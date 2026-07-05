@@ -25,11 +25,8 @@
   --color-tab-story: var(--tab-story);
   --color-tab-conv: var(--tab-conv);
   --color-tab-dmclose: var(--tab-dmclose);
-  --color-tab-objections: var(--tab-objections);
   --color-tab-psych: var(--tab-psych);
   --color-tab-engage: var(--tab-engage);
-  --color-tab-lang: var(--tab-lang);
-  --color-tab-frame: var(--tab-frame);
   --color-tab-pacing: var(--tab-pacing);
 
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
@@ -47,18 +44,37 @@
   --primary: oklch(0.35 0.10 160);
   --primary-foreground: oklch(0.99 0 0);
 
+  --canvas-bg: #fcfbf8;
+  --canvas-dot: rgba(0,0,0,0.09);
+  --script-bg: rgba(13,107,91,0.05);
+  --script-border: rgba(13,107,91,0.35);
+
   --tab-stages: #0d6b5b;
   --tab-inbound: #2f6feb;
   --tab-outbound: #d99516;
   --tab-story: #7c3aed;
   --tab-conv: #dd5a2f;
   --tab-dmclose: #16a34a;
-  --tab-objections: #ea580c;
   --tab-psych: #d97706;
   --tab-engage: #0f9488;
-  --tab-lang: #7c3aed;
-  --tab-frame: #2563eb;
   --tab-pacing: #0d9488;
+}
+
+.dark {
+  --background: oklch(0.16 0.01 260);
+  --foreground: oklch(0.96 0.005 90);
+  --card: oklch(0.22 0.015 260);
+  --card-foreground: oklch(0.96 0.005 90);
+  --muted: oklch(0.26 0.015 260);
+  --muted-foreground: oklch(0.72 0.015 260);
+  --border: oklch(0.32 0.015 260);
+  --primary: oklch(0.75 0.14 160);
+  --primary-foreground: oklch(0.15 0.02 260);
+
+  --canvas-bg: #14161c;
+  --canvas-dot: rgba(255,255,255,0.06);
+  --script-bg: rgba(255,255,255,0.04);
+  --script-border: rgba(255,255,255,0.18);
 }
 
 @layer base {
@@ -73,7 +89,31 @@
 }
 
 .canvas-bg {
-  background-color: #fcfbf8;
-  background-image: radial-gradient(circle, rgba(0,0,0,0.09) 1px, transparent 1px);
+  background-color: var(--canvas-bg);
+  background-image: radial-gradient(circle, var(--canvas-dot) 1px, transparent 1px);
   background-size: 22px 22px;
 }
+
+.script-block {
+  background-color: var(--script-bg);
+  border-left-color: var(--script-border);
+}
+
+.hl-match {
+  background-color: rgba(250, 204, 21, 0.45);
+  border-radius: 2px;
+  padding: 0 1px;
+}
+.dark .hl-match {
+  background-color: rgba(250, 204, 21, 0.35);
+  color: #111;
+}
+
+/* Card highlight ring when it matches the search query */
+.card-matched {
+  box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.7), 0 4px 12px rgba(0,0,0,0.06);
+}
+
+/* Hide native scrollbars on mobile pill row */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
