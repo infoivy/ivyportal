@@ -194,16 +194,34 @@ function Header({ onJump, query, setQuery }: { onJump: (id: TabId) => void; quer
           );
         })}
       </div>
-      {!query && (
-        <div className="hidden sm:flex gap-1.5 mt-1.5 ml-12 items-center flex-wrap">
-          <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Try:</span>
-          {SUGGESTIONS.map(s => (
-            <button key={s} onClick={() => setQuery(s)} className="text-[10px] px-2 py-0.5 rounded-full border border-border/70 text-muted-foreground hover:text-foreground hover:border-foreground/40 transition">
+      <div className="hidden sm:flex gap-1.5 mt-1.5 ml-12 items-center flex-wrap">
+        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Try:</span>
+        {SUGGESTIONS.map(s => {
+          const active = query === s;
+          return (
+            <button
+              key={s}
+              onClick={() => setQuery(active ? "" : s)}
+              className={`text-[10px] px-2 py-0.5 rounded-full border transition ${
+                active
+                  ? "bg-foreground text-background border-foreground"
+                  : "border-border/70 text-muted-foreground hover:text-foreground hover:border-foreground/40"
+              }`}
+            >
               {s}
             </button>
-          ))}
-        </div>
-      )}
+          );
+        })}
+        {query && (
+          <button
+            onClick={() => setQuery("")}
+            className="text-[10px] px-2 py-0.5 rounded-full text-muted-foreground hover:text-foreground"
+            title="Clear search"
+          >
+            clear ✕
+          </button>
+        )}
+      </div>
     </div>
   );
 }
