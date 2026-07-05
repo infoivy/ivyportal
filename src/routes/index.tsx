@@ -326,8 +326,7 @@ function Canvas({ matched, query }: { matched: Set<TabId> | null; query: string 
   );
 }
 
-function NotesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const defaultTpl = `PRE-CALL NOTES
+const PRECALL_TPL = `PRE-CALL NOTES
 
 Name / handle:
 Age range:
@@ -353,35 +352,78 @@ Last interaction:
 Next follow-up:
 
 Call outcome:`;
-  const [text, setText] = useState(defaultTpl);
+
+const eodTemplate = (c: Counter, extra = "") => `EOD REPORT — ${c.date}
+
+Followers contacted: ${c.contacted}
+Dials: ${c.dials}
+Sets: ${c.sets}
+Conversations: ${c.convos}
+
+Wins:
+Losses / lessons:
+Objections seen today:
+Tomorrow's focus:
+${extra ? "\nNotes:\n" + extra : ""}`;
+
+function NotesModal({ open, onClose, counter }: { open: boolean; onClose: () => void; counter: Counter }) {
+  const [tab, setTab] = useState<"precall" | "eod">("precall");
+  const [precall, setPrecall] = useState(PRECALL_TPL);
+  const [eod, setEod] = useState(() => eodTemplate(counter));
   const [copied, setCopied] = useState(false);
+
+  // Keep EOD counters in sync when modal opens, unless user has customized
+  useEffect(() => {
+    if (open && tab === "eod") {
+      // Only re-hydrate if it still looks like an untouched template for a different count
+      setEod(prev => {
+        if (prev.startsWith("EOD REPORT") && !prev.includes("Notes:\n") && !/[A-Za-z]{2,}:\s+\S/.test(prev.split("\n\n").slice(-3).join("\n"))) {
+          return eodTemplate(counter);
+        }
+        return prev;
+      });
+    }
+  }, [open, tab, counter]);
+
   if (!open) return null;
+
+  const text = tab === "precall" ? precall : eod;
+  const setText = tab === "precall" ? setPrecall : setEod;
+  const resetTpl = () => tab === "precall" ? setPrecall(PRECALL_TPL) : setEod(eodTemplate(counter));
+
   const copy = () => {
     navigator.clipboard?.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
+
+  const stopWheel = (e: React.WheelEvent) => e.stopPropagation();
+
   return (
-    <div className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-card border border-border rounded-lg shadow-2xl w-full max-w-lg flex flex-col" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose} onWheel={stopWheel}>
+      <div className="bg-card border border-border rounded-lg shadow-2xl w-full max-w-lg flex flex-col" onClick={e => e.stopPropagation()} onWheel={stopWheel}>
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-          <div>
-            <h3 className="text-sm font-bold text-foreground">Pre-Call Notes</h3>
-            <p className="text-[11px] text-muted-foreground">Fill in the DM, copy to hand off to the closer.</p>
+          <div className="flex items-center gap-1 bg-muted rounded-md p-0.5">
+            <button onClick={() => setTab("precall")} className={`px-3 py-1 text-xs font-semibold rounded ${tab === "precall" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>Pre-call</button>
+            <button onClick={() => setTab("eod")} className={`px-3 py-1 text-xs font-semibold rounded ${tab === "eod" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>EOD report</button>
           </div>
           <button onClick={onClose} className="w-7 h-7 rounded hover:bg-muted flex items-center justify-center text-muted-foreground" title="Close">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
           </button>
         </div>
+        <p className="text-[11px] text-muted-foreground px-4 pt-2">
+          {tab === "precall" ? "Fill in during the DM, copy to hand off to the closer." : "Auto-filled from your session counters. Copy to paste into your EOD report."}
+        </p>
         <textarea
           value={text}
           onChange={e => setText(e.target.value)}
-          className="flex-1 min-h-[380px] p-3 text-xs font-mono bg-background text-foreground resize-none focus:outline-none"
+          onWheel={stopWheel}
+          className="flex-1 min-h-[380px] max-h-[60vh] p-3 mt-2 text-xs font-mono bg-background text-foreground resize-none focus:outline-none overflow-auto"
         />
         <div className="flex items-center justify-between gap-2 px-4 py-3 border-t border-border">
-          <button onClick={() => setText(defaultTpl)} className="text-xs text-muted-foreground hover:text-foreground">Reset template</button>
+          <button onClick={resetTpl} className="text-xs text-muted-foreground hover:text-foreground">Reset template</button>
           <button onClick={copy} className="px-3 py-1.5 rounded-md bg-[color:var(--tab-stages)] text-white text-xs font-semibold hover:opacity-90">
-            {copied ? "Copied!" : "Copy notes"}
+            {copied ? "Copied!" : "Copy"}
           </button>
         </div>
       </div>
