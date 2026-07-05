@@ -440,6 +440,32 @@ function Index() {
   const [counter, setCounterState] = useState<Counter>(() => loadCounter());
   const matched = useMemo(() => matchSections(query), [query]);
 
+  const clampCanvasPosition = useCallback((x: number, y: number, scale: number) => {
+    const container = containerRef.current;
+    const canvas = container?.querySelector<HTMLElement>(".canvas-bg");
+    if (!container || !canvas) return { x, y };
+
+    const rect = container.getBoundingClientRect();
+    const isM = rect.width < 640;
+    const headerH = isM ? HEADER_HEIGHT_MOBILE : HEADER_HEIGHT_DESKTOP;
+    const leftGutter = 8;
+    const rightGutter = 8;
+    const topGutter = headerH + 8;
+    const bottomGutter = 80;
+    const scaledW = canvas.offsetWidth * scale;
+    const scaledH = canvas.offsetHeight * scale;
+
+    const maxX = leftGutter - CANVAS_PAD_LEFT * scale;
+    const minX = Math.min(maxX, rect.width - rightGutter - scaledW);
+    const maxY = topGutter - CANVAS_PAD_TOP * scale;
+    const minY = Math.min(maxY, rect.height - bottomGutter - scaledH);
+
+    return {
+      x: Math.min(maxX, Math.max(minX, x)),
+      y: Math.min(maxY, Math.max(minY, y)),
+    };
+  }, []);
+
   const setCounter = useCallback((c: Counter) => {
     setCounterState(c);
     saveCounter(c);
@@ -461,8 +487,9 @@ function Index() {
     const targetTop = (isMobile ? HEADER_HEIGHT_MOBILE : HEADER_HEIGHT_DESKTOP) + 16;
     const deltaX = targetLeft - elRect.left;
     const deltaY = targetTop - elRect.top;
-    w.setTransform(state.positionX + deltaX, state.positionY + deltaY, scale, 500, "easeOutCubic");
-  }, []);
+    const next = clampCanvasPosition(state.positionX + deltaX, state.positionY + deltaY, scale);
+    w.setTransform(next.x, next.y, scale, 500, "easeOutCubic");
+  }, [clampCanvasPosition]);
 
   const jumpTo = useCallback((id: TabId) => {
     const el = document.getElementById(`sec-${id}`);
@@ -505,11 +532,12 @@ function Index() {
       if (!w) return;
       e.preventDefault();
       const { positionX, positionY, scale } = w.state;
-      w.setTransform(positionX - e.deltaX, positionY - e.deltaY, scale, 0);
+      const next = clampCanvasPosition(positionX - e.deltaX, positionY - e.deltaY, scale);
+      w.setTransform(next.x, next.y, scale, 0);
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
-  }, []);
+  }, [clampCanvasPosition]);
 
   // Position canvas so first card sits just below the header on load
   const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
@@ -527,8 +555,9 @@ function Index() {
     const scale = 1;
     const posY = hH + 8 - CANVAS_PAD_TOP * scale;
     const posX = 8 - CANVAS_PAD_LEFT * scale;
-    w.setTransform(posX, posY, scale, 350, "easeOutCubic");
-  }, []);
+    const next = clampCanvasPosition(posX, posY, scale);
+    w.setTransform(next.x, next.y, scale, 350, "easeOutCubic");
+  }, [clampCanvasPosition]);
 
   return (
     <div ref={containerRef} className="fixed inset-0 overflow-hidden bg-background">
