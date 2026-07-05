@@ -370,7 +370,7 @@ function SectionRail({ onJump }: { onJump: (id: TabId) => void }) {
         <button
           key={s.id}
           onClick={() => onJump(s.id)}
-          className="group relative w-4 h-4 flex items-center justify-center"
+          className="group relative w-5 h-5 flex items-center justify-center shrink-0 cursor-pointer"
           title={s.heading}
         >
           <span
