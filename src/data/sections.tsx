@@ -166,33 +166,24 @@ export const SECTIONS: Section[] = [
         title: "Stage 3: Problem Identification",
         subtitle: "Surface → Real Problem",
         body: (
-          <div className="space-y-2">
-            <table className="w-full text-[12px]">
-              <thead>
-                <tr className="text-left text-muted-foreground">
-                  <th className="pb-1 pr-2">THEY SAY</th>
-                  <th className="pb-1 pr-2">REAL PROBLEM</th>
-                  <th className="pb-1">FOLLOW-UP</th>
-                </tr>
-              </thead>
-              <tbody className="align-top">
-                {[
-                  ["\"I hate my job\"", "No exit skill", "\"what have you actually tried to build income outside of it?\""],
-                  ["\"I want to make hijrah\"", "No income plan for after", "\"what's the income plan once you're there?\""],
-                  ["\"I need money fast\"", "Urgency without a skill", "\"what's making it urgent right now?\""],
-                  ["\"Tried dropshipping/crypto\"", "Chasing models, not skills", "\"what made you stop each one?\""],
-                  ["\"I'm not ready yet\"", "Fear dressed as humility", "\"what would ready actually look like?\""],
-                  ["\"Fix myself first\"", "Avoidance", "\"why can't both happen at the same time?\""],
-                  ["\"Can't land an offer\"", "No reps or no proof", "\"how many real conversations or roleplays have you actually done?\""],
-                ].map((r, i) => (
-                  <tr key={i} className="border-t border-border/70">
-                    <td className="py-1 pr-2">{r[0]}</td>
-                    <td className="py-1 pr-2">{r[1]}</td>
-                    <td className="py-1 italic text-foreground/80">{r[2]}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="space-y-3">
+            {[
+              ["\"I hate my job\"", "No exit skill", "what have you actually tried to build income outside of it?"],
+              ["\"I want to make hijrah\"", "No income plan for after", "what's the income plan once you're there?"],
+              ["\"I need money fast\"", "Urgency without a skill", "what's making it urgent right now?"],
+              ["\"Tried dropshipping/crypto\"", "Chasing models, not skills", "what made you stop each one?"],
+              ["\"I'm not ready yet\"", "Fear dressed as humility", "what would ready actually look like?"],
+              ["\"Fix myself first\"", "Avoidance", "why can't both happen at the same time?"],
+              ["\"Can't land an offer\"", "No reps or no proof", "how many real conversations or roleplays have you actually done?"],
+            ].map(([say, real, follow], i) => (
+              <div key={i} className="border-t border-border/70 pt-2 first:border-t-0 first:pt-0">
+                <div className="flex flex-wrap gap-x-3 gap-y-1 text-[12px] mb-1">
+                  <span className="text-foreground/90"><span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground mr-1">They say</span>{say}</span>
+                  <span className="text-foreground/90"><span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground mr-1">Real problem</span>{real}</span>
+                </div>
+                <Q label="Follow-up">{follow}</Q>
+              </div>
+            ))}
             <P><b>Empathy:</b> "i see," "i feel you," "it's frustrating when...," "i was in the same spot," "that's more common than you think"</P>
           </div>
         ),
