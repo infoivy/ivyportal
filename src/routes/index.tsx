@@ -74,16 +74,6 @@ function matchSections(query: string): Set<TabId> | null {
 type Counter = { contacted: number; dials: number; sets: number; convos: number; date: string };
 const todayKey = () => new Date().toISOString().slice(0, 10);
 const emptyCounter = (): Counter => ({ contacted: 0, dials: 0, sets: 0, convos: 0, date: todayKey() });
-const loadCounter = (): Counter => {
-  if (typeof localStorage === "undefined") return emptyCounter();
-  try {
-    const raw = localStorage.getItem("isa:counter");
-    if (!raw) return emptyCounter();
-    const parsed = JSON.parse(raw) as Partial<Counter>;
-    if (parsed.date !== todayKey()) return emptyCounter();
-    return { ...emptyCounter(), ...parsed } as Counter;
-  } catch { return emptyCounter(); }
-};
 const saveCounter = (c: Counter) => { try { localStorage.setItem("isa:counter", JSON.stringify(c)); } catch { /* ignore */ } };
 
 const COUNTER_FIELDS: { key: keyof Omit<Counter, "date">; label: string; full: string }[] = [
