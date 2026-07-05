@@ -116,7 +116,7 @@ export const SECTIONS: Section[] = [
               "\"make me a millionaire\" energy",
               "Doesn't control his own money",
             ]} />
-            <P className="pt-1"><b>Disqualified ≠ discarded.</b> Route warmly to the free community. Over 35 with everything else strong = judgment call, flag to Sair. Parental-funded under-18s: only the closer books them, never the setter.</P>
+            <P className="pt-1"><b>Disqualified ≠ discarded.</b> Route warmly to the free community. Over 35 with everything else strong = judgment call, flag to Abdulrahman. Parental-funded under-18s: only the closer books them, never the setter.</P>
 
           </div>
         ),
@@ -1306,7 +1306,7 @@ export const SECTIONS: Section[] = [
             ]} />
             <P>Post observations as they happen in the team channel — one-liners are fine:</P>
             <Q>3 guys this week mentioned [competitor].</Q>
-            <P>Weekly 15-min sync with Sair: lead quality patterns, offer questions, what content to make more of.</P>
+            <P>Weekly 15-min sync with Abdulrahman: lead quality patterns, offer questions, what content to make more of.</P>
           </div>
         ),
       },
@@ -1352,7 +1352,7 @@ export const SECTIONS: Section[] = [
               "Be human. React to photos, joke, talk gym, food, football, non-business.",
               <>Pull back when appropriate. <i>"just thought i'd share, i'll stop bothering you now lol"</i></>,
             ]} />
-            <P className="pt-1">Read every message out loud before sending. If it sounds like an email, rewrite it. The prospect should never be able to tell the setter from Sair.</P>
+            <P className="pt-1">Read every message out loud before sending. If it sounds like an email, rewrite it. The prospect should never be able to tell the setter from Abdulrahman.</P>
           </div>
         ),
       },
