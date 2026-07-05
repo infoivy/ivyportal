@@ -186,7 +186,7 @@ function Index() {
         minScale={0.45}
         maxScale={2.5}
         limitToBounds={false}
-        wheel={{ step: 0.03, smoothStep: 0.005 }}
+        wheel={{ step: 0.03 }}
         pinch={{ step: 2 }}
         doubleClick={{ disabled: true }}
         panning={{ velocityDisabled: true }}
