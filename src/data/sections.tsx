@@ -3,11 +3,12 @@ import type { Section } from "./content";
 const P = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
   <p className={`text-[13px] leading-relaxed text-foreground/90 ${className}`}>{children}</p>
 );
-const Q = ({ children }: { children: React.ReactNode }) => {
-  const text = typeof children === "string" ? children : String(children);
+
+// Script block — subtle shaded background flags this as copy-pasteable
+export const Q = ({ children, label }: { children: React.ReactNode; label?: string }) => {
   const copy = (e: React.MouseEvent<HTMLButtonElement>) => {
     const el = (e.currentTarget.parentElement?.querySelector("[data-quote]") as HTMLElement | null);
-    const txt = el?.innerText || text;
+    const txt = el?.innerText || (typeof children === "string" ? children : String(children));
     navigator.clipboard?.writeText(txt);
     const btn = e.currentTarget;
     const prev = btn.innerText;
@@ -15,12 +16,14 @@ const Q = ({ children }: { children: React.ReactNode }) => {
     setTimeout(() => { btn.innerText = prev; }, 1200);
   };
   return (
-    <div className="group relative flex items-start gap-1.5">
-      <p data-quote className="text-[13px] leading-relaxed italic text-foreground/80 flex-1">“{children}”</p>
-      <button onClick={copy} className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded border border-border bg-white flex-shrink-0" title="Copy script">Copy</button>
+    <div className="script-block my-1.5 relative rounded-md border-l-2 pl-3 pr-14 py-1.5" data-script>
+      {label && <span className="inline-block text-[9px] font-bold uppercase tracking-wider text-muted-foreground mr-1.5 align-middle">{label}</span>}
+      <span data-quote className="text-[13px] leading-relaxed text-foreground/85">{children}</span>
+      <button onClick={copy} className="absolute right-1 top-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded border border-border/60 bg-background/70 opacity-70 hover:opacity-100 transition" title="Copy script">Copy</button>
     </div>
   );
 };
+
 const H = ({ children }: { children: React.ReactNode }) => (
   <p className="text-[12px] font-semibold uppercase tracking-wide text-foreground mt-3 first:mt-0">{children}</p>
 );
@@ -29,6 +32,7 @@ const UL = ({ items }: { items: string[] }) => (
     {items.map((i, k) => <li key={k}>{i}</li>)}
   </ul>
 );
+
 
 const NumStep = ({ n, title, sub, color = "var(--tab-stages)" }: { n: number; title: string; sub: string; color?: string }) => (
   <div className="flex gap-3 items-start">
