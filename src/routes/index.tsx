@@ -684,10 +684,18 @@ function Index() {
     w.setTransform(next.x, next.y, scale, 500, "easeOutCubic");
   }, [clampCanvasPosition]);
 
+  const scrollToEl = useCallback((el: HTMLElement) => {
+    const hH = headerRef.current?.getBoundingClientRect().height ?? headerH;
+    const top = el.getBoundingClientRect().top + window.scrollY - hH - 12;
+    window.scrollTo({ top, behavior: "smooth" });
+  }, [headerH]);
+
   const jumpTo = useCallback((id: TabId) => {
     const el = document.getElementById(`sec-${id}`);
-    if (el) jumpToEl(el);
-  }, [jumpToEl]);
+    if (!el) return;
+    if (isMobile) scrollToEl(el);
+    else jumpToEl(el);
+  }, [isMobile, jumpToEl, scrollToEl]);
 
   useEffect(() => {
     if (matched && matched.size > 0) {
@@ -704,7 +712,8 @@ function Index() {
       const el = document.getElementById(h);
       if (el) {
         setTimeout(() => {
-          jumpToEl(el);
+          if (isMobile) scrollToEl(el);
+          else jumpToEl(el);
           el.classList.remove("card-focus-flash");
           // reflow to restart animation if same hash re-triggered
           void (el as HTMLElement).offsetWidth;
@@ -713,11 +722,10 @@ function Index() {
         }, 80);
       }
     };
-    // wait a tick for canvas to mount
     setTimeout(handleHash, 200);
     window.addEventListener("hashchange", handleHash);
     return () => window.removeEventListener("hashchange", handleHash);
-  }, [jumpToEl]);
+  }, [isMobile, jumpToEl, scrollToEl]);
 
   // Trackpad two-finger scroll → pan the canvas. Ctrl/Cmd/pinch → zoom (library handles).
   // Ignore wheel events originating inside a modal or scrollable UI element.
