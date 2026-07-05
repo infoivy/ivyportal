@@ -194,16 +194,34 @@ function Header({ onJump, query, setQuery }: { onJump: (id: TabId) => void; quer
           );
         })}
       </div>
-      {!query && (
-        <div className="hidden sm:flex gap-1.5 mt-1.5 ml-12 items-center flex-wrap">
-          <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Try:</span>
-          {SUGGESTIONS.map(s => (
-            <button key={s} onClick={() => setQuery(s)} className="text-[10px] px-2 py-0.5 rounded-full border border-border/70 text-muted-foreground hover:text-foreground hover:border-foreground/40 transition">
+      <div className="hidden sm:flex gap-1.5 mt-1.5 ml-12 items-center flex-wrap">
+        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Try:</span>
+        {SUGGESTIONS.map(s => {
+          const active = query === s;
+          return (
+            <button
+              key={s}
+              onClick={() => setQuery(active ? "" : s)}
+              className={`text-[10px] px-2 py-0.5 rounded-full border transition ${
+                active
+                  ? "bg-foreground text-background border-foreground"
+                  : "border-border/70 text-muted-foreground hover:text-foreground hover:border-foreground/40"
+              }`}
+            >
               {s}
             </button>
-          ))}
-        </div>
-      )}
+          );
+        })}
+        {query && (
+          <button
+            onClick={() => setQuery("")}
+            className="text-[10px] px-2 py-0.5 rounded-full text-muted-foreground hover:text-foreground"
+            title="Clear search"
+          >
+            clear ✕
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -347,12 +365,12 @@ function SectionRail({ onJump }: { onJump: (id: TabId) => void }) {
     return () => clearInterval(t);
   }, []);
   return (
-    <div className="hidden sm:flex fixed left-2 top-1/2 -translate-y-1/2 z-40 flex-col gap-2 bg-background/80 backdrop-blur-sm border border-border/60 rounded-full py-2 px-1.5">
+    <div className="hidden sm:flex fixed left-2 top-1/2 -translate-y-1/2 z-[55] flex-col gap-2 bg-background/85 backdrop-blur-sm border border-border/60 rounded-full py-2 px-1.5 max-h-[calc(100vh-200px)] overflow-y-auto no-scrollbar">
       {SECTIONS.map(s => (
         <button
           key={s.id}
           onClick={() => onJump(s.id)}
-          className="group relative w-4 h-4 flex items-center justify-center"
+          className="group relative w-5 h-5 flex items-center justify-center shrink-0 cursor-pointer"
           title={s.heading}
         >
           <span
