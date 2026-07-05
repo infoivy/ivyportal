@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { TransformWrapper, TransformComponent, useControls, useTransformEffect, type ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
-import { useRef, useState, useEffect, useCallback, useMemo, useDeferredValue } from "react";
+import React, { useRef, useState, useEffect, useCallback, useMemo, useDeferredValue } from "react";
 import { TABS, type TabId } from "@/data/content";
 import { SECTIONS } from "@/data/sections";
 import { useIsMobile } from "@/hooks/use-mobile";
