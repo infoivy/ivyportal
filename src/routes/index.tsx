@@ -346,48 +346,6 @@ function Canvas({ matched, query }: { matched: Set<TabId> | null; query: string 
   );
 }
 
-function SectionRail({ onJump }: { onJump: (id: TabId) => void }) {
-  const [active, setActive] = useState<TabId | null>(null);
-  useEffect(() => {
-    const onScroll = () => {
-      let best: TabId | null = null;
-      let bestDist = Infinity;
-      const viewportTop = (window.innerWidth < 640 ? HEADER_HEIGHT_MOBILE : HEADER_HEIGHT_DESKTOP) + 40;
-      for (const s of SECTIONS) {
-        const el = document.getElementById(`sec-${s.id}`);
-        if (!el) continue;
-        const d = Math.abs(el.getBoundingClientRect().top - viewportTop);
-        if (d < bestDist) { bestDist = d; best = s.id; }
-      }
-      if (best) setActive(best);
-    };
-    const t = setInterval(onScroll, 400);
-    return () => clearInterval(t);
-  }, []);
-  return (
-    <div className="hidden sm:flex fixed left-2 top-1/2 -translate-y-1/2 z-[55] flex-col gap-2 bg-background/85 backdrop-blur-sm border border-border/60 rounded-full py-2 px-1.5 max-h-[calc(100vh-200px)] overflow-y-auto no-scrollbar">
-      {SECTIONS.map(s => (
-        <button
-          key={s.id}
-          onClick={() => onJump(s.id)}
-          className="group relative w-5 h-5 flex items-center justify-center shrink-0 cursor-pointer"
-          title={s.heading}
-        >
-          <span
-            className="rounded-full transition-all"
-            style={{
-              backgroundColor: s.color,
-              width: active === s.id ? 10 : 6,
-              height: active === s.id ? 10 : 6,
-              opacity: active === s.id ? 1 : 0.55,
-            }}
-          />
-        </button>
-      ))}
-    </div>
-  );
-}
-
 function HelpOverlay({ open, onClose }: { open: boolean; onClose: () => void }) {
   if (!open) return null;
   const rows: [string, string][] = [
@@ -765,7 +723,6 @@ function Index() {
 
       {/* Fixed overlays — siblings of the canvas, always on top */}
       <Header innerRef={headerRef} onJump={jumpTo} query={query} setQuery={setQuery} />
-      <SectionRail onJump={jumpTo} />
       <NotesModal open={notesOpen} onClose={() => setNotesOpen(false)} counter={counter} />
       <HelpOverlay open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
