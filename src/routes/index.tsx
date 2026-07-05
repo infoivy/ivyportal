@@ -621,19 +621,23 @@ function Index() {
 
   // Transform viewport sits BELOW the header — positions are viewport-relative
   const initScale = 0.55;
-  // Restore last-view (localStorage) or fall back to top-left
+  // Always start from the same top-left fallback on server and first client render.
+  // Saved view is restored after hydration to avoid mismatched SSR HTML.
   const initialView = useMemo(() => {
-    const fallback = { scale: initScale, x: 8 - CANVAS_PAD_LEFT * initScale, y: 8 - CANVAS_PAD_TOP * initScale };
-    if (typeof localStorage === "undefined") return fallback;
+    return { scale: initScale, x: 8 - CANVAS_PAD_LEFT * initScale, y: 8 - CANVAS_PAD_TOP * initScale };
+  }, []);
+
+  useEffect(() => {
+    const w = wrapperRef.current;
+    if (!w) return;
     try {
       const raw = localStorage.getItem("isa:view:v2");
-      if (!raw) return fallback;
+      if (!raw) return;
       const p = JSON.parse(raw) as { scale?: number; x?: number; y?: number };
       if (typeof p.scale === "number" && typeof p.x === "number" && typeof p.y === "number") {
-        return { scale: p.scale, x: p.x, y: p.y };
+        w.setTransform(p.x, p.y, p.scale, 0);
       }
     } catch { /* ignore */ }
-    return fallback;
   }, []);
 
   // Persist view (throttled) whenever the transform changes
