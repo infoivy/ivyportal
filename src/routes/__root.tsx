@@ -77,9 +77,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Grow Acquisition — Setting Mastery" },
+      { title: "Ivy Sales Academy" },
       { name: "description", content: "Complete system: conversation flows, scripts, objection handling, psychology, engagement & operations" },
-      { property: "og:title", content: "Grow Acquisition — Setting Mastery" },
+      { property: "og:title", content: "Ivy Sales Academy" },
       { property: "og:description", content: "Complete system: conversation flows, scripts, objection handling, psychology, engagement & operations" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
