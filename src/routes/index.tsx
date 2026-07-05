@@ -120,10 +120,29 @@ function Toolbar({ dark, setDark, onNotes, counter, setCounter, onReset, onHelp 
         <div key={key} className="flex items-center h-8 shrink-0 rounded-full bg-muted/60 pl-1.5 pr-1 gap-1" title={full}>
           <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{label}</span>
           <button onClick={() => bump(key, -1)} className="w-5 h-5 rounded-full bg-background hover:bg-foreground hover:text-background flex items-center justify-center text-xs font-bold" title={`-1 ${full}`}>−</button>
-          <span className="text-sm font-bold tabular-nums text-foreground min-w-[16px] text-center">{counter[key]}</span>
+          <input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={counter[key]}
+            onFocus={e => e.currentTarget.select()}
+            onChange={e => {
+              const n = parseInt(e.target.value.replace(/\D/g, ""), 10);
+              setCounter({ ...counter, [key]: Number.isFinite(n) ? Math.max(0, n) : 0 });
+            }}
+            className="w-8 text-sm font-bold tabular-nums text-foreground text-center bg-transparent border-0 focus:outline-none focus:ring-1 focus:ring-ring rounded"
+            aria-label={full}
+          />
           <button onClick={() => bump(key, 1)} className="w-5 h-5 rounded-full bg-background hover:bg-foreground hover:text-background flex items-center justify-center text-xs font-bold" title={`+1 ${full}`}>+</button>
         </div>
       ))}
+      <button
+        onClick={() => setCounter({ ...counter, contacted: 0, dials: 0, sets: 0, convos: 0 })}
+        className="w-8 h-8 shrink-0 rounded-full hover:bg-muted flex items-center justify-center text-muted-foreground"
+        title="Reset session counters to 0"
+      >
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+      </button>
       <div className="w-px h-5 bg-border mx-1 shrink-0" />
       <button onClick={onNotes} className="h-8 px-3 shrink-0 rounded-full hover:bg-muted flex items-center gap-1.5 text-xs font-semibold" title="Pre-call notes & EOD report">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 3h9a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8l5-5z"/><path d="M9 3v5H4"/></svg>
@@ -495,7 +514,11 @@ function Index() {
   const [headerH, setHeaderH] = useState(HEADER_HEIGHT_DESKTOP);
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
-  const [dark, setDark] = useState(false);
+  const [dark, setDark] = useState(() => {
+    if (typeof localStorage === "undefined") return true;
+    const v = localStorage.getItem("isa:dark");
+    return v === null ? true : v === "1";
+  });
   const [notesOpen, setNotesOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [counter, setCounterState] = useState<Counter>(() => loadCounter());
@@ -550,6 +573,7 @@ function Index() {
   useEffect(() => {
     if (typeof document === "undefined") return;
     document.documentElement.classList.toggle("dark", dark);
+    try { localStorage.setItem("isa:dark", dark ? "1" : "0"); } catch { /* ignore */ }
   }, [dark]);
 
   const jumpToEl = useCallback((el: HTMLElement) => {
