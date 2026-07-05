@@ -951,6 +951,170 @@ export const SECTIONS: Section[] = [
     ],
   },
 
+  // ===== FOLLOW-UPS =====
+  {
+    id: "followup",
+    heading: "Follow-Ups",
+    color: "var(--tab-followup)",
+    cards: [
+      {
+        title: "Follow-Up Rules",
+        subtitle: "Read before sending any bump",
+        body: (
+          <div className="space-y-2">
+            <P>Most deals aren't lost to a "no". They're lost because the setter stopped following up, or followed up the wrong way.</P>
+            <UL items={[
+              <><b>Maximum 3 follow-ups</b> per conversation in DMs. After that, story nurture only.</>,
+              <>Every follow-up <b>adds something</b>: a question, a piece of value, or an easy out. "just bumping this" adds nothing — never send it alone.</>,
+              <><b>One follow-up per gap.</b> Send it, put the convo in the waiting box, move on. Never double-bump.</>,
+              <>Reference the <b>last real thing HE said</b>, not your last message. "did you figure out [his challenge]?" beats "did you see my message?"</>,
+              <><b>Match the follow-up to the situation.</b> A guy who ghosted mid-convo, a guy sitting on a calendly link, and a guy praying istikhara are three different follow-ups, not one template.</>,
+              <><b>Detachment is the energy.</b> You're checking on a brother, not chasing a commission. If a follow-up would read as desperate, it's story engagement instead.</>,
+            ]} />
+          </div>
+        ),
+      },
+      {
+        title: "Opener Sent, No Reply (outbound)",
+        subtitle: "The one situation you do NOT bump",
+        body: (
+          <div className="space-y-2">
+            <P>An unanswered cold opener never gets a text follow-up. Bumping a message he never engaged with reads as spam and burns the lead.</P>
+            <H>Instead:</H>
+            <UL items={[
+              <><b>Days 1–7:</b> react to and reply to his stories — genuine, no pitch.</>,
+              <><b>Week 2–3:</b> try again with a COMPLETELY different opener, different angle (if the first was aspirational gap, go pure curiosity).</>,
+              <><b>Still nothing after 2 openers:</b> he goes cold list — quarterly story presence only.</>,
+            ]} />
+            <P>The story engagement in between is what makes the second opener land. He's seen your name twice before you show up in his DMs again.</P>
+          </div>
+        ),
+      },
+      {
+        title: "Ghosted Mid-Conversation",
+        subtitle: "He was talking, then went quiet",
+        body: (
+          <div className="space-y-2">
+            <H>24h — casual check-in tied to the last real thing he said:</H>
+            <Q>hey, still thinking about what you said about [his topic]. did you figure out how you're handling [his challenge]?</Q>
+            <H>48h — no DM:</H>
+            <P>Story engagement only — a reaction or a genuine reply to something he posted.</P>
+            <H>Day 5–7 — value drop, not a nudge:</H>
+            <Q>just saw something that reminded me of your situation, still dealing with [problem]?</Q>
+            <P>Attach the relevant video. Or:</P>
+            <Q>one of our guys was in almost your exact spot, [before], now he's [after]. thought of you</Q>
+            <H>Week 2 — binary re-engagement:</H>
+            <Q>hey, thanks for your patience. ready to book the call and see if the path fits? or not ready to move forward right now, which is also completely fine.</Q>
+            <P>That's the 3 DM touches. After the binary message: story nurture, hand over to the Engagement section rhythm.</P>
+          </div>
+        ),
+      },
+      {
+        title: "Calendly Sent, Not Booked",
+        subtitle: "The highest-value follow-up in the system",
+        body: (
+          <div className="space-y-2">
+            <H>24h:</H>
+            <Q>hey, did you get a chance to check the calendar?</Q>
+            <H>48h:</H>
+            <Q>[Name]! just curious if you found a time that works. no worries if not</Q>
+            <H>72h — final, easy out:</H>
+            <Q>i'll close the loop after this man. if this is still something you're serious about, grab a time and i'll make sure everything's set on my end. if now isn't right, completely fine too, just let me know either way so i know whether to keep the spot open</Q>
+            <P>After 72h: stop chasing in DMs. Story engagement only. Re-approach with the binary message in 2 weeks.</P>
+            <P>The easy out in the final message is what makes it work. Men on the fence reply to permission to say no more often than they reply to pressure to say yes.</P>
+          </div>
+        ),
+      },
+      {
+        title: "Booked: Show-Rate Sequence",
+        subtitle: "A booked call is not a held call",
+        body: (
+          <div className="space-y-2">
+            <H>Immediately on booking:</H>
+            <Q>perfect, you're locked in! come with your real questions, bring the doubts too. talk soon insha'Allah</Q>
+            <P>+ send student proof matched to his situation.</P>
+            <H>Same day — pre-call video:</H>
+            <Q>could you watch this before we talk? it'll make the call 10x more useful</Q>
+            <H>Day before:</H>
+            <Q>all set for tomorrow insha'Allah?</Q>
+            <H>1–2 hours before:</H>
+            <Q>we're on in a bit, see you there man</Q>
+            <P>Between booking and call: keep reacting to his stories. Many of these men are nervous about the call. Familiarity is what gets a nervous man to show up.</P>
+          </div>
+        ),
+      },
+      {
+        title: "No-Show Recovery",
+        subtitle: "Same day, zero guilt",
+        body: (
+          <div className="space-y-2">
+            <H>Within 2 hours of the missed call:</H>
+            <Q>hey [Name], we missed you on the call. no stress, things come up. want me to send the calendar so you can grab a new time?</Q>
+            <H>If he rebooks:</H>
+            <P>Run the show-rate sequence again, and add the day-of reminder.</P>
+            <H>If he goes quiet:</H>
+            <Q>everything good man? happy to reschedule whenever works</Q>
+            <P>Send at 48h, then stop. Story nurture. Binary re-engagement in 2 weeks.</P>
+            <P><b>Never guilt a no-show.</b> The men who feel judged never come back; the men who feel welcomed usually do. One no-show is a scheduling problem. Two no-shows is a readiness problem — route to the free community and nurture.</P>
+          </div>
+        ),
+      },
+      {
+        title: "Paused for Istikhara / Wife / Parents",
+        subtitle: "Respect the pause, own the timeline",
+        body: (
+          <div className="space-y-2">
+            <P>These are not objections to overcome — they're processes to respect. Your job is to attach a date to the pause so it doesn't become a silent forever.</P>
+            <H>Istikhara:</H>
+            <Q>that's exactly the right move and i'd never rush that. when should i check back in with you?</Q>
+            <P>Then check in on HIS date, not before:</P>
+            <Q>as-salamu alaykum man, checking in like you asked. where did you land?</Q>
+            <H>Talking to his wife:</H>
+            <P>Send the summary he can walk her through, then:</P>
+            <Q>take the time you need. want me to check in this weekend after you two have talked?</Q>
+            <H>Parents — same play:</H>
+            <Q>makes sense to talk it through with them. i'll check in [day], and if it helps, here's something you can show them so they see exactly what this is.</Q>
+            <H>If the date passes silently — one message:</H>
+            <Q>no pressure at all, just keeping my word on the check-in. where are things at?</Q>
+            <P>Then story nurture.</P>
+          </div>
+        ),
+      },
+      {
+        title: "\"I'll Try On My Own First\" + Community Routes",
+        subtitle: "Date-based check-ins",
+        body: (
+          <div className="space-y-2">
+            <H>He said he'll try alone:</H>
+            <Q>respect that, genuinely. how long are you giving yourself before you look back at this message? put a date on it and i'll check in then.</Q>
+            <P>Log the date. On the date:</P>
+            <Q>as-salamu alaykum, today's the day we said i'd check in lol. how's it going, honestly?</Q>
+            <P>Whatever he answers, win. <b>Progress:</b> celebrate it genuinely, then <i>"imagine this pace with someone correcting your reps every week."</i> <b>Stalled:</b> no told-you-so, ever — <i>"that's the normal experience of doing it alone man, it's not a you problem. want to look at the path again?"</i></P>
+            <H>Routed to free community:</H>
+            <UL items={[
+              <><b>Day 3:</b> "you get in alright? drop an intro post, the guys are solid"</>,
+              <><b>Day 14:</b> react to his community activity or a story</>,
+              <><b>Day 30:</b> "been a month since we talked. what's changed on your side?"</>,
+            ]} />
+            <P>Active members get warmer; quiet members get one nudge then quarterly presence.</P>
+          </div>
+        ),
+      },
+      {
+        title: "The Waiting Box",
+        subtitle: "The mental system that makes all of this work",
+        body: (
+          <div className="space-y-2">
+            <P>After any close message or follow-up: put the conversation in the waiting box and move to the next active convo. Do not check if he's seen it. Do not re-read the thread. Do not draft the next message early.</P>
+            <P>Every lead in waiting has two things logged in the tracking sheet: <b>Next Action</b> and <b>Next Date</b>. The morning pre-shift review pulls today's dates — that's your follow-up list. Nothing lives in your memory, everything lives in the sheet.</P>
+            <P>Sunday refresh sweeps everyone whose dates slipped: roughly 100 leads reviewed, 80 personalized follow-ups, and the two-week binary re-engagement for anyone who's had all 3 DM touches.</P>
+            <P><b>One bad day of replies means nothing. Track the week, not the conversation.</b></P>
+          </div>
+        ),
+      },
+    ],
+  },
+
   // ===== PSYCHOLOGY =====
   {
     id: "psych",
