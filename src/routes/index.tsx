@@ -510,10 +510,12 @@ function Index() {
   const wrapperRef = useRef<ReactZoomPanPinchRef | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [query, setQuery] = useState("");
+  const deferredQuery = useDeferredValue(query);
   const [dark, setDark] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [counter, setCounterState] = useState<Counter>(() => loadCounter());
-  const matched = useMemo(() => matchSections(query), [query]);
+  const matched = useMemo(() => matchSections(deferredQuery), [deferredQuery]);
 
   const clampCanvasPosition = useCallback((x: number, y: number, scale: number) => {
     const container = containerRef.current;
