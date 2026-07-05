@@ -757,13 +757,15 @@ function Index() {
           <TransformComponent wrapperStyle={{ width: "100%", height: "100%", overflow: "hidden" }}>
             <Canvas matched={matched} query={deferredQuery} />
           </TransformComponent>
+          {/* Toolbar needs useControls() → must live inside TransformWrapper.
+              It's position:fixed so it escapes this container visually. */}
+          <Toolbar dark={dark} setDark={setDark} onNotes={() => setNotesOpen(true)} counter={counter} setCounter={setCounter} onReset={resetView} onHelp={() => setHelpOpen(true)} />
         </TransformWrapper>
       </div>
 
       {/* Fixed overlays — siblings of the canvas, always on top */}
       <Header innerRef={headerRef} onJump={jumpTo} query={query} setQuery={setQuery} />
       <SectionRail onJump={jumpTo} />
-      <Toolbar dark={dark} setDark={setDark} onNotes={() => setNotesOpen(true)} counter={counter} setCounter={setCounter} onReset={resetView} onHelp={() => setHelpOpen(true)} />
       <NotesModal open={notesOpen} onClose={() => setNotesOpen(false)} counter={counter} />
       <HelpOverlay open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
