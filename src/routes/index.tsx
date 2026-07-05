@@ -52,7 +52,7 @@ const SEARCH_TAGS: Record<TabId, string[]> = {
   story: ["story", "reply", "engagement", "reaction", "posts", "instagram", "gym", "win", "struggle", "quote", "motivation"],
   conv: ["conversation", "conv", "flow", "value drop", "youtube", "trust", "nurture", "warm", "brother", "self-identify", ...SYNONYMS.followup, "case study"],
   dmclose: ["dm close", "close", ...SYNONYMS.objections, ...SYNONYMS.money, ...SYNONYMS.time, ...SYNONYMS.family, ...SYNONYMS.belief, ...SYNONYMS.deen, "burned", "scammed", "trust", "think about", "not ready", "binary"],
-  followup: ["follow-up", "follow up", "followup", "bump", "ghosted", "no reply", "calendly", "no show", "no-show", "show rate", "istikhara", "wife", "parents", "waiting box", "3/5/7", "binary", ...SYNONYMS.followup],
+  followup: ["follow-up", "follow up", "followup", "bump", "ghosted", "no reply", "calendly", "no show", "no-show", "rebook", "reminder", "show rate", "istikhara", "wife", "parents", "waiting box", "ladder", "fast ladder", "slow ladder", "binary", ...SYNONYMS.followup],
   psych: ["psychology", "principle", ...SYNONYMS.belief, "authority", "empathy", "emotion", "trust", "expect", "need", "destination"],
   engage: ["engagement", "engage", "story", ...SYNONYMS.followup, "friend", "warm", "cold", "testimonial", "sunday", "pipeline", "proof", "student", "case study"],
   pacing: ["pacing", "ops", "operations", "schedule", "tracking", "crm", "targets", "kpi", "metrics", "daily", "sunday", "non-negotiable", "personality", "empathy phrases", "handoff", "closer", "benchmark", "stats", "feedback"],
