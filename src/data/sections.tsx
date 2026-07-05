@@ -1,7 +1,7 @@
 import type { Section } from "./content";
 
-const P = ({ children }: { children: React.ReactNode }) => (
-  <p className="text-[13px] leading-relaxed text-foreground/90">{children}</p>
+const P = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <p className={`text-[13px] leading-relaxed text-foreground/90 ${className}`}>{children}</p>
 );
 const Q = ({ children }: { children: React.ReactNode }) => (
   <p className="text-[13px] leading-relaxed italic text-foreground/80">“{children}”</p>
