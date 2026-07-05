@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 export type TabId =
   | "stages" | "inbound" | "outbound" | "story" | "conv" | "dmclose"
-  | "psych" | "engage" | "pacing";
+  | "followup" | "psych" | "engage" | "pacing";
 
 export const TABS: { id: TabId; label: string; color: string }[] = [
   { id: "stages", label: "The 8 Stages", color: "var(--tab-stages)" },
@@ -11,6 +11,7 @@ export const TABS: { id: TabId; label: string; color: string }[] = [
   { id: "story", label: "Story Replies", color: "var(--tab-story)" },
   { id: "conv", label: "Outbound Conv. Flow", color: "var(--tab-conv)" },
   { id: "dmclose", label: "DM Close & Objections", color: "var(--tab-dmclose)" },
+  { id: "followup", label: "Follow-Ups", color: "var(--tab-followup)" },
   { id: "psych", label: "Psychology", color: "var(--tab-psych)" },
   { id: "engage", label: "Engagement", color: "var(--tab-engage)" },
   { id: "pacing", label: "Tracking & Ops", color: "var(--tab-pacing)" },
