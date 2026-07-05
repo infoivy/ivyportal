@@ -106,16 +106,18 @@ export const SECTIONS: Section[] = [
               "Wants a career skill, not a 2-week side hustle",
               "Makes his own financial decisions",
             ]} />
-            <H><Tag tone="red">Auto-Disqualify</Tag></H>
+            <H><Tag tone="red">DM-Stage Disqualify</Tag></H>
             <UL items={[
-              "Under 18, or needs parental permission to pay",
+              "Under 18 → hard disqualify in DMs (closer can requalify on call if parents will fund)",
+              "Needs parental permission to pay → same rule: DM disqualify, closer handles it live",
               "No income AND no savings AND no plan",
               "Cannot commit 4 hours daily",
               "No computer or unwilling to learn basic software",
               "\"make me a millionaire\" energy",
               "Doesn't control his own money",
             ]} />
-            <P className="pt-1"><b>Disqualified ≠ discarded.</b> Route warmly to the free community. Over 35 with everything else strong = judgment call, flag to Sair.</P>
+            <P className="pt-1"><b>Disqualified ≠ discarded.</b> Route warmly to the free community. Over 35 with everything else strong = judgment call, flag to Sair. Parental-funded under-18s: only the closer books them, never the setter.</P>
+
           </div>
         ),
       },
