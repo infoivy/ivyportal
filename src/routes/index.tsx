@@ -424,36 +424,35 @@ const parseEodBody = (text: string, fallback: string) => {
   return m ? m[1] : fallback;
 };
 
-function NotesModal({ open, onClose, counter }: { open: boolean; onClose: () => void; counter: Counter }) {
+function NotesModal({ open, onClose, counter, setCounter }: { open: boolean; onClose: () => void; counter: Counter; setCounter: (c: Counter) => void }) {
   const [tab, setTab] = useState<"precall" | "eod">("precall");
   const [precall, setPrecall] = useState(PRECALL_TPL);
-  const [eod, setEod] = useState(() => eodTemplate(counter));
+  const [eodBody, setEodBody] = useState(EOD_DEFAULT_BODY);
   const [copied, setCopied] = useState(false);
-
-  // Keep EOD counters in sync when modal opens, unless user has customized
-  useEffect(() => {
-    if (open && tab === "eod") {
-      // Only re-hydrate if it still looks like an untouched template for a different count
-      setEod(prev => {
-        if (prev.startsWith("EOD REPORT") && !prev.includes("Notes:\n") && !/[A-Za-z]{2,}:\s+\S/.test(prev.split("\n\n").slice(-3).join("\n"))) {
-          return eodTemplate(counter);
-        }
-        return prev;
-      });
-    }
-  }, [open, tab, counter]);
 
   if (!open) return null;
 
+  const eod = composeEod(counter, eodBody);
   const text = tab === "precall" ? precall : eod;
-  const setText = tab === "precall" ? setPrecall : setEod;
-  const resetTpl = () => tab === "precall" ? setPrecall(PRECALL_TPL) : setEod(eodTemplate(counter));
+  const onChangeText = (v: string) => {
+    if (tab === "precall") setPrecall(v);
+    else setEodBody(parseEodBody(v, eodBody));
+  };
+  const resetTpl = () => {
+    if (tab === "precall") {
+      setPrecall(PRECALL_TPL);
+    } else {
+      setEodBody(EOD_DEFAULT_BODY);
+      setCounter({ ...counter, contacted: 0, dials: 0, sets: 0, convos: 0 });
+    }
+  };
 
   const copy = () => {
     navigator.clipboard?.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
+
 
   const stopWheel = (e: React.WheelEvent) => e.stopPropagation();
 
