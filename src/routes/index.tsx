@@ -663,6 +663,23 @@ function Index() {
     w.setTransform(next.x, next.y, scale, 350, "easeOutCubic");
   }, [clampCanvasPosition]);
 
+  // On mount (and window resize), re-clamp the current transform in case
+  // the restored view is out-of-bounds for the current viewport.
+  useEffect(() => {
+    const reclamp = () => {
+      const w = wrapperRef.current;
+      if (!w) return;
+      const { positionX, positionY, scale } = w.state;
+      const next = clampCanvasPosition(positionX, positionY, scale);
+      if (next.x !== positionX || next.y !== positionY) {
+        w.setTransform(next.x, next.y, scale, 0);
+      }
+    };
+    const t = setTimeout(reclamp, 60);
+    window.addEventListener("resize", reclamp);
+    return () => { clearTimeout(t); window.removeEventListener("resize", reclamp); };
+  }, [clampCanvasPosition]);
+
   // Keyboard shortcuts: /, ?, R, Esc
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
