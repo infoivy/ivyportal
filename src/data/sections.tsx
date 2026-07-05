@@ -451,7 +451,7 @@ export const SECTIONS: Section[] = [
           <div className="space-y-2">
             <UL items={[
               "\"hey\" / \"hi\" / \"hello\"",
-              "\"thanks for the follow\"",
+              "\"thanks for the follow\" as a standalone statement (a fresh-follow opener that ENDS WITH A QUESTION is allowed, see Who to DM)",
               "\"I checked your page\"",
               "\"what's been holding you back?\"",
               "\"do you want to make money online?\"",
