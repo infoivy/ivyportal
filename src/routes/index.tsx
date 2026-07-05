@@ -17,20 +17,17 @@ export const Route = createFileRoute("/")({
 
 const HEADER_HEIGHT = 118;
 
-// Keyword → section IDs. Search a word → sections whose tags include it become the match set.
+// Keyword → section IDs. Search a word → matched sections light up, rest dim.
 const SEARCH_TAGS: Record<TabId, string[]> = {
-  stages: ["stage", "process", "steps", "flow", "profile research", "opener", "problem", "deep dive", "constraint", "routing", "recommendation", "close", "calendly"],
-  inbound: ["inbound", "info", "keyword", "reply", "permission close", "budget", "money", "finance", "financial", "invest", "price", "afford"],
-  outbound: ["outbound", "opener", "dm", "cold", "prospect", "targeting", "who to dm", "leads"],
-  story: ["story", "story reply", "reply", "engagement", "reaction", "posts", "instagram"],
-  conv: ["conversation", "conv", "flow", "value drop", "youtube", "trust", "nurture", "warm"],
-  dmclose: ["dm close", "close", "pricing", "price", "payment", "offer", "commitment", "buy"],
-  objections: ["objection", "objections", "budget", "money", "financial", "finance", "price", "afford", "expensive", "cost", "time", "spouse", "wife", "family", "parents", "mindset", "fear", "faith", "religious", "haram", "halal", "burned", "trust", "think about", "not ready", "followers", "someone else"],
-  psych: ["psychology", "principle", "mindset", "belief", "authority", "empathy", "emotion", "trust"],
-  engage: ["engagement", "engage", "story", "follow up", "nurture", "friend", "warm", "cold", "testimonial", "sunday", "pipeline"],
-  lang: ["language", "tone", "words", "phrases", "voice", "sound"],
-  frame: ["framework", "positioning", "structure", "template"],
-  pacing: ["pacing", "ops", "operations", "schedule", "tracking", "crm", "targets", "kpi", "metrics", "daily", "sunday", "non-negotiable"],
+  stages: ["stage", "process", "steps", "flow", "profile", "opener", "problem", "deep dive", "constraint", "routing", "recommendation", "close", "calendly", "dreamer", "stuck", "committed", "ready"],
+  inbound: ["inbound", "path", "keyword", "reply", "permission close", "budget", "money", "invest", "halal", "haram"],
+  outbound: ["outbound", "opener", "dm", "cold", "prospect", "targeting", "who to dm", "leads", "bad lead"],
+  story: ["story", "reply", "engagement", "reaction", "posts", "instagram", "gym", "win", "struggle", "quote"],
+  conv: ["conversation", "conv", "flow", "value drop", "youtube", "trust", "nurture", "warm", "brother", "self-identify"],
+  dmclose: ["dm close", "close", "objection", "objections", "budget", "money", "financial", "price", "afford", "expensive", "cost", "time", "spouse", "wife", "family", "parents", "mindset", "fear", "faith", "religious", "haram", "halal", "burned", "scammed", "trust", "think about", "istikhara", "not ready", "deen"],
+  psych: ["psychology", "principle", "mindset", "belief", "authority", "empathy", "emotion", "trust", "expect", "need"],
+  engage: ["engagement", "engage", "story", "follow up", "nurture", "friend", "warm", "cold", "testimonial", "sunday", "pipeline", "proof", "student"],
+  pacing: ["pacing", "ops", "operations", "schedule", "tracking", "crm", "targets", "kpi", "metrics", "daily", "sunday", "non-negotiable", "personality", "empathy phrases"],
 };
 
 function matchSections(query: string): Set<TabId> | null {
@@ -41,7 +38,6 @@ function matchSections(query: string): Set<TabId> | null {
     const tags = SEARCH_TAGS[s.id] || [];
     const hay = [s.heading.toLowerCase(), ...tags].join(" | ");
     if (hay.includes(q)) matched.add(s.id);
-    // also match individual card titles/subtitles
     else if (s.cards.some(c => (c.title + " " + (c.subtitle || "")).toLowerCase().includes(q))) matched.add(s.id);
   }
   return matched;
@@ -84,7 +80,7 @@ function Header({ onJump, query, setQuery }: { onJump: (id: TabId) => void; quer
           <input
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Search (e.g. budget, mindset)…"
+            placeholder="Search (e.g. budget, mindset, halal)…"
             className="text-xs bg-white border border-border rounded-full pl-7 pr-3 py-1.5 w-56 focus:outline-none focus:ring-2 focus:ring-[color:var(--tab-stages)]/30"
           />
         </div>
@@ -150,115 +146,10 @@ function Canvas({ matched }: { matched: Set<TabId> | null }) {
   );
 }
 
-// Minimap: shows the whole canvas + a viewport rectangle. Click to jump.
-const MINI_W = 200;
-const MINI_H = 132;
-const CANVAS_W = 6400;
-const CANVAS_H = 4200;
-
-function Minimap({ wrapperRef }: { wrapperRef: React.MutableRefObject<ReactZoomPanPinchRef | null> }) {
-  const [tick, setTick] = useState(0);
-  useTransformEffect(() => { setTick(t => t + 1); });
-  const w = wrapperRef.current;
-  const state = w?.state;
-  const scale = state?.scale || 0.55;
-  const posX = state?.positionX || 0;
-  const posY = state?.positionY || 0;
-  const vw = typeof window !== "undefined" ? window.innerWidth : 1200;
-  const vh = typeof window !== "undefined" ? window.innerHeight : 800;
-  // Visible portion of canvas in canvas coords:
-  const visX = -posX / scale;
-  const visY = -posY / scale;
-  const visW = vw / scale;
-  const visH = vh / scale;
-
-  const sx = MINI_W / CANVAS_W;
-  const sy = MINI_H / CANVAS_H;
-
-  const jumpFromMini = (mx: number, my: number) => {
-    const w2 = wrapperRef.current;
-    if (!w2) return;
-    // canvas point clicked:
-    const cx = mx / sx;
-    const cy = my / sy;
-    // center that point on screen
-    const targetX = -cx * scale + vw / 2;
-    const targetY = -cy * scale + vh / 2;
-    w2.setTransform(targetX, targetY, scale, 400, "easeOutCubic");
-  };
-
-  void tick;
-  return (
-    <div className="fixed bottom-4 right-4 z-50 bg-white/95 border border-border rounded-md shadow-lg p-1.5 backdrop-blur-sm">
-      <div
-        className="relative overflow-hidden rounded cursor-crosshair"
-        style={{ width: MINI_W, height: MINI_H, backgroundColor: "#fcfbf8" }}
-        onClick={(e) => {
-          const r = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
-          jumpFromMini(e.clientX - r.left, e.clientY - r.top);
-        }}
-      >
-        {/* section markers */}
-        {SECTIONS.map((s, i) => {
-          const el = typeof document !== "undefined" ? document.getElementById(`sec-${s.id}`) : null;
-          const canvas = el?.closest(".canvas-bg") as HTMLElement | null;
-          if (!el || !canvas) return null;
-          const canvasRect = canvas.getBoundingClientRect();
-          const elRect = el.getBoundingClientRect();
-          const y = (elRect.top - canvasRect.top) / scale;
-          return (
-            <div
-              key={s.id}
-              style={{
-                position: "absolute",
-                left: 4,
-                top: y * sy,
-                right: 4,
-                height: 2,
-                backgroundColor: s.color,
-                opacity: 0.5,
-              }}
-              title={s.heading}
-            >
-              <div style={{ position: "absolute", left: -2, top: -2, width: 6, height: 6, borderRadius: 3, backgroundColor: s.color }} />
-              {void i}
-            </div>
-          );
-        })}
-        {/* viewport rect */}
-        <div
-          style={{
-            position: "absolute",
-            left: Math.max(0, visX * sx),
-            top: Math.max(0, visY * sy),
-            width: Math.min(MINI_W, visW * sx),
-            height: Math.min(MINI_H, visH * sy),
-            border: "2px solid #0d6b5b",
-            backgroundColor: "rgba(13,107,91,0.08)",
-            pointerEvents: "none",
-          }}
-        />
-      </div>
-    </div>
-  );
-}
-
 function Index() {
   const wrapperRef = useRef<ReactZoomPanPinchRef | null>(null);
   const [query, setQuery] = useState("");
   const matched = matchSections(query);
-
-  // When search matches, auto-jump to first matched section
-  useEffect(() => {
-    if (matched && matched.size > 0) {
-      const first = SECTIONS.find(s => matched.has(s.id));
-      if (first) {
-        // small delay to let opacity settle
-        setTimeout(() => jumpTo(first.id), 50);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query]);
 
   const jumpTo = (id: TabId) => {
     const el = document.getElementById(`sec-${id}`);
@@ -267,14 +158,25 @@ function Index() {
     const state = w.state;
     const scale = state.scale;
     const elRect = el.getBoundingClientRect();
-    // We want elRect.left → 24, elRect.top → HEADER_HEIGHT + 16
-    // Delta on screen equals delta on positionX/Y (transform is translate then scale)
-    const deltaX = 24 - elRect.left;
-    const deltaY = (HEADER_HEIGHT + 16) - elRect.top;
+    // Place section heading at left edge (24px) so the leftmost card is fully visible,
+    // and just below the fixed header.
+    const targetLeft = 24;
+    const targetTop = HEADER_HEIGHT + 20;
+    const deltaX = targetLeft - elRect.left;
+    const deltaY = targetTop - elRect.top;
     const newX = state.positionX + deltaX;
     const newY = state.positionY + deltaY;
     w.setTransform(newX, newY, scale, 500, "easeOutCubic");
   };
+
+  // Auto-jump to first matched section on search
+  useEffect(() => {
+    if (matched && matched.size > 0) {
+      const first = SECTIONS.find(s => matched.has(s.id));
+      if (first) setTimeout(() => jumpTo(first.id), 50);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-[#fcfbf8]">
@@ -284,7 +186,8 @@ function Index() {
         minScale={0.45}
         maxScale={2.5}
         limitToBounds={false}
-        wheel={{ step: 0.1 }}
+        wheel={{ step: 0.03, smoothStep: 0.005 }}
+        pinch={{ step: 2 }}
         doubleClick={{ disabled: true }}
         panning={{ velocityDisabled: true }}
       >
@@ -293,7 +196,6 @@ function Index() {
           <Canvas matched={matched} />
         </TransformComponent>
         <Toolbar />
-        <Minimap wrapperRef={wrapperRef} />
       </TransformWrapper>
     </div>
   );
