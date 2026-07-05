@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 export type TabId =
   | "stages" | "inbound" | "outbound" | "story" | "conv" | "dmclose"
   | "objections" | "psych" | "engage" | "lang" | "frame" | "pacing";
@@ -20,7 +22,7 @@ export const TABS: { id: TabId; label: string; color: string }[] = [
 export type Card = {
   title: string;
   subtitle?: string;
-  body: React.ReactNode;
+  body: ReactNode;
 };
 
 export type Section = {
