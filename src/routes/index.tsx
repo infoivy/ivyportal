@@ -69,26 +69,34 @@ function matchSections(query: string): Set<TabId> | null {
   return matched;
 }
 
-// ---------- Session Counter ----------
-type Counter = { dms: number; calSent: number; booked: number; date: string };
+// ---------- Session Counter (aligned with EOD report format) ----------
+type Counter = { contacted: number; dials: number; sets: number; convos: number; date: string };
 const todayKey = () => new Date().toISOString().slice(0, 10);
+const emptyCounter = (): Counter => ({ contacted: 0, dials: 0, sets: 0, convos: 0, date: todayKey() });
 const loadCounter = (): Counter => {
-  if (typeof localStorage === "undefined") return { dms: 0, calSent: 0, booked: 0, date: todayKey() };
+  if (typeof localStorage === "undefined") return emptyCounter();
   try {
     const raw = localStorage.getItem("isa:counter");
-    if (!raw) return { dms: 0, calSent: 0, booked: 0, date: todayKey() };
-    const parsed = JSON.parse(raw) as Counter;
-    if (parsed.date !== todayKey()) return { dms: 0, calSent: 0, booked: 0, date: todayKey() };
-    return parsed;
-  } catch { return { dms: 0, calSent: 0, booked: 0, date: todayKey() }; }
+    if (!raw) return emptyCounter();
+    const parsed = JSON.parse(raw) as Partial<Counter>;
+    if (parsed.date !== todayKey()) return emptyCounter();
+    return { ...emptyCounter(), ...parsed } as Counter;
+  } catch { return emptyCounter(); }
 };
 const saveCounter = (c: Counter) => { try { localStorage.setItem("isa:counter", JSON.stringify(c)); } catch { /* ignore */ } };
 
-function Toolbar({ dark, setDark, onNotes, counter, setCounter }: { dark: boolean; setDark: (v: boolean) => void; onNotes: () => void; counter: Counter; setCounter: (c: Counter) => void }) {
-  const { zoomIn, zoomOut, resetTransform } = useControls();
+const COUNTER_FIELDS: { key: keyof Omit<Counter, "date">; label: string; full: string }[] = [
+  { key: "contacted", label: "Contact", full: "Followers contacted" },
+  { key: "dials", label: "Dials", full: "Dials" },
+  { key: "sets", label: "Sets", full: "Sets (call booked)" },
+  { key: "convos", label: "Convos", full: "Conversations" },
+];
+
+function Toolbar({ dark, setDark, onNotes, counter, setCounter, onReset }: { dark: boolean; setDark: (v: boolean) => void; onNotes: () => void; counter: Counter; setCounter: (c: Counter) => void; onReset: () => void }) {
+  const { zoomIn, zoomOut } = useControls();
   const [pct, setPct] = useState(55);
   useTransformEffect(({ state }) => { setPct(Math.round(state.scale * 100)); });
-  const bump = (k: "dms" | "calSent" | "booked", d: number) => {
+  const bump = (k: keyof Omit<Counter, "date">, d: number) => {
     const next = { ...counter, [k]: Math.max(0, counter[k] + d) };
     setCounter(next);
   };
@@ -102,26 +110,22 @@ function Toolbar({ dark, setDark, onNotes, counter, setCounter }: { dark: boolea
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14"/></svg>
       </button>
       <div className="w-px h-5 bg-border mx-1 shrink-0" />
-      <button onClick={() => resetTransform()} className="h-8 px-3 shrink-0 rounded-full hover:bg-muted flex items-center gap-1.5 text-xs font-semibold" title="Reset view">
+      <button onClick={onReset} className="h-8 px-3 shrink-0 rounded-full hover:bg-muted flex items-center gap-1.5 text-xs font-semibold" title="Reset to 100% and scroll to top">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
         Reset
       </button>
       <div className="w-px h-5 bg-border mx-1 shrink-0" />
-      {/* Session counter */}
-      {([["dms", "DMs"], ["calSent", "Cal"], ["booked", "Booked"]] as const).map(([k, lbl]) => (
-        <div key={k} className="flex items-center h-8 shrink-0 rounded-full bg-muted/60 pl-2 pr-1 gap-1" title={`${lbl} today (right-click to decrement)`}>
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{lbl}</span>
-          <span className="text-sm font-bold tabular-nums text-foreground min-w-[16px] text-center">{counter[k]}</span>
-          <button
-            onClick={() => bump(k, 1)}
-            onContextMenu={(e) => { e.preventDefault(); bump(k, -1); }}
-            className="w-5 h-5 rounded-full bg-background hover:bg-foreground hover:text-background flex items-center justify-center text-xs font-bold"
-            title="Click +1 · right-click -1"
-          >+</button>
+      {/* Session counter — matches EOD report format */}
+      {COUNTER_FIELDS.map(({ key, label, full }) => (
+        <div key={key} className="flex items-center h-8 shrink-0 rounded-full bg-muted/60 pl-1.5 pr-1 gap-1" title={full}>
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{label}</span>
+          <button onClick={() => bump(key, -1)} className="w-5 h-5 rounded-full bg-background hover:bg-foreground hover:text-background flex items-center justify-center text-xs font-bold" title={`-1 ${full}`}>−</button>
+          <span className="text-sm font-bold tabular-nums text-foreground min-w-[16px] text-center">{counter[key]}</span>
+          <button onClick={() => bump(key, 1)} className="w-5 h-5 rounded-full bg-background hover:bg-foreground hover:text-background flex items-center justify-center text-xs font-bold" title={`+1 ${full}`}>+</button>
         </div>
       ))}
       <div className="w-px h-5 bg-border mx-1 shrink-0" />
-      <button onClick={onNotes} className="h-8 px-3 shrink-0 rounded-full hover:bg-muted flex items-center gap-1.5 text-xs font-semibold" title="Pre-call notes">
+      <button onClick={onNotes} className="h-8 px-3 shrink-0 rounded-full hover:bg-muted flex items-center gap-1.5 text-xs font-semibold" title="Pre-call notes & EOD report">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 3h9a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8l5-5z"/><path d="M9 3v5H4"/></svg>
         Notes
       </button>
@@ -322,8 +326,7 @@ function Canvas({ matched, query }: { matched: Set<TabId> | null; query: string 
   );
 }
 
-function NotesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const defaultTpl = `PRE-CALL NOTES
+const PRECALL_TPL = `PRE-CALL NOTES
 
 Name / handle:
 Age range:
@@ -349,35 +352,78 @@ Last interaction:
 Next follow-up:
 
 Call outcome:`;
-  const [text, setText] = useState(defaultTpl);
+
+const eodTemplate = (c: Counter, extra = "") => `EOD REPORT — ${c.date}
+
+Followers contacted: ${c.contacted}
+Dials: ${c.dials}
+Sets: ${c.sets}
+Conversations: ${c.convos}
+
+Wins:
+Losses / lessons:
+Objections seen today:
+Tomorrow's focus:
+${extra ? "\nNotes:\n" + extra : ""}`;
+
+function NotesModal({ open, onClose, counter }: { open: boolean; onClose: () => void; counter: Counter }) {
+  const [tab, setTab] = useState<"precall" | "eod">("precall");
+  const [precall, setPrecall] = useState(PRECALL_TPL);
+  const [eod, setEod] = useState(() => eodTemplate(counter));
   const [copied, setCopied] = useState(false);
+
+  // Keep EOD counters in sync when modal opens, unless user has customized
+  useEffect(() => {
+    if (open && tab === "eod") {
+      // Only re-hydrate if it still looks like an untouched template for a different count
+      setEod(prev => {
+        if (prev.startsWith("EOD REPORT") && !prev.includes("Notes:\n") && !/[A-Za-z]{2,}:\s+\S/.test(prev.split("\n\n").slice(-3).join("\n"))) {
+          return eodTemplate(counter);
+        }
+        return prev;
+      });
+    }
+  }, [open, tab, counter]);
+
   if (!open) return null;
+
+  const text = tab === "precall" ? precall : eod;
+  const setText = tab === "precall" ? setPrecall : setEod;
+  const resetTpl = () => tab === "precall" ? setPrecall(PRECALL_TPL) : setEod(eodTemplate(counter));
+
   const copy = () => {
     navigator.clipboard?.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
+
+  const stopWheel = (e: React.WheelEvent) => e.stopPropagation();
+
   return (
-    <div className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-card border border-border rounded-lg shadow-2xl w-full max-w-lg flex flex-col" onClick={e => e.stopPropagation()}>
+    <div className="isa-modal fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose} onWheel={stopWheel} data-no-canvas-scroll>
+      <div className="isa-modal bg-card border border-border rounded-lg shadow-2xl w-full max-w-lg flex flex-col" onClick={e => e.stopPropagation()} onWheel={stopWheel} data-no-canvas-scroll>
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-          <div>
-            <h3 className="text-sm font-bold text-foreground">Pre-Call Notes</h3>
-            <p className="text-[11px] text-muted-foreground">Fill in the DM, copy to hand off to the closer.</p>
+          <div className="flex items-center gap-1 bg-muted rounded-md p-0.5">
+            <button onClick={() => setTab("precall")} className={`px-3 py-1 text-xs font-semibold rounded ${tab === "precall" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>Pre-call</button>
+            <button onClick={() => setTab("eod")} className={`px-3 py-1 text-xs font-semibold rounded ${tab === "eod" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>EOD report</button>
           </div>
           <button onClick={onClose} className="w-7 h-7 rounded hover:bg-muted flex items-center justify-center text-muted-foreground" title="Close">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
           </button>
         </div>
+        <p className="text-[11px] text-muted-foreground px-4 pt-2">
+          {tab === "precall" ? "Fill in during the DM, copy to hand off to the closer." : "Auto-filled from your session counters. Copy to paste into your EOD report."}
+        </p>
         <textarea
           value={text}
           onChange={e => setText(e.target.value)}
-          className="flex-1 min-h-[380px] p-3 text-xs font-mono bg-background text-foreground resize-none focus:outline-none"
+          onWheel={stopWheel}
+          className="flex-1 min-h-[380px] max-h-[60vh] p-3 mt-2 text-xs font-mono bg-background text-foreground resize-none focus:outline-none overflow-auto"
         />
         <div className="flex items-center justify-between gap-2 px-4 py-3 border-t border-border">
-          <button onClick={() => setText(defaultTpl)} className="text-xs text-muted-foreground hover:text-foreground">Reset template</button>
+          <button onClick={resetTpl} className="text-xs text-muted-foreground hover:text-foreground">Reset template</button>
           <button onClick={copy} className="px-3 py-1.5 rounded-md bg-[color:var(--tab-stages)] text-white text-xs font-semibold hover:opacity-90">
-            {copied ? "Copied!" : "Copy notes"}
+            {copied ? "Copied!" : "Copy"}
           </button>
         </div>
       </div>
@@ -445,11 +491,16 @@ function Index() {
   }, [jumpToEl]);
 
   // Trackpad two-finger scroll → pan the canvas. Ctrl/Cmd/pinch → zoom (library handles).
+  // Ignore wheel events originating inside a modal or scrollable UI element.
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     const onWheel = (e: WheelEvent) => {
-      if (e.ctrlKey || e.metaKey) return;
+      const target = e.target as HTMLElement | null;
+      // Let the browser handle wheel inside modals, scrollable inputs, etc.
+      if (target && target.closest("[data-no-canvas-scroll], textarea, .isa-modal")) return;
+      // Block browser page-zoom on Ctrl/Cmd+wheel — let the library zoom the canvas instead
+      if (e.ctrlKey || e.metaKey) { e.preventDefault(); return; }
       const w = wrapperRef.current;
       if (!w) return;
       e.preventDefault();
@@ -467,6 +518,18 @@ function Index() {
   const initialPositionY = headerH + 8 - CANVAS_PAD_TOP * initScale;
   const initialPositionX = 8 - CANVAS_PAD_LEFT * initScale;
 
+  // Reset view = 100% zoom, first card just below the header
+  const resetView = useCallback(() => {
+    const w = wrapperRef.current;
+    if (!w) return;
+    const isM = window.innerWidth < 640;
+    const hH = isM ? HEADER_HEIGHT_MOBILE : HEADER_HEIGHT_DESKTOP;
+    const scale = 1;
+    const posY = hH + 8 - CANVAS_PAD_TOP * scale;
+    const posX = 8 - CANVAS_PAD_LEFT * scale;
+    w.setTransform(posX, posY, scale, 350, "easeOutCubic");
+  }, []);
+
   return (
     <div ref={containerRef} className="fixed inset-0 overflow-hidden bg-background">
       <TransformWrapper
@@ -476,20 +539,21 @@ function Index() {
         initialPositionY={initialPositionY}
         minScale={0.35}
         maxScale={2.5}
-        limitToBounds={false}
+        limitToBounds={true}
         centerOnInit={false}
         centerZoomedOut={false}
-        wheel={{ step: 0.06, activationKeys: ["Control", "Meta"] }}
+        wheel={{ step: 0.06, activationKeys: ["Control", "Meta"], excluded: ["textarea", "input", "isa-modal"] }}
+        pinch={{ excluded: ["textarea", "input", "isa-modal"] }}
         doubleClick={{ disabled: true }}
-        panning={{ velocityDisabled: true }}
+        panning={{ velocityDisabled: true, excluded: ["textarea", "input", "isa-modal"] }}
       >
         <Header onJump={jumpTo} query={query} setQuery={setQuery} />
         <TransformComponent wrapperStyle={{ width: "100%", height: "100%" }}>
           <Canvas matched={matched} query={query} />
         </TransformComponent>
-        <Toolbar dark={dark} setDark={setDark} onNotes={() => setNotesOpen(true)} counter={counter} setCounter={setCounter} />
+        <Toolbar dark={dark} setDark={setDark} onNotes={() => setNotesOpen(true)} counter={counter} setCounter={setCounter} onReset={resetView} />
       </TransformWrapper>
-      <NotesModal open={notesOpen} onClose={() => setNotesOpen(false)} />
+      <NotesModal open={notesOpen} onClose={() => setNotesOpen(false)} counter={counter} />
     </div>
   );
 }
