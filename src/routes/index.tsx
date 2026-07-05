@@ -160,9 +160,10 @@ function Header({ onJump, query, setQuery }: { onJump: (id: TabId) => void; quer
             <circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/>
           </svg>
           <input
+            id="isa-search"
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Search…"
+            placeholder="Search…  (press /)"
             className="text-xs bg-card border border-border rounded-full pl-7 pr-3 py-1.5 w-32 sm:w-56 focus:outline-none focus:ring-2 focus:ring-[color:var(--tab-stages)]/30"
           />
         </div>
