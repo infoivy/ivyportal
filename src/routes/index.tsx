@@ -473,7 +473,7 @@ function NotesModal({ open, onClose, counter, setCounter }: { open: boolean; onC
         </p>
         <textarea
           value={text}
-          onChange={e => setText(e.target.value)}
+          onChange={e => onChangeText(e.target.value)}
           onWheel={stopWheel}
           className="flex-1 min-h-[380px] max-h-[60vh] p-3 mt-2 text-xs font-mono bg-background text-foreground resize-none focus:outline-none overflow-auto"
         />
