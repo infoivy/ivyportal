@@ -400,8 +400,8 @@ function NotesModal({ open, onClose, counter }: { open: boolean; onClose: () => 
   const stopWheel = (e: React.WheelEvent) => e.stopPropagation();
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose} onWheel={stopWheel}>
-      <div className="bg-card border border-border rounded-lg shadow-2xl w-full max-w-lg flex flex-col" onClick={e => e.stopPropagation()} onWheel={stopWheel}>
+    <div className="isa-modal fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose} onWheel={stopWheel} data-no-canvas-scroll>
+      <div className="isa-modal bg-card border border-border rounded-lg shadow-2xl w-full max-w-lg flex flex-col" onClick={e => e.stopPropagation()} onWheel={stopWheel} data-no-canvas-scroll>
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <div className="flex items-center gap-1 bg-muted rounded-md p-0.5">
             <button onClick={() => setTab("precall")} className={`px-3 py-1 text-xs font-semibold rounded ${tab === "precall" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>Pre-call</button>
