@@ -528,6 +528,8 @@ function NotesModal({ open, onClose, counter }: { open: boolean; onClose: () => 
 function Index() {
   const wrapperRef = useRef<ReactZoomPanPinchRef | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const headerRef = useRef<HTMLDivElement | null>(null);
+  const [headerH, setHeaderH] = useState(HEADER_HEIGHT_DESKTOP);
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
   const [dark, setDark] = useState(false);
@@ -535,6 +537,18 @@ function Index() {
   const [helpOpen, setHelpOpen] = useState(false);
   const [counter, setCounterState] = useState<Counter>(() => loadCounter());
   const matched = useMemo(() => matchSections(deferredQuery), [deferredQuery]);
+
+  // Measure actual header height so the canvas is padded correctly at any zoom
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const update = () => setHeaderH(el.getBoundingClientRect().height);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    window.addEventListener("resize", update);
+    return () => { ro.disconnect(); window.removeEventListener("resize", update); };
+  }, []);
 
   const clampCanvasPosition = useCallback((x: number, y: number, scale: number) => {
     const container = containerRef.current;
