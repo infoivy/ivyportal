@@ -110,7 +110,7 @@ function Index() {
     const el = document.getElementById(`sec-${id}`);
     const w = wrapperRef.current;
     if (!el || !w) return;
-    const scale = w.instance.transformState.scale;
+    const scale = w.state.scale;
     // Position in canvas coordinates
     const canvas = el.closest(".canvas-bg") as HTMLElement | null;
     if (!canvas) return;
