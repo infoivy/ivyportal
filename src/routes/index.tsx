@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { TransformWrapper, TransformComponent, useControls, useTransformEffect, type ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
-import { useRef, useState, useEffect, useCallback, useMemo } from "react";
+import { useRef, useState, useEffect, useCallback, useMemo, useDeferredValue } from "react";
 import { TABS, type TabId } from "@/data/content";
 import { SECTIONS } from "@/data/sections";
 import logoAsset from "@/assets/isa-logo.png.asset.json";
@@ -92,7 +92,7 @@ const COUNTER_FIELDS: { key: keyof Omit<Counter, "date">; label: string; full: s
   { key: "convos", label: "Convos", full: "Conversations" },
 ];
 
-function Toolbar({ dark, setDark, onNotes, counter, setCounter, onReset }: { dark: boolean; setDark: (v: boolean) => void; onNotes: () => void; counter: Counter; setCounter: (c: Counter) => void; onReset: () => void }) {
+function Toolbar({ dark, setDark, onNotes, counter, setCounter, onReset, onHelp }: { dark: boolean; setDark: (v: boolean) => void; onNotes: () => void; counter: Counter; setCounter: (c: Counter) => void; onReset: () => void; onHelp: () => void }) {
   const { zoomIn, zoomOut } = useControls();
   const [pct, setPct] = useState(55);
   useTransformEffect(({ state }) => { setPct(Math.round(state.scale * 100)); });
@@ -133,6 +133,7 @@ function Toolbar({ dark, setDark, onNotes, counter, setCounter, onReset }: { dar
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>
         Print
       </a>
+      <button onClick={onHelp} className="w-8 h-8 shrink-0 rounded-full hover:bg-muted flex items-center justify-center text-xs font-bold" title="Keyboard shortcuts (?)">?</button>
       <button onClick={() => setDark(!dark)} className="w-8 h-8 shrink-0 rounded-full hover:bg-muted flex items-center justify-center" title={dark ? "Light mode" : "Dark mode"}>
         {dark ? (
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/></svg>
@@ -160,9 +161,10 @@ function Header({ onJump, query, setQuery }: { onJump: (id: TabId) => void; quer
             <circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/>
           </svg>
           <input
+            id="isa-search"
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Search…"
+            placeholder="Search…  (press /)"
             className="text-xs bg-card border border-border rounded-full pl-7 pr-3 py-1.5 w-32 sm:w-56 focus:outline-none focus:ring-2 focus:ring-[color:var(--tab-stages)]/30"
           />
         </div>
@@ -315,12 +317,86 @@ function Canvas({ matched, query }: { matched: Set<TabId> | null; query: string 
               <SectionHeading id={section.id} color={section.color} text={section.heading} />
               <div className="flex flex-nowrap gap-4 items-start w-max">
                 {section.cards.map((c, i) => (
-                  <Card key={i} cardId={`card-${section.id}-${i}`} color={section.color} title={c.title} subtitle={c.subtitle} matchQuery={query}>{c.body}</Card>
+                  <Card key={i} cardId={`card-${section.id}-${i}`} color={section.color} title={c.title} subtitle={c.subtitle} matchQuery={dim ? "" : query}>{c.body}</Card>
                 ))}
               </div>
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+function SectionRail({ onJump }: { onJump: (id: TabId) => void }) {
+  const [active, setActive] = useState<TabId | null>(null);
+  useEffect(() => {
+    const onScroll = () => {
+      let best: TabId | null = null;
+      let bestDist = Infinity;
+      const viewportTop = (window.innerWidth < 640 ? HEADER_HEIGHT_MOBILE : HEADER_HEIGHT_DESKTOP) + 40;
+      for (const s of SECTIONS) {
+        const el = document.getElementById(`sec-${s.id}`);
+        if (!el) continue;
+        const d = Math.abs(el.getBoundingClientRect().top - viewportTop);
+        if (d < bestDist) { bestDist = d; best = s.id; }
+      }
+      if (best) setActive(best);
+    };
+    const t = setInterval(onScroll, 400);
+    return () => clearInterval(t);
+  }, []);
+  return (
+    <div className="hidden sm:flex fixed left-2 top-1/2 -translate-y-1/2 z-40 flex-col gap-2 bg-background/80 backdrop-blur-sm border border-border/60 rounded-full py-2 px-1.5">
+      {SECTIONS.map(s => (
+        <button
+          key={s.id}
+          onClick={() => onJump(s.id)}
+          className="group relative w-4 h-4 flex items-center justify-center"
+          title={s.heading}
+        >
+          <span
+            className="rounded-full transition-all"
+            style={{
+              backgroundColor: s.color,
+              width: active === s.id ? 10 : 6,
+              height: active === s.id ? 10 : 6,
+              opacity: active === s.id ? 1 : 0.55,
+            }}
+          />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function HelpOverlay({ open, onClose }: { open: boolean; onClose: () => void }) {
+  if (!open) return null;
+  const rows: [string, string][] = [
+    ["/", "Focus search"],
+    ["?", "Toggle this help"],
+    ["R", "Reset view (100%, top-left)"],
+    ["Esc", "Clear search / close modals"],
+    ["Ctrl / ⌘ + wheel", "Zoom canvas"],
+    ["Two-finger drag", "Pan canvas"],
+  ];
+  return (
+    <div className="isa-modal fixed inset-0 z-[70] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose} data-no-canvas-scroll>
+      <div className="isa-modal bg-card border border-border rounded-lg shadow-2xl w-full max-w-sm" onClick={e => e.stopPropagation()} data-no-canvas-scroll>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+          <h3 className="text-sm font-bold">Keyboard shortcuts</h3>
+          <button onClick={onClose} className="w-7 h-7 rounded hover:bg-muted flex items-center justify-center text-muted-foreground" title="Close">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div className="p-4 space-y-2">
+          {rows.map(([k, label]) => (
+            <div key={k} className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">{label}</span>
+              <kbd className="px-2 py-0.5 rounded border border-border bg-muted/60 font-mono text-[11px]">{k}</kbd>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -435,10 +511,12 @@ function Index() {
   const wrapperRef = useRef<ReactZoomPanPinchRef | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [query, setQuery] = useState("");
+  const deferredQuery = useDeferredValue(query);
   const [dark, setDark] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [counter, setCounterState] = useState<Counter>(() => loadCounter());
-  const matched = useMemo(() => matchSections(query), [query]);
+  const matched = useMemo(() => matchSections(deferredQuery), [deferredQuery]);
 
   const clampCanvasPosition = useCallback((x: number, y: number, scale: number) => {
     const container = containerRef.current;
@@ -547,8 +625,32 @@ function Index() {
   const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
   const headerH = isMobile ? HEADER_HEIGHT_MOBILE : HEADER_HEIGHT_DESKTOP;
   const initScale = 0.55;
-  const initialPositionY = 8 - CANVAS_PAD_TOP * initScale;
-  const initialPositionX = 8 - CANVAS_PAD_LEFT * initScale;
+  // Restore last-view (localStorage) or fall back to top-left
+  const initialView = useMemo(() => {
+    const fallback = { scale: initScale, x: 8 - CANVAS_PAD_LEFT * initScale, y: 8 - CANVAS_PAD_TOP * initScale };
+    if (typeof localStorage === "undefined") return fallback;
+    try {
+      const raw = localStorage.getItem("isa:view");
+      if (!raw) return fallback;
+      const p = JSON.parse(raw) as { scale?: number; x?: number; y?: number };
+      if (typeof p.scale === "number" && typeof p.x === "number" && typeof p.y === "number") {
+        return { scale: p.scale, x: p.x, y: p.y };
+      }
+    } catch { /* ignore */ }
+    return fallback;
+  }, []);
+
+  // Persist view (throttled) whenever the transform changes
+  const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const persistView = useCallback((ref: ReactZoomPanPinchRef) => {
+    if (persistTimer.current) clearTimeout(persistTimer.current);
+    persistTimer.current = setTimeout(() => {
+      try {
+        const { scale, positionX, positionY } = ref.state;
+        localStorage.setItem("isa:view", JSON.stringify({ scale, x: positionX, y: positionY }));
+      } catch { /* ignore */ }
+    }, 250);
+  }, []);
 
   // Reset view = 100% zoom, first card pinned to top-left of viewport
   const resetView = useCallback(() => {
@@ -561,13 +663,33 @@ function Index() {
     w.setTransform(next.x, next.y, scale, 350, "easeOutCubic");
   }, [clampCanvasPosition]);
 
+  // Keyboard shortcuts: /, ?, R, Esc
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      const inField = !!t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable);
+      if (e.key === "Escape") {
+        if (helpOpen) { setHelpOpen(false); return; }
+        if (notesOpen) { setNotesOpen(false); return; }
+        if (query) { setQuery(""); (document.getElementById("isa-search") as HTMLInputElement | null)?.blur(); return; }
+        return;
+      }
+      if (inField) return;
+      if (e.key === "/") { e.preventDefault(); (document.getElementById("isa-search") as HTMLInputElement | null)?.focus(); return; }
+      if (e.key === "?" ) { e.preventDefault(); setHelpOpen(v => !v); return; }
+      if (e.key === "r" || e.key === "R") { e.preventDefault(); resetView(); return; }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [helpOpen, notesOpen, query, resetView]);
+
   return (
     <div ref={containerRef} className="fixed inset-0 overflow-hidden bg-background">
       <TransformWrapper
         ref={wrapperRef}
-        initialScale={initScale}
-        initialPositionX={initialPositionX}
-        initialPositionY={initialPositionY}
+        initialScale={initialView.scale}
+        initialPositionX={initialView.x}
+        initialPositionY={initialView.y}
         minScale={0.35}
         maxScale={2.5}
         limitToBounds={true}
@@ -577,14 +699,17 @@ function Index() {
         pinch={{ excluded: ["textarea", "input", "isa-modal"] }}
         doubleClick={{ disabled: true }}
         panning={{ velocityDisabled: true, excluded: ["textarea", "input", "isa-modal"] }}
+        onTransform={persistView}
       >
         <Header onJump={jumpTo} query={query} setQuery={setQuery} />
+        <SectionRail onJump={jumpTo} />
         <TransformComponent wrapperStyle={{ position: "absolute", top: headerH, left: 0, right: 0, bottom: 0, width: "auto", height: "auto" }}>
-          <Canvas matched={matched} query={query} />
+          <Canvas matched={matched} query={deferredQuery} />
         </TransformComponent>
-        <Toolbar dark={dark} setDark={setDark} onNotes={() => setNotesOpen(true)} counter={counter} setCounter={setCounter} onReset={resetView} />
+        <Toolbar dark={dark} setDark={setDark} onNotes={() => setNotesOpen(true)} counter={counter} setCounter={setCounter} onReset={resetView} onHelp={() => setHelpOpen(true)} />
       </TransformWrapper>
       <NotesModal open={notesOpen} onClose={() => setNotesOpen(false)} counter={counter} />
+      <HelpOverlay open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
   );
 }
