@@ -365,7 +365,7 @@ function SectionRail({ onJump }: { onJump: (id: TabId) => void }) {
     return () => clearInterval(t);
   }, []);
   return (
-    <div className="hidden sm:flex fixed left-2 top-1/2 -translate-y-1/2 z-40 flex-col gap-2 bg-background/80 backdrop-blur-sm border border-border/60 rounded-full py-2 px-1.5">
+    <div className="hidden sm:flex fixed left-2 top-1/2 -translate-y-1/2 z-[55] flex-col gap-2 bg-background/85 backdrop-blur-sm border border-border/60 rounded-full py-2 px-1.5 max-h-[calc(100vh-200px)] overflow-y-auto no-scrollbar">
       {SECTIONS.map(s => (
         <button
           key={s.id}
