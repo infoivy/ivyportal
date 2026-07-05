@@ -160,7 +160,7 @@ function Minimap({ wrapperRef }: { wrapperRef: React.MutableRefObject<ReactZoomP
   const [tick, setTick] = useState(0);
   useTransformEffect(() => { setTick(t => t + 1); });
   const w = wrapperRef.current;
-  const state = w?.instance.transformState;
+  const state = w?.state;
   const scale = state?.scale || 0.55;
   const posX = state?.positionX || 0;
   const posY = state?.positionY || 0;
@@ -264,7 +264,7 @@ function Index() {
     const el = document.getElementById(`sec-${id}`);
     const w = wrapperRef.current;
     if (!el || !w) return;
-    const state = w.instance.transformState;
+    const state = w.state;
     const scale = state.scale;
     const elRect = el.getBoundingClientRect();
     // We want elRect.left → 24, elRect.top → HEADER_HEIGHT + 16
