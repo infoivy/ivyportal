@@ -382,7 +382,7 @@ const Canvas = React.memo(function Canvas({ matched, query }: { matched: Set<Tab
       </div>
     </div>
   );
-}
+});
 
 function HelpOverlay({ open, onClose }: { open: boolean; onClose: () => void }) {
   if (!open) return null;
