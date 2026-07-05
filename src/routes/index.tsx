@@ -92,7 +92,7 @@ const COUNTER_FIELDS: { key: keyof Omit<Counter, "date">; label: string; full: s
   { key: "convos", label: "Convos", full: "Conversations" },
 ];
 
-function Toolbar({ dark, setDark, onNotes, counter, setCounter, onReset }: { dark: boolean; setDark: (v: boolean) => void; onNotes: () => void; counter: Counter; setCounter: (c: Counter) => void; onReset: () => void }) {
+function Toolbar({ dark, setDark, onNotes, counter, setCounter, onReset, onHelp }: { dark: boolean; setDark: (v: boolean) => void; onNotes: () => void; counter: Counter; setCounter: (c: Counter) => void; onReset: () => void; onHelp: () => void }) {
   const { zoomIn, zoomOut } = useControls();
   const [pct, setPct] = useState(55);
   useTransformEffect(({ state }) => { setPct(Math.round(state.scale * 100)); });
