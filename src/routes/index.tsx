@@ -359,7 +359,7 @@ const Card = React.memo(function Card({ cardId, color, title, subtitle, children
 });
 
 
-function Canvas({ matched, query }: { matched: Set<TabId> | null; query: string }) {
+const Canvas = React.memo(function Canvas({ matched, query }: { matched: Set<TabId> | null; query: string }) {
   return (
     <div className="canvas-bg inline-block" style={{ padding: `${CANVAS_PAD_TOP}px ${CANVAS_PAD_LEFT}px 40px` }}>
       <div className="flex flex-col gap-8">
