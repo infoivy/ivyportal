@@ -1,31 +1,26 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { TransformWrapper, TransformComponent, useControls } from "react-zoom-pan-pinch";
-import { useState } from "react";
+import { TransformWrapper, TransformComponent, useControls, type ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
+import { useRef, useState, useEffect } from "react";
 import { TABS, type TabId } from "@/data/content";
 import { SECTIONS } from "@/data/sections";
+import logoAsset from "@/assets/isa-logo.png.asset.json";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Grow Acquisition — Setting Mastery" },
+      { title: "Ivy Sales Academy — Setting Mastery" },
       { name: "description", content: "Complete system: conversation flows, scripts, objection handling, psychology, engagement & operations" },
     ],
   }),
   component: Index,
 });
 
-function Toolbar() {
+function Toolbar({ onPercent }: { onPercent: (p: number) => void }) {
   const { zoomIn, zoomOut, resetTransform } = useControls();
   const [pct, setPct] = useState(55);
+  useEffect(() => { onPercent(pct); }, [pct]);
   return (
     <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-white border border-border rounded-full shadow-lg px-2 py-1.5">
-      <button className="w-8 h-8 rounded-full hover:bg-muted flex items-center justify-center" title="Select">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 3l7 17 2-7 7-2z"/></svg>
-      </button>
-      <button className="w-8 h-8 rounded-full bg-muted flex items-center justify-center" title="Pan">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 13V5a2 2 0 114 0v6M12 11V3a2 2 0 114 0v8M16 11V5a2 2 0 114 0v10a6 6 0 01-6 6h-2c-3 0-4-1-6-5l-2-4c-1-2 1-3 2-2l2 3"/></svg>
-      </button>
-      <div className="w-px h-5 bg-border mx-1" />
       <button onClick={() => zoomIn(0.15)} className="w-8 h-8 rounded-full hover:bg-muted flex items-center justify-center" title="Zoom in">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14"/></svg>
       </button>
@@ -41,20 +36,26 @@ function Toolbar() {
   );
 }
 
-function Header() {
+const HEADER_HEIGHT = 128; // approx header pixel height
+
+function Header({ onJump }: { onJump: (id: TabId) => void }) {
   return (
-    <div className="fixed top-0 left-0 right-0 z-40 px-8 py-5 bg-[#fcfbf8]/95 backdrop-blur-sm border-b border-border/60">
-      <div className="flex items-start gap-3">
-        <div className="w-8 h-8 rounded-full bg-[color:var(--tab-stages)] text-white flex items-center justify-center font-bold text-sm flex-shrink-0">I</div>
+    <div className="fixed top-0 left-0 right-0 z-40 px-6 py-3 bg-[#fcfbf8]/95 backdrop-blur-sm border-b border-border/60">
+      <div className="flex items-center gap-3">
+        <img src={logoAsset.url} alt="Ivy Sales Academy" className="w-9 h-9 flex-shrink-0 object-contain" />
         <div>
-          <h1 className="text-lg font-bold text-foreground">Ivy Sales Academy</h1>
+          <h1 className="text-lg font-bold text-foreground leading-tight">Ivy Sales Academy</h1>
           <p className="text-xs text-muted-foreground mt-0.5">Complete system: conversation flows, scripts, objection handling, psychology, engagement & operations</p>
         </div>
       </div>
-      <div className="flex flex-wrap gap-2 mt-3 ml-11">
+      <div className="flex flex-wrap gap-2 mt-2 ml-12">
         {TABS.map(t => (
-          <a key={t.id} href={`#sec-${t.id}`} className="text-[11px] font-bold uppercase tracking-wide text-white px-3 py-1.5 rounded-full whitespace-nowrap"
-            style={{ backgroundColor: t.color }}>{t.label}</a>
+          <button
+            key={t.id}
+            onClick={() => onJump(t.id)}
+            className="text-[11px] font-bold uppercase tracking-wide text-white px-3 py-1.5 rounded-full whitespace-nowrap hover:opacity-90 transition-opacity"
+            style={{ backgroundColor: t.color }}
+          >{t.label}</button>
         ))}
       </div>
     </div>
@@ -63,7 +64,7 @@ function Header() {
 
 function SectionHeading({ id, color, text }: { id: TabId; color: string; text: string }) {
   return (
-    <div id={`sec-${id}`} className="col-span-full flex items-center gap-2 mt-6 mb-2">
+    <div id={`sec-${id}`} data-section={id} className="col-span-full flex items-center gap-2 mt-6 mb-2">
       <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
       <h2 className="text-[11px] font-bold uppercase tracking-wider text-foreground/80">{text}</h2>
     </div>
@@ -103,23 +104,56 @@ function Canvas() {
 }
 
 function Index() {
+  const wrapperRef = useRef<ReactZoomPanPinchRef | null>(null);
+
+  const jumpTo = (id: TabId) => {
+    const el = document.getElementById(`sec-${id}`);
+    const w = wrapperRef.current;
+    if (!el || !w) return;
+    const scale = w.state.scale;
+    // Position in canvas coordinates
+    const canvas = el.closest(".canvas-bg") as HTMLElement | null;
+    if (!canvas) return;
+    const canvasRect = canvas.getBoundingClientRect();
+    const elRect = el.getBoundingClientRect();
+    // Element offset relative to canvas (in current scaled space)
+    const offsetX = (elRect.left - canvasRect.left) / scale;
+    const offsetY = (elRect.top - canvasRect.top) / scale;
+    // Target: place element at x=24 (small left margin), y=HEADER_HEIGHT + 16
+    const targetX = -offsetX * scale + 24;
+    const targetY = -offsetY * scale + HEADER_HEIGHT + 16;
+    w.setTransform(targetX, targetY, scale, 400, "easeOutCubic");
+  };
+
   return (
     <div className="fixed inset-0 overflow-hidden bg-[#fcfbf8]">
       <TransformWrapper
+        ref={wrapperRef}
         initialScale={0.55}
-        minScale={0.2}
-        maxScale={2}
+        minScale={0.45}
+        maxScale={2.5}
         limitToBounds={false}
         wheel={{ step: 0.1 }}
         doubleClick={{ disabled: true }}
         panning={{ velocityDisabled: true }}
       >
-        <Header />
-        <TransformComponent wrapperStyle={{ width: "100%", height: "100%" }}>
-          <Canvas />
-        </TransformComponent>
-        <Toolbar />
+        {(utils) => (
+          <>
+            <Header onJump={jumpTo} />
+            <TransformComponent wrapperStyle={{ width: "100%", height: "100%" }}>
+              <Canvas />
+            </TransformComponent>
+            <Toolbar onPercent={() => {}} />
+            <ScaleReadout />
+            {/* keep utils referenced */}
+            <span className="hidden">{utils.state.scale}</span>
+          </>
+        )}
       </TransformWrapper>
     </div>
   );
+}
+
+function ScaleReadout() {
+  return null;
 }
