@@ -405,49 +405,54 @@ Next follow-up:
 
 Call outcome:`;
 
-const eodTemplate = (c: Counter, extra = "") => `EOD REPORT — ${c.date}
+const EOD_DEFAULT_BODY = `Wins:
+Losses / lessons:
+Objections seen today:
+Tomorrow's focus:`;
+
+const composeEod = (c: Counter, body: string) => `EOD REPORT — ${c.date}
 
 Followers contacted: ${c.contacted}
 Dials: ${c.dials}
 Sets: ${c.sets}
 Conversations: ${c.convos}
 
-Wins:
-Losses / lessons:
-Objections seen today:
-Tomorrow's focus:
-${extra ? "\nNotes:\n" + extra : ""}`;
+${body}`;
 
-function NotesModal({ open, onClose, counter }: { open: boolean; onClose: () => void; counter: Counter }) {
+const parseEodBody = (text: string, fallback: string) => {
+  const m = text.match(/Conversations:[^\n]*\n\n([\s\S]*)$/);
+  return m ? m[1] : fallback;
+};
+
+function NotesModal({ open, onClose, counter, setCounter }: { open: boolean; onClose: () => void; counter: Counter; setCounter: (c: Counter) => void }) {
   const [tab, setTab] = useState<"precall" | "eod">("precall");
   const [precall, setPrecall] = useState(PRECALL_TPL);
-  const [eod, setEod] = useState(() => eodTemplate(counter));
+  const [eodBody, setEodBody] = useState(EOD_DEFAULT_BODY);
   const [copied, setCopied] = useState(false);
-
-  // Keep EOD counters in sync when modal opens, unless user has customized
-  useEffect(() => {
-    if (open && tab === "eod") {
-      // Only re-hydrate if it still looks like an untouched template for a different count
-      setEod(prev => {
-        if (prev.startsWith("EOD REPORT") && !prev.includes("Notes:\n") && !/[A-Za-z]{2,}:\s+\S/.test(prev.split("\n\n").slice(-3).join("\n"))) {
-          return eodTemplate(counter);
-        }
-        return prev;
-      });
-    }
-  }, [open, tab, counter]);
 
   if (!open) return null;
 
+  const eod = composeEod(counter, eodBody);
   const text = tab === "precall" ? precall : eod;
-  const setText = tab === "precall" ? setPrecall : setEod;
-  const resetTpl = () => tab === "precall" ? setPrecall(PRECALL_TPL) : setEod(eodTemplate(counter));
+  const onChangeText = (v: string) => {
+    if (tab === "precall") setPrecall(v);
+    else setEodBody(parseEodBody(v, eodBody));
+  };
+  const resetTpl = () => {
+    if (tab === "precall") {
+      setPrecall(PRECALL_TPL);
+    } else {
+      setEodBody(EOD_DEFAULT_BODY);
+      setCounter({ ...counter, contacted: 0, dials: 0, sets: 0, convos: 0 });
+    }
+  };
 
   const copy = () => {
     navigator.clipboard?.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
+
 
   const stopWheel = (e: React.WheelEvent) => e.stopPropagation();
 
@@ -468,7 +473,7 @@ function NotesModal({ open, onClose, counter }: { open: boolean; onClose: () => 
         </p>
         <textarea
           value={text}
-          onChange={e => setText(e.target.value)}
+          onChange={e => onChangeText(e.target.value)}
           onWheel={stopWheel}
           className="flex-1 min-h-[380px] max-h-[60vh] p-3 mt-2 text-xs font-mono bg-background text-foreground resize-none focus:outline-none overflow-auto"
         />
@@ -736,7 +741,7 @@ function Index() {
 
       {/* Fixed overlays — siblings of the canvas, always on top */}
       <Header innerRef={headerRef} onJump={jumpTo} query={query} setQuery={setQuery} />
-      <NotesModal open={notesOpen} onClose={() => setNotesOpen(false)} counter={counter} />
+      <NotesModal open={notesOpen} onClose={() => setNotesOpen(false)} counter={counter} setCounter={setCounter} />
       <HelpOverlay open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
   );
