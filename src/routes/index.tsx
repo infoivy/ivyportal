@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { TransformWrapper, TransformComponent, useControls, useTransformEffect, type ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
-import { useRef, useState, useEffect, useCallback, useMemo, useDeferredValue } from "react";
+import React, { useRef, useState, useEffect, useCallback, useMemo, useDeferredValue } from "react";
 import { TABS, type TabId } from "@/data/content";
 import { SECTIONS } from "@/data/sections";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -246,8 +246,9 @@ function SectionHeading({ id, color, text }: { id: TabId; color: string; text: s
   );
 }
 
-function Card({ cardId, color, title, subtitle, children, matchQuery, wide }: { cardId: string; color: string; title: string; subtitle?: string; children: React.ReactNode; matchQuery: string; wide?: boolean }) {
+const Card = React.memo(function Card({ cardId, color, title, subtitle, children, matchQuery, wide }: { cardId: string; color: string; title: string; subtitle?: string; children: React.ReactNode; matchQuery: string; wide?: boolean }) {
   const bodyRef = useRef<HTMLDivElement | null>(null);
+  const hadMarksRef = useRef(false);
   const [matches, setMatches] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
 
@@ -265,21 +266,44 @@ function Card({ cardId, color, title, subtitle, children, matchQuery, wide }: { 
     setTimeout(() => setLinkCopied(false), 1500);
   };
 
-  // Highlight matched words & detect card match
+  // Highlight matched words & detect card match.
+  // Hot path — runs for every card whenever the search query changes.
+  // Optimizations:
+  //  - Skip all DOM work when there's no query AND no prior marks to clean up
+  //  - Skip walker entirely when query is < 2 chars (avoids full-tree walks on single-key typing)
+  //  - Use textContent (no layout) instead of innerText (forces synchronous layout)
   useEffect(() => {
     const root = bodyRef.current;
     if (!root) return;
-    root.querySelectorAll("mark.hl-match").forEach(m => {
-      const t = document.createTextNode(m.textContent || "");
-      m.parentNode?.replaceChild(t, m);
-    });
-    root.normalize();
-    if (!matchQuery.trim()) { setMatches(false); return; }
     const q = matchQuery.trim();
-    const cardText = (title + " " + (subtitle || "") + " " + root.innerText).toLowerCase();
+
+    // Fast path: nothing to do and nothing to clean up
+    if (!q && !hadMarksRef.current) {
+      if (matches) setMatches(false);
+      return;
+    }
+
+    // Clean up prior highlights only if we actually added them
+    if (hadMarksRef.current) {
+      root.querySelectorAll("mark.hl-match").forEach(m => {
+        const t = document.createTextNode(m.textContent || "");
+        m.parentNode?.replaceChild(t, m);
+      });
+      root.normalize();
+      hadMarksRef.current = false;
+    }
+
+    if (!q) { setMatches(false); return; }
+
+    // Cheap text match check first (textContent avoids layout, unlike innerText)
+    const cardText = (title + " " + (subtitle || "") + " " + (root.textContent || "")).toLowerCase();
     const hit = cardText.includes(q.toLowerCase());
     setMatches(hit);
     if (!hit) return;
+
+    // Skip expensive DOM walk for single-char queries — visual highlight isn't worth the cost
+    if (q.length < 2) return;
+
     const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     const nodes: Text[] = [];
@@ -290,6 +314,7 @@ function Card({ cardId, color, title, subtitle, children, matchQuery, wide }: { 
       if (re.test(tn.data)) nodes.push(tn);
       re.lastIndex = 0;
     }
+    if (!nodes.length) return;
     nodes.forEach(tn => {
       const parts = tn.data.split(re);
       const matchesArr = tn.data.match(re) || [];
@@ -306,6 +331,7 @@ function Card({ cardId, color, title, subtitle, children, matchQuery, wide }: { 
       });
       tn.parentNode?.replaceChild(frag, tn);
     });
+    hadMarksRef.current = true;
   }, [matchQuery, title, subtitle]);
 
   return (
@@ -330,9 +356,10 @@ function Card({ cardId, color, title, subtitle, children, matchQuery, wide }: { 
       </div>
     </div>
   );
-}
+});
 
-function Canvas({ matched, query }: { matched: Set<TabId> | null; query: string }) {
+
+const Canvas = React.memo(function Canvas({ matched, query }: { matched: Set<TabId> | null; query: string }) {
   return (
     <div className="canvas-bg inline-block" style={{ padding: `${CANVAS_PAD_TOP}px ${CANVAS_PAD_LEFT}px 40px` }}>
       <div className="flex flex-col gap-8">
@@ -355,7 +382,7 @@ function Canvas({ matched, query }: { matched: Set<TabId> | null; query: string 
       </div>
     </div>
   );
-}
+});
 
 function HelpOverlay({ open, onClose }: { open: boolean; onClose: () => void }) {
   if (!open) return null;
@@ -499,7 +526,7 @@ function NotesModal({ open, onClose, counter, setCounter }: { open: boolean; onC
   );
 }
 
-function MobileView({ matched, query, headerH }: { matched: Set<TabId> | null; query: string; headerH: number }) {
+const MobileView = React.memo(function MobileView({ matched, query, headerH }: { matched: Set<TabId> | null; query: string; headerH: number }) {
   return (
     <div className="min-h-screen bg-background pb-24" style={{ paddingTop: headerH + 8 }}>
       <div className="px-3 space-y-6">
@@ -536,7 +563,7 @@ function MobileView({ matched, query, headerH }: { matched: Set<TabId> | null; q
       </div>
     </div>
   );
-}
+});
 
 function MobileToolbar({ dark, setDark, onNotes, counter, setCounter, onHelp }: { dark: boolean; setDark: (v: boolean) => void; onNotes: () => void; counter: Counter; setCounter: (c: Counter) => void; onHelp: () => void }) {
   const bump = (k: keyof Omit<Counter, "date">, d: number) => {
