@@ -579,7 +579,7 @@ function Index() {
         panning={{ velocityDisabled: true, excluded: ["textarea", "input", "isa-modal"] }}
       >
         <Header onJump={jumpTo} query={query} setQuery={setQuery} />
-        <TransformComponent wrapperStyle={{ width: "100%", height: "100%" }}>
+        <TransformComponent wrapperStyle={{ position: "absolute", top: headerH, left: 0, right: 0, bottom: 0, width: "auto", height: "auto" }}>
           <Canvas matched={matched} query={query} />
         </TransformComponent>
         <Toolbar dark={dark} setDark={setDark} onNotes={() => setNotesOpen(true)} counter={counter} setCounter={setCounter} onReset={resetView} />
