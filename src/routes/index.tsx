@@ -698,7 +698,7 @@ function Index() {
         pinch={{ excluded: ["textarea", "input", "isa-modal"] }}
         doubleClick={{ disabled: true }}
         panning={{ velocityDisabled: true, excluded: ["textarea", "input", "isa-modal"] }}
-        onTransformed={persistView as unknown as never}
+        onTransform={persistView}
       >
         <Header onJump={jumpTo} query={query} setQuery={setQuery} />
         <SectionRail onJump={jumpTo} />
