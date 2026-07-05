@@ -595,10 +595,9 @@ function Index() {
     const state = w.state;
     const scale = state.scale;
     const elRect = el.getBoundingClientRect();
-    const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
-    const headerH = isMobile ? HEADER_HEIGHT_MOBILE : HEADER_HEIGHT_DESKTOP;
+    const hH = headerRef.current?.getBoundingClientRect().height ?? headerH;
     const targetLeft = 20;
-    const targetTop = headerH + 16;
+    const targetTop = hH + 16;
     const deltaX = targetLeft - elRect.left;
     const deltaY = targetTop - elRect.top;
     const next = clampCanvasPosition(state.positionX + deltaX, state.positionY + deltaY, scale);
