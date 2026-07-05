@@ -720,7 +720,7 @@ function Index() {
       >
         <Header onJump={jumpTo} query={query} setQuery={setQuery} />
         <SectionRail onJump={jumpTo} />
-        <TransformComponent wrapperStyle={{ position: "absolute", top: headerH, left: 0, right: 0, bottom: 0, width: "auto", height: "auto" }}>
+        <TransformComponent wrapperStyle={{ position: "absolute", top: headerH + 16, left: 0, right: 0, bottom: 0, width: "auto", height: "auto", overflow: "hidden" }}>
           <Canvas matched={matched} query={deferredQuery} />
         </TransformComponent>
         <Toolbar dark={dark} setDark={setDark} onNotes={() => setNotesOpen(true)} counter={counter} setCounter={setCounter} onReset={resetView} onHelp={() => setHelpOpen(true)} />
