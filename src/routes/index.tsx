@@ -43,15 +43,15 @@ function Toolbar() {
 
 function Header() {
   return (
-    <div className="absolute top-0 left-0 right-0 z-40 px-8 py-6 pointer-events-none">
-      <div className="flex items-start gap-3 pointer-events-auto">
-        <div className="w-8 h-8 rounded-full bg-[color:var(--tab-stages)] text-white flex items-center justify-center font-bold text-sm flex-shrink-0">G</div>
+    <div className="fixed top-0 left-0 right-0 z-40 px-8 py-5 bg-[#fcfbf8]/95 backdrop-blur-sm border-b border-border/60">
+      <div className="flex items-start gap-3">
+        <div className="w-8 h-8 rounded-full bg-[color:var(--tab-stages)] text-white flex items-center justify-center font-bold text-sm flex-shrink-0">I</div>
         <div>
-          <h1 className="text-lg font-bold text-foreground">Grow Acquisition — Setting Mastery</h1>
+          <h1 className="text-lg font-bold text-foreground">Ivy Sales Academy</h1>
           <p className="text-xs text-muted-foreground mt-0.5">Complete system: conversation flows, scripts, objection handling, psychology, engagement & operations</p>
         </div>
       </div>
-      <div className="flex flex-wrap gap-2 mt-3 ml-11 pointer-events-auto">
+      <div className="flex flex-wrap gap-2 mt-3 ml-11">
         {TABS.map(t => (
           <a key={t.id} href={`#sec-${t.id}`} className="text-[11px] font-bold uppercase tracking-wide text-white px-3 py-1.5 rounded-full whitespace-nowrap"
             style={{ backgroundColor: t.color }}>{t.label}</a>
