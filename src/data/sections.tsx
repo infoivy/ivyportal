@@ -1392,7 +1392,7 @@ export const SECTIONS: Section[] = [
             <P><b>2.</b> Never mention specific pricing in DMs. All pricing to the call.</P>
             <P><b>3.</b> Never send Calendly before Stage 7. All 4 boxes checked: Situation, Problem, Constraint, Readiness.</P>
             <P><b>4.</b> Never argue deen with a lead. Validate, reframe once, move on. You're a setter, not a mufti.</P>
-            <P><b>5.</b> Never book anyone who needs parental permission to pay. Route unqualified leads to the free community within the first few messages.</P>
+            <P><b>5.</b> Never book anyone in DMs who needs parental permission to pay (under-18 or otherwise). The closer handles that live on the call. Route unqualified leads to the free community within the first few messages.</P>
             <P><b>6.</b> Inbound "path" messages answered within 5 minutes during setting windows. Always end with a question.</P>
             <P><b>7.</b> Always send the closer handoff the moment a booking confirms. Always send student proof after booking.</P>
             <P><b>8.</b> Always send the daily tracking report. Update the sheet every window, not every day.</P>
