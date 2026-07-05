@@ -228,8 +228,8 @@ export const SECTIONS: Section[] = [
             <Q>here's the calendar: [calendly link]. ping me when booked so i can confirm on my end.</Q>
             <Q>perfect, you're locked in! come with your real questions, bring the doubts too. talk soon insha'Allah.</Q>
             <H>Follow-ups:</H>
-            <P>24h: “hey did you get a chance to check the calendar?”</P>
-            <P>48h: “just checking in, any time work this week?”</P>
+            <Q label="24h">hey did you get a chance to check the calendar?</Q>
+            <Q label="48h">just checking in, any time work this week?</Q>
             <P>After: story nurture, stop chasing beyond 3 attempts.</P>
             <P className="pt-1"><b>“If you give me permission” = power + humility. Impossible to refuse.</b></P>
           </div>
@@ -715,8 +715,8 @@ export const SECTIONS: Section[] = [
             <H>Day before:</H>
             <Q>all set for tomorrow insha'Allah?</Q>
             <H>If not booked:</H>
-            <P>24h: “hey, did you get a chance to check the calendar?”</P>
-            <P>48h: “[Name]! just curious if you found a time that works”</P>
+            <Q label="24h">hey, did you get a chance to check the calendar?</Q>
+            <Q label="48h">[Name]! just curious if you found a time that works</Q>
             <P>72h+: stop chasing, story engagement only.</P>
             <P>Keep engaging their stories even after booking. Goal: they feel like they already know you before the call.</P>
           </div>
@@ -923,11 +923,11 @@ export const SECTIONS: Section[] = [
         subtitle: "30-day rhythm",
         body: (
           <div className="space-y-1 text-[13px]">
-            <P><b>Day 1:</b> React to story, no pitch</P>
-            <P><b>Day 3:</b> Reply to story with a genuine comment</P>
-            <P><b>Day 7:</b> Send relevant content: “saw this and thought of your situation”</P>
-            <P><b>Day 14:</b> Direct check-in: “hey, how's things going with [situation]?”</P>
-            <P><b>Day 30:</b> If timing fits: “things have moved on our end, might be worth a conversation now”</P>
+            <Q label="Day 1">react to story, no pitch (no message sent)</Q>
+            <Q label="Day 3">reply to story with a genuine comment</Q>
+            <Q label="Day 7">saw this and thought of your situation [send relevant content]</Q>
+            <Q label="Day 14">hey, how's things going with [their situation]?</Q>
+            <Q label="Day 30">things have moved on our end, might be worth a conversation now</Q>
           </div>
         ),
       },
