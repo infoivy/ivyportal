@@ -939,22 +939,6 @@ export const SECTIONS: Section[] = [
         ),
       },
       {
-        title: "Follow-Up: 3 / 5 / 7 Days",
-        subtitle: "New — with the easy out",
-        body: (
-          <div className="space-y-2">
-            <H>Day 3 (no response):</H>
-            <Q>hey, still thinking about what you said about [their topic]. did you ever figure out how you're handling [their challenge]?</Q>
-            <H>Day 5:</H>
-            <Q>just saw something that reminded me of your situation, still dealing with [problem]?</Q>
-            <P>Attach the relevant video. Value first, not a nudge.</P>
-            <H>Day 7 (final, easy out):</H>
-            <Q>i'll close the loop after this. if getting into remote sales is still something you're serious about, happy to point you in the right direction. if the timing isn't right, completely fine too, just let me know either way</Q>
-            <P>The easy out is what makes the final message work. Men on the fence often reply to it. After day 7: story nurture only.</P>
-          </div>
-        ),
-      },
-      {
         title: "Binary Re-Engagement",
         subtitle: "Force a movement",
         body: (
