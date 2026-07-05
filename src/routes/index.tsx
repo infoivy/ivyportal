@@ -145,9 +145,9 @@ function Toolbar({ dark, setDark, onNotes, counter, setCounter, onReset, onHelp 
   );
 }
 
-function Header({ onJump, query, setQuery }: { onJump: (id: TabId) => void; query: string; setQuery: (v: string) => void }) {
+function Header({ onJump, query, setQuery, innerRef }: { onJump: (id: TabId) => void; query: string; setQuery: (v: string) => void; innerRef?: React.RefObject<HTMLDivElement | null> }) {
   return (
-    <div className="fixed top-0 left-0 right-0 z-40 px-3 sm:px-6 py-2 sm:py-3 bg-background/95 backdrop-blur-sm border-b border-border/60">
+    <div ref={innerRef} className="fixed top-0 left-0 right-0 z-[80] px-3 sm:px-6 py-2 sm:py-3 bg-background border-b border-border shadow-sm">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 sm:gap-3">
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <img src={logoAsset.url} alt="Ivy Sales Academy" className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 object-contain" loading="eager" />
@@ -528,6 +528,8 @@ function NotesModal({ open, onClose, counter }: { open: boolean; onClose: () => 
 function Index() {
   const wrapperRef = useRef<ReactZoomPanPinchRef | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const headerRef = useRef<HTMLDivElement | null>(null);
+  const [headerH, setHeaderH] = useState(HEADER_HEIGHT_DESKTOP);
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
   const [dark, setDark] = useState(false);
@@ -536,17 +538,29 @@ function Index() {
   const [counter, setCounterState] = useState<Counter>(() => loadCounter());
   const matched = useMemo(() => matchSections(deferredQuery), [deferredQuery]);
 
+  // Measure actual header height so the canvas is padded correctly at any zoom
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const update = () => setHeaderH(el.getBoundingClientRect().height);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    window.addEventListener("resize", update);
+    return () => { ro.disconnect(); window.removeEventListener("resize", update); };
+  }, []);
+
   const clampCanvasPosition = useCallback((x: number, y: number, scale: number) => {
     const container = containerRef.current;
     const canvas = container?.querySelector<HTMLElement>(".canvas-bg");
     if (!container || !canvas) return { x, y };
 
     const rect = container.getBoundingClientRect();
-    const isM = rect.width < 640;
-    const headerH = isM ? HEADER_HEIGHT_MOBILE : HEADER_HEIGHT_DESKTOP;
+    const headerEl = headerRef.current;
+    const hH = headerEl ? headerEl.getBoundingClientRect().height : (rect.width < 640 ? HEADER_HEIGHT_MOBILE : HEADER_HEIGHT_DESKTOP);
     // Transform viewport starts BELOW the header, so gutters are viewport-relative
     const viewportW = rect.width;
-    const viewportH = rect.height - headerH;
+    const viewportH = rect.height - hH;
     const leftGutter = 8;
     const rightGutter = 8;
     const topGutter = 8;
@@ -581,10 +595,9 @@ function Index() {
     const state = w.state;
     const scale = state.scale;
     const elRect = el.getBoundingClientRect();
-    const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
-    const headerH = isMobile ? HEADER_HEIGHT_MOBILE : HEADER_HEIGHT_DESKTOP;
+    const hH = headerRef.current?.getBoundingClientRect().height ?? headerH;
     const targetLeft = 20;
-    const targetTop = headerH + 16;
+    const targetTop = hH + 16;
     const deltaX = targetLeft - elRect.left;
     const deltaY = targetTop - elRect.top;
     const next = clampCanvasPosition(state.positionX + deltaX, state.positionY + deltaY, scale);
@@ -640,8 +653,6 @@ function Index() {
   }, [clampCanvasPosition]);
 
   // Transform viewport sits BELOW the header — positions are viewport-relative
-  const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
-  const headerH = isMobile ? HEADER_HEIGHT_MOBILE : HEADER_HEIGHT_DESKTOP;
   const initScale = 0.55;
   // Restore last-view (localStorage) or fall back to top-left
   const initialView = useMemo(() => {
@@ -720,29 +731,41 @@ function Index() {
 
   return (
     <div ref={containerRef} className="fixed inset-0 overflow-hidden bg-background">
-      <TransformWrapper
-        ref={wrapperRef}
-        initialScale={initialView.scale}
-        initialPositionX={initialView.x}
-        initialPositionY={initialView.y}
-        minScale={0.35}
-        maxScale={2.5}
-        limitToBounds={true}
-        centerOnInit={false}
-        centerZoomedOut={false}
-        wheel={{ step: 0.06, activationKeys: ["Control", "Meta"], excluded: ["textarea", "input", "isa-modal"] }}
-        pinch={{ excluded: ["textarea", "input", "isa-modal"] }}
-        doubleClick={{ disabled: true }}
-        panning={{ velocityDisabled: true, excluded: ["textarea", "input", "isa-modal"] }}
-        onTransform={persistView}
+      {/* Zoom/pan canvas — clipped inside a container that starts BELOW the header.
+          Header, rail, toolbar, and modals live OUTSIDE this wrapper so no
+          transform/stacking-context can trap them below the header. */}
+      <div
+        className="absolute left-0 right-0 bottom-0 overflow-hidden"
+        style={{ top: headerH + 16 }}
       >
-        <Header onJump={jumpTo} query={query} setQuery={setQuery} />
-        <SectionRail onJump={jumpTo} />
-        <TransformComponent wrapperStyle={{ position: "absolute", top: headerH + 16, left: 0, right: 0, bottom: 0, width: "auto", height: "auto", overflow: "hidden" }}>
-          <Canvas matched={matched} query={deferredQuery} />
-        </TransformComponent>
-        <Toolbar dark={dark} setDark={setDark} onNotes={() => setNotesOpen(true)} counter={counter} setCounter={setCounter} onReset={resetView} onHelp={() => setHelpOpen(true)} />
-      </TransformWrapper>
+        <TransformWrapper
+          ref={wrapperRef}
+          initialScale={initialView.scale}
+          initialPositionX={initialView.x}
+          initialPositionY={initialView.y}
+          minScale={0.35}
+          maxScale={2.5}
+          limitToBounds={true}
+          centerOnInit={false}
+          centerZoomedOut={false}
+          wheel={{ step: 0.06, activationKeys: ["Control", "Meta"], excluded: ["textarea", "input", "isa-modal"] }}
+          pinch={{ excluded: ["textarea", "input", "isa-modal"] }}
+          doubleClick={{ disabled: true }}
+          panning={{ velocityDisabled: true, excluded: ["textarea", "input", "isa-modal"] }}
+          onTransform={persistView}
+        >
+          <TransformComponent wrapperStyle={{ width: "100%", height: "100%", overflow: "hidden" }}>
+            <Canvas matched={matched} query={deferredQuery} />
+          </TransformComponent>
+          {/* Toolbar needs useControls() → must live inside TransformWrapper.
+              It's position:fixed so it escapes this container visually. */}
+          <Toolbar dark={dark} setDark={setDark} onNotes={() => setNotesOpen(true)} counter={counter} setCounter={setCounter} onReset={resetView} onHelp={() => setHelpOpen(true)} />
+        </TransformWrapper>
+      </div>
+
+      {/* Fixed overlays — siblings of the canvas, always on top */}
+      <Header innerRef={headerRef} onJump={jumpTo} query={query} setQuery={setQuery} />
+      <SectionRail onJump={jumpTo} />
       <NotesModal open={notesOpen} onClose={() => setNotesOpen(false)} counter={counter} />
       <HelpOverlay open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
