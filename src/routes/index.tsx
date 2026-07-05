@@ -448,17 +448,20 @@ function Index() {
     const rect = container.getBoundingClientRect();
     const isM = rect.width < 640;
     const headerH = isM ? HEADER_HEIGHT_MOBILE : HEADER_HEIGHT_DESKTOP;
+    // Transform viewport starts BELOW the header, so gutters are viewport-relative
+    const viewportW = rect.width;
+    const viewportH = rect.height - headerH;
     const leftGutter = 8;
     const rightGutter = 8;
-    const topGutter = headerH + 8;
+    const topGutter = 8;
     const bottomGutter = 80;
     const scaledW = canvas.offsetWidth * scale;
     const scaledH = canvas.offsetHeight * scale;
 
     const maxX = leftGutter - CANVAS_PAD_LEFT * scale;
-    const minX = Math.min(maxX, rect.width - rightGutter - scaledW);
+    const minX = Math.min(maxX, viewportW - rightGutter - scaledW);
     const maxY = topGutter - CANVAS_PAD_TOP * scale;
-    const minY = Math.min(maxY, rect.height - bottomGutter - scaledH);
+    const minY = Math.min(maxY, viewportH - bottomGutter - scaledH);
 
     return {
       x: Math.min(maxX, Math.max(minX, x)),
@@ -483,8 +486,9 @@ function Index() {
     const scale = state.scale;
     const elRect = el.getBoundingClientRect();
     const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
+    const headerH = isMobile ? HEADER_HEIGHT_MOBILE : HEADER_HEIGHT_DESKTOP;
     const targetLeft = 20;
-    const targetTop = (isMobile ? HEADER_HEIGHT_MOBILE : HEADER_HEIGHT_DESKTOP) + 16;
+    const targetTop = headerH + 16;
     const deltaX = targetLeft - elRect.left;
     const deltaY = targetTop - elRect.top;
     const next = clampCanvasPosition(state.positionX + deltaX, state.positionY + deltaY, scale);
@@ -539,21 +543,19 @@ function Index() {
     return () => el.removeEventListener("wheel", onWheel);
   }, [clampCanvasPosition]);
 
-  // Position canvas so first card sits just below the header on load
+  // Transform viewport sits BELOW the header — positions are viewport-relative
   const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
   const headerH = isMobile ? HEADER_HEIGHT_MOBILE : HEADER_HEIGHT_DESKTOP;
   const initScale = 0.55;
-  const initialPositionY = headerH + 8 - CANVAS_PAD_TOP * initScale;
+  const initialPositionY = 8 - CANVAS_PAD_TOP * initScale;
   const initialPositionX = 8 - CANVAS_PAD_LEFT * initScale;
 
-  // Reset view = 100% zoom, first card just below the header
+  // Reset view = 100% zoom, first card pinned to top-left of viewport
   const resetView = useCallback(() => {
     const w = wrapperRef.current;
     if (!w) return;
-    const isM = window.innerWidth < 640;
-    const hH = isM ? HEADER_HEIGHT_MOBILE : HEADER_HEIGHT_DESKTOP;
     const scale = 1;
-    const posY = hH + 8 - CANVAS_PAD_TOP * scale;
+    const posY = 8 - CANVAS_PAD_TOP * scale;
     const posX = 8 - CANVAS_PAD_LEFT * scale;
     const next = clampCanvasPosition(posX, posY, scale);
     w.setTransform(next.x, next.y, scale, 350, "easeOutCubic");
@@ -577,7 +579,7 @@ function Index() {
         panning={{ velocityDisabled: true, excluded: ["textarea", "input", "isa-modal"] }}
       >
         <Header onJump={jumpTo} query={query} setQuery={setQuery} />
-        <TransformComponent wrapperStyle={{ width: "100%", height: "100%" }}>
+        <TransformComponent wrapperStyle={{ position: "absolute", top: headerH, left: 0, right: 0, bottom: 0, width: "auto", height: "auto" }}>
           <Canvas matched={matched} query={query} />
         </TransformComponent>
         <Toolbar dark={dark} setDark={setDark} onNotes={() => setNotesOpen(true)} counter={counter} setCounter={setCounter} onReset={resetView} />
