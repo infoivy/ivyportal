@@ -556,11 +556,11 @@ function Index() {
     if (!container || !canvas) return { x, y };
 
     const rect = container.getBoundingClientRect();
-    const isM = rect.width < 640;
-    const headerH = isM ? HEADER_HEIGHT_MOBILE : HEADER_HEIGHT_DESKTOP;
+    const headerEl = headerRef.current;
+    const hH = headerEl ? headerEl.getBoundingClientRect().height : (rect.width < 640 ? HEADER_HEIGHT_MOBILE : HEADER_HEIGHT_DESKTOP);
     // Transform viewport starts BELOW the header, so gutters are viewport-relative
     const viewportW = rect.width;
-    const viewportH = rect.height - headerH;
+    const viewportH = rect.height - hH;
     const leftGutter = 8;
     const rightGutter = 8;
     const topGutter = 8;
