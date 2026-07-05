@@ -615,6 +615,7 @@ function Index() {
   const [helpOpen, setHelpOpen] = useState(false);
   const [counter, setCounterState] = useState<Counter>(() => loadCounter());
   const matched = useMemo(() => matchSections(deferredQuery), [deferredQuery]);
+  const isMobile = useIsMobile();
 
   // Measure actual header height so the canvas is padded correctly at any zoom
   useEffect(() => {
