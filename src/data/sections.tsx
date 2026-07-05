@@ -106,16 +106,18 @@ export const SECTIONS: Section[] = [
               "Wants a career skill, not a 2-week side hustle",
               "Makes his own financial decisions",
             ]} />
-            <H><Tag tone="red">Auto-Disqualify</Tag></H>
+            <H><Tag tone="red">DM-Stage Disqualify</Tag></H>
             <UL items={[
-              "Under 18, or needs parental permission to pay",
+              "Under 18 → hard disqualify in DMs (closer can requalify on call if parents will fund)",
+              "Needs parental permission to pay → same rule: DM disqualify, closer handles it live",
               "No income AND no savings AND no plan",
               "Cannot commit 4 hours daily",
               "No computer or unwilling to learn basic software",
               "\"make me a millionaire\" energy",
               "Doesn't control his own money",
             ]} />
-            <P className="pt-1"><b>Disqualified ≠ discarded.</b> Route warmly to the free community. Over 35 with everything else strong = judgment call, flag to Sair.</P>
+            <P className="pt-1"><b>Disqualified ≠ discarded.</b> Route warmly to the free community. Over 35 with everything else strong = judgment call, flag to Sair. Parental-funded under-18s: only the closer books them, never the setter.</P>
+
           </div>
         ),
       },
@@ -1390,7 +1392,7 @@ export const SECTIONS: Section[] = [
             <P><b>2.</b> Never mention specific pricing in DMs. All pricing to the call.</P>
             <P><b>3.</b> Never send Calendly before Stage 7. All 4 boxes checked: Situation, Problem, Constraint, Readiness.</P>
             <P><b>4.</b> Never argue deen with a lead. Validate, reframe once, move on. You're a setter, not a mufti.</P>
-            <P><b>5.</b> Never book anyone who needs parental permission to pay. Route unqualified leads to the free community within the first few messages.</P>
+            <P><b>5.</b> Never book anyone in DMs who needs parental permission to pay (under-18 or otherwise). The closer handles that live on the call. Route unqualified leads to the free community within the first few messages.</P>
             <P><b>6.</b> Inbound "path" messages answered within 5 minutes during setting windows. Always end with a question.</P>
             <P><b>7.</b> Always send the closer handoff the moment a booking confirms. Always send student proof after booking.</P>
             <P><b>8.</b> Always send the daily tracking report. Update the sheet every window, not every day.</P>

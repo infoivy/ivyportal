@@ -214,7 +214,8 @@ function Card({ color, title, subtitle, children, matchQuery }: { color: string;
 
 function Canvas({ matched, query }: { matched: Set<TabId> | null; query: string }) {
   return (
-    <div className="canvas-bg" style={{ width: 6400, minHeight: 4200, padding: "160px 40px 80px" }}>
+    <div className="canvas-bg inline-block" style={{ padding: "160px 40px 80px" }}>
+
       <div className="flex flex-col gap-8">
         {SECTIONS.map(section => {
           const dim = matched && !matched.has(section.id);
