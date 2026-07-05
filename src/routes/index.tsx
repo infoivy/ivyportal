@@ -69,26 +69,34 @@ function matchSections(query: string): Set<TabId> | null {
   return matched;
 }
 
-// ---------- Session Counter ----------
-type Counter = { dms: number; calSent: number; booked: number; date: string };
+// ---------- Session Counter (aligned with EOD report format) ----------
+type Counter = { contacted: number; dials: number; sets: number; convos: number; date: string };
 const todayKey = () => new Date().toISOString().slice(0, 10);
+const emptyCounter = (): Counter => ({ contacted: 0, dials: 0, sets: 0, convos: 0, date: todayKey() });
 const loadCounter = (): Counter => {
-  if (typeof localStorage === "undefined") return { dms: 0, calSent: 0, booked: 0, date: todayKey() };
+  if (typeof localStorage === "undefined") return emptyCounter();
   try {
     const raw = localStorage.getItem("isa:counter");
-    if (!raw) return { dms: 0, calSent: 0, booked: 0, date: todayKey() };
-    const parsed = JSON.parse(raw) as Counter;
-    if (parsed.date !== todayKey()) return { dms: 0, calSent: 0, booked: 0, date: todayKey() };
-    return parsed;
-  } catch { return { dms: 0, calSent: 0, booked: 0, date: todayKey() }; }
+    if (!raw) return emptyCounter();
+    const parsed = JSON.parse(raw) as Partial<Counter>;
+    if (parsed.date !== todayKey()) return emptyCounter();
+    return { ...emptyCounter(), ...parsed } as Counter;
+  } catch { return emptyCounter(); }
 };
 const saveCounter = (c: Counter) => { try { localStorage.setItem("isa:counter", JSON.stringify(c)); } catch { /* ignore */ } };
 
-function Toolbar({ dark, setDark, onNotes, counter, setCounter }: { dark: boolean; setDark: (v: boolean) => void; onNotes: () => void; counter: Counter; setCounter: (c: Counter) => void }) {
-  const { zoomIn, zoomOut, resetTransform } = useControls();
+const COUNTER_FIELDS: { key: keyof Omit<Counter, "date">; label: string; full: string }[] = [
+  { key: "contacted", label: "Contact", full: "Followers contacted" },
+  { key: "dials", label: "Dials", full: "Dials" },
+  { key: "sets", label: "Sets", full: "Sets (call booked)" },
+  { key: "convos", label: "Convos", full: "Conversations" },
+];
+
+function Toolbar({ dark, setDark, onNotes, counter, setCounter, onReset }: { dark: boolean; setDark: (v: boolean) => void; onNotes: () => void; counter: Counter; setCounter: (c: Counter) => void; onReset: () => void }) {
+  const { zoomIn, zoomOut } = useControls();
   const [pct, setPct] = useState(55);
   useTransformEffect(({ state }) => { setPct(Math.round(state.scale * 100)); });
-  const bump = (k: "dms" | "calSent" | "booked", d: number) => {
+  const bump = (k: keyof Omit<Counter, "date">, d: number) => {
     const next = { ...counter, [k]: Math.max(0, counter[k] + d) };
     setCounter(next);
   };
@@ -102,26 +110,22 @@ function Toolbar({ dark, setDark, onNotes, counter, setCounter }: { dark: boolea
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14"/></svg>
       </button>
       <div className="w-px h-5 bg-border mx-1 shrink-0" />
-      <button onClick={() => resetTransform()} className="h-8 px-3 shrink-0 rounded-full hover:bg-muted flex items-center gap-1.5 text-xs font-semibold" title="Reset view">
+      <button onClick={onReset} className="h-8 px-3 shrink-0 rounded-full hover:bg-muted flex items-center gap-1.5 text-xs font-semibold" title="Reset to 100% and scroll to top">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
         Reset
       </button>
       <div className="w-px h-5 bg-border mx-1 shrink-0" />
-      {/* Session counter */}
-      {([["dms", "DMs"], ["calSent", "Cal"], ["booked", "Booked"]] as const).map(([k, lbl]) => (
-        <div key={k} className="flex items-center h-8 shrink-0 rounded-full bg-muted/60 pl-2 pr-1 gap-1" title={`${lbl} today (right-click to decrement)`}>
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{lbl}</span>
-          <span className="text-sm font-bold tabular-nums text-foreground min-w-[16px] text-center">{counter[k]}</span>
-          <button
-            onClick={() => bump(k, 1)}
-            onContextMenu={(e) => { e.preventDefault(); bump(k, -1); }}
-            className="w-5 h-5 rounded-full bg-background hover:bg-foreground hover:text-background flex items-center justify-center text-xs font-bold"
-            title="Click +1 · right-click -1"
-          >+</button>
+      {/* Session counter — matches EOD report format */}
+      {COUNTER_FIELDS.map(({ key, label, full }) => (
+        <div key={key} className="flex items-center h-8 shrink-0 rounded-full bg-muted/60 pl-1.5 pr-1 gap-1" title={full}>
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{label}</span>
+          <button onClick={() => bump(key, -1)} className="w-5 h-5 rounded-full bg-background hover:bg-foreground hover:text-background flex items-center justify-center text-xs font-bold" title={`-1 ${full}`}>−</button>
+          <span className="text-sm font-bold tabular-nums text-foreground min-w-[16px] text-center">{counter[key]}</span>
+          <button onClick={() => bump(key, 1)} className="w-5 h-5 rounded-full bg-background hover:bg-foreground hover:text-background flex items-center justify-center text-xs font-bold" title={`+1 ${full}`}>+</button>
         </div>
       ))}
       <div className="w-px h-5 bg-border mx-1 shrink-0" />
-      <button onClick={onNotes} className="h-8 px-3 shrink-0 rounded-full hover:bg-muted flex items-center gap-1.5 text-xs font-semibold" title="Pre-call notes">
+      <button onClick={onNotes} className="h-8 px-3 shrink-0 rounded-full hover:bg-muted flex items-center gap-1.5 text-xs font-semibold" title="Pre-call notes & EOD report">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 3h9a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8l5-5z"/><path d="M9 3v5H4"/></svg>
         Notes
       </button>
