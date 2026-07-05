@@ -830,6 +830,18 @@ function Index() {
     return () => window.removeEventListener("keydown", onKey);
   }, [helpOpen, notesOpen, query, resetView]);
 
+  if (isMobile) {
+    return (
+      <div ref={containerRef} className="min-h-screen bg-background">
+        <MobileView matched={matched} query={deferredQuery} headerH={headerH} />
+        <Header innerRef={headerRef} onJump={jumpTo} query={query} setQuery={setQuery} />
+        <MobileToolbar dark={dark} setDark={setDark} onNotes={() => setNotesOpen(true)} counter={counter} setCounter={setCounter} onHelp={() => setHelpOpen(true)} />
+        <NotesModal open={notesOpen} onClose={() => setNotesOpen(false)} counter={counter} setCounter={setCounter} />
+        <HelpOverlay open={helpOpen} onClose={() => setHelpOpen(false)} />
+      </div>
+    );
+  }
+
   return (
     <div ref={containerRef} className="fixed inset-0 overflow-hidden bg-background">
       {/* Zoom/pan canvas — clipped inside a container that starts BELOW the header.
