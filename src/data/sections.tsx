@@ -614,10 +614,10 @@ export const SECTIONS: Section[] = [
         subtitle: "Promotion, PR, first sale, savings",
         body: (
           <div className="space-y-1.5">
-            <Q>this is fire, most guys won't post wins because they're scared of the evil eye or judgment. respect 🤝</Q>
-            <Q>mabrook man. now imagine this discipline pointed at something that pays you properly</Q>
-            <Q>love this. one-off or you building a system behind it?</Q>
-            <Q>BOOM. this is the kind of consistency that transfers to anything you touch</Q>
+            <Q>allahumma baarik akhi 🤲 most guys won't post wins because they're scared of the evil eye or judgment. respect for owning it</Q>
+            <Q>allahumma baarik. now imagine this same discipline pointed at something that pays you properly</Q>
+            <Q>ma sha Allah, love this. one-off or you building a system behind it?</Q>
+            <Q>allahumma baarik — this is the kind of consistency that transfers to anything you touch</Q>
           </div>
         ),
       },
