@@ -580,7 +580,16 @@ function Index() {
       const h = window.location.hash.slice(1);
       if (!h) return;
       const el = document.getElementById(h);
-      if (el) setTimeout(() => jumpToEl(el), 80);
+      if (el) {
+        setTimeout(() => {
+          jumpToEl(el);
+          el.classList.remove("card-focus-flash");
+          // reflow to restart animation if same hash re-triggered
+          void (el as HTMLElement).offsetWidth;
+          el.classList.add("card-focus-flash");
+          setTimeout(() => el.classList.remove("card-focus-flash"), 2600);
+        }, 80);
+      }
     };
     // wait a tick for canvas to mount
     setTimeout(handleHash, 200);

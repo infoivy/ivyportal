@@ -114,6 +114,17 @@
   box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.7), 0 4px 12px rgba(0,0,0,0.06);
 }
 
+/* Deep-link highlight: pulse a ring around a card/section when opened via URL hash */
+@keyframes card-focus-pulse {
+  0%   { box-shadow: 0 0 0 0px rgba(250, 204, 21, 0.0), 0 4px 12px rgba(0,0,0,0.06); }
+  15%  { box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.9), 0 4px 16px rgba(0,0,0,0.10); }
+  100% { box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.0), 0 4px 12px rgba(0,0,0,0.00); }
+}
+.card-focus-flash {
+  animation: card-focus-pulse 2.4s ease-out 1;
+  border-radius: 0.5rem;
+}
+
 /* Hide native scrollbars on mobile pill row */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { scrollbar-width: none; }
