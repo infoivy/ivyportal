@@ -255,7 +255,7 @@ function SectionHeading({ id, color, text }: { id: TabId; color: string; text: s
   );
 }
 
-function Card({ cardId, color, title, subtitle, children, matchQuery }: { cardId: string; color: string; title: string; subtitle?: string; children: React.ReactNode; matchQuery: string }) {
+function Card({ cardId, color, title, subtitle, children, matchQuery, wide }: { cardId: string; color: string; title: string; subtitle?: string; children: React.ReactNode; matchQuery: string; wide?: boolean }) {
   const bodyRef = useRef<HTMLDivElement | null>(null);
   const [matches, setMatches] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
