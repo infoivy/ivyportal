@@ -494,11 +494,6 @@ function Index() {
     const next = clampCanvasPosition(state.positionX + deltaX, state.positionY + deltaY, scale);
     w.setTransform(next.x, next.y, scale, 500, "easeOutCubic");
   }, [clampCanvasPosition]);
-    const deltaX = targetLeft - elRect.left;
-    const deltaY = targetTop - elRect.top;
-    const next = clampCanvasPosition(state.positionX + deltaX, state.positionY + deltaY, scale);
-    w.setTransform(next.x, next.y, scale, 500, "easeOutCubic");
-  }, [clampCanvasPosition]);
 
   const jumpTo = useCallback((id: TabId) => {
     const el = document.getElementById(`sec-${id}`);
