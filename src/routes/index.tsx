@@ -543,21 +543,19 @@ function Index() {
     return () => el.removeEventListener("wheel", onWheel);
   }, [clampCanvasPosition]);
 
-  // Position canvas so first card sits just below the header on load
+  // Transform viewport sits BELOW the header — positions are viewport-relative
   const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
   const headerH = isMobile ? HEADER_HEIGHT_MOBILE : HEADER_HEIGHT_DESKTOP;
   const initScale = 0.55;
-  const initialPositionY = headerH + 8 - CANVAS_PAD_TOP * initScale;
+  const initialPositionY = 8 - CANVAS_PAD_TOP * initScale;
   const initialPositionX = 8 - CANVAS_PAD_LEFT * initScale;
 
-  // Reset view = 100% zoom, first card just below the header
+  // Reset view = 100% zoom, first card pinned to top-left of viewport
   const resetView = useCallback(() => {
     const w = wrapperRef.current;
     if (!w) return;
-    const isM = window.innerWidth < 640;
-    const hH = isM ? HEADER_HEIGHT_MOBILE : HEADER_HEIGHT_DESKTOP;
     const scale = 1;
-    const posY = hH + 8 - CANVAS_PAD_TOP * scale;
+    const posY = 8 - CANVAS_PAD_TOP * scale;
     const posX = 8 - CANVAS_PAD_LEFT * scale;
     const next = clampCanvasPosition(posX, posY, scale);
     w.setTransform(next.x, next.y, scale, 350, "easeOutCubic");
