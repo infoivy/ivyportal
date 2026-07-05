@@ -3,9 +3,24 @@ import type { Section } from "./content";
 const P = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
   <p className={`text-[13px] leading-relaxed text-foreground/90 ${className}`}>{children}</p>
 );
-const Q = ({ children }: { children: React.ReactNode }) => (
-  <p className="text-[13px] leading-relaxed italic text-foreground/80">“{children}”</p>
-);
+const Q = ({ children }: { children: React.ReactNode }) => {
+  const text = typeof children === "string" ? children : String(children);
+  const copy = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const el = (e.currentTarget.parentElement?.querySelector("[data-quote]") as HTMLElement | null);
+    const txt = el?.innerText || text;
+    navigator.clipboard?.writeText(txt);
+    const btn = e.currentTarget;
+    const prev = btn.innerText;
+    btn.innerText = "Copied";
+    setTimeout(() => { btn.innerText = prev; }, 1200);
+  };
+  return (
+    <div className="group relative flex items-start gap-1.5">
+      <p data-quote className="text-[13px] leading-relaxed italic text-foreground/80 flex-1">“{children}”</p>
+      <button onClick={copy} className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded border border-border bg-white flex-shrink-0" title="Copy script">Copy</button>
+    </div>
+  );
+};
 const H = ({ children }: { children: React.ReactNode }) => (
   <p className="text-[12px] font-semibold uppercase tracking-wide text-foreground mt-3 first:mt-0">{children}</p>
 );
