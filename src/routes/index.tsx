@@ -495,7 +495,11 @@ function Index() {
   const [headerH, setHeaderH] = useState(HEADER_HEIGHT_DESKTOP);
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
-  const [dark, setDark] = useState(false);
+  const [dark, setDark] = useState(() => {
+    if (typeof localStorage === "undefined") return true;
+    const v = localStorage.getItem("isa:dark");
+    return v === null ? true : v === "1";
+  });
   const [notesOpen, setNotesOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [counter, setCounterState] = useState<Counter>(() => loadCounter());
