@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 export type TabId =
   | "stages" | "inbound" | "outbound" | "story" | "conv" | "dmclose"
-  | "objections" | "psych" | "engage" | "lang" | "frame" | "pacing";
+  | "psych" | "engage" | "pacing";
 
 export const TABS: { id: TabId; label: string; color: string }[] = [
   { id: "stages", label: "The 8 Stages", color: "var(--tab-stages)" },
@@ -10,13 +10,10 @@ export const TABS: { id: TabId; label: string; color: string }[] = [
   { id: "outbound", label: "Outbound Openers", color: "var(--tab-outbound)" },
   { id: "story", label: "Story Replies", color: "var(--tab-story)" },
   { id: "conv", label: "Outbound Conv. Flow", color: "var(--tab-conv)" },
-  { id: "dmclose", label: "DM Close", color: "var(--tab-dmclose)" },
-  { id: "objections", label: "Objections", color: "var(--tab-objections)" },
+  { id: "dmclose", label: "DM Close & Objections", color: "var(--tab-dmclose)" },
   { id: "psych", label: "Psychology", color: "var(--tab-psych)" },
   { id: "engage", label: "Engagement", color: "var(--tab-engage)" },
-  { id: "lang", label: "Language & Tone", color: "var(--tab-lang)" },
-  { id: "frame", label: "Frameworks", color: "var(--tab-frame)" },
-  { id: "pacing", label: "Pacing & Ops", color: "var(--tab-pacing)" },
+  { id: "pacing", label: "Tracking & Ops", color: "var(--tab-pacing)" },
 ];
 
 export type Card = {
