@@ -451,7 +451,7 @@ export const SECTIONS: Section[] = [
           <div className="space-y-2">
             <UL items={[
               "\"hey\" / \"hi\" / \"hello\"",
-              "\"thanks for the follow\"",
+              "\"thanks for the follow\" as a standalone statement (a fresh-follow opener that ENDS WITH A QUESTION is allowed, see Who to DM)",
               "\"I checked your page\"",
               "\"what's been holding you back?\"",
               "\"do you want to make money online?\"",
@@ -495,6 +495,10 @@ export const SECTIONS: Section[] = [
         subtitle: "Prospecting targets",
         body: (
           <div className="space-y-2">
+            <H>NEW FOLLOWER PLAYS:</H>
+            <P><b>1. Followed in last 24-48h, no other action:</b> <Q>as-salamu alaykum, appreciate the follow. out of curiosity, what made you hit follow?</Q></P>
+            <P><b>2. Older follower, never engaged:</b> do NOT mention the follow. 30-sec profile check, use an approved opener from this section.</P>
+            <P><b>3. Follower who engaged (comment, story reply, "path"):</b> switch to Inbound Flow.</P>
             <H>Today:</H>
             <UL items={[
               "Liked/commented on ISA content in last 24h",
