@@ -606,16 +606,30 @@ function Index() {
   const [headerH, setHeaderH] = useState(HEADER_HEIGHT_DESKTOP);
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
-  const [dark, setDark] = useState(() => {
-    if (typeof localStorage === "undefined") return true;
-    const v = localStorage.getItem("isa:dark");
-    return v === null ? true : v === "1";
-  });
+  const [dark, setDark] = useState(true);
   const [notesOpen, setNotesOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
-  const [counter, setCounterState] = useState<Counter>(() => loadCounter());
+  const [counter, setCounterState] = useState<Counter>(emptyCounter);
   const matched = useMemo(() => matchSections(deferredQuery), [deferredQuery]);
   const isMobile = useIsMobile();
+
+  // Rehydrate persisted preferences after SSR to avoid hydration mismatches
+  useEffect(() => {
+    if (typeof localStorage === "undefined") return;
+    try {
+      const saved = localStorage.getItem("isa:dark");
+      setDark(saved === null ? true : saved === "1");
+    } catch { /* ignore */ }
+    try {
+      const raw = localStorage.getItem("isa:counter");
+      if (raw) {
+        const parsed = JSON.parse(raw) as Partial<Counter>;
+        if (parsed.date === todayKey()) {
+          setCounterState({ ...emptyCounter(), ...parsed } as Counter);
+        }
+      }
+    } catch { /* ignore */ }
+  }, []);
 
   // Measure actual header height so the canvas is padded correctly at any zoom
   useEffect(() => {
