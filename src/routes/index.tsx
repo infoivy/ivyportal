@@ -318,7 +318,7 @@ function Card({ cardId, color, title, subtitle, children, matchQuery, wide }: { 
   }, [matchQuery, title, subtitle]);
 
   return (
-    <div id={cardId} className={`w-[280px] bg-card rounded-lg shadow-sm border border-border overflow-hidden flex flex-col ${matches ? "card-matched" : ""}`}>
+    <div id={cardId} className={`${wide ? "w-full" : "w-[280px]"} bg-card rounded-lg shadow-sm border border-border overflow-hidden flex flex-col ${matches ? "card-matched" : ""}`}>
       <div className="h-1" style={{ backgroundColor: color }} />
       <div className="p-4 flex-1 relative">
         <div className="flex items-start justify-between gap-2">
