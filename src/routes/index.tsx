@@ -486,8 +486,14 @@ function Index() {
     const scale = state.scale;
     const elRect = el.getBoundingClientRect();
     const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
+    const headerH = isMobile ? HEADER_HEIGHT_MOBILE : HEADER_HEIGHT_DESKTOP;
     const targetLeft = 20;
-    const targetTop = (isMobile ? HEADER_HEIGHT_MOBILE : HEADER_HEIGHT_DESKTOP) + 16;
+    const targetTop = headerH + 16;
+    const deltaX = targetLeft - elRect.left;
+    const deltaY = targetTop - elRect.top;
+    const next = clampCanvasPosition(state.positionX + deltaX, state.positionY + deltaY, scale);
+    w.setTransform(next.x, next.y, scale, 500, "easeOutCubic");
+  }, [clampCanvasPosition]);
     const deltaX = targetLeft - elRect.left;
     const deltaY = targetTop - elRect.top;
     const next = clampCanvasPosition(state.positionX + deltaX, state.positionY + deltaY, scale);
