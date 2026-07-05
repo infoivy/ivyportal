@@ -630,7 +630,7 @@ function Index() {
     const fallback = { scale: initScale, x: 8 - CANVAS_PAD_LEFT * initScale, y: 8 - CANVAS_PAD_TOP * initScale };
     if (typeof localStorage === "undefined") return fallback;
     try {
-      const raw = localStorage.getItem("isa:view");
+      const raw = localStorage.getItem("isa:view:v2");
       if (!raw) return fallback;
       const p = JSON.parse(raw) as { scale?: number; x?: number; y?: number };
       if (typeof p.scale === "number" && typeof p.x === "number" && typeof p.y === "number") {
@@ -647,7 +647,7 @@ function Index() {
     persistTimer.current = setTimeout(() => {
       try {
         const { scale, positionX, positionY } = ref.state;
-        localStorage.setItem("isa:view", JSON.stringify({ scale, x: positionX, y: positionY }));
+        localStorage.setItem("isa:view:v2", JSON.stringify({ scale, x: positionX, y: positionY }));
       } catch { /* ignore */ }
     }, 250);
   }, []);
