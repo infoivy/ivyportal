@@ -731,29 +731,39 @@ function Index() {
 
   return (
     <div ref={containerRef} className="fixed inset-0 overflow-hidden bg-background">
-      <TransformWrapper
-        ref={wrapperRef}
-        initialScale={initialView.scale}
-        initialPositionX={initialView.x}
-        initialPositionY={initialView.y}
-        minScale={0.35}
-        maxScale={2.5}
-        limitToBounds={true}
-        centerOnInit={false}
-        centerZoomedOut={false}
-        wheel={{ step: 0.06, activationKeys: ["Control", "Meta"], excluded: ["textarea", "input", "isa-modal"] }}
-        pinch={{ excluded: ["textarea", "input", "isa-modal"] }}
-        doubleClick={{ disabled: true }}
-        panning={{ velocityDisabled: true, excluded: ["textarea", "input", "isa-modal"] }}
-        onTransform={persistView}
+      {/* Zoom/pan canvas — clipped inside a container that starts BELOW the header.
+          Header, rail, toolbar, and modals live OUTSIDE this wrapper so no
+          transform/stacking-context can trap them below the header. */}
+      <div
+        className="absolute left-0 right-0 bottom-0 overflow-hidden"
+        style={{ top: headerH + 16 }}
       >
-        <Header onJump={jumpTo} query={query} setQuery={setQuery} />
-        <SectionRail onJump={jumpTo} />
-        <TransformComponent wrapperStyle={{ position: "absolute", top: headerH + 16, left: 0, right: 0, bottom: 0, width: "auto", height: "auto", overflow: "hidden" }}>
-          <Canvas matched={matched} query={deferredQuery} />
-        </TransformComponent>
-        <Toolbar dark={dark} setDark={setDark} onNotes={() => setNotesOpen(true)} counter={counter} setCounter={setCounter} onReset={resetView} onHelp={() => setHelpOpen(true)} />
-      </TransformWrapper>
+        <TransformWrapper
+          ref={wrapperRef}
+          initialScale={initialView.scale}
+          initialPositionX={initialView.x}
+          initialPositionY={initialView.y}
+          minScale={0.35}
+          maxScale={2.5}
+          limitToBounds={true}
+          centerOnInit={false}
+          centerZoomedOut={false}
+          wheel={{ step: 0.06, activationKeys: ["Control", "Meta"], excluded: ["textarea", "input", "isa-modal"] }}
+          pinch={{ excluded: ["textarea", "input", "isa-modal"] }}
+          doubleClick={{ disabled: true }}
+          panning={{ velocityDisabled: true, excluded: ["textarea", "input", "isa-modal"] }}
+          onTransform={persistView}
+        >
+          <TransformComponent wrapperStyle={{ width: "100%", height: "100%", overflow: "hidden" }}>
+            <Canvas matched={matched} query={deferredQuery} />
+          </TransformComponent>
+        </TransformWrapper>
+      </div>
+
+      {/* Fixed overlays — siblings of the canvas, always on top */}
+      <Header innerRef={headerRef} onJump={jumpTo} query={query} setQuery={setQuery} />
+      <SectionRail onJump={jumpTo} />
+      <Toolbar dark={dark} setDark={setDark} onNotes={() => setNotesOpen(true)} counter={counter} setCounter={setCounter} onReset={resetView} onHelp={() => setHelpOpen(true)} />
       <NotesModal open={notesOpen} onClose={() => setNotesOpen(false)} counter={counter} />
       <HelpOverlay open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
