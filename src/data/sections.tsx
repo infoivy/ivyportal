@@ -1,7 +1,7 @@
 import type { Section } from "./content";
 
 const P = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <p className={`text-[13px] leading-relaxed text-foreground/90 ${className}`}>{children}</p>
+  <div className={`text-[13px] leading-relaxed text-foreground/90 ${className}`}>{children}</div>
 );
 
 // Script block — subtle shaded background flags this as copy-pasteable
