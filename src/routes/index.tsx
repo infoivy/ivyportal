@@ -741,7 +741,7 @@ function Index() {
 
       {/* Fixed overlays — siblings of the canvas, always on top */}
       <Header innerRef={headerRef} onJump={jumpTo} query={query} setQuery={setQuery} />
-      <NotesModal open={notesOpen} onClose={() => setNotesOpen(false)} counter={counter} />
+      <NotesModal open={notesOpen} onClose={() => setNotesOpen(false)} counter={counter} setCounter={setCounter} />
       <HelpOverlay open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
   );
