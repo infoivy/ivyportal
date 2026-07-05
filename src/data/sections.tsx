@@ -3,11 +3,12 @@ import type { Section } from "./content";
 const P = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
   <p className={`text-[13px] leading-relaxed text-foreground/90 ${className}`}>{children}</p>
 );
-const Q = ({ children }: { children: React.ReactNode }) => {
-  const text = typeof children === "string" ? children : String(children);
+
+// Script block — subtle shaded background flags this as copy-pasteable
+export const Q = ({ children, label }: { children: React.ReactNode; label?: string }) => {
   const copy = (e: React.MouseEvent<HTMLButtonElement>) => {
     const el = (e.currentTarget.parentElement?.querySelector("[data-quote]") as HTMLElement | null);
-    const txt = el?.innerText || text;
+    const txt = el?.innerText || (typeof children === "string" ? children : String(children));
     navigator.clipboard?.writeText(txt);
     const btn = e.currentTarget;
     const prev = btn.innerText;
@@ -15,12 +16,14 @@ const Q = ({ children }: { children: React.ReactNode }) => {
     setTimeout(() => { btn.innerText = prev; }, 1200);
   };
   return (
-    <div className="group relative flex items-start gap-1.5">
-      <p data-quote className="text-[13px] leading-relaxed italic text-foreground/80 flex-1">“{children}”</p>
-      <button onClick={copy} className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded border border-border bg-white flex-shrink-0" title="Copy script">Copy</button>
+    <div className="script-block my-1.5 relative rounded-md border-l-2 pl-3 pr-14 py-1.5" data-script>
+      {label && <span className="inline-block text-[9px] font-bold uppercase tracking-wider text-muted-foreground mr-1.5 align-middle">{label}</span>}
+      <span data-quote className="text-[13px] leading-relaxed text-foreground/85">{children}</span>
+      <button onClick={copy} className="absolute right-1 top-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded border border-border/60 bg-background/70 opacity-70 hover:opacity-100 transition" title="Copy script">Copy</button>
     </div>
   );
 };
+
 const H = ({ children }: { children: React.ReactNode }) => (
   <p className="text-[12px] font-semibold uppercase tracking-wide text-foreground mt-3 first:mt-0">{children}</p>
 );
@@ -29,6 +32,7 @@ const UL = ({ items }: { items: string[] }) => (
     {items.map((i, k) => <li key={k}>{i}</li>)}
   </ul>
 );
+
 
 const NumStep = ({ n, title, sub, color = "var(--tab-stages)" }: { n: number; title: string; sub: string; color?: string }) => (
   <div className="flex gap-3 items-start">
@@ -224,8 +228,8 @@ export const SECTIONS: Section[] = [
             <Q>here's the calendar: [calendly link]. ping me when booked so i can confirm on my end.</Q>
             <Q>perfect, you're locked in! come with your real questions, bring the doubts too. talk soon insha'Allah.</Q>
             <H>Follow-ups:</H>
-            <P>24h: “hey did you get a chance to check the calendar?”</P>
-            <P>48h: “just checking in, any time work this week?”</P>
+            <Q label="24h">hey did you get a chance to check the calendar?</Q>
+            <Q label="48h">just checking in, any time work this week?</Q>
             <P>After: story nurture, stop chasing beyond 3 attempts.</P>
             <P className="pt-1"><b>“If you give me permission” = power + humility. Impossible to refuse.</b></P>
           </div>
@@ -711,8 +715,8 @@ export const SECTIONS: Section[] = [
             <H>Day before:</H>
             <Q>all set for tomorrow insha'Allah?</Q>
             <H>If not booked:</H>
-            <P>24h: “hey, did you get a chance to check the calendar?”</P>
-            <P>48h: “[Name]! just curious if you found a time that works”</P>
+            <Q label="24h">hey, did you get a chance to check the calendar?</Q>
+            <Q label="48h">[Name]! just curious if you found a time that works</Q>
             <P>72h+: stop chasing, story engagement only.</P>
             <P>Keep engaging their stories even after booking. Goal: they feel like they already know you before the call.</P>
           </div>
@@ -919,11 +923,11 @@ export const SECTIONS: Section[] = [
         subtitle: "30-day rhythm",
         body: (
           <div className="space-y-1 text-[13px]">
-            <P><b>Day 1:</b> React to story, no pitch</P>
-            <P><b>Day 3:</b> Reply to story with a genuine comment</P>
-            <P><b>Day 7:</b> Send relevant content: “saw this and thought of your situation”</P>
-            <P><b>Day 14:</b> Direct check-in: “hey, how's things going with [situation]?”</P>
-            <P><b>Day 30:</b> If timing fits: “things have moved on our end, might be worth a conversation now”</P>
+            <Q label="Day 1">react to story, no pitch (no message sent)</Q>
+            <Q label="Day 3">reply to story with a genuine comment</Q>
+            <Q label="Day 7">saw this and thought of your situation [send relevant content]</Q>
+            <Q label="Day 14">hey, how's things going with [their situation]?</Q>
+            <Q label="Day 30">things have moved on our end, might be worth a conversation now</Q>
           </div>
         ),
       },
