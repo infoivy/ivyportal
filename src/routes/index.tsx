@@ -654,8 +654,6 @@ function Index() {
   }, [clampCanvasPosition]);
 
   // Transform viewport sits BELOW the header — positions are viewport-relative
-  const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
-  const headerH = isMobile ? HEADER_HEIGHT_MOBILE : HEADER_HEIGHT_DESKTOP;
   const initScale = 0.55;
   // Restore last-view (localStorage) or fall back to top-left
   const initialView = useMemo(() => {
