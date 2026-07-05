@@ -313,7 +313,7 @@ function Canvas({ matched, query }: { matched: Set<TabId> | null; query: string 
               style={{ opacity: dim ? 0.2 : 1, transition: "opacity 200ms" }}
             >
               <SectionHeading id={section.id} color={section.color} text={section.heading} />
-              <div className="flex flex-wrap gap-4 items-start">
+              <div className="flex flex-nowrap gap-4 items-start w-max">
                 {section.cards.map((c, i) => (
                   <Card key={i} cardId={`card-${section.id}-${i}`} color={section.color} title={c.title} subtitle={c.subtitle} matchQuery={query}>{c.body}</Card>
                 ))}
