@@ -563,7 +563,7 @@ const MobileView = React.memo(function MobileView({ matched, query, headerH }: {
       </div>
     </div>
   );
-}
+});
 
 function MobileToolbar({ dark, setDark, onNotes, counter, setCounter, onHelp }: { dark: boolean; setDark: (v: boolean) => void; onNotes: () => void; counter: Counter; setCounter: (c: Counter) => void; onHelp: () => void }) {
   const bump = (k: keyof Omit<Counter, "date">, d: number) => {
