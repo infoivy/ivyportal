@@ -539,7 +539,7 @@ function Index() {
         initialPositionY={initialPositionY}
         minScale={0.35}
         maxScale={2.5}
-        limitToBounds={false}
+        limitToBounds={true}
         centerOnInit={false}
         centerZoomedOut={false}
         wheel={{ step: 0.06, activationKeys: ["Control", "Meta"], excluded: ["textarea", "input", "isa-modal"] }}
