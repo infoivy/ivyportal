@@ -316,12 +316,86 @@ function Canvas({ matched, query }: { matched: Set<TabId> | null; query: string 
               <SectionHeading id={section.id} color={section.color} text={section.heading} />
               <div className="flex flex-nowrap gap-4 items-start w-max">
                 {section.cards.map((c, i) => (
-                  <Card key={i} cardId={`card-${section.id}-${i}`} color={section.color} title={c.title} subtitle={c.subtitle} matchQuery={query}>{c.body}</Card>
+                  <Card key={i} cardId={`card-${section.id}-${i}`} color={section.color} title={c.title} subtitle={c.subtitle} matchQuery={dim ? "" : query}>{c.body}</Card>
                 ))}
               </div>
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+function SectionRail({ onJump }: { onJump: (id: TabId) => void }) {
+  const [active, setActive] = useState<TabId | null>(null);
+  useEffect(() => {
+    const onScroll = () => {
+      let best: TabId | null = null;
+      let bestDist = Infinity;
+      const viewportTop = (window.innerWidth < 640 ? HEADER_HEIGHT_MOBILE : HEADER_HEIGHT_DESKTOP) + 40;
+      for (const s of SECTIONS) {
+        const el = document.getElementById(`sec-${s.id}`);
+        if (!el) continue;
+        const d = Math.abs(el.getBoundingClientRect().top - viewportTop);
+        if (d < bestDist) { bestDist = d; best = s.id; }
+      }
+      if (best) setActive(best);
+    };
+    const t = setInterval(onScroll, 400);
+    return () => clearInterval(t);
+  }, []);
+  return (
+    <div className="hidden sm:flex fixed left-2 top-1/2 -translate-y-1/2 z-40 flex-col gap-2 bg-background/80 backdrop-blur-sm border border-border/60 rounded-full py-2 px-1.5">
+      {SECTIONS.map(s => (
+        <button
+          key={s.id}
+          onClick={() => onJump(s.id)}
+          className="group relative w-4 h-4 flex items-center justify-center"
+          title={s.heading}
+        >
+          <span
+            className="rounded-full transition-all"
+            style={{
+              backgroundColor: s.color,
+              width: active === s.id ? 10 : 6,
+              height: active === s.id ? 10 : 6,
+              opacity: active === s.id ? 1 : 0.55,
+            }}
+          />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function HelpOverlay({ open, onClose }: { open: boolean; onClose: () => void }) {
+  if (!open) return null;
+  const rows: [string, string][] = [
+    ["/", "Focus search"],
+    ["?", "Toggle this help"],
+    ["R", "Reset view (100%, top-left)"],
+    ["Esc", "Clear search / close modals"],
+    ["Ctrl / ⌘ + wheel", "Zoom canvas"],
+    ["Two-finger drag", "Pan canvas"],
+  ];
+  return (
+    <div className="isa-modal fixed inset-0 z-[70] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose} data-no-canvas-scroll>
+      <div className="isa-modal bg-card border border-border rounded-lg shadow-2xl w-full max-w-sm" onClick={e => e.stopPropagation()} data-no-canvas-scroll>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+          <h3 className="text-sm font-bold">Keyboard shortcuts</h3>
+          <button onClick={onClose} className="w-7 h-7 rounded hover:bg-muted flex items-center justify-center text-muted-foreground" title="Close">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div className="p-4 space-y-2">
+          {rows.map(([k, label]) => (
+            <div key={k} className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">{label}</span>
+              <kbd className="px-2 py-0.5 rounded border border-border bg-muted/60 font-mono text-[11px]">{k}</kbd>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
