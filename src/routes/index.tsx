@@ -554,6 +554,7 @@ function Index() {
   useEffect(() => {
     if (typeof document === "undefined") return;
     document.documentElement.classList.toggle("dark", dark);
+    try { localStorage.setItem("isa:dark", dark ? "1" : "0"); } catch { /* ignore */ }
   }, [dark]);
 
   const jumpToEl = useCallback((el: HTMLElement) => {
