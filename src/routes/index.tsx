@@ -15,13 +15,8 @@ export const Route = createFileRoute("/")({
 });
 
 function Toolbar() {
-  const { zoomIn, zoomOut, resetTransform, instance } = useControls();
+  const { zoomIn, zoomOut, resetTransform } = useControls();
   const [pct, setPct] = useState(55);
-  // update percentage on transform
-  if (instance?.transformState) {
-    const s = Math.round(instance.transformState.scale * 100);
-    if (s !== pct) setTimeout(() => setPct(s), 0);
-  }
   return (
     <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-white border border-border rounded-full shadow-lg px-2 py-1.5">
       <button className="w-8 h-8 rounded-full hover:bg-muted flex items-center justify-center" title="Select">
