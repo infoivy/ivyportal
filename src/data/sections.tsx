@@ -626,9 +626,9 @@ export const SECTIONS: Section[] = [
         subtitle: "When discipline is visible",
         body: (
           <div className="space-y-1.5">
-            <Q>this is the part most guys skip, then wonder why nothing else in their life holds together</Q>
-            <Q>the discipline is clearly there. the only question is what you're pointing it at</Q>
-            <Q>you already live harder than most jobs would ever ask of you lol, that's the raw material right there</Q>
+            <Q>allahumma baarik, this is the part most guys skip, then wonder why nothing else in their life holds together</Q>
+            <Q>ma sha Allah the discipline is clearly there. the only question is what you're pointing it at</Q>
+            <Q>you already live harder than most jobs would ever ask of you lol — that's the raw material right there</Q>
           </div>
         ),
       },
