@@ -405,18 +405,24 @@ Next follow-up:
 
 Call outcome:`;
 
-const eodTemplate = (c: Counter, extra = "") => `EOD REPORT — ${c.date}
+const EOD_DEFAULT_BODY = `Wins:
+Losses / lessons:
+Objections seen today:
+Tomorrow's focus:`;
+
+const composeEod = (c: Counter, body: string) => `EOD REPORT — ${c.date}
 
 Followers contacted: ${c.contacted}
 Dials: ${c.dials}
 Sets: ${c.sets}
 Conversations: ${c.convos}
 
-Wins:
-Losses / lessons:
-Objections seen today:
-Tomorrow's focus:
-${extra ? "\nNotes:\n" + extra : ""}`;
+${body}`;
+
+const parseEodBody = (text: string, fallback: string) => {
+  const m = text.match(/Conversations:[^\n]*\n\n([\s\S]*)$/);
+  return m ? m[1] : fallback;
+};
 
 function NotesModal({ open, onClose, counter }: { open: boolean; onClose: () => void; counter: Counter }) {
   const [tab, setTab] = useState<"precall" | "eod">("precall");
