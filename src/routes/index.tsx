@@ -624,8 +624,32 @@ function Index() {
   const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
   const headerH = isMobile ? HEADER_HEIGHT_MOBILE : HEADER_HEIGHT_DESKTOP;
   const initScale = 0.55;
-  const initialPositionY = 8 - CANVAS_PAD_TOP * initScale;
-  const initialPositionX = 8 - CANVAS_PAD_LEFT * initScale;
+  // Restore last-view (localStorage) or fall back to top-left
+  const initialView = useMemo(() => {
+    const fallback = { scale: initScale, x: 8 - CANVAS_PAD_LEFT * initScale, y: 8 - CANVAS_PAD_TOP * initScale };
+    if (typeof localStorage === "undefined") return fallback;
+    try {
+      const raw = localStorage.getItem("isa:view");
+      if (!raw) return fallback;
+      const p = JSON.parse(raw) as { scale?: number; x?: number; y?: number };
+      if (typeof p.scale === "number" && typeof p.x === "number" && typeof p.y === "number") {
+        return { scale: p.scale, x: p.x, y: p.y };
+      }
+    } catch { /* ignore */ }
+    return fallback;
+  }, []);
+
+  // Persist view (throttled) whenever the transform changes
+  const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const persistView = useCallback((ref: ReactZoomPanPinchRef) => {
+    if (persistTimer.current) clearTimeout(persistTimer.current);
+    persistTimer.current = setTimeout(() => {
+      try {
+        const { scale, positionX, positionY } = ref.state;
+        localStorage.setItem("isa:view", JSON.stringify({ scale, x: positionX, y: positionY }));
+      } catch { /* ignore */ }
+    }, 250);
+  }, []);
 
   // Reset view = 100% zoom, first card pinned to top-left of viewport
   const resetView = useCallback(() => {
@@ -638,13 +662,33 @@ function Index() {
     w.setTransform(next.x, next.y, scale, 350, "easeOutCubic");
   }, [clampCanvasPosition]);
 
+  // Keyboard shortcuts: /, ?, R, Esc
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      const inField = !!t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable);
+      if (e.key === "Escape") {
+        if (helpOpen) { setHelpOpen(false); return; }
+        if (notesOpen) { setNotesOpen(false); return; }
+        if (query) { setQuery(""); (document.getElementById("isa-search") as HTMLInputElement | null)?.blur(); return; }
+        return;
+      }
+      if (inField) return;
+      if (e.key === "/") { e.preventDefault(); (document.getElementById("isa-search") as HTMLInputElement | null)?.focus(); return; }
+      if (e.key === "?" ) { e.preventDefault(); setHelpOpen(v => !v); return; }
+      if (e.key === "r" || e.key === "R") { e.preventDefault(); resetView(); return; }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [helpOpen, notesOpen, query, resetView]);
+
   return (
     <div ref={containerRef} className="fixed inset-0 overflow-hidden bg-background">
       <TransformWrapper
         ref={wrapperRef}
-        initialScale={initScale}
-        initialPositionX={initialPositionX}
-        initialPositionY={initialPositionY}
+        initialScale={initialView.scale}
+        initialPositionX={initialView.x}
+        initialPositionY={initialView.y}
         minScale={0.35}
         maxScale={2.5}
         limitToBounds={true}
@@ -654,14 +698,17 @@ function Index() {
         pinch={{ excluded: ["textarea", "input", "isa-modal"] }}
         doubleClick={{ disabled: true }}
         panning={{ velocityDisabled: true, excluded: ["textarea", "input", "isa-modal"] }}
+        onTransformed={persistView}
       >
         <Header onJump={jumpTo} query={query} setQuery={setQuery} />
+        <SectionRail onJump={jumpTo} />
         <TransformComponent wrapperStyle={{ position: "absolute", top: headerH, left: 0, right: 0, bottom: 0, width: "auto", height: "auto" }}>
-          <Canvas matched={matched} query={query} />
+          <Canvas matched={matched} query={deferredQuery} />
         </TransformComponent>
-        <Toolbar dark={dark} setDark={setDark} onNotes={() => setNotesOpen(true)} counter={counter} setCounter={setCounter} onReset={resetView} />
+        <Toolbar dark={dark} setDark={setDark} onNotes={() => setNotesOpen(true)} counter={counter} setCounter={setCounter} onReset={resetView} onHelp={() => setHelpOpen(true)} />
       </TransformWrapper>
       <NotesModal open={notesOpen} onClose={() => setNotesOpen(false)} counter={counter} />
+      <HelpOverlay open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
   );
 }
