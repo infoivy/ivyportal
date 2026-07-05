@@ -491,11 +491,16 @@ function Index() {
   }, [jumpToEl]);
 
   // Trackpad two-finger scroll → pan the canvas. Ctrl/Cmd/pinch → zoom (library handles).
+  // Ignore wheel events originating inside a modal or scrollable UI element.
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     const onWheel = (e: WheelEvent) => {
-      if (e.ctrlKey || e.metaKey) return;
+      const target = e.target as HTMLElement | null;
+      // Let the browser handle wheel inside modals, scrollable inputs, etc.
+      if (target && target.closest("[data-no-canvas-scroll], textarea, .isa-modal")) return;
+      // Block browser page-zoom on Ctrl/Cmd+wheel — let the library zoom the canvas instead
+      if (e.ctrlKey || e.metaKey) { e.preventDefault(); return; }
       const w = wrapperRef.current;
       if (!w) return;
       e.preventDefault();
@@ -513,6 +518,18 @@ function Index() {
   const initialPositionY = headerH + 8 - CANVAS_PAD_TOP * initScale;
   const initialPositionX = 8 - CANVAS_PAD_LEFT * initScale;
 
+  // Reset view = 100% zoom, first card just below the header
+  const resetView = useCallback(() => {
+    const w = wrapperRef.current;
+    if (!w) return;
+    const isM = window.innerWidth < 640;
+    const hH = isM ? HEADER_HEIGHT_MOBILE : HEADER_HEIGHT_DESKTOP;
+    const scale = 1;
+    const posY = hH + 8 - CANVAS_PAD_TOP * scale;
+    const posX = 8 - CANVAS_PAD_LEFT * scale;
+    w.setTransform(posX, posY, scale, 350, "easeOutCubic");
+  }, []);
+
   return (
     <div ref={containerRef} className="fixed inset-0 overflow-hidden bg-background">
       <TransformWrapper
@@ -525,17 +542,18 @@ function Index() {
         limitToBounds={false}
         centerOnInit={false}
         centerZoomedOut={false}
-        wheel={{ step: 0.06, activationKeys: ["Control", "Meta"] }}
+        wheel={{ step: 0.06, activationKeys: ["Control", "Meta"], excluded: ["textarea", "input", "isa-modal"] }}
+        pinch={{ excluded: ["textarea", "input", "isa-modal"] }}
         doubleClick={{ disabled: true }}
-        panning={{ velocityDisabled: true }}
+        panning={{ velocityDisabled: true, excluded: ["textarea", "input", "isa-modal"] }}
       >
         <Header onJump={jumpTo} query={query} setQuery={setQuery} />
         <TransformComponent wrapperStyle={{ width: "100%", height: "100%" }}>
           <Canvas matched={matched} query={query} />
         </TransformComponent>
-        <Toolbar dark={dark} setDark={setDark} onNotes={() => setNotesOpen(true)} counter={counter} setCounter={setCounter} />
+        <Toolbar dark={dark} setDark={setDark} onNotes={() => setNotesOpen(true)} counter={counter} setCounter={setCounter} onReset={resetView} />
       </TransformWrapper>
-      <NotesModal open={notesOpen} onClose={() => setNotesOpen(false)} />
+      <NotesModal open={notesOpen} onClose={() => setNotesOpen(false)} counter={counter} />
     </div>
   );
 }
