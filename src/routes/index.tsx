@@ -3,6 +3,7 @@ import { TransformWrapper, TransformComponent, useControls, useTransformEffect, 
 import { useRef, useState, useEffect, useCallback, useMemo, useDeferredValue } from "react";
 import { TABS, type TabId } from "@/data/content";
 import { SECTIONS } from "@/data/sections";
+import { useIsMobile } from "@/hooks/use-mobile";
 import logoAsset from "@/assets/isa-logo.png.asset.json";
 
 export const Route = createFileRoute("/")({
@@ -254,7 +255,7 @@ function SectionHeading({ id, color, text }: { id: TabId; color: string; text: s
   );
 }
 
-function Card({ cardId, color, title, subtitle, children, matchQuery }: { cardId: string; color: string; title: string; subtitle?: string; children: React.ReactNode; matchQuery: string }) {
+function Card({ cardId, color, title, subtitle, children, matchQuery, wide }: { cardId: string; color: string; title: string; subtitle?: string; children: React.ReactNode; matchQuery: string; wide?: boolean }) {
   const bodyRef = useRef<HTMLDivElement | null>(null);
   const [matches, setMatches] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
@@ -317,7 +318,7 @@ function Card({ cardId, color, title, subtitle, children, matchQuery }: { cardId
   }, [matchQuery, title, subtitle]);
 
   return (
-    <div id={cardId} className={`w-[280px] bg-card rounded-lg shadow-sm border border-border overflow-hidden flex flex-col ${matches ? "card-matched" : ""}`}>
+    <div id={cardId} className={`${wide ? "w-full" : "w-[280px]"} bg-card rounded-lg shadow-sm border border-border overflow-hidden flex flex-col ${matches ? "card-matched" : ""}`}>
       <div className="h-1" style={{ backgroundColor: color }} />
       <div className="p-4 flex-1 relative">
         <div className="flex items-start justify-between gap-2">
@@ -507,6 +508,97 @@ function NotesModal({ open, onClose, counter, setCounter }: { open: boolean; onC
   );
 }
 
+function MobileView({ matched, query, headerH }: { matched: Set<TabId> | null; query: string; headerH: number }) {
+  return (
+    <div className="min-h-screen bg-background pb-24" style={{ paddingTop: headerH + 8 }}>
+      <div className="px-3 space-y-6">
+        {SECTIONS.map(section => {
+          const dim = matched && !matched.has(section.id);
+          return (
+            <section
+              key={section.id}
+              id={`sec-${section.id}`}
+              data-section={section.id}
+              className="scroll-mt-4"
+              style={{ opacity: dim ? 0.35 : 1, transition: "opacity 200ms" }}
+            >
+              <div className="flex items-center gap-2 mb-3 sticky z-10 bg-background/95 backdrop-blur-sm py-2 -mx-3 px-3 border-b border-border" style={{ top: headerH }}>
+                <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: section.color }} />
+                <h2 className="text-[12px] font-bold uppercase tracking-wider text-foreground truncate">{section.heading}</h2>
+              </div>
+              <div className="flex flex-col gap-3">
+                {section.cards.map((c, i) => (
+                  <Card
+                    key={i}
+                    cardId={`card-${section.id}-${i}`}
+                    color={section.color}
+                    title={c.title}
+                    subtitle={c.subtitle}
+                    matchQuery={dim ? "" : query}
+                    wide
+                  >{c.body}</Card>
+                ))}
+              </div>
+            </section>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function MobileToolbar({ dark, setDark, onNotes, counter, setCounter, onHelp }: { dark: boolean; setDark: (v: boolean) => void; onNotes: () => void; counter: Counter; setCounter: (c: Counter) => void; onHelp: () => void }) {
+  const bump = (k: keyof Omit<Counter, "date">, d: number) => {
+    setCounter({ ...counter, [k]: Math.max(0, counter[k] + d) });
+  };
+  return (
+    <div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-background border border-border rounded-full shadow-lg px-2 py-1.5 max-w-[calc(100vw-16px)] overflow-x-auto no-scrollbar">
+      {COUNTER_FIELDS.map(({ key, label, full }) => (
+        <div key={key} className="flex items-center h-8 shrink-0 rounded-full bg-muted/60 pl-1.5 pr-1 gap-1" title={full}>
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{label}</span>
+          <button onClick={() => bump(key, -1)} className="w-5 h-5 rounded-full bg-background flex items-center justify-center text-xs font-bold">−</button>
+          <input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={counter[key]}
+            onFocus={e => e.currentTarget.select()}
+            onChange={e => {
+              const n = parseInt(e.target.value.replace(/\D/g, ""), 10);
+              setCounter({ ...counter, [key]: Number.isFinite(n) ? Math.max(0, n) : 0 });
+            }}
+            className="w-8 text-sm font-bold tabular-nums text-foreground text-center bg-transparent border-0 focus:outline-none focus:ring-1 focus:ring-ring rounded"
+            aria-label={full}
+          />
+          <button onClick={() => bump(key, 1)} className="w-5 h-5 rounded-full bg-background flex items-center justify-center text-xs font-bold">+</button>
+        </div>
+      ))}
+      <button
+        onClick={() => setCounter({ ...counter, contacted: 0, dials: 0, sets: 0, convos: 0 })}
+        className="w-8 h-8 shrink-0 rounded-full hover:bg-muted flex items-center justify-center text-muted-foreground"
+        title="Reset counters"
+      >
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+      </button>
+      <div className="w-px h-5 bg-border mx-1 shrink-0" />
+      <button onClick={onNotes} className="h-8 px-3 shrink-0 rounded-full hover:bg-muted flex items-center gap-1.5 text-xs font-semibold">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 3h9a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8l5-5z"/><path d="M9 3v5H4"/></svg>
+        Notes
+      </button>
+      <button onClick={onHelp} className="w-8 h-8 shrink-0 rounded-full hover:bg-muted flex items-center justify-center text-xs font-bold" title="Help">?</button>
+      <button onClick={() => setDark(!dark)} className="w-8 h-8 shrink-0 rounded-full hover:bg-muted flex items-center justify-center" title={dark ? "Light mode" : "Dark mode"}>
+        {dark ? (
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/></svg>
+        ) : (
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        )}
+      </button>
+    </div>
+  );
+}
+
+
+
 function Index() {
   const wrapperRef = useRef<ReactZoomPanPinchRef | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -523,6 +615,7 @@ function Index() {
   const [helpOpen, setHelpOpen] = useState(false);
   const [counter, setCounterState] = useState<Counter>(() => loadCounter());
   const matched = useMemo(() => matchSections(deferredQuery), [deferredQuery]);
+  const isMobile = useIsMobile();
 
   // Measure actual header height so the canvas is padded correctly at any zoom
   useEffect(() => {
@@ -591,10 +684,18 @@ function Index() {
     w.setTransform(next.x, next.y, scale, 500, "easeOutCubic");
   }, [clampCanvasPosition]);
 
+  const scrollToEl = useCallback((el: HTMLElement) => {
+    const hH = headerRef.current?.getBoundingClientRect().height ?? headerH;
+    const top = el.getBoundingClientRect().top + window.scrollY - hH - 12;
+    window.scrollTo({ top, behavior: "smooth" });
+  }, [headerH]);
+
   const jumpTo = useCallback((id: TabId) => {
     const el = document.getElementById(`sec-${id}`);
-    if (el) jumpToEl(el);
-  }, [jumpToEl]);
+    if (!el) return;
+    if (isMobile) scrollToEl(el);
+    else jumpToEl(el);
+  }, [isMobile, jumpToEl, scrollToEl]);
 
   useEffect(() => {
     if (matched && matched.size > 0) {
@@ -611,7 +712,8 @@ function Index() {
       const el = document.getElementById(h);
       if (el) {
         setTimeout(() => {
-          jumpToEl(el);
+          if (isMobile) scrollToEl(el);
+          else jumpToEl(el);
           el.classList.remove("card-focus-flash");
           // reflow to restart animation if same hash re-triggered
           void (el as HTMLElement).offsetWidth;
@@ -620,11 +722,10 @@ function Index() {
         }, 80);
       }
     };
-    // wait a tick for canvas to mount
     setTimeout(handleHash, 200);
     window.addEventListener("hashchange", handleHash);
     return () => window.removeEventListener("hashchange", handleHash);
-  }, [jumpToEl]);
+  }, [isMobile, jumpToEl, scrollToEl]);
 
   // Trackpad two-finger scroll → pan the canvas. Ctrl/Cmd/pinch → zoom (library handles).
   // Ignore wheel events originating inside a modal or scrollable UI element.
@@ -728,6 +829,18 @@ function Index() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [helpOpen, notesOpen, query, resetView]);
+
+  if (isMobile) {
+    return (
+      <div ref={containerRef} className="min-h-screen bg-background">
+        <MobileView matched={matched} query={deferredQuery} headerH={headerH} />
+        <Header innerRef={headerRef} onJump={jumpTo} query={query} setQuery={setQuery} />
+        <MobileToolbar dark={dark} setDark={setDark} onNotes={() => setNotesOpen(true)} counter={counter} setCounter={setCounter} onHelp={() => setHelpOpen(true)} />
+        <NotesModal open={notesOpen} onClose={() => setNotesOpen(false)} counter={counter} setCounter={setCounter} />
+        <HelpOverlay open={helpOpen} onClose={() => setHelpOpen(false)} />
+      </div>
+    );
+  }
 
   return (
     <div ref={containerRef} className="fixed inset-0 overflow-hidden bg-background">
