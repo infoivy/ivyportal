@@ -448,17 +448,20 @@ function Index() {
     const rect = container.getBoundingClientRect();
     const isM = rect.width < 640;
     const headerH = isM ? HEADER_HEIGHT_MOBILE : HEADER_HEIGHT_DESKTOP;
+    // Transform viewport starts BELOW the header, so gutters are viewport-relative
+    const viewportW = rect.width;
+    const viewportH = rect.height - headerH;
     const leftGutter = 8;
     const rightGutter = 8;
-    const topGutter = headerH + 8;
+    const topGutter = 8;
     const bottomGutter = 80;
     const scaledW = canvas.offsetWidth * scale;
     const scaledH = canvas.offsetHeight * scale;
 
     const maxX = leftGutter - CANVAS_PAD_LEFT * scale;
-    const minX = Math.min(maxX, rect.width - rightGutter - scaledW);
+    const minX = Math.min(maxX, viewportW - rightGutter - scaledW);
     const maxY = topGutter - CANVAS_PAD_TOP * scale;
-    const minY = Math.min(maxY, rect.height - bottomGutter - scaledH);
+    const minY = Math.min(maxY, viewportH - bottomGutter - scaledH);
 
     return {
       x: Math.min(maxX, Math.max(minX, x)),
