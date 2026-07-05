@@ -526,7 +526,7 @@ function NotesModal({ open, onClose, counter, setCounter }: { open: boolean; onC
   );
 }
 
-function MobileView({ matched, query, headerH }: { matched: Set<TabId> | null; query: string; headerH: number }) {
+const MobileView = React.memo(function MobileView({ matched, query, headerH }: { matched: Set<TabId> | null; query: string; headerH: number }) {
   return (
     <div className="min-h-screen bg-background pb-24" style={{ paddingTop: headerH + 8 }}>
       <div className="px-3 space-y-6">
