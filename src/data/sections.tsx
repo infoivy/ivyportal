@@ -6,14 +6,35 @@ const P = ({ children, className = "" }: { children: React.ReactNode; className?
 
 // Script block — subtle shaded background flags this as copy-pasteable
 export const Q = ({ children, label }: { children: React.ReactNode; label?: string }) => {
-  const copy = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const copy = async (e: React.MouseEvent<HTMLButtonElement>) => {
     const el = (e.currentTarget.parentElement?.querySelector("[data-quote]") as HTMLElement | null);
     const txt = el?.innerText || (typeof children === "string" ? children : String(children));
-    navigator.clipboard?.writeText(txt);
+    let ok = false;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(txt);
+        ok = true;
+      }
+    } catch {
+      // fallback to execCommand
+    }
+    if (!ok) {
+      const ta = document.createElement("textarea");
+      ta.value = txt;
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      try {
+        ok = document.execCommand("copy");
+      } catch {}
+      document.body.removeChild(ta);
+    }
     const btn = e.currentTarget;
     const prev = btn.innerText;
-    btn.innerText = "Copied";
-    setTimeout(() => { btn.innerText = prev; }, 1200);
+    btn.innerText = ok ? "Copied" : prev;
+    if (ok) setTimeout(() => { btn.innerText = prev; }, 1200);
   };
   return (
     <div className="script-block my-1.5 relative rounded-md border-l-2 pl-3 pr-14 py-1.5" data-script>
@@ -221,7 +242,7 @@ export const SECTIONS: Section[] = [
           <div className="space-y-2">
             <H>MONEY — frame VALUE and rizq:</H>
             <P>A skill comes with you everywhere, including after hijrah.</P>
-            <Q>it will help me a lot if you're comfortable sharing what you're working with right now, income and savings wise, so i can point you to the right path instead of guessing...</Q>
+            <Q>what are you working with right now, income and savings wise? i need to know so i can point you to the right path instead of guessing...</Q>
             <H>TIME — frame SPEED:</H>
             <P>Compress 6–12 months of trial and error into weeks.</P>
             <Q>knowing your schedule, would you say you want the full roadmap to work through yourself, or you want to move quick with someone reviewing your actual reps every week?</Q>
@@ -274,8 +295,8 @@ export const SECTIONS: Section[] = [
         subtitle: "Permission-based close, three flavors",
         body: (
           <div className="space-y-2">
-            <H>Default (permission close):</H>
-            <Q>let's have a proper chat so i can understand your full situation and show you exactly what the path looks like from where you're standing. if you give me permission to shoot over the calendly, i'll do it!</Q>
+            <H>Default (phone close):</H>
+            <Q>let's have a proper chat so i can understand your full situation and show you exactly what the path looks like from where you're standing. if you can drop your phone number in this chat, i'll have one of my team members reach out to you for a call!</Q>
             <H>Casual (hot convo):</H>
             <Q>this convo is getting good man, easier to sort on a quick call than typing novels back and forth lol. want me to send the calendar?</Q>
             <H>Value-focused (problem-heavy convo):</H>
@@ -284,7 +305,7 @@ export const SECTIONS: Section[] = [
             <Q>[calendly link], ping me when booked so i can confirm on my end.</Q>
             <H>Confirmed:</H>
             <Q>perfect, you're locked in! come with your real questions, bring the doubts too. talk soon insha'Allah.</Q>
-            <P className="pt-1"><b>"If you give me permission"</b> = power + humility. Impossible to refuse.</P>
+            <P className="pt-1"><b>Phone close</b> = lower friction than a calendly link. They just drop the number and your team handles the booking.</P>
           </div>
         ),
       },
@@ -384,9 +405,9 @@ export const SECTIONS: Section[] = [
         subtitle: "The organic ask",
         body: (
           <div className="space-y-2">
-            <Q>it will help me a lot if you're comfortable sharing what you're working with right now, income and savings wise, so i can point you to the right path instead of guessing...</Q>
-            <Q>it will help me a lot if you're comfortable sharing how much you have set aside to invest in yourself, so i can be straight with you about which direction makes sense...</Q>
-            <P><b>Structure:</b> "If you're comfortable sharing" (respectful) + "so i can point you to the right path" (direction in exchange for transparency).</P>
+            <Q>what are you working with right now, income and savings wise? i need to know so i can point you to the right path instead of guessing...</Q>
+            <Q>how much do you have set aside to invest in yourself? i need to know so i can be straight with you about which direction makes sense...</Q>
+            <P><b>Structure:</b> Direct question + reason why (so I can point you to the right path).</P>
             <P>Can't invest? No shame. Route to the free community warmly. Those men come back.</P>
           </div>
         ),
