@@ -242,7 +242,7 @@ export const SECTIONS: Section[] = [
           <div className="space-y-2">
             <H>MONEY — frame VALUE and rizq:</H>
             <P>A skill comes with you everywhere, including after hijrah.</P>
-            <Q>it will help me a lot if you're comfortable sharing what you're working with right now, income and savings wise, so i can point you to the right path instead of guessing...</Q>
+            <Q>what are you working with right now, income and savings wise? i need to know so i can point you to the right path instead of guessing...</Q>
             <H>TIME — frame SPEED:</H>
             <P>Compress 6–12 months of trial and error into weeks.</P>
             <Q>knowing your schedule, would you say you want the full roadmap to work through yourself, or you want to move quick with someone reviewing your actual reps every week?</Q>
@@ -405,9 +405,9 @@ export const SECTIONS: Section[] = [
         subtitle: "The organic ask",
         body: (
           <div className="space-y-2">
-            <Q>it will help me a lot if you're comfortable sharing what you're working with right now, income and savings wise, so i can point you to the right path instead of guessing...</Q>
-            <Q>it will help me a lot if you're comfortable sharing how much you have set aside to invest in yourself, so i can be straight with you about which direction makes sense...</Q>
-            <P><b>Structure:</b> "If you're comfortable sharing" (respectful) + "so i can point you to the right path" (direction in exchange for transparency).</P>
+            <Q>what are you working with right now, income and savings wise? i need to know so i can point you to the right path instead of guessing...</Q>
+            <Q>how much do you have set aside to invest in yourself? i need to know so i can be straight with you about which direction makes sense...</Q>
+            <P><b>Structure:</b> Direct question + reason why (so I can point you to the right path).</P>
             <P>Can't invest? No shame. Route to the free community warmly. Those men come back.</P>
           </div>
         ),
