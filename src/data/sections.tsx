@@ -6,14 +6,35 @@ const P = ({ children, className = "" }: { children: React.ReactNode; className?
 
 // Script block — subtle shaded background flags this as copy-pasteable
 export const Q = ({ children, label }: { children: React.ReactNode; label?: string }) => {
-  const copy = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const copy = async (e: React.MouseEvent<HTMLButtonElement>) => {
     const el = (e.currentTarget.parentElement?.querySelector("[data-quote]") as HTMLElement | null);
     const txt = el?.innerText || (typeof children === "string" ? children : String(children));
-    navigator.clipboard?.writeText(txt);
+    let ok = false;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(txt);
+        ok = true;
+      }
+    } catch {
+      // fallback to execCommand
+    }
+    if (!ok) {
+      const ta = document.createElement("textarea");
+      ta.value = txt;
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      try {
+        ok = document.execCommand("copy");
+      } catch {}
+      document.body.removeChild(ta);
+    }
     const btn = e.currentTarget;
     const prev = btn.innerText;
-    btn.innerText = "Copied";
-    setTimeout(() => { btn.innerText = prev; }, 1200);
+    btn.innerText = ok ? "Copied" : prev;
+    if (ok) setTimeout(() => { btn.innerText = prev; }, 1200);
   };
   return (
     <div className="script-block my-1.5 relative rounded-md border-l-2 pl-3 pr-14 py-1.5" data-script>
