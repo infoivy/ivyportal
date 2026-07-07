@@ -295,8 +295,8 @@ export const SECTIONS: Section[] = [
         subtitle: "Permission-based close, three flavors",
         body: (
           <div className="space-y-2">
-            <H>Default (permission close):</H>
-            <Q>let's have a proper chat so i can understand your full situation and show you exactly what the path looks like from where you're standing. if you give me permission to shoot over the calendly, i'll do it!</Q>
+            <H>Default (phone close):</H>
+            <Q>let's have a proper chat so i can understand your full situation and show you exactly what the path looks like from where you're standing. if you can drop your phone number in this chat, i'll have one of my team members reach out to you for a call!</Q>
             <H>Casual (hot convo):</H>
             <Q>this convo is getting good man, easier to sort on a quick call than typing novels back and forth lol. want me to send the calendar?</Q>
             <H>Value-focused (problem-heavy convo):</H>
@@ -305,7 +305,7 @@ export const SECTIONS: Section[] = [
             <Q>[calendly link], ping me when booked so i can confirm on my end.</Q>
             <H>Confirmed:</H>
             <Q>perfect, you're locked in! come with your real questions, bring the doubts too. talk soon insha'Allah.</Q>
-            <P className="pt-1"><b>"If you give me permission"</b> = power + humility. Impossible to refuse.</P>
+            <P className="pt-1"><b>Phone close</b> = lower friction than a calendly link. They just drop the number and your team handles the booking.</P>
           </div>
         ),
       },
