@@ -141,7 +141,7 @@ function KnowledgeIndex() {
 
       {loading ? (
         <div className="text-sm text-muted-foreground">Loading…</div>
-      ) : docs.length === 0 ? (
+      ) : docs.length === 0 && !(roles.includes("admin") || roles.includes("setter")) ? (
         <Card className="p-8 text-center">
           <BookOpen className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
           <p className="text-sm text-muted-foreground">
@@ -152,13 +152,54 @@ function KnowledgeIndex() {
         <div className="space-y-8">
           {DOC_CATEGORIES.map(({ value, label }) => {
             const items = grouped.get(value) ?? [];
-            if (items.length === 0) return null;
+            const staticItems =
+              value === "setting" &&
+              (roles.includes("admin") || roles.includes("setter"))
+                ? [
+                    {
+                      key: "isa-setting-process",
+                      title: "ISA Setting Process",
+                      description:
+                        "The full 8-stage setting system: openers, conversation flow, objection handling, follow-ups, psychology, engagement, and ops.",
+                      to: "/sops/isa-setting-process",
+                    },
+                  ]
+                : [];
+            if (items.length === 0 && staticItems.length === 0) return null;
+            const showSection = q
+              ? items.length > 0 ||
+                staticItems.some((s) =>
+                  (s.title + " " + s.description).toLowerCase().includes(q.toLowerCase()),
+                )
+              : true;
+            if (!showSection) return null;
             return (
               <section key={value}>
                 <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-3">
                   {label}
                 </h2>
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {staticItems.map((s) => (
+                    <Link key={s.key} to={s.to as string}>
+                      <Card className="p-4 h-full hover:border-primary/60 transition group border-primary/30">
+                        <div className="flex items-start justify-between gap-2">
+                          <h3 className="font-semibold text-sm group-hover:text-primary transition line-clamp-2">
+                            {s.title}
+                          </h3>
+                          <Pin className="h-3.5 w-3.5 text-primary shrink-0" />
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2 line-clamp-3">
+                          {s.description}
+                        </p>
+                        <div className="mt-3 flex items-center justify-between text-[10px] text-muted-foreground">
+                          <span className="uppercase tracking-wider">Core SOP</span>
+                          <span className="inline-flex items-center gap-1 text-primary opacity-0 group-hover:opacity-100 transition">
+                            Open <ArrowRight className="h-3 w-3" />
+                          </span>
+                        </div>
+                      </Card>
+                    </Link>
+                  ))}
                   {items.map((d) => (
                     <Link key={d.id} to={"/knowledge/$slug" as string} params={{ slug: d.slug } as never}>
                       <Card className="p-4 h-full hover:border-primary/60 transition group">
