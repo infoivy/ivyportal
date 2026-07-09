@@ -304,6 +304,10 @@ function Dashboard() {
           )}
         </div>
 
+        {(roles.includes("admin") || roles.includes("closer") || roles.includes("coach")) && (
+          <WeeklyLeaderboard compact />
+        )}
+
         {/* Row 3: Top Setters + Goals + Audience */}
         <div className="grid gap-3 lg:grid-cols-[1.5fr_1fr]">
           <Panel>
