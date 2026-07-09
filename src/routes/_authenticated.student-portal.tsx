@@ -3,7 +3,9 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
-import { Trash2, CheckCircle2, Clock, Award, Briefcase, MessageSquare, Users, ListChecks, Calendar, Trophy, TrendingUp } from "lucide-react";
+import { Trash2, CheckCircle2, Clock, Award, Briefcase, MessageSquare, Users, ListChecks, Calendar, Trophy, TrendingUp, Flame } from "lucide-react";
+import { computeStreak } from "@/lib/streak";
+import { setStudentPortalTab, onStudentPortalTab, getStudentPortalTab } from "@/lib/student-portal-bus";
 
 export const Route = createFileRoute("/_authenticated/student-portal")({
   head: () => ({ meta: [{ title: "Student Portal — ISA" }] }),
@@ -37,7 +39,14 @@ type Tab = "eod" | "actions" | "coaching" | "milestones";
 function StudentPortal() {
   const { user, displayName } = useAuth();
   const today = new Date().toISOString().slice(0, 10);
-  const [tab, setTab] = useState<Tab>("eod");
+  const [tab, setTab] = useState<Tab>(() => (getStudentPortalTab() as Tab) || "eod");
+  useEffect(() => {
+    setStudentPortalTab(tab);
+  }, [tab]);
+  useEffect(() => {
+    const off = onStudentPortalTab(t => setTab(t as Tab));
+    return () => { off(); };
+  }, []);
   const [student, setStudent] = useState<Student | null>(null);
   const [eods, setEods] = useState<SEod[]>([]);
   const [calls, setCalls] = useState<Call[]>([]);
