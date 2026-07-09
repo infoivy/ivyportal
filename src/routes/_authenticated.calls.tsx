@@ -106,11 +106,6 @@ function CallsPage() {
     return { total, completed, noShow, followUp, openActions, avgRating };
   }, [filtered]);
 
-  const setStatus = async (c: Call, status: CallStatus) => {
-    const { error } = await supabase.from("student_calls").update({ status } as any).eq("id", c.id);
-    if (error) return toast.error(error.message);
-    setCalls(prev => prev.map(x => x.id === c.id ? { ...x, status } : x));
-  };
 
   return (
     <div className="p-4 sm:p-6 max-w-[1500px] mx-auto space-y-5">
