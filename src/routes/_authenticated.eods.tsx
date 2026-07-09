@@ -86,7 +86,29 @@ function EODsPage() {
     setTeamEods(eods.map(e => ({ ...e, display_name: nameMap.get(e.user_id) ?? "Unknown" })));
   };
 
-  useEffect(() => { loadMine(); if (canViewTeam) loadTeam(); }, [user]);
+  const syncCsmTally = async () => {
+    if (!user || !isCsm) return;
+    const start = today + "T00:00:00.000Z";
+    const end = today + "T23:59:59.999Z";
+    const { data } = await supabase
+      .from("csm_tally")
+      .select("kind")
+      .eq("user_id", user.id)
+      .gte("created_at", start)
+      .lte("created_at", end);
+    if (!data) return;
+    const counts = { loom: 0, roleplay: 0, checkin: 0, escalation: 0 } as Record<string, number>;
+    data.forEach(r => { counts[r.kind] = (counts[r.kind] ?? 0) + 1; });
+    setForm(prev => ({
+      ...prev,
+      looms_reviewed:       Math.max(prev.looms_reviewed,       counts.loom),
+      roleplays_reviewed:   Math.max(prev.roleplays_reviewed,   counts.roleplay),
+      student_checkins:     Math.max(prev.student_checkins,     counts.checkin),
+      escalations_resolved: Math.max(prev.escalations_resolved, counts.escalation),
+    }));
+  };
+
+  useEffect(() => { (async () => { await loadMine(); await syncCsmTally(); })(); if (canViewTeam) loadTeam(); /* eslint-disable-next-line */ }, [user]);
 
   const submit = async () => {
     if (!user) return;
