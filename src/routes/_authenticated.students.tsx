@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import {
   School, Search, Plus, LayoutGrid, Table as TableIcon, Trash2, X,
-  ChevronRight, Users, AlertTriangle,
+  ChevronRight, Users, AlertTriangle, Columns3, Award, MessageSquare,
 } from "lucide-react";
 
 
@@ -17,10 +17,15 @@ export const Route = createFileRoute("/_authenticated/students")({
 
 type Phase = "uncategorized" | "onboarding" | "coaching_1on1" | "training" | "graduated" | "paused";
 type Status = "active" | "inactive" | "ghosting";
+type PaymentState = "paid_in_full" | "installments" | "behind";
 type Student = {
   id: string; user_id: string | null; full_name: string; email: string | null;
   phase: Phase; status: Status; coach_id: string | null;
   join_date: string; calls_included: number; notes: string | null;
+  student_grade: string | null; whatsapp: string | null; next_action: string | null;
+  calls_allotted: number; payment_state: PaymentState | null;
+  first_win_at: string | null; offer_landed_at: string | null;
+  testimonial_collected: boolean; trustpilot_collected: boolean;
   created_at: string; updated_at: string;
 };
 type Coach = { id: string; display_name: string | null };
@@ -38,9 +43,31 @@ const STATUSES: { key: Status; label: string; color: string }[] = [
   { key: "inactive", label: "Inactive", color: "text-zinc-400 border-zinc-500/30 bg-zinc-500/5" },
   { key: "ghosting", label: "Ghosting", color: "text-rose-400 border-rose-500/30 bg-rose-500/10" },
 ];
+const PAYMENT_META: Record<PaymentState, { label: string; color: string }> = {
+  paid_in_full: { label: "Paid", color: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10" },
+  installments: { label: "Installments", color: "text-sky-400 border-sky-500/30 bg-sky-500/10" },
+  behind: { label: "Behind", color: "text-rose-400 border-rose-500/30 bg-rose-500/10" },
+};
 
 const phaseMeta = (p: Phase) => PHASES.find(x => x.key === p)!;
 const statusMeta = (s: Status) => STATUSES.find(x => x.key === s)!;
+
+type ColKey = "student" | "grade" | "phase" | "status" | "coach" | "payment" | "calls_remaining" | "last_call" | "last_eod" | "next_action" | "badges";
+type ColDef = { key: ColKey; label: string; default: boolean };
+const COLUMNS: ColDef[] = [
+  { key: "student",         label: "Student",         default: true },
+  { key: "grade",           label: "Grade",           default: true },
+  { key: "phase",           label: "Phase",           default: true },
+  { key: "status",          label: "Status",          default: true },
+  { key: "coach",           label: "Coach",           default: true },
+  { key: "payment",         label: "Payment",         default: true },
+  { key: "calls_remaining", label: "Calls left",      default: true },
+  { key: "last_call",       label: "Last 1:1",        default: true },
+  { key: "last_eod",        label: "Last EOD",        default: false },
+  { key: "next_action",     label: "Next action",     default: false },
+  { key: "badges",          label: "Badges",          default: false },
+];
+
 
 function StudentsLayout() {
   const { roles } = useAuth();
