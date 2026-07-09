@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { CheckCircle2, Clock, TrendingUp, Users, Phone, Target, AlertTriangle, ChevronRight, Trash2, HeartHandshake, Flame } from "lucide-react";
 import { computeStreak } from "@/lib/streak";
+import confetti from "canvas-confetti";
 
 export const Route = createFileRoute("/_authenticated/eods")({
   head: () => ({ meta: [{ title: "EOD Reports — ISA Team" }] }),
@@ -110,6 +111,36 @@ function EODsPage() {
 
   useEffect(() => { (async () => { await loadMine(); await syncCsmTally(); })(); if (canViewTeam) loadTeam(); /* eslint-disable-next-line */ }, [user]);
 
+  // Autosave draft to localStorage while composing today's EOD (skip if already submitted)
+  const draftKey = user ? `eod-draft:${user.id}:${today}` : null;
+  const hydratedDraft = useRef(false);
+  useEffect(() => {
+    if (!draftKey || hydratedDraft.current || existingId) return;
+    try {
+      const raw = localStorage.getItem(draftKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        setForm(f => ({ ...f, ...parsed }));
+        toast.message("Draft restored");
+      }
+    } catch {}
+    hydratedDraft.current = true;
+  }, [draftKey, existingId]);
+  useEffect(() => {
+    if (!draftKey || existingId) return;
+    const t = setTimeout(() => {
+      try { localStorage.setItem(draftKey, JSON.stringify(form)); } catch {}
+    }, 400);
+    return () => clearTimeout(t);
+  }, [form, draftKey, existingId]);
+
+  // Yesterday's tomorrow_focus as a hint for today's summary/wins
+  const yesterday = useMemo(() => {
+    const y = new Date(); y.setDate(y.getDate() - 1);
+    const yStr = y.toISOString().slice(0, 10);
+    return myEods.find(e => e.report_date === yStr) ?? null;
+  }, [myEods]);
+
   const submit = async () => {
     if (!user) return;
     // Cross-field sanity checks (warn, don't hard-block)
@@ -119,11 +150,20 @@ function EODsPage() {
     if ((form.shows + form.no_shows) > form.calls_booked) warnings.push(`Shows + no-shows (${form.shows + form.no_shows}) exceeds calls booked (${form.calls_booked}).`);
     if (warnings.length && !confirm(warnings.join("\n") + "\n\nAre you sure these numbers are right?")) return;
     setSaving(true);
+    const wasNew = !existingId;
     const payload = { user_id: user.id, report_date: today, ...form };
     const { error } = await supabase.from("eods").upsert(payload, { onConflict: "user_id,report_date" });
     setSaving(false);
     if (error) toast.error(error.message);
-    else { toast.success(existingId ? "EOD updated" : "EOD submitted"); loadMine(); if (canViewTeam) loadTeam(); }
+    else {
+      toast.success(existingId ? "EOD updated" : "EOD submitted");
+      if (wasNew) {
+        confetti({ particleCount: 120, spread: 80, origin: { y: 0.7 }, colors: ["#10b981", "#f59e0b", "#3b82f6", "#a855f7"] });
+        if (draftKey) { try { localStorage.removeItem(draftKey); } catch {} }
+      }
+      loadMine();
+      if (canViewTeam) loadTeam();
+    }
   };
 
   const deleteEod = async (id: string) => {
@@ -261,11 +301,23 @@ function EODsPage() {
 
               <div className="space-y-3">
                 <SectionLabel>Narrative</SectionLabel>
+                {yesterday?.tomorrow_focus && !existingId && (
+                  <div className="rounded-sm border border-sky-500/30 bg-sky-500/5 px-3 py-2 text-[11px] text-sky-300 flex items-start gap-2">
+                    <span className="text-[9px] uppercase tracking-wider text-sky-400 shrink-0 mt-0.5">Yesterday</span>
+                    <span className="flex-1"><span className="text-muted-foreground">Tomorrow's focus was:</span> {yesterday.tomorrow_focus}</span>
+                    <button
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, summary: f.summary || `Yesterday's focus: ${yesterday.tomorrow_focus}` }))}
+                      className="text-[10px] text-sky-400 hover:text-sky-300 shrink-0"
+                    >Use as start</button>
+                  </div>
+                )}
                 <TextField label="Wins" value={form.wins} onChange={v => setForm(f => ({ ...f, wins: v }))} />
                 <TextField label="Blockers" value={form.blockers} onChange={v => setForm(f => ({ ...f, blockers: v }))} />
                 <TextField label="Tomorrow's focus" value={form.tomorrow_focus} onChange={v => setForm(f => ({ ...f, tomorrow_focus: v }))} />
                 <TextField label="Summary" value={form.summary} onChange={v => setForm(f => ({ ...f, summary: v }))} rows={3} />
               </div>
+
 
               <div className="flex items-center justify-between pt-2 border-t border-[#1f2530]">
                 <div className="text-[11px] text-muted-foreground">
