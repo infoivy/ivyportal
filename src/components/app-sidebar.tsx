@@ -2,6 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, FileText, BookOpen, Calendar, GraduationCap,
   BarChart3, Database, Users, StickyNote, ShieldCheck, Shield, UserCircle, School, HeartHandshake, Phone, DollarSign,
+  ListChecks, Trophy,
 } from "lucide-react";
 
 
@@ -16,6 +17,7 @@ type Item = { title: string; url: string; icon: React.ComponentType<{ className?
 const workItems: Item[] = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "EOD Reports", url: "/eods", icon: FileText },
+  { title: "Action Items", url: "/action-items", icon: ListChecks },
   { title: "Notes", url: "/notes", icon: StickyNote },
   { title: "CSM", url: "/csm", icon: HeartHandshake, roles: ["admin", "csm"] },
 ];
@@ -29,6 +31,7 @@ const knowledgeItems: Item[] = [
 const opsItems: Item[] = [
   { title: "Students", url: "/students", icon: School },
   { title: "1-on-1 Calls", url: "/calls", icon: Phone, roles: ["admin", "coach"] },
+  { title: "Coaches", url: "/coaches", icon: Trophy, roles: ["admin", "coach", "csm"] },
   { title: "Installments", url: "/installments", icon: DollarSign, roles: ["admin", "setter", "coach", "csm"] },
   { title: "Calendar", url: "/calendar", icon: Calendar },
   { title: "Analytics", url: "/analytics", icon: BarChart3 },

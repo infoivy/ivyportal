@@ -26,10 +26,12 @@ import { Route as AuthenticatedEodsRouteImport } from './routes/_authenticated.e
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
 import { Route as AuthenticatedCsmRouteImport } from './routes/_authenticated.csm'
 import { Route as AuthenticatedCrmRouteImport } from './routes/_authenticated.crm'
+import { Route as AuthenticatedCoachesRouteImport } from './routes/_authenticated.coaches'
 import { Route as AuthenticatedCallsRouteImport } from './routes/_authenticated.calls'
 import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticated.calendar'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated.analytics'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated.admin'
+import { Route as AuthenticatedActionItemsRouteImport } from './routes/_authenticated.action-items'
 import { Route as AuthenticatedPoliciesIndexRouteImport } from './routes/_authenticated.policies.index'
 import { Route as ApiPublicGoogleOauthCallbackRouteImport } from './routes/api/public/google-oauth-callback'
 import { Route as AuthenticatedStudentsIdRouteImport } from './routes/_authenticated.students.$id'
@@ -122,6 +124,11 @@ const AuthenticatedCrmRoute = AuthenticatedCrmRouteImport.update({
   path: '/crm',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedCoachesRoute = AuthenticatedCoachesRouteImport.update({
+  id: '/coaches',
+  path: '/coaches',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedCallsRoute = AuthenticatedCallsRouteImport.update({
   id: '/calls',
   path: '/calls',
@@ -142,6 +149,12 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedActionItemsRoute =
+  AuthenticatedActionItemsRouteImport.update({
+    id: '/action-items',
+    path: '/action-items',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedPoliciesIndexRoute =
   AuthenticatedPoliciesIndexRouteImport.update({
     id: '/',
@@ -176,10 +189,12 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/print': typeof PrintRoute
+  '/action-items': typeof AuthenticatedActionItemsRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/calendar': typeof AuthenticatedCalendarRoute
   '/calls': typeof AuthenticatedCallsRoute
+  '/coaches': typeof AuthenticatedCoachesRoute
   '/crm': typeof AuthenticatedCrmRoute
   '/csm': typeof AuthenticatedCsmRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -203,10 +218,12 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/print': typeof PrintRoute
+  '/action-items': typeof AuthenticatedActionItemsRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/calendar': typeof AuthenticatedCalendarRoute
   '/calls': typeof AuthenticatedCallsRoute
+  '/coaches': typeof AuthenticatedCoachesRoute
   '/crm': typeof AuthenticatedCrmRoute
   '/csm': typeof AuthenticatedCsmRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -231,10 +248,12 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/auth': typeof AuthRoute
   '/print': typeof PrintRoute
+  '/_authenticated/action-items': typeof AuthenticatedActionItemsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
   '/_authenticated/calendar': typeof AuthenticatedCalendarRoute
   '/_authenticated/calls': typeof AuthenticatedCallsRoute
+  '/_authenticated/coaches': typeof AuthenticatedCoachesRoute
   '/_authenticated/crm': typeof AuthenticatedCrmRoute
   '/_authenticated/csm': typeof AuthenticatedCsmRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -260,10 +279,12 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/print'
+    | '/action-items'
     | '/admin'
     | '/analytics'
     | '/calendar'
     | '/calls'
+    | '/coaches'
     | '/crm'
     | '/csm'
     | '/dashboard'
@@ -287,10 +308,12 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/print'
+    | '/action-items'
     | '/admin'
     | '/analytics'
     | '/calendar'
     | '/calls'
+    | '/coaches'
     | '/crm'
     | '/csm'
     | '/dashboard'
@@ -314,10 +337,12 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/print'
+    | '/_authenticated/action-items'
     | '/_authenticated/admin'
     | '/_authenticated/analytics'
     | '/_authenticated/calendar'
     | '/_authenticated/calls'
+    | '/_authenticated/coaches'
     | '/_authenticated/crm'
     | '/_authenticated/csm'
     | '/_authenticated/dashboard'
@@ -467,6 +492,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCrmRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/coaches': {
+      id: '/_authenticated/coaches'
+      path: '/coaches'
+      fullPath: '/coaches'
+      preLoaderRoute: typeof AuthenticatedCoachesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/calls': {
       id: '/_authenticated/calls'
       path: '/calls'
@@ -493,6 +525,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/action-items': {
+      id: '/_authenticated/action-items'
+      path: '/action-items'
+      fullPath: '/action-items'
+      preLoaderRoute: typeof AuthenticatedActionItemsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/policies/': {
@@ -574,10 +613,12 @@ const AuthenticatedStudentsRouteWithChildren =
   )
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedActionItemsRoute: typeof AuthenticatedActionItemsRoute
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
   AuthenticatedCalendarRoute: typeof AuthenticatedCalendarRoute
   AuthenticatedCallsRoute: typeof AuthenticatedCallsRoute
+  AuthenticatedCoachesRoute: typeof AuthenticatedCoachesRoute
   AuthenticatedCrmRoute: typeof AuthenticatedCrmRoute
   AuthenticatedCsmRoute: typeof AuthenticatedCsmRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
@@ -594,10 +635,12 @@ interface AuthenticatedRouteChildren {
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedActionItemsRoute: AuthenticatedActionItemsRoute,
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
   AuthenticatedCalendarRoute: AuthenticatedCalendarRoute,
   AuthenticatedCallsRoute: AuthenticatedCallsRoute,
+  AuthenticatedCoachesRoute: AuthenticatedCoachesRoute,
   AuthenticatedCrmRoute: AuthenticatedCrmRoute,
   AuthenticatedCsmRoute: AuthenticatedCsmRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
