@@ -538,6 +538,52 @@ function StudentsLayout() {
   );
 }
 
+function GraduationKanban({ students }: { students: Student[] }) {
+  const stages = [
+    { key: "first_win", label: "1. First win pending", color: "text-slate-300 border-slate-500/30 bg-slate-500/5",
+      match: (s: Student) => !s.first_win_at },
+    { key: "offer", label: "2. Offer landing", color: "text-sky-400 border-sky-500/30 bg-sky-500/10",
+      match: (s: Student) => !!s.first_win_at && !s.offer_landed_at },
+    { key: "testimonial", label: "3. Testimonial pending", color: "text-fuchsia-400 border-fuchsia-500/30 bg-fuchsia-500/10",
+      match: (s: Student) => !!s.offer_landed_at && !s.testimonial_collected },
+    { key: "trustpilot", label: "4. Trustpilot pending", color: "text-amber-400 border-amber-500/30 bg-amber-500/10",
+      match: (s: Student) => !!s.testimonial_collected && !s.trustpilot_collected },
+    { key: "complete", label: "🏆 Complete", color: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10",
+      match: (s: Student) => !!s.testimonial_collected && !!s.trustpilot_collected },
+  ];
+  const active = students.filter(s => s.status === "active" || (!!s.testimonial_collected && !!s.trustpilot_collected));
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
+      {stages.map(st => {
+        const inStage = active.filter(s => st.match(s));
+        return (
+          <div key={st.key} className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-2 min-h-[200px]">
+            <div className={`flex items-center justify-between text-[10px] uppercase tracking-wider px-1 py-1 mb-2 rounded-sm border ${st.color}`}>
+              <span className="truncate">{st.label}</span>
+              <span className="font-mono">{inStage.length}</span>
+            </div>
+            <div className="space-y-1.5">
+              {inStage.map(s => (
+                <Link key={s.id} to={"/students/$id" as any} params={{ id: s.id } as any}
+                  className="block p-2 rounded-sm bg-[#14171e] border border-[#1f2530] hover:border-[#2a3140]">
+                  <div className="text-xs font-medium truncate">{s.full_name}</div>
+                  <div className="flex items-center gap-1 mt-1">
+                    {s.first_win_at && <span title="First win" className="text-amber-400 text-[10px]">★</span>}
+                    {s.offer_landed_at && <span title="Offer landed" className="text-sky-400"><Trophy className="h-3 w-3" /></span>}
+                    {s.testimonial_collected && <span title="Testimonial"><Award className="h-3 w-3 text-fuchsia-400" /></span>}
+                    {s.trustpilot_collected && <span title="Trustpilot"><MessageSquare className="h-3 w-3 text-emerald-400" /></span>}
+                  </div>
+                </Link>
+              ))}
+              {inStage.length === 0 && <div className="text-[10px] text-muted-foreground text-center py-3">Empty</div>}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function StudentCard({ s, canDrag, coachName, atRisk }: { s: Student; canDrag: boolean; coachName: string; atRisk: boolean }) {
   return (
     <Link
