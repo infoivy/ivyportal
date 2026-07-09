@@ -36,9 +36,14 @@ const CREATIVE_TYPES = [
   "tutorial", "case study", "tweet-style", "screen record", "meme",
 ];
 
-// Monday-start ISO date string
+// Monday-start local YYYY-MM-DD. Do NOT use toISOString — it shifts by the
+// local UTC offset, so in any UTC+X timezone a local Monday becomes the
+// previous UTC day (Sunday). That is the exact off-by-one date bug.
+function ymd(d: Date): string {
+  return format(d, "yyyy-MM-dd");
+}
 function mondayOf(d: Date): string {
-  return startOfWeek(d, { weekStartsOn: 1 }).toISOString().slice(0, 10);
+  return ymd(startOfWeek(d, { weekStartsOn: 1 }));
 }
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -99,7 +104,7 @@ export function WeeklyPlan({ onOpenItem }: { onOpenItem: (id: string) => void })
   const slotsByDay = useMemo(() => {
     const map = new Map<string, WeekSlot[]>();
     for (let i = 0; i < 7; i++) {
-      map.set(addDays(monday, i).toISOString().slice(0, 10), []);
+      map.set(ymd(addDays(monday, i)), []);
     }
     for (const s of slots) {
       if (!s.scheduled_date) continue;
@@ -236,7 +241,7 @@ export function WeeklyPlan({ onOpenItem }: { onOpenItem: (id: string) => void })
             </div>
             <div className="space-y-1.5">
               {DAYS.map((day, idx) => {
-                const date = addDays(monday, idx).toISOString().slice(0, 10);
+                const date = ymd(addDays(monday, idx));
                 const daySlots = slotsByDay.get(date) ?? [];
                 const meta = SLOT_LABELS[idx];
                 const isToday = isSameDay(addDays(monday, idx), new Date());
@@ -260,7 +265,12 @@ export function WeeklyPlan({ onOpenItem }: { onOpenItem: (id: string) => void })
                     </div>
                     <div className="p-2 space-y-1">
                       {daySlots.length === 0 ? (
-                        <div className="text-[11px] text-muted-foreground italic px-1">No slot — reload week</div>
+                        <button
+                          onClick={() => load()}
+                          className="text-[11px] text-fuchsia-400 hover:text-fuchsia-300 italic px-1 underline decoration-dotted"
+                        >
+                          Slot missing — click to repair
+                        </button>
                       ) : daySlots.map(s => {
                         const isFilled = s.hook && !/^(TOF|MOF)\s·/.test(s.hook);
                         return (
