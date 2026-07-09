@@ -256,6 +256,16 @@ function StudentPortal() {
   };
 
   const toggleItem = async (callId: string, index: number, done: boolean) => {
+    if (callId.startsWith("adhoc:")) {
+      const id = callId.slice("adhoc:".length);
+      setAdhocItems(prev => prev.map(a => a.id === id ? { ...a, done } : a));
+      const { error } = await supabase
+        .from("student_action_items")
+        .update({ done, done_at: done ? new Date().toISOString() : null })
+        .eq("id", id);
+      if (error) { toast.error(error.message); load(); }
+      return;
+    }
     setCalls(prev => prev.map(c => {
       if (c.id !== callId) return c;
       const items = Array.isArray(c.action_items_json) ? [...c.action_items_json] : [];
