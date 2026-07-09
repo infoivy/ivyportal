@@ -8,6 +8,7 @@ import { LogOut, AlertCircle } from "lucide-react";
 import { Toaster } from "sonner";
 import { AuthContext, type AuthState } from "@/lib/auth-context";
 import { installSessionOnlyCleanup } from "@/components/auth-page";
+import { NotificationsBell } from "@/components/notifications-bell";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
