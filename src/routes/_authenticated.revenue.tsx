@@ -445,7 +445,7 @@ function LogDealDialog({
       setFathomUrl("");
       setNotes("");
       setAutoCreateStudent(true);
-      setAutoCreateInstallment(true);
+      setAutoCreateInstallment(false);
       setInstallments("3");
     }
   }, [open, editing, currentUserId]);
