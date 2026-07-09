@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import {
   School, Search, Plus, LayoutGrid, Table as TableIcon, Trash2, X,
-  ChevronRight, Users, AlertTriangle, Columns3, Award, MessageSquare,
+  ChevronRight, Users, AlertTriangle, Columns3, Award, MessageSquare, Trophy,
 } from "lucide-react";
 
 
@@ -83,7 +83,7 @@ function StudentsLayout() {
   const [apps7dByStudent, setApps7dByStudent] = useState<Record<string, number>>({});
   const [q, setQ] = useState("");
   const [phaseFilter, setPhaseFilter] = useState<Phase | "all" | "at_risk">("all");
-  const [view, setView] = useState<"table" | "kanban">("table");
+  const [view, setView] = useState<"table" | "kanban" | "graduation">("table");
   const [kanbanBy, setKanbanBy] = useState<"phase" | "coach">("phase");
   const [addOpen, setAddOpen] = useState(false);
   const [colsOpen, setColsOpen] = useState(false);
@@ -256,6 +256,9 @@ function StudentsLayout() {
             <button onClick={() => setView("kanban")} className={`px-2 py-1 rounded-sm transition ${view === "kanban" ? "bg-[#1a1f29] text-foreground" : "text-muted-foreground"}`} title="Kanban">
               <LayoutGrid className="h-3.5 w-3.5" />
             </button>
+            <button onClick={() => setView("graduation")} className={`px-2 py-1 rounded-sm transition ${view === "graduation" ? "bg-[#1a1f29] text-amber-400" : "text-muted-foreground"}`} title="Graduation pipeline">
+              <Trophy className="h-3.5 w-3.5" />
+            </button>
           </div>
           {view === "table" && (
             <div className="relative">
@@ -327,7 +330,9 @@ function StudentsLayout() {
         )}
       </div>
 
-      {view === "table" ? (
+      {view === "graduation" ? (
+        <GraduationKanban students={filtered} />
+      ) : view === "table" ? (
         <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm overflow-x-auto">
           <table className="w-full text-xs">
             <thead className="text-[10px] uppercase tracking-widest text-muted-foreground bg-[#0f1116] sticky top-0">
@@ -529,6 +534,52 @@ function StudentsLayout() {
 
 
       {addOpen && <AddStudentModal onClose={() => setAddOpen(false)} onCreated={() => { setAddOpen(false); load(); }} coaches={coaches} />}
+    </div>
+  );
+}
+
+function GraduationKanban({ students }: { students: Student[] }) {
+  const stages = [
+    { key: "first_win", label: "1. First win pending", color: "text-slate-300 border-slate-500/30 bg-slate-500/5",
+      match: (s: Student) => !s.first_win_at },
+    { key: "offer", label: "2. Offer landing", color: "text-sky-400 border-sky-500/30 bg-sky-500/10",
+      match: (s: Student) => !!s.first_win_at && !s.offer_landed_at },
+    { key: "testimonial", label: "3. Testimonial pending", color: "text-fuchsia-400 border-fuchsia-500/30 bg-fuchsia-500/10",
+      match: (s: Student) => !!s.offer_landed_at && !s.testimonial_collected },
+    { key: "trustpilot", label: "4. Trustpilot pending", color: "text-amber-400 border-amber-500/30 bg-amber-500/10",
+      match: (s: Student) => !!s.testimonial_collected && !s.trustpilot_collected },
+    { key: "complete", label: "🏆 Complete", color: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10",
+      match: (s: Student) => !!s.testimonial_collected && !!s.trustpilot_collected },
+  ];
+  const active = students.filter(s => s.status === "active" || (!!s.testimonial_collected && !!s.trustpilot_collected));
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
+      {stages.map(st => {
+        const inStage = active.filter(s => st.match(s));
+        return (
+          <div key={st.key} className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-2 min-h-[200px]">
+            <div className={`flex items-center justify-between text-[10px] uppercase tracking-wider px-1 py-1 mb-2 rounded-sm border ${st.color}`}>
+              <span className="truncate">{st.label}</span>
+              <span className="font-mono">{inStage.length}</span>
+            </div>
+            <div className="space-y-1.5">
+              {inStage.map(s => (
+                <Link key={s.id} to={"/students/$id" as any} params={{ id: s.id } as any}
+                  className="block p-2 rounded-sm bg-[#14171e] border border-[#1f2530] hover:border-[#2a3140]">
+                  <div className="text-xs font-medium truncate">{s.full_name}</div>
+                  <div className="flex items-center gap-1 mt-1">
+                    {s.first_win_at && <span title="First win" className="text-amber-400 text-[10px]">★</span>}
+                    {s.offer_landed_at && <span title="Offer landed" className="text-sky-400"><Trophy className="h-3 w-3" /></span>}
+                    {s.testimonial_collected && <span title="Testimonial"><Award className="h-3 w-3 text-fuchsia-400" /></span>}
+                    {s.trustpilot_collected && <span title="Trustpilot"><MessageSquare className="h-3 w-3 text-emerald-400" /></span>}
+                  </div>
+                </Link>
+              ))}
+              {inStage.length === 0 && <div className="text-[10px] text-muted-foreground text-center py-3">Empty</div>}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

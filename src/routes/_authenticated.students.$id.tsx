@@ -7,7 +7,7 @@ import {
   ArrowLeft, Video, Trash2, Plus, Save, Calendar as CalIcon,
   Phone, FileText, User, Pencil, ExternalLink, CheckCircle2, Circle,
   Star, HeartHandshake, DollarSign, Trophy, Award, MessageSquare, Link2,
-  AlertTriangle, MessageCircle, GraduationCap,
+  AlertTriangle, MessageCircle, GraduationCap, Activity,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/students/$id")({
@@ -54,7 +54,7 @@ const PAYMENT_STATES: { key: PaymentState; label: string; color: string }[] = [
   { key: "behind", label: "Behind", color: "text-rose-400 border-rose-500/30 bg-rose-500/10" },
 ];
 
-type Tab = "calls" | "eods" | "csm" | "installments" | "notes";
+type Tab = "timeline" | "calls" | "eods" | "csm" | "installments" | "notes";
 
 function StudentDetail() {
   const { id } = Route.useParams() as { id: string };
@@ -72,7 +72,7 @@ function StudentDetail() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [coaches, setCoaches] = useState<Coach[]>([]);
   const [callFormOpen, setCallFormOpen] = useState(false);
-  const [tab, setTab] = useState<Tab>("calls");
+  const [tab, setTab] = useState<Tab>("timeline");
 
   const load = async () => {
     const [sRes, cRes, eRes, coachRes, csmRes, instRes] = await Promise.all([
@@ -353,12 +353,25 @@ function StudentDetail() {
 
       {/* Tabs */}
       <div className="flex items-center gap-1 border-b border-[#1f2530] overflow-x-auto">
-        <TabBtn active={tab === "calls"} onClick={() => setTab("calls")} icon={<Phone className="h-3 w-3" />}>1:1 timeline ({calls.length})</TabBtn>
+        <TabBtn active={tab === "timeline"} onClick={() => setTab("timeline")} icon={<Activity className="h-3 w-3" />}>Timeline</TabBtn>
+        <TabBtn active={tab === "calls"} onClick={() => setTab("calls")} icon={<Phone className="h-3 w-3" />}>1:1s ({calls.length})</TabBtn>
         <TabBtn active={tab === "eods"} onClick={() => setTab("eods")} icon={<User className="h-3 w-3" />}>Student EODs ({eods.length})</TabBtn>
         {isCsm && <TabBtn active={tab === "csm"} onClick={() => setTab("csm")} icon={<HeartHandshake className="h-3 w-3" />}>CSM notes ({csmNotes.length})</TabBtn>}
         <TabBtn active={tab === "installments"} onClick={() => setTab("installments")} icon={<DollarSign className="h-3 w-3" />}>Installments {installment ? `(${payments.filter(p => p.status === "paid").length}/${payments.length})` : ""}</TabBtn>
         <TabBtn active={tab === "notes"} onClick={() => setTab("notes")} icon={<FileText className="h-3 w-3" />}>General notes</TabBtn>
       </div>
+
+      {tab === "timeline" && (
+        <TimelineFeed
+          student={student}
+          calls={calls}
+          eods={eods}
+          csmNotes={csmNotes}
+          csmAuthors={csmAuthors}
+          coachName={coachName}
+          payments={payments}
+        />
+      )}
 
       {tab === "calls" && (
         <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm">
@@ -701,3 +714,96 @@ function CallForm({ studentId, onCancel, onDone }: { studentId: string; onCancel
     </div>
   );
 }
+
+type TimelineEvent = {
+  key: string;
+  ts: string;
+  kind: "call" | "eod" | "csm" | "payment" | "milestone";
+  title: string;
+  detail?: string;
+  meta?: string;
+};
+
+function TimelineFeed({ student, calls, eods, csmNotes, csmAuthors, coachName, payments }: {
+  student: Student;
+  calls: Call[];
+  eods: SEod[];
+  csmNotes: CsmNote[];
+  csmAuthors: Record<string, string>;
+  coachName: (uid: string | null) => string;
+  payments: Payment[];
+}) {
+  const events: TimelineEvent[] = [];
+  calls.forEach(c => events.push({
+    key: `c-${c.id}`,
+    ts: c.call_date,
+    kind: "call",
+    title: `1:1 ${c.status ?? ""} with ${coachName(c.coach_id)}`,
+    detail: c.coach_notes ?? c.outcome ?? undefined,
+    meta: c.progress_rating ? `${c.progress_rating}/5` : undefined,
+  }));
+  eods.forEach(e => events.push({
+    key: `e-${e.id}`,
+    ts: e.report_date,
+    kind: "eod",
+    title: `EOD · ${e.applications_submitted} apps · ${e.interviews} interviews`,
+    detail: e.wins || e.blockers || undefined,
+  }));
+  csmNotes.forEach(n => events.push({
+    key: `n-${n.id}`,
+    ts: n.created_at.slice(0, 10),
+    kind: "csm",
+    title: `CSM · ${csmAuthors[n.user_id] ?? "Unknown"}`,
+    detail: n.note,
+  }));
+  payments.filter(p => p.status === "paid" && p.paid_at).forEach(p => events.push({
+    key: `p-${p.id}`,
+    ts: (p.paid_at ?? "").slice(0, 10),
+    kind: "payment",
+    title: `Payment ${p.sequence} · ${p.currency} ${Number(p.amount).toLocaleString()}`,
+  }));
+  if (student.first_win_at) events.push({ key: "m-fw", ts: student.first_win_at.slice(0, 10), kind: "milestone", title: "🌟 First win" });
+  if (student.offer_landed_at) events.push({ key: "m-off", ts: student.offer_landed_at.slice(0, 10), kind: "milestone", title: "🏆 Offer landed" });
+  events.sort((a, b) => b.ts.localeCompare(a.ts));
+
+  const tones: Record<TimelineEvent["kind"], { icon: any; color: string }> = {
+    call:      { icon: Phone,      color: "text-sky-400 border-sky-500/40 bg-sky-500/5" },
+    eod:       { icon: FileText,   color: "text-emerald-400 border-emerald-500/40 bg-emerald-500/5" },
+    csm:       { icon: HeartHandshake, color: "text-amber-400 border-amber-500/40 bg-amber-500/5" },
+    payment:   { icon: DollarSign, color: "text-emerald-400 border-emerald-500/40 bg-emerald-500/5" },
+    milestone: { icon: Trophy,     color: "text-amber-400 border-amber-500/40 bg-amber-500/5" },
+  };
+
+  return (
+    <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm">
+      <div className="px-4 py-3 border-b border-[#1f2530] text-xs font-semibold flex items-center gap-2">
+        <Activity className="h-3.5 w-3.5 text-fuchsia-400" /> Activity · {events.length}
+      </div>
+      {events.length === 0 ? (
+        <div className="p-6 text-center text-xs text-muted-foreground">No activity yet.</div>
+      ) : (
+        <ol className="divide-y divide-[#1a1f29]">
+          {events.map(ev => {
+            const t = tones[ev.kind];
+            const Icon = t.icon;
+            return (
+              <li key={ev.key} className="p-3 flex items-start gap-3">
+                <div className={`h-7 w-7 rounded-sm border flex items-center justify-center shrink-0 ${t.color}`}>
+                  <Icon className="h-3.5 w-3.5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-xs font-medium truncate">{ev.title}</div>
+                    <span className="text-[10px] font-mono text-muted-foreground shrink-0">{ev.ts}{ev.meta ? ` · ${ev.meta}` : ""}</span>
+                  </div>
+                  {ev.detail && <div className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">{ev.detail}</div>}
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+    </div>
+  );
+}
+
