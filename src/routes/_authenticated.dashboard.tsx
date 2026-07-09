@@ -3,15 +3,13 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
   MessageSquare, MessagesSquare, CalendarCheck, Eye, EyeOff, Trophy,
   Target, TrendingUp, ArrowUpRight, ArrowDownRight, Flame, Users2,
-  FileText, StickyNote,
+  FileText, StickyNote, Sparkles,
 } from "lucide-react";
 import {
-  ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  BarChart, Bar,
+  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
 } from "recharts";
 import { format, subDays } from "date-fns";
 
@@ -42,13 +40,18 @@ const RANGES = [
 ] as const;
 type RangeKey = typeof RANGES[number]["key"];
 
-// Team-wide monthly targets. Admin-configurable later.
-const GOALS = {
-  dms: 8000,
-  convos: 1200,
-  calls: 200,
-  shows: 140,
-  showRate: 70, // percent
+const GOALS = { dms: 8000, convos: 1200, calls: 200, shows: 140, showRate: 70 };
+
+// Vibrant creator-dashboard palette per KPI
+const KPI_COLORS = {
+  dms:     { bg: "#3b82f6", soft: "rgba(59,130,246,0.14)" },   // blue
+  convos:  { bg: "#a855f7", soft: "rgba(168,85,247,0.14)" },   // purple
+  booked:  { bg: "#22c55e", soft: "rgba(34,197,94,0.14)" },    // green
+  shows:   { bg: "#f59e0b", soft: "rgba(245,158,11,0.16)" },   // amber
+  noshow:  { bg: "#ef4444", soft: "rgba(239,68,68,0.14)" },    // red
+  rate:    { bg: "#06b6d4", soft: "rgba(6,182,212,0.14)" },    // cyan
+  setters: { bg: "#ec4899", soft: "rgba(236,72,153,0.14)" },   // pink
+  eods:    { bg: "#f97316", soft: "rgba(249,115,22,0.14)" },   // orange
 };
 
 function Dashboard() {
@@ -83,14 +86,10 @@ function Dashboard() {
     })();
   }, [days]);
 
-  // Totals
   const totals = useMemo(() => sumRows(eods), [eods]);
   const prevTotals = useMemo(() => sumRows(prevEods), [prevEods]);
-
-  // Trend series
   const trend = useMemo(() => buildTrend(eods, days), [eods, days]);
 
-  // Top setters
   const topSetters = useMemo(() => {
     const byUser: Record<string, { user_id: string; calls: number; dms: number; convos: number; shows: number }> = {};
     for (const r of eods) {
@@ -100,210 +99,217 @@ function Dashboard() {
       b.convos += r.convos_started;
       b.shows += r.shows;
     }
-    return Object.values(byUser).sort((a, b) => b.calls - a.calls).slice(0, 8);
+    return Object.values(byUser).sort((a, b) => b.calls - a.calls).slice(0, 6);
   }, [eods]);
 
-  // Setter bar chart data
-  const setterBars = useMemo(() =>
-    topSetters.slice(0, 5).map((s) => ({
-      name: (profiles[s.user_id]?.display_name ?? "—").split(" ")[0],
-      Calls: s.calls,
-      Shows: s.shows,
-    })), [topSetters, profiles]);
+  const maxCalls = topSetters[0]?.calls ?? 0;
 
   const showRate = totals.shows + totals.no_shows > 0
-    ? Math.round((totals.shows / (totals.shows + totals.no_shows)) * 100)
-    : 0;
+    ? Math.round((totals.shows / (totals.shows + totals.no_shows)) * 100) : 0;
   const prevShowRate = prevTotals.shows + prevTotals.no_shows > 0
-    ? Math.round((prevTotals.shows / (prevTotals.shows + prevTotals.no_shows)) * 100)
-    : 0;
+    ? Math.round((prevTotals.shows / (prevTotals.shows + prevTotals.no_shows)) * 100) : 0;
 
   const activeSetters = new Set(eods.map((e) => e.user_id)).size;
   const totalEods = eods.length;
-
   const rangeLabel = range === "7d" ? "Last 7 days" : range === "30d" ? "Last 30 days" : "Last 90 days";
 
   return (
     <div className="min-h-full bg-background">
-      <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
-        {/* Header */}
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="h-11 w-11 rounded-xl bg-primary/15 text-primary flex items-center justify-center font-bold">
-              {(displayName ?? "?").slice(0, 2).toUpperCase()}
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-5">
+        {/* Hero header */}
+        <Card className="relative overflow-hidden border-border/60 p-5 sm:p-6">
+          <div
+            className="absolute inset-0 opacity-70 pointer-events-none"
+            style={{
+              background:
+                "radial-gradient(600px 200px at 0% 0%, rgba(168,85,247,0.18), transparent 60%), radial-gradient(500px 200px at 100% 0%, rgba(59,130,246,0.18), transparent 60%)",
+            }}
+          />
+          <div className="relative flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="h-14 w-14 rounded-2xl flex items-center justify-center font-bold text-lg text-white shadow-lg"
+                style={{ background: "linear-gradient(135deg,#a855f7,#3b82f6)" }}>
+                {(displayName ?? "?").slice(0, 2).toUpperCase()}
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl font-semibold tracking-tight">{displayName ?? "Team member"}</h1>
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-primary/15 text-primary">
+                    <Sparkles className="h-3 w-3" /> ISA Team
+                  </span>
+                </div>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  {roles.length ? roles.join(" · ") : "member"} · {rangeLabel.toLowerCase()} overview
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight">{displayName ?? "Team member"}</h1>
-              <p className="text-sm text-muted-foreground">
-                {roles.length ? roles.join(" · ") : "member"} · Team overview
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <div className="inline-flex rounded-full border border-border bg-card p-0.5">
+            <div className="inline-flex rounded-full border border-border bg-card/60 backdrop-blur p-0.5">
               {RANGES.map((r) => (
                 <button
                   key={r.key}
                   onClick={() => setRange(r.key)}
-                  className={`text-xs px-3 py-1.5 rounded-full transition ${
-                    range === r.key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                  className={`text-xs px-3.5 py-1.5 rounded-full transition ${
+                    range === r.key ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"
                   }`}
-                >
-                  {r.label}
-                </button>
+                >{r.label}</button>
               ))}
             </div>
-            <Badge variant="outline" className="text-xs">{rangeLabel}</Badge>
           </div>
-        </div>
+        </Card>
 
         {/* KPI grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-          <Kpi icon={MessageSquare} label="DMs" value={totals.dms_sent} prev={prevTotals.dms_sent} accent="var(--tab-inbound)" />
-          <Kpi icon={MessagesSquare} label="Convos" value={totals.convos_started} prev={prevTotals.convos_started} accent="var(--tab-conv)" />
-          <Kpi icon={CalendarCheck} label="Booked" value={totals.calls_booked} prev={prevTotals.calls_booked} accent="var(--tab-dmclose)" />
-          <Kpi icon={Eye} label="Shows" value={totals.shows} prev={prevTotals.shows} accent="var(--tab-engage)" />
-          <Kpi icon={EyeOff} label="No-shows" value={totals.no_shows} prev={prevTotals.no_shows} accent="var(--tab-outbound)" invertDelta />
-          <Kpi icon={TrendingUp} label="Show %" value={showRate} suffix="%" prev={prevShowRate} accent="var(--tab-psych)" />
-          <Kpi icon={Users2} label="Setters" value={activeSetters} prev={new Set(prevEods.map((e) => e.user_id)).size} accent="var(--tab-story)" />
-          <Kpi icon={FileText} label="EODs" value={totalEods} prev={prevEods.length} accent="var(--tab-stages)" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <Kpi icon={MessageSquare}  label="DMs Sent"    value={totals.dms_sent}       prev={prevTotals.dms_sent}       color={KPI_COLORS.dms} />
+          <Kpi icon={MessagesSquare} label="Convos"      value={totals.convos_started} prev={prevTotals.convos_started} color={KPI_COLORS.convos} />
+          <Kpi icon={CalendarCheck}  label="Calls Booked" value={totals.calls_booked}  prev={prevTotals.calls_booked}   color={KPI_COLORS.booked} />
+          <Kpi icon={Eye}            label="Shows"       value={totals.shows}          prev={prevTotals.shows}          color={KPI_COLORS.shows} />
+          <Kpi icon={EyeOff}         label="No-shows"    value={totals.no_shows}       prev={prevTotals.no_shows}       color={KPI_COLORS.noshow} invertDelta />
+          <Kpi icon={TrendingUp}     label="Show rate"   value={showRate} suffix="%"   prev={prevShowRate}              color={KPI_COLORS.rate} />
+          <Kpi icon={Users2}         label="Active Setters" value={activeSetters}      prev={new Set(prevEods.map((e) => e.user_id)).size} color={KPI_COLORS.setters} />
+          <Kpi icon={FileText}       label="EODs Filed"  value={totalEods}             prev={prevEods.length}           color={KPI_COLORS.eods} />
         </div>
 
-        {/* Row: Trend + Transformation */}
+        {/* Row: Trend + Momentum */}
         <div className="grid gap-4 lg:grid-cols-3">
-          <Card className="lg:col-span-2 p-5">
+          <Card className="lg:col-span-2 p-5 border-border/60">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="font-semibold">Growth Trend</h3>
-                <p className="text-xs text-muted-foreground">{rangeLabel}</p>
+                <p className="text-xs text-muted-foreground">{rangeLabel} · daily activity</p>
               </div>
               <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                <LegendDot color="var(--tab-inbound)" label="DMs" />
-                <LegendDot color="var(--tab-conv)" label="Convos" />
-                <LegendDot color="var(--tab-dmclose)" label="Booked" />
+                <LegendDot color={KPI_COLORS.dms.bg} label="DMs" />
+                <LegendDot color={KPI_COLORS.convos.bg} label="Convos" />
+                <LegendDot color={KPI_COLORS.booked.bg} label="Booked" />
               </div>
             </div>
-            <div className="h-64">
+            <div className="h-72">
               {loading ? (
                 <ChartSkeleton />
               ) : (
                 <ResponsiveContainer>
-                  <LineChart data={trend} margin={{ top: 5, right: 8, left: -20, bottom: 0 }}>
+                  <AreaChart data={trend} margin={{ top: 5, right: 8, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="gDms" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={KPI_COLORS.dms.bg} stopOpacity={0.4} />
+                        <stop offset="100%" stopColor={KPI_COLORS.dms.bg} stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="gConv" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={KPI_COLORS.convos.bg} stopOpacity={0.4} />
+                        <stop offset="100%" stopColor={KPI_COLORS.convos.bg} stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="gBook" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={KPI_COLORS.booked.bg} stopOpacity={0.5} />
+                        <stop offset="100%" stopColor={KPI_COLORS.booked.bg} stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                     <XAxis dataKey="label" stroke="var(--muted-foreground)" fontSize={11} tickLine={false} axisLine={false} />
                     <YAxis stroke="var(--muted-foreground)" fontSize={11} tickLine={false} axisLine={false} />
-                    <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }} />
-                    <Line type="monotone" dataKey="dms" stroke="var(--tab-inbound)" strokeWidth={2} dot={false} />
-                    <Line type="monotone" dataKey="convos" stroke="var(--tab-conv)" strokeWidth={2} dot={false} />
-                    <Line type="monotone" dataKey="booked" stroke="var(--tab-dmclose)" strokeWidth={2} dot={false} />
-                  </LineChart>
+                    <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, fontSize: 12 }} />
+                    <Area type="monotone" dataKey="dms"    stroke={KPI_COLORS.dms.bg}    strokeWidth={2} fill="url(#gDms)"  />
+                    <Area type="monotone" dataKey="convos" stroke={KPI_COLORS.convos.bg} strokeWidth={2} fill="url(#gConv)" />
+                    <Area type="monotone" dataKey="booked" stroke={KPI_COLORS.booked.bg} strokeWidth={2.5} fill="url(#gBook)" />
+                  </AreaChart>
                 </ResponsiveContainer>
               )}
             </div>
           </Card>
 
-          <Card className="p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="h-8 w-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center">
-                <Flame className="h-4 w-4" />
+          <Card className="p-5 border-border/60">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="h-8 w-8 rounded-xl flex items-center justify-center" style={{ background: "rgba(249,115,22,0.15)" }}>
+                <Flame className="h-4 w-4" style={{ color: "#f97316" }} />
               </div>
               <h3 className="font-semibold">Momentum</h3>
             </div>
-            <p className="text-xs text-muted-foreground mb-4">This period vs previous period</p>
+            <p className="text-xs text-muted-foreground mb-4">This period vs previous</p>
             <div className="space-y-3">
-              <TransformRow label="DMs" prev={prevTotals.dms_sent} curr={totals.dms_sent} />
-              <TransformRow label="Convos" prev={prevTotals.convos_started} curr={totals.convos_started} />
-              <TransformRow label="Calls booked" prev={prevTotals.calls_booked} curr={totals.calls_booked} />
-              <TransformRow label="Shows" prev={prevTotals.shows} curr={totals.shows} />
-              <TransformRow label="Show rate" prev={prevShowRate} curr={showRate} suffix="%" />
+              <TransformRow label="DMs"         prev={prevTotals.dms_sent}       curr={totals.dms_sent} />
+              <TransformRow label="Convos"      prev={prevTotals.convos_started} curr={totals.convos_started} />
+              <TransformRow label="Calls booked" prev={prevTotals.calls_booked}  curr={totals.calls_booked} />
+              <TransformRow label="Shows"       prev={prevTotals.shows}          curr={totals.shows} />
+              <TransformRow label="Show rate"   prev={prevShowRate}              curr={showRate} suffix="%" />
             </div>
           </Card>
         </div>
 
         {/* Row: Top setters + Goals */}
         <div className="grid gap-4 lg:grid-cols-3">
-          <Card className="lg:col-span-2 p-5">
+          <Card className="lg:col-span-2 p-5 border-border/60">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <Trophy className="h-4 w-4 text-primary" />
-                <h3 className="font-semibold">Top Performing Setters</h3>
+                <div className="h-8 w-8 rounded-xl flex items-center justify-center" style={{ background: "rgba(245,158,11,0.15)" }}>
+                  <Trophy className="h-4 w-4" style={{ color: "#f59e0b" }} />
+                </div>
+                <div>
+                  <h3 className="font-semibold">Top Performing Setters</h3>
+                  <p className="text-xs text-muted-foreground">{rangeLabel} · ranked by calls booked</p>
+                </div>
               </div>
-              <span className="text-xs text-muted-foreground">{rangeLabel}</span>
             </div>
 
             {topSetters.length === 0 ? (
               <EmptyState text="No EODs submitted in this range yet." />
             ) : (
-              <>
-                <div className="overflow-x-auto -mx-5 px-5">
-                  <table className="w-full text-sm">
-                    <thead className="text-xs text-muted-foreground">
-                      <tr className="border-b border-border">
-                        <th className="text-left font-normal py-2 w-8">#</th>
-                        <th className="text-left font-normal py-2">Setter</th>
-                        <th className="text-right font-normal py-2">DMs</th>
-                        <th className="text-right font-normal py-2">Convos</th>
-                        <th className="text-right font-normal py-2">Booked</th>
-                        <th className="text-right font-normal py-2">Shows</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {topSetters.map((s, i) => (
-                        <tr key={s.user_id} className="border-b border-border/50 last:border-0">
-                          <td className="py-2.5 text-muted-foreground">{i + 1}</td>
-                          <td className="py-2.5 font-medium truncate max-w-[180px]">
-                            {profiles[s.user_id]?.display_name ?? "Unknown"}
-                          </td>
-                          <td className="py-2.5 text-right tabular-nums">{s.dms.toLocaleString()}</td>
-                          <td className="py-2.5 text-right tabular-nums">{s.convos.toLocaleString()}</td>
-                          <td className="py-2.5 text-right tabular-nums font-semibold text-primary">{s.calls}</td>
-                          <td className="py-2.5 text-right tabular-nums">{s.shows}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {setterBars.length > 0 && (
-                  <div className="h-40 mt-4">
-                    <ResponsiveContainer>
-                      <BarChart data={setterBars} layout="vertical" margin={{ top: 0, right: 8, left: 8, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
-                        <XAxis type="number" stroke="var(--muted-foreground)" fontSize={11} tickLine={false} axisLine={false} />
-                        <YAxis type="category" dataKey="name" stroke="var(--muted-foreground)" fontSize={11} tickLine={false} axisLine={false} width={70} />
-                        <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }} />
-                        <Bar dataKey="Calls" fill="var(--tab-dmclose)" radius={[0, 4, 4, 0]} />
-                        <Bar dataKey="Shows" fill="var(--tab-engage)" radius={[0, 4, 4, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                )}
-              </>
+              <div className="space-y-2.5">
+                {topSetters.map((s, i) => {
+                  const name = profiles[s.user_id]?.display_name ?? "Unknown";
+                  const initials = name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+                  const pct = maxCalls ? Math.max(4, Math.round((s.calls / maxCalls) * 100)) : 0;
+                  const rankColors = ["#f59e0b", "#94a3b8", "#f97316"];
+                  const rankBg = i < 3 ? rankColors[i] : "var(--muted)";
+                  const rankFg = i < 3 ? "#0b0b0b" : "var(--muted-foreground)";
+                  return (
+                    <div key={s.user_id} className="flex items-center gap-3 rounded-xl p-2.5 hover:bg-muted/40 transition">
+                      <div className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+                        style={{ background: rankBg, color: rankFg }}>{i + 1}</div>
+                      <div className="h-9 w-9 rounded-full flex items-center justify-center text-xs font-semibold text-white shrink-0"
+                        style={{ background: `linear-gradient(135deg, hsl(${(i * 67) % 360} 70% 55%), hsl(${(i * 67 + 40) % 360} 70% 45%))` }}>
+                        {initials || "?"}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-sm font-medium truncate">{name}</p>
+                          <p className="text-xs text-muted-foreground tabular-nums shrink-0">
+                            <span className="font-semibold text-foreground">{s.calls}</span> booked · {s.shows} shows
+                          </p>
+                        </div>
+                        <div className="mt-1.5 h-1.5 rounded-full bg-muted overflow-hidden">
+                          <div className="h-full rounded-full transition-all"
+                            style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${KPI_COLORS.booked.bg}, ${KPI_COLORS.rate.bg})` }} />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </Card>
 
-          <Card className="p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <Target className="h-4 w-4 text-primary" />
+          <Card className="p-5 border-border/60">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="h-8 w-8 rounded-xl flex items-center justify-center" style={{ background: "rgba(34,197,94,0.15)" }}>
+                <Target className="h-4 w-4" style={{ color: "#22c55e" }} />
+              </div>
               <h3 className="font-semibold">Team Goals</h3>
             </div>
-            <p className="text-xs text-muted-foreground mb-4">Monthly targets — pace vs {rangeLabel.toLowerCase()}</p>
+            <p className="text-xs text-muted-foreground mb-4">Monthly targets</p>
             <div className="space-y-4">
-              <Goal label="DMs sent" value={totals.dms_sent} target={GOALS.dms} />
-              <Goal label="Convos started" value={totals.convos_started} target={GOALS.convos} />
-              <Goal label="Calls booked" value={totals.calls_booked} target={GOALS.calls} />
-              <Goal label="Shows" value={totals.shows} target={GOALS.shows} />
-              <Goal label="Show rate" value={showRate} target={GOALS.showRate} suffix="%" />
+              <Goal label="DMs sent"       value={totals.dms_sent}       target={GOALS.dms}     color={KPI_COLORS.dms.bg} />
+              <Goal label="Convos started" value={totals.convos_started} target={GOALS.convos}  color={KPI_COLORS.convos.bg} />
+              <Goal label="Calls booked"   value={totals.calls_booked}   target={GOALS.calls}   color={KPI_COLORS.booked.bg} />
+              <Goal label="Shows"          value={totals.shows}          target={GOALS.shows}   color={KPI_COLORS.shows.bg} />
+              <Goal label="Show rate"      value={showRate}              target={GOALS.showRate} suffix="%" color={KPI_COLORS.rate.bg} />
             </div>
           </Card>
         </div>
 
         {/* Quick links */}
         <div className="grid gap-3 sm:grid-cols-3">
-          <QuickLink to="/eods" icon={FileText} label="Submit EOD" desc="Log today's numbers" />
-          <QuickLink to="/notes" icon={StickyNote} label="Add note" desc="Capture an objection or win" />
-          <QuickLink to="/policies/crm-hygiene" icon={Target} label="CRM Hygiene" desc="Review the policy" />
+          <QuickLink to="/eods"     icon={FileText}   label="Submit EOD"   desc="Log today's numbers" color={KPI_COLORS.booked.bg} />
+          <QuickLink to="/notes"    icon={StickyNote} label="Add note"     desc="Capture an objection or win" color={KPI_COLORS.convos.bg} />
+          <QuickLink to="/policies/crm-hygiene" icon={Target} label="CRM Hygiene" desc="Review the policy" color={KPI_COLORS.rate.bg} />
         </div>
       </div>
     </div>
@@ -348,34 +354,43 @@ function buildTrend(rows: EodRow[], days: number) {
 /* ---------- subcomponents ---------- */
 
 function Kpi({
-  icon: Icon, label, value, prev, suffix, accent, invertDelta,
+  icon: Icon, label, value, prev, suffix, color, invertDelta,
 }: {
   icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
-
   label: string;
   value: number;
   prev: number;
   suffix?: string;
-  accent: string;
+  color: { bg: string; soft: string };
   invertDelta?: boolean;
 }) {
   const delta = prev === 0 ? (value > 0 ? 100 : 0) : Math.round(((value - prev) / prev) * 100);
   const positive = invertDelta ? delta < 0 : delta > 0;
   const flat = delta === 0;
   return (
-    <Card className="p-3 relative overflow-hidden">
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        <Icon className="h-3.5 w-3.5" style={{ color: accent }} />
-        <span>{label}</span>
+    <Card className="p-4 relative overflow-hidden border-border/60 hover:border-border transition">
+      <div
+        className="absolute -top-8 -right-8 h-24 w-24 rounded-full blur-2xl opacity-60 pointer-events-none"
+        style={{ background: color.soft }}
+      />
+      <div className="relative flex items-start justify-between">
+        <div className="h-9 w-9 rounded-xl flex items-center justify-center" style={{ background: color.soft }}>
+          <Icon className="h-4 w-4" style={{ color: color.bg }} />
+        </div>
+        <span
+          className={`text-[10.5px] font-semibold px-2 py-0.5 rounded-full inline-flex items-center gap-0.5 tabular-nums ${
+            flat ? "bg-muted text-muted-foreground" : positive ? "bg-emerald-500/15 text-emerald-500" : "bg-red-500/15 text-red-500"
+          }`}
+        >
+          {!flat && (positive ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />)}
+          {flat ? "0%" : `${delta > 0 ? "+" : ""}${delta}%`}
+        </span>
       </div>
-      <div className="mt-1.5 text-xl font-semibold tabular-nums">
-        {value.toLocaleString()}{suffix}
-      </div>
-      <div className={`mt-1 text-[11px] flex items-center gap-0.5 tabular-nums ${
-        flat ? "text-muted-foreground" : positive ? "text-emerald-500" : "text-red-500"
-      }`}>
-        {!flat && (positive ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />)}
-        {flat ? "—" : `${delta > 0 ? "+" : ""}${delta}%`}
+      <div className="relative mt-3">
+        <div className="text-2xl font-bold tabular-nums tracking-tight">
+          {value.toLocaleString()}{suffix}
+        </div>
+        <div className="text-xs text-muted-foreground mt-0.5">{label}</div>
       </div>
     </Card>
   );
@@ -400,7 +415,7 @@ function TransformRow({ label, prev, curr, suffix }: { label: string; prev: numb
         <span className="text-xs text-muted-foreground">{prev.toLocaleString()}{suffix}</span>
         <span className="text-muted-foreground">→</span>
         <span className="font-semibold">{curr.toLocaleString()}{suffix}</span>
-        <span className={`text-[11px] ${positive ? "text-emerald-500" : "text-red-500"} w-12 text-right`}>
+        <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${positive ? "bg-emerald-500/15 text-emerald-500" : "bg-red-500/15 text-red-500"} w-14 text-center`}>
           {delta > 0 ? "+" : ""}{delta}%
         </span>
       </div>
@@ -408,41 +423,35 @@ function TransformRow({ label, prev, curr, suffix }: { label: string; prev: numb
   );
 }
 
-function Goal({ label, value, target, suffix }: { label: string; value: number; target: number; suffix?: string }) {
+function Goal({ label, value, target, suffix, color }: { label: string; value: number; target: number; suffix?: string; color: string }) {
   const pct = Math.min(100, Math.round((value / target) * 100));
-  const onPace = pct >= 60;
   return (
     <div>
       <div className="flex justify-between items-center text-sm mb-1.5">
-        <span className="flex items-center gap-1.5">
-          {label}
-          <span className={`h-1.5 w-1.5 rounded-full ${onPace ? "bg-emerald-500" : "bg-amber-500"}`} />
-        </span>
-        <span className="tabular-nums text-xs text-muted-foreground">
+        <span>{label}</span>
+        <span className="tabular-nums text-xs">
           <span className="font-semibold text-foreground">{value.toLocaleString()}{suffix}</span>
-          <span> / {target.toLocaleString()}{suffix}</span>
+          <span className="text-muted-foreground"> / {target.toLocaleString()}{suffix}</span>
         </span>
       </div>
-      <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-        <div
-          className="h-full rounded-full transition-all"
-          style={{ width: `${pct}%`, background: onPace ? "var(--tab-dmclose)" : "var(--tab-outbound)" }}
-        />
+      <div className="h-2 rounded-full bg-muted overflow-hidden">
+        <div className="h-full rounded-full transition-all"
+          style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${color}, ${color}cc)` }} />
       </div>
     </div>
   );
 }
 
-function QuickLink({ to, icon: Icon, label, desc }: { to: string; icon: React.ComponentType<{ className?: string }>; label: string; desc: string }) {
+function QuickLink({ to, icon: Icon, label, desc, color }: { to: string; icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>; label: string; desc: string; color: string }) {
   return (
     <Link to={to}>
-      <Card className="p-4 hover:border-primary/60 transition group">
+      <Card className="p-4 border-border/60 hover:border-primary/60 transition group">
         <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center">
-            <Icon className="h-4 w-4 text-primary" />
+          <div className="h-10 w-10 rounded-xl flex items-center justify-center" style={{ background: `${color}22` }}>
+            <Icon className="h-5 w-5" style={{ color }} />
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-medium group-hover:text-primary transition">{label}</p>
+            <p className="text-sm font-semibold group-hover:text-primary transition">{label}</p>
             <p className="text-xs text-muted-foreground">{desc}</p>
           </div>
         </div>
