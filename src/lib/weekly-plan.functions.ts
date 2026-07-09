@@ -63,7 +63,7 @@ export const ensureWeekProvisioned = createServerFn({ method: "POST" })
 
       if (!weekItems || weekItems.length === 0) {
         const monday = new Date(`${week}T00:00:00Z`);
-        const slots = [
+        const slots: { offset: number; stage: "tof" | "mof"; label: string }[] = [
           { offset: 0, stage: "tof", label: "TOF · 1 of 4" },
           { offset: 1, stage: "tof", label: "TOF · 2 of 4" },
           { offset: 2, stage: "tof", label: "TOF · 3 of 4" },
