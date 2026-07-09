@@ -352,6 +352,29 @@ function StudentsLayout() {
   );
 }
 
+function StudentCard({ s, canDrag, coachName, atRisk }: { s: Student; canDrag: boolean; coachName: string; atRisk: boolean }) {
+  return (
+    <Link
+      to={"/students/$id" as any}
+      params={{ id: s.id } as any}
+      draggable={canDrag}
+      onDragStart={e => e.dataTransfer.setData("text/plain", s.id)}
+      className={`block p-2 rounded-sm bg-[#14171e] border transition cursor-pointer ${atRisk ? "border-rose-500/30 hover:border-rose-500/60" : "border-[#1f2530] hover:border-[#2a3140]"}`}
+    >
+      <div className="flex items-center gap-1.5">
+        {atRisk && <AlertTriangle className="h-3 w-3 text-rose-400 shrink-0" />}
+        <div className="text-xs font-medium truncate flex-1">{s.full_name}</div>
+      </div>
+      <div className="flex items-center justify-between mt-1">
+        <span className={`text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm border ${statusMeta(s.status).color}`}>{statusMeta(s.status).label}</span>
+        <span className="text-[9px] text-muted-foreground truncate ml-1">{coachName.slice(0, 14)}</span>
+      </div>
+    </Link>
+  );
+}
+
+
+
 function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void; onCreated: () => void; coaches: Coach[] }) {
   const [form, setForm] = useState({
     full_name: "", email: "", phase: "onboarding" as Phase, status: "active" as Status,
