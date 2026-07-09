@@ -242,7 +242,9 @@ function StudentsLayout() {
                   {risky && <AlertTriangle className="h-3 w-3 text-rose-400 shrink-0" />}
                   <div className="min-w-0">
                     <div className="text-sm font-medium truncate">{s.full_name}</div>
-                    <div className="text-[10px] text-muted-foreground truncate">{s.email ?? "no email"}</div>
+                    <div className={`text-[10px] truncate flex items-center gap-1 ${s.email ? "text-muted-foreground" : "text-amber-400"}`}>
+                      {s.email ?? "⚠ No email — cannot auto-link login"}
+                    </div>
                   </div>
                 </Link>
                 {canManage ? (
@@ -384,10 +386,13 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
 
   const submit = async () => {
     if (!form.full_name.trim()) return toast.error("Name required");
+    const email = form.email.trim().toLowerCase();
+    if (!email) return toast.error("Email is required — it's how the student's login links to this record.");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return toast.error("Enter a valid email address.");
     setSaving(true);
     const { error } = await supabase.from("students").insert({
       full_name: form.full_name.trim(),
-      email: form.email.trim() || null,
+      email,
       phase: form.phase,
       status: form.status,
       coach_id: form.coach_id || null,
@@ -401,6 +406,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
     onCreated();
   };
 
+
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-[#0f1116] border border-[#1f2530] rounded-sm max-w-lg w-full p-5 space-y-4" onClick={e => e.stopPropagation()}>
@@ -412,8 +418,8 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
           <Field label="Full name" full>
             <input value={form.full_name} onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))} className={inputCls} />
           </Field>
-          <Field label="Email" full>
-            <input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} className={inputCls} placeholder="They'll auto-link on signup" />
+          <Field label="Email (required)" full>
+            <input type="email" required value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} className={inputCls} placeholder="Needed to auto-link their login" />
           </Field>
           <Field label="Phase">
             <select value={form.phase} onChange={e => setForm(f => ({ ...f, phase: e.target.value as Phase }))} className={inputCls}>

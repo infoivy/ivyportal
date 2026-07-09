@@ -455,46 +455,79 @@ export type Database = {
       }
       students: {
         Row: {
+          calls_allotted: number
           calls_included: number
           coach_id: string | null
           created_at: string
           email: string | null
+          first_win_at: string | null
           full_name: string
+          general_notes: string | null
           id: string
           join_date: string
+          next_action: string | null
           notes: string | null
+          offer_landed_at: string | null
+          offers_landed_count: number
+          payment_state: Database["public"]["Enums"]["payment_state"] | null
           phase: Database["public"]["Enums"]["student_phase"]
           status: Database["public"]["Enums"]["student_status"]
+          student_grade: string | null
+          testimonial_collected: boolean
+          trustpilot_collected: boolean
           updated_at: string
           user_id: string | null
+          whatsapp: string | null
         }
         Insert: {
+          calls_allotted?: number
           calls_included?: number
           coach_id?: string | null
           created_at?: string
           email?: string | null
+          first_win_at?: string | null
           full_name: string
+          general_notes?: string | null
           id?: string
           join_date?: string
+          next_action?: string | null
           notes?: string | null
+          offer_landed_at?: string | null
+          offers_landed_count?: number
+          payment_state?: Database["public"]["Enums"]["payment_state"] | null
           phase?: Database["public"]["Enums"]["student_phase"]
           status?: Database["public"]["Enums"]["student_status"]
+          student_grade?: string | null
+          testimonial_collected?: boolean
+          trustpilot_collected?: boolean
           updated_at?: string
           user_id?: string | null
+          whatsapp?: string | null
         }
         Update: {
+          calls_allotted?: number
           calls_included?: number
           coach_id?: string | null
           created_at?: string
           email?: string | null
+          first_win_at?: string | null
           full_name?: string
+          general_notes?: string | null
           id?: string
           join_date?: string
+          next_action?: string | null
           notes?: string | null
+          offer_landed_at?: string | null
+          offers_landed_count?: number
+          payment_state?: Database["public"]["Enums"]["payment_state"] | null
           phase?: Database["public"]["Enums"]["student_phase"]
           status?: Database["public"]["Enums"]["student_status"]
+          student_grade?: string | null
+          testimonial_collected?: boolean
+          trustpilot_collected?: boolean
           updated_at?: string
           user_id?: string | null
+          whatsapp?: string | null
         }
         Relationships: []
       }
@@ -540,6 +573,7 @@ export type Database = {
         | "late"
         | "missed"
         | "waived"
+      payment_state: "paid_in_full" | "installments" | "behind"
       student_phase:
         | "uncategorized"
         | "onboarding"
@@ -683,6 +717,7 @@ export const Constants = {
         "missed",
         "waived",
       ],
+      payment_state: ["paid_in_full", "installments", "behind"],
       student_phase: [
         "uncategorized",
         "onboarding",
