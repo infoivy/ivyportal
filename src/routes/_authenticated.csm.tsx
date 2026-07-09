@@ -31,6 +31,10 @@ type StudentCall = {
 type ActionItem = { text: string; done: boolean };
 
 type StudentEodLite = { student_id: string; report_date: string };
+type AdHocItem = {
+  id: string; student_id: string; text: string; done: boolean;
+  due_date: string | null; created_at: string; created_by: string;
+};
 
 const KIND_META: Record<TallyKind, { label: string; icon: typeof Video; color: string; ring: string }> = {
   loom:       { label: "Loom reviewed",     icon: Video,          color: "bg-blue-500/10 text-blue-300 hover:bg-blue-500/20 border-blue-500/30",         ring: "focus:ring-blue-400/40" },
