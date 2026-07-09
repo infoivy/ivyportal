@@ -12,6 +12,7 @@ import { NotificationsBell } from "@/components/notifications-bell";
 import { CommandPalette } from "@/components/command-palette";
 import { StudentBottomNav } from "@/components/student-bottom-nav";
 import { setStudentPortalTab, getStudentPortalTab, onStudentPortalTab } from "@/lib/student-portal-bus";
+import { PageSkeleton } from "@/components/ui/skeletons";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
