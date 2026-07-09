@@ -16,7 +16,7 @@ export const CATEGORY_LABEL: Record<DocCategory, string> = Object.fromEntries(
   DOC_CATEGORIES.map((c) => [c.value, c.label]),
 ) as Record<DocCategory, string>;
 
-export const ALL_ROLES = ["admin", "closer", "setter", "coach", "csm", "student"] as const;
+export const ALL_ROLES = ["admin", "closer", "setter", "coach", "csm", "student", "founder"] as const;
 export type AppRole = (typeof ALL_ROLES)[number];
 
 export function slugify(input: string): string {
