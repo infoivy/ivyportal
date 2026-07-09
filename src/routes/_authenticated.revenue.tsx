@@ -258,6 +258,46 @@ function RevenuePage() {
         </div>
       </Card>
 
+      {/* Per-setter breakdown */}
+      <Card className="overflow-hidden">
+        <div className="p-4 border-b border-[#1f2530] flex items-center justify-between">
+          <h3 className="text-sm font-semibold">Per-setter breakdown (MTD)</h3>
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+            {(rates.setter_base * 100).toFixed(1)}% base · +{(rates.setter_pif_bonus * 100).toFixed(1)}% PIF bonus
+          </span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="text-xs uppercase tracking-wider text-muted-foreground/70 bg-[#0f1116]">
+              <tr>
+                <th className="text-left px-4 py-2.5">Setter</th>
+                <th className="text-right px-4 py-2.5">Set closes</th>
+                <th className="text-right px-4 py-2.5">PIF bonuses</th>
+                <th className="text-right px-4 py-2.5">Booked</th>
+                <th className="text-right px-4 py-2.5">Commission</th>
+              </tr>
+            </thead>
+            <tbody>
+              {perSetter.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="text-center text-muted-foreground py-8">No setter-attributed deals this month.</td>
+                </tr>
+              ) : (
+                perSetter.map((r) => (
+                  <tr key={r.setter_id} className="border-t border-[#1f2530]">
+                    <td className="px-4 py-3 font-medium">{r.name}</td>
+                    <td className="px-4 py-3 text-right tabular-nums">{r.deals}</td>
+                    <td className="px-4 py-3 text-right tabular-nums text-sky-400">{r.pifBonus}</td>
+                    <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">{money(r.booked)}</td>
+                    <td className="px-4 py-3 text-right tabular-nums font-semibold text-emerald-400">{money(r.commission)}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
       {/* Recent deals */}
       <Card className="overflow-hidden">
         <div className="p-4 border-b border-[#1f2530]">
@@ -270,6 +310,7 @@ function RevenuePage() {
                 <th className="text-left px-4 py-2.5">Date</th>
                 <th className="text-left px-4 py-2.5">Student</th>
                 <th className="text-left px-4 py-2.5">Closer</th>
+                <th className="text-left px-4 py-2.5">Setter</th>
                 <th className="text-left px-4 py-2.5">Type</th>
                 <th className="text-right px-4 py-2.5">Value</th>
                 <th className="text-right px-4 py-2.5">Cash</th>
@@ -280,11 +321,15 @@ function RevenuePage() {
               {deals.slice(0, 25).map((d) => {
                 const canEdit = isAdmin || d.created_by === user?.id;
                 const closerName = closers.find((c) => c.id === d.closer_id)?.display_name || "—";
+                const setterName = d.setter_id
+                  ? setters.find((s) => s.id === d.setter_id)?.display_name || "—"
+                  : "—";
                 return (
                   <tr key={d.id} className="border-t border-[#1f2530]">
                     <td className="px-4 py-3 text-muted-foreground tabular-nums">{d.deal_date}</td>
                     <td className="px-4 py-3 font-medium">{d.student_name}</td>
                     <td className="px-4 py-3">{closerName}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{setterName}</td>
                     <td className="px-4 py-3">
                       <span className="text-[10px] uppercase tracking-wider border border-[#1f2530] rounded-full px-2 py-0.5">
                         {d.payment_type}
@@ -311,7 +356,7 @@ function RevenuePage() {
               })}
               {deals.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="text-center text-muted-foreground py-8">No deals logged yet.</td>
+                  <td colSpan={8} className="text-center text-muted-foreground py-8">No deals logged yet.</td>
                 </tr>
               )}
             </tbody>
