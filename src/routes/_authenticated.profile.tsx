@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
-import { UserCircle, Save, Camera } from "lucide-react";
+import { UserCircle, Save, Camera, Upload, Trash2 } from "lucide-react";
+import { signAvatar, uploadAvatar } from "@/lib/avatars";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({ meta: [{ title: "Profile — ISA" }] }),
@@ -13,24 +14,63 @@ export const Route = createFileRoute("/_authenticated/profile")({
 function ProfilePage() {
   const { user, roles } = useAuth();
   const [displayName, setDisplayName] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState("");
+  const [avatarPath, setAvatarPath] = useState<string | null>(null);
+  const [avatarSignedUrl, setAvatarSignedUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("profiles").select("display_name, avatar_url").eq("id", user.id).maybeSingle().then(({ data }) => {
-      setDisplayName(data?.display_name ?? "");
-      setAvatarUrl(data?.avatar_url ?? "");
-    });
+    supabase
+      .from("profiles")
+      .select("display_name, avatar_path")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then(async ({ data }) => {
+        setDisplayName(data?.display_name ?? "");
+        const p = (data as any)?.avatar_path ?? null;
+        setAvatarPath(p);
+        setAvatarSignedUrl(await signAvatar(p));
+      });
   }, [user]);
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f || !user) return;
+    if (f.size > 5 * 1024 * 1024) return toast.error("Max 5MB");
+    setUploading(true);
+    try {
+      const path = await uploadAvatar(user.id, f);
+      const { error } = await supabase.from("profiles").update({ avatar_path: path } as any).eq("id", user.id);
+      if (error) throw error;
+      setAvatarPath(path);
+      setAvatarSignedUrl(await signAvatar(path));
+      toast.success("Avatar updated");
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  const removeAvatar = async () => {
+    if (!user || !avatarPath) return;
+    await supabase.storage.from("avatars").remove([avatarPath]);
+    await supabase.from("profiles").update({ avatar_path: null } as any).eq("id", user.id);
+    setAvatarPath(null);
+    setAvatarSignedUrl(null);
+    toast.success("Avatar removed");
+  };
 
   const save = async () => {
     if (!user) return;
     setSaving(true);
-    const { error } = await supabase.from("profiles").update({
-      display_name: displayName.trim() || null,
-      avatar_url: avatarUrl.trim() || null,
-    }).eq("id", user.id);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ display_name: displayName.trim() || null })
+      .eq("id", user.id);
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success("Profile saved");
@@ -56,19 +96,29 @@ function ProfilePage() {
 
       <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-5 space-y-4">
         <div className="flex items-center gap-4">
-          <div className="h-16 w-16 rounded-md border border-[#1f2530] bg-[#1a1f29] overflow-hidden flex items-center justify-center text-2xl font-bold text-muted-foreground">
-            {avatarUrl ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" /> : (displayName ?? "?").slice(0, 1).toUpperCase()}
+          <div className="h-20 w-20 rounded-md border border-[#1f2530] bg-[#1a1f29] overflow-hidden flex items-center justify-center text-2xl font-bold text-muted-foreground shrink-0">
+            {avatarSignedUrl ? <img src={avatarSignedUrl} alt="" className="h-full w-full object-cover" /> : (displayName ?? "?").slice(0, 1).toUpperCase()}
           </div>
-          <div className="flex-1 space-y-1">
+          <div className="flex-1 space-y-2">
             <label className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-              <Camera className="h-3 w-3" /> Avatar URL
+              <Camera className="h-3 w-3" /> Profile picture
             </label>
-            <input
-              value={avatarUrl}
-              onChange={e => setAvatarUrl(e.target.value)}
-              placeholder="https://…"
-              className="w-full h-8 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs focus:outline-none focus:border-emerald-500/40"
-            />
+            <div className="flex items-center gap-2">
+              <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
+              <button
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading}
+                className="flex items-center gap-1 text-xs bg-[#1a1f29] hover:bg-[#232935] border border-[#2a3140] px-3 py-1.5 rounded-sm"
+              >
+                <Upload className="h-3 w-3" /> {uploading ? "Uploading…" : "Upload image"}
+              </button>
+              {avatarPath && (
+                <button onClick={removeAvatar} className="flex items-center gap-1 text-xs text-rose-400 hover:text-rose-300 px-2 py-1.5">
+                  <Trash2 className="h-3 w-3" /> Remove
+                </button>
+              )}
+            </div>
+            <p className="text-[10px] text-muted-foreground">PNG or JPG, up to 5MB.</p>
           </div>
         </div>
 

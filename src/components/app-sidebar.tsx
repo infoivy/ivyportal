@@ -1,8 +1,9 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, FileText, BookOpen, Calendar, GraduationCap,
-  BarChart3, Database, Users, StickyNote, ShieldCheck, Shield, UserCircle, School, HeartHandshake,
+  BarChart3, Database, Users, StickyNote, ShieldCheck, Shield, UserCircle, School, HeartHandshake, Phone,
 } from "lucide-react";
+
 
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
@@ -27,10 +28,12 @@ const knowledgeItems: Item[] = [
 
 const opsItems: Item[] = [
   { title: "Students", url: "/students", icon: School },
+  { title: "1-on-1 Calls", url: "/calls", icon: Phone, roles: ["admin", "coach"] },
   { title: "Calendar", url: "/calendar", icon: Calendar },
   { title: "Analytics", url: "/analytics", icon: BarChart3 },
   { title: "CRM", url: "/crm", icon: Database },
 ];
+
 
 const adminItems: Item[] = [
   { title: "Admin", url: "/admin", icon: Shield, roles: ["admin"] },

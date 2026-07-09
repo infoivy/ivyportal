@@ -192,6 +192,8 @@ export type Database = {
       }
       profiles: {
         Row: {
+          active: boolean
+          avatar_path: string | null
           avatar_url: string | null
           created_at: string
           display_name: string | null
@@ -199,6 +201,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          active?: boolean
+          avatar_path?: string | null
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
@@ -206,6 +210,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          active?: boolean
+          avatar_path?: string | null
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
@@ -217,34 +223,55 @@ export type Database = {
       student_calls: {
         Row: {
           action_items: string | null
+          action_items_json: Json
           call_date: string
           coach_id: string | null
           coach_notes: string | null
           created_at: string
+          duration_min: number | null
           fathom_url: string | null
           id: string
+          next_call_date: string | null
+          next_step: string | null
+          outcome: string | null
+          progress_rating: number | null
+          status: string
           student_id: string
           updated_at: string
         }
         Insert: {
           action_items?: string | null
+          action_items_json?: Json
           call_date: string
           coach_id?: string | null
           coach_notes?: string | null
           created_at?: string
+          duration_min?: number | null
           fathom_url?: string | null
           id?: string
+          next_call_date?: string | null
+          next_step?: string | null
+          outcome?: string | null
+          progress_rating?: number | null
+          status?: string
           student_id: string
           updated_at?: string
         }
         Update: {
           action_items?: string | null
+          action_items_json?: Json
           call_date?: string
           coach_id?: string | null
           coach_notes?: string | null
           created_at?: string
+          duration_min?: number | null
           fathom_url?: string | null
           id?: string
+          next_call_date?: string | null
+          next_step?: string | null
+          outcome?: string | null
+          progress_rating?: number | null
+          status?: string
           student_id?: string
           updated_at?: string
         }
