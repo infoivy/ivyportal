@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 import {
   Users, UserPlus, Eye, Zap, MessageSquare, Heart, MessagesSquare,
   Link2, FileText, Target, Globe, ArrowRightLeft, Calendar as CalIcon,
-  Settings, CheckCircle2, AlertTriangle,
+  Settings, CheckCircle2, AlertTriangle, DollarSign, Phone, Star, ChevronDown,
 } from "lucide-react";
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -31,14 +31,27 @@ type EodRow = {
 };
 type Profile = { id: string; display_name: string | null };
 
+function currentQuarterLabel(d = new Date()) {
+  return `Q${Math.floor(d.getMonth() / 3) + 1} ${d.getFullYear()}`;
+}
+
 const RANGES = [
   { key: "7d", label: "7D", days: 7 },
   { key: "30d", label: "30D", days: 30 },
-  { key: "90d", label: "Q1", days: 90 },
+  { key: "90d", label: "90D", days: 90 },
 ] as const;
 type RangeKey = typeof RANGES[number]["key"];
 
 const GOALS = { dms: 20000, convos: 3000, calls: 500, shows: 350, showRate: 75, viral: 3 };
+
+type OpsCounts = {
+  atRisk: number;
+  installmentsDueSoon: number;
+  installmentsOverdue: number;
+  callsThisWeek: number;
+  eodsMissingToday: number;
+  testimonialsPending: number;
+};
 
 function Dashboard() {
   const { displayName, roles } = useAuth();
@@ -46,6 +59,7 @@ function Dashboard() {
   const [eods, setEods] = useState<EodRow[]>([]);
   const [prevEods, setPrevEods] = useState<EodRow[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
+  const [ops, setOps] = useState<OpsCounts | null>(null);
   const [loading, setLoading] = useState(true);
 
   const days = RANGES.find((r) => r.key === range)!.days;
@@ -53,21 +67,54 @@ function Dashboard() {
   useEffect(() => {
     setLoading(true);
     const now = new Date();
+    const today = format(now, "yyyy-MM-dd");
     const from = format(subDays(now, days - 1), "yyyy-MM-dd");
     const prevFrom = format(subDays(now, days * 2 - 1), "yyyy-MM-dd");
     const prevTo = format(subDays(now, days), "yyyy-MM-dd");
+    const in3 = format(new Date(now.getTime() + 3 * 86400000), "yyyy-MM-dd");
+    const in7 = format(new Date(now.getTime() + 7 * 86400000), "yyyy-MM-dd");
+    const eodRisk = format(subDays(now, 5), "yyyy-MM-dd");
+    const callRisk = format(subDays(now, 14), "yyyy-MM-dd");
 
     (async () => {
-      const [cur, prev, profs] = await Promise.all([
+      const [cur, prev, profs, students, callsThisWeek, callsRecent, eodsRecent, todayEods, installmentsDue, installmentsLate, testimonials] = await Promise.all([
         supabase.from("eods").select("*").gte("report_date", from).order("report_date", { ascending: true }),
         supabase.from("eods").select("*").gte("report_date", prevFrom).lte("report_date", prevTo),
         supabase.from("profiles").select("id, display_name"),
+        supabase.from("students").select("id, status").eq("status", "active"),
+        supabase.from("student_calls").select("id", { count: "exact", head: true }).eq("status", "scheduled").gte("call_date", today).lte("call_date", in7),
+        supabase.from("student_calls").select("student_id, call_date").eq("status", "completed").gte("call_date", callRisk),
+        supabase.from("student_eods").select("student_id, report_date").gte("report_date", eodRisk),
+        supabase.from("eods").select("user_id").eq("report_date", today),
+        supabase.from("installment_payments").select("id", { count: "exact", head: true }).eq("status", "upcoming").gte("due_date", today).lte("due_date", in3),
+        supabase.from("installment_payments").select("id", { count: "exact", head: true }).eq("status", "upcoming").lt("due_date", today),
+        supabase.from("students").select("id", { count: "exact", head: true }).eq("status", "active").eq("testimonial_collected", false).not("first_win_at", "is", null),
       ]);
       setEods((cur.data as EodRow[]) ?? []);
       setPrevEods((prev.data as EodRow[]) ?? []);
       const pmap: Record<string, Profile> = {};
       (profs.data as Profile[] | null)?.forEach((p) => { pmap[p.id] = p; });
       setProfiles(pmap);
+
+      // At-risk: active students with no student EOD in 5d AND no completed call in 14d
+      const eodByStudent = new Set((eodsRecent.data as { student_id: string }[] | null ?? []).map(r => r.student_id));
+      const callByStudent = new Set((callsRecent.data as { student_id: string }[] | null ?? []).map(r => r.student_id));
+      const activeStudents = (students.data as { id: string; status: string }[] | null) ?? [];
+      const atRisk = activeStudents.filter(s => !eodByStudent.has(s.id) || !callByStudent.has(s.id)).length;
+
+      // EODs missing today: setters/closers with role but no eod for today. Approximation: count distinct users who filed in last 7d minus those who filed today.
+      const filedToday = new Set(((todayEods.data as { user_id: string }[] | null) ?? []).map(r => r.user_id));
+      const recentFilers = new Set(((cur.data as EodRow[]) ?? []).map(r => r.user_id));
+      const eodsMissingToday = Array.from(recentFilers).filter(u => !filedToday.has(u)).length;
+
+      setOps({
+        atRisk,
+        installmentsDueSoon: installmentsDue.count ?? 0,
+        installmentsOverdue: installmentsLate.count ?? 0,
+        callsThisWeek: callsThisWeek.count ?? 0,
+        eodsMissingToday,
+        testimonialsPending: testimonials.count ?? 0,
+      });
       setLoading(false);
     })();
   }, [days]);
@@ -75,6 +122,7 @@ function Dashboard() {
   const totals = useMemo(() => sumRows(eods), [eods]);
   const prevTotals = useMemo(() => sumRows(prevEods), [prevEods]);
   const trend = useMemo(() => buildTrend(eods, days), [eods, days]);
+  const hasPrev = prevEods.length > 0;
 
   const showRate = totals.shows + totals.no_shows > 0
     ? Math.round((totals.shows / (totals.shows + totals.no_shows)) * 100) : 0;
@@ -100,7 +148,8 @@ function Dashboard() {
     { label: "Booked → Shows", value: totals.shows, color: "#ef4444" },
   ];
 
-  const rangeLabel = range === "7d" ? "Last 7 days" : range === "30d" ? "Last 30 days" : "Q1 2026";
+  const rangeLabel = range === "7d" ? "Last 7 days" : range === "30d" ? "Last 30 days" : `Last 90 days · ${currentQuarterLabel()}`;
+  const goalsLabel = `${currentQuarterLabel()} Goals`;
 
   return (
     <div className="dashboard-dark min-h-full">
@@ -160,8 +209,24 @@ function Dashboard() {
           <Kpi icon={FileText}       label="Scheduled"      value={totals.calls_scheduled} color="#ec4899" />
         </div>
 
+        {/* Ops Row */}
+        <div>
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-2">
+            <span>Ops today</span>
+            <span className="h-px flex-1 bg-border" />
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+            <OpsCard to="/students" search={{ view: "atRisk" }} tone={ops && ops.atRisk > 0 ? "rose" : "muted"} icon={AlertTriangle} label="At-risk students" value={ops?.atRisk} />
+            <OpsCard to="/installments" tone={ops && ops.installmentsOverdue > 0 ? "rose" : "muted"} icon={DollarSign} label="Installments overdue" value={ops?.installmentsOverdue} />
+            <OpsCard to="/installments" tone={ops && ops.installmentsDueSoon > 0 ? "amber" : "muted"} icon={DollarSign} label="Due in ≤3 days" value={ops?.installmentsDueSoon} />
+            <OpsCard to="/calls" tone="sky" icon={Phone} label="1:1s this week" value={ops?.callsThisWeek} />
+            <OpsCard to="/eods" tone={ops && ops.eodsMissingToday > 0 ? "amber" : "muted"} icon={FileText} label="EODs missing today" value={ops?.eodsMissingToday} />
+            <OpsCard to="/students" tone={ops && ops.testimonialsPending > 0 ? "amber" : "muted"} icon={Star} label="Testimonials pending" value={ops?.testimonialsPending} />
+          </div>
+        </div>
+
         {/* Row 2: Growth + Format + Transformation */}
-        <div className="grid gap-3 lg:grid-cols-[1.2fr_1fr_1fr]">
+        <div className={`grid gap-3 ${hasPrev ? "lg:grid-cols-[1.2fr_1fr_1fr]" : "lg:grid-cols-[1.5fr_1fr]"}`}>
           {/* Growth Trend */}
           <Panel>
             <PanelHead title="Growth Trend" subtitle={rangeLabel} legend={[
@@ -205,28 +270,34 @@ function Dashboard() {
             </div>
           </Panel>
 
-          {/* Transformation Results (period-over-period) */}
-          <Panel accent="emerald">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="grid h-6 w-6 place-items-center rounded-sm bg-emerald-500/15 border border-emerald-500/40">
-                <Zap className="h-3 w-3 text-emerald-400" />
+          {/* Transformation Results (period-over-period) — only when we have a prior period */}
+          {hasPrev && (
+            <Panel accent="emerald">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="grid h-6 w-6 place-items-center rounded-sm bg-emerald-500/15 border border-emerald-500/40">
+                  <Zap className="h-3 w-3 text-emerald-400" />
+                </div>
+                <h3 className="text-sm font-bold">Period Deltas</h3>
               </div>
-              <h3 className="text-sm font-bold">Period Deltas</h3>
-            </div>
-            <div className="space-y-2.5">
-              <Transform label="DMs Sent"     prev={prevTotals.dms_sent}       curr={totals.dms_sent} />
-              <Transform label="Convos"       prev={prevTotals.convos_started} curr={totals.convos_started} />
-              <Transform label="Booked"       prev={prevTotals.calls_booked}   curr={totals.calls_booked} />
-              <Transform label="Shows"        prev={prevTotals.shows}          curr={totals.shows} />
-              <Transform label="Show Rate"    prev={prevShowRateOf(prevTotals)} curr={showRate} suffix="%" />
-            </div>
-          </Panel>
+              <div className="space-y-2.5">
+                <Transform label="DMs Sent"     prev={prevTotals.dms_sent}       curr={totals.dms_sent} />
+                <Transform label="Convos"       prev={prevTotals.convos_started} curr={totals.convos_started} />
+                <Transform label="Booked"       prev={prevTotals.calls_booked}   curr={totals.calls_booked} />
+                <Transform label="Shows"        prev={prevTotals.shows}          curr={totals.shows} />
+                <Transform label="Show Rate"    prev={prevShowRateOf(prevTotals)} curr={showRate} suffix="%" />
+              </div>
+            </Panel>
+          )}
         </div>
 
         {/* Row 3: Top Setters + Goals + Audience */}
         <div className="grid gap-3 lg:grid-cols-[1.5fr_1fr]">
           <Panel>
-            <PanelHead title="Top Performing Setters" subtitle={rangeLabel} />
+            <PanelHead
+              title="Top Performing Setters"
+              subtitle={rangeLabel}
+              legend={[{ color: "#22c55e", label: "Sorted by Booked" }]}
+            />
             {topSetters.length === 0 ? (
               <div className="py-10 text-center text-xs text-muted-foreground">No EODs submitted in this range.</div>
             ) : (
@@ -236,7 +307,7 @@ function Dashboard() {
                   <span>Setter</span>
                   <span className="text-right">DMs</span>
                   <span className="text-right">Convos</span>
-                  <span className="text-right">Booked</span>
+                  <span className="text-right inline-flex items-center justify-end gap-0.5 text-emerald-400">Booked <ChevronDown className="h-3 w-3" /></span>
                   <span className="text-right">Shows</span>
                 </div>
                 {topSetters.map((s, i) => {
@@ -262,7 +333,7 @@ function Dashboard() {
                 <div className="grid h-6 w-6 place-items-center rounded-sm bg-blue-500/15 border border-blue-500/40">
                   <Target className="h-3 w-3 text-blue-400" />
                 </div>
-                <h3 className="text-sm font-bold">Q1 Goals</h3>
+                <h3 className="text-sm font-bold">{goalsLabel}</h3>
               </div>
               <div className="space-y-3">
                 <Goal label="DMs Sent"     value={totals.dms_sent}       target={GOALS.dms}     color="#3b82f6" />
@@ -381,6 +452,42 @@ function Kpi({ icon: Icon, label, value, suffix, color, highlight }: {
     </div>
   );
 }
+
+const OPS_TONE: Record<string, { border: string; bg: string; text: string; iconBg: string }> = {
+  rose:   { border: "border-rose-500/40",    bg: "bg-rose-500/5",    text: "text-rose-400",    iconBg: "bg-rose-500/15" },
+  amber:  { border: "border-amber-500/40",   bg: "bg-amber-500/5",   text: "text-amber-400",   iconBg: "bg-amber-500/15" },
+  sky:    { border: "border-sky-500/40",     bg: "bg-sky-500/5",     text: "text-sky-400",     iconBg: "bg-sky-500/15" },
+  muted:  { border: "border-border",         bg: "bg-card",          text: "text-foreground",  iconBg: "bg-white/5" },
+};
+
+function OpsCard({
+  to, search, tone, icon: Icon, label, value,
+}: {
+  to: string; search?: Record<string, unknown>;
+  tone: keyof typeof OPS_TONE;
+  icon: React.ComponentType<{ className?: string }>;
+  label: string; value: number | undefined;
+}) {
+  const t = OPS_TONE[tone];
+  return (
+    <Link
+      to={to as any}
+      search={search as any}
+      className={`rounded-md border ${t.border} ${t.bg} p-2.5 hover:brightness-110 transition block`}
+    >
+      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+        <span className={`grid h-4 w-4 place-items-center rounded-sm ${t.iconBg}`}>
+          <Icon className={`h-2.5 w-2.5 ${t.text}`} />
+        </span>
+        <span className="truncate">{label}</span>
+      </div>
+      <div className={`text-xl font-bold tabular-nums mt-1 ${t.text}`}>
+        {value == null ? <span className="text-muted-foreground text-sm">—</span> : value.toLocaleString()}
+      </div>
+    </Link>
+  );
+}
+
 function Transform({ label, prev, curr, suffix }: { label: string; prev: number; curr: number; suffix?: string }) {
   return (
     <div className="flex items-center justify-between text-xs">
