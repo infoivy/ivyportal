@@ -72,12 +72,13 @@ function CsmPage() {
   const load = async () => {
     if (!user) return;
     const since = new Date(Date.now() - 14 * 86400000).toISOString();
-    const [studentsRes, notesRes, tallyRes, callsRes, sEodRes] = await Promise.all([
+    const [studentsRes, notesRes, tallyRes, callsRes, sEodRes, adhocRes] = await Promise.all([
       supabase.from("students").select("id, full_name, email, phase, status, coach_id").order("full_name", { ascending: true }),
       supabase.from("csm_student_notes").select("*").order("created_at", { ascending: false }).limit(200),
       supabase.from("csm_tally").select("*").eq("user_id", user.id).gte("created_at", since).order("created_at", { ascending: false }),
       supabase.from("student_calls").select("id, student_id, call_date, action_items_json, next_call_date").order("call_date", { ascending: false }).limit(600),
       supabase.from("student_eods").select("student_id, report_date").order("report_date", { ascending: false }).limit(1000),
+      supabase.from("student_action_items").select("id, student_id, text, done, due_date, created_at, created_by").order("created_at", { ascending: false }).limit(500),
     ]);
     const studentRows = (studentsRes.data ?? []) as Student[];
     setStudents(studentRows);
