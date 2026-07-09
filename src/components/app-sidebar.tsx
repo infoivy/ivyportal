@@ -1,8 +1,9 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, FileText, BookOpen, Calendar, GraduationCap,
-  BarChart3, Database, Users, StickyNote, ShieldCheck, Shield, UserCircle, School, HeartHandshake,
+  BarChart3, Database, Users, StickyNote, ShieldCheck, Shield, UserCircle, School, HeartHandshake, Phone,
 } from "lucide-react";
+
 
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
