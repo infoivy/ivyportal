@@ -40,6 +40,9 @@ export function CommandPalette() {
   const [q, setQ] = useState("");
   const [students, setStudents] = useState<StudentItem[]>([]);
   const [people, setPeople] = useState<PersonItem[]>([]);
+  const [docs, setDocs] = useState<DocItem[]>([]);
+  const [testimonialsList, setTestimonialsList] = useState<TestimonialItem[]>([]);
+  const [contentList, setContentList] = useState<ContentItem[]>([]);
   const [active, setActive] = useState(0);
 
   useEffect(() => {
@@ -57,10 +60,13 @@ export function CommandPalette() {
     if (!open) return;
     let alive = true;
     (async () => {
-      const [sRes, pRes, rRes] = await Promise.all([
+      const [sRes, pRes, rRes, dRes, tRes, cRes] = await Promise.all([
         supabase.from("students").select("id, full_name, email").order("full_name").limit(500),
         supabase.from("profiles").select("id, display_name").limit(200),
         supabase.from("user_roles").select("user_id, role"),
+        supabase.from("docs").select("slug, title, category").limit(300),
+        supabase.from("testimonials").select("id, title").limit(200),
+        supabase.from("content_items").select("id, hook, platform").limit(200),
       ]);
       if (!alive) return;
       setStudents(((sRes.data ?? []) as any[]).map(s => ({ kind: "student", id: s.id, name: s.full_name, email: s.email })));
@@ -72,6 +78,9 @@ export function CommandPalette() {
         kind: "person", id: p.id, name: p.display_name ?? "Unnamed",
         role: (roleMap.get(p.id) ?? [])[0],
       })));
+      setDocs(((dRes.data ?? []) as any[]).map(d => ({ kind: "doc", slug: d.slug, title: d.title, category: d.category })));
+      setTestimonialsList(((tRes.data ?? []) as any[]).map(t => ({ kind: "testimonial", id: t.id, title: t.title ?? "Untitled" })));
+      setContentList(((cRes.data ?? []) as any[]).map(c => ({ kind: "content", id: c.id, title: c.hook ?? "Untitled", platform: c.platform ?? "" })));
     })();
     return () => { alive = false; };
   }, [open]);
@@ -87,13 +96,16 @@ export function CommandPalette() {
     const st = (term
       ? students.filter(s => s.name.toLowerCase().includes(term) || (s.email ?? "").toLowerCase().includes(term))
       : students
-    ).slice(0, 10);
+    ).slice(0, 8);
     const pe = (term
       ? people.filter(p => p.name.toLowerCase().includes(term))
       : []
     ).slice(0, 6);
-    return [...pages, ...st, ...pe];
-  }, [q, visiblePages, students, people]);
+    const dc = (term ? docs.filter(d => d.title.toLowerCase().includes(term)) : []).slice(0, 6);
+    const ts = (term ? testimonialsList.filter(t => t.title.toLowerCase().includes(term)) : []).slice(0, 6);
+    const cn = (term ? contentList.filter(c => c.title.toLowerCase().includes(term)) : []).slice(0, 6);
+    return [...pages, ...st, ...pe, ...dc, ...ts, ...cn];
+  }, [q, visiblePages, students, people, docs, testimonialsList, contentList]);
 
   useEffect(() => { setActive(0); }, [q, open]);
 
@@ -101,6 +113,9 @@ export function CommandPalette() {
     setOpen(false); setQ("");
     if (it.kind === "page") nav({ to: it.to as any });
     else if (it.kind === "student") nav({ to: "/students/$id", params: { id: it.id } });
+    else if (it.kind === "doc") nav({ to: "/knowledge/$slug", params: { slug: it.slug } });
+    else if (it.kind === "testimonial") nav({ to: "/testimonials" });
+    else if (it.kind === "content") nav({ to: "/founder" });
     else nav({ to: "/team" });
   };
 
