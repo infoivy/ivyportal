@@ -220,39 +220,43 @@ function Dashboard() {
         </div>
 
         {/* KPI Row */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-9 gap-2">
-          <Kpi icon={Users}         label="Active Setters" value={activeSetters} highlight />
-          <Kpi icon={UserPlus}      label="EODs Filed"     value={totalEods} />
-          <Kpi icon={Eye}            label="DMs Sent"       value={totals.dms_sent} color="#3b82f6" />
-          <Kpi icon={Zap}            label="Convos"         value={totals.convos_started} color="#a855f7" />
-          <Kpi icon={Users}          label="Booked"         value={totals.calls_booked} color="#22c55e" />
-          <Kpi icon={Heart}          label="Shows"          value={totals.shows} color="#f59e0b" />
-          <Kpi icon={MessagesSquare} label="No-Shows"       value={totals.no_shows} color="#ef4444" />
-          <Kpi icon={Link2}          label="Show Rate"      value={showRate} suffix="%" color="#06b6d4" />
-          <Kpi icon={FileText}       label="Scheduled"      value={totals.calls_scheduled} color="#ec4899" />
-        </div>
+        {prefs.showKpis && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-9 gap-2">
+            <Kpi icon={Users}         label="Active Setters" value={activeSetters} highlight />
+            <Kpi icon={UserPlus}      label="EODs Filed"     value={totalEods} />
+            <Kpi icon={Eye}            label="DMs Sent"       value={totals.dms_sent} color="#3b82f6" onClick={() => setDrilldown("dms_sent")} delta={compare ? pctDelta(prevTotals.dms_sent, totals.dms_sent) : null} />
+            <Kpi icon={Zap}            label="Convos"         value={totals.convos_started} color="#a855f7" onClick={() => setDrilldown("convos_started")} delta={compare ? pctDelta(prevTotals.convos_started, totals.convos_started) : null} />
+            <Kpi icon={Users}          label="Booked"         value={totals.calls_booked} color="#22c55e" onClick={() => setDrilldown("calls_booked")} delta={compare ? pctDelta(prevTotals.calls_booked, totals.calls_booked) : null} />
+            <Kpi icon={Heart}          label="Shows"          value={totals.shows} color="#f59e0b" onClick={() => setDrilldown("shows")} delta={compare ? pctDelta(prevTotals.shows, totals.shows) : null} />
+            <Kpi icon={MessagesSquare} label="No-Shows"       value={totals.no_shows} color="#ef4444" onClick={() => setDrilldown("no_shows")} delta={compare ? pctDelta(prevTotals.no_shows, totals.no_shows) : null} />
+            <Kpi icon={Link2}          label="Show Rate"      value={showRate} suffix="%" color="#06b6d4" delta={compare ? pctDelta(prevShowRateOf(prevTotals), showRate) : null} />
+            <Kpi icon={FileText}       label="Scheduled"      value={totals.calls_scheduled} color="#ec4899" onClick={() => setDrilldown("calls_scheduled")} delta={compare ? pctDelta(prevTotals.calls_scheduled, totals.calls_scheduled) : null} />
+          </div>
+        )}
 
         {/* Ops Row */}
-        <div>
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-2">
-            <span>Ops today</span>
-            <span className="h-px flex-1 bg-border" />
+        {prefs.showOps && (
+          <div>
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-2">
+              <span>Ops today</span>
+              <span className="h-px flex-1 bg-border" />
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2">
+              <OpsCard to="/students" search={{ view: "atRisk" }} tone={ops && ops.atRisk > 0 ? "rose" : "muted"} icon={AlertTriangle} label="At-risk students" value={ops?.atRisk} />
+              <OpsCard to="/installments" tone={ops && ops.installmentsOverdue > 0 ? "rose" : "muted"} icon={DollarSign} label="Installments overdue" value={ops?.installmentsOverdue} />
+              <OpsCard to="/installments" tone={ops && ops.installmentsDueSoon > 0 ? "amber" : "muted"} icon={DollarSign} label="Due in ≤3 days" value={ops?.installmentsDueSoon} />
+              <OpsCard to="/calls" tone="sky" icon={Phone} label="1:1s this week" value={ops?.callsThisWeek} />
+              <OpsCard to="/eods" tone={ops && ops.eodsMissingToday > 0 ? "amber" : "muted"} icon={FileText} label="EODs missing today" value={ops?.eodsMissingToday} />
+              <OpsCard to="/students" tone={ops && ops.testimonialsPending > 0 ? "amber" : "muted"} icon={Star} label="Testimonials pending" value={ops?.testimonialsPending} />
+              <OpsCard to="/action-items" tone={ops && ops.openActionItems > 0 ? "amber" : "muted"} icon={ListChecks} label="Open action items" value={ops?.openActionItems} />
+            </div>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2">
-            <OpsCard to="/students" search={{ view: "atRisk" }} tone={ops && ops.atRisk > 0 ? "rose" : "muted"} icon={AlertTriangle} label="At-risk students" value={ops?.atRisk} />
-            <OpsCard to="/installments" tone={ops && ops.installmentsOverdue > 0 ? "rose" : "muted"} icon={DollarSign} label="Installments overdue" value={ops?.installmentsOverdue} />
-            <OpsCard to="/installments" tone={ops && ops.installmentsDueSoon > 0 ? "amber" : "muted"} icon={DollarSign} label="Due in ≤3 days" value={ops?.installmentsDueSoon} />
-            <OpsCard to="/calls" tone="sky" icon={Phone} label="1:1s this week" value={ops?.callsThisWeek} />
-            <OpsCard to="/eods" tone={ops && ops.eodsMissingToday > 0 ? "amber" : "muted"} icon={FileText} label="EODs missing today" value={ops?.eodsMissingToday} />
-            <OpsCard to="/students" tone={ops && ops.testimonialsPending > 0 ? "amber" : "muted"} icon={Star} label="Testimonials pending" value={ops?.testimonialsPending} />
-            <OpsCard to="/action-items" tone={ops && ops.openActionItems > 0 ? "amber" : "muted"} icon={ListChecks} label="Open action items" value={ops?.openActionItems} />
-          </div>
-        </div>
+        )}
 
-        <MyDayBlock roles={roles} />
+        {prefs.showMyDay && <MyDayBlock roles={roles} />}
 
 
-        <InstallmentReminders />
+        {prefs.showInstallmentReminders && <InstallmentReminders />}
 
         {/* Row 2: Growth + Format + Transformation */}
         <div className={`grid gap-3 ${hasPrev ? "lg:grid-cols-[1.2fr_1fr_1fr]" : "lg:grid-cols-[1.5fr_1fr]"}`}>
