@@ -79,7 +79,7 @@ function Dashboard() {
     const callRisk = format(subDays(now, 14), "yyyy-MM-dd");
 
     (async () => {
-      const [cur, prev, profs, students, callsThisWeek, callsRecent, eodsRecent, todayEods, installmentsDue, installmentsLate, testimonials] = await Promise.all([
+      const [cur, prev, profs, students, callsThisWeek, callsRecent, eodsRecent, todayEods, installmentsDue, installmentsLate, testimonials, actionCalls] = await Promise.all([
         supabase.from("eods").select("*").gte("report_date", from).order("report_date", { ascending: true }),
         supabase.from("eods").select("*").gte("report_date", prevFrom).lte("report_date", prevTo),
         supabase.from("profiles").select("id, display_name"),
@@ -91,6 +91,7 @@ function Dashboard() {
         supabase.from("installment_payments").select("id", { count: "exact", head: true }).eq("status", "upcoming").gte("due_date", today).lte("due_date", in3),
         supabase.from("installment_payments").select("id", { count: "exact", head: true }).eq("status", "upcoming").lt("due_date", today),
         supabase.from("students").select("id", { count: "exact", head: true }).eq("status", "active").eq("testimonial_collected", false).not("first_win_at", "is", null),
+        supabase.from("student_calls").select("action_items_json").not("action_items_json", "is", null).limit(2000),
       ]);
       setEods((cur.data as EodRow[]) ?? []);
       setPrevEods((prev.data as EodRow[]) ?? []);
@@ -98,16 +99,20 @@ function Dashboard() {
       (profs.data as Profile[] | null)?.forEach((p) => { pmap[p.id] = p; });
       setProfiles(pmap);
 
-      // At-risk: active students with no student EOD in 5d AND no completed call in 14d
       const eodByStudent = new Set((eodsRecent.data as { student_id: string }[] | null ?? []).map(r => r.student_id));
       const callByStudent = new Set((callsRecent.data as { student_id: string }[] | null ?? []).map(r => r.student_id));
       const activeStudents = (students.data as { id: string; status: string }[] | null) ?? [];
       const atRisk = activeStudents.filter(s => !eodByStudent.has(s.id) || !callByStudent.has(s.id)).length;
 
-      // EODs missing today: setters/closers with role but no eod for today. Approximation: count distinct users who filed in last 7d minus those who filed today.
       const filedToday = new Set(((todayEods.data as { user_id: string }[] | null) ?? []).map(r => r.user_id));
       const recentFilers = new Set(((cur.data as EodRow[]) ?? []).map(r => r.user_id));
       const eodsMissingToday = Array.from(recentFilers).filter(u => !filedToday.has(u)).length;
+
+      let openActionItems = 0;
+      ((actionCalls.data as any[]) ?? []).forEach(r => {
+        const items = Array.isArray(r.action_items_json) ? r.action_items_json : [];
+        openActionItems += items.filter((it: any) => !it?.done).length;
+      });
 
       setOps({
         atRisk,
@@ -116,6 +121,7 @@ function Dashboard() {
         callsThisWeek: callsThisWeek.count ?? 0,
         eodsMissingToday,
         testimonialsPending: testimonials.count ?? 0,
+        openActionItems,
       });
       setLoading(false);
     })();
