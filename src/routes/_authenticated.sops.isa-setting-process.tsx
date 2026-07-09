@@ -5,6 +5,8 @@ import { TABS, type TabId } from "@/data/content";
 import { SECTIONS } from "@/data/sections";
 import { useIsMobile } from "@/hooks/use-mobile";
 import logoAsset from "@/assets/isa-logo.png.asset.json";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/sops/isa-setting-process")({
   head: () => ({
