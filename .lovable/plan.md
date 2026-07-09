@@ -1,65 +1,69 @@
 
-# ISA Team Dashboard — Build Plan
+# Phases 2 & 3 — Build Plan
 
-Turn the current ISA canvas into one module inside a bigger team dashboard. This plan is Phase 1 (foundation + EOD + SOPs). Calendar, training videos, analytics, and Close CRM come in later phases so each ships polished, not half-done.
+Four placeholder routes get replaced with real features, one stage at a time. Each stage ends in a working, shippable module so nothing sits half-done.
 
-## Phase 1 (this build)
+## Stage A — Team Calendar (Google Calendar, per-user)
 
-### 1. Auth + roles
-- Enable Lovable Cloud (Supabase under the hood).
-- Email/password + Google sign-in.
-- Roles stored in a separate `user_roles` table (never on profiles) with enum `app_role`: `admin`, `closer`, `setter`. Security-definer `has_role()` function for RLS.
-- `profiles` table (display name, avatar, role shown for convenience).
-- First user to sign up = admin; admin promotes/demotes others from a Team page.
-- Protected app shell under `_authenticated/` (managed layout). Public `/auth` route.
+Each closer connects their **own** Google Calendar. Setters see a unified view before booking a call.
 
-### 2. App shell + navigation
-- Left sidebar with sections: Dashboard, EODs, SOPs, Calendar (placeholder), Training (placeholder), Analytics (placeholder), CRM (placeholder), Team (admin only).
-- Top bar: user menu, role badge, sign out.
-- Keep current dark aesthetic from the ISA canvas.
+- Per-user Google OAuth (not the workspace connector — that would only show *one* person's calendar). Scope: `https://www.googleapis.com/auth/calendar.readonly`.
+- New table `calendar_connections` (user_id, google refresh token, calendar_id, connected_at). RLS: user manages own row, admins/closers read team status.
+- "Connect Google Calendar" button on the Calendar page for closers/admins.
+- Unified week + day view: all closers' events on one grid, color-coded by closer, filter by closer.
+- Tooltip on each event shows title, time, closer.
+- Server function refreshes tokens and fetches events (cached 60s).
 
-### 3. EOD submissions + notes
-- **EOD form** (setters submit daily): date, DMs sent, convos started, calls booked, calls scheduled, shows, no-shows, wins, blockers, tomorrow's focus, free-text summary.
-- **Notes**: quick-note stream per user (thoughts, lead context, objections heard). Filter by author/date/tag.
-- **Views**:
-  - Setter: my EODs list, submit today's EOD, edit today's before midnight.
-  - Admin/closer: team feed of EODs (filter by setter, date range), roll-up totals per day/week.
-- Tables: `eods`, `notes`. RLS: users read/write their own; admins + closers read all.
+Prereq: user creates a Google Cloud OAuth client and pastes Client ID + Secret. I'll walk through that and request the secrets when this stage starts.
 
-### 4. SOP dashboard
-- SOPs are structured documents with sections and cards (same shape as the current ISA canvas).
-- Move the existing setting-process canvas in as SOP #1: "ISA Setting Process" — no content changes, just relocate it behind the auth-gated `/sops/isa-setting-process` route.
-- SOP index page lists all SOPs with description + owner role.
-- Admins can create additional SOPs later via a simple config (data-driven from `src/data/sops/`). No CMS in v1 — SOPs are code-defined, which keeps the beautiful custom layouts.
+## Stage B — Training Videos
 
-### 5. Placeholders for future phases
-Nav entries exist and route to "Coming in Phase 2" pages so the shape of the app is visible now.
+Team library for training content Abdulrahman uploads.
 
-## Phase 2 (next build, after Phase 1 approved)
-- **Team calendar**: each closer connects their Google Calendar (per-user OAuth, not the workspace connector — each closer sees their own events). Unified week view showing all closers' booked calls, color-coded by closer.
-- **Training videos**: upload to Lovable Cloud storage, organized by category, watch-progress tracking per user.
+- Lovable Cloud storage bucket `training` (private, signed URLs).
+- Tables: `training_categories`, `training_videos` (title, description, category, video_path, thumbnail_path, duration, uploaded_by, published), `training_progress` (user_id, video_id, seconds_watched, completed_at).
+- Admin: upload form, category manager, publish/unpublish.
+- Everyone: browse by category, video player, resume where you left off, "Completed" checkmark.
+- Simple assignments (Phase 2.5, optional): mark a video required for a role.
 
-## Phase 3
-- **Analytics**: team + individual dashboards from EOD data (trends, conversion funnels, leaderboard).
-- **Close CRM integration**: Close isn't a standard Lovable connector — I'll add it via Close's REST API using a stored API key (admin pastes it in settings). Pull leads, opportunities, activity into the dashboard; write back call outcomes.
+## Stage C — Analytics
+
+Deeper cuts than the dashboard cards.
+
+- `/analytics` page with:
+  - Full-funnel: DMs → Convos → Booked → Shows → Closes (from EODs; Closes filled by Stage D).
+  - Per-setter breakdown table (sortable), sparklines per row.
+  - Week-over-week + month-over-month deltas.
+  - Range picker (7/30/90/custom), CSV export.
+  - Individual view: pick a setter, see their trend + goal pace.
+- All queries live in one `analytics.functions.ts` server module for reuse.
+
+## Stage D — Close CRM
+
+Close isn't a native connector, so we go through Close's REST API.
+
+- Admin settings tab: paste Close API key (stored as `CLOSE_API_KEY` secret, admin-only).
+- Server functions call `api.close.com/api/v1/` with the key.
+- `/crm` page (admin/closer):
+  - Pipeline: leads by status, opportunity value.
+  - Recent activity feed (calls, emails, notes from Close).
+  - Search leads by name/email.
+- Close data enriches Analytics: real "Closes" and revenue numbers replace the EOD-only estimates.
+- Optional write-back: from an EOD, log a call outcome to the matching Close opportunity.
 
 ## Technical notes
 
-- Stack: TanStack Start (existing), Lovable Cloud, shadcn/ui, Tailwind v4.
-- File layout:
-  - `src/routes/auth.tsx` — sign in / sign up
-  - `src/routes/_authenticated/route.tsx` — managed gate
-  - `src/routes/_authenticated/index.tsx` — dashboard home
-  - `src/routes/_authenticated/eods.*` — list, new, detail
-  - `src/routes/_authenticated/notes.tsx`
-  - `src/routes/_authenticated/sops.*` — index + individual SOPs
-  - `src/routes/_authenticated/sops/isa-setting-process.tsx` — current canvas moved here
-  - `src/routes/_authenticated/team.tsx` — admin-only role management
-  - `src/routes/_authenticated/{calendar,training,analytics,crm}.tsx` — Phase 2/3 stubs
-- DB migrations: `profiles`, `user_roles` (+ enum + `has_role`), `eods`, `notes`. All with proper GRANTs and RLS.
-- Current public `/` (the ISA canvas) becomes a redirect to `/auth` (or `/dashboard` if signed in). The canvas itself lives on inside `_authenticated/sops/isa-setting-process` with zero content changes.
+- File layout adds:
+  - `src/routes/_authenticated.calendar.tsx` (real UI), `src/routes/api/public/google-oauth-callback.ts`
+  - `src/routes/_authenticated.training.tsx`, `src/routes/_authenticated.training.$videoId.tsx`, `src/routes/_authenticated.training.admin.tsx`
+  - `src/routes/_authenticated.analytics.tsx` (real)
+  - `src/routes/_authenticated.crm.tsx` (real), `src/routes/_authenticated.settings.integrations.tsx`
+- Migrations: `calendar_connections`, `training_categories`, `training_videos`, `training_progress`, storage bucket `training`. All with GRANTs + RLS per Lovable Cloud rules.
+- Secrets requested at the right stage: Google OAuth Client ID + Secret (Stage A), `CLOSE_API_KEY` (Stage D).
+- UI matches the current creator-dashboard aesthetic (gradient hero, colorful KPI chips, area charts).
 
-## Out of scope for Phase 1
-Calendar OAuth, video uploads/progress, analytics charts, Close CRM API. Nav entries are visible but routes show a "Phase 2" placeholder. This keeps Phase 1 shippable in one pass.
+## Order & shipping
 
-Approve to build Phase 1, or tell me to reshuffle what's in v1 vs later.
+Build **A → B → C → D**, one stage per turn. After each stage you can use it, then say "next" and I'll start the following one. If you'd rather I ship all four back-to-back without stopping, tell me and I'll chain them.
+
+Approve to start Stage A (Calendar).
