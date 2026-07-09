@@ -500,6 +500,7 @@ function LogDealDialog({
       setStudentId(editing.student_id ?? "");
       setStudentName(editing.student_name);
       setCloserId(editing.closer_id);
+      setSetterId(editing.setter_id ?? "");
       setProgramType(editing.program_type);
       setTotalValue(String(editing.total_value));
       setCashUpfront(String(editing.cash_collected_upfront));
