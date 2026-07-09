@@ -228,7 +228,7 @@ function Dashboard() {
         {prefs.showKpis && (
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-9 gap-2">
             <Kpi icon={Users}         label="Active Setters" value={activeSetters} highlight />
-            <Kpi icon={UserPlus}      label="EODs Filed"     value={totalEods} />
+            <Kpi icon={UserPlus}      label="EODs Filed"     value={totalEods} onClick={() => navigate({ to: "/eods" })} title={`${totalEods} EOD reports filed by the team in ${rangeLabel.toLowerCase()}. Click to open EOD reports.`} />
             <Kpi icon={Eye}            label="DMs Sent"       value={totals.dms_sent} color="#3b82f6" onClick={() => setDrilldown("dms_sent")} delta={compare ? pctDelta(prevTotals.dms_sent, totals.dms_sent) : null} />
             <Kpi icon={Zap}            label="Convos"         value={totals.convos_started} color="#a855f7" onClick={() => setDrilldown("convos_started")} delta={compare ? pctDelta(prevTotals.convos_started, totals.convos_started) : null} />
             <Kpi icon={Users}          label="Booked"         value={totals.calls_booked} color="#22c55e" onClick={() => setDrilldown("calls_booked")} delta={compare ? pctDelta(prevTotals.calls_booked, totals.calls_booked) : null} />
