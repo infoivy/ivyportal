@@ -15,7 +15,7 @@ import { Trophy, Zap } from "lucide-react";
  * Combines deals.cash_collected_upfront + eods.cash_collected per closer.
  * Top closer flagged "Double bookings eligible".
  */
-export function WeeklyLeaderboard({ compact = false }: { compact?: boolean }) {
+export function CashLeaderboard({ compact = false }: { compact?: boolean }) {
   const [rows, setRows] = useState<{ user_id: string; name: string; cash: number; closes: number }[]>([]);
   const [loading, setLoading] = useState(true);
 
