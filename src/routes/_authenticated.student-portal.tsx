@@ -175,17 +175,33 @@ function StudentPortal() {
   };
 
   const actionItems = useMemo(() => {
-    const out: { callId: string; callDate: string; index: number; item: ActionItem }[] = [];
+    const out: {
+      kind: "call" | "adhoc";
+      callId: string; callDate: string; index: number;
+      adhocId?: string;
+      item: ActionItem;
+    }[] = [];
     for (const c of calls) {
       const items = Array.isArray(c.action_items_json) ? c.action_items_json : [];
-      items.forEach((it, i) => out.push({ callId: c.id, callDate: c.call_date, index: i, item: it }));
+      items.forEach((it, i) => out.push({ kind: "call", callId: c.id, callDate: c.call_date, index: i, item: it }));
+    }
+    for (const ah of adhocItems) {
+      if (ah.source_call_id) continue; // avoid duplicating call-derived items surfaced as adhoc
+      out.push({
+        kind: "adhoc",
+        callId: `adhoc:${ah.id}`,
+        callDate: ah.created_at.slice(0, 10),
+        index: 0,
+        adhocId: ah.id,
+        item: { text: ah.text, done: ah.done, due_date: ah.due_date ?? null },
+      });
     }
     return out.sort((a, b) => {
       if (!!a.item.done !== !!b.item.done) return a.item.done ? 1 : -1;
       const ad = a.item.due_date ?? "9999", bd = b.item.due_date ?? "9999";
       return ad.localeCompare(bd);
     });
-  }, [calls]);
+  }, [calls, adhocItems]);
 
   const openItems = actionItems.filter(a => !a.item.done);
   const dueToday = openItems.filter(a => a.item.due_date === today);
