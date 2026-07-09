@@ -610,7 +610,7 @@ function StudentCard({ s, canDrag, coachName, atRisk }: { s: Student; canDrag: b
 function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void; onCreated: () => void; coaches: Coach[] }) {
   const [form, setForm] = useState({
     full_name: "", email: "", phase: "onboarding" as Phase, status: "active" as Status,
-    coach_id: "", join_date: new Date().toISOString().slice(0, 10), calls_included: 4, notes: "",
+    coach_id: "", join_date: new Date().toISOString().slice(0, 10), calls_included: 10, notes: "",
   });
   const [saving, setSaving] = useState(false);
 
