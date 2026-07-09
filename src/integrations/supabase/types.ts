@@ -258,6 +258,7 @@ export type Database = {
           notes: string | null
           payment_type: Database["public"]["Enums"]["deal_payment_type"]
           program_type: string
+          setter_id: string | null
           student_id: string | null
           student_name: string
           total_value: number
@@ -275,6 +276,7 @@ export type Database = {
           notes?: string | null
           payment_type?: Database["public"]["Enums"]["deal_payment_type"]
           program_type?: string
+          setter_id?: string | null
           student_id?: string | null
           student_name: string
           total_value?: number
@@ -292,6 +294,7 @@ export type Database = {
           notes?: string | null
           payment_type?: Database["public"]["Enums"]["deal_payment_type"]
           program_type?: string
+          setter_id?: string | null
           student_id?: string | null
           student_name?: string
           total_value?: number
@@ -585,6 +588,7 @@ export type Database = {
           currency: string
           id: string
           notes: string | null
+          setter_id: string | null
           student_id: string | null
           student_name: string
           total_amount: number
@@ -598,6 +602,7 @@ export type Database = {
           currency?: string
           id?: string
           notes?: string | null
+          setter_id?: string | null
           student_id?: string | null
           student_name: string
           total_amount?: number
@@ -611,6 +616,7 @@ export type Database = {
           currency?: string
           id?: string
           notes?: string | null
+          setter_id?: string | null
           student_id?: string | null
           student_name?: string
           total_amount?: number
