@@ -25,7 +25,7 @@ type Student = {
   student_grade: string | null; whatsapp: string | null; next_action: string | null;
   calls_allotted: number; payment_state: PaymentState | null;
   first_win_at: string | null; offers_landed_count: number; offer_landed_at: string | null;
-  testimonial_collected: boolean; trustpilot_collected: boolean;
+  testimonial_collected: boolean; trustpilot_collected: boolean; testimonial_requested?: boolean;
   general_notes: string | null;
 };
 type Call = {
