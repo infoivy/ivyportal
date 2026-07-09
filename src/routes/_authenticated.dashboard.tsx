@@ -2,14 +2,14 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
-import { Card } from "@/components/ui/card";
 import {
-  MessageSquare, MessagesSquare, CalendarCheck, Eye, EyeOff, Trophy,
-  Target, TrendingUp, ArrowUpRight, ArrowDownRight, Flame, Users2,
-  FileText, StickyNote, Sparkles,
+  Users, UserPlus, Eye, Zap, MessageSquare, Heart, MessagesSquare,
+  Link2, FileText, Target, Globe, ArrowRightLeft, Calendar as CalIcon,
+  Settings, CheckCircle2, AlertTriangle,
 } from "lucide-react";
 import {
-  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+  BarChart, Bar, Cell,
 } from "recharts";
 import { format, subDays } from "date-fns";
 
@@ -28,31 +28,17 @@ type EodRow = {
   calls_scheduled: number;
   shows: number;
   no_shows: number;
-  wins: string | null;
 };
-
 type Profile = { id: string; display_name: string | null };
 
 const RANGES = [
   { key: "7d", label: "7D", days: 7 },
   { key: "30d", label: "30D", days: 30 },
-  { key: "90d", label: "90D", days: 90 },
+  { key: "90d", label: "Q1", days: 90 },
 ] as const;
 type RangeKey = typeof RANGES[number]["key"];
 
-const GOALS = { dms: 8000, convos: 1200, calls: 200, shows: 140, showRate: 70 };
-
-// Vibrant creator-dashboard palette per KPI
-const KPI_COLORS = {
-  dms:     { bg: "#3b82f6", soft: "rgba(59,130,246,0.14)" },   // blue
-  convos:  { bg: "#a855f7", soft: "rgba(168,85,247,0.14)" },   // purple
-  booked:  { bg: "#22c55e", soft: "rgba(34,197,94,0.14)" },    // green
-  shows:   { bg: "#f59e0b", soft: "rgba(245,158,11,0.16)" },   // amber
-  noshow:  { bg: "#ef4444", soft: "rgba(239,68,68,0.14)" },    // red
-  rate:    { bg: "#06b6d4", soft: "rgba(6,182,212,0.14)" },    // cyan
-  setters: { bg: "#ec4899", soft: "rgba(236,72,153,0.14)" },   // pink
-  eods:    { bg: "#f97316", soft: "rgba(249,115,22,0.14)" },   // orange
-};
+const GOALS = { dms: 20000, convos: 3000, calls: 500, shows: 350, showRate: 75, viral: 3 };
 
 function Dashboard() {
   const { displayName, roles } = useAuth();
@@ -90,6 +76,12 @@ function Dashboard() {
   const prevTotals = useMemo(() => sumRows(prevEods), [prevEods]);
   const trend = useMemo(() => buildTrend(eods, days), [eods, days]);
 
+  const showRate = totals.shows + totals.no_shows > 0
+    ? Math.round((totals.shows / (totals.shows + totals.no_shows)) * 100) : 0;
+
+  const activeSetters = new Set(eods.map((e) => e.user_id)).size;
+  const totalEods = eods.length;
+
   const topSetters = useMemo(() => {
     const byUser: Record<string, { user_id: string; calls: number; dms: number; convos: number; shows: number }> = {};
     for (const r of eods) {
@@ -99,243 +91,236 @@ function Dashboard() {
       b.convos += r.convos_started;
       b.shows += r.shows;
     }
-    return Object.values(byUser).sort((a, b) => b.calls - a.calls).slice(0, 6);
+    return Object.values(byUser).sort((a, b) => b.calls - a.calls).slice(0, 8);
   }, [eods]);
 
-  const maxCalls = topSetters[0]?.calls ?? 0;
+  const formatBreakdown = [
+    { label: "DMs → Convos", value: totals.convos_started, color: "#3b82f6" },
+    { label: "Convos → Booked", value: totals.calls_booked, color: "#f59e0b" },
+    { label: "Booked → Shows", value: totals.shows, color: "#ef4444" },
+  ];
 
-  const showRate = totals.shows + totals.no_shows > 0
-    ? Math.round((totals.shows / (totals.shows + totals.no_shows)) * 100) : 0;
-  const prevShowRate = prevTotals.shows + prevTotals.no_shows > 0
-    ? Math.round((prevTotals.shows / (prevTotals.shows + prevTotals.no_shows)) * 100) : 0;
-
-  const activeSetters = new Set(eods.map((e) => e.user_id)).size;
-  const totalEods = eods.length;
-  const rangeLabel = range === "7d" ? "Last 7 days" : range === "30d" ? "Last 30 days" : "Last 90 days";
+  const rangeLabel = range === "7d" ? "Last 7 days" : range === "30d" ? "Last 30 days" : "Q1 2026";
 
   return (
-    <div className="min-h-full bg-background">
-      <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-5">
-        {/* Hero header */}
-        <Card className="relative overflow-hidden border-border/60 p-5 sm:p-6">
-          <div
-            className="absolute inset-0 opacity-70 pointer-events-none"
-            style={{
-              background:
-                "radial-gradient(600px 200px at 0% 0%, rgba(168,85,247,0.18), transparent 60%), radial-gradient(500px 200px at 100% 0%, rgba(59,130,246,0.18), transparent 60%)",
-            }}
-          />
-          <div className="relative flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="h-14 w-14 rounded-2xl flex items-center justify-center font-bold text-lg text-white shadow-lg"
-                style={{ background: "linear-gradient(135deg,#a855f7,#3b82f6)" }}>
-                {(displayName ?? "?").slice(0, 2).toUpperCase()}
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-2xl font-semibold tracking-tight">{displayName ?? "Team member"}</h1>
-                  <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-primary/15 text-primary">
-                    <Sparkles className="h-3 w-3" /> ISA Team
-                  </span>
-                </div>
-                <p className="text-sm text-muted-foreground mt-0.5">
-                  {roles.length ? roles.join(" · ") : "member"} · {rangeLabel.toLowerCase()} overview
-                </p>
-              </div>
+    <div className="dashboard-dark min-h-full">
+      <div className="max-w-[1400px] mx-auto p-4 sm:p-5 space-y-4">
+        {/* Header */}
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-emerald-500/10 border border-emerald-500/40 font-bold text-emerald-400">
+              {(displayName ?? "?").slice(0, 1).toUpperCase()}
             </div>
-            <div className="inline-flex rounded-full border border-border bg-card/60 backdrop-blur p-0.5">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h1 className="truncate text-lg font-bold">{displayName ?? "Team member"}</h1>
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-sm bg-amber-500/10 text-amber-400 border border-amber-500/30 uppercase tracking-wider">
+                  {rangeLabel}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                {roles.length ? roles.join(" · ") : "member"} · ISA Team overview
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="inline-flex rounded-sm border border-border bg-card p-0.5">
               {RANGES.map((r) => (
                 <button
                   key={r.key}
                   onClick={() => setRange(r.key)}
-                  className={`text-xs px-3.5 py-1.5 rounded-full transition ${
-                    range === r.key ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:text-foreground"
+                  className={`text-[11px] font-semibold px-2.5 py-1 rounded-[2px] transition ${
+                    range === r.key ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
                   }`}
                 >{r.label}</button>
               ))}
             </div>
+            <button className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1.5 rounded-sm border border-border text-muted-foreground hover:text-foreground">
+              <ArrowRightLeft className="h-3 w-3" /> Compare
+            </button>
+            <Link to="/eods" className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1.5 rounded-sm border border-border text-muted-foreground hover:text-foreground">
+              <CalIcon className="h-3 w-3" /> <span className="hidden sm:inline">{format(new Date(), "MMMM yyyy")}</span>
+            </Link>
+            <button className="p-1.5 rounded-sm border border-border text-muted-foreground hover:text-foreground">
+              <Settings className="h-3.5 w-3.5" />
+            </button>
           </div>
-        </Card>
-
-        {/* KPI grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Kpi icon={MessageSquare}  label="DMs Sent"    value={totals.dms_sent}       prev={prevTotals.dms_sent}       color={KPI_COLORS.dms} />
-          <Kpi icon={MessagesSquare} label="Convos"      value={totals.convos_started} prev={prevTotals.convos_started} color={KPI_COLORS.convos} />
-          <Kpi icon={CalendarCheck}  label="Calls Booked" value={totals.calls_booked}  prev={prevTotals.calls_booked}   color={KPI_COLORS.booked} />
-          <Kpi icon={Eye}            label="Shows"       value={totals.shows}          prev={prevTotals.shows}          color={KPI_COLORS.shows} />
-          <Kpi icon={EyeOff}         label="No-shows"    value={totals.no_shows}       prev={prevTotals.no_shows}       color={KPI_COLORS.noshow} invertDelta />
-          <Kpi icon={TrendingUp}     label="Show rate"   value={showRate} suffix="%"   prev={prevShowRate}              color={KPI_COLORS.rate} />
-          <Kpi icon={Users2}         label="Active Setters" value={activeSetters}      prev={new Set(prevEods.map((e) => e.user_id)).size} color={KPI_COLORS.setters} />
-          <Kpi icon={FileText}       label="EODs Filed"  value={totalEods}             prev={prevEods.length}           color={KPI_COLORS.eods} />
         </div>
 
-        {/* Row: Trend + Momentum */}
-        <div className="grid gap-4 lg:grid-cols-3">
-          <Card className="lg:col-span-2 p-5 border-border/60">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="font-semibold">Growth Trend</h3>
-                <p className="text-xs text-muted-foreground">{rangeLabel} · daily activity</p>
-              </div>
-              <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                <LegendDot color={KPI_COLORS.dms.bg} label="DMs" />
-                <LegendDot color={KPI_COLORS.convos.bg} label="Convos" />
-                <LegendDot color={KPI_COLORS.booked.bg} label="Booked" />
-              </div>
-            </div>
-            <div className="h-72">
-              {loading ? (
-                <ChartSkeleton />
-              ) : (
+        {/* KPI Row */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-9 gap-2">
+          <Kpi icon={Users}         label="Active Setters" value={activeSetters} highlight />
+          <Kpi icon={UserPlus}      label="EODs Filed"     value={totalEods} />
+          <Kpi icon={Eye}            label="DMs Sent"       value={totals.dms_sent} color="#3b82f6" />
+          <Kpi icon={Zap}            label="Convos"         value={totals.convos_started} color="#a855f7" />
+          <Kpi icon={Users}          label="Booked"         value={totals.calls_booked} color="#22c55e" />
+          <Kpi icon={Heart}          label="Shows"          value={totals.shows} color="#f59e0b" />
+          <Kpi icon={MessagesSquare} label="No-Shows"       value={totals.no_shows} color="#ef4444" />
+          <Kpi icon={Link2}          label="Show Rate"      value={showRate} suffix="%" color="#06b6d4" />
+          <Kpi icon={FileText}       label="Scheduled"      value={totals.calls_scheduled} color="#ec4899" />
+        </div>
+
+        {/* Row 2: Growth + Format + Transformation */}
+        <div className="grid gap-3 lg:grid-cols-[1.2fr_1fr_1fr]">
+          {/* Growth Trend */}
+          <Panel>
+            <PanelHead title="Growth Trend" subtitle={rangeLabel} legend={[
+              { color: "#22c55e", label: "Booked" },
+              { color: "#3b82f6", label: "DMs" },
+              { color: "#f59e0b", label: "Convos" },
+            ]} />
+            <div className="h-[220px] mt-1">
+              {loading ? <Skeleton /> : (
                 <ResponsiveContainer>
-                  <AreaChart data={trend} margin={{ top: 5, right: 8, left: -20, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="gDms" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={KPI_COLORS.dms.bg} stopOpacity={0.4} />
-                        <stop offset="100%" stopColor={KPI_COLORS.dms.bg} stopOpacity={0} />
-                      </linearGradient>
-                      <linearGradient id="gConv" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={KPI_COLORS.convos.bg} stopOpacity={0.4} />
-                        <stop offset="100%" stopColor={KPI_COLORS.convos.bg} stopOpacity={0} />
-                      </linearGradient>
-                      <linearGradient id="gBook" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={KPI_COLORS.booked.bg} stopOpacity={0.5} />
-                        <stop offset="100%" stopColor={KPI_COLORS.booked.bg} stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                    <XAxis dataKey="label" stroke="var(--muted-foreground)" fontSize={11} tickLine={false} axisLine={false} />
-                    <YAxis stroke="var(--muted-foreground)" fontSize={11} tickLine={false} axisLine={false} />
-                    <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, fontSize: 12 }} />
-                    <Area type="monotone" dataKey="dms"    stroke={KPI_COLORS.dms.bg}    strokeWidth={2} fill="url(#gDms)"  />
-                    <Area type="monotone" dataKey="convos" stroke={KPI_COLORS.convos.bg} strokeWidth={2} fill="url(#gConv)" />
-                    <Area type="monotone" dataKey="booked" stroke={KPI_COLORS.booked.bg} strokeWidth={2.5} fill="url(#gBook)" />
-                  </AreaChart>
+                  <LineChart data={trend} margin={{ top: 5, right: 10, left: -18, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.06)" vertical={false} />
+                    <XAxis dataKey="label" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                    <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                    <Tooltip contentStyle={{ background: "#0f1116", border: "1px solid #1f2530", borderRadius: 4, fontSize: 11 }} />
+                    <Line type="monotone" dataKey="dms"    stroke="#3b82f6" strokeWidth={1.5} dot={{ r: 2 }} />
+                    <Line type="monotone" dataKey="convos" stroke="#f59e0b" strokeWidth={1.5} dot={{ r: 2 }} />
+                    <Line type="monotone" dataKey="booked" stroke="#22c55e" strokeWidth={2}   dot={{ r: 2.5 }} />
+                  </LineChart>
                 </ResponsiveContainer>
               )}
             </div>
-          </Card>
+          </Panel>
 
-          <Card className="p-5 border-border/60">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="h-8 w-8 rounded-xl flex items-center justify-center" style={{ background: "rgba(249,115,22,0.15)" }}>
-                <Flame className="h-4 w-4" style={{ color: "#f97316" }} />
+          {/* Performance by Format */}
+          <Panel>
+            <PanelHead title="Funnel Performance" subtitle="Volume by stage" />
+            <div className="h-[220px] mt-1">
+              {loading ? <Skeleton /> : (
+                <ResponsiveContainer>
+                  <BarChart data={formatBreakdown} layout="vertical" margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+                    <XAxis type="number" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                    <YAxis type="category" dataKey="label" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} width={100} />
+                    <Tooltip contentStyle={{ background: "#0f1116", border: "1px solid #1f2530", borderRadius: 4, fontSize: 11 }} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
+                    <Bar dataKey="value" radius={[0, 2, 2, 0]}>
+                      {formatBreakdown.map((f, i) => <Cell key={i} fill={f.color} />)}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </Panel>
+
+          {/* Transformation Results (period-over-period) */}
+          <Panel accent="emerald">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="grid h-6 w-6 place-items-center rounded-sm bg-emerald-500/15 border border-emerald-500/40">
+                <Zap className="h-3 w-3 text-emerald-400" />
               </div>
-              <h3 className="font-semibold">Momentum</h3>
+              <h3 className="text-sm font-bold">Period Deltas</h3>
             </div>
-            <p className="text-xs text-muted-foreground mb-4">This period vs previous</p>
-            <div className="space-y-3">
-              <TransformRow label="DMs"         prev={prevTotals.dms_sent}       curr={totals.dms_sent} />
-              <TransformRow label="Convos"      prev={prevTotals.convos_started} curr={totals.convos_started} />
-              <TransformRow label="Calls booked" prev={prevTotals.calls_booked}  curr={totals.calls_booked} />
-              <TransformRow label="Shows"       prev={prevTotals.shows}          curr={totals.shows} />
-              <TransformRow label="Show rate"   prev={prevShowRate}              curr={showRate} suffix="%" />
+            <div className="space-y-2.5">
+              <Transform label="DMs Sent"     prev={prevTotals.dms_sent}       curr={totals.dms_sent} />
+              <Transform label="Convos"       prev={prevTotals.convos_started} curr={totals.convos_started} />
+              <Transform label="Booked"       prev={prevTotals.calls_booked}   curr={totals.calls_booked} />
+              <Transform label="Shows"        prev={prevTotals.shows}          curr={totals.shows} />
+              <Transform label="Show Rate"    prev={prevShowRateOf(prevTotals)} curr={showRate} suffix="%" />
             </div>
-          </Card>
+          </Panel>
         </div>
 
-        {/* Row: Top setters + Goals */}
-        <div className="grid gap-4 lg:grid-cols-3">
-          <Card className="lg:col-span-2 p-5 border-border/60">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-xl flex items-center justify-center" style={{ background: "rgba(245,158,11,0.15)" }}>
-                  <Trophy className="h-4 w-4" style={{ color: "#f59e0b" }} />
-                </div>
-                <div>
-                  <h3 className="font-semibold">Top Performing Setters</h3>
-                  <p className="text-xs text-muted-foreground">{rangeLabel} · ranked by calls booked</p>
-                </div>
-              </div>
-            </div>
-
+        {/* Row 3: Top Setters + Goals + Audience */}
+        <div className="grid gap-3 lg:grid-cols-[1.5fr_1fr]">
+          <Panel>
+            <PanelHead title="Top Performing Setters" subtitle={rangeLabel} />
             {topSetters.length === 0 ? (
-              <EmptyState text="No EODs submitted in this range yet." />
+              <div className="py-10 text-center text-xs text-muted-foreground">No EODs submitted in this range.</div>
             ) : (
-              <div className="space-y-2.5">
+              <div className="mt-2">
+                <div className="grid grid-cols-[24px_minmax(0,1fr)_90px_60px_60px_60px] gap-2 px-2 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border">
+                  <span>#</span>
+                  <span>Setter</span>
+                  <span className="text-right">DMs</span>
+                  <span className="text-right">Convos</span>
+                  <span className="text-right">Booked</span>
+                  <span className="text-right">Shows</span>
+                </div>
                 {topSetters.map((s, i) => {
                   const name = profiles[s.user_id]?.display_name ?? "Unknown";
-                  const initials = name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
-                  const pct = maxCalls ? Math.max(4, Math.round((s.calls / maxCalls) * 100)) : 0;
-                  const rankColors = ["#f59e0b", "#94a3b8", "#f97316"];
-                  const rankBg = i < 3 ? rankColors[i] : "var(--muted)";
-                  const rankFg = i < 3 ? "#0b0b0b" : "var(--muted-foreground)";
                   return (
-                    <div key={s.user_id} className="flex items-center gap-3 rounded-xl p-2.5 hover:bg-muted/40 transition">
-                      <div className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
-                        style={{ background: rankBg, color: rankFg }}>{i + 1}</div>
-                      <div className="h-9 w-9 rounded-full flex items-center justify-center text-xs font-semibold text-white shrink-0"
-                        style={{ background: `linear-gradient(135deg, hsl(${(i * 67) % 360} 70% 55%), hsl(${(i * 67 + 40) % 360} 70% 45%))` }}>
-                        {initials || "?"}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="text-sm font-medium truncate">{name}</p>
-                          <p className="text-xs text-muted-foreground tabular-nums shrink-0">
-                            <span className="font-semibold text-foreground">{s.calls}</span> booked · {s.shows} shows
-                          </p>
-                        </div>
-                        <div className="mt-1.5 h-1.5 rounded-full bg-muted overflow-hidden">
-                          <div className="h-full rounded-full transition-all"
-                            style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${KPI_COLORS.booked.bg}, ${KPI_COLORS.rate.bg})` }} />
-                        </div>
-                      </div>
+                    <div key={s.user_id} className="grid grid-cols-[24px_minmax(0,1fr)_90px_60px_60px_60px] gap-2 px-2 py-2 text-xs tabular-nums border-b border-border/50 hover:bg-white/[0.02]">
+                      <span className="text-muted-foreground">{i + 1}</span>
+                      <span className="truncate font-medium">{name}</span>
+                      <span className="text-right text-blue-400">{s.dms.toLocaleString()}</span>
+                      <span className="text-right text-purple-400">{s.convos.toLocaleString()}</span>
+                      <span className="text-right text-emerald-400 font-semibold">{s.calls.toLocaleString()}</span>
+                      <span className="text-right text-amber-400">{s.shows.toLocaleString()}</span>
                     </div>
                   );
                 })}
               </div>
             )}
-          </Card>
+          </Panel>
 
-          <Card className="p-5 border-border/60">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="h-8 w-8 rounded-xl flex items-center justify-center" style={{ background: "rgba(34,197,94,0.15)" }}>
-                <Target className="h-4 w-4" style={{ color: "#22c55e" }} />
+          <div className="grid gap-3">
+            <Panel>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="grid h-6 w-6 place-items-center rounded-sm bg-blue-500/15 border border-blue-500/40">
+                  <Target className="h-3 w-3 text-blue-400" />
+                </div>
+                <h3 className="text-sm font-bold">Q1 Goals</h3>
               </div>
-              <h3 className="font-semibold">Team Goals</h3>
-            </div>
-            <p className="text-xs text-muted-foreground mb-4">Monthly targets</p>
-            <div className="space-y-4">
-              <Goal label="DMs sent"       value={totals.dms_sent}       target={GOALS.dms}     color={KPI_COLORS.dms.bg} />
-              <Goal label="Convos started" value={totals.convos_started} target={GOALS.convos}  color={KPI_COLORS.convos.bg} />
-              <Goal label="Calls booked"   value={totals.calls_booked}   target={GOALS.calls}   color={KPI_COLORS.booked.bg} />
-              <Goal label="Shows"          value={totals.shows}          target={GOALS.shows}   color={KPI_COLORS.shows.bg} />
-              <Goal label="Show rate"      value={showRate}              target={GOALS.showRate} suffix="%" color={KPI_COLORS.rate.bg} />
-            </div>
-          </Card>
+              <div className="space-y-3">
+                <Goal label="DMs Sent"     value={totals.dms_sent}       target={GOALS.dms}     color="#3b82f6" />
+                <Goal label="Convos"       value={totals.convos_started} target={GOALS.convos}  color="#a855f7" />
+                <Goal label="Calls Booked" value={totals.calls_booked}   target={GOALS.calls}   color="#22c55e" />
+                <Goal label="Shows"        value={totals.shows}          target={GOALS.shows}   color="#f59e0b" warn={totals.shows < GOALS.shows * 0.5 && days >= 30} />
+                <Goal label="Show Rate"    value={showRate}              target={GOALS.showRate} suffix="%" color="#06b6d4" />
+              </div>
+            </Panel>
+
+            <Panel>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="grid h-6 w-6 place-items-center rounded-sm bg-purple-500/15 border border-purple-500/40">
+                  <Globe className="h-3 w-3 text-purple-400" />
+                </div>
+                <h3 className="text-sm font-bold">Team Composition</h3>
+              </div>
+              <div className="space-y-2">
+                <AudienceRow label="Active this period" value={activeSetters} total={Math.max(activeSetters, 1)} color="#3b82f6" />
+                <AudienceRow label="EODs / setter"      value={activeSetters > 0 ? Math.round(totalEods / activeSetters) : 0} total={days} color="#22c55e" suffix={` / ${days}`} />
+                <AudienceRow label="Avg calls / setter" value={activeSetters > 0 ? Math.round(totals.calls_booked / activeSetters) : 0} total={GOALS.calls / Math.max(activeSetters, 1)} color="#f59e0b" />
+              </div>
+            </Panel>
+          </div>
         </div>
 
-        {/* Quick links */}
-        <div className="grid gap-3 sm:grid-cols-3">
-          <QuickLink to="/eods"     icon={FileText}   label="Submit EOD"   desc="Log today's numbers" color={KPI_COLORS.booked.bg} />
-          <QuickLink to="/notes"    icon={StickyNote} label="Add note"     desc="Capture an objection or win" color={KPI_COLORS.convos.bg} />
-          <QuickLink to="/policies/crm-hygiene" icon={Target} label="CRM Hygiene" desc="Review the policy" color={KPI_COLORS.rate.bg} />
+        {/* Quick actions */}
+        <div className="grid gap-2 sm:grid-cols-4">
+          <QuickAction to="/eods"     icon={FileText}   label="Submit EOD" />
+          <QuickAction to="/analytics" icon={Target}    label="Full Analytics" />
+          <QuickAction to="/training" icon={Zap}        label="Training" />
+          <QuickAction to="/policies/crm-hygiene" icon={MessageSquare} label="CRM Hygiene" />
         </div>
       </div>
     </div>
   );
 }
 
-/* ---------- helpers ---------- */
-
+/* helpers */
 function sumRows(rows: EodRow[]) {
-  return rows.reduce(
-    (acc, r) => ({
-      dms_sent: acc.dms_sent + r.dms_sent,
-      convos_started: acc.convos_started + r.convos_started,
-      calls_booked: acc.calls_booked + r.calls_booked,
-      shows: acc.shows + r.shows,
-      no_shows: acc.no_shows + r.no_shows,
-    }),
-    { dms_sent: 0, convos_started: 0, calls_booked: 0, shows: 0, no_shows: 0 },
-  );
+  return rows.reduce((a, r) => ({
+    dms_sent: a.dms_sent + r.dms_sent,
+    convos_started: a.convos_started + r.convos_started,
+    calls_booked: a.calls_booked + r.calls_booked,
+    calls_scheduled: a.calls_scheduled + r.calls_scheduled,
+    shows: a.shows + r.shows,
+    no_shows: a.no_shows + r.no_shows,
+  }), { dms_sent: 0, convos_started: 0, calls_booked: 0, calls_scheduled: 0, shows: 0, no_shows: 0 });
 }
-
+function prevShowRateOf(t: ReturnType<typeof sumRows>) {
+  return t.shows + t.no_shows > 0 ? Math.round((t.shows / (t.shows + t.no_shows)) * 100) : 0;
+}
 function buildTrend(rows: EodRow[], days: number) {
   const map: Record<string, { dms: number; convos: number; booked: number }> = {};
   const out: { key: string; label: string; dms: number; convos: number; booked: number }[] = [];
   const today = new Date();
-  for (let i = days - 1; i >= 0; i--) {
+  const step = days <= 7 ? 1 : days <= 30 ? 1 : 3;
+  for (let i = days - 1; i >= 0; i -= step) {
     const d = subDays(today, i);
     const key = format(d, "yyyy-MM-dd");
     map[key] = { dms: 0, convos: 0, booked: 0 };
@@ -351,119 +336,104 @@ function buildTrend(rows: EodRow[], days: number) {
   return out.map((o) => ({ ...o, ...map[o.key] }));
 }
 
-/* ---------- subcomponents ---------- */
-
-function Kpi({
-  icon: Icon, label, value, prev, suffix, color, invertDelta,
-}: {
+/* subcomponents */
+function Panel({ children, accent }: { children: React.ReactNode; accent?: "emerald" }) {
+  return (
+    <div className={`rounded-md border p-3.5 bg-card ${accent === "emerald" ? "border-emerald-500/40 shadow-[0_0_0_1px_rgba(16,185,129,0.06)_inset]" : "border-border"}`}>
+      {children}
+    </div>
+  );
+}
+function PanelHead({ title, subtitle, legend }: { title: string; subtitle?: string; legend?: { color: string; label: string }[] }) {
+  return (
+    <div className="flex items-start justify-between gap-2 mb-1">
+      <div className="min-w-0">
+        <h3 className="text-sm font-bold truncate">{title}</h3>
+        {subtitle && <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">{subtitle}</p>}
+      </div>
+      {legend && (
+        <div className="flex items-center gap-2 text-[10px] text-muted-foreground shrink-0">
+          {legend.map(l => (
+            <span key={l.label} className="inline-flex items-center gap-1">
+              <span className="h-1.5 w-1.5 rounded-full" style={{ background: l.color }} />
+              {l.label}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+function Kpi({ icon: Icon, label, value, suffix, color, highlight }: {
   icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
-  label: string;
-  value: number;
-  prev: number;
-  suffix?: string;
-  color: { bg: string; soft: string };
-  invertDelta?: boolean;
+  label: string; value: number; suffix?: string; color?: string; highlight?: boolean;
 }) {
-  const delta = prev === 0 ? (value > 0 ? 100 : 0) : Math.round(((value - prev) / prev) * 100);
-  const positive = invertDelta ? delta < 0 : delta > 0;
-  const flat = delta === 0;
+  const c = color ?? "#94a3b8";
   return (
-    <Card className="p-4 relative overflow-hidden border-border/60 hover:border-border transition">
-      <div
-        className="absolute -top-8 -right-8 h-24 w-24 rounded-full blur-2xl opacity-60 pointer-events-none"
-        style={{ background: color.soft }}
-      />
-      <div className="relative flex items-start justify-between">
-        <div className="h-9 w-9 rounded-xl flex items-center justify-center" style={{ background: color.soft }}>
-          <Icon className="h-4 w-4" style={{ color: color.bg }} />
-        </div>
-        <span
-          className={`text-[10.5px] font-semibold px-2 py-0.5 rounded-full inline-flex items-center gap-0.5 tabular-nums ${
-            flat ? "bg-muted text-muted-foreground" : positive ? "bg-emerald-500/15 text-emerald-500" : "bg-red-500/15 text-red-500"
-          }`}
-        >
-          {!flat && (positive ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />)}
-          {flat ? "0%" : `${delta > 0 ? "+" : ""}${delta}%`}
-        </span>
+    <div className={`rounded-md border p-2.5 bg-card ${highlight ? "border-blue-500/60 shadow-[0_0_0_1px_rgba(59,130,246,0.15)_inset]" : "border-border"}`}>
+      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+        <Icon className="h-3 w-3" style={{ color: c }} />
+        <span className="truncate">{label}</span>
       </div>
-      <div className="relative mt-3">
-        <div className="text-2xl font-bold tabular-nums tracking-tight">
-          {value.toLocaleString()}{suffix}
-        </div>
-        <div className="text-xs text-muted-foreground mt-0.5">{label}</div>
-      </div>
-    </Card>
-  );
-}
-
-function LegendDot({ color, label }: { color: string; label: string }) {
-  return (
-    <span className="inline-flex items-center gap-1.5">
-      <span className="h-2 w-2 rounded-full" style={{ background: color }} />
-      {label}
-    </span>
-  );
-}
-
-function TransformRow({ label, prev, curr, suffix }: { label: string; prev: number; curr: number; suffix?: string }) {
-  const delta = prev === 0 ? (curr > 0 ? 100 : 0) : Math.round(((curr - prev) / prev) * 100);
-  const positive = delta >= 0;
-  return (
-    <div className="flex items-center justify-between text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <div className="flex items-center gap-2 tabular-nums">
-        <span className="text-xs text-muted-foreground">{prev.toLocaleString()}{suffix}</span>
-        <span className="text-muted-foreground">→</span>
-        <span className="font-semibold">{curr.toLocaleString()}{suffix}</span>
-        <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${positive ? "bg-emerald-500/15 text-emerald-500" : "bg-red-500/15 text-red-500"} w-14 text-center`}>
-          {delta > 0 ? "+" : ""}{delta}%
-        </span>
+      <div className="text-xl font-bold tabular-nums mt-1" style={{ color: c }}>
+        {value >= 1000 ? `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}K` : value.toLocaleString()}{suffix}
       </div>
     </div>
   );
 }
-
-function Goal({ label, value, target, suffix, color }: { label: string; value: number; target: number; suffix?: string; color: string }) {
+function Transform({ label, prev, curr, suffix }: { label: string; prev: number; curr: number; suffix?: string }) {
+  return (
+    <div className="flex items-center justify-between text-xs">
+      <span className="text-muted-foreground">{label}</span>
+      <div className="flex items-center gap-1.5 tabular-nums">
+        <span className="text-muted-foreground text-[11px]">{prev.toLocaleString()}{suffix}</span>
+        <span className="text-muted-foreground">→</span>
+        <span className="font-bold text-emerald-400">{curr.toLocaleString()}{suffix}</span>
+      </div>
+    </div>
+  );
+}
+function Goal({ label, value, target, suffix, color, warn }: { label: string; value: number; target: number; suffix?: string; color: string; warn?: boolean }) {
   const pct = Math.min(100, Math.round((value / target) * 100));
   return (
     <div>
-      <div className="flex justify-between items-center text-sm mb-1.5">
-        <span>{label}</span>
-        <span className="tabular-nums text-xs">
-          <span className="font-semibold text-foreground">{value.toLocaleString()}{suffix}</span>
-          <span className="text-muted-foreground"> / {target.toLocaleString()}{suffix}</span>
+      <div className="flex items-center justify-between text-xs mb-1">
+        <span className="inline-flex items-center gap-1.5">
+          {label}
+          {warn ? <AlertTriangle className="h-3 w-3 text-red-400" /> : pct >= 100 ? <CheckCircle2 className="h-3 w-3 text-emerald-400" /> : null}
+        </span>
+        <span className="tabular-nums text-[11px] text-muted-foreground">
+          <span className="font-bold text-foreground">{value.toLocaleString()}{suffix}</span> / {target.toLocaleString()}{suffix}
         </span>
       </div>
-      <div className="h-2 rounded-full bg-muted overflow-hidden">
-        <div className="h-full rounded-full transition-all"
-          style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${color}, ${color}cc)` }} />
+      <div className="h-1 rounded-full bg-white/5 overflow-hidden">
+        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: warn ? "#ef4444" : color }} />
       </div>
     </div>
   );
 }
-
-function QuickLink({ to, icon: Icon, label, desc, color }: { to: string; icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>; label: string; desc: string; color: string }) {
+function AudienceRow({ label, value, total, color, suffix }: { label: string; value: number; total: number; color: string; suffix?: string }) {
+  const pct = total > 0 ? Math.min(100, Math.round((value / total) * 100)) : 0;
   return (
-    <Link to={to}>
-      <Card className="p-4 border-border/60 hover:border-primary/60 transition group">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl flex items-center justify-center" style={{ background: `${color}22` }}>
-            <Icon className="h-5 w-5" style={{ color }} />
-          </div>
-          <div className="min-w-0">
-            <p className="text-sm font-semibold group-hover:text-primary transition">{label}</p>
-            <p className="text-xs text-muted-foreground">{desc}</p>
-          </div>
-        </div>
-      </Card>
+    <div>
+      <div className="flex items-center justify-between text-xs mb-1">
+        <span className="text-muted-foreground">{label}</span>
+        <span className="tabular-nums text-[11px] font-semibold" style={{ color }}>{value.toLocaleString()}{suffix ?? ""}</span>
+      </div>
+      <div className="h-1 rounded-full bg-white/5 overflow-hidden">
+        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
+      </div>
+    </div>
+  );
+}
+function QuickAction({ to, icon: Icon, label }: { to: string; icon: React.ComponentType<{ className?: string }>; label: string }) {
+  return (
+    <Link to={to} className="rounded-md border border-border bg-card p-3 hover:border-white/20 transition flex items-center gap-2">
+      <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+      <span className="text-xs font-medium">{label}</span>
     </Link>
   );
 }
-
-function ChartSkeleton() {
-  return <div className="h-full w-full rounded-md bg-muted/40 animate-pulse" />;
-}
-
-function EmptyState({ text }: { text: string }) {
-  return <div className="text-sm text-muted-foreground py-10 text-center">{text}</div>;
+function Skeleton() {
+  return <div className="h-full w-full rounded bg-white/5 animate-pulse" />;
 }
