@@ -229,16 +229,30 @@ function WeekTile({ label, value, icon, accent }: { label: string; value: number
 }
 
 function NumField({ label, value, onChange }: { label: string; value: number; onChange: (v: string) => void }) {
+  const bump = (d: number) => onChange(String(Math.max(0, value + d)));
   return (
     <div className="space-y-1">
       <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</Label>
-      <Input
-        type="number"
-        min={0}
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        className="bg-[#0a0b0f] border-[#1f2530] rounded-sm h-9 font-mono text-sm focus-visible:ring-emerald-500/40 focus-visible:border-emerald-500/40"
-      />
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          onClick={() => bump(-1)}
+          className="h-9 w-8 rounded-sm border border-[#1f2530] bg-[#0a0b0f] hover:bg-[#1a1f29] text-lg leading-none"
+        >−</button>
+        <Input
+          type="number"
+          min={0}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          onFocus={e => e.currentTarget.select()}
+          className="bg-[#0a0b0f] border-[#1f2530] rounded-sm h-9 font-mono text-sm text-center focus-visible:ring-emerald-500/40 focus-visible:border-emerald-500/40"
+        />
+        <button
+          type="button"
+          onClick={() => bump(1)}
+          className="h-9 w-8 rounded-sm border border-[#1f2530] bg-[#0a0b0f] hover:bg-[#1a1f29] text-lg leading-none"
+        >+</button>
+      </div>
     </div>
   );
 }
