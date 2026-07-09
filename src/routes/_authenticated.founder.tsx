@@ -412,11 +412,12 @@ function ItemDialog({ initial, userId, onClose, onSaved, promotingIdea: pIdea }:
   promotingIdea: Idea | null;
 }) {
   const isNew = !initial?.id;
+  const pIdea = promotingIdea;
   const [scheduled, setScheduled] = useState(initial?.scheduled_date ?? "");
   const [platform, setPlatform] = useState<Platform>(initial?.platform ?? "instagram");
   const [format, setFormat] = useState(initial?.format ?? "");
-  const [hook, setHook] = useState(initial?.hook ?? "");
-  const [script, setScript] = useState(initial?.script ?? "");
+  const [hook, setHook] = useState(initial?.hook ?? pIdea?.text ?? "");
+  const [script, setScript] = useState(initial?.script ?? (pIdea?.link ? `Source: ${pIdea.link}` : ""));
   const [status, setStatus] = useState<Status>(initial?.status ?? "idea");
   const [link, setLink] = useState(initial?.link_when_posted ?? "");
   const [tagsStr, setTagsStr] = useState(initial?.tags.join(", ") ?? "");
