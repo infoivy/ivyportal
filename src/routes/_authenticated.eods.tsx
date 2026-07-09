@@ -254,23 +254,27 @@ function EODsPage() {
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <SectionLabel>Funnel volume</SectionLabel>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <NumField label="DMs sent" value={form.dms_sent} onChange={setNum("dms_sent")} />
-                  <NumField label="Convos started" value={form.convos_started} onChange={setNum("convos_started")} />
-                  <NumField label="Calls booked" value={form.calls_booked} onChange={setNum("calls_booked")} />
-                  <NumField label="Calls scheduled" value={form.calls_scheduled} onChange={setNum("calls_scheduled")} />
+              {!isCsm && (
+                <div className="space-y-3">
+                  <SectionLabel>Funnel volume</SectionLabel>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <NumField label="DMs sent" value={form.dms_sent} onChange={setNum("dms_sent")} />
+                    <NumField label="Convos started" value={form.convos_started} onChange={setNum("convos_started")} />
+                    <NumField label="Calls booked" value={form.calls_booked} onChange={setNum("calls_booked")} />
+                    <NumField label="Calls scheduled" value={form.calls_scheduled} onChange={setNum("calls_scheduled")} />
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <div className="space-y-3">
-                <SectionLabel>Show outcomes</SectionLabel>
-                <div className="grid grid-cols-2 gap-3">
-                  <NumField label="Shows" value={form.shows} onChange={setNum("shows")} />
-                  <NumField label="No-shows" value={form.no_shows} onChange={setNum("no_shows")} />
+              {!isCsm && (
+                <div className="space-y-3">
+                  <SectionLabel>Show outcomes</SectionLabel>
+                  <div className="grid grid-cols-2 gap-3">
+                    <NumField label="Shows" value={form.shows} onChange={setNum("shows")} />
+                    <NumField label="No-shows" value={form.no_shows} onChange={setNum("no_shows")} />
+                  </div>
                 </div>
-              </div>
+              )}
 
               {isCsm && (
                 <div className="space-y-3">
