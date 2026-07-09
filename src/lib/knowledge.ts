@@ -2,6 +2,8 @@ import type { Database } from "@/integrations/supabase/types";
 
 export type DocCategory = Database["public"]["Enums"]["doc_category"];
 
+// Team-facing categories only. "content" is intentionally excluded — content
+// SOPs now live in Founder Space (see /founder → SOPs & Playbooks tab).
 export const DOC_CATEGORIES: { value: DocCategory; label: string }[] = [
   { value: "setting", label: "Setting" },
   { value: "closing", label: "Closing" },
@@ -9,12 +11,19 @@ export const DOC_CATEGORIES: { value: DocCategory; label: string }[] = [
   { value: "coaching", label: "Coaching" },
   { value: "team_ops", label: "Team & Ops" },
   { value: "onboarding", label: "Onboarding" },
-  { value: "content", label: "Content" },
 ];
 
-export const CATEGORY_LABEL: Record<DocCategory, string> = Object.fromEntries(
-  DOC_CATEGORIES.map((c) => [c.value, c.label]),
-) as Record<DocCategory, string>;
+// Label map still covers the "content" enum value so legacy references render
+// something sensible if a founder-only doc leaks into a team surface.
+export const CATEGORY_LABEL: Record<DocCategory, string> = {
+  setting: "Setting",
+  closing: "Closing",
+  csm: "CSM",
+  coaching: "Coaching",
+  team_ops: "Team & Ops",
+  onboarding: "Onboarding",
+  content: "Content",
+};
 
 export const ALL_ROLES = ["admin", "closer", "setter", "coach", "csm", "student", "founder"] as const;
 export type AppRole = (typeof ALL_ROLES)[number];

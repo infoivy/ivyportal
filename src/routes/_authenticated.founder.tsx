@@ -5,10 +5,12 @@ import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import {
   Sparkles, Calendar as CalendarIcon, Columns3, List as ListIcon, Lightbulb,
-  Plus, ExternalLink, Trash2, X, ArrowRight, BookOpen, Loader2, Instagram, LayoutGrid,
+  Plus, ExternalLink, Trash2, X, ArrowRight, Loader2, Instagram, LayoutGrid,
+  BookOpen,
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, parseISO } from "date-fns";
 import { WeeklyPlan } from "@/components/weekly-plan";
+import { FounderSops } from "@/components/founder-sops";
 
 export const Route = createFileRoute("/_authenticated/founder")({
   head: () => ({ meta: [{ title: "Founder Space — ISA Portal" }] }),
@@ -69,7 +71,7 @@ function FounderPage() {
 
   const [items, setItems] = useState<ContentItem[]>([]);
   const [ideas, setIdeas] = useState<Idea[]>([]);
-  const [view, setView] = useState<"weekly" | "calendar" | "kanban" | "list">("weekly");
+  const [view, setView] = useState<"weekly" | "calendar" | "kanban" | "list" | "sops">("weekly");
   const [monthCursor, setMonthCursor] = useState(new Date());
   const [editing, setEditing] = useState<ContentItem | null>(null);
   const [creating, setCreating] = useState(false);
@@ -116,12 +118,6 @@ function FounderPage() {
           >
             <Instagram className="h-3.5 w-3.5" /> IG Analytics
           </Link>
-          <Link
-            to="/knowledge"
-            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-sm border border-[#1f2530] hover:border-fuchsia-500/40 text-xs"
-          >
-            <BookOpen className="h-3.5 w-3.5" /> Content SOPs
-          </Link>
           <button
             onClick={() => setCreating(true)}
             className="inline-flex items-center gap-1.5 h-8 px-3 rounded-sm bg-fuchsia-500 hover:bg-fuchsia-400 text-fuchsia-950 text-xs font-medium"
@@ -132,14 +128,17 @@ function FounderPage() {
       </header>
 
       {/* View switcher */}
-      <div className="flex items-center gap-1 border-b border-[#1f2530]">
+      <div className="flex items-center gap-1 border-b border-[#1f2530] overflow-x-auto">
         <ViewTab active={view === "weekly"}   onClick={() => setView("weekly")}   icon={LayoutGrid}   label="Weekly plan" />
         <ViewTab active={view === "calendar"} onClick={() => setView("calendar")} icon={CalendarIcon} label="Calendar" />
         <ViewTab active={view === "kanban"}   onClick={() => setView("kanban")}   icon={Columns3}     label="Kanban" />
         <ViewTab active={view === "list"}     onClick={() => setView("list")}     icon={ListIcon}     label="List" />
+        <ViewTab active={view === "sops"}     onClick={() => setView("sops")}     icon={BookOpen}     label="SOPs & Playbooks" />
       </div>
 
-      {view === "weekly" ? (
+      {view === "sops" ? (
+        <FounderSops />
+      ) : view === "weekly" ? (
         <WeeklyPlan
           onOpenItem={(id) => {
             const it = items.find(i => i.id === id);

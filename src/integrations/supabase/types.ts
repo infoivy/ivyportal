@@ -430,6 +430,8 @@ export type Database = {
           created_at: string
           external_links: Json
           id: string
+          is_founder_only: boolean
+          last_reviewed_at: string | null
           pinned: boolean
           role_visibility: string[]
           slug: string
@@ -444,6 +446,8 @@ export type Database = {
           created_at?: string
           external_links?: Json
           id?: string
+          is_founder_only?: boolean
+          last_reviewed_at?: string | null
           pinned?: boolean
           role_visibility?: string[]
           slug: string
@@ -458,6 +462,8 @@ export type Database = {
           created_at?: string
           external_links?: Json
           id?: string
+          is_founder_only?: boolean
+          last_reviewed_at?: string | null
           pinned?: boolean
           role_visibility?: string[]
           slug?: string
