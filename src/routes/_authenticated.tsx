@@ -12,6 +12,7 @@ import { NotificationsBell } from "@/components/notifications-bell";
 import { CommandPalette } from "@/components/command-palette";
 import { StudentBottomNav } from "@/components/student-bottom-nav";
 import { setStudentPortalTab, getStudentPortalTab, onStudentPortalTab } from "@/lib/student-portal-bus";
+import { PageSkeleton } from "@/components/ui/skeletons";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -83,7 +84,12 @@ function AuthedLayout() {
   };
 
   if (state.loading) {
-    return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
+    return (
+      <div className="dashboard-dark min-h-screen bg-[#0a0b0f]">
+        <div className="h-12 border-b border-[#1f2530] bg-[#0a0b0f]/95" />
+        <PageSkeleton />
+      </div>
+    );
   }
 
   const isStudent = state.roles.includes("student");

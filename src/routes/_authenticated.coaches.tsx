@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { studentsQuery, coachesQuery } from "@/lib/queries";
 import { Users, Phone, Star, AlertTriangle, Trophy } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/coaches")({
@@ -12,26 +14,29 @@ type Student = { id: string; full_name: string; coach_id: string | null; status:
 type CallRow = { student_id: string; coach_id: string | null; status: string; call_date: string; progress_rating: number | null };
 
 function CoachesPage() {
-  const [coaches, setCoaches] = useState<{ id: string; display_name: string | null }[]>([]);
-  const [students, setStudents] = useState<Student[]>([]);
-  const [calls, setCalls] = useState<CallRow[]>([]);
-
+  // Only coaches (not admins) for this roster view — filter from the shared coach roster.
+  const { data: allCoachProfiles = [] } = useQuery(coachesQuery());
+  const [coachIds, setCoachIds] = useState<Set<string>>(new Set());
   useEffect(() => {
     (async () => {
-      const [rRes, sRes, cRes] = await Promise.all([
-        supabase.from("user_roles").select("user_id, role").eq("role", "coach"),
-        supabase.from("students").select("id, full_name, coach_id, status, calls_allotted, phase"),
-        supabase.from("student_calls").select("student_id, coach_id, status, call_date, progress_rating").limit(5000),
-      ]);
-      const ids = Array.from(new Set((rRes.data ?? []).map((r: any) => r.user_id)));
-      if (ids.length) {
-        const { data } = await supabase.from("profiles").select("id, display_name").in("id", ids);
-        setCoaches((data ?? []) as any);
-      }
-      setStudents((sRes.data ?? []) as Student[]);
-      setCalls((cRes.data ?? []) as CallRow[]);
+      const { data } = await supabase.from("user_roles").select("user_id").eq("role", "coach");
+      setCoachIds(new Set((data ?? []).map((r: any) => r.user_id)));
     })();
   }, []);
+  const coaches = useMemo(() => allCoachProfiles.filter(c => coachIds.has(c.id)), [allCoachProfiles, coachIds]);
+
+  const { data: students = [] } = useQuery(studentsQuery()) as { data: Student[] };
+
+  const { data: calls = [] } = useQuery({
+    queryKey: ["student_calls", "coaches_view"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("student_calls").select("student_id, coach_id, status, call_date, progress_rating").limit(5000);
+      if (error) throw error;
+      return (data ?? []) as CallRow[];
+    },
+    staleTime: 60_000,
+  });
+
 
   const today = Date.now();
   const dayMs = 86400000;
