@@ -79,6 +79,15 @@ function EODsPage() {
     else { toast.success(existingId ? "EOD updated" : "EOD submitted"); loadMine(); if (canViewTeam) loadTeam(); }
   };
 
+  const deleteEod = async (id: string) => {
+    const { error } = await supabase.from("eods").delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("EOD deleted");
+    if (existingId === id) { setExistingId(null); setForm(emptyForm); }
+    loadMine();
+    if (canViewTeam) loadTeam();
+  };
+
   const setNum = (k: keyof typeof form) => (v: string) => setForm(f => ({ ...f, [k]: parseInt(v) || 0 }));
 
   // 7-day rolling summary for the current user
