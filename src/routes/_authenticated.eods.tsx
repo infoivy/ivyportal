@@ -301,11 +301,23 @@ function EODsPage() {
 
               <div className="space-y-3">
                 <SectionLabel>Narrative</SectionLabel>
+                {yesterday?.tomorrow_focus && !existingId && (
+                  <div className="rounded-sm border border-sky-500/30 bg-sky-500/5 px-3 py-2 text-[11px] text-sky-300 flex items-start gap-2">
+                    <span className="text-[9px] uppercase tracking-wider text-sky-400 shrink-0 mt-0.5">Yesterday</span>
+                    <span className="flex-1"><span className="text-muted-foreground">Tomorrow's focus was:</span> {yesterday.tomorrow_focus}</span>
+                    <button
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, summary: f.summary || `Yesterday's focus: ${yesterday.tomorrow_focus}` }))}
+                      className="text-[10px] text-sky-400 hover:text-sky-300 shrink-0"
+                    >Use as start</button>
+                  </div>
+                )}
                 <TextField label="Wins" value={form.wins} onChange={v => setForm(f => ({ ...f, wins: v }))} />
                 <TextField label="Blockers" value={form.blockers} onChange={v => setForm(f => ({ ...f, blockers: v }))} />
                 <TextField label="Tomorrow's focus" value={form.tomorrow_focus} onChange={v => setForm(f => ({ ...f, tomorrow_focus: v }))} />
                 <TextField label="Summary" value={form.summary} onChange={v => setForm(f => ({ ...f, summary: v }))} rows={3} />
               </div>
+
 
               <div className="flex items-center justify-between pt-2 border-t border-[#1f2530]">
                 <div className="text-[11px] text-muted-foreground">
