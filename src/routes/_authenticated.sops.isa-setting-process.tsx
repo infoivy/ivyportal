@@ -864,7 +864,7 @@ function Index() {
 
   if (isMobile) {
     return (
-      <div ref={containerRef} className="min-h-screen bg-background">
+      <div ref={containerRef} className="relative min-h-full bg-background">
         <MobileView matched={matched} query={deferredQuery} headerH={headerH} />
         <Header innerRef={headerRef} onJump={jumpTo} query={query} setQuery={setQuery} />
         <MobileToolbar dark={dark} setDark={setDark} onNotes={() => setNotesOpen(true)} counter={counter} setCounter={setCounter} onHelp={() => setHelpOpen(true)} />
