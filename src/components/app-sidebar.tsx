@@ -141,6 +141,7 @@ export function AppSidebar({ roles }: { roles: string[] }) {
         {renderGroup("Work", workItems)}
         {renderGroup("Knowledge", knowledgeItems)}
         {renderGroup("Ops", opsItems)}
+        {roles.includes("founder") && renderGroup("Founder", founderItems)}
         {isAdmin && renderGroup("Admin", adminItems)}
         {renderGroup("Account", [{ title: "Profile", url: "/profile", icon: UserCircle }])}
       </SidebarContent>
