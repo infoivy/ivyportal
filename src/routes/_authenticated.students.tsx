@@ -859,7 +859,10 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
           {payMode !== "none" && (
             <div className="grid grid-cols-2 gap-3">
               <Field label="Total amount ($)">
-                <input type="number" min="0" value={totalAmount} onChange={e => setTotalAmount(e.target.value)} className={inputCls} placeholder="e.g. 3000" />
+                <input type="number" min="0" value={totalAmount} onChange={e => setTotalAmount(e.target.value)} className={inputCls} placeholder="e.g. 5000" />
+              </Field>
+              <Field label="Deal date">
+                <input type="date" value={dealDate} onChange={e => setDealDate(e.target.value)} className={inputCls} />
               </Field>
               <Field label="Closer (who sold this)">
                 <select value={closerId} onChange={e => setCloserId(e.target.value)} className={inputCls}>
@@ -867,33 +870,78 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
                   {closers.map(c => <option key={c.id} value={c.id}>{c.display_name ?? c.id.slice(0, 8)}</option>)}
                 </select>
               </Field>
-              <Field label="Deal date">
-                <input type="date" value={dealDate} onChange={e => setDealDate(e.target.value)} className={inputCls} />
+              <Field label="Setter (who booked the call)">
+                <select value={setterId} onChange={e => setSetterId(e.target.value)} className={inputCls}>
+                  <option value="">— None / unknown —</option>
+                  {setters.map(s => <option key={s.id} value={s.id}>{s.display_name ?? s.id.slice(0, 8)}</option>)}
+                </select>
               </Field>
 
               {payMode === "installments" && (
                 <>
-                  <Field label="Deposit / cash upfront ($)">
+                  <Field label="Deposit / cash upfront ($)" full>
                     <input type="number" min="0" value={depositAmount} onChange={e => setDepositAmount(e.target.value)} className={inputCls} />
                   </Field>
-                  <Field label="Number of installments" full={false}>
-                    <input type="number" min="1" max="24" value={numInstallments} onChange={e => setNumInstallments(e.target.value)} className={inputCls} />
-                  </Field>
-                  <Field label="Frequency">
-                    <select value={frequency} onChange={e => setFrequency(e.target.value as any)} className={inputCls}>
-                      <option value="monthly">Monthly</option>
-                      <option value="biweekly">Every 2 weeks</option>
-                      <option value="weekly">Weekly</option>
-                    </select>
-                  </Field>
-                  <Field label="First payment due">
-                    <input type="date" value={firstDueDate} onChange={e => setFirstDueDate(e.target.value)} className={inputCls} />
-                  </Field>
-                  <div className="col-span-2 text-[11px] text-muted-foreground bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-2">
-                    {n} × ${perInstallment.toFixed(2)} = ${(n * perInstallment).toFixed(2)} remaining
-                    {dep > 0 && <> · ${dep.toFixed(2)} upfront</>}
-                    <> · total ${tv.toFixed(2)}</>
+
+                  <div className="col-span-2 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setScheduleMode("even")}
+                      className={`flex-1 p-2 rounded-sm border text-xs transition ${scheduleMode === "even" ? "border-sky-500/50 bg-sky-500/10 text-sky-300" : "border-[#1f2530] text-muted-foreground hover:border-[#2a3140]"}`}
+                    >Split evenly</button>
+                    <button
+                      type="button"
+                      onClick={() => setScheduleMode("custom")}
+                      className={`flex-1 p-2 rounded-sm border text-xs transition ${scheduleMode === "custom" ? "border-sky-500/50 bg-sky-500/10 text-sky-300" : "border-[#1f2530] text-muted-foreground hover:border-[#2a3140]"}`}
+                    >Custom schedule</button>
                   </div>
+
+                  {scheduleMode === "even" && (
+                    <>
+                      <Field label="Number of installments" full={false}>
+                        <input type="number" min="1" max="24" value={numInstallments} onChange={e => setNumInstallments(e.target.value)} className={inputCls} />
+                      </Field>
+                      <Field label="Frequency">
+                        <select value={frequency} onChange={e => setFrequency(e.target.value as any)} className={inputCls}>
+                          <option value="monthly">Monthly</option>
+                          <option value="biweekly">Every 2 weeks</option>
+                          <option value="weekly">Weekly</option>
+                        </select>
+                      </Field>
+                      <Field label="First payment due" full>
+                        <input type="date" value={firstDueDate} onChange={e => setFirstDueDate(e.target.value)} className={inputCls} />
+                      </Field>
+                      <div className="col-span-2 text-[11px] text-muted-foreground bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-2">
+                        {n} × ${perInstallment.toFixed(2)} = ${(n * perInstallment).toFixed(2)} remaining
+                        {dep > 0 && <> · ${dep.toFixed(2)} upfront</>}
+                        <> · total ${tv.toFixed(2)}</>
+                      </div>
+                    </>
+                  )}
+
+                  {scheduleMode === "custom" && (
+                    <div className="col-span-2 space-y-2">
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+                        <span>Scheduled payments</span>
+                        <button type="button" onClick={addCustomRow} className="text-[10px] text-emerald-400 hover:text-emerald-300">+ Add payment</button>
+                      </div>
+                      {customRows.map((r, i) => (
+                        <div key={r.id} className="grid grid-cols-[24px_1fr_1.1fr_1fr_28px] gap-2 items-center">
+                          <span className="text-[10px] text-muted-foreground font-mono">#{i + 1}</span>
+                          <input type="number" min="0" step="0.01" value={r.amount} onChange={e => updateCustomRow(r.id, { amount: e.target.value })} placeholder="Amount" className={inputCls} />
+                          <input type="date" value={r.due_date} onChange={e => updateCustomRow(r.id, { due_date: e.target.value })} className={inputCls} />
+                          <input value={r.payment_method} onChange={e => updateCustomRow(r.id, { payment_method: e.target.value })} placeholder="Method (optional)" className={inputCls} />
+                          <button type="button" onClick={() => removeCustomRow(r.id)} disabled={customRows.length === 1} className="text-muted-foreground hover:text-rose-400 disabled:opacity-30"><X className="h-3.5 w-3.5" /></button>
+                        </div>
+                      ))}
+                      <div className={`text-[11px] rounded-sm p-2 border ${Math.abs(customDelta) < 0.01 ? "text-emerald-300 border-emerald-500/30 bg-emerald-500/5" : "text-amber-300 border-amber-500/30 bg-amber-500/5"}`}>
+                        Scheduled ${customTotal.toFixed(2)}{dep > 0 ? ` + $${dep.toFixed(2)} upfront` : ""} = ${(customTotal + dep).toFixed(2)} of ${tv.toFixed(2)}
+                        {Math.abs(customDelta) >= 0.01 && (
+                          <span className="ml-1">· {customDelta > 0 ? `$${customDelta.toFixed(2)} unallocated` : `$${Math.abs(customDelta).toFixed(2)} over total`}</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
             </div>
