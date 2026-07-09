@@ -97,51 +97,6 @@ export type Database = {
           },
         ]
       }
-      docs: {
-        Row: {
-          category: Database["public"]["Enums"]["doc_category"]
-          content: string
-          created_at: string
-          external_links: Json
-          id: string
-          pinned: boolean
-          role_visibility: string[]
-          slug: string
-          sort_order: number
-          title: string
-          updated_at: string
-          updated_by: string | null
-        }
-        Insert: {
-          category: Database["public"]["Enums"]["doc_category"]
-          content?: string
-          created_at?: string
-          external_links?: Json
-          id?: string
-          pinned?: boolean
-          role_visibility?: string[]
-          slug: string
-          sort_order?: number
-          title: string
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Update: {
-          category?: Database["public"]["Enums"]["doc_category"]
-          content?: string
-          created_at?: string
-          external_links?: Json
-          id?: string
-          pinned?: boolean
-          role_visibility?: string[]
-          slug?: string
-          sort_order?: number
-          title?: string
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Relationships: []
-      }
       eods: {
         Row: {
           blockers: string | null
@@ -341,48 +296,6 @@ export type Database = {
           tags?: string[] | null
           updated_at?: string
           user_id?: string
-        }
-        Relationships: []
-      }
-      payment_links: {
-        Row: {
-          active: boolean
-          amount: number | null
-          created_at: string
-          currency: string
-          id: string
-          label: string
-          method: Database["public"]["Enums"]["payment_method"]
-          notes: string | null
-          sort_order: number
-          updated_at: string
-          url: string
-        }
-        Insert: {
-          active?: boolean
-          amount?: number | null
-          created_at?: string
-          currency?: string
-          id?: string
-          label: string
-          method?: Database["public"]["Enums"]["payment_method"]
-          notes?: string | null
-          sort_order?: number
-          updated_at?: string
-          url: string
-        }
-        Update: {
-          active?: boolean
-          amount?: number | null
-          created_at?: string
-          currency?: string
-          id?: string
-          label?: string
-          method?: Database["public"]["Enums"]["payment_method"]
-          notes?: string | null
-          sort_order?: number
-          updated_at?: string
-          url?: string
         }
         Relationships: []
       }
@@ -658,21 +571,12 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "closer" | "setter" | "coach" | "student" | "csm"
-      doc_category:
-        | "setting"
-        | "closing"
-        | "csm"
-        | "coaching"
-        | "team_ops"
-        | "onboarding"
-        | "content"
       installment_payment_status:
         | "upcoming"
         | "paid"
         | "late"
         | "missed"
         | "waived"
-      payment_method: "whop" | "stripe" | "wise" | "paypal" | "bank" | "other"
       payment_state: "paid_in_full" | "installments" | "behind"
       student_phase:
         | "uncategorized"
@@ -810,15 +714,6 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "closer", "setter", "coach", "student", "csm"],
-      doc_category: [
-        "setting",
-        "closing",
-        "csm",
-        "coaching",
-        "team_ops",
-        "onboarding",
-        "content",
-      ],
       installment_payment_status: [
         "upcoming",
         "paid",
@@ -826,7 +721,6 @@ export const Constants = {
         "missed",
         "waived",
       ],
-      payment_method: ["whop", "stripe", "wise", "paypal", "bank", "other"],
       payment_state: ["paid_in_full", "installments", "behind"],
       student_phase: [
         "uncategorized",
