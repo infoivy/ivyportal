@@ -23,6 +23,8 @@ type EOD = {
   dms_sent: number; convos_started: number; calls_booked: number; calls_scheduled: number;
   shows: number; no_shows: number;
   looms_reviewed: number; roleplays_reviewed: number; student_checkins: number; escalations_resolved: number;
+  calls_taken: number; closes: number; deposits: number;
+  cash_collected: number; deferred_cash: number; follow_ups_done: number;
   wins: string | null; blockers: string | null; tomorrow_focus: string | null; summary: string | null;
 };
 
@@ -30,6 +32,8 @@ const emptyForm = {
   dms_sent: 0, convos_started: 0, calls_booked: 0, calls_scheduled: 0,
   shows: 0, no_shows: 0,
   looms_reviewed: 0, roleplays_reviewed: 0, student_checkins: 0, escalations_resolved: 0,
+  calls_taken: 0, closes: 0, deposits: 0,
+  cash_collected: 0, deferred_cash: 0, follow_ups_done: 0,
   wins: "", blockers: "", tomorrow_focus: "", summary: "",
 };
 
@@ -37,6 +41,7 @@ function EODsPage() {
   const { user, roles } = useAuth();
   const canViewTeam = roles.includes("admin") || roles.includes("closer");
   const isCsm = roles.includes("csm");
+  const isCloser = roles.includes("closer") || roles.includes("coach");
   const today = new Date().toISOString().slice(0, 10);
 
   const [form, setForm] = useState(emptyForm);
