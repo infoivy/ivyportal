@@ -228,18 +228,20 @@ function EODsPage() {
         </div>
       </header>
 
-      <div className="grid grid-cols-2 md:grid-cols-7 gap-2">
-        <div className="border rounded-sm p-2.5 border-amber-500/40 bg-amber-500/5">
-          <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-amber-400 mb-1"><Flame className="h-3 w-3" /> Streak</div>
-          <div className="text-lg font-mono font-semibold text-amber-400">{streak}<span className="text-xs text-muted-foreground ml-1">days</span></div>
+      {!isFounder && (
+        <div className="grid grid-cols-2 md:grid-cols-7 gap-2">
+          <div className="border rounded-sm p-2.5 border-amber-500/40 bg-amber-500/5">
+            <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-amber-400 mb-1"><Flame className="h-3 w-3" /> Streak</div>
+            <div className="text-lg font-mono font-semibold text-amber-400">{streak}<span className="text-xs text-muted-foreground ml-1">days</span></div>
+          </div>
+          <WeekTile label={isCsm ? "7d looms" : "7d DMs"} value={isCsm ? weekly.looms : weekly.dms} icon={isCsm ? <HeartHandshake className="h-3 w-3" /> : <Users className="h-3 w-3" />} />
+          <WeekTile label={isCsm ? "7d roleplays" : "7d Convos"} value={isCsm ? weekly.roleplays : weekly.convos} icon={<TrendingUp className="h-3 w-3" />} />
+          <WeekTile label={isCsm ? "7d check-ins" : "7d Booked"} value={isCsm ? weekly.checkins : weekly.booked} icon={<Phone className="h-3 w-3" />} accent />
+          <WeekTile label={isCsm ? "7d escalations" : "7d Shows"} value={isCsm ? weekly.escalations : weekly.shows} icon={<Target className="h-3 w-3" />} />
+          <WeekTile label="7d No-shows" value={weekly.noshows} icon={<AlertTriangle className="h-3 w-3" />} />
+          <WeekTile label="Reports" value={`${weekly.submitted}/7`} icon={<CheckCircle2 className="h-3 w-3" />} />
         </div>
-        <WeekTile label={isCsm ? "7d looms" : "7d DMs"} value={isCsm ? weekly.looms : weekly.dms} icon={isCsm ? <HeartHandshake className="h-3 w-3" /> : <Users className="h-3 w-3" />} />
-        <WeekTile label={isCsm ? "7d roleplays" : "7d Convos"} value={isCsm ? weekly.roleplays : weekly.convos} icon={<TrendingUp className="h-3 w-3" />} />
-        <WeekTile label={isCsm ? "7d check-ins" : "7d Booked"} value={isCsm ? weekly.checkins : weekly.booked} icon={<Phone className="h-3 w-3" />} accent />
-        <WeekTile label={isCsm ? "7d escalations" : "7d Shows"} value={isCsm ? weekly.escalations : weekly.shows} icon={<Target className="h-3 w-3" />} />
-        <WeekTile label="7d No-shows" value={weekly.noshows} icon={<AlertTriangle className="h-3 w-3" />} />
-        <WeekTile label="Reports" value={`${weekly.submitted}/7`} icon={<CheckCircle2 className="h-3 w-3" />} />
-      </div>
+      )}
 
       <Tabs defaultValue="submit" className="space-y-4">
         <TabsList className="bg-[#0f1116] border border-[#1f2530] rounded-sm h-9 p-0.5">
