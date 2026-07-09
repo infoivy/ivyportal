@@ -54,6 +54,10 @@ function CsmPage() {
   const [tally, setTally] = useState<TallyRow[]>([]);
   const [calls, setCalls] = useState<StudentCall[]>([]);
   const [studentEods, setStudentEods] = useState<StudentEodLite[]>([]);
+  const [adhoc, setAdhoc] = useState<AdHocItem[]>([]);
+  const [newAdhocText, setNewAdhocText] = useState("");
+  const [newAdhocDue, setNewAdhocDue] = useState("");
+  const [savingAdhoc, setSavingAdhoc] = useState(false);
   const [studentId, setStudentId] = useState("");
   const [note, setNote] = useState("");
   const [tags, setTags] = useState("progress, check-in");
