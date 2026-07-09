@@ -749,8 +749,9 @@ function ActionSection({ title, icon, children, tone }: { title: string; icon: R
   );
 }
 
-function ActionRow({ a, today, onToggle }: { a: { callId: string; callDate: string; index: number; item: ActionItem }; today: string; onToggle: (id: string, i: number, done: boolean) => void }) {
+function ActionRow({ a, today, onToggle }: { a: { kind?: "call" | "adhoc"; callId: string; callDate: string; index: number; item: ActionItem }; today: string; onToggle: (id: string, i: number, done: boolean) => void }) {
   const isOverdue = !a.item.done && a.item.due_date && a.item.due_date < today;
+  const isAdhoc = a.kind === "adhoc";
   return (
     <label className="flex items-start gap-3 p-3 cursor-pointer hover:bg-[#141821]">
       <input
@@ -763,8 +764,14 @@ function ActionRow({ a, today, onToggle }: { a: { callId: string; callDate: stri
         <div className={`text-xs ${a.item.done ? "line-through text-muted-foreground" : isOverdue ? "text-rose-300" : "text-foreground"}`}>
           {a.item.text || <span className="italic text-muted-foreground">(no text)</span>}
         </div>
-        <div className="flex gap-2 mt-1 text-[10px] font-mono text-muted-foreground">
-          <span>from call {a.callDate}</span>
+        <div className="flex gap-2 mt-1 text-[10px] font-mono text-muted-foreground items-center flex-wrap">
+          {isAdhoc ? (
+            <span className="px-1.5 py-0.5 rounded-sm border border-fuchsia-500/30 bg-fuchsia-500/10 text-fuchsia-300 uppercase tracking-wider">
+              Coach added
+            </span>
+          ) : (
+            <span>from call {a.callDate}</span>
+          )}
           {a.item.due_date && (
             <span className={isOverdue ? "text-rose-400" : ""}>
               · due {a.item.due_date}{isOverdue ? " (overdue)" : ""}
