@@ -18,6 +18,7 @@ import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated.t
 import { Route as AuthenticatedStudentsRouteImport } from './routes/_authenticated.students'
 import { Route as AuthenticatedStudentPortalRouteImport } from './routes/_authenticated.student-portal'
 import { Route as AuthenticatedSopsRouteImport } from './routes/_authenticated.sops'
+import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated.profile'
 import { Route as AuthenticatedPoliciesRouteImport } from './routes/_authenticated.policies'
 import { Route as AuthenticatedNotesRouteImport } from './routes/_authenticated.notes'
 import { Route as AuthenticatedEodsRouteImport } from './routes/_authenticated.eods'
@@ -75,6 +76,11 @@ const AuthenticatedStudentPortalRoute =
 const AuthenticatedSopsRoute = AuthenticatedSopsRouteImport.update({
   id: '/sops',
   path: '/sops',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedPoliciesRoute = AuthenticatedPoliciesRouteImport.update({
@@ -159,6 +165,7 @@ export interface FileRoutesByFullPath {
   '/eods': typeof AuthenticatedEodsRoute
   '/notes': typeof AuthenticatedNotesRoute
   '/policies': typeof AuthenticatedPoliciesRouteWithChildren
+  '/profile': typeof AuthenticatedProfileRoute
   '/sops': typeof AuthenticatedSopsRouteWithChildren
   '/student-portal': typeof AuthenticatedStudentPortalRoute
   '/students': typeof AuthenticatedStudentsRouteWithChildren
@@ -181,6 +188,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/eods': typeof AuthenticatedEodsRoute
   '/notes': typeof AuthenticatedNotesRoute
+  '/profile': typeof AuthenticatedProfileRoute
   '/sops': typeof AuthenticatedSopsRouteWithChildren
   '/student-portal': typeof AuthenticatedStudentPortalRoute
   '/students': typeof AuthenticatedStudentsRouteWithChildren
@@ -206,6 +214,7 @@ export interface FileRoutesById {
   '/_authenticated/eods': typeof AuthenticatedEodsRoute
   '/_authenticated/notes': typeof AuthenticatedNotesRoute
   '/_authenticated/policies': typeof AuthenticatedPoliciesRouteWithChildren
+  '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/sops': typeof AuthenticatedSopsRouteWithChildren
   '/_authenticated/student-portal': typeof AuthenticatedStudentPortalRoute
   '/_authenticated/students': typeof AuthenticatedStudentsRouteWithChildren
@@ -231,6 +240,7 @@ export interface FileRouteTypes {
     | '/eods'
     | '/notes'
     | '/policies'
+    | '/profile'
     | '/sops'
     | '/student-portal'
     | '/students'
@@ -253,6 +263,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/eods'
     | '/notes'
+    | '/profile'
     | '/sops'
     | '/student-portal'
     | '/students'
@@ -277,6 +288,7 @@ export interface FileRouteTypes {
     | '/_authenticated/eods'
     | '/_authenticated/notes'
     | '/_authenticated/policies'
+    | '/_authenticated/profile'
     | '/_authenticated/sops'
     | '/_authenticated/student-portal'
     | '/_authenticated/students'
@@ -360,6 +372,13 @@ declare module '@tanstack/react-router' {
       path: '/sops'
       fullPath: '/sops'
       preLoaderRoute: typeof AuthenticatedSopsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/profile': {
+      id: '/_authenticated/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/policies': {
@@ -505,6 +524,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedEodsRoute: typeof AuthenticatedEodsRoute
   AuthenticatedNotesRoute: typeof AuthenticatedNotesRoute
   AuthenticatedPoliciesRoute: typeof AuthenticatedPoliciesRouteWithChildren
+  AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedSopsRoute: typeof AuthenticatedSopsRouteWithChildren
   AuthenticatedStudentPortalRoute: typeof AuthenticatedStudentPortalRoute
   AuthenticatedStudentsRoute: typeof AuthenticatedStudentsRouteWithChildren
@@ -521,6 +541,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedEodsRoute: AuthenticatedEodsRoute,
   AuthenticatedNotesRoute: AuthenticatedNotesRoute,
   AuthenticatedPoliciesRoute: AuthenticatedPoliciesRouteWithChildren,
+  AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedSopsRoute: AuthenticatedSopsRouteWithChildren,
   AuthenticatedStudentPortalRoute: AuthenticatedStudentPortalRoute,
   AuthenticatedStudentsRoute: AuthenticatedStudentsRouteWithChildren,
