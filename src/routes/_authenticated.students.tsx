@@ -587,10 +587,13 @@ function StudentCard({ s, canDrag, coachName, atRisk }: { s: Student; canDrag: b
 
 
 type Closer = { id: string; display_name: string | null };
+type Setter = { id: string; display_name: string | null };
+type ScheduleRow = { id: string; amount: string; due_date: string; payment_method: string };
 
 function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void; onCreated: () => void; coaches: Coach[] }) {
   const { user } = useAuth();
   const [closers, setClosers] = useState<Closer[]>([]);
+  const [setters, setSetters] = useState<Setter[]>([]);
 
   // Basics
   const [fullName, setFullName] = useState("");
@@ -607,9 +610,11 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
   const [totalAmount, setTotalAmount] = useState<string>("");
   const [payMode, setPayMode] = useState<"pif" | "installments" | "none">("pif");
   const [closerId, setCloserId] = useState<string>("");
+  const [setterId, setSetterId] = useState<string>("");
   const [dealDate, setDealDate] = useState(new Date().toISOString().slice(0, 10));
 
-  // Installments detail
+  // Installments detail (even-split mode)
+  const [scheduleMode, setScheduleMode] = useState<"even" | "custom">("even");
   const [depositAmount, setDepositAmount] = useState<string>("0");
   const [numInstallments, setNumInstallments] = useState<string>("3");
   const [firstDueDate, setFirstDueDate] = useState<string>(() => {
@@ -617,18 +622,31 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
   });
   const [frequency, setFrequency] = useState<"monthly" | "biweekly" | "weekly">("monthly");
 
+  // Installments detail (custom mode)
+  const nextMonth = () => { const d = new Date(); d.setMonth(d.getMonth() + 1); return d.toISOString().slice(0, 10); };
+  const [customRows, setCustomRows] = useState<ScheduleRow[]>(() => [
+    { id: crypto.randomUUID(), amount: "", due_date: nextMonth(), payment_method: "" },
+  ]);
+  const addCustomRow = () => setCustomRows(rs => [...rs, { id: crypto.randomUUID(), amount: "", due_date: nextMonth(), payment_method: "" }]);
+  const removeCustomRow = (id: string) => setCustomRows(rs => rs.length > 1 ? rs.filter(r => r.id !== id) : rs);
+  const updateCustomRow = (id: string, patch: Partial<ScheduleRow>) => setCustomRows(rs => rs.map(r => r.id === id ? { ...r, ...patch } : r));
+
   const [saving, setSaving] = useState(false);
 
-  // Fetch closers (users with closer or admin role)
+  // Fetch closers (closer or admin) and setters (setter or admin)
   useEffect(() => {
     (async () => {
-      const { data: roleRows } = await supabase.from("user_roles").select("user_id, role").in("role", ["closer", "admin"]);
-      const ids = Array.from(new Set((roleRows ?? []).map((r: any) => r.user_id)));
-      if (!ids.length) return;
-      const { data: profs } = await supabase.from("profiles").select("id, display_name").in("id", ids);
-      setClosers((profs ?? []) as Closer[]);
-      if (user?.id && ids.includes(user.id)) setCloserId(user.id);
-      else if (ids.length === 1) setCloserId(ids[0]);
+      const { data: roleRows } = await supabase.from("user_roles").select("user_id, role").in("role", ["closer", "admin", "setter"]);
+      const closerIds = Array.from(new Set((roleRows ?? []).filter((r: any) => r.role === "closer" || r.role === "admin").map((r: any) => r.user_id)));
+      const setterIds = Array.from(new Set((roleRows ?? []).filter((r: any) => r.role === "setter" || r.role === "admin").map((r: any) => r.user_id)));
+      const allIds = Array.from(new Set([...closerIds, ...setterIds]));
+      if (!allIds.length) return;
+      const { data: profs } = await supabase.from("profiles").select("id, display_name").in("id", allIds);
+      const byId = new Map((profs ?? []).map((p: any) => [p.id, p as Setter]));
+      setClosers(closerIds.map(id => byId.get(id) ?? { id, display_name: null }));
+      setSetters(setterIds.map(id => byId.get(id) ?? { id, display_name: null }));
+      if (user?.id && closerIds.includes(user.id)) setCloserId(user.id);
+      else if (closerIds.length === 1) setCloserId(closerIds[0]);
     })();
   }, [user?.id]);
 
@@ -637,6 +655,8 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
   const n = Math.max(1, Math.min(24, Number(numInstallments) || 0));
   const remaining = Math.max(0, tv - dep);
   const perInstallment = payMode === "installments" && n > 0 ? remaining / n : 0;
+  const customTotal = customRows.reduce((a, r) => a + (Number(r.amount) || 0), 0);
+  const customDelta = tv - dep - customTotal;
 
   const submit = async () => {
     if (!fullName.trim()) return toast.error("Name required");
