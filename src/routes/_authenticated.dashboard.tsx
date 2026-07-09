@@ -12,8 +12,12 @@ import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   BarChart, Bar, Cell,
 } from "recharts";
-import { format, subDays } from "date-fns";
+import { format, subDays, differenceInCalendarDays } from "date-fns";
 import { CashLeaderboard } from "@/components/weekly-leaderboard";
+import { RangePicker, type DateRange, rangeFor, daysBetween } from "@/components/range-picker";
+import { StatDrilldown, type MetricKey } from "@/components/stat-drilldown";
+import { DashboardSettingsSheet } from "@/components/dashboard-settings-sheet";
+import { useDashboardPrefs } from "@/lib/dashboard-prefs";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — ISA Team" }] }),
@@ -57,23 +61,28 @@ type OpsCounts = {
 };
 
 function Dashboard() {
-  const { displayName, roles } = useAuth();
-  const [range, setRange] = useState<RangeKey>("30d");
+  const { user, displayName, roles } = useAuth();
+  const [dateRange, setDateRange] = useState<DateRange>(() => rangeFor("30d"));
+  const [compare, setCompare] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [drilldown, setDrilldown] = useState<MetricKey | null>(null);
   const [eods, setEods] = useState<EodRow[]>([]);
   const [prevEods, setPrevEods] = useState<EodRow[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [ops, setOps] = useState<OpsCounts | null>(null);
   const [loading, setLoading] = useState(true);
+  const { prefs, save: savePrefs } = useDashboardPrefs(user?.id);
 
-  const days = RANGES.find((r) => r.key === range)!.days;
+  const days = daysBetween(dateRange);
 
   useEffect(() => {
     setLoading(true);
     const now = new Date();
     const today = format(now, "yyyy-MM-dd");
-    const from = format(subDays(now, days - 1), "yyyy-MM-dd");
-    const prevFrom = format(subDays(now, days * 2 - 1), "yyyy-MM-dd");
-    const prevTo = format(subDays(now, days), "yyyy-MM-dd");
+    const from = format(dateRange.from, "yyyy-MM-dd");
+    const to = format(dateRange.to, "yyyy-MM-dd");
+    const prevFrom = format(subDays(dateRange.from, days), "yyyy-MM-dd");
+    const prevTo = format(subDays(dateRange.from, 1), "yyyy-MM-dd");
     const in3 = format(new Date(now.getTime() + 3 * 86400000), "yyyy-MM-dd");
     const in7 = format(new Date(now.getTime() + 7 * 86400000), "yyyy-MM-dd");
     const eodRisk = format(subDays(now, 5), "yyyy-MM-dd");
@@ -81,8 +90,10 @@ function Dashboard() {
 
     (async () => {
       const [cur, prev, profs, students, callsThisWeek, callsRecent, eodsRecent, todayEods, installmentsDue, installmentsLate, testimonials, actionCalls] = await Promise.all([
-        supabase.from("eods").select("*").gte("report_date", from).order("report_date", { ascending: true }),
-        supabase.from("eods").select("*").gte("report_date", prevFrom).lte("report_date", prevTo),
+        supabase.from("eods").select("*").gte("report_date", from).lte("report_date", to).order("report_date", { ascending: true }),
+        compare
+          ? supabase.from("eods").select("*").gte("report_date", prevFrom).lte("report_date", prevTo)
+          : Promise.resolve({ data: [] as EodRow[] }),
         supabase.from("profiles").select("id, display_name"),
         supabase.from("students").select("id, status").eq("status", "active"),
         supabase.from("student_calls").select("id", { count: "exact", head: true }).eq("status", "scheduled").gte("call_date", today).lte("call_date", in7),
@@ -126,12 +137,12 @@ function Dashboard() {
       });
       setLoading(false);
     })();
-  }, [days]);
+  }, [dateRange.from.getTime(), dateRange.to.getTime(), compare]);
 
   const totals = useMemo(() => sumRows(eods), [eods]);
   const prevTotals = useMemo(() => sumRows(prevEods), [prevEods]);
   const trend = useMemo(() => buildTrend(eods, days), [eods, days]);
-  const hasPrev = prevEods.length > 0;
+  const hasPrev = compare && prevEods.length > 0;
 
   const showRate = totals.shows + totals.no_shows > 0
     ? Math.round((totals.shows / (totals.shows + totals.no_shows)) * 100) : 0;
@@ -157,7 +168,11 @@ function Dashboard() {
     { label: "Booked → Shows", value: totals.shows, color: "#ef4444" },
   ];
 
-  const rangeLabel = range === "7d" ? "Last 7 days" : range === "30d" ? "Last 30 days" : `Last 90 days · ${currentQuarterLabel()}`;
+  const rangeLabel =
+    dateRange.preset === "7d" ? "Last 7 days"
+    : dateRange.preset === "30d" ? "Last 30 days"
+    : dateRange.preset === "90d" ? `Last 90 days · ${currentQuarterLabel()}`
+    : `${format(dateRange.from, "MMM d")} → ${format(dateRange.to, "MMM d, yyyy")}`;
   const goalsLabel = `${currentQuarterLabel()} Goals`;
 
   return (
@@ -181,215 +196,249 @@ function Dashboard() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="inline-flex rounded-sm border border-border bg-card p-0.5">
-              {RANGES.map((r) => (
-                <button
-                  key={r.key}
-                  onClick={() => setRange(r.key)}
-                  className={`text-[11px] font-semibold px-2.5 py-1 rounded-[2px] transition ${
-                    range === r.key ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >{r.label}</button>
-              ))}
-            </div>
-            <button className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1.5 rounded-sm border border-border text-muted-foreground hover:text-foreground">
+          <div className="flex items-center gap-2 flex-wrap">
+            <RangePicker value={dateRange} onChange={setDateRange} />
+            <button
+              onClick={() => setCompare((c) => !c)}
+              className={`hidden sm:inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1.5 rounded-sm border transition ${
+                compare
+                  ? "border-emerald-500/40 text-emerald-400 bg-emerald-500/5"
+                  : "border-border text-muted-foreground hover:text-foreground"
+              }`}
+              title="Toggle previous-period comparison"
+            >
               <ArrowRightLeft className="h-3 w-3" /> Compare
             </button>
-            <Link to="/eods" className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1.5 rounded-sm border border-border text-muted-foreground hover:text-foreground">
-              <CalIcon className="h-3 w-3" /> <span className="hidden sm:inline">{format(new Date(), "MMMM yyyy")}</span>
-            </Link>
-            <button className="p-1.5 rounded-sm border border-border text-muted-foreground hover:text-foreground">
+            <button
+              onClick={() => setSettingsOpen(true)}
+              className="p-1.5 rounded-sm border border-border text-muted-foreground hover:text-foreground"
+              title="Dashboard settings"
+            >
               <Settings className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>
 
         {/* KPI Row */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-9 gap-2">
-          <Kpi icon={Users}         label="Active Setters" value={activeSetters} highlight />
-          <Kpi icon={UserPlus}      label="EODs Filed"     value={totalEods} />
-          <Kpi icon={Eye}            label="DMs Sent"       value={totals.dms_sent} color="#3b82f6" />
-          <Kpi icon={Zap}            label="Convos"         value={totals.convos_started} color="#a855f7" />
-          <Kpi icon={Users}          label="Booked"         value={totals.calls_booked} color="#22c55e" />
-          <Kpi icon={Heart}          label="Shows"          value={totals.shows} color="#f59e0b" />
-          <Kpi icon={MessagesSquare} label="No-Shows"       value={totals.no_shows} color="#ef4444" />
-          <Kpi icon={Link2}          label="Show Rate"      value={showRate} suffix="%" color="#06b6d4" />
-          <Kpi icon={FileText}       label="Scheduled"      value={totals.calls_scheduled} color="#ec4899" />
-        </div>
+        {prefs.showKpis && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-9 gap-2">
+            <Kpi icon={Users}         label="Active Setters" value={activeSetters} highlight />
+            <Kpi icon={UserPlus}      label="EODs Filed"     value={totalEods} />
+            <Kpi icon={Eye}            label="DMs Sent"       value={totals.dms_sent} color="#3b82f6" onClick={() => setDrilldown("dms_sent")} delta={compare ? pctDelta(prevTotals.dms_sent, totals.dms_sent) : null} />
+            <Kpi icon={Zap}            label="Convos"         value={totals.convos_started} color="#a855f7" onClick={() => setDrilldown("convos_started")} delta={compare ? pctDelta(prevTotals.convos_started, totals.convos_started) : null} />
+            <Kpi icon={Users}          label="Booked"         value={totals.calls_booked} color="#22c55e" onClick={() => setDrilldown("calls_booked")} delta={compare ? pctDelta(prevTotals.calls_booked, totals.calls_booked) : null} />
+            <Kpi icon={Heart}          label="Shows"          value={totals.shows} color="#f59e0b" onClick={() => setDrilldown("shows")} delta={compare ? pctDelta(prevTotals.shows, totals.shows) : null} />
+            <Kpi icon={MessagesSquare} label="No-Shows"       value={totals.no_shows} color="#ef4444" onClick={() => setDrilldown("no_shows")} delta={compare ? pctDelta(prevTotals.no_shows, totals.no_shows) : null} />
+            <Kpi icon={Link2}          label="Show Rate"      value={showRate} suffix="%" color="#06b6d4" delta={compare ? pctDelta(prevShowRateOf(prevTotals), showRate) : null} />
+            <Kpi icon={FileText}       label="Scheduled"      value={totals.calls_scheduled} color="#ec4899" onClick={() => setDrilldown("calls_scheduled")} delta={compare ? pctDelta(prevTotals.calls_scheduled, totals.calls_scheduled) : null} />
+          </div>
+        )}
 
         {/* Ops Row */}
-        <div>
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-2">
-            <span>Ops today</span>
-            <span className="h-px flex-1 bg-border" />
+        {prefs.showOps && (
+          <div>
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-2">
+              <span>Ops today</span>
+              <span className="h-px flex-1 bg-border" />
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2">
+              <OpsCard to="/students" search={{ view: "atRisk" }} tone={ops && ops.atRisk > 0 ? "rose" : "muted"} icon={AlertTriangle} label="At-risk students" value={ops?.atRisk} />
+              <OpsCard to="/installments" tone={ops && ops.installmentsOverdue > 0 ? "rose" : "muted"} icon={DollarSign} label="Installments overdue" value={ops?.installmentsOverdue} />
+              <OpsCard to="/installments" tone={ops && ops.installmentsDueSoon > 0 ? "amber" : "muted"} icon={DollarSign} label="Due in ≤3 days" value={ops?.installmentsDueSoon} />
+              <OpsCard to="/calls" tone="sky" icon={Phone} label="1:1s this week" value={ops?.callsThisWeek} />
+              <OpsCard to="/eods" tone={ops && ops.eodsMissingToday > 0 ? "amber" : "muted"} icon={FileText} label="EODs missing today" value={ops?.eodsMissingToday} />
+              <OpsCard to="/students" tone={ops && ops.testimonialsPending > 0 ? "amber" : "muted"} icon={Star} label="Testimonials pending" value={ops?.testimonialsPending} />
+              <OpsCard to="/action-items" tone={ops && ops.openActionItems > 0 ? "amber" : "muted"} icon={ListChecks} label="Open action items" value={ops?.openActionItems} />
+            </div>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2">
-            <OpsCard to="/students" search={{ view: "atRisk" }} tone={ops && ops.atRisk > 0 ? "rose" : "muted"} icon={AlertTriangle} label="At-risk students" value={ops?.atRisk} />
-            <OpsCard to="/installments" tone={ops && ops.installmentsOverdue > 0 ? "rose" : "muted"} icon={DollarSign} label="Installments overdue" value={ops?.installmentsOverdue} />
-            <OpsCard to="/installments" tone={ops && ops.installmentsDueSoon > 0 ? "amber" : "muted"} icon={DollarSign} label="Due in ≤3 days" value={ops?.installmentsDueSoon} />
-            <OpsCard to="/calls" tone="sky" icon={Phone} label="1:1s this week" value={ops?.callsThisWeek} />
-            <OpsCard to="/eods" tone={ops && ops.eodsMissingToday > 0 ? "amber" : "muted"} icon={FileText} label="EODs missing today" value={ops?.eodsMissingToday} />
-            <OpsCard to="/students" tone={ops && ops.testimonialsPending > 0 ? "amber" : "muted"} icon={Star} label="Testimonials pending" value={ops?.testimonialsPending} />
-            <OpsCard to="/action-items" tone={ops && ops.openActionItems > 0 ? "amber" : "muted"} icon={ListChecks} label="Open action items" value={ops?.openActionItems} />
-          </div>
-        </div>
+        )}
 
-        <MyDayBlock roles={roles} />
+        {prefs.showMyDay && <MyDayBlock roles={roles} />}
 
 
-        <InstallmentReminders />
+        {prefs.showInstallmentReminders && <InstallmentReminders />}
 
         {/* Row 2: Growth + Format + Transformation */}
-        <div className={`grid gap-3 ${hasPrev ? "lg:grid-cols-[1.2fr_1fr_1fr]" : "lg:grid-cols-[1.5fr_1fr]"}`}>
-          {/* Growth Trend */}
-          <Panel>
-            <PanelHead title="Growth Trend" subtitle={rangeLabel} legend={[
-              { color: "#22c55e", label: "Booked" },
-              { color: "#3b82f6", label: "DMs" },
-              { color: "#f59e0b", label: "Convos" },
-            ]} />
-            <div className="h-[220px] mt-1">
-              {loading ? <Skeleton /> : (
-                <ResponsiveContainer>
-                  <LineChart data={trend} margin={{ top: 5, right: 10, left: -18, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.06)" vertical={false} />
-                    <XAxis dataKey="label" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
-                    <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
-                    <Tooltip contentStyle={{ background: "#0f1116", border: "1px solid #1f2530", borderRadius: 4, fontSize: 11 }} />
-                    <Line type="monotone" dataKey="dms"    stroke="#3b82f6" strokeWidth={1.5} dot={{ r: 2 }} />
-                    <Line type="monotone" dataKey="convos" stroke="#f59e0b" strokeWidth={1.5} dot={{ r: 2 }} />
-                    <Line type="monotone" dataKey="booked" stroke="#22c55e" strokeWidth={2}   dot={{ r: 2.5 }} />
-                  </LineChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-          </Panel>
-
-          {/* Performance by Format */}
-          <Panel>
-            <PanelHead title="Funnel Performance" subtitle="Volume by stage" />
-            <div className="h-[220px] mt-1">
-              {loading ? <Skeleton /> : (
-                <ResponsiveContainer>
-                  <BarChart data={formatBreakdown} layout="vertical" margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
-                    <XAxis type="number" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
-                    <YAxis type="category" dataKey="label" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} width={100} />
-                    <Tooltip contentStyle={{ background: "#0f1116", border: "1px solid #1f2530", borderRadius: 4, fontSize: 11 }} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
-                    <Bar dataKey="value" radius={[0, 2, 2, 0]}>
-                      {formatBreakdown.map((f, i) => <Cell key={i} fill={f.color} />)}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-          </Panel>
-
-          {/* Transformation Results (period-over-period) — only when we have a prior period */}
-          {hasPrev && (
-            <Panel accent="emerald">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="grid h-6 w-6 place-items-center rounded-sm bg-emerald-500/15 border border-emerald-500/40">
-                  <Zap className="h-3 w-3 text-emerald-400" />
+        {(prefs.showGrowth || prefs.showFunnel || hasPrev) && (
+          <div className={`grid gap-3 ${hasPrev ? "lg:grid-cols-[1.2fr_1fr_1fr]" : "lg:grid-cols-[1.5fr_1fr]"}`}>
+            {prefs.showGrowth && (
+              <Panel>
+                <PanelHead title="Growth Trend" subtitle={rangeLabel} legend={[
+                  { color: "#22c55e", label: "Booked" },
+                  { color: "#3b82f6", label: "DMs" },
+                  { color: "#f59e0b", label: "Convos" },
+                ]} />
+                <div className="h-[220px] mt-1">
+                  {loading ? <Skeleton /> : (
+                    <ResponsiveContainer>
+                      <LineChart data={trend} margin={{ top: 5, right: 10, left: -18, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.06)" vertical={false} />
+                        <XAxis dataKey="label" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                        <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                        <Tooltip contentStyle={{ background: "#0f1116", border: "1px solid #1f2530", borderRadius: 4, fontSize: 11 }} />
+                        <Line type="monotone" dataKey="dms"    stroke="#3b82f6" strokeWidth={1.5} dot={{ r: 2 }} />
+                        <Line type="monotone" dataKey="convos" stroke="#f59e0b" strokeWidth={1.5} dot={{ r: 2 }} />
+                        <Line type="monotone" dataKey="booked" stroke="#22c55e" strokeWidth={2}   dot={{ r: 2.5 }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  )}
                 </div>
-                <h3 className="text-sm font-bold">Period Deltas</h3>
-              </div>
-              <div className="space-y-2.5">
-                <Transform label="DMs Sent"     prev={prevTotals.dms_sent}       curr={totals.dms_sent} />
-                <Transform label="Convos"       prev={prevTotals.convos_started} curr={totals.convos_started} />
-                <Transform label="Booked"       prev={prevTotals.calls_booked}   curr={totals.calls_booked} />
-                <Transform label="Shows"        prev={prevTotals.shows}          curr={totals.shows} />
-                <Transform label="Show Rate"    prev={prevShowRateOf(prevTotals)} curr={showRate} suffix="%" />
-              </div>
-            </Panel>
-          )}
-        </div>
+              </Panel>
+            )}
 
-        {(roles.includes("admin") || roles.includes("closer") || roles.includes("coach")) && (
+            {prefs.showFunnel && (
+              <Panel>
+                <PanelHead title="Funnel Performance" subtitle="Volume by stage" />
+                <div className="h-[220px] mt-1">
+                  {loading ? <Skeleton /> : (
+                    <ResponsiveContainer>
+                      <BarChart data={formatBreakdown} layout="vertical" margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+                        <XAxis type="number" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                        <YAxis type="category" dataKey="label" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} width={100} />
+                        <Tooltip contentStyle={{ background: "#0f1116", border: "1px solid #1f2530", borderRadius: 4, fontSize: 11 }} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
+                        <Bar dataKey="value" radius={[0, 2, 2, 0]}>
+                          {formatBreakdown.map((f, i) => <Cell key={i} fill={f.color} />)}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+              </Panel>
+            )}
+
+            {hasPrev && (
+              <Panel accent="emerald">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="grid h-6 w-6 place-items-center rounded-sm bg-emerald-500/15 border border-emerald-500/40">
+                    <Zap className="h-3 w-3 text-emerald-400" />
+                  </div>
+                  <h3 className="text-sm font-bold">Period Deltas</h3>
+                  <span className="ml-auto text-[10px] text-muted-foreground">vs previous {days}d</span>
+                </div>
+                <div className="space-y-2.5">
+                  <Transform label="DMs Sent"     prev={prevTotals.dms_sent}       curr={totals.dms_sent} />
+                  <Transform label="Convos"       prev={prevTotals.convos_started} curr={totals.convos_started} />
+                  <Transform label="Booked"       prev={prevTotals.calls_booked}   curr={totals.calls_booked} />
+                  <Transform label="Shows"        prev={prevTotals.shows}          curr={totals.shows} />
+                  <Transform label="Show Rate"    prev={prevShowRateOf(prevTotals)} curr={showRate} suffix="%" />
+                </div>
+              </Panel>
+            )}
+          </div>
+        )}
+
+        {prefs.showCashLeaderboard && (roles.includes("admin") || roles.includes("closer") || roles.includes("coach")) && (
           <CashLeaderboard compact />
         )}
 
         {/* Row 3: Top Setters + Goals + Audience */}
-        <div className="grid gap-3 lg:grid-cols-[1.5fr_1fr]">
-          <Panel>
-            <PanelHead
-              title="Top Performing Setters"
-              subtitle={rangeLabel}
-              legend={[{ color: "#22c55e", label: "Sorted by Booked" }]}
-            />
-            {topSetters.length === 0 ? (
-              <div className="py-10 text-center text-xs text-muted-foreground">No EODs submitted in this range.</div>
-            ) : (
-              <div className="mt-2">
-                <div className="grid grid-cols-[24px_minmax(0,1fr)_90px_60px_60px_60px] gap-2 px-2 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border">
-                  <span>#</span>
-                  <span>Setter</span>
-                  <span className="text-right">DMs</span>
-                  <span className="text-right">Convos</span>
-                  <span className="text-right inline-flex items-center justify-end gap-0.5 text-emerald-400">Booked <ChevronDown className="h-3 w-3" /></span>
-                  <span className="text-right">Shows</span>
-                </div>
-                {topSetters.map((s, i) => {
-                  const name = profiles[s.user_id]?.display_name ?? "Unknown";
-                  return (
-                    <div key={s.user_id} className="grid grid-cols-[24px_minmax(0,1fr)_90px_60px_60px_60px] gap-2 px-2 py-2 text-xs tabular-nums border-b border-border/50 hover:bg-white/[0.02]">
-                      <span className="text-muted-foreground">{i + 1}</span>
-                      <span className="truncate font-medium">{name}</span>
-                      <span className="text-right text-blue-400">{s.dms.toLocaleString()}</span>
-                      <span className="text-right text-purple-400">{s.convos.toLocaleString()}</span>
-                      <span className="text-right text-emerald-400 font-semibold">{s.calls.toLocaleString()}</span>
-                      <span className="text-right text-amber-400">{s.shows.toLocaleString()}</span>
+        {(prefs.showTopSetters || prefs.showGoals || prefs.showTeamComp) && (
+          <div className="grid gap-3 lg:grid-cols-[1.5fr_1fr]">
+            {prefs.showTopSetters && (
+              <Panel>
+                <PanelHead
+                  title="Top Performing Setters"
+                  subtitle={rangeLabel}
+                  legend={[{ color: "#22c55e", label: "Sorted by Booked" }]}
+                />
+                {topSetters.length === 0 ? (
+                  <div className="py-10 text-center text-xs text-muted-foreground">No EODs submitted in this range.</div>
+                ) : (
+                  <div className="mt-2">
+                    <div className="grid grid-cols-[24px_minmax(0,1fr)_90px_60px_60px_60px] gap-2 px-2 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border">
+                      <span>#</span>
+                      <span>Setter</span>
+                      <span className="text-right">DMs</span>
+                      <span className="text-right">Convos</span>
+                      <span className="text-right inline-flex items-center justify-end gap-0.5 text-emerald-400">Booked <ChevronDown className="h-3 w-3" /></span>
+                      <span className="text-right">Shows</span>
                     </div>
-                  );
-                })}
+                    {topSetters.map((s, i) => {
+                      const name = profiles[s.user_id]?.display_name ?? "Unknown";
+                      return (
+                        <div key={s.user_id} className="grid grid-cols-[24px_minmax(0,1fr)_90px_60px_60px_60px] gap-2 px-2 py-2 text-xs tabular-nums border-b border-border/50 hover:bg-white/[0.02]">
+                          <span className="text-muted-foreground">{i + 1}</span>
+                          <span className="truncate font-medium">{name}</span>
+                          <span className="text-right text-blue-400">{s.dms.toLocaleString()}</span>
+                          <span className="text-right text-purple-400">{s.convos.toLocaleString()}</span>
+                          <span className="text-right text-emerald-400 font-semibold">{s.calls.toLocaleString()}</span>
+                          <span className="text-right text-amber-400">{s.shows.toLocaleString()}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </Panel>
+            )}
+
+            {(prefs.showGoals || prefs.showTeamComp) && (
+              <div className="grid gap-3">
+                {prefs.showGoals && (
+                  <Panel>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="grid h-6 w-6 place-items-center rounded-sm bg-blue-500/15 border border-blue-500/40">
+                        <Target className="h-3 w-3 text-blue-400" />
+                      </div>
+                      <h3 className="text-sm font-bold">{goalsLabel}</h3>
+                    </div>
+                    <div className="space-y-3">
+                      <Goal label="DMs Sent"     value={totals.dms_sent}       target={GOALS.dms}     color="#3b82f6" />
+                      <Goal label="Convos"       value={totals.convos_started} target={GOALS.convos}  color="#a855f7" />
+                      <Goal label="Calls Booked" value={totals.calls_booked}   target={GOALS.calls}   color="#22c55e" />
+                      <Goal label="Shows"        value={totals.shows}          target={GOALS.shows}   color="#f59e0b" warn={totals.shows < GOALS.shows * 0.5 && days >= 30} />
+                      <Goal label="Show Rate"    value={showRate}              target={GOALS.showRate} suffix="%" color="#06b6d4" />
+                    </div>
+                  </Panel>
+                )}
+
+                {prefs.showTeamComp && (
+                  <Panel>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="grid h-6 w-6 place-items-center rounded-sm bg-purple-500/15 border border-purple-500/40">
+                        <Globe className="h-3 w-3 text-purple-400" />
+                      </div>
+                      <h3 className="text-sm font-bold">Team Composition</h3>
+                    </div>
+                    <div className="space-y-2">
+                      <AudienceRow label="Active this period" value={activeSetters} total={Math.max(activeSetters, 1)} color="#3b82f6" />
+                      <AudienceRow label="EODs / setter"      value={activeSetters > 0 ? Math.round(totalEods / activeSetters) : 0} total={days} color="#22c55e" suffix={` / ${days}`} />
+                      <AudienceRow label="Avg calls / setter" value={activeSetters > 0 ? Math.round(totals.calls_booked / activeSetters) : 0} total={GOALS.calls / Math.max(activeSetters, 1)} color="#f59e0b" />
+                    </div>
+                  </Panel>
+                )}
               </div>
             )}
-          </Panel>
-
-          <div className="grid gap-3">
-            <Panel>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="grid h-6 w-6 place-items-center rounded-sm bg-blue-500/15 border border-blue-500/40">
-                  <Target className="h-3 w-3 text-blue-400" />
-                </div>
-                <h3 className="text-sm font-bold">{goalsLabel}</h3>
-              </div>
-              <div className="space-y-3">
-                <Goal label="DMs Sent"     value={totals.dms_sent}       target={GOALS.dms}     color="#3b82f6" />
-                <Goal label="Convos"       value={totals.convos_started} target={GOALS.convos}  color="#a855f7" />
-                <Goal label="Calls Booked" value={totals.calls_booked}   target={GOALS.calls}   color="#22c55e" />
-                <Goal label="Shows"        value={totals.shows}          target={GOALS.shows}   color="#f59e0b" warn={totals.shows < GOALS.shows * 0.5 && days >= 30} />
-                <Goal label="Show Rate"    value={showRate}              target={GOALS.showRate} suffix="%" color="#06b6d4" />
-              </div>
-            </Panel>
-
-            <Panel>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="grid h-6 w-6 place-items-center rounded-sm bg-purple-500/15 border border-purple-500/40">
-                  <Globe className="h-3 w-3 text-purple-400" />
-                </div>
-                <h3 className="text-sm font-bold">Team Composition</h3>
-              </div>
-              <div className="space-y-2">
-                <AudienceRow label="Active this period" value={activeSetters} total={Math.max(activeSetters, 1)} color="#3b82f6" />
-                <AudienceRow label="EODs / setter"      value={activeSetters > 0 ? Math.round(totalEods / activeSetters) : 0} total={days} color="#22c55e" suffix={` / ${days}`} />
-                <AudienceRow label="Avg calls / setter" value={activeSetters > 0 ? Math.round(totals.calls_booked / activeSetters) : 0} total={GOALS.calls / Math.max(activeSetters, 1)} color="#f59e0b" />
-              </div>
-            </Panel>
           </div>
-        </div>
+        )}
 
-        <WeeklyLeaderboard profiles={profiles} eods={eods} />
+        {prefs.showWeeklyLeaderboard && <WeeklyLeaderboard profiles={profiles} eods={eods} />}
 
 
         {/* Quick actions */}
-        <div className="grid gap-2 sm:grid-cols-4">
-          <QuickAction to="/eods"     icon={FileText}   label="Submit EOD" />
-          <QuickAction to="/analytics" icon={Target}    label="Full Analytics" />
-          <QuickAction to="/training" icon={Zap}        label="Training" />
-          <QuickAction to="/policies/crm-hygiene" icon={MessageSquare} label="CRM Hygiene" />
-        </div>
+        {prefs.showQuickActions && (
+          <div className="grid gap-2 sm:grid-cols-4">
+            <QuickAction to="/eods"     icon={FileText}   label="Submit EOD" />
+            <QuickAction to="/analytics" icon={Target}    label="Full Analytics" />
+            <QuickAction to="/training" icon={Zap}        label="Training" />
+            <QuickAction to="/policies/crm-hygiene" icon={MessageSquare} label="CRM Hygiene" />
+          </div>
+        )}
       </div>
+
+      <StatDrilldown
+        open={drilldown !== null}
+        onOpenChange={(v) => !v && setDrilldown(null)}
+        metric={drilldown}
+        eods={eods}
+        profiles={profiles}
+        rangeLabel={rangeLabel}
+      />
+      <DashboardSettingsSheet
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        prefs={prefs}
+        onChange={savePrefs}
+      />
     </div>
   );
 }
@@ -404,6 +453,10 @@ function sumRows(rows: EodRow[]) {
     shows: a.shows + r.shows,
     no_shows: a.no_shows + r.no_shows,
   }), { dms_sent: 0, convos_started: 0, calls_booked: 0, calls_scheduled: 0, shows: 0, no_shows: 0 });
+}
+function pctDelta(prev: number, curr: number): number | null {
+  if (!prev) return curr > 0 ? 100 : null;
+  return ((curr - prev) / prev) * 100;
 }
 function prevShowRateOf(t: ReturnType<typeof sumRows>) {
   return t.shows + t.no_shows > 0 ? Math.round((t.shows / (t.shows + t.no_shows)) * 100) : 0;
@@ -457,19 +510,35 @@ function PanelHead({ title, subtitle, legend }: { title: string; subtitle?: stri
     </div>
   );
 }
-function Kpi({ icon: Icon, label, value, suffix, color, highlight }: {
+function Kpi({ icon: Icon, label, value, suffix, color, highlight, onClick, delta }: {
   icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
   label: string; value: number; suffix?: string; color?: string; highlight?: boolean;
+  onClick?: () => void;
+  delta?: number | null;
 }) {
   const c = color ?? "#94a3b8";
+  const clickable = !!onClick;
   return (
-    <div className={`rounded-md border p-2.5 bg-card ${highlight ? "border-blue-500/60 shadow-[0_0_0_1px_rgba(59,130,246,0.15)_inset]" : "border-border"}`}>
+    <div
+      onClick={onClick}
+      role={clickable ? "button" : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      onKeyDown={clickable ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick!(); } } : undefined}
+      className={`rounded-md border p-2.5 bg-card ${highlight ? "border-blue-500/60 shadow-[0_0_0_1px_rgba(59,130,246,0.15)_inset]" : "border-border"} ${clickable ? "cursor-pointer hover:bg-white/[0.03] transition" : ""}`}
+    >
       <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
         <Icon className="h-3 w-3" style={{ color: c }} />
         <span className="truncate">{label}</span>
       </div>
-      <div className="text-xl font-bold tabular-nums mt-1" style={{ color: c }}>
-        {value >= 1000 ? `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}K` : value.toLocaleString()}{suffix}
+      <div className="flex items-baseline gap-2">
+        <div className="text-xl font-bold tabular-nums mt-1" style={{ color: c }}>
+          {value >= 1000 ? `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}K` : value.toLocaleString()}{suffix}
+        </div>
+        {delta != null && Number.isFinite(delta) && (
+          <span className={`text-[10px] font-semibold tabular-nums ${delta > 0 ? "text-emerald-400" : delta < 0 ? "text-rose-400" : "text-muted-foreground"}`}>
+            {delta > 0 ? "+" : ""}{delta.toFixed(0)}%
+          </span>
+        )}
       </div>
     </div>
   );
