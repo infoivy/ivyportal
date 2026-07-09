@@ -225,6 +225,8 @@ function Dashboard() {
           </div>
         </div>
 
+        <InstallmentReminders />
+
         {/* Row 2: Growth + Format + Transformation */}
         <div className={`grid gap-3 ${hasPrev ? "lg:grid-cols-[1.2fr_1fr_1fr]" : "lg:grid-cols-[1.5fr_1fr]"}`}>
           {/* Growth Trend */}
