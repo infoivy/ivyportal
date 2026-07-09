@@ -24,6 +24,7 @@ const workItems: Item[] = [
 
 const knowledgeItems: Item[] = [
   { title: "Knowledge Hub", url: "/knowledge", icon: BookOpen },
+  { title: "Setting Process", url: "/setting-process", icon: ListChecks, roles: ["admin", "setter", "coach", "csm"] },
   { title: "Closer Resources", url: "/closer-resources", icon: DollarSign, roles: ["admin", "closer"] },
   { title: "Training", url: "/training", icon: GraduationCap },
 ];

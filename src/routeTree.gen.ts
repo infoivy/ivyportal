@@ -18,6 +18,7 @@ import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated.t
 import { Route as AuthenticatedStudentsRouteImport } from './routes/_authenticated.students'
 import { Route as AuthenticatedStudentPortalRouteImport } from './routes/_authenticated.student-portal'
 import { Route as AuthenticatedSopsRouteImport } from './routes/_authenticated.sops'
+import { Route as AuthenticatedSettingProcessRouteImport } from './routes/_authenticated.setting-process'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated.profile'
 import { Route as AuthenticatedPoliciesRouteImport } from './routes/_authenticated.policies'
 import { Route as AuthenticatedNotesRouteImport } from './routes/_authenticated.notes'
@@ -86,6 +87,12 @@ const AuthenticatedSopsRoute = AuthenticatedSopsRouteImport.update({
   path: '/sops',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedSettingProcessRoute =
+  AuthenticatedSettingProcessRouteImport.update({
+    id: '/setting-process',
+    path: '/setting-process',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -225,6 +232,7 @@ export interface FileRoutesByFullPath {
   '/notes': typeof AuthenticatedNotesRoute
   '/policies': typeof AuthenticatedPoliciesRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/setting-process': typeof AuthenticatedSettingProcessRoute
   '/sops': typeof AuthenticatedSopsRoute
   '/student-portal': typeof AuthenticatedStudentPortalRoute
   '/students': typeof AuthenticatedStudentsRouteWithChildren
@@ -256,6 +264,7 @@ export interface FileRoutesByTo {
   '/notes': typeof AuthenticatedNotesRoute
   '/policies': typeof AuthenticatedPoliciesRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/setting-process': typeof AuthenticatedSettingProcessRoute
   '/sops': typeof AuthenticatedSopsRoute
   '/student-portal': typeof AuthenticatedStudentPortalRoute
   '/students': typeof AuthenticatedStudentsRouteWithChildren
@@ -290,6 +299,7 @@ export interface FileRoutesById {
   '/_authenticated/notes': typeof AuthenticatedNotesRoute
   '/_authenticated/policies': typeof AuthenticatedPoliciesRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/_authenticated/setting-process': typeof AuthenticatedSettingProcessRoute
   '/_authenticated/sops': typeof AuthenticatedSopsRoute
   '/_authenticated/student-portal': typeof AuthenticatedStudentPortalRoute
   '/_authenticated/students': typeof AuthenticatedStudentsRouteWithChildren
@@ -324,6 +334,7 @@ export interface FileRouteTypes {
     | '/notes'
     | '/policies'
     | '/profile'
+    | '/setting-process'
     | '/sops'
     | '/student-portal'
     | '/students'
@@ -355,6 +366,7 @@ export interface FileRouteTypes {
     | '/notes'
     | '/policies'
     | '/profile'
+    | '/setting-process'
     | '/sops'
     | '/student-portal'
     | '/students'
@@ -388,6 +400,7 @@ export interface FileRouteTypes {
     | '/_authenticated/notes'
     | '/_authenticated/policies'
     | '/_authenticated/profile'
+    | '/_authenticated/setting-process'
     | '/_authenticated/sops'
     | '/_authenticated/student-portal'
     | '/_authenticated/students'
@@ -472,6 +485,13 @@ declare module '@tanstack/react-router' {
       path: '/sops'
       fullPath: '/sops'
       preLoaderRoute: typeof AuthenticatedSopsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/setting-process': {
+      id: '/_authenticated/setting-process'
+      path: '/setting-process'
+      fullPath: '/setting-process'
+      preLoaderRoute: typeof AuthenticatedSettingProcessRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/profile': {
@@ -694,6 +714,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedNotesRoute: typeof AuthenticatedNotesRoute
   AuthenticatedPoliciesRoute: typeof AuthenticatedPoliciesRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+  AuthenticatedSettingProcessRoute: typeof AuthenticatedSettingProcessRoute
   AuthenticatedSopsRoute: typeof AuthenticatedSopsRoute
   AuthenticatedStudentPortalRoute: typeof AuthenticatedStudentPortalRoute
   AuthenticatedStudentsRoute: typeof AuthenticatedStudentsRouteWithChildren
@@ -718,6 +739,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedNotesRoute: AuthenticatedNotesRoute,
   AuthenticatedPoliciesRoute: AuthenticatedPoliciesRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
+  AuthenticatedSettingProcessRoute: AuthenticatedSettingProcessRoute,
   AuthenticatedSopsRoute: AuthenticatedSopsRoute,
   AuthenticatedStudentPortalRoute: AuthenticatedStudentPortalRoute,
   AuthenticatedStudentsRoute: AuthenticatedStudentsRouteWithChildren,
