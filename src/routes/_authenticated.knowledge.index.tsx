@@ -39,6 +39,7 @@ function KnowledgeIndex() {
       const { data } = await supabase
         .from("docs")
         .select("*")
+        .eq("is_founder_only", false)
         .order("pinned", { ascending: false })
         .order("sort_order", { ascending: true })
         .order("updated_at", { ascending: false });
