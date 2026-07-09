@@ -8,6 +8,7 @@ import { LogOut, AlertCircle } from "lucide-react";
 import { Toaster } from "sonner";
 import { AuthContext, type AuthState } from "@/lib/auth-context";
 import { installSessionOnlyCleanup } from "@/components/auth-page";
+import { NotificationsBell } from "@/components/notifications-bell";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -108,6 +109,7 @@ function AuthedLayout() {
                     EOD due
                   </Link>
                 )}
+                <NotificationsBell />
                 <div className="text-[11px] text-muted-foreground hidden md:flex flex-col items-end leading-tight">
                   <span className="text-foreground font-medium">{state.displayName}</span>
                   <span className="uppercase tracking-wider text-[9px]">{state.roles.join(" · ") || "member"}</span>
