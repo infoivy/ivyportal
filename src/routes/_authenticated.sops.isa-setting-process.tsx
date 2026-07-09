@@ -158,7 +158,7 @@ function Toolbar({ dark, setDark, onNotes, counter, setCounter, onReset, onHelp 
 
 function Header({ onJump, query, setQuery, innerRef }: { onJump: (id: TabId) => void; query: string; setQuery: (v: string) => void; innerRef?: React.RefObject<HTMLDivElement | null> }) {
   return (
-    <div ref={innerRef} className="fixed top-0 left-0 right-0 z-[80] px-3 sm:px-6 py-2 sm:py-3 bg-background border-b border-border shadow-sm">
+    <div ref={innerRef} className="absolute top-0 left-0 right-0 z-40 px-3 sm:px-6 py-2 sm:py-3 bg-background border-b border-border shadow-sm">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 sm:gap-3">
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <img src={logoAsset.url} alt="Ivy Sales Academy" className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 object-contain" loading="eager" />
