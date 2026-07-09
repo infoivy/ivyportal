@@ -23,6 +23,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedCrmRouteImport } from './routes/_authenticated.crm'
 import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticated.calendar'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated.analytics'
+import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated.admin'
 import { Route as AuthenticatedPoliciesIndexRouteImport } from './routes/_authenticated.policies.index'
 import { Route as ApiPublicGoogleOauthCallbackRouteImport } from './routes/api/public/google-oauth-callback'
 import { Route as AuthenticatedSopsIsaSettingProcessRouteImport } from './routes/_authenticated.sops.isa-setting-process'
@@ -97,6 +98,11 @@ const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedPoliciesIndexRoute =
   AuthenticatedPoliciesIndexRouteImport.update({
     id: '/',
@@ -126,6 +132,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/print': typeof PrintRoute
+  '/admin': typeof AuthenticatedAdminRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/calendar': typeof AuthenticatedCalendarRoute
   '/crm': typeof AuthenticatedCrmRoute
@@ -145,6 +152,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/print': typeof PrintRoute
+  '/admin': typeof AuthenticatedAdminRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/calendar': typeof AuthenticatedCalendarRoute
   '/crm': typeof AuthenticatedCrmRoute
@@ -165,6 +173,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/auth': typeof AuthRoute
   '/print': typeof PrintRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
   '/_authenticated/calendar': typeof AuthenticatedCalendarRoute
   '/_authenticated/crm': typeof AuthenticatedCrmRoute
@@ -186,6 +195,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/print'
+    | '/admin'
     | '/analytics'
     | '/calendar'
     | '/crm'
@@ -205,6 +215,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/print'
+    | '/admin'
     | '/analytics'
     | '/calendar'
     | '/crm'
@@ -224,6 +235,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/print'
+    | '/_authenticated/admin'
     | '/_authenticated/analytics'
     | '/_authenticated/calendar'
     | '/_authenticated/crm'
@@ -348,6 +360,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAnalyticsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/policies/': {
       id: '/_authenticated/policies/'
       path: '/'
@@ -407,6 +426,7 @@ const AuthenticatedSopsRouteWithChildren =
   AuthenticatedSopsRoute._addFileChildren(AuthenticatedSopsRouteChildren)
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
   AuthenticatedCalendarRoute: typeof AuthenticatedCalendarRoute
   AuthenticatedCrmRoute: typeof AuthenticatedCrmRoute
@@ -420,6 +440,7 @@ interface AuthenticatedRouteChildren {
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
   AuthenticatedCalendarRoute: AuthenticatedCalendarRoute,
   AuthenticatedCrmRoute: AuthenticatedCrmRoute,

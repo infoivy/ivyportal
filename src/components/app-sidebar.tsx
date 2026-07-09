@@ -1,7 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, FileText, BookOpen, Calendar, GraduationCap,
-  BarChart3, Database, Users, StickyNote, ShieldCheck,
+  BarChart3, Database, Users, StickyNote, ShieldCheck, Shield,
 } from "lucide-react";
 
 import {
@@ -32,6 +32,7 @@ const opsItems: Item[] = [
 ];
 
 const adminItems: Item[] = [
+  { title: "Admin", url: "/admin", icon: Shield, adminOnly: true },
   { title: "Team", url: "/team", icon: Users, adminOnly: true },
 ];
 
