@@ -1,7 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, FileText, BookOpen, Calendar, GraduationCap,
-  BarChart3, Database, Users, StickyNote, ShieldCheck, Shield, UserCircle, School,
+  BarChart3, Database, Users, StickyNote, ShieldCheck, Shield, UserCircle, School, HeartHandshake,
 } from "lucide-react";
 
 import {
@@ -16,6 +16,7 @@ const workItems: Item[] = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "EOD Reports", url: "/eods", icon: FileText },
   { title: "Notes", url: "/notes", icon: StickyNote },
+  { title: "CSM", url: "/csm", icon: HeartHandshake, roles: ["admin", "csm"] },
 ];
 
 const knowledgeItems: Item[] = [
@@ -47,7 +48,7 @@ export function AppSidebar({ roles }: { roles: string[] }) {
   const currentPath = useRouterState({ select: s => s.location.pathname });
   const isAdmin = roles.includes("admin");
   const isStudent = roles.includes("student");
-  const isTeam = roles.some(r => ["admin", "coach", "closer", "setter"].includes(r));
+  const isTeam = roles.some(r => ["admin", "coach", "closer", "setter", "csm"].includes(r));
 
   const isActive = (url: string) =>
     url === "/dashboard" ? currentPath === url : currentPath.startsWith(url);
