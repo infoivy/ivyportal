@@ -1,10 +1,10 @@
-import { createFileRoute, Outlet, redirect, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, redirect, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
+import { LogOut, AlertCircle } from "lucide-react";
 import { Toaster } from "sonner";
 import { AuthContext, type AuthState } from "@/lib/auth-context";
 
@@ -21,6 +21,13 @@ export const Route = createFileRoute("/_authenticated")({
 function AuthedLayout() {
   const navigate = useNavigate();
   const [state, setState] = useState<AuthState>({ user: null, roles: [], displayName: null, loading: true });
+  const [eodSubmitted, setEodSubmitted] = useState<boolean | null>(null);
+
+  const checkEod = async (userId: string) => {
+    const today = new Date().toISOString().slice(0, 10);
+    const { data } = await supabase.from("eods").select("id").eq("user_id", userId).eq("report_date", today).maybeSingle();
+    setEodSubmitted(!!data);
+  };
 
   useEffect(() => {
     let alive = true;
@@ -41,6 +48,7 @@ function AuthedLayout() {
         displayName: profileRes.data?.display_name ?? userRes.data.user?.email ?? null,
         loading: false,
       });
+      checkEod(userId);
     };
     supabase.auth.getSession().then(({ data }) => load(data.session?.user.id ?? null));
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
@@ -79,6 +87,15 @@ function AuthedLayout() {
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   Live
                 </div>
+                {eodSubmitted === false && (
+                  <Link
+                    to="/eods"
+                    className="hidden sm:flex items-center gap-1.5 text-[10px] font-medium px-2 py-1 rounded-sm border border-amber-500/30 bg-amber-500/5 text-amber-400 hover:bg-amber-500/10 transition"
+                  >
+                    <AlertCircle className="h-3 w-3" />
+                    EOD due
+                  </Link>
+                )}
                 <div className="text-[11px] text-muted-foreground hidden md:flex flex-col items-end leading-tight">
                   <span className="text-foreground font-medium">{state.displayName}</span>
                   <span className="uppercase tracking-wider text-[9px]">{state.roles.join(" · ") || "member"}</span>

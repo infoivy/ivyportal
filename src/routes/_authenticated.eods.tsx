@@ -1,14 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { CheckCircle2, Clock, TrendingUp, Users, Phone, Target, AlertTriangle, ChevronRight } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/eods")({
   head: () => ({ meta: [{ title: "EOD Reports — ISA Team" }] }),
@@ -81,51 +81,130 @@ function EODsPage() {
 
   const setNum = (k: keyof typeof form) => (v: string) => setForm(f => ({ ...f, [k]: parseInt(v) || 0 }));
 
+  // 7-day rolling summary for the current user
+  const weekly = useMemo(() => {
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 7);
+    const recent = myEods.filter(e => new Date(e.report_date) >= cutoff);
+    const sum = (k: keyof EOD) => recent.reduce((a, e) => a + (Number(e[k]) || 0), 0);
+    return {
+      dms: sum("dms_sent"), convos: sum("convos_started"), booked: sum("calls_booked"),
+      shows: sum("shows"), noshows: sum("no_shows"), submitted: recent.length,
+    };
+  }, [myEods]);
+
+  const conv = form.convos_started > 0 ? Math.round((form.calls_booked / form.convos_started) * 100) : 0;
+  const showRate = (form.shows + form.no_shows) > 0 ? Math.round((form.shows / (form.shows + form.no_shows)) * 100) : 0;
+
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">EOD Reports</h1>
-      <Tabs defaultValue="submit">
-        <TabsList>
-          <TabsTrigger value="submit">Today's EOD</TabsTrigger>
-          <TabsTrigger value="mine">My history</TabsTrigger>
-          {canViewTeam && <TabsTrigger value="team">Team feed</TabsTrigger>}
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-5">
+      <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[#1f2530] pb-4">
+        <div>
+          <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-1">Daily Reporting</div>
+          <h1 className="text-2xl font-semibold tracking-tight">End of Day</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">Log your numbers. Track the funnel. Ship consistency.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-sm border ${existingId ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-400" : "border-amber-500/30 bg-amber-500/5 text-amber-400"}`}>
+            {existingId ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Clock className="h-3.5 w-3.5" />}
+            {existingId ? "Today submitted" : "Today pending"}
+          </div>
+          <span className="text-[11px] text-muted-foreground font-mono">{today}</span>
+        </div>
+      </header>
+
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
+        <WeekTile label="7d DMs" value={weekly.dms} icon={<Users className="h-3 w-3" />} />
+        <WeekTile label="7d Convos" value={weekly.convos} icon={<TrendingUp className="h-3 w-3" />} />
+        <WeekTile label="7d Booked" value={weekly.booked} icon={<Phone className="h-3 w-3" />} accent />
+        <WeekTile label="7d Shows" value={weekly.shows} icon={<Target className="h-3 w-3" />} />
+        <WeekTile label="7d No-shows" value={weekly.noshows} icon={<AlertTriangle className="h-3 w-3" />} />
+        <WeekTile label="Reports" value={`${weekly.submitted}/7`} icon={<CheckCircle2 className="h-3 w-3" />} />
+      </div>
+
+      <Tabs defaultValue="submit" className="space-y-4">
+        <TabsList className="bg-[#0f1116] border border-[#1f2530] rounded-sm h-9 p-0.5">
+          <TabsTrigger value="submit" className="text-xs h-8 rounded-sm data-[state=active]:bg-[#1a1f29]">Today's EOD</TabsTrigger>
+          <TabsTrigger value="mine" className="text-xs h-8 rounded-sm data-[state=active]:bg-[#1a1f29]">My history</TabsTrigger>
+          {canViewTeam && <TabsTrigger value="team" className="text-xs h-8 rounded-sm data-[state=active]:bg-[#1a1f29]">Team feed</TabsTrigger>}
         </TabsList>
 
-        <TabsContent value="submit">
-          <Card>
-            <CardHeader>
-              <CardTitle>{existingId ? "Update today's EOD" : "Submit today's EOD"}</CardTitle>
-              <p className="text-sm text-muted-foreground">{today}</p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                <NumField label="DMs sent" value={form.dms_sent} onChange={setNum("dms_sent")} />
-                <NumField label="Convos started" value={form.convos_started} onChange={setNum("convos_started")} />
-                <NumField label="Calls booked" value={form.calls_booked} onChange={setNum("calls_booked")} />
-                <NumField label="Calls scheduled" value={form.calls_scheduled} onChange={setNum("calls_scheduled")} />
-                <NumField label="Shows" value={form.shows} onChange={setNum("shows")} />
-                <NumField label="No-shows" value={form.no_shows} onChange={setNum("no_shows")} />
+        <TabsContent value="submit" className="space-y-4">
+          <div className="grid lg:grid-cols-3 gap-4">
+            <div className="lg:col-span-2 border border-[#1f2530] bg-[#0f1116] rounded-sm p-5 space-y-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-sm font-semibold">{existingId ? "Update today's numbers" : "Submit today's numbers"}</h2>
+                  <p className="text-[11px] text-muted-foreground">All fields required. Zero is a valid answer.</p>
+                </div>
               </div>
-              <TextField label="Wins" value={form.wins} onChange={v => setForm(f => ({ ...f, wins: v }))} />
-              <TextField label="Blockers" value={form.blockers} onChange={v => setForm(f => ({ ...f, blockers: v }))} />
-              <TextField label="Tomorrow's focus" value={form.tomorrow_focus} onChange={v => setForm(f => ({ ...f, tomorrow_focus: v }))} />
-              <TextField label="Summary" value={form.summary} onChange={v => setForm(f => ({ ...f, summary: v }))} rows={4} />
-              <Button onClick={submit} disabled={saving}>{saving ? "Saving..." : existingId ? "Update EOD" : "Submit EOD"}</Button>
-            </CardContent>
-          </Card>
+
+              <div className="space-y-3">
+                <SectionLabel>Funnel volume</SectionLabel>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <NumField label="DMs sent" value={form.dms_sent} onChange={setNum("dms_sent")} />
+                  <NumField label="Convos started" value={form.convos_started} onChange={setNum("convos_started")} />
+                  <NumField label="Calls booked" value={form.calls_booked} onChange={setNum("calls_booked")} />
+                  <NumField label="Calls scheduled" value={form.calls_scheduled} onChange={setNum("calls_scheduled")} />
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <SectionLabel>Show outcomes</SectionLabel>
+                <div className="grid grid-cols-2 gap-3">
+                  <NumField label="Shows" value={form.shows} onChange={setNum("shows")} />
+                  <NumField label="No-shows" value={form.no_shows} onChange={setNum("no_shows")} />
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <SectionLabel>Narrative</SectionLabel>
+                <TextField label="Wins" value={form.wins} onChange={v => setForm(f => ({ ...f, wins: v }))} />
+                <TextField label="Blockers" value={form.blockers} onChange={v => setForm(f => ({ ...f, blockers: v }))} />
+                <TextField label="Tomorrow's focus" value={form.tomorrow_focus} onChange={v => setForm(f => ({ ...f, tomorrow_focus: v }))} />
+                <TextField label="Summary" value={form.summary} onChange={v => setForm(f => ({ ...f, summary: v }))} rows={3} />
+              </div>
+
+              <div className="flex items-center justify-between pt-2 border-t border-[#1f2530]">
+                <div className="text-[11px] text-muted-foreground">
+                  Convos→Booked <span className="text-foreground font-mono ml-1">{conv}%</span>
+                  <span className="mx-2 text-[#1f2530]">|</span>
+                  Show rate <span className="text-foreground font-mono ml-1">{showRate}%</span>
+                </div>
+                <Button onClick={submit} disabled={saving} className="bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-medium h-8 rounded-sm text-xs">
+                  {saving ? "Saving…" : existingId ? "Update EOD" : "Submit EOD"}
+                </Button>
+              </div>
+            </div>
+
+            <aside className="space-y-3">
+              <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-4">
+                <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-3">Today at a glance</div>
+                <MiniStat label="DMs sent" value={form.dms_sent} />
+                <MiniStat label="Convos" value={form.convos_started} />
+                <MiniStat label="Booked" value={form.calls_booked} highlight />
+                <MiniStat label="Shows" value={form.shows} />
+                <MiniStat label="No-shows" value={form.no_shows} />
+              </div>
+              <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-4 text-[11px] text-muted-foreground leading-relaxed">
+                <div className="text-[10px] uppercase tracking-widest text-emerald-400 mb-2">Pro tip</div>
+                Submit before <span className="text-foreground font-mono">23:59</span>. Missed days hurt the team's rolling average and your leaderboard rank.
+              </div>
+            </aside>
+          </div>
         </TabsContent>
 
         <TabsContent value="mine">
-          <div className="space-y-3">
-            {myEods.length === 0 && <p className="text-muted-foreground">No EODs yet.</p>}
-            {myEods.map(e => <EODCard key={e.id} eod={e} />)}
+          <div className="space-y-2">
+            {myEods.length === 0 && <EmptyState text="No EODs yet. Submit your first one above." />}
+            {myEods.map(e => <EODRow key={e.id} eod={e} />)}
           </div>
         </TabsContent>
 
         {canViewTeam && (
           <TabsContent value="team">
-            <div className="space-y-3">
-              {teamEods.map(e => <EODCard key={e.id} eod={e} author={e.display_name} />)}
+            <div className="space-y-2">
+              {teamEods.length === 0 && <EmptyState text="No team EODs yet." />}
+              {teamEods.map(e => <EODRow key={e.id} eod={e} author={e.display_name} />)}
             </div>
           </TabsContent>
         )}
@@ -134,11 +213,32 @@ function EODsPage() {
   );
 }
 
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground border-b border-[#1f2530] pb-1.5">{children}</div>;
+}
+
+function WeekTile({ label, value, icon, accent }: { label: string; value: number | string; icon: React.ReactNode; accent?: boolean }) {
+  return (
+    <div className={`border border-[#1f2530] rounded-sm p-2.5 ${accent ? "bg-emerald-500/5" : "bg-[#0f1116]"}`}>
+      <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-muted-foreground mb-1">
+        {icon}{label}
+      </div>
+      <div className={`text-lg font-mono font-semibold ${accent ? "text-emerald-400" : "text-foreground"}`}>{value}</div>
+    </div>
+  );
+}
+
 function NumField({ label, value, onChange }: { label: string; value: number; onChange: (v: string) => void }) {
   return (
     <div className="space-y-1">
-      <Label className="text-xs">{label}</Label>
-      <Input type="number" min={0} value={value} onChange={e => onChange(e.target.value)} />
+      <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</Label>
+      <Input
+        type="number"
+        min={0}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        className="bg-[#0a0b0f] border-[#1f2530] rounded-sm h-9 font-mono text-sm focus-visible:ring-emerald-500/40 focus-visible:border-emerald-500/40"
+      />
     </div>
   );
 }
@@ -146,38 +246,65 @@ function NumField({ label, value, onChange }: { label: string; value: number; on
 function TextField({ label, value, onChange, rows = 2 }: { label: string; value: string; onChange: (v: string) => void; rows?: number }) {
   return (
     <div className="space-y-1">
-      <Label className="text-xs">{label}</Label>
-      <Textarea value={value} onChange={e => onChange(e.target.value)} rows={rows} />
+      <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</Label>
+      <Textarea
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        rows={rows}
+        className="bg-[#0a0b0f] border-[#1f2530] rounded-sm text-sm focus-visible:ring-emerald-500/40 focus-visible:border-emerald-500/40 resize-none"
+      />
     </div>
   );
 }
 
-function EODCard({ eod, author }: { eod: EOD; author?: string }) {
+function MiniStat({ label, value, highlight }: { label: string; value: number; highlight?: boolean }) {
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-center">
-          <CardTitle className="text-base">{eod.report_date}{author && <span className="text-muted-foreground font-normal"> · {author}</span>}</CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent className="text-sm space-y-2">
-        <div className="grid grid-cols-3 md:grid-cols-6 gap-2 text-xs">
-          <Stat label="DMs" value={eod.dms_sent} />
-          <Stat label="Convos" value={eod.convos_started} />
-          <Stat label="Booked" value={eod.calls_booked} />
-          <Stat label="Sched" value={eod.calls_scheduled} />
-          <Stat label="Shows" value={eod.shows} />
-          <Stat label="No-shows" value={eod.no_shows} />
-        </div>
-        {eod.wins && <p><span className="text-muted-foreground">Wins:</span> {eod.wins}</p>}
-        {eod.blockers && <p><span className="text-muted-foreground">Blockers:</span> {eod.blockers}</p>}
-        {eod.tomorrow_focus && <p><span className="text-muted-foreground">Tomorrow:</span> {eod.tomorrow_focus}</p>}
-        {eod.summary && <p className="text-muted-foreground italic">{eod.summary}</p>}
-      </CardContent>
-    </Card>
+    <div className="flex items-center justify-between py-1.5 border-b border-[#1a1f29] last:border-0 text-xs">
+      <span className="text-muted-foreground">{label}</span>
+      <span className={`font-mono ${highlight ? "text-emerald-400 font-semibold" : "text-foreground"}`}>{value}</span>
+    </div>
   );
 }
 
-function Stat({ label, value }: { label: string; value: number }) {
-  return <div className="bg-muted rounded p-2 text-center"><div className="font-bold">{value}</div><div className="text-muted-foreground">{label}</div></div>;
+function EmptyState({ text }: { text: string }) {
+  return <div className="border border-dashed border-[#1f2530] rounded-sm p-8 text-center text-xs text-muted-foreground">{text}</div>;
+}
+
+function EODRow({ eod, author }: { eod: EOD; author?: string }) {
+  const [open, setOpen] = useState(false);
+  const conv = eod.convos_started > 0 ? Math.round((eod.calls_booked / eod.convos_started) * 100) : 0;
+  return (
+    <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm">
+      <button onClick={() => setOpen(o => !o)} className="w-full flex items-center gap-3 p-3 text-left hover:bg-[#14171e] transition">
+        <ChevronRight className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${open ? "rotate-90" : ""}`} />
+        <div className="text-xs font-mono text-muted-foreground w-24">{eod.report_date}</div>
+        {author && <div className="text-xs text-foreground w-32 truncate">{author}</div>}
+        <div className="flex-1 grid grid-cols-3 md:grid-cols-6 gap-2 text-[11px]">
+          <RowStat label="DMs" value={eod.dms_sent} />
+          <RowStat label="Convos" value={eod.convos_started} />
+          <RowStat label="Booked" value={eod.calls_booked} accent />
+          <RowStat label="Sched" value={eod.calls_scheduled} />
+          <RowStat label="Shows" value={eod.shows} />
+          <RowStat label="Conv%" value={`${conv}%`} />
+        </div>
+      </button>
+      {open && (eod.wins || eod.blockers || eod.tomorrow_focus || eod.summary) && (
+        <div className="border-t border-[#1f2530] p-4 space-y-2 text-xs">
+          {eod.wins && <p><span className="text-emerald-400">Wins:</span> {eod.wins}</p>}
+          {eod.blockers && <p><span className="text-amber-400">Blockers:</span> {eod.blockers}</p>}
+          {eod.tomorrow_focus && <p><span className="text-sky-400">Tomorrow:</span> {eod.tomorrow_focus}</p>}
+          {eod.summary && <p className="text-muted-foreground italic">{eod.summary}</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RowStat({ label, value, accent }: { label: string; value: number | string; accent?: boolean }) {
+  return (
+    <div className="flex items-baseline gap-1.5">
+      <span className="text-[9px] uppercase tracking-wider text-muted-foreground">{label}</span>
+      <span className={`font-mono ${accent ? "text-emerald-400 font-semibold" : "text-foreground"}`}>{value}</span>
+    </div>
+  );
 }
