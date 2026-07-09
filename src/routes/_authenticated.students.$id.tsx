@@ -7,7 +7,7 @@ import {
   ArrowLeft, Video, Trash2, Plus, Save, Calendar as CalIcon,
   Phone, FileText, User, Pencil, ExternalLink, CheckCircle2, Circle,
   Star, HeartHandshake, DollarSign, Trophy, Award, MessageSquare, Link2,
-  AlertTriangle, MessageCircle, GraduationCap,
+  AlertTriangle, MessageCircle, GraduationCap, Activity,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/students/$id")({
@@ -54,7 +54,7 @@ const PAYMENT_STATES: { key: PaymentState; label: string; color: string }[] = [
   { key: "behind", label: "Behind", color: "text-rose-400 border-rose-500/30 bg-rose-500/10" },
 ];
 
-type Tab = "calls" | "eods" | "csm" | "installments" | "notes";
+type Tab = "timeline" | "calls" | "eods" | "csm" | "installments" | "notes";
 
 function StudentDetail() {
   const { id } = Route.useParams() as { id: string };
@@ -72,7 +72,7 @@ function StudentDetail() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [coaches, setCoaches] = useState<Coach[]>([]);
   const [callFormOpen, setCallFormOpen] = useState(false);
-  const [tab, setTab] = useState<Tab>("calls");
+  const [tab, setTab] = useState<Tab>("timeline");
 
   const load = async () => {
     const [sRes, cRes, eRes, coachRes, csmRes, instRes] = await Promise.all([
