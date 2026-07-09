@@ -94,9 +94,9 @@ function CoachesPage() {
             </div>
 
             <div className="grid grid-cols-3 gap-2">
-              <Stat label="Calls left" value={remaining} sub={`of ${totalAllotted}`} icon={<Phone className="h-3 w-3" />} tone={remaining === 0 ? "rose" : remaining < 5 ? "amber" : "emerald"} />
+              <Stat label="Active" value={active.length} sub={`${roster.length} roster`} icon={<Phone className="h-3 w-3" />} tone={active.length > 15 ? "amber" : "emerald"} />
               <Stat label="Avg rating" value={avgRating ? avgRating.toFixed(1) : "—"} sub={`${ratings.length} rated`} icon={<Star className="h-3 w-3" />} tone="amber" />
-              <Stat label="Completed" value={completed} sub="1:1s" icon={<Trophy className="h-3 w-3" />} tone="sky" />
+              <Stat label="1:1s done" value={completed} sub="completed" icon={<Trophy className="h-3 w-3" />} tone="sky" />
             </div>
 
             {stale.length > 0 && (
