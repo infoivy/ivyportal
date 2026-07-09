@@ -575,7 +575,7 @@ function InstallmentReminders() {
       const to = in3.toISOString().slice(0, 10);
       let q = supabase
         .from("installment_payments")
-        .select("id, amount, currency, due_date, installments!inner(coach_id, student_id, students(id, full_name), coach:profiles!installments_coach_id_fkey(display_name))")
+        .select("id, amount, currency, due_date, installments!inner(coach_id, student_id, students(id, full_name))")
         .eq("status", "upcoming")
         .lte("due_date", to)
         .order("due_date", { ascending: true })
@@ -583,6 +583,12 @@ function InstallmentReminders() {
       if (!isAdmin && isCoach) q = q.eq("installments.coach_id", user.id);
       const { data } = await q;
       if (!alive) return;
+      const coachIds = Array.from(new Set((data ?? []).map((r: any) => r.installments?.coach_id).filter(Boolean)));
+      const coachMap = new Map<string, string>();
+      if (coachIds.length) {
+        const { data: profs } = await supabase.from("profiles").select("id, display_name").in("id", coachIds);
+        (profs ?? []).forEach(p => coachMap.set(p.id, p.display_name ?? ""));
+      }
       const now = new Date(new Date().toISOString().slice(0, 10));
       const mapped: ReminderRow[] = (data ?? []).map((r: any) => {
         const student = r.installments?.students;
@@ -595,7 +601,7 @@ function InstallmentReminders() {
           days,
           student_id: student?.id ?? null,
           student_name: student?.full_name ?? "Unknown",
-          coach_name: r.installments?.coach?.display_name ?? null,
+          coach_name: r.installments?.coach_id ? (coachMap.get(r.installments.coach_id) || null) : null,
         };
       });
       setRows(mapped);
