@@ -284,6 +284,11 @@ function EditProfileModal({ member, initialUrl, onClose, onSaved }: { member: Me
           <input value={displayName} onChange={e => setDisplayName(e.target.value)}
                  className="w-full h-9 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-sm" />
         </div>
+        <div className="space-y-1">
+          <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Phone (optional)</label>
+          <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="+1 555 123 4567" inputMode="tel"
+                 className="w-full h-9 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-sm" />
+        </div>
         <div className="flex justify-end gap-2 pt-2 border-t border-[#1f2530]">
           <button onClick={onClose} className="text-xs text-muted-foreground hover:text-foreground px-3 py-1.5">Cancel</button>
           <button onClick={save} disabled={saving} className="text-xs bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-medium px-3 py-1.5 rounded-sm">
