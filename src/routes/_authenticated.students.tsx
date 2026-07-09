@@ -78,13 +78,18 @@ function StudentsLayout() {
   const isDetail = /^\/students\/[^/]+/.test(pathname);
   const canManage = roles.includes("admin") || roles.includes("coach");
 
-  const [students, setStudents] = useState<Student[]>([]);
-  const [coaches, setCoaches] = useState<Coach[]>([]);
-  const [lastCallByStudent, setLastCallByStudent] = useState<Record<string, string>>({});
-  const [lastEodByStudent, setLastEodByStudent] = useState<Record<string, string>>({});
-  const [callsUsedByStudent, setCallsUsedByStudent] = useState<Record<string, number>>({});
-  const [apps7dByStudent, setApps7dByStudent] = useState<Record<string, number>>({});
-  const [q, setQ] = useState("");
+  const qc = useQueryClient();
+  const { data: students = [], isLoading: studentsLoading } = useQuery(studentsQuery()) as { data: Student[]; isLoading: boolean };
+  const { data: coaches = [] } = useQuery(coachesQuery()) as { data: Coach[] };
+  const { data: callAgg } = useQuery(studentCallsAggQuery());
+  const { data: eodAgg } = useQuery(studentEodsAggQuery());
+  const lastCallByStudent = callAgg?.lastCall ?? {};
+  const lastEodByStudent = eodAgg?.lastEod ?? {};
+  const callsUsedByStudent = callAgg?.callsUsed ?? {};
+  const apps7dByStudent = eodAgg?.apps7d ?? {};
+
+  const [qRaw, setQ] = useState("");
+  const q = useDebouncedValue(qRaw, 250);
   const [phaseFilter, setPhaseFilter] = useState<Phase | "all" | "at_risk">("all");
   const [view, setView] = useState<"table" | "kanban" | "graduation">("table");
   const [kanbanBy, setKanbanBy] = useState<"phase" | "coach">("phase");
@@ -101,48 +106,18 @@ function StudentsLayout() {
     setVisibleCols(prev => {
       const next = new Set(prev);
       if (next.has(k)) next.delete(k); else next.add(k);
-      next.add("student"); // always visible
+      next.add("student");
       try { localStorage.setItem("students.visibleCols", JSON.stringify([...next])); } catch {}
       return next;
     });
   };
 
-  const load = async () => {
-    const [sRes, cRes, callRes, eodRes] = await Promise.all([
-      supabase.from("students").select("*").order("created_at", { ascending: false }),
-      supabase.from("user_roles").select("user_id, role").in("role", ["coach", "admin"]),
-      supabase.from("student_calls").select("student_id, call_date, status").order("call_date", { ascending: false }).limit(2000),
-      supabase.from("student_eods").select("student_id, report_date, applications_submitted").order("report_date", { ascending: false }).limit(3000),
-    ]);
-    setStudents((sRes.data ?? []) as Student[]);
-    const coachIds = Array.from(new Set((cRes.data ?? []).map(r => r.user_id)));
-    if (coachIds.length) {
-      const { data: profs } = await supabase.from("profiles").select("id, display_name").in("id", coachIds);
-      setCoaches((profs ?? []) as Coach[]);
-    }
-    const lastCall: Record<string, string> = {};
-    const callsUsed: Record<string, number> = {};
-    (callRes.data ?? []).forEach((c: any) => {
-      if (!lastCall[c.student_id]) lastCall[c.student_id] = c.call_date;
-      if (c.status === "completed") callsUsed[c.student_id] = (callsUsed[c.student_id] ?? 0) + 1;
-    });
-    setLastCallByStudent(lastCall);
-    setCallsUsedByStudent(callsUsed);
-
-    const lastEod: Record<string, string> = {};
-    const apps7d: Record<string, number> = {};
-    const cutoff = Date.now() - 7 * 86400000;
-    (eodRes.data ?? []).forEach((e: any) => {
-      if (!lastEod[e.student_id]) lastEod[e.student_id] = e.report_date;
-      if (new Date(e.report_date).getTime() >= cutoff) {
-        apps7d[e.student_id] = (apps7d[e.student_id] ?? 0) + (e.applications_submitted ?? 0);
-      }
-    });
-    setLastEodByStudent(lastEod);
-    setApps7dByStudent(apps7d);
+  const invalidateAll = () => {
+    qc.invalidateQueries({ queryKey: ["students", "all"] });
+    qc.invalidateQueries({ queryKey: ["student_calls", "agg"] });
+    qc.invalidateQueries({ queryKey: ["student_eods", "agg"] });
   };
 
-  useEffect(() => { load(); }, []);
 
   const coachName = (id: string | null) => (id ? coaches.find(c => c.id === id)?.display_name ?? "—" : "Unassigned");
 
