@@ -25,6 +25,7 @@ import { Route as AuthenticatedPoliciesRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedNotesRouteImport } from './routes/_authenticated.notes'
 import { Route as AuthenticatedKnowledgeRouteImport } from './routes/_authenticated.knowledge'
 import { Route as AuthenticatedInstallmentsRouteImport } from './routes/_authenticated.installments'
+import { Route as AuthenticatedInstagramRouteImport } from './routes/_authenticated.instagram'
 import { Route as AuthenticatedFounderRouteImport } from './routes/_authenticated.founder'
 import { Route as AuthenticatedEodsRouteImport } from './routes/_authenticated.eods'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
@@ -129,6 +130,11 @@ const AuthenticatedInstallmentsRoute =
     path: '/installments',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedInstagramRoute = AuthenticatedInstagramRouteImport.update({
+  id: '/instagram',
+  path: '/instagram',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedFounderRoute = AuthenticatedFounderRouteImport.update({
   id: '/founder',
   path: '/founder',
@@ -261,6 +267,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/eods': typeof AuthenticatedEodsRoute
   '/founder': typeof AuthenticatedFounderRoute
+  '/instagram': typeof AuthenticatedInstagramRoute
   '/installments': typeof AuthenticatedInstallmentsRoute
   '/knowledge': typeof AuthenticatedKnowledgeRouteWithChildren
   '/notes': typeof AuthenticatedNotesRoute
@@ -299,6 +306,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/eods': typeof AuthenticatedEodsRoute
   '/founder': typeof AuthenticatedFounderRoute
+  '/instagram': typeof AuthenticatedInstagramRoute
   '/installments': typeof AuthenticatedInstallmentsRoute
   '/notes': typeof AuthenticatedNotesRoute
   '/profile': typeof AuthenticatedProfileRoute
@@ -337,6 +345,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/eods': typeof AuthenticatedEodsRoute
   '/_authenticated/founder': typeof AuthenticatedFounderRoute
+  '/_authenticated/instagram': typeof AuthenticatedInstagramRoute
   '/_authenticated/installments': typeof AuthenticatedInstallmentsRoute
   '/_authenticated/knowledge': typeof AuthenticatedKnowledgeRouteWithChildren
   '/_authenticated/notes': typeof AuthenticatedNotesRoute
@@ -377,6 +386,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/eods'
     | '/founder'
+    | '/instagram'
     | '/installments'
     | '/knowledge'
     | '/notes'
@@ -415,6 +425,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/eods'
     | '/founder'
+    | '/instagram'
     | '/installments'
     | '/notes'
     | '/profile'
@@ -452,6 +463,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/eods'
     | '/_authenticated/founder'
+    | '/_authenticated/instagram'
     | '/_authenticated/installments'
     | '/_authenticated/knowledge'
     | '/_authenticated/notes'
@@ -595,6 +607,13 @@ declare module '@tanstack/react-router' {
       path: '/installments'
       fullPath: '/installments'
       preLoaderRoute: typeof AuthenticatedInstallmentsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/instagram': {
+      id: '/_authenticated/instagram'
+      path: '/instagram'
+      fullPath: '/instagram'
+      preLoaderRoute: typeof AuthenticatedInstagramRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/founder': {
@@ -833,6 +852,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEodsRoute: typeof AuthenticatedEodsRoute
   AuthenticatedFounderRoute: typeof AuthenticatedFounderRoute
+  AuthenticatedInstagramRoute: typeof AuthenticatedInstagramRoute
   AuthenticatedInstallmentsRoute: typeof AuthenticatedInstallmentsRoute
   AuthenticatedKnowledgeRoute: typeof AuthenticatedKnowledgeRouteWithChildren
   AuthenticatedNotesRoute: typeof AuthenticatedNotesRoute
@@ -860,6 +880,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEodsRoute: AuthenticatedEodsRoute,
   AuthenticatedFounderRoute: AuthenticatedFounderRoute,
+  AuthenticatedInstagramRoute: AuthenticatedInstagramRoute,
   AuthenticatedInstallmentsRoute: AuthenticatedInstallmentsRoute,
   AuthenticatedKnowledgeRoute: AuthenticatedKnowledgeRouteWithChildren,
   AuthenticatedNotesRoute: AuthenticatedNotesRoute,
