@@ -570,7 +570,7 @@ function MobileToolbar({ dark, setDark, onNotes, counter, setCounter, onHelp }: 
     setCounter({ ...counter, [k]: Math.max(0, counter[k] + d) });
   };
   return (
-    <div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-background border border-border rounded-full shadow-lg px-2 py-1.5 max-w-[calc(100vw-16px)] overflow-x-auto no-scrollbar">
+    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-background border border-border rounded-full shadow-lg px-2 py-1.5 max-w-[calc(100%-16px)] overflow-x-auto no-scrollbar">
       {COUNTER_FIELDS.map(({ key, label, full }) => (
         <div key={key} className="flex items-center h-8 shrink-0 rounded-full bg-muted/60 pl-1.5 pr-1 gap-1" title={full}>
           <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{label}</span>
