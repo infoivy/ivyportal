@@ -34,12 +34,9 @@ import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated.analytics'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated.admin'
 import { Route as AuthenticatedActionItemsRouteImport } from './routes/_authenticated.action-items'
-import { Route as AuthenticatedPoliciesIndexRouteImport } from './routes/_authenticated.policies.index'
 import { Route as AuthenticatedKnowledgeIndexRouteImport } from './routes/_authenticated.knowledge.index'
 import { Route as ApiPublicGoogleOauthCallbackRouteImport } from './routes/api/public/google-oauth-callback'
 import { Route as AuthenticatedStudentsIdRouteImport } from './routes/_authenticated.students.$id'
-import { Route as AuthenticatedSopsIsaSettingProcessRouteImport } from './routes/_authenticated.sops.isa-setting-process'
-import { Route as AuthenticatedPoliciesCrmHygieneRouteImport } from './routes/_authenticated.policies.crm-hygiene'
 import { Route as AuthenticatedKnowledgeNewRouteImport } from './routes/_authenticated.knowledge.new'
 import { Route as AuthenticatedKnowledgeSlugRouteImport } from './routes/_authenticated.knowledge.$slug'
 import { Route as AuthenticatedKnowledgeSlugEditRouteImport } from './routes/_authenticated.knowledge.$slug.edit'
@@ -172,12 +169,6 @@ const AuthenticatedActionItemsRoute =
     path: '/action-items',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedPoliciesIndexRoute =
-  AuthenticatedPoliciesIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedPoliciesRoute,
-  } as any)
 const AuthenticatedKnowledgeIndexRoute =
   AuthenticatedKnowledgeIndexRouteImport.update({
     id: '/',
@@ -195,18 +186,6 @@ const AuthenticatedStudentsIdRoute = AuthenticatedStudentsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AuthenticatedStudentsRoute,
 } as any)
-const AuthenticatedSopsIsaSettingProcessRoute =
-  AuthenticatedSopsIsaSettingProcessRouteImport.update({
-    id: '/isa-setting-process',
-    path: '/isa-setting-process',
-    getParentRoute: () => AuthenticatedSopsRoute,
-  } as any)
-const AuthenticatedPoliciesCrmHygieneRoute =
-  AuthenticatedPoliciesCrmHygieneRouteImport.update({
-    id: '/crm-hygiene',
-    path: '/crm-hygiene',
-    getParentRoute: () => AuthenticatedPoliciesRoute,
-  } as any)
 const AuthenticatedKnowledgeNewRoute =
   AuthenticatedKnowledgeNewRouteImport.update({
     id: '/new',
@@ -244,21 +223,18 @@ export interface FileRoutesByFullPath {
   '/installments': typeof AuthenticatedInstallmentsRoute
   '/knowledge': typeof AuthenticatedKnowledgeRouteWithChildren
   '/notes': typeof AuthenticatedNotesRoute
-  '/policies': typeof AuthenticatedPoliciesRouteWithChildren
+  '/policies': typeof AuthenticatedPoliciesRoute
   '/profile': typeof AuthenticatedProfileRoute
-  '/sops': typeof AuthenticatedSopsRouteWithChildren
+  '/sops': typeof AuthenticatedSopsRoute
   '/student-portal': typeof AuthenticatedStudentPortalRoute
   '/students': typeof AuthenticatedStudentsRouteWithChildren
   '/team': typeof AuthenticatedTeamRoute
   '/training': typeof AuthenticatedTrainingRoute
   '/knowledge/$slug': typeof AuthenticatedKnowledgeSlugRouteWithChildren
   '/knowledge/new': typeof AuthenticatedKnowledgeNewRoute
-  '/policies/crm-hygiene': typeof AuthenticatedPoliciesCrmHygieneRoute
-  '/sops/isa-setting-process': typeof AuthenticatedSopsIsaSettingProcessRoute
   '/students/$id': typeof AuthenticatedStudentsIdRoute
   '/api/public/google-oauth-callback': typeof ApiPublicGoogleOauthCallbackRoute
   '/knowledge/': typeof AuthenticatedKnowledgeIndexRoute
-  '/policies/': typeof AuthenticatedPoliciesIndexRoute
   '/knowledge/$slug/edit': typeof AuthenticatedKnowledgeSlugEditRoute
 }
 export interface FileRoutesByTo {
@@ -278,20 +254,18 @@ export interface FileRoutesByTo {
   '/eods': typeof AuthenticatedEodsRoute
   '/installments': typeof AuthenticatedInstallmentsRoute
   '/notes': typeof AuthenticatedNotesRoute
+  '/policies': typeof AuthenticatedPoliciesRoute
   '/profile': typeof AuthenticatedProfileRoute
-  '/sops': typeof AuthenticatedSopsRouteWithChildren
+  '/sops': typeof AuthenticatedSopsRoute
   '/student-portal': typeof AuthenticatedStudentPortalRoute
   '/students': typeof AuthenticatedStudentsRouteWithChildren
   '/team': typeof AuthenticatedTeamRoute
   '/training': typeof AuthenticatedTrainingRoute
   '/knowledge/$slug': typeof AuthenticatedKnowledgeSlugRouteWithChildren
   '/knowledge/new': typeof AuthenticatedKnowledgeNewRoute
-  '/policies/crm-hygiene': typeof AuthenticatedPoliciesCrmHygieneRoute
-  '/sops/isa-setting-process': typeof AuthenticatedSopsIsaSettingProcessRoute
   '/students/$id': typeof AuthenticatedStudentsIdRoute
   '/api/public/google-oauth-callback': typeof ApiPublicGoogleOauthCallbackRoute
   '/knowledge': typeof AuthenticatedKnowledgeIndexRoute
-  '/policies': typeof AuthenticatedPoliciesIndexRoute
   '/knowledge/$slug/edit': typeof AuthenticatedKnowledgeSlugEditRoute
 }
 export interface FileRoutesById {
@@ -314,21 +288,18 @@ export interface FileRoutesById {
   '/_authenticated/installments': typeof AuthenticatedInstallmentsRoute
   '/_authenticated/knowledge': typeof AuthenticatedKnowledgeRouteWithChildren
   '/_authenticated/notes': typeof AuthenticatedNotesRoute
-  '/_authenticated/policies': typeof AuthenticatedPoliciesRouteWithChildren
+  '/_authenticated/policies': typeof AuthenticatedPoliciesRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
-  '/_authenticated/sops': typeof AuthenticatedSopsRouteWithChildren
+  '/_authenticated/sops': typeof AuthenticatedSopsRoute
   '/_authenticated/student-portal': typeof AuthenticatedStudentPortalRoute
   '/_authenticated/students': typeof AuthenticatedStudentsRouteWithChildren
   '/_authenticated/team': typeof AuthenticatedTeamRoute
   '/_authenticated/training': typeof AuthenticatedTrainingRoute
   '/_authenticated/knowledge/$slug': typeof AuthenticatedKnowledgeSlugRouteWithChildren
   '/_authenticated/knowledge/new': typeof AuthenticatedKnowledgeNewRoute
-  '/_authenticated/policies/crm-hygiene': typeof AuthenticatedPoliciesCrmHygieneRoute
-  '/_authenticated/sops/isa-setting-process': typeof AuthenticatedSopsIsaSettingProcessRoute
   '/_authenticated/students/$id': typeof AuthenticatedStudentsIdRoute
   '/api/public/google-oauth-callback': typeof ApiPublicGoogleOauthCallbackRoute
   '/_authenticated/knowledge/': typeof AuthenticatedKnowledgeIndexRoute
-  '/_authenticated/policies/': typeof AuthenticatedPoliciesIndexRoute
   '/_authenticated/knowledge/$slug/edit': typeof AuthenticatedKnowledgeSlugEditRoute
 }
 export interface FileRouteTypes {
@@ -360,12 +331,9 @@ export interface FileRouteTypes {
     | '/training'
     | '/knowledge/$slug'
     | '/knowledge/new'
-    | '/policies/crm-hygiene'
-    | '/sops/isa-setting-process'
     | '/students/$id'
     | '/api/public/google-oauth-callback'
     | '/knowledge/'
-    | '/policies/'
     | '/knowledge/$slug/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -385,6 +353,7 @@ export interface FileRouteTypes {
     | '/eods'
     | '/installments'
     | '/notes'
+    | '/policies'
     | '/profile'
     | '/sops'
     | '/student-portal'
@@ -393,12 +362,9 @@ export interface FileRouteTypes {
     | '/training'
     | '/knowledge/$slug'
     | '/knowledge/new'
-    | '/policies/crm-hygiene'
-    | '/sops/isa-setting-process'
     | '/students/$id'
     | '/api/public/google-oauth-callback'
     | '/knowledge'
-    | '/policies'
     | '/knowledge/$slug/edit'
   id:
     | '__root__'
@@ -429,12 +395,9 @@ export interface FileRouteTypes {
     | '/_authenticated/training'
     | '/_authenticated/knowledge/$slug'
     | '/_authenticated/knowledge/new'
-    | '/_authenticated/policies/crm-hygiene'
-    | '/_authenticated/sops/isa-setting-process'
     | '/_authenticated/students/$id'
     | '/api/public/google-oauth-callback'
     | '/_authenticated/knowledge/'
-    | '/_authenticated/policies/'
     | '/_authenticated/knowledge/$slug/edit'
   fileRoutesById: FileRoutesById
 }
@@ -623,13 +586,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedActionItemsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/policies/': {
-      id: '/_authenticated/policies/'
-      path: '/'
-      fullPath: '/policies/'
-      preLoaderRoute: typeof AuthenticatedPoliciesIndexRouteImport
-      parentRoute: typeof AuthenticatedPoliciesRoute
-    }
     '/_authenticated/knowledge/': {
       id: '/_authenticated/knowledge/'
       path: '/'
@@ -650,20 +606,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/students/$id'
       preLoaderRoute: typeof AuthenticatedStudentsIdRouteImport
       parentRoute: typeof AuthenticatedStudentsRoute
-    }
-    '/_authenticated/sops/isa-setting-process': {
-      id: '/_authenticated/sops/isa-setting-process'
-      path: '/isa-setting-process'
-      fullPath: '/sops/isa-setting-process'
-      preLoaderRoute: typeof AuthenticatedSopsIsaSettingProcessRouteImport
-      parentRoute: typeof AuthenticatedSopsRoute
-    }
-    '/_authenticated/policies/crm-hygiene': {
-      id: '/_authenticated/policies/crm-hygiene'
-      path: '/crm-hygiene'
-      fullPath: '/policies/crm-hygiene'
-      preLoaderRoute: typeof AuthenticatedPoliciesCrmHygieneRouteImport
-      parentRoute: typeof AuthenticatedPoliciesRoute
     }
     '/_authenticated/knowledge/new': {
       id: '/_authenticated/knowledge/new'
@@ -722,33 +664,6 @@ const AuthenticatedKnowledgeRouteWithChildren =
     AuthenticatedKnowledgeRouteChildren,
   )
 
-interface AuthenticatedPoliciesRouteChildren {
-  AuthenticatedPoliciesCrmHygieneRoute: typeof AuthenticatedPoliciesCrmHygieneRoute
-  AuthenticatedPoliciesIndexRoute: typeof AuthenticatedPoliciesIndexRoute
-}
-
-const AuthenticatedPoliciesRouteChildren: AuthenticatedPoliciesRouteChildren = {
-  AuthenticatedPoliciesCrmHygieneRoute: AuthenticatedPoliciesCrmHygieneRoute,
-  AuthenticatedPoliciesIndexRoute: AuthenticatedPoliciesIndexRoute,
-}
-
-const AuthenticatedPoliciesRouteWithChildren =
-  AuthenticatedPoliciesRoute._addFileChildren(
-    AuthenticatedPoliciesRouteChildren,
-  )
-
-interface AuthenticatedSopsRouteChildren {
-  AuthenticatedSopsIsaSettingProcessRoute: typeof AuthenticatedSopsIsaSettingProcessRoute
-}
-
-const AuthenticatedSopsRouteChildren: AuthenticatedSopsRouteChildren = {
-  AuthenticatedSopsIsaSettingProcessRoute:
-    AuthenticatedSopsIsaSettingProcessRoute,
-}
-
-const AuthenticatedSopsRouteWithChildren =
-  AuthenticatedSopsRoute._addFileChildren(AuthenticatedSopsRouteChildren)
-
 interface AuthenticatedStudentsRouteChildren {
   AuthenticatedStudentsIdRoute: typeof AuthenticatedStudentsIdRoute
 }
@@ -777,9 +692,9 @@ interface AuthenticatedRouteChildren {
   AuthenticatedInstallmentsRoute: typeof AuthenticatedInstallmentsRoute
   AuthenticatedKnowledgeRoute: typeof AuthenticatedKnowledgeRouteWithChildren
   AuthenticatedNotesRoute: typeof AuthenticatedNotesRoute
-  AuthenticatedPoliciesRoute: typeof AuthenticatedPoliciesRouteWithChildren
+  AuthenticatedPoliciesRoute: typeof AuthenticatedPoliciesRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
-  AuthenticatedSopsRoute: typeof AuthenticatedSopsRouteWithChildren
+  AuthenticatedSopsRoute: typeof AuthenticatedSopsRoute
   AuthenticatedStudentPortalRoute: typeof AuthenticatedStudentPortalRoute
   AuthenticatedStudentsRoute: typeof AuthenticatedStudentsRouteWithChildren
   AuthenticatedTeamRoute: typeof AuthenticatedTeamRoute
@@ -801,9 +716,9 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedInstallmentsRoute: AuthenticatedInstallmentsRoute,
   AuthenticatedKnowledgeRoute: AuthenticatedKnowledgeRouteWithChildren,
   AuthenticatedNotesRoute: AuthenticatedNotesRoute,
-  AuthenticatedPoliciesRoute: AuthenticatedPoliciesRouteWithChildren,
+  AuthenticatedPoliciesRoute: AuthenticatedPoliciesRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
-  AuthenticatedSopsRoute: AuthenticatedSopsRouteWithChildren,
+  AuthenticatedSopsRoute: AuthenticatedSopsRoute,
   AuthenticatedStudentPortalRoute: AuthenticatedStudentPortalRoute,
   AuthenticatedStudentsRoute: AuthenticatedStudentsRouteWithChildren,
   AuthenticatedTeamRoute: AuthenticatedTeamRoute,
