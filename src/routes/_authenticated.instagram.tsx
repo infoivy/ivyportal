@@ -179,10 +179,10 @@ function IgPage() {
           <button
             onClick={() => setConnectOpen(true)}
             className="inline-flex items-center gap-2 h-9 px-3 rounded-md border border-[#1f2530] bg-[#0f1116] hover:border-pink-500/40 text-xs"
-            title={connection?.status === "connected" ? "Instagram connected" : "Connect Instagram"}
+            title="Set your IG handle / display name (manual dashboard)"
           >
             <Instagram className="h-3.5 w-3.5 text-pink-400" />
-            {connection?.status === "connected" ? "Connected" : "Connect IG"}
+            {connection?.username ? `@${connection.username}` : "Set profile"}
           </button>
           <button
             onClick={() => setSettingsOpen(true)}
