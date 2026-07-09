@@ -194,7 +194,7 @@ function RevenuePage() {
       </div>
 
       <div className="grid lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-1">
           <Card className="p-5">
             <h3 className="text-sm font-semibold mb-3">Monthly trend</h3>
             <div className="h-64">
@@ -215,6 +215,7 @@ function RevenuePage() {
           </Card>
         </div>
         <CashLeaderboard />
+        <SetterLeaderboard />
       </div>
 
       {/* Per-closer breakdown */}
