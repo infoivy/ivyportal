@@ -43,6 +43,8 @@ function EODsPage() {
   const canViewTeam = roles.includes("admin") || roles.includes("closer");
   const isCsm = roles.includes("csm");
   const isCloser = roles.includes("closer") || roles.includes("coach");
+  const filesEods = roles.includes("setter") || roles.includes("closer") || roles.includes("coach") || roles.includes("csm");
+  const isFounder = roles.includes("admin") && !filesEods;
   const today = new Date().toISOString().slice(0, 10);
 
   const [form, setForm] = useState(emptyForm);
