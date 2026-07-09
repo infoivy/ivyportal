@@ -667,8 +667,8 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
               {coaches.map(c => <option key={c.id} value={c.id}>{c.display_name ?? c.id}</option>)}
             </select>
           </Field>
-          <Field label="Calls included">
-            <input type="number" min={0} value={form.calls_included} onChange={e => setForm(f => ({ ...f, calls_included: parseInt(e.target.value) || 0 }))} className={inputCls} />
+          <Field label="Calls included (max 10)">
+            <input type="number" min={0} max={10} value={form.calls_included} onChange={e => setForm(f => ({ ...f, calls_included: Math.min(10, Math.max(0, parseInt(e.target.value) || 0)) }))} className={inputCls} />
           </Field>
           <Field label="Join date">
             <input type="date" value={form.join_date} onChange={e => setForm(f => ({ ...f, join_date: e.target.value }))} className={inputCls} />
