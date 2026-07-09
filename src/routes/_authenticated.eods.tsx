@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { CheckCircle2, Clock, TrendingUp, Users, Phone, Target, AlertTriangle, ChevronRight } from "lucide-react";
+import { CheckCircle2, Clock, TrendingUp, Users, Phone, Target, AlertTriangle, ChevronRight, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/eods")({
   head: () => ({ meta: [{ title: "EOD Reports — ISA Team" }] }),
@@ -77,6 +77,15 @@ function EODsPage() {
     setSaving(false);
     if (error) toast.error(error.message);
     else { toast.success(existingId ? "EOD updated" : "EOD submitted"); loadMine(); if (canViewTeam) loadTeam(); }
+  };
+
+  const deleteEod = async (id: string) => {
+    const { error } = await supabase.from("eods").delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("EOD deleted");
+    if (existingId === id) { setExistingId(null); setForm(emptyForm); }
+    loadMine();
+    if (canViewTeam) loadTeam();
   };
 
   const setNum = (k: keyof typeof form) => (v: string) => setForm(f => ({ ...f, [k]: parseInt(v) || 0 }));
@@ -196,7 +205,7 @@ function EODsPage() {
         <TabsContent value="mine">
           <div className="space-y-2">
             {myEods.length === 0 && <EmptyState text="No EODs yet. Submit your first one above." />}
-            {myEods.map(e => <EODRow key={e.id} eod={e} />)}
+            {myEods.map(e => <EODRow key={e.id} eod={e} onDelete={deleteEod} />)}
           </div>
         </TabsContent>
 
@@ -204,7 +213,7 @@ function EODsPage() {
           <TabsContent value="team">
             <div className="space-y-2">
               {teamEods.length === 0 && <EmptyState text="No team EODs yet." />}
-              {teamEods.map(e => <EODRow key={e.id} eod={e} author={e.display_name} />)}
+              {teamEods.map(e => <EODRow key={e.id} eod={e} author={e.display_name} onDelete={roles.includes("admin") ? deleteEod : undefined} />)}
             </div>
           </TabsContent>
         )}
@@ -229,16 +238,30 @@ function WeekTile({ label, value, icon, accent }: { label: string; value: number
 }
 
 function NumField({ label, value, onChange }: { label: string; value: number; onChange: (v: string) => void }) {
+  const bump = (d: number) => onChange(String(Math.max(0, value + d)));
   return (
     <div className="space-y-1">
       <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</Label>
-      <Input
-        type="number"
-        min={0}
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        className="bg-[#0a0b0f] border-[#1f2530] rounded-sm h-9 font-mono text-sm focus-visible:ring-emerald-500/40 focus-visible:border-emerald-500/40"
-      />
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          onClick={() => bump(-1)}
+          className="h-9 w-8 rounded-sm border border-[#1f2530] bg-[#0a0b0f] hover:bg-[#1a1f29] text-lg leading-none"
+        >−</button>
+        <Input
+          type="number"
+          min={0}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          onFocus={e => e.currentTarget.select()}
+          className="bg-[#0a0b0f] border-[#1f2530] rounded-sm h-9 font-mono text-sm text-center focus-visible:ring-emerald-500/40 focus-visible:border-emerald-500/40"
+        />
+        <button
+          type="button"
+          onClick={() => bump(1)}
+          className="h-9 w-8 rounded-sm border border-[#1f2530] bg-[#0a0b0f] hover:bg-[#1a1f29] text-lg leading-none"
+        >+</button>
+      </div>
     </div>
   );
 }
@@ -270,24 +293,35 @@ function EmptyState({ text }: { text: string }) {
   return <div className="border border-dashed border-[#1f2530] rounded-sm p-8 text-center text-xs text-muted-foreground">{text}</div>;
 }
 
-function EODRow({ eod, author }: { eod: EOD; author?: string }) {
+function EODRow({ eod, author, onDelete }: { eod: EOD; author?: string; onDelete?: (id: string) => void }) {
   const [open, setOpen] = useState(false);
   const conv = eod.convos_started > 0 ? Math.round((eod.calls_booked / eod.convos_started) * 100) : 0;
   return (
     <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm">
-      <button onClick={() => setOpen(o => !o)} className="w-full flex items-center gap-3 p-3 text-left hover:bg-[#14171e] transition">
-        <ChevronRight className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${open ? "rotate-90" : ""}`} />
-        <div className="text-xs font-mono text-muted-foreground w-24">{eod.report_date}</div>
-        {author && <div className="text-xs text-foreground w-32 truncate">{author}</div>}
-        <div className="flex-1 grid grid-cols-3 md:grid-cols-6 gap-2 text-[11px]">
-          <RowStat label="DMs" value={eod.dms_sent} />
-          <RowStat label="Convos" value={eod.convos_started} />
-          <RowStat label="Booked" value={eod.calls_booked} accent />
-          <RowStat label="Sched" value={eod.calls_scheduled} />
-          <RowStat label="Shows" value={eod.shows} />
-          <RowStat label="Conv%" value={`${conv}%`} />
-        </div>
-      </button>
+      <div className="w-full flex items-center gap-3 p-3 text-left hover:bg-[#14171e] transition">
+        <button onClick={() => setOpen(o => !o)} className="flex items-center gap-3 flex-1 min-w-0 text-left">
+          <ChevronRight className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${open ? "rotate-90" : ""}`} />
+          <div className="text-xs font-mono text-muted-foreground w-24">{eod.report_date}</div>
+          {author && <div className="text-xs text-foreground w-32 truncate">{author}</div>}
+          <div className="flex-1 grid grid-cols-3 md:grid-cols-6 gap-2 text-[11px]">
+            <RowStat label="DMs" value={eod.dms_sent} />
+            <RowStat label="Convos" value={eod.convos_started} />
+            <RowStat label="Booked" value={eod.calls_booked} accent />
+            <RowStat label="Sched" value={eod.calls_scheduled} />
+            <RowStat label="Shows" value={eod.shows} />
+            <RowStat label="Conv%" value={`${conv}%`} />
+          </div>
+        </button>
+        {onDelete && (
+          <button
+            onClick={() => { if (confirm("Delete this EOD?")) onDelete(eod.id); }}
+            className="p-1 rounded text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10"
+            title="Delete"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </div>
       {open && (eod.wins || eod.blockers || eod.tomorrow_focus || eod.summary) && (
         <div className="border-t border-[#1f2530] p-4 space-y-2 text-xs">
           {eod.wins && <p><span className="text-emerald-400">Wins:</span> {eod.wins}</p>}

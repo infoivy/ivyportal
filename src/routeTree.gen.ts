@@ -15,7 +15,10 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedTrainingRouteImport } from './routes/_authenticated.training'
 import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated.team'
+import { Route as AuthenticatedStudentsRouteImport } from './routes/_authenticated.students'
+import { Route as AuthenticatedStudentPortalRouteImport } from './routes/_authenticated.student-portal'
 import { Route as AuthenticatedSopsRouteImport } from './routes/_authenticated.sops'
+import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated.profile'
 import { Route as AuthenticatedPoliciesRouteImport } from './routes/_authenticated.policies'
 import { Route as AuthenticatedNotesRouteImport } from './routes/_authenticated.notes'
 import { Route as AuthenticatedEodsRouteImport } from './routes/_authenticated.eods'
@@ -26,6 +29,7 @@ import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authentica
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated.admin'
 import { Route as AuthenticatedPoliciesIndexRouteImport } from './routes/_authenticated.policies.index'
 import { Route as ApiPublicGoogleOauthCallbackRouteImport } from './routes/api/public/google-oauth-callback'
+import { Route as AuthenticatedStudentsIdRouteImport } from './routes/_authenticated.students.$id'
 import { Route as AuthenticatedSopsIsaSettingProcessRouteImport } from './routes/_authenticated.sops.isa-setting-process'
 import { Route as AuthenticatedPoliciesCrmHygieneRouteImport } from './routes/_authenticated.policies.crm-hygiene'
 
@@ -58,9 +62,25 @@ const AuthenticatedTeamRoute = AuthenticatedTeamRouteImport.update({
   path: '/team',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedStudentsRoute = AuthenticatedStudentsRouteImport.update({
+  id: '/students',
+  path: '/students',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedStudentPortalRoute =
+  AuthenticatedStudentPortalRouteImport.update({
+    id: '/student-portal',
+    path: '/student-portal',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedSopsRoute = AuthenticatedSopsRouteImport.update({
   id: '/sops',
   path: '/sops',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedPoliciesRoute = AuthenticatedPoliciesRouteImport.update({
@@ -115,6 +135,11 @@ const ApiPublicGoogleOauthCallbackRoute =
     path: '/api/public/google-oauth-callback',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AuthenticatedStudentsIdRoute = AuthenticatedStudentsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AuthenticatedStudentsRoute,
+} as any)
 const AuthenticatedSopsIsaSettingProcessRoute =
   AuthenticatedSopsIsaSettingProcessRouteImport.update({
     id: '/isa-setting-process',
@@ -140,11 +165,15 @@ export interface FileRoutesByFullPath {
   '/eods': typeof AuthenticatedEodsRoute
   '/notes': typeof AuthenticatedNotesRoute
   '/policies': typeof AuthenticatedPoliciesRouteWithChildren
+  '/profile': typeof AuthenticatedProfileRoute
   '/sops': typeof AuthenticatedSopsRouteWithChildren
+  '/student-portal': typeof AuthenticatedStudentPortalRoute
+  '/students': typeof AuthenticatedStudentsRouteWithChildren
   '/team': typeof AuthenticatedTeamRoute
   '/training': typeof AuthenticatedTrainingRoute
   '/policies/crm-hygiene': typeof AuthenticatedPoliciesCrmHygieneRoute
   '/sops/isa-setting-process': typeof AuthenticatedSopsIsaSettingProcessRoute
+  '/students/$id': typeof AuthenticatedStudentsIdRoute
   '/api/public/google-oauth-callback': typeof ApiPublicGoogleOauthCallbackRoute
   '/policies/': typeof AuthenticatedPoliciesIndexRoute
 }
@@ -159,11 +188,15 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/eods': typeof AuthenticatedEodsRoute
   '/notes': typeof AuthenticatedNotesRoute
+  '/profile': typeof AuthenticatedProfileRoute
   '/sops': typeof AuthenticatedSopsRouteWithChildren
+  '/student-portal': typeof AuthenticatedStudentPortalRoute
+  '/students': typeof AuthenticatedStudentsRouteWithChildren
   '/team': typeof AuthenticatedTeamRoute
   '/training': typeof AuthenticatedTrainingRoute
   '/policies/crm-hygiene': typeof AuthenticatedPoliciesCrmHygieneRoute
   '/sops/isa-setting-process': typeof AuthenticatedSopsIsaSettingProcessRoute
+  '/students/$id': typeof AuthenticatedStudentsIdRoute
   '/api/public/google-oauth-callback': typeof ApiPublicGoogleOauthCallbackRoute
   '/policies': typeof AuthenticatedPoliciesIndexRoute
 }
@@ -181,11 +214,15 @@ export interface FileRoutesById {
   '/_authenticated/eods': typeof AuthenticatedEodsRoute
   '/_authenticated/notes': typeof AuthenticatedNotesRoute
   '/_authenticated/policies': typeof AuthenticatedPoliciesRouteWithChildren
+  '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/sops': typeof AuthenticatedSopsRouteWithChildren
+  '/_authenticated/student-portal': typeof AuthenticatedStudentPortalRoute
+  '/_authenticated/students': typeof AuthenticatedStudentsRouteWithChildren
   '/_authenticated/team': typeof AuthenticatedTeamRoute
   '/_authenticated/training': typeof AuthenticatedTrainingRoute
   '/_authenticated/policies/crm-hygiene': typeof AuthenticatedPoliciesCrmHygieneRoute
   '/_authenticated/sops/isa-setting-process': typeof AuthenticatedSopsIsaSettingProcessRoute
+  '/_authenticated/students/$id': typeof AuthenticatedStudentsIdRoute
   '/api/public/google-oauth-callback': typeof ApiPublicGoogleOauthCallbackRoute
   '/_authenticated/policies/': typeof AuthenticatedPoliciesIndexRoute
 }
@@ -203,11 +240,15 @@ export interface FileRouteTypes {
     | '/eods'
     | '/notes'
     | '/policies'
+    | '/profile'
     | '/sops'
+    | '/student-portal'
+    | '/students'
     | '/team'
     | '/training'
     | '/policies/crm-hygiene'
     | '/sops/isa-setting-process'
+    | '/students/$id'
     | '/api/public/google-oauth-callback'
     | '/policies/'
   fileRoutesByTo: FileRoutesByTo
@@ -222,11 +263,15 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/eods'
     | '/notes'
+    | '/profile'
     | '/sops'
+    | '/student-portal'
+    | '/students'
     | '/team'
     | '/training'
     | '/policies/crm-hygiene'
     | '/sops/isa-setting-process'
+    | '/students/$id'
     | '/api/public/google-oauth-callback'
     | '/policies'
   id:
@@ -243,11 +288,15 @@ export interface FileRouteTypes {
     | '/_authenticated/eods'
     | '/_authenticated/notes'
     | '/_authenticated/policies'
+    | '/_authenticated/profile'
     | '/_authenticated/sops'
+    | '/_authenticated/student-portal'
+    | '/_authenticated/students'
     | '/_authenticated/team'
     | '/_authenticated/training'
     | '/_authenticated/policies/crm-hygiene'
     | '/_authenticated/sops/isa-setting-process'
+    | '/_authenticated/students/$id'
     | '/api/public/google-oauth-callback'
     | '/_authenticated/policies/'
   fileRoutesById: FileRoutesById
@@ -304,11 +353,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTeamRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/students': {
+      id: '/_authenticated/students'
+      path: '/students'
+      fullPath: '/students'
+      preLoaderRoute: typeof AuthenticatedStudentsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/student-portal': {
+      id: '/_authenticated/student-portal'
+      path: '/student-portal'
+      fullPath: '/student-portal'
+      preLoaderRoute: typeof AuthenticatedStudentPortalRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/sops': {
       id: '/_authenticated/sops'
       path: '/sops'
       fullPath: '/sops'
       preLoaderRoute: typeof AuthenticatedSopsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/profile': {
+      id: '/_authenticated/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/policies': {
@@ -381,6 +451,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicGoogleOauthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/students/$id': {
+      id: '/_authenticated/students/$id'
+      path: '/$id'
+      fullPath: '/students/$id'
+      preLoaderRoute: typeof AuthenticatedStudentsIdRouteImport
+      parentRoute: typeof AuthenticatedStudentsRoute
+    }
     '/_authenticated/sops/isa-setting-process': {
       id: '/_authenticated/sops/isa-setting-process'
       path: '/isa-setting-process'
@@ -425,6 +502,19 @@ const AuthenticatedSopsRouteChildren: AuthenticatedSopsRouteChildren = {
 const AuthenticatedSopsRouteWithChildren =
   AuthenticatedSopsRoute._addFileChildren(AuthenticatedSopsRouteChildren)
 
+interface AuthenticatedStudentsRouteChildren {
+  AuthenticatedStudentsIdRoute: typeof AuthenticatedStudentsIdRoute
+}
+
+const AuthenticatedStudentsRouteChildren: AuthenticatedStudentsRouteChildren = {
+  AuthenticatedStudentsIdRoute: AuthenticatedStudentsIdRoute,
+}
+
+const AuthenticatedStudentsRouteWithChildren =
+  AuthenticatedStudentsRoute._addFileChildren(
+    AuthenticatedStudentsRouteChildren,
+  )
+
 interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
@@ -434,7 +524,10 @@ interface AuthenticatedRouteChildren {
   AuthenticatedEodsRoute: typeof AuthenticatedEodsRoute
   AuthenticatedNotesRoute: typeof AuthenticatedNotesRoute
   AuthenticatedPoliciesRoute: typeof AuthenticatedPoliciesRouteWithChildren
+  AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedSopsRoute: typeof AuthenticatedSopsRouteWithChildren
+  AuthenticatedStudentPortalRoute: typeof AuthenticatedStudentPortalRoute
+  AuthenticatedStudentsRoute: typeof AuthenticatedStudentsRouteWithChildren
   AuthenticatedTeamRoute: typeof AuthenticatedTeamRoute
   AuthenticatedTrainingRoute: typeof AuthenticatedTrainingRoute
 }
@@ -448,7 +541,10 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedEodsRoute: AuthenticatedEodsRoute,
   AuthenticatedNotesRoute: AuthenticatedNotesRoute,
   AuthenticatedPoliciesRoute: AuthenticatedPoliciesRouteWithChildren,
+  AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedSopsRoute: AuthenticatedSopsRouteWithChildren,
+  AuthenticatedStudentPortalRoute: AuthenticatedStudentPortalRoute,
+  AuthenticatedStudentsRoute: AuthenticatedStudentsRouteWithChildren,
   AuthenticatedTeamRoute: AuthenticatedTeamRoute,
   AuthenticatedTrainingRoute: AuthenticatedTrainingRoute,
 }

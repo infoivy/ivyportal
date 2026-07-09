@@ -164,6 +164,151 @@ export type Database = {
         }
         Relationships: []
       }
+      student_calls: {
+        Row: {
+          action_items: string | null
+          call_date: string
+          coach_id: string | null
+          coach_notes: string | null
+          created_at: string
+          fathom_url: string | null
+          id: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          action_items?: string | null
+          call_date: string
+          coach_id?: string | null
+          coach_notes?: string | null
+          created_at?: string
+          fathom_url?: string | null
+          id?: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          action_items?: string | null
+          call_date?: string
+          coach_id?: string | null
+          coach_notes?: string | null
+          created_at?: string
+          fathom_url?: string | null
+          id?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_calls_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_eods: {
+        Row: {
+          applications_submitted: number
+          blockers: string | null
+          created_at: string
+          id: string
+          interviews: number
+          outreach_sent: number
+          replies: number
+          report_date: string
+          student_id: string
+          summary: string | null
+          tomorrow_focus: string | null
+          updated_at: string
+          wins: string | null
+        }
+        Insert: {
+          applications_submitted?: number
+          blockers?: string | null
+          created_at?: string
+          id?: string
+          interviews?: number
+          outreach_sent?: number
+          replies?: number
+          report_date: string
+          student_id: string
+          summary?: string | null
+          tomorrow_focus?: string | null
+          updated_at?: string
+          wins?: string | null
+        }
+        Update: {
+          applications_submitted?: number
+          blockers?: string | null
+          created_at?: string
+          id?: string
+          interviews?: number
+          outreach_sent?: number
+          replies?: number
+          report_date?: string
+          student_id?: string
+          summary?: string | null
+          tomorrow_focus?: string | null
+          updated_at?: string
+          wins?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_eods_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      students: {
+        Row: {
+          calls_included: number
+          coach_id: string | null
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          join_date: string
+          notes: string | null
+          phase: Database["public"]["Enums"]["student_phase"]
+          status: Database["public"]["Enums"]["student_status"]
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          calls_included?: number
+          coach_id?: string | null
+          created_at?: string
+          email?: string | null
+          full_name: string
+          id?: string
+          join_date?: string
+          notes?: string | null
+          phase?: Database["public"]["Enums"]["student_phase"]
+          status?: Database["public"]["Enums"]["student_status"]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          calls_included?: number
+          coach_id?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          join_date?: string
+          notes?: string | null
+          phase?: Database["public"]["Enums"]["student_phase"]
+          status?: Database["public"]["Enums"]["student_status"]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -199,7 +344,15 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "closer" | "setter"
+      app_role: "admin" | "closer" | "setter" | "coach" | "student"
+      student_phase:
+        | "uncategorized"
+        | "onboarding"
+        | "coaching_1on1"
+        | "training"
+        | "graduated"
+        | "paused"
+      student_status: "active" | "inactive" | "ghosting"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -327,7 +480,16 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "closer", "setter"],
+      app_role: ["admin", "closer", "setter", "coach", "student"],
+      student_phase: [
+        "uncategorized",
+        "onboarding",
+        "coaching_1on1",
+        "training",
+        "graduated",
+        "paused",
+      ],
+      student_status: ["active", "inactive", "ghosting"],
     },
   },
 } as const

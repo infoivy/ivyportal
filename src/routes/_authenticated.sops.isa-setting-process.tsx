@@ -5,6 +5,8 @@ import { TABS, type TabId } from "@/data/content";
 import { SECTIONS } from "@/data/sections";
 import { useIsMobile } from "@/hooks/use-mobile";
 import logoAsset from "@/assets/isa-logo.png.asset.json";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/sops/isa-setting-process")({
   head: () => ({
@@ -491,6 +493,39 @@ function NotesModal({ open, onClose, counter, setCounter }: { open: boolean; onC
     setTimeout(() => setCopied(false), 1500);
   };
 
+  const [syncing, setSyncing] = useState(false);
+  const syncToEod = async () => {
+    setSyncing(true);
+    const { data: sess } = await supabase.auth.getSession();
+    const userId = sess.session?.user.id;
+    if (!userId) { setSyncing(false); return toast.error("Not signed in"); }
+
+    // Parse narrative sections from the current EOD body
+    const grab = (label: string) => {
+      const m = eodBody.match(new RegExp(`${label}:\\s*([^\\n]*(?:\\n(?!\\w+:)[^\\n]*)*)`, "i"));
+      return (m?.[1] ?? "").trim() || null;
+    };
+
+    const payload = {
+      user_id: userId,
+      report_date: counter.date,
+      dms_sent: counter.contacted,
+      convos_started: counter.convos,
+      calls_booked: counter.sets,
+      calls_scheduled: counter.sets,
+      shows: 0,
+      no_shows: 0,
+      wins: grab("Wins"),
+      blockers: grab("Losses / lessons") ?? grab("Losses") ?? grab("Objections seen today"),
+      tomorrow_focus: grab("Tomorrow's focus") ?? grab("Tomorrow"),
+      summary: null,
+    };
+
+    const { error } = await supabase.from("eods").upsert(payload, { onConflict: "user_id,report_date" });
+    setSyncing(false);
+    if (error) toast.error(error.message);
+    else toast.success("Synced to EOD Reports");
+  };
 
   const stopWheel = (e: React.WheelEvent) => e.stopPropagation();
 
@@ -507,7 +542,7 @@ function NotesModal({ open, onClose, counter, setCounter }: { open: boolean; onC
           </button>
         </div>
         <p className="text-[11px] text-muted-foreground px-4 pt-2">
-          {tab === "precall" ? "Fill in during the DM, copy to hand off to the closer." : "Auto-filled from your session counters. Copy to paste into your EOD report."}
+          {tab === "precall" ? "Fill in during the DM, copy to hand off to the closer." : "Auto-filled from your session counters. Copy, or sync directly to your EOD Reports."}
         </p>
         <textarea
           value={text}
@@ -517,9 +552,16 @@ function NotesModal({ open, onClose, counter, setCounter }: { open: boolean; onC
         />
         <div className="flex items-center justify-between gap-2 px-4 py-3 border-t border-border">
           <button onClick={resetTpl} className="text-xs text-muted-foreground hover:text-foreground">Reset template</button>
-          <button onClick={copy} className="px-3 py-1.5 rounded-md bg-[color:var(--tab-stages)] text-white text-xs font-semibold hover:opacity-90">
-            {copied ? "Copied!" : "Copy"}
-          </button>
+          <div className="flex items-center gap-2">
+            {tab === "eod" && (
+              <button onClick={syncToEod} disabled={syncing} className="px-3 py-1.5 rounded-md bg-emerald-500 hover:bg-emerald-400 text-emerald-950 text-xs font-semibold disabled:opacity-60">
+                {syncing ? "Syncing…" : "Sync to EOD Reports"}
+              </button>
+            )}
+            <button onClick={copy} className="px-3 py-1.5 rounded-md bg-[color:var(--tab-stages)] text-white text-xs font-semibold hover:opacity-90">
+              {copied ? "Copied!" : "Copy"}
+            </button>
+          </div>
         </div>
       </div>
     </div>

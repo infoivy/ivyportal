@@ -42,13 +42,23 @@ function AuthedLayout() {
         supabase.auth.getUser(),
       ]);
       if (!alive) return;
+      const rolesArr = (rolesRes.data ?? []).map(r => r.role as string);
       setState({
         user: userRes.data.user,
-        roles: (rolesRes.data ?? []).map(r => r.role as string),
+        roles: rolesArr,
         displayName: profileRes.data?.display_name ?? userRes.data.user?.email ?? null,
         loading: false,
       });
       checkEod(userId);
+      // Redirect students to their portal if they land on team-only pages
+      const isStudent = rolesArr.includes("student");
+      const isTeam = rolesArr.some(r => ["admin", "coach", "closer", "setter"].includes(r));
+      if (isStudent && !isTeam) {
+        const path = window.location.pathname;
+        if (path === "/dashboard" || path === "/" || path === "/auth") {
+          navigate({ to: "/student-portal", replace: true });
+        }
+      }
     };
     supabase.auth.getSession().then(({ data }) => load(data.session?.user.id ?? null));
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
