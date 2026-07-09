@@ -174,36 +174,27 @@ function CallsPage() {
 
       {view === "table" ? (
         <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm overflow-hidden">
-          <div className="grid grid-cols-[0.7fr_1.3fr_1fr_0.9fr_0.7fr_0.7fr_0.7fr_auto] items-center px-4 py-2 border-b border-[#1f2530] text-[10px] uppercase tracking-widest text-muted-foreground gap-2">
-            <span>Date</span><span>Student</span><span>Coach</span><span>Status</span><span>Rating</span><span>Actions</span><span>Fathom</span><span />
+          <div className="grid grid-cols-[0.7fr_1.3fr_1fr_0.9fr_0.9fr_0.7fr_auto] items-center px-4 py-2 border-b border-[#1f2530] text-[10px] uppercase tracking-widest text-muted-foreground gap-2">
+            <span>Date</span><span>Student</span><span>Coach</span><span title="1–5 stars — how the student is progressing overall">Progress (1–5)</span><span title="Open action items / total">Action items</span><span>Fathom</span><span />
           </div>
           {filtered.length === 0 && <div className="p-8 text-center text-xs text-muted-foreground">No calls match your filters.</div>}
           {filtered.map(c => {
-            const st = STATUS_META[c.status];
             const openA = c.action_items_json?.filter(a => !a.done).length ?? 0;
             const totalA = c.action_items_json?.length ?? 0;
             return (
-              <div key={c.id} className="grid grid-cols-[0.7fr_1.3fr_1fr_0.9fr_0.7fr_0.7fr_0.7fr_auto] items-center gap-2 px-4 py-3 border-b border-[#1a1f29] last:border-0 hover:bg-[#14171e]">
+              <div key={c.id} className="grid grid-cols-[0.7fr_1.3fr_1fr_0.9fr_0.9fr_0.7fr_auto] items-center gap-2 px-4 py-3 border-b border-[#1a1f29] last:border-0 hover:bg-[#14171e]">
                 <span className="text-xs font-mono text-muted-foreground">{c.call_date}</span>
                 <Link to={"/students/$id" as any} params={{ id: c.student_id } as any} className="text-sm truncate hover:text-emerald-400">
                   {studentName(c.student_id)}
                 </Link>
                 <span className="text-xs text-muted-foreground truncate">{coachName(c.coach_id)}</span>
-                <select
-                  value={c.status}
-                  onChange={e => setStatus(c, e.target.value as CallStatus)}
-                  disabled={!canManage}
-                  className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border bg-transparent w-fit ${st.color}`}
-                >
-                  {KANBAN_COLS.map(s => <option key={s} value={s} className="bg-[#0f1116]">{STATUS_META[s].label}</option>)}
-                </select>
-                <span className="flex items-center gap-0.5 text-xs">
+                <span className="flex items-center gap-0.5 text-xs" title="Progress rating: 1 (stuck) – 5 (crushing it)">
                   {c.progress_rating ? Array.from({ length: 5 }).map((_, i) => (
                     <Star key={i} className={`h-3 w-3 ${i < c.progress_rating! ? "fill-amber-400 text-amber-400" : "text-[#2a3140]"}`} />
                   )) : <span className="text-muted-foreground">—</span>}
                 </span>
-                <span className={`text-xs font-mono ${openA > 0 ? "text-amber-400" : "text-muted-foreground"}`}>
-                  {totalA ? `${totalA - openA}/${totalA}` : "—"}
+                <span className={`text-xs font-mono ${openA > 0 ? "text-amber-400" : "text-muted-foreground"}`} title="Open / total action items from this call">
+                  {totalA ? `${totalA - openA}/${totalA} done` : "—"}
                 </span>
                 <span>
                   {c.fathom_url ? (
