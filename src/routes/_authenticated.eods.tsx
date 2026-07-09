@@ -65,6 +65,12 @@ function EODsPage() {
         roleplays_reviewed: todayEod.roleplays_reviewed ?? 0,
         student_checkins: todayEod.student_checkins ?? 0,
         escalations_resolved: todayEod.escalations_resolved ?? 0,
+        calls_taken: todayEod.calls_taken ?? 0,
+        closes: todayEod.closes ?? 0,
+        deposits: todayEod.deposits ?? 0,
+        cash_collected: Number(todayEod.cash_collected ?? 0),
+        deferred_cash: Number(todayEod.deferred_cash ?? 0),
+        follow_ups_done: todayEod.follow_ups_done ?? 0,
         wins: todayEod.wins ?? "", blockers: todayEod.blockers ?? "",
         tomorrow_focus: todayEod.tomorrow_focus ?? "", summary: todayEod.summary ?? "",
       });
