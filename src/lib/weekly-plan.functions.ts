@@ -78,13 +78,13 @@ export const ensureWeekProvisioned = createServerFn({ method: "POST" })
           return {
             created_by: context.userId,
             scheduled_date: d.toISOString().slice(0, 10),
-            platform: "instagram",
+            platform: "instagram" as const,
             format: "Reel",
             hook: s.label,
-            status: "idea",
+            status: "idea" as const,
             funnel_stage: s.stage,
             week_start: week,
-            tags: [],
+            tags: [] as string[],
           };
         });
         const { error } = await context.supabase.from("content_items").insert(rows);
