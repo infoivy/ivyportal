@@ -330,7 +330,9 @@ function StudentsLayout() {
         )}
       </div>
 
-      {view === "table" ? (
+      {view === "graduation" ? (
+        <GraduationKanban students={filtered} />
+      ) : view === "table" ? (
         <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm overflow-x-auto">
           <table className="w-full text-xs">
             <thead className="text-[10px] uppercase tracking-widest text-muted-foreground bg-[#0f1116] sticky top-0">
