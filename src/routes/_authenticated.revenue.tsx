@@ -184,7 +184,7 @@ function RevenuePage() {
             </div>
           </Card>
         </div>
-        <WeeklyLeaderboard />
+        <CashLeaderboard />
       </div>
 
       {/* Per-closer breakdown */}
