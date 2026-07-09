@@ -16,13 +16,16 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedTrainingRouteImport } from './routes/_authenticated.training'
 import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated.team'
 import { Route as AuthenticatedSopsRouteImport } from './routes/_authenticated.sops'
+import { Route as AuthenticatedPoliciesRouteImport } from './routes/_authenticated.policies'
 import { Route as AuthenticatedNotesRouteImport } from './routes/_authenticated.notes'
 import { Route as AuthenticatedEodsRouteImport } from './routes/_authenticated.eods'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
 import { Route as AuthenticatedCrmRouteImport } from './routes/_authenticated.crm'
 import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticated.calendar'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated.analytics'
+import { Route as AuthenticatedPoliciesIndexRouteImport } from './routes/_authenticated.policies.index'
 import { Route as AuthenticatedSopsIsaSettingProcessRouteImport } from './routes/_authenticated.sops.isa-setting-process'
+import { Route as AuthenticatedPoliciesCrmHygieneRouteImport } from './routes/_authenticated.policies.crm-hygiene'
 
 const PrintRoute = PrintRouteImport.update({
   id: '/print',
@@ -58,6 +61,11 @@ const AuthenticatedSopsRoute = AuthenticatedSopsRouteImport.update({
   path: '/sops',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedPoliciesRoute = AuthenticatedPoliciesRouteImport.update({
+  id: '/policies',
+  path: '/policies',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedNotesRoute = AuthenticatedNotesRouteImport.update({
   id: '/notes',
   path: '/notes',
@@ -88,11 +96,23 @@ const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedPoliciesIndexRoute =
+  AuthenticatedPoliciesIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedPoliciesRoute,
+  } as any)
 const AuthenticatedSopsIsaSettingProcessRoute =
   AuthenticatedSopsIsaSettingProcessRouteImport.update({
     id: '/isa-setting-process',
     path: '/isa-setting-process',
     getParentRoute: () => AuthenticatedSopsRoute,
+  } as any)
+const AuthenticatedPoliciesCrmHygieneRoute =
+  AuthenticatedPoliciesCrmHygieneRouteImport.update({
+    id: '/crm-hygiene',
+    path: '/crm-hygiene',
+    getParentRoute: () => AuthenticatedPoliciesRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -105,10 +125,13 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/eods': typeof AuthenticatedEodsRoute
   '/notes': typeof AuthenticatedNotesRoute
+  '/policies': typeof AuthenticatedPoliciesRouteWithChildren
   '/sops': typeof AuthenticatedSopsRouteWithChildren
   '/team': typeof AuthenticatedTeamRoute
   '/training': typeof AuthenticatedTrainingRoute
+  '/policies/crm-hygiene': typeof AuthenticatedPoliciesCrmHygieneRoute
   '/sops/isa-setting-process': typeof AuthenticatedSopsIsaSettingProcessRoute
+  '/policies/': typeof AuthenticatedPoliciesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -123,7 +146,9 @@ export interface FileRoutesByTo {
   '/sops': typeof AuthenticatedSopsRouteWithChildren
   '/team': typeof AuthenticatedTeamRoute
   '/training': typeof AuthenticatedTrainingRoute
+  '/policies/crm-hygiene': typeof AuthenticatedPoliciesCrmHygieneRoute
   '/sops/isa-setting-process': typeof AuthenticatedSopsIsaSettingProcessRoute
+  '/policies': typeof AuthenticatedPoliciesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -137,10 +162,13 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/eods': typeof AuthenticatedEodsRoute
   '/_authenticated/notes': typeof AuthenticatedNotesRoute
+  '/_authenticated/policies': typeof AuthenticatedPoliciesRouteWithChildren
   '/_authenticated/sops': typeof AuthenticatedSopsRouteWithChildren
   '/_authenticated/team': typeof AuthenticatedTeamRoute
   '/_authenticated/training': typeof AuthenticatedTrainingRoute
+  '/_authenticated/policies/crm-hygiene': typeof AuthenticatedPoliciesCrmHygieneRoute
   '/_authenticated/sops/isa-setting-process': typeof AuthenticatedSopsIsaSettingProcessRoute
+  '/_authenticated/policies/': typeof AuthenticatedPoliciesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -154,10 +182,13 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/eods'
     | '/notes'
+    | '/policies'
     | '/sops'
     | '/team'
     | '/training'
+    | '/policies/crm-hygiene'
     | '/sops/isa-setting-process'
+    | '/policies/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -172,7 +203,9 @@ export interface FileRouteTypes {
     | '/sops'
     | '/team'
     | '/training'
+    | '/policies/crm-hygiene'
     | '/sops/isa-setting-process'
+    | '/policies'
   id:
     | '__root__'
     | '/'
@@ -185,10 +218,13 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/eods'
     | '/_authenticated/notes'
+    | '/_authenticated/policies'
     | '/_authenticated/sops'
     | '/_authenticated/team'
     | '/_authenticated/training'
+    | '/_authenticated/policies/crm-hygiene'
     | '/_authenticated/sops/isa-setting-process'
+    | '/_authenticated/policies/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -249,6 +285,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSopsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/policies': {
+      id: '/_authenticated/policies'
+      path: '/policies'
+      fullPath: '/policies'
+      preLoaderRoute: typeof AuthenticatedPoliciesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/notes': {
       id: '/_authenticated/notes'
       path: '/notes'
@@ -291,6 +334,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAnalyticsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/policies/': {
+      id: '/_authenticated/policies/'
+      path: '/'
+      fullPath: '/policies/'
+      preLoaderRoute: typeof AuthenticatedPoliciesIndexRouteImport
+      parentRoute: typeof AuthenticatedPoliciesRoute
+    }
     '/_authenticated/sops/isa-setting-process': {
       id: '/_authenticated/sops/isa-setting-process'
       path: '/isa-setting-process'
@@ -298,8 +348,30 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSopsIsaSettingProcessRouteImport
       parentRoute: typeof AuthenticatedSopsRoute
     }
+    '/_authenticated/policies/crm-hygiene': {
+      id: '/_authenticated/policies/crm-hygiene'
+      path: '/crm-hygiene'
+      fullPath: '/policies/crm-hygiene'
+      preLoaderRoute: typeof AuthenticatedPoliciesCrmHygieneRouteImport
+      parentRoute: typeof AuthenticatedPoliciesRoute
+    }
   }
 }
+
+interface AuthenticatedPoliciesRouteChildren {
+  AuthenticatedPoliciesCrmHygieneRoute: typeof AuthenticatedPoliciesCrmHygieneRoute
+  AuthenticatedPoliciesIndexRoute: typeof AuthenticatedPoliciesIndexRoute
+}
+
+const AuthenticatedPoliciesRouteChildren: AuthenticatedPoliciesRouteChildren = {
+  AuthenticatedPoliciesCrmHygieneRoute: AuthenticatedPoliciesCrmHygieneRoute,
+  AuthenticatedPoliciesIndexRoute: AuthenticatedPoliciesIndexRoute,
+}
+
+const AuthenticatedPoliciesRouteWithChildren =
+  AuthenticatedPoliciesRoute._addFileChildren(
+    AuthenticatedPoliciesRouteChildren,
+  )
 
 interface AuthenticatedSopsRouteChildren {
   AuthenticatedSopsIsaSettingProcessRoute: typeof AuthenticatedSopsIsaSettingProcessRoute
@@ -320,6 +392,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEodsRoute: typeof AuthenticatedEodsRoute
   AuthenticatedNotesRoute: typeof AuthenticatedNotesRoute
+  AuthenticatedPoliciesRoute: typeof AuthenticatedPoliciesRouteWithChildren
   AuthenticatedSopsRoute: typeof AuthenticatedSopsRouteWithChildren
   AuthenticatedTeamRoute: typeof AuthenticatedTeamRoute
   AuthenticatedTrainingRoute: typeof AuthenticatedTrainingRoute
@@ -332,6 +405,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEodsRoute: AuthenticatedEodsRoute,
   AuthenticatedNotesRoute: AuthenticatedNotesRoute,
+  AuthenticatedPoliciesRoute: AuthenticatedPoliciesRouteWithChildren,
   AuthenticatedSopsRoute: AuthenticatedSopsRouteWithChildren,
   AuthenticatedTeamRoute: AuthenticatedTeamRoute,
   AuthenticatedTrainingRoute: AuthenticatedTrainingRoute,
