@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import {
   School, Search, Plus, LayoutGrid, Table as TableIcon, Trash2, X,
-  ChevronRight, Users, AlertTriangle, Columns3, Award, MessageSquare,
+  ChevronRight, Users, AlertTriangle, Columns3, Award, MessageSquare, Trophy,
 } from "lucide-react";
 
 
@@ -83,7 +83,7 @@ function StudentsLayout() {
   const [apps7dByStudent, setApps7dByStudent] = useState<Record<string, number>>({});
   const [q, setQ] = useState("");
   const [phaseFilter, setPhaseFilter] = useState<Phase | "all" | "at_risk">("all");
-  const [view, setView] = useState<"table" | "kanban">("table");
+  const [view, setView] = useState<"table" | "kanban" | "graduation">("table");
   const [kanbanBy, setKanbanBy] = useState<"phase" | "coach">("phase");
   const [addOpen, setAddOpen] = useState(false);
   const [colsOpen, setColsOpen] = useState(false);
@@ -255,6 +255,9 @@ function StudentsLayout() {
             </button>
             <button onClick={() => setView("kanban")} className={`px-2 py-1 rounded-sm transition ${view === "kanban" ? "bg-[#1a1f29] text-foreground" : "text-muted-foreground"}`} title="Kanban">
               <LayoutGrid className="h-3.5 w-3.5" />
+            </button>
+            <button onClick={() => setView("graduation")} className={`px-2 py-1 rounded-sm transition ${view === "graduation" ? "bg-[#1a1f29] text-amber-400" : "text-muted-foreground"}`} title="Graduation pipeline">
+              <Trophy className="h-3.5 w-3.5" />
             </button>
           </div>
           {view === "table" && (
