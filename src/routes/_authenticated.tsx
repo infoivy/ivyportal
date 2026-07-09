@@ -21,6 +21,13 @@ export const Route = createFileRoute("/_authenticated")({
 function AuthedLayout() {
   const navigate = useNavigate();
   const [state, setState] = useState<AuthState>({ user: null, roles: [], displayName: null, loading: true });
+  const [eodSubmitted, setEodSubmitted] = useState<boolean | null>(null);
+
+  const checkEod = async (userId: string) => {
+    const today = new Date().toISOString().slice(0, 10);
+    const { data } = await supabase.from("eods").select("id").eq("user_id", userId).eq("report_date", today).maybeSingle();
+    setEodSubmitted(!!data);
+  };
 
   useEffect(() => {
     let alive = true;
