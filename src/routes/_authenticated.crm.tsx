@@ -76,13 +76,29 @@ function Crm() {
       setConnected(isConn);
       if (isConn) {
         const r = await listLeads({ data: { query } });
-        setLeads((r?.leads ?? []) as Lead[]);
+        const arr = (r?.leads ?? []) as Lead[];
+        setLeads(arr);
+        if (arr.length) {
+          try {
+            const counts = await countNotes({ data: { leadIds: arr.map((l) => l.id) } });
+            setNoteCounts(counts ?? {});
+          } catch { /* ignore */ }
+        } else {
+          setNoteCounts({});
+        }
       } else {
         setLeads([]);
+        setNoteCounts({});
       }
     } finally {
       setLoading(false);
     }
+  };
+  const refreshNoteCount = async (leadId: string) => {
+    try {
+      const counts = await countNotes({ data: { leadIds: [leadId] } });
+      setNoteCounts((prev) => ({ ...prev, [leadId]: counts?.[leadId] ?? 0 }));
+    } catch { /* ignore */ }
   };
   useEffect(() => { refresh(""); }, []);
 
