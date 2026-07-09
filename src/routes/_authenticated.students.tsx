@@ -587,10 +587,13 @@ function StudentCard({ s, canDrag, coachName, atRisk }: { s: Student; canDrag: b
 
 
 type Closer = { id: string; display_name: string | null };
+type Setter = { id: string; display_name: string | null };
+type ScheduleRow = { id: string; amount: string; due_date: string; payment_method: string };
 
 function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void; onCreated: () => void; coaches: Coach[] }) {
   const { user } = useAuth();
   const [closers, setClosers] = useState<Closer[]>([]);
+  const [setters, setSetters] = useState<Setter[]>([]);
 
   // Basics
   const [fullName, setFullName] = useState("");
@@ -607,9 +610,11 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
   const [totalAmount, setTotalAmount] = useState<string>("");
   const [payMode, setPayMode] = useState<"pif" | "installments" | "none">("pif");
   const [closerId, setCloserId] = useState<string>("");
+  const [setterId, setSetterId] = useState<string>("");
   const [dealDate, setDealDate] = useState(new Date().toISOString().slice(0, 10));
 
-  // Installments detail
+  // Installments detail (even-split mode)
+  const [scheduleMode, setScheduleMode] = useState<"even" | "custom">("even");
   const [depositAmount, setDepositAmount] = useState<string>("0");
   const [numInstallments, setNumInstallments] = useState<string>("3");
   const [firstDueDate, setFirstDueDate] = useState<string>(() => {
@@ -617,18 +622,31 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
   });
   const [frequency, setFrequency] = useState<"monthly" | "biweekly" | "weekly">("monthly");
 
+  // Installments detail (custom mode)
+  const nextMonth = () => { const d = new Date(); d.setMonth(d.getMonth() + 1); return d.toISOString().slice(0, 10); };
+  const [customRows, setCustomRows] = useState<ScheduleRow[]>(() => [
+    { id: crypto.randomUUID(), amount: "", due_date: nextMonth(), payment_method: "" },
+  ]);
+  const addCustomRow = () => setCustomRows(rs => [...rs, { id: crypto.randomUUID(), amount: "", due_date: nextMonth(), payment_method: "" }]);
+  const removeCustomRow = (id: string) => setCustomRows(rs => rs.length > 1 ? rs.filter(r => r.id !== id) : rs);
+  const updateCustomRow = (id: string, patch: Partial<ScheduleRow>) => setCustomRows(rs => rs.map(r => r.id === id ? { ...r, ...patch } : r));
+
   const [saving, setSaving] = useState(false);
 
-  // Fetch closers (users with closer or admin role)
+  // Fetch closers (closer or admin) and setters (setter or admin)
   useEffect(() => {
     (async () => {
-      const { data: roleRows } = await supabase.from("user_roles").select("user_id, role").in("role", ["closer", "admin"]);
-      const ids = Array.from(new Set((roleRows ?? []).map((r: any) => r.user_id)));
-      if (!ids.length) return;
-      const { data: profs } = await supabase.from("profiles").select("id, display_name").in("id", ids);
-      setClosers((profs ?? []) as Closer[]);
-      if (user?.id && ids.includes(user.id)) setCloserId(user.id);
-      else if (ids.length === 1) setCloserId(ids[0]);
+      const { data: roleRows } = await supabase.from("user_roles").select("user_id, role").in("role", ["closer", "admin", "setter"]);
+      const closerIds = Array.from(new Set((roleRows ?? []).filter((r: any) => r.role === "closer" || r.role === "admin").map((r: any) => r.user_id)));
+      const setterIds = Array.from(new Set((roleRows ?? []).filter((r: any) => r.role === "setter" || r.role === "admin").map((r: any) => r.user_id)));
+      const allIds = Array.from(new Set([...closerIds, ...setterIds]));
+      if (!allIds.length) return;
+      const { data: profs } = await supabase.from("profiles").select("id, display_name").in("id", allIds);
+      const byId = new Map((profs ?? []).map((p: any) => [p.id, p as Setter]));
+      setClosers(closerIds.map(id => byId.get(id) ?? { id, display_name: null }));
+      setSetters(setterIds.map(id => byId.get(id) ?? { id, display_name: null }));
+      if (user?.id && closerIds.includes(user.id)) setCloserId(user.id);
+      else if (closerIds.length === 1) setCloserId(closerIds[0]);
     })();
   }, [user?.id]);
 
@@ -637,6 +655,8 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
   const n = Math.max(1, Math.min(24, Number(numInstallments) || 0));
   const remaining = Math.max(0, tv - dep);
   const perInstallment = payMode === "installments" && n > 0 ? remaining / n : 0;
+  const customTotal = customRows.reduce((a, r) => a + (Number(r.amount) || 0), 0);
+  const customDelta = tv - dep - customTotal;
 
   const submit = async () => {
     if (!fullName.trim()) return toast.error("Name required");
@@ -647,13 +667,17 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
       if (!closerId) return toast.error("Pick who closed this deal");
       if (payMode === "installments") {
         if (dep > tv) return toast.error("Deposit cannot exceed total");
-        if (n < 1) return toast.error("At least 1 installment");
+        if (scheduleMode === "even" && n < 1) return toast.error("At least 1 installment");
+        if (scheduleMode === "custom") {
+          const cleanRows = customRows.filter(r => Number(r.amount) > 0);
+          if (cleanRows.length === 0) return toast.error("Add at least one payment row");
+          if (cleanRows.some(r => !r.due_date)) return toast.error("Each payment row needs a due date");
+        }
       }
     }
 
     setSaving(true);
     try {
-      // 1) Student
       const paymentState: PaymentState | null =
         payMode === "pif" ? "paid_in_full" : payMode === "installments" ? "installments" : null;
       const callsAllotted = pkg === "one_on_one" ? 10 : 0;
@@ -674,7 +698,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
       if (stuErr) throw new Error("Student: " + stuErr.message);
       const studentId = newStu.id;
 
-      // 2) Deal
+      // Deal
       if (payMode !== "none") {
         const cashUpfront = payMode === "pif" ? tv : dep;
         const paymentType = payMode === "pif" ? "pif" : dep > 0 ? "deposit" : "split";
@@ -682,46 +706,73 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
           student_id: studentId,
           student_name: fullName.trim(),
           closer_id: closerId,
+          setter_id: setterId || null,
           program_type: pkg === "one_on_one" ? "1:1 Pathway" : "Group Coaching",
           total_value: tv,
           cash_collected_upfront: cashUpfront,
           payment_type: paymentType as any,
           deal_date: dealDate,
           created_by: user?.id ?? null,
-        });
+        } as any);
         if (dealErr) throw new Error("Deal: " + dealErr.message);
       }
 
-      // 3) Installments plan + payments
-      if (payMode === "installments" && remaining > 0 && n > 0) {
-        const { data: plan, error: planErr } = await supabase.from("installments").insert({
-          student_id: studentId,
-          student_name: fullName.trim(),
-          closer_id: closerId,
-          coach_id: coachId || null,
-          total_amount: remaining,
-          currency: "USD",
-          created_by: user?.id ?? null,
-        }).select("id").single();
-        if (planErr) throw new Error("Installment plan: " + planErr.message);
+      // Installments plan + payments
+      if (payMode === "installments") {
+        const cleanCustom = customRows.filter(r => Number(r.amount) > 0);
+        const planTotal = scheduleMode === "custom"
+          ? cleanCustom.reduce((a, r) => a + Number(r.amount), 0)
+          : remaining;
 
-        const start = new Date(firstDueDate + "T00:00:00");
-        const rows = Array.from({ length: n }, (_, i) => {
-          const due = new Date(start);
-          if (frequency === "monthly") due.setMonth(start.getMonth() + i);
-          else if (frequency === "biweekly") due.setDate(start.getDate() + i * 14);
-          else due.setDate(start.getDate() + i * 7);
-          return {
-            installment_id: plan.id,
-            sequence: i + 1,
-            amount: perInstallment,
+        if (planTotal > 0) {
+          const { data: plan, error: planErr } = await supabase.from("installments").insert({
+            student_id: studentId,
+            student_name: fullName.trim(),
+            closer_id: closerId,
+            setter_id: setterId || null,
+            coach_id: coachId || null,
+            total_amount: planTotal,
             currency: "USD",
-            due_date: due.toISOString().slice(0, 10),
-            status: "upcoming" as const,
-          };
-        });
-        const { error: payErr } = await supabase.from("installment_payments").insert(rows);
-        if (payErr) throw new Error("Installment schedule: " + payErr.message);
+            created_by: user?.id ?? null,
+          } as any).select("id").single();
+          if (planErr) throw new Error("Installment plan: " + planErr.message);
+
+          let rows: any[] = [];
+          if (scheduleMode === "even" && n > 0) {
+            const start = new Date(firstDueDate + "T00:00:00");
+            rows = Array.from({ length: n }, (_, i) => {
+              const due = new Date(start);
+              if (frequency === "monthly") due.setMonth(start.getMonth() + i);
+              else if (frequency === "biweekly") due.setDate(start.getDate() + i * 14);
+              else due.setDate(start.getDate() + i * 7);
+              return {
+                installment_id: plan.id,
+                sequence: i + 1,
+                amount: perInstallment,
+                currency: "USD",
+                due_date: due.toISOString().slice(0, 10),
+                status: "upcoming" as const,
+              };
+            });
+          } else {
+            rows = cleanCustom
+              .slice()
+              .sort((a, b) => a.due_date.localeCompare(b.due_date))
+              .map((r, i) => ({
+                installment_id: plan.id,
+                sequence: i + 1,
+                amount: Number(r.amount),
+                currency: "USD",
+                due_date: r.due_date,
+                status: "upcoming" as const,
+                payment_method: r.payment_method.trim() || null,
+              }));
+          }
+          if (rows.length) {
+            const { error: payErr } = await supabase.from("installment_payments").insert(rows);
+            if (payErr) throw new Error("Installment schedule: " + payErr.message);
+          }
+        }
       }
 
       toast.success("Student added — deal & installments created.");
@@ -808,7 +859,10 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
           {payMode !== "none" && (
             <div className="grid grid-cols-2 gap-3">
               <Field label="Total amount ($)">
-                <input type="number" min="0" value={totalAmount} onChange={e => setTotalAmount(e.target.value)} className={inputCls} placeholder="e.g. 3000" />
+                <input type="number" min="0" value={totalAmount} onChange={e => setTotalAmount(e.target.value)} className={inputCls} placeholder="e.g. 5000" />
+              </Field>
+              <Field label="Deal date">
+                <input type="date" value={dealDate} onChange={e => setDealDate(e.target.value)} className={inputCls} />
               </Field>
               <Field label="Closer (who sold this)">
                 <select value={closerId} onChange={e => setCloserId(e.target.value)} className={inputCls}>
@@ -816,33 +870,78 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
                   {closers.map(c => <option key={c.id} value={c.id}>{c.display_name ?? c.id.slice(0, 8)}</option>)}
                 </select>
               </Field>
-              <Field label="Deal date">
-                <input type="date" value={dealDate} onChange={e => setDealDate(e.target.value)} className={inputCls} />
+              <Field label="Setter (who booked the call)">
+                <select value={setterId} onChange={e => setSetterId(e.target.value)} className={inputCls}>
+                  <option value="">— None / unknown —</option>
+                  {setters.map(s => <option key={s.id} value={s.id}>{s.display_name ?? s.id.slice(0, 8)}</option>)}
+                </select>
               </Field>
 
               {payMode === "installments" && (
                 <>
-                  <Field label="Deposit / cash upfront ($)">
+                  <Field label="Deposit / cash upfront ($)" full>
                     <input type="number" min="0" value={depositAmount} onChange={e => setDepositAmount(e.target.value)} className={inputCls} />
                   </Field>
-                  <Field label="Number of installments" full={false}>
-                    <input type="number" min="1" max="24" value={numInstallments} onChange={e => setNumInstallments(e.target.value)} className={inputCls} />
-                  </Field>
-                  <Field label="Frequency">
-                    <select value={frequency} onChange={e => setFrequency(e.target.value as any)} className={inputCls}>
-                      <option value="monthly">Monthly</option>
-                      <option value="biweekly">Every 2 weeks</option>
-                      <option value="weekly">Weekly</option>
-                    </select>
-                  </Field>
-                  <Field label="First payment due">
-                    <input type="date" value={firstDueDate} onChange={e => setFirstDueDate(e.target.value)} className={inputCls} />
-                  </Field>
-                  <div className="col-span-2 text-[11px] text-muted-foreground bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-2">
-                    {n} × ${perInstallment.toFixed(2)} = ${(n * perInstallment).toFixed(2)} remaining
-                    {dep > 0 && <> · ${dep.toFixed(2)} upfront</>}
-                    <> · total ${tv.toFixed(2)}</>
+
+                  <div className="col-span-2 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setScheduleMode("even")}
+                      className={`flex-1 p-2 rounded-sm border text-xs transition ${scheduleMode === "even" ? "border-sky-500/50 bg-sky-500/10 text-sky-300" : "border-[#1f2530] text-muted-foreground hover:border-[#2a3140]"}`}
+                    >Split evenly</button>
+                    <button
+                      type="button"
+                      onClick={() => setScheduleMode("custom")}
+                      className={`flex-1 p-2 rounded-sm border text-xs transition ${scheduleMode === "custom" ? "border-sky-500/50 bg-sky-500/10 text-sky-300" : "border-[#1f2530] text-muted-foreground hover:border-[#2a3140]"}`}
+                    >Custom schedule</button>
                   </div>
+
+                  {scheduleMode === "even" && (
+                    <>
+                      <Field label="Number of installments" full={false}>
+                        <input type="number" min="1" max="24" value={numInstallments} onChange={e => setNumInstallments(e.target.value)} className={inputCls} />
+                      </Field>
+                      <Field label="Frequency">
+                        <select value={frequency} onChange={e => setFrequency(e.target.value as any)} className={inputCls}>
+                          <option value="monthly">Monthly</option>
+                          <option value="biweekly">Every 2 weeks</option>
+                          <option value="weekly">Weekly</option>
+                        </select>
+                      </Field>
+                      <Field label="First payment due" full>
+                        <input type="date" value={firstDueDate} onChange={e => setFirstDueDate(e.target.value)} className={inputCls} />
+                      </Field>
+                      <div className="col-span-2 text-[11px] text-muted-foreground bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-2">
+                        {n} × ${perInstallment.toFixed(2)} = ${(n * perInstallment).toFixed(2)} remaining
+                        {dep > 0 && <> · ${dep.toFixed(2)} upfront</>}
+                        <> · total ${tv.toFixed(2)}</>
+                      </div>
+                    </>
+                  )}
+
+                  {scheduleMode === "custom" && (
+                    <div className="col-span-2 space-y-2">
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+                        <span>Scheduled payments</span>
+                        <button type="button" onClick={addCustomRow} className="text-[10px] text-emerald-400 hover:text-emerald-300">+ Add payment</button>
+                      </div>
+                      {customRows.map((r, i) => (
+                        <div key={r.id} className="grid grid-cols-[24px_1fr_1.1fr_1fr_28px] gap-2 items-center">
+                          <span className="text-[10px] text-muted-foreground font-mono">#{i + 1}</span>
+                          <input type="number" min="0" step="0.01" value={r.amount} onChange={e => updateCustomRow(r.id, { amount: e.target.value })} placeholder="Amount" className={inputCls} />
+                          <input type="date" value={r.due_date} onChange={e => updateCustomRow(r.id, { due_date: e.target.value })} className={inputCls} />
+                          <input value={r.payment_method} onChange={e => updateCustomRow(r.id, { payment_method: e.target.value })} placeholder="Method (optional)" className={inputCls} />
+                          <button type="button" onClick={() => removeCustomRow(r.id)} disabled={customRows.length === 1} className="text-muted-foreground hover:text-rose-400 disabled:opacity-30"><X className="h-3.5 w-3.5" /></button>
+                        </div>
+                      ))}
+                      <div className={`text-[11px] rounded-sm p-2 border ${Math.abs(customDelta) < 0.01 ? "text-emerald-300 border-emerald-500/30 bg-emerald-500/5" : "text-amber-300 border-amber-500/30 bg-amber-500/5"}`}>
+                        Scheduled ${customTotal.toFixed(2)}{dep > 0 ? ` + $${dep.toFixed(2)} upfront` : ""} = ${(customTotal + dep).toFixed(2)} of ${tv.toFixed(2)}
+                        {Math.abs(customDelta) >= 0.01 && (
+                          <span className="ml-1">· {customDelta > 0 ? `$${customDelta.toFixed(2)} unallocated` : `$${Math.abs(customDelta).toFixed(2)} over total`}</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
             </div>
