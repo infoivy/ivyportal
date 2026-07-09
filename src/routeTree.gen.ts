@@ -10,43 +10,44 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as PrintRouteImport } from './routes/print'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedSopsIsaSettingProcessRouteImport } from './routes/_authenticated.sops.isa-setting-process'
 
 const PrintRoute = PrintRouteImport.update({
   id: '/print',
   path: '/print',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
+const AuthenticatedSopsIsaSettingProcessRoute =
+  AuthenticatedSopsIsaSettingProcessRouteImport.update({
+    id: '/_authenticated/sops/isa-setting-process',
+    path: '/sops/isa-setting-process',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
   '/print': typeof PrintRoute
+  '/sops/isa-setting-process': typeof AuthenticatedSopsIsaSettingProcessRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
   '/print': typeof PrintRoute
+  '/sops/isa-setting-process': typeof AuthenticatedSopsIsaSettingProcessRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
   '/print': typeof PrintRoute
+  '/_authenticated/sops/isa-setting-process': typeof AuthenticatedSopsIsaSettingProcessRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/print'
+  fullPaths: '/print' | '/sops/isa-setting-process'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/print'
-  id: '__root__' | '/' | '/print'
+  to: '/print' | '/sops/isa-setting-process'
+  id: '__root__' | '/print' | '/_authenticated/sops/isa-setting-process'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
   PrintRoute: typeof PrintRoute
+  AuthenticatedSopsIsaSettingProcessRoute: typeof AuthenticatedSopsIsaSettingProcessRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -58,19 +59,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrintRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/_authenticated/sops/isa-setting-process': {
+      id: '/_authenticated/sops/isa-setting-process'
+      path: '/sops/isa-setting-process'
+      fullPath: '/sops/isa-setting-process'
+      preLoaderRoute: typeof AuthenticatedSopsIsaSettingProcessRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
   PrintRoute: PrintRoute,
+  AuthenticatedSopsIsaSettingProcessRoute:
+    AuthenticatedSopsIsaSettingProcessRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

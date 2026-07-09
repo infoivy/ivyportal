@@ -6,7 +6,7 @@ import { SECTIONS } from "@/data/sections";
 import { useIsMobile } from "@/hooks/use-mobile";
 import logoAsset from "@/assets/isa-logo.png.asset.json";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_authenticated/sops/isa-setting-process")({
   head: () => ({
     meta: [
       { title: "Ivy Sales Academy — Setting Mastery" },
