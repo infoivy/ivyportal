@@ -5,10 +5,12 @@ import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import {
   Sparkles, Calendar as CalendarIcon, Columns3, List as ListIcon, Lightbulb,
-  Plus, ExternalLink, Trash2, X, ArrowRight, BookOpen, Loader2, Instagram, LayoutGrid,
+  Plus, ExternalLink, Trash2, X, ArrowRight, Loader2, Instagram, LayoutGrid,
+  BookOpen,
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, parseISO } from "date-fns";
 import { WeeklyPlan } from "@/components/weekly-plan";
+import { FounderSops } from "@/components/founder-sops";
 
 export const Route = createFileRoute("/_authenticated/founder")({
   head: () => ({ meta: [{ title: "Founder Space — ISA Portal" }] }),
