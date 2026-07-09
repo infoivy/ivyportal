@@ -284,24 +284,35 @@ function EmptyState({ text }: { text: string }) {
   return <div className="border border-dashed border-[#1f2530] rounded-sm p-8 text-center text-xs text-muted-foreground">{text}</div>;
 }
 
-function EODRow({ eod, author }: { eod: EOD; author?: string }) {
+function EODRow({ eod, author, onDelete }: { eod: EOD; author?: string; onDelete?: (id: string) => void }) {
   const [open, setOpen] = useState(false);
   const conv = eod.convos_started > 0 ? Math.round((eod.calls_booked / eod.convos_started) * 100) : 0;
   return (
     <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm">
-      <button onClick={() => setOpen(o => !o)} className="w-full flex items-center gap-3 p-3 text-left hover:bg-[#14171e] transition">
-        <ChevronRight className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${open ? "rotate-90" : ""}`} />
-        <div className="text-xs font-mono text-muted-foreground w-24">{eod.report_date}</div>
-        {author && <div className="text-xs text-foreground w-32 truncate">{author}</div>}
-        <div className="flex-1 grid grid-cols-3 md:grid-cols-6 gap-2 text-[11px]">
-          <RowStat label="DMs" value={eod.dms_sent} />
-          <RowStat label="Convos" value={eod.convos_started} />
-          <RowStat label="Booked" value={eod.calls_booked} accent />
-          <RowStat label="Sched" value={eod.calls_scheduled} />
-          <RowStat label="Shows" value={eod.shows} />
-          <RowStat label="Conv%" value={`${conv}%`} />
-        </div>
-      </button>
+      <div className="w-full flex items-center gap-3 p-3 text-left hover:bg-[#14171e] transition">
+        <button onClick={() => setOpen(o => !o)} className="flex items-center gap-3 flex-1 min-w-0 text-left">
+          <ChevronRight className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${open ? "rotate-90" : ""}`} />
+          <div className="text-xs font-mono text-muted-foreground w-24">{eod.report_date}</div>
+          {author && <div className="text-xs text-foreground w-32 truncate">{author}</div>}
+          <div className="flex-1 grid grid-cols-3 md:grid-cols-6 gap-2 text-[11px]">
+            <RowStat label="DMs" value={eod.dms_sent} />
+            <RowStat label="Convos" value={eod.convos_started} />
+            <RowStat label="Booked" value={eod.calls_booked} accent />
+            <RowStat label="Sched" value={eod.calls_scheduled} />
+            <RowStat label="Shows" value={eod.shows} />
+            <RowStat label="Conv%" value={`${conv}%`} />
+          </div>
+        </button>
+        {onDelete && (
+          <button
+            onClick={() => { if (confirm("Delete this EOD?")) onDelete(eod.id); }}
+            className="p-1 rounded text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10"
+            title="Delete"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </div>
       {open && (eod.wins || eod.blockers || eod.tomorrow_focus || eod.summary) && (
         <div className="border-t border-[#1f2530] p-4 space-y-2 text-xs">
           {eod.wins && <p><span className="text-emerald-400">Wins:</span> {eod.wins}</p>}
