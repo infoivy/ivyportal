@@ -109,6 +109,7 @@ function AuthedLayout() {
                     EOD due
                   </Link>
                 )}
+                <NotificationsBell />
                 <div className="text-[11px] text-muted-foreground hidden md:flex flex-col items-end leading-tight">
                   <span className="text-foreground font-medium">{state.displayName}</span>
                   <span className="uppercase tracking-wider text-[9px]">{state.roles.join(" · ") || "member"}</span>
