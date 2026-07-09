@@ -259,155 +259,186 @@ function Dashboard() {
         {prefs.showInstallmentReminders && <InstallmentReminders />}
 
         {/* Row 2: Growth + Format + Transformation */}
-        <div className={`grid gap-3 ${hasPrev ? "lg:grid-cols-[1.2fr_1fr_1fr]" : "lg:grid-cols-[1.5fr_1fr]"}`}>
-          {/* Growth Trend */}
-          <Panel>
-            <PanelHead title="Growth Trend" subtitle={rangeLabel} legend={[
-              { color: "#22c55e", label: "Booked" },
-              { color: "#3b82f6", label: "DMs" },
-              { color: "#f59e0b", label: "Convos" },
-            ]} />
-            <div className="h-[220px] mt-1">
-              {loading ? <Skeleton /> : (
-                <ResponsiveContainer>
-                  <LineChart data={trend} margin={{ top: 5, right: 10, left: -18, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.06)" vertical={false} />
-                    <XAxis dataKey="label" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
-                    <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
-                    <Tooltip contentStyle={{ background: "#0f1116", border: "1px solid #1f2530", borderRadius: 4, fontSize: 11 }} />
-                    <Line type="monotone" dataKey="dms"    stroke="#3b82f6" strokeWidth={1.5} dot={{ r: 2 }} />
-                    <Line type="monotone" dataKey="convos" stroke="#f59e0b" strokeWidth={1.5} dot={{ r: 2 }} />
-                    <Line type="monotone" dataKey="booked" stroke="#22c55e" strokeWidth={2}   dot={{ r: 2.5 }} />
-                  </LineChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-          </Panel>
-
-          {/* Performance by Format */}
-          <Panel>
-            <PanelHead title="Funnel Performance" subtitle="Volume by stage" />
-            <div className="h-[220px] mt-1">
-              {loading ? <Skeleton /> : (
-                <ResponsiveContainer>
-                  <BarChart data={formatBreakdown} layout="vertical" margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
-                    <XAxis type="number" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
-                    <YAxis type="category" dataKey="label" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} width={100} />
-                    <Tooltip contentStyle={{ background: "#0f1116", border: "1px solid #1f2530", borderRadius: 4, fontSize: 11 }} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
-                    <Bar dataKey="value" radius={[0, 2, 2, 0]}>
-                      {formatBreakdown.map((f, i) => <Cell key={i} fill={f.color} />)}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-          </Panel>
-
-          {/* Transformation Results (period-over-period) — only when we have a prior period */}
-          {hasPrev && (
-            <Panel accent="emerald">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="grid h-6 w-6 place-items-center rounded-sm bg-emerald-500/15 border border-emerald-500/40">
-                  <Zap className="h-3 w-3 text-emerald-400" />
+        {(prefs.showGrowth || prefs.showFunnel || hasPrev) && (
+          <div className={`grid gap-3 ${hasPrev ? "lg:grid-cols-[1.2fr_1fr_1fr]" : "lg:grid-cols-[1.5fr_1fr]"}`}>
+            {prefs.showGrowth && (
+              <Panel>
+                <PanelHead title="Growth Trend" subtitle={rangeLabel} legend={[
+                  { color: "#22c55e", label: "Booked" },
+                  { color: "#3b82f6", label: "DMs" },
+                  { color: "#f59e0b", label: "Convos" },
+                ]} />
+                <div className="h-[220px] mt-1">
+                  {loading ? <Skeleton /> : (
+                    <ResponsiveContainer>
+                      <LineChart data={trend} margin={{ top: 5, right: 10, left: -18, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.06)" vertical={false} />
+                        <XAxis dataKey="label" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                        <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                        <Tooltip contentStyle={{ background: "#0f1116", border: "1px solid #1f2530", borderRadius: 4, fontSize: 11 }} />
+                        <Line type="monotone" dataKey="dms"    stroke="#3b82f6" strokeWidth={1.5} dot={{ r: 2 }} />
+                        <Line type="monotone" dataKey="convos" stroke="#f59e0b" strokeWidth={1.5} dot={{ r: 2 }} />
+                        <Line type="monotone" dataKey="booked" stroke="#22c55e" strokeWidth={2}   dot={{ r: 2.5 }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  )}
                 </div>
-                <h3 className="text-sm font-bold">Period Deltas</h3>
-              </div>
-              <div className="space-y-2.5">
-                <Transform label="DMs Sent"     prev={prevTotals.dms_sent}       curr={totals.dms_sent} />
-                <Transform label="Convos"       prev={prevTotals.convos_started} curr={totals.convos_started} />
-                <Transform label="Booked"       prev={prevTotals.calls_booked}   curr={totals.calls_booked} />
-                <Transform label="Shows"        prev={prevTotals.shows}          curr={totals.shows} />
-                <Transform label="Show Rate"    prev={prevShowRateOf(prevTotals)} curr={showRate} suffix="%" />
-              </div>
-            </Panel>
-          )}
-        </div>
+              </Panel>
+            )}
 
-        {(roles.includes("admin") || roles.includes("closer") || roles.includes("coach")) && (
+            {prefs.showFunnel && (
+              <Panel>
+                <PanelHead title="Funnel Performance" subtitle="Volume by stage" />
+                <div className="h-[220px] mt-1">
+                  {loading ? <Skeleton /> : (
+                    <ResponsiveContainer>
+                      <BarChart data={formatBreakdown} layout="vertical" margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+                        <XAxis type="number" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                        <YAxis type="category" dataKey="label" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} width={100} />
+                        <Tooltip contentStyle={{ background: "#0f1116", border: "1px solid #1f2530", borderRadius: 4, fontSize: 11 }} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
+                        <Bar dataKey="value" radius={[0, 2, 2, 0]}>
+                          {formatBreakdown.map((f, i) => <Cell key={i} fill={f.color} />)}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+              </Panel>
+            )}
+
+            {hasPrev && (
+              <Panel accent="emerald">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="grid h-6 w-6 place-items-center rounded-sm bg-emerald-500/15 border border-emerald-500/40">
+                    <Zap className="h-3 w-3 text-emerald-400" />
+                  </div>
+                  <h3 className="text-sm font-bold">Period Deltas</h3>
+                  <span className="ml-auto text-[10px] text-muted-foreground">vs previous {days}d</span>
+                </div>
+                <div className="space-y-2.5">
+                  <Transform label="DMs Sent"     prev={prevTotals.dms_sent}       curr={totals.dms_sent} />
+                  <Transform label="Convos"       prev={prevTotals.convos_started} curr={totals.convos_started} />
+                  <Transform label="Booked"       prev={prevTotals.calls_booked}   curr={totals.calls_booked} />
+                  <Transform label="Shows"        prev={prevTotals.shows}          curr={totals.shows} />
+                  <Transform label="Show Rate"    prev={prevShowRateOf(prevTotals)} curr={showRate} suffix="%" />
+                </div>
+              </Panel>
+            )}
+          </div>
+        )}
+
+        {prefs.showCashLeaderboard && (roles.includes("admin") || roles.includes("closer") || roles.includes("coach")) && (
           <CashLeaderboard compact />
         )}
 
         {/* Row 3: Top Setters + Goals + Audience */}
-        <div className="grid gap-3 lg:grid-cols-[1.5fr_1fr]">
-          <Panel>
-            <PanelHead
-              title="Top Performing Setters"
-              subtitle={rangeLabel}
-              legend={[{ color: "#22c55e", label: "Sorted by Booked" }]}
-            />
-            {topSetters.length === 0 ? (
-              <div className="py-10 text-center text-xs text-muted-foreground">No EODs submitted in this range.</div>
-            ) : (
-              <div className="mt-2">
-                <div className="grid grid-cols-[24px_minmax(0,1fr)_90px_60px_60px_60px] gap-2 px-2 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border">
-                  <span>#</span>
-                  <span>Setter</span>
-                  <span className="text-right">DMs</span>
-                  <span className="text-right">Convos</span>
-                  <span className="text-right inline-flex items-center justify-end gap-0.5 text-emerald-400">Booked <ChevronDown className="h-3 w-3" /></span>
-                  <span className="text-right">Shows</span>
-                </div>
-                {topSetters.map((s, i) => {
-                  const name = profiles[s.user_id]?.display_name ?? "Unknown";
-                  return (
-                    <div key={s.user_id} className="grid grid-cols-[24px_minmax(0,1fr)_90px_60px_60px_60px] gap-2 px-2 py-2 text-xs tabular-nums border-b border-border/50 hover:bg-white/[0.02]">
-                      <span className="text-muted-foreground">{i + 1}</span>
-                      <span className="truncate font-medium">{name}</span>
-                      <span className="text-right text-blue-400">{s.dms.toLocaleString()}</span>
-                      <span className="text-right text-purple-400">{s.convos.toLocaleString()}</span>
-                      <span className="text-right text-emerald-400 font-semibold">{s.calls.toLocaleString()}</span>
-                      <span className="text-right text-amber-400">{s.shows.toLocaleString()}</span>
+        {(prefs.showTopSetters || prefs.showGoals || prefs.showTeamComp) && (
+          <div className="grid gap-3 lg:grid-cols-[1.5fr_1fr]">
+            {prefs.showTopSetters && (
+              <Panel>
+                <PanelHead
+                  title="Top Performing Setters"
+                  subtitle={rangeLabel}
+                  legend={[{ color: "#22c55e", label: "Sorted by Booked" }]}
+                />
+                {topSetters.length === 0 ? (
+                  <div className="py-10 text-center text-xs text-muted-foreground">No EODs submitted in this range.</div>
+                ) : (
+                  <div className="mt-2">
+                    <div className="grid grid-cols-[24px_minmax(0,1fr)_90px_60px_60px_60px] gap-2 px-2 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border">
+                      <span>#</span>
+                      <span>Setter</span>
+                      <span className="text-right">DMs</span>
+                      <span className="text-right">Convos</span>
+                      <span className="text-right inline-flex items-center justify-end gap-0.5 text-emerald-400">Booked <ChevronDown className="h-3 w-3" /></span>
+                      <span className="text-right">Shows</span>
                     </div>
-                  );
-                })}
+                    {topSetters.map((s, i) => {
+                      const name = profiles[s.user_id]?.display_name ?? "Unknown";
+                      return (
+                        <div key={s.user_id} className="grid grid-cols-[24px_minmax(0,1fr)_90px_60px_60px_60px] gap-2 px-2 py-2 text-xs tabular-nums border-b border-border/50 hover:bg-white/[0.02]">
+                          <span className="text-muted-foreground">{i + 1}</span>
+                          <span className="truncate font-medium">{name}</span>
+                          <span className="text-right text-blue-400">{s.dms.toLocaleString()}</span>
+                          <span className="text-right text-purple-400">{s.convos.toLocaleString()}</span>
+                          <span className="text-right text-emerald-400 font-semibold">{s.calls.toLocaleString()}</span>
+                          <span className="text-right text-amber-400">{s.shows.toLocaleString()}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </Panel>
+            )}
+
+            {(prefs.showGoals || prefs.showTeamComp) && (
+              <div className="grid gap-3">
+                {prefs.showGoals && (
+                  <Panel>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="grid h-6 w-6 place-items-center rounded-sm bg-blue-500/15 border border-blue-500/40">
+                        <Target className="h-3 w-3 text-blue-400" />
+                      </div>
+                      <h3 className="text-sm font-bold">{goalsLabel}</h3>
+                    </div>
+                    <div className="space-y-3">
+                      <Goal label="DMs Sent"     value={totals.dms_sent}       target={GOALS.dms}     color="#3b82f6" />
+                      <Goal label="Convos"       value={totals.convos_started} target={GOALS.convos}  color="#a855f7" />
+                      <Goal label="Calls Booked" value={totals.calls_booked}   target={GOALS.calls}   color="#22c55e" />
+                      <Goal label="Shows"        value={totals.shows}          target={GOALS.shows}   color="#f59e0b" warn={totals.shows < GOALS.shows * 0.5 && days >= 30} />
+                      <Goal label="Show Rate"    value={showRate}              target={GOALS.showRate} suffix="%" color="#06b6d4" />
+                    </div>
+                  </Panel>
+                )}
+
+                {prefs.showTeamComp && (
+                  <Panel>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="grid h-6 w-6 place-items-center rounded-sm bg-purple-500/15 border border-purple-500/40">
+                        <Globe className="h-3 w-3 text-purple-400" />
+                      </div>
+                      <h3 className="text-sm font-bold">Team Composition</h3>
+                    </div>
+                    <div className="space-y-2">
+                      <AudienceRow label="Active this period" value={activeSetters} total={Math.max(activeSetters, 1)} color="#3b82f6" />
+                      <AudienceRow label="EODs / setter"      value={activeSetters > 0 ? Math.round(totalEods / activeSetters) : 0} total={days} color="#22c55e" suffix={` / ${days}`} />
+                      <AudienceRow label="Avg calls / setter" value={activeSetters > 0 ? Math.round(totals.calls_booked / activeSetters) : 0} total={GOALS.calls / Math.max(activeSetters, 1)} color="#f59e0b" />
+                    </div>
+                  </Panel>
+                )}
               </div>
             )}
-          </Panel>
-
-          <div className="grid gap-3">
-            <Panel>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="grid h-6 w-6 place-items-center rounded-sm bg-blue-500/15 border border-blue-500/40">
-                  <Target className="h-3 w-3 text-blue-400" />
-                </div>
-                <h3 className="text-sm font-bold">{goalsLabel}</h3>
-              </div>
-              <div className="space-y-3">
-                <Goal label="DMs Sent"     value={totals.dms_sent}       target={GOALS.dms}     color="#3b82f6" />
-                <Goal label="Convos"       value={totals.convos_started} target={GOALS.convos}  color="#a855f7" />
-                <Goal label="Calls Booked" value={totals.calls_booked}   target={GOALS.calls}   color="#22c55e" />
-                <Goal label="Shows"        value={totals.shows}          target={GOALS.shows}   color="#f59e0b" warn={totals.shows < GOALS.shows * 0.5 && days >= 30} />
-                <Goal label="Show Rate"    value={showRate}              target={GOALS.showRate} suffix="%" color="#06b6d4" />
-              </div>
-            </Panel>
-
-            <Panel>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="grid h-6 w-6 place-items-center rounded-sm bg-purple-500/15 border border-purple-500/40">
-                  <Globe className="h-3 w-3 text-purple-400" />
-                </div>
-                <h3 className="text-sm font-bold">Team Composition</h3>
-              </div>
-              <div className="space-y-2">
-                <AudienceRow label="Active this period" value={activeSetters} total={Math.max(activeSetters, 1)} color="#3b82f6" />
-                <AudienceRow label="EODs / setter"      value={activeSetters > 0 ? Math.round(totalEods / activeSetters) : 0} total={days} color="#22c55e" suffix={` / ${days}`} />
-                <AudienceRow label="Avg calls / setter" value={activeSetters > 0 ? Math.round(totals.calls_booked / activeSetters) : 0} total={GOALS.calls / Math.max(activeSetters, 1)} color="#f59e0b" />
-              </div>
-            </Panel>
           </div>
-        </div>
+        )}
 
-        <WeeklyLeaderboard profiles={profiles} eods={eods} />
+        {prefs.showWeeklyLeaderboard && <WeeklyLeaderboard profiles={profiles} eods={eods} />}
 
 
         {/* Quick actions */}
-        <div className="grid gap-2 sm:grid-cols-4">
-          <QuickAction to="/eods"     icon={FileText}   label="Submit EOD" />
-          <QuickAction to="/analytics" icon={Target}    label="Full Analytics" />
-          <QuickAction to="/training" icon={Zap}        label="Training" />
-          <QuickAction to="/policies/crm-hygiene" icon={MessageSquare} label="CRM Hygiene" />
-        </div>
+        {prefs.showQuickActions && (
+          <div className="grid gap-2 sm:grid-cols-4">
+            <QuickAction to="/eods"     icon={FileText}   label="Submit EOD" />
+            <QuickAction to="/analytics" icon={Target}    label="Full Analytics" />
+            <QuickAction to="/training" icon={Zap}        label="Training" />
+            <QuickAction to="/policies/crm-hygiene" icon={MessageSquare} label="CRM Hygiene" />
+          </div>
+        )}
       </div>
+
+      <StatDrilldown
+        open={drilldown !== null}
+        onOpenChange={(v) => !v && setDrilldown(null)}
+        metric={drilldown}
+        eods={eods}
+        profiles={profiles}
+        rangeLabel={rangeLabel}
+      />
+      <DashboardSettingsSheet
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        prefs={prefs}
+        onChange={savePrefs}
+      />
     </div>
   );
 }
