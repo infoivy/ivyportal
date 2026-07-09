@@ -59,6 +59,36 @@ export type Database = {
         }
         Relationships: []
       }
+      commission_rates: {
+        Row: {
+          active: boolean
+          id: string
+          key: string
+          label: string
+          notes: string | null
+          rate: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          id?: string
+          key: string
+          label: string
+          notes?: string | null
+          rate?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          id?: string
+          key?: string
+          label?: string
+          notes?: string | null
+          rate?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       csm_student_notes: {
         Row: {
           created_at: string
@@ -90,6 +120,68 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "csm_student_notes_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deals: {
+        Row: {
+          cash_collected_upfront: number
+          closer_id: string
+          contract_url: string | null
+          created_at: string
+          created_by: string | null
+          deal_date: string
+          fathom_url: string | null
+          id: string
+          notes: string | null
+          payment_type: Database["public"]["Enums"]["deal_payment_type"]
+          program_type: string
+          student_id: string | null
+          student_name: string
+          total_value: number
+          updated_at: string
+        }
+        Insert: {
+          cash_collected_upfront?: number
+          closer_id: string
+          contract_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          deal_date?: string
+          fathom_url?: string | null
+          id?: string
+          notes?: string | null
+          payment_type?: Database["public"]["Enums"]["deal_payment_type"]
+          program_type?: string
+          student_id?: string | null
+          student_name: string
+          total_value?: number
+          updated_at?: string
+        }
+        Update: {
+          cash_collected_upfront?: number
+          closer_id?: string
+          contract_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          deal_date?: string
+          fathom_url?: string | null
+          id?: string
+          notes?: string | null
+          payment_type?: Database["public"]["Enums"]["deal_payment_type"]
+          program_type?: string
+          student_id?: string | null
+          student_name?: string
+          total_value?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deals_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
@@ -147,10 +239,16 @@ export type Database = {
           blockers: string | null
           calls_booked: number
           calls_scheduled: number
+          calls_taken: number
+          cash_collected: number
+          closes: number
           convos_started: number
           created_at: string
+          deferred_cash: number
+          deposits: number
           dms_sent: number
           escalations_resolved: number
+          follow_ups_done: number
           id: string
           looms_reviewed: number
           no_shows: number
@@ -168,10 +266,16 @@ export type Database = {
           blockers?: string | null
           calls_booked?: number
           calls_scheduled?: number
+          calls_taken?: number
+          cash_collected?: number
+          closes?: number
           convos_started?: number
           created_at?: string
+          deferred_cash?: number
+          deposits?: number
           dms_sent?: number
           escalations_resolved?: number
+          follow_ups_done?: number
           id?: string
           looms_reviewed?: number
           no_shows?: number
@@ -189,10 +293,16 @@ export type Database = {
           blockers?: string | null
           calls_booked?: number
           calls_scheduled?: number
+          calls_taken?: number
+          cash_collected?: number
+          closes?: number
           convos_started?: number
           created_at?: string
+          deferred_cash?: number
+          deposits?: number
           dms_sent?: number
           escalations_resolved?: number
+          follow_ups_done?: number
           id?: string
           looms_reviewed?: number
           no_shows?: number
@@ -658,6 +768,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "closer" | "setter" | "coach" | "student" | "csm"
+      deal_payment_type: "pif" | "deposit" | "split"
       doc_category:
         | "setting"
         | "closing"
@@ -810,6 +921,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "closer", "setter", "coach", "student", "csm"],
+      deal_payment_type: ["pif", "deposit", "split"],
       doc_category: [
         "setting",
         "closing",
