@@ -34,6 +34,10 @@ type Call = {
   id: string; call_date: string; status: string; progress_rating: number | null;
   next_call_date: string | null; action_items_json: ActionItem[] | null;
 };
+type AdhocItem = {
+  id: string; student_id: string; text: string; done: boolean;
+  due_date: string | null; created_at: string; source_call_id: string | null;
+};
 type Doc = { slug: string; title: string; category: string };
 
 const empty = {
