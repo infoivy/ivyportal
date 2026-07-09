@@ -32,6 +32,7 @@ const opsItems: Item[] = [
 ];
 
 const adminItems: Item[] = [
+  { title: "Admin", url: "/admin", icon: Shield, adminOnly: true },
   { title: "Team", url: "/team", icon: Users, adminOnly: true },
 ];
 
