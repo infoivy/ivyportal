@@ -328,79 +328,157 @@ function StudentsLayout() {
       </div>
 
       {view === "table" ? (
-        <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm overflow-hidden">
-          <div className="grid grid-cols-[1.4fr_1fr_1fr_1fr_0.5fr_auto] items-center px-4 py-2 border-b border-[#1f2530] text-[10px] uppercase tracking-widest text-muted-foreground gap-2">
-            <span>Student</span><span>Phase</span><span>Status</span><span>Coach</span><span>Last 1:1</span><span />
-          </div>
-          {filtered.length === 0 && <div className="p-8 text-center text-xs text-muted-foreground">No students match your filters.</div>}
-          {filtered.map(s => {
-            const last = lastCallByStudent[s.id];
-            const risky = isAtRisk(s);
-            return (
-              <div key={s.id} className={`grid grid-cols-[1.4fr_1fr_1fr_1fr_0.5fr_auto] items-center gap-2 px-4 py-3 border-b border-[#1a1f29] last:border-0 hover:bg-[#14171e] transition`}>
-                <Link to={"/students/$id" as any} params={{ id: s.id } as any} className="min-w-0 flex items-center gap-2">
-                  {risky && <AlertTriangle className="h-3 w-3 text-rose-400 shrink-0" />}
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium truncate">{s.full_name}</div>
-                    <div className={`text-[10px] truncate flex items-center gap-1 ${s.email ? "text-muted-foreground" : "text-amber-400"}`}>
-                      {s.email ?? "⚠ No email — cannot auto-link login"}
-                    </div>
-                  </div>
-                </Link>
-                {canManage ? (
-                  <select
-                    value={s.phase}
-                    onChange={e => updateStudent(s.id, { phase: e.target.value as Phase })}
-                    className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border bg-transparent w-fit ${phaseMeta(s.phase).color}`}
-                  >
-                    {PHASES.map(p => <option key={p.key} value={p.key} className="bg-[#0f1116]">{p.label}</option>)}
-                  </select>
-                ) : (
-                  <span className={`inline-flex items-center text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border w-fit ${phaseMeta(s.phase).color}`}>{phaseMeta(s.phase).label}</span>
-                )}
-                {canManage ? (
-                  <select
-                    value={s.status}
-                    onChange={e => updateStudent(s.id, { status: e.target.value as Status })}
-                    className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border bg-transparent w-fit ${statusMeta(s.status).color}`}
-                  >
-                    {STATUSES.map(x => <option key={x.key} value={x.key} className="bg-[#0f1116]">{x.label}</option>)}
-                  </select>
-                ) : (
-                  <span className={`inline-flex items-center text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border w-fit ${statusMeta(s.status).color}`}>{statusMeta(s.status).label}</span>
-                )}
-                {canManage ? (
-                  <select
-                    value={s.coach_id ?? ""}
-                    onChange={e => updateStudent(s.id, { coach_id: e.target.value || null })}
-                    className="text-xs h-7 px-2 rounded-sm border border-[#1f2530] bg-transparent w-fit"
-                  >
-                    <option value="">Unassigned</option>
-                    {coaches.map(c => <option key={c.id} value={c.id} className="bg-[#0f1116]">{c.display_name ?? c.id}</option>)}
-                  </select>
-                ) : (
-                  <span className="text-xs text-muted-foreground truncate">{coachName(s.coach_id)}</span>
-                )}
-                <span className={`text-[10px] font-mono ${last && daysSince(last) > 14 ? "text-rose-400" : "text-muted-foreground"}`}>
-                  {last ? `${daysSince(last)}d ago` : "—"}
-                </span>
-                <div className="flex items-center gap-1 justify-end">
-                  <Link to={"/students/$id" as any} params={{ id: s.id } as any} className="text-muted-foreground hover:text-foreground p-1">
-                    <ChevronRight className="h-3.5 w-3.5" />
-                  </Link>
-                  {canManage && roles.includes("admin") && (
-                    <button
-                      onClick={() => deleteStudent(s.id)}
-                      className="p-1 rounded hover:bg-rose-500/10 text-muted-foreground hover:text-rose-400"
-                      title="Delete student"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+        <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead className="text-[10px] uppercase tracking-widest text-muted-foreground bg-[#0f1116] sticky top-0">
+              <tr className="border-b border-[#1f2530]">
+                <th className="text-left px-4 py-2 font-normal">Student</th>
+                {visibleCols.has("grade") && <th className="text-left px-2 py-2 font-normal">Grade</th>}
+                {visibleCols.has("phase") && <th className="text-left px-2 py-2 font-normal">Phase</th>}
+                {visibleCols.has("status") && <th className="text-left px-2 py-2 font-normal">Status</th>}
+                {visibleCols.has("coach") && <th className="text-left px-2 py-2 font-normal">Coach</th>}
+                {visibleCols.has("payment") && <th className="text-left px-2 py-2 font-normal">Pay</th>}
+                {visibleCols.has("calls_remaining") && <th className="text-right px-2 py-2 font-normal">Calls left</th>}
+                {visibleCols.has("last_call") && <th className="text-right px-2 py-2 font-normal">Last 1:1</th>}
+                {visibleCols.has("last_eod") && <th className="text-right px-2 py-2 font-normal">Last EOD</th>}
+                {visibleCols.has("next_action") && <th className="text-left px-2 py-2 font-normal">Next action</th>}
+                {visibleCols.has("badges") && <th className="text-left px-2 py-2 font-normal">Badges</th>}
+                <th className="px-2 py-2" />
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 && (
+                <tr><td colSpan={12} className="p-8 text-center text-xs text-muted-foreground">No students match your filters.</td></tr>
+              )}
+              {filtered.map(s => {
+                const last = lastCallByStudent[s.id];
+                const lastEod = lastEodByStudent[s.id];
+                const used = callsUsedByStudent[s.id] ?? 0;
+                const remaining = Math.max(0, s.calls_allotted - used);
+                const info = atRiskInfo(s);
+                const showReasons = phaseFilter === "at_risk";
+                return (
+                  <tr key={s.id} className="border-b border-[#1a1f29] last:border-0 hover:bg-[#14171e] transition">
+                    <td className="px-4 py-3 min-w-[220px]">
+                      <Link to={"/students/$id" as any} params={{ id: s.id } as any} className="flex items-center gap-2 min-w-0">
+                        {info.risky && <AlertTriangle className="h-3 w-3 text-rose-400 shrink-0" />}
+                        <div className="min-w-0">
+                          <div className="text-sm font-medium truncate">{s.full_name}</div>
+                          <div className={`text-[10px] truncate flex items-center gap-1 ${s.email ? "text-muted-foreground" : "text-amber-400"}`}>
+                            {s.email ?? "⚠ No email — cannot auto-link login"}
+                          </div>
+                          {showReasons && info.reasons.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {info.reasons.map(r => (
+                                <span key={r} className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm border border-rose-500/30 bg-rose-500/10 text-rose-400">{r}</span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </Link>
+                    </td>
+                    {visibleCols.has("grade") && (
+                      <td className="px-2 py-3">
+                        <span className={`text-[10px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded-sm border ${s.student_grade ? "border-amber-500/30 bg-amber-500/10 text-amber-400" : "border-[#1f2530] text-muted-foreground"}`}>
+                          {s.student_grade ?? "—"}
+                        </span>
+                      </td>
+                    )}
+                    {visibleCols.has("phase") && (
+                      <td className="px-2 py-3">
+                        {canManage ? (
+                          <select value={s.phase} onChange={e => updateStudent(s.id, { phase: e.target.value as Phase })} className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border bg-transparent ${phaseMeta(s.phase).color}`}>
+                            {PHASES.map(p => <option key={p.key} value={p.key} className="bg-[#0f1116]">{p.label}</option>)}
+                          </select>
+                        ) : (
+                          <span className={`inline-flex items-center text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border ${phaseMeta(s.phase).color}`}>{phaseMeta(s.phase).label}</span>
+                        )}
+                      </td>
+                    )}
+                    {visibleCols.has("status") && (
+                      <td className="px-2 py-3">
+                        {canManage ? (
+                          <select value={s.status} onChange={e => updateStudent(s.id, { status: e.target.value as Status })} className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border bg-transparent ${statusMeta(s.status).color}`}>
+                            {STATUSES.map(x => <option key={x.key} value={x.key} className="bg-[#0f1116]">{x.label}</option>)}
+                          </select>
+                        ) : (
+                          <span className={`inline-flex items-center text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border ${statusMeta(s.status).color}`}>{statusMeta(s.status).label}</span>
+                        )}
+                      </td>
+                    )}
+                    {visibleCols.has("coach") && (
+                      <td className="px-2 py-3">
+                        {canManage ? (
+                          <select value={s.coach_id ?? ""} onChange={e => updateStudent(s.id, { coach_id: e.target.value || null })} className="text-xs h-7 px-2 rounded-sm border border-[#1f2530] bg-transparent max-w-[140px]">
+                            <option value="">Unassigned</option>
+                            {coaches.map(c => <option key={c.id} value={c.id} className="bg-[#0f1116]">{c.display_name ?? c.id}</option>)}
+                          </select>
+                        ) : (
+                          <span className="text-xs text-muted-foreground truncate">{coachName(s.coach_id)}</span>
+                        )}
+                      </td>
+                    )}
+                    {visibleCols.has("payment") && (
+                      <td className="px-2 py-3">
+                        {s.payment_state ? (
+                          <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border ${PAYMENT_META[s.payment_state].color}`}>{PAYMENT_META[s.payment_state].label}</span>
+                        ) : <span className="text-[10px] text-muted-foreground">—</span>}
+                      </td>
+                    )}
+                    {visibleCols.has("calls_remaining") && (
+                      <td className={`px-2 py-3 text-right font-mono text-xs ${remaining === 0 ? "text-rose-400" : "text-foreground"}`}>
+                        {remaining}<span className="text-muted-foreground">/{s.calls_allotted}</span>
+                      </td>
+                    )}
+                    {visibleCols.has("last_call") && (
+                      <td className={`px-2 py-3 text-right text-[10px] font-mono ${last && daysSince(last) > 14 ? "text-rose-400" : "text-muted-foreground"}`}>
+                        {last ? `${daysSince(last)}d` : "—"}
+                      </td>
+                    )}
+                    {visibleCols.has("last_eod") && (
+                      <td className={`px-2 py-3 text-right text-[10px] font-mono ${lastEod && daysSince(lastEod) >= 5 ? "text-rose-400" : "text-muted-foreground"}`}>
+                        {lastEod ? `${daysSince(lastEod)}d` : "—"}
+                      </td>
+                    )}
+                    {visibleCols.has("next_action") && (
+                      <td className="px-2 py-3 min-w-[180px]">
+                        {canManage ? (
+                          <input
+                            defaultValue={s.next_action ?? ""}
+                            onBlur={e => { if (e.target.value !== (s.next_action ?? "")) updateStudent(s.id, { next_action: e.target.value.trim() || null }); }}
+                            placeholder="—"
+                            className="w-full h-7 px-2 rounded-sm border border-transparent hover:border-[#1f2530] focus:border-emerald-500/40 bg-transparent text-xs focus:outline-none"
+                          />
+                        ) : (
+                          <span className="text-xs text-muted-foreground">{s.next_action ?? "—"}</span>
+                        )}
+                      </td>
+                    )}
+                    {visibleCols.has("badges") && (
+                      <td className="px-2 py-3">
+                        <div className="flex gap-1">
+                          <span title="Testimonial" className={s.testimonial_collected ? "text-amber-400" : "text-[#2a3140]"}><Award className="h-3.5 w-3.5" /></span>
+                          <span title="Trustpilot" className={s.trustpilot_collected ? "text-emerald-400" : "text-[#2a3140]"}><MessageSquare className="h-3.5 w-3.5" /></span>
+                        </div>
+                      </td>
+                    )}
+                    <td className="px-2 py-3">
+                      <div className="flex items-center gap-1 justify-end">
+                        <Link to={"/students/$id" as any} params={{ id: s.id } as any} className="text-muted-foreground hover:text-foreground p-1">
+                          <ChevronRight className="h-3.5 w-3.5" />
+                        </Link>
+                        {canManage && roles.includes("admin") && (
+                          <button onClick={() => deleteStudent(s.id)} className="p-1 rounded hover:bg-rose-500/10 text-muted-foreground hover:text-rose-400" title="Delete student">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       ) : kanbanBy === "phase" ? (
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
@@ -424,6 +502,7 @@ function StudentsLayout() {
             </div>
           ))}
         </div>
+
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
           {["__unassigned__", ...coaches.map(c => c.id)].map(cid => (
