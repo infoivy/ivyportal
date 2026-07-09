@@ -425,10 +425,10 @@ function CallModal({ call, onClose, onSaved, students, coaches, defaultCoachId }
             </div>
           </Field>
 
-          <Field label="Next step">
-            <input value={form.next_step} onChange={e => setForm(f => ({ ...f, next_step: e.target.value }))} placeholder="Next focus" className={inputCls} />
+          <Field label="Next step for the student">
+            <input value={form.next_step} onChange={e => setForm(f => ({ ...f, next_step: e.target.value }))} placeholder="e.g. Post 3 reels + book 5 sales calls" className={inputCls} />
           </Field>
-          <Field label="Next call date">
+          <Field label="Next 1:1 date">
             <input type="date" value={form.next_call_date} onChange={e => setForm(f => ({ ...f, next_call_date: e.target.value }))} className={inputCls} />
           </Field>
         </div>
