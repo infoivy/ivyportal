@@ -135,6 +135,48 @@ function CsmPage() {
   const lastStudentEod = useMemo(() => studentEods.find(e => e.student_id === studentId)?.report_date ?? null, [studentEods, studentId]);
   const studentLoomsReviewed = useMemo(() => tally.filter(t => t.student_id === studentId && t.kind === "loom"), [tally, studentId]);
   const studentRoleplaysReviewed = useMemo(() => tally.filter(t => t.student_id === studentId && t.kind === "roleplay"), [tally, studentId]);
+  const selectedAdhoc = useMemo(
+    () => adhoc.filter(a => a.student_id === studentId).sort((a, b) => (a.done === b.done ? 0 : a.done ? 1 : -1)),
+    [adhoc, studentId],
+  );
+
+  const addAdhoc = async () => {
+    if (!user || !studentId || !newAdhocText.trim()) return;
+    setSavingAdhoc(true);
+    const { data, error } = await supabase
+      .from("student_action_items")
+      .insert({
+        student_id: studentId,
+        created_by: user.id,
+        text: newAdhocText.trim(),
+        due_date: newAdhocDue || null,
+      })
+      .select()
+      .single();
+    setSavingAdhoc(false);
+    if (error) return toast.error(error.message);
+    setAdhoc(prev => [data as AdHocItem, ...prev]);
+    setNewAdhocText(""); setNewAdhocDue("");
+    toast.success("Action item added");
+  };
+
+  const toggleAdhoc = async (it: AdHocItem) => {
+    const next = !it.done;
+    const { error } = await supabase
+      .from("student_action_items")
+      .update({ done: next, done_at: next ? new Date().toISOString() : null })
+      .eq("id", it.id);
+    if (error) return toast.error(error.message);
+    setAdhoc(prev => prev.map(a => a.id === it.id ? { ...a, done: next } : a));
+  };
+
+  const deleteAdhoc = async (id: string) => {
+    if (!confirm("Delete this action item?")) return;
+    const { error } = await supabase.from("student_action_items").delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    setAdhoc(prev => prev.filter(a => a.id !== id));
+    toast.success("Deleted");
+  };
 
   const addTally = async (kind: TallyKind, opts?: { student_id?: string | null; note?: string | null }) => {
     if (!user) return;
