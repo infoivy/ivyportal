@@ -382,7 +382,7 @@ function Dashboard() {
           <QuickAction to="/eods"     icon={FileText}   label="Submit EOD" />
           <QuickAction to="/analytics" icon={Target}    label="Full Analytics" />
           <QuickAction to="/training" icon={Zap}        label="Training" />
-          <QuickAction to="/policies/crm-hygiene" icon={MessageSquare} label="CRM Hygiene" />
+          <QuickAction to="/knowledge" icon={MessageSquare} label="Knowledge Hub" />
         </div>
       </div>
     </div>

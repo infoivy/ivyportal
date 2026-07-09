@@ -23,8 +23,8 @@ const workItems: Item[] = [
 ];
 
 const knowledgeItems: Item[] = [
-  { title: "SOPs", url: "/sops", icon: BookOpen },
-  { title: "Policies", url: "/policies", icon: ShieldCheck },
+  { title: "Knowledge Hub", url: "/knowledge", icon: BookOpen },
+  { title: "Closer Resources", url: "/closer-resources", icon: DollarSign, roles: ["admin", "closer"] },
   { title: "Training", url: "/training", icon: GraduationCap },
 ];
 
