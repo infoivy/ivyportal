@@ -13,6 +13,7 @@ import {
   BarChart, Bar, Cell,
 } from "recharts";
 import { format, subDays } from "date-fns";
+import { CashLeaderboard } from "@/components/weekly-leaderboard";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — ISA Team" }] }),
