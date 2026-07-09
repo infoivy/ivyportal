@@ -16,6 +16,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedTrainingRouteImport } from './routes/_authenticated.training'
 import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated.team'
 import { Route as AuthenticatedStudentsRouteImport } from './routes/_authenticated.students'
+import { Route as AuthenticatedStudentPortalRouteImport } from './routes/_authenticated.student-portal'
 import { Route as AuthenticatedSopsRouteImport } from './routes/_authenticated.sops'
 import { Route as AuthenticatedPoliciesRouteImport } from './routes/_authenticated.policies'
 import { Route as AuthenticatedNotesRouteImport } from './routes/_authenticated.notes'
@@ -65,6 +66,12 @@ const AuthenticatedStudentsRoute = AuthenticatedStudentsRouteImport.update({
   path: '/students',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedStudentPortalRoute =
+  AuthenticatedStudentPortalRouteImport.update({
+    id: '/student-portal',
+    path: '/student-portal',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedSopsRoute = AuthenticatedSopsRouteImport.update({
   id: '/sops',
   path: '/sops',
@@ -153,6 +160,7 @@ export interface FileRoutesByFullPath {
   '/notes': typeof AuthenticatedNotesRoute
   '/policies': typeof AuthenticatedPoliciesRouteWithChildren
   '/sops': typeof AuthenticatedSopsRouteWithChildren
+  '/student-portal': typeof AuthenticatedStudentPortalRoute
   '/students': typeof AuthenticatedStudentsRouteWithChildren
   '/team': typeof AuthenticatedTeamRoute
   '/training': typeof AuthenticatedTrainingRoute
@@ -174,6 +182,7 @@ export interface FileRoutesByTo {
   '/eods': typeof AuthenticatedEodsRoute
   '/notes': typeof AuthenticatedNotesRoute
   '/sops': typeof AuthenticatedSopsRouteWithChildren
+  '/student-portal': typeof AuthenticatedStudentPortalRoute
   '/students': typeof AuthenticatedStudentsRouteWithChildren
   '/team': typeof AuthenticatedTeamRoute
   '/training': typeof AuthenticatedTrainingRoute
@@ -198,6 +207,7 @@ export interface FileRoutesById {
   '/_authenticated/notes': typeof AuthenticatedNotesRoute
   '/_authenticated/policies': typeof AuthenticatedPoliciesRouteWithChildren
   '/_authenticated/sops': typeof AuthenticatedSopsRouteWithChildren
+  '/_authenticated/student-portal': typeof AuthenticatedStudentPortalRoute
   '/_authenticated/students': typeof AuthenticatedStudentsRouteWithChildren
   '/_authenticated/team': typeof AuthenticatedTeamRoute
   '/_authenticated/training': typeof AuthenticatedTrainingRoute
@@ -222,6 +232,7 @@ export interface FileRouteTypes {
     | '/notes'
     | '/policies'
     | '/sops'
+    | '/student-portal'
     | '/students'
     | '/team'
     | '/training'
@@ -243,6 +254,7 @@ export interface FileRouteTypes {
     | '/eods'
     | '/notes'
     | '/sops'
+    | '/student-portal'
     | '/students'
     | '/team'
     | '/training'
@@ -266,6 +278,7 @@ export interface FileRouteTypes {
     | '/_authenticated/notes'
     | '/_authenticated/policies'
     | '/_authenticated/sops'
+    | '/_authenticated/student-portal'
     | '/_authenticated/students'
     | '/_authenticated/team'
     | '/_authenticated/training'
@@ -333,6 +346,13 @@ declare module '@tanstack/react-router' {
       path: '/students'
       fullPath: '/students'
       preLoaderRoute: typeof AuthenticatedStudentsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/student-portal': {
+      id: '/_authenticated/student-portal'
+      path: '/student-portal'
+      fullPath: '/student-portal'
+      preLoaderRoute: typeof AuthenticatedStudentPortalRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/sops': {
@@ -486,6 +506,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedNotesRoute: typeof AuthenticatedNotesRoute
   AuthenticatedPoliciesRoute: typeof AuthenticatedPoliciesRouteWithChildren
   AuthenticatedSopsRoute: typeof AuthenticatedSopsRouteWithChildren
+  AuthenticatedStudentPortalRoute: typeof AuthenticatedStudentPortalRoute
   AuthenticatedStudentsRoute: typeof AuthenticatedStudentsRouteWithChildren
   AuthenticatedTeamRoute: typeof AuthenticatedTeamRoute
   AuthenticatedTrainingRoute: typeof AuthenticatedTrainingRoute
@@ -501,6 +522,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedNotesRoute: AuthenticatedNotesRoute,
   AuthenticatedPoliciesRoute: AuthenticatedPoliciesRouteWithChildren,
   AuthenticatedSopsRoute: AuthenticatedSopsRouteWithChildren,
+  AuthenticatedStudentPortalRoute: AuthenticatedStudentPortalRoute,
   AuthenticatedStudentsRoute: AuthenticatedStudentsRouteWithChildren,
   AuthenticatedTeamRoute: AuthenticatedTeamRoute,
   AuthenticatedTrainingRoute: AuthenticatedTrainingRoute,
