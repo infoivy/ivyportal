@@ -303,7 +303,13 @@ function CallModal({ call, onClose, onSaved, students, coaches, defaultCoachId }
 
   const save = async () => {
     if (!form.student_id) return toast.error("Pick a student");
-    if (form.status === "completed" && (!form.progress_rating || form.progress_rating < 1)) {
+    // Auto-derive status from date: future = scheduled, otherwise completed.
+    // Preserve explicit no_show / cancelled / follow_up if already set on the record.
+    const todayIso = new Date().toISOString().slice(0, 10);
+    const preserved: CallStatus[] = ["no_show", "cancelled", "follow_up"];
+    const derived: CallStatus = form.call_date > todayIso ? "scheduled" : "completed";
+    const status: CallStatus = call && preserved.includes(call.status) ? call.status : derived;
+    if (status === "completed" && (!form.progress_rating || form.progress_rating < 1)) {
       return toast.error("Set a 1–5 progress rating before saving a completed call.");
     }
     setSaving(true);
@@ -311,7 +317,7 @@ function CallModal({ call, onClose, onSaved, students, coaches, defaultCoachId }
       student_id: form.student_id,
       coach_id: form.coach_id || user?.id || null,
       call_date: form.call_date,
-      status: form.status,
+      status,
       duration_min: form.duration_min || null,
       progress_rating: form.progress_rating || null,
       fathom_url: form.fathom_url.trim() || null,
