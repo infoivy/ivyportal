@@ -34,6 +34,10 @@ type Call = {
   id: string; call_date: string; status: string; progress_rating: number | null;
   next_call_date: string | null; action_items_json: ActionItem[] | null;
 };
+type AdhocItem = {
+  id: string; student_id: string; text: string; done: boolean;
+  due_date: string | null; created_at: string; source_call_id: string | null;
+};
 type Doc = { slug: string; title: string; category: string };
 
 const empty = {
@@ -64,6 +68,7 @@ function StudentPortal() {
   const [coach, setCoach] = useState<Coach | null>(null);
   const [eods, setEods] = useState<SEod[]>([]);
   const [calls, setCalls] = useState<Call[]>([]);
+  const [adhocItems, setAdhocItems] = useState<AdhocItem[]>([]);
   const [docs, setDocs] = useState<Doc[]>([]);
   const [form, setForm] = useState(empty);
   const [existingId, setExistingId] = useState<string | null>(null);
@@ -84,14 +89,16 @@ function StudentPortal() {
     if (!s) { setLoading(false); return; }
     const st = s as Student;
 
-    const [{ data: e }, { data: c }, coachRes, docsRes] = await Promise.all([
+    const [{ data: e }, { data: c }, { data: ah }, coachRes, docsRes] = await Promise.all([
       supabase.from("student_eods").select("*").eq("student_id", st.id).order("report_date", { ascending: false }).limit(60),
       supabase.from("student_calls").select("id, call_date, status, progress_rating, next_call_date, action_items_json").eq("student_id", st.id).order("call_date", { ascending: false }),
+      supabase.from("student_action_items").select("id, student_id, text, done, due_date, created_at, source_call_id").eq("student_id", st.id).order("created_at", { ascending: false }),
       st.coach_id ? supabase.from("profiles").select("id, display_name, avatar_url").eq("id", st.coach_id).maybeSingle() : Promise.resolve({ data: null }),
       supabase.from("docs").select("slug, title, category").contains("role_visibility", ["student"]).order("pinned", { ascending: false }).order("sort_order").limit(8),
     ]);
     setEods((e ?? []) as SEod[]);
     setCalls((c ?? []) as Call[]);
+    setAdhocItems((ah ?? []) as AdhocItem[]);
     setCoach((coachRes.data as Coach) ?? null);
     setDocs((docsRes.data ?? []) as Doc[]);
 
@@ -168,17 +175,33 @@ function StudentPortal() {
   };
 
   const actionItems = useMemo(() => {
-    const out: { callId: string; callDate: string; index: number; item: ActionItem }[] = [];
+    const out: {
+      kind: "call" | "adhoc";
+      callId: string; callDate: string; index: number;
+      adhocId?: string;
+      item: ActionItem;
+    }[] = [];
     for (const c of calls) {
       const items = Array.isArray(c.action_items_json) ? c.action_items_json : [];
-      items.forEach((it, i) => out.push({ callId: c.id, callDate: c.call_date, index: i, item: it }));
+      items.forEach((it, i) => out.push({ kind: "call", callId: c.id, callDate: c.call_date, index: i, item: it }));
+    }
+    for (const ah of adhocItems) {
+      if (ah.source_call_id) continue; // avoid duplicating call-derived items surfaced as adhoc
+      out.push({
+        kind: "adhoc",
+        callId: `adhoc:${ah.id}`,
+        callDate: ah.created_at.slice(0, 10),
+        index: 0,
+        adhocId: ah.id,
+        item: { text: ah.text, done: ah.done, due_date: ah.due_date ?? null },
+      });
     }
     return out.sort((a, b) => {
       if (!!a.item.done !== !!b.item.done) return a.item.done ? 1 : -1;
       const ad = a.item.due_date ?? "9999", bd = b.item.due_date ?? "9999";
       return ad.localeCompare(bd);
     });
-  }, [calls]);
+  }, [calls, adhocItems]);
 
   const openItems = actionItems.filter(a => !a.item.done);
   const dueToday = openItems.filter(a => a.item.due_date === today);
@@ -233,6 +256,16 @@ function StudentPortal() {
   };
 
   const toggleItem = async (callId: string, index: number, done: boolean) => {
+    if (callId.startsWith("adhoc:")) {
+      const id = callId.slice("adhoc:".length);
+      setAdhocItems(prev => prev.map(a => a.id === id ? { ...a, done } : a));
+      const { error } = await supabase
+        .from("student_action_items")
+        .update({ done, done_at: done ? new Date().toISOString() : null })
+        .eq("id", id);
+      if (error) { toast.error(error.message); load(); }
+      return;
+    }
     setCalls(prev => prev.map(c => {
       if (c.id !== callId) return c;
       const items = Array.isArray(c.action_items_json) ? [...c.action_items_json] : [];
@@ -716,8 +749,9 @@ function ActionSection({ title, icon, children, tone }: { title: string; icon: R
   );
 }
 
-function ActionRow({ a, today, onToggle }: { a: { callId: string; callDate: string; index: number; item: ActionItem }; today: string; onToggle: (id: string, i: number, done: boolean) => void }) {
+function ActionRow({ a, today, onToggle }: { a: { kind?: "call" | "adhoc"; callId: string; callDate: string; index: number; item: ActionItem }; today: string; onToggle: (id: string, i: number, done: boolean) => void }) {
   const isOverdue = !a.item.done && a.item.due_date && a.item.due_date < today;
+  const isAdhoc = a.kind === "adhoc";
   return (
     <label className="flex items-start gap-3 p-3 cursor-pointer hover:bg-[#141821]">
       <input
@@ -730,8 +764,14 @@ function ActionRow({ a, today, onToggle }: { a: { callId: string; callDate: stri
         <div className={`text-xs ${a.item.done ? "line-through text-muted-foreground" : isOverdue ? "text-rose-300" : "text-foreground"}`}>
           {a.item.text || <span className="italic text-muted-foreground">(no text)</span>}
         </div>
-        <div className="flex gap-2 mt-1 text-[10px] font-mono text-muted-foreground">
-          <span>from call {a.callDate}</span>
+        <div className="flex gap-2 mt-1 text-[10px] font-mono text-muted-foreground items-center flex-wrap">
+          {isAdhoc ? (
+            <span className="px-1.5 py-0.5 rounded-sm border border-fuchsia-500/30 bg-fuchsia-500/10 text-fuchsia-300 uppercase tracking-wider">
+              Coach added
+            </span>
+          ) : (
+            <span>from call {a.callDate}</span>
+          )}
           {a.item.due_date && (
             <span className={isOverdue ? "text-rose-400" : ""}>
               · due {a.item.due_date}{isOverdue ? " (overdue)" : ""}

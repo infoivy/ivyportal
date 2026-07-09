@@ -172,6 +172,39 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_lead_notes: {
+        Row: {
+          body: string
+          created_at: string
+          created_by: string
+          id: string
+          lead_id: string
+          lead_name: string | null
+          pinned: boolean
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          created_by: string
+          id?: string
+          lead_id: string
+          lead_name?: string | null
+          pinned?: boolean
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          lead_id?: string
+          lead_name?: string | null
+          pinned?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       csm_student_notes: {
         Row: {
           created_at: string
