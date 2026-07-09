@@ -218,10 +218,12 @@ function EODsPage() {
           <p className="text-xs text-muted-foreground mt-0.5">Log your numbers. Track the funnel. Ship consistency.</p>
         </div>
         <div className="flex items-center gap-2">
-          <div className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-sm border ${existingId ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-400" : "border-amber-500/30 bg-amber-500/5 text-amber-400"}`}>
-            {existingId ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Clock className="h-3.5 w-3.5" />}
-            {existingId ? "Today submitted" : "Today pending"}
-          </div>
+          {!isFounder && (
+            <div className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-sm border ${existingId ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-400" : "border-amber-500/30 bg-amber-500/5 text-amber-400"}`}>
+              {existingId ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Clock className="h-3.5 w-3.5" />}
+              {existingId ? "Today submitted" : "Today pending"}
+            </div>
+          )}
           <span className="text-[11px] text-muted-foreground font-mono">{today}</span>
         </div>
       </header>
