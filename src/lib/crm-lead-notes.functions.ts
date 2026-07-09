@@ -77,7 +77,7 @@ export const updateLeadNote = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { id: string; body?: string; pinned?: boolean }) => {
     if (!input?.id) throw new Error("id required");
-    const patch: Record<string, unknown> = {};
+    const patch: { body?: string; pinned?: boolean } = {};
     if (typeof input.body === "string") patch.body = input.body.trim();
     if (typeof input.pinned === "boolean") patch.pinned = input.pinned;
     return { id: input.id, patch };
