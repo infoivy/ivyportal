@@ -271,18 +271,32 @@ function Crm() {
             <div className="max-h-[520px] overflow-auto">
               {filtered.slice(0, 100).map((l) => {
                 const c = STATUS_TYPE_COLOR[l.status_type] ?? "#a855f7";
+                const nc = noteCounts[l.id] ?? 0;
                 return (
-                  <div
+                  <button
                     key={l.id}
-                    className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 px-3 py-2 border-b border-border/50 last:border-0 hover:bg-white/[0.02]"
+                    onClick={() => setActiveLead(l)}
+                    className="w-full text-left grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-3 px-3 py-2 border-b border-border/50 last:border-0 hover:bg-white/[0.02]"
                   >
                     <div className="min-w-0">
                       <div className="text-xs font-medium truncate">{l.name}</div>
                       <div className="text-[10px] mt-0.5 truncate" style={{ color: c }}>{l.status}</div>
                     </div>
+                    <span
+                      className={
+                        "inline-flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded-sm border " +
+                        (nc > 0
+                          ? "border-fuchsia-500/40 bg-fuchsia-500/10 text-fuchsia-300"
+                          : "border-border/60 text-muted-foreground")
+                      }
+                      title={nc === 1 ? "1 internal note" : `${nc} internal notes`}
+                    >
+                      <StickyNote className="h-3 w-3" />
+                      {nc}
+                    </span>
                     <span className="text-xs font-bold tabular-nums text-emerald-400">{l.value > 0 ? currency(l.value) : "—"}</span>
                     <span className="text-[10px] text-muted-foreground tabular-nums whitespace-nowrap">{relTime(l.updated_at)}</span>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -293,6 +307,11 @@ function Crm() {
       {isAdmin && (
         <CloseKeyDialog open={openDialog} onOpenChange={setOpenDialog} connected={!!connected} onChanged={() => refresh(q)} />
       )}
+      <LeadDetailDrawer
+        lead={activeLead}
+        onClose={() => setActiveLead(null)}
+        onNotesChanged={(id) => refreshNoteCount(id)}
+      />
     </div>
   );
 }
