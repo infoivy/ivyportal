@@ -25,7 +25,7 @@ type Student = {
   student_grade: string | null; whatsapp: string | null; next_action: string | null;
   calls_allotted: number; payment_state: PaymentState | null;
   first_win_at: string | null; offers_landed_count: number; offer_landed_at: string | null;
-  testimonial_collected: boolean; trustpilot_collected: boolean;
+  testimonial_collected: boolean; trustpilot_collected: boolean; testimonial_requested?: boolean;
   general_notes: string | null;
 };
 type Call = {
@@ -139,7 +139,7 @@ function StudentDetail() {
   const graduationSteps = useMemo(() => student ? [
     { key: "first_win", label: "First win", done: !!student.first_win_at, at: student.first_win_at, icon: Star },
     { key: "offer", label: "Offer landed", done: !!student.offer_landed_at, at: student.offer_landed_at, icon: Trophy },
-    { key: "testimonial", label: "Testimonial", done: student.testimonial_collected, at: null, icon: Award },
+    { key: "testimonial", label: student.testimonial_requested && !student.testimonial_collected ? "Testimonial (requested)" : "Testimonial", done: student.testimonial_collected, at: null, icon: Award },
     { key: "trustpilot", label: "Trustpilot", done: student.trustpilot_collected, at: null, icon: MessageSquare },
   ] : [], [student]);
   const graduationDone = graduationSteps.filter(s => s.done).length;
