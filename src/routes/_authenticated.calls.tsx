@@ -5,9 +5,10 @@ import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import {
   Phone, Video, ExternalLink, Search, LayoutGrid, Table as TableIcon,
-  Star, ChevronRight, CheckSquare, Square, Plus, X, Calendar,
+  Star, ChevronRight, CheckSquare, Square, Plus, X, Calendar, FileText,
 } from "lucide-react";
 import { signAvatars } from "@/lib/avatars";
+import { CALL_NOTE_TEMPLATES } from "@/components/call-note-templates";
 
 export const Route = createFileRoute("/_authenticated/calls")({
   head: () => ({ meta: [{ title: "1-on-1s — ISA" }] }),
@@ -395,7 +396,18 @@ function CallModal({ call, onClose, onSaved, students, coaches, defaultCoachId }
             <input value={form.outcome} onChange={e => setForm(f => ({ ...f, outcome: e.target.value }))} placeholder="One line summary" className={inputCls} />
           </Field>
           <Field label="Coach notes" full>
-            <textarea value={form.coach_notes} onChange={e => setForm(f => ({ ...f, coach_notes: e.target.value }))} rows={3} placeholder="What was covered, personality, blockers…" className={inputCls + " h-auto py-2"} />
+            <div className="flex items-center gap-1 flex-wrap mb-1">
+              <span className="text-[9px] uppercase tracking-wider text-muted-foreground flex items-center gap-1"><FileText className="h-2.5 w-2.5" /> Template:</span>
+              {CALL_NOTE_TEMPLATES.map(t => (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => setForm(f => ({ ...f, coach_notes: f.coach_notes ? `${f.coach_notes}\n\n${t.body}` : t.body }))}
+                  className="text-[10px] px-1.5 py-0.5 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-muted-foreground hover:text-foreground hover:border-[#2a3140]"
+                >{t.label}</button>
+              ))}
+            </div>
+            <textarea value={form.coach_notes} onChange={e => setForm(f => ({ ...f, coach_notes: e.target.value }))} rows={6} placeholder="What was covered, personality, blockers…" className={inputCls + " h-auto py-2"} />
           </Field>
 
           <Field label="Action items" full>
