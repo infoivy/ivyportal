@@ -84,7 +84,7 @@ function StudentsLayout() {
   }, [filtered]);
 
   // Under a detail path, hide the list UI and just render <Outlet />
-  if (isDetail) return <Outlet coaches={coaches as any} students={students as any} onReload={load as any} />;
+  if (isDetail) return <Outlet />;
 
   const deleteStudent = async (id: string) => {
     if (!confirm("Delete this student and all their data?")) return;

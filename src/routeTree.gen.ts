@@ -15,6 +15,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedTrainingRouteImport } from './routes/_authenticated.training'
 import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated.team'
+import { Route as AuthenticatedStudentsRouteImport } from './routes/_authenticated.students'
 import { Route as AuthenticatedSopsRouteImport } from './routes/_authenticated.sops'
 import { Route as AuthenticatedPoliciesRouteImport } from './routes/_authenticated.policies'
 import { Route as AuthenticatedNotesRouteImport } from './routes/_authenticated.notes'
@@ -56,6 +57,11 @@ const AuthenticatedTrainingRoute = AuthenticatedTrainingRouteImport.update({
 const AuthenticatedTeamRoute = AuthenticatedTeamRouteImport.update({
   id: '/team',
   path: '/team',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedStudentsRoute = AuthenticatedStudentsRouteImport.update({
+  id: '/students',
+  path: '/students',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedSopsRoute = AuthenticatedSopsRouteImport.update({
@@ -141,6 +147,7 @@ export interface FileRoutesByFullPath {
   '/notes': typeof AuthenticatedNotesRoute
   '/policies': typeof AuthenticatedPoliciesRouteWithChildren
   '/sops': typeof AuthenticatedSopsRouteWithChildren
+  '/students': typeof AuthenticatedStudentsRoute
   '/team': typeof AuthenticatedTeamRoute
   '/training': typeof AuthenticatedTrainingRoute
   '/policies/crm-hygiene': typeof AuthenticatedPoliciesCrmHygieneRoute
@@ -160,6 +167,7 @@ export interface FileRoutesByTo {
   '/eods': typeof AuthenticatedEodsRoute
   '/notes': typeof AuthenticatedNotesRoute
   '/sops': typeof AuthenticatedSopsRouteWithChildren
+  '/students': typeof AuthenticatedStudentsRoute
   '/team': typeof AuthenticatedTeamRoute
   '/training': typeof AuthenticatedTrainingRoute
   '/policies/crm-hygiene': typeof AuthenticatedPoliciesCrmHygieneRoute
@@ -182,6 +190,7 @@ export interface FileRoutesById {
   '/_authenticated/notes': typeof AuthenticatedNotesRoute
   '/_authenticated/policies': typeof AuthenticatedPoliciesRouteWithChildren
   '/_authenticated/sops': typeof AuthenticatedSopsRouteWithChildren
+  '/_authenticated/students': typeof AuthenticatedStudentsRoute
   '/_authenticated/team': typeof AuthenticatedTeamRoute
   '/_authenticated/training': typeof AuthenticatedTrainingRoute
   '/_authenticated/policies/crm-hygiene': typeof AuthenticatedPoliciesCrmHygieneRoute
@@ -204,6 +213,7 @@ export interface FileRouteTypes {
     | '/notes'
     | '/policies'
     | '/sops'
+    | '/students'
     | '/team'
     | '/training'
     | '/policies/crm-hygiene'
@@ -223,6 +233,7 @@ export interface FileRouteTypes {
     | '/eods'
     | '/notes'
     | '/sops'
+    | '/students'
     | '/team'
     | '/training'
     | '/policies/crm-hygiene'
@@ -244,6 +255,7 @@ export interface FileRouteTypes {
     | '/_authenticated/notes'
     | '/_authenticated/policies'
     | '/_authenticated/sops'
+    | '/_authenticated/students'
     | '/_authenticated/team'
     | '/_authenticated/training'
     | '/_authenticated/policies/crm-hygiene'
@@ -302,6 +314,13 @@ declare module '@tanstack/react-router' {
       path: '/team'
       fullPath: '/team'
       preLoaderRoute: typeof AuthenticatedTeamRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/students': {
+      id: '/_authenticated/students'
+      path: '/students'
+      fullPath: '/students'
+      preLoaderRoute: typeof AuthenticatedStudentsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/sops': {
@@ -435,6 +454,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedNotesRoute: typeof AuthenticatedNotesRoute
   AuthenticatedPoliciesRoute: typeof AuthenticatedPoliciesRouteWithChildren
   AuthenticatedSopsRoute: typeof AuthenticatedSopsRouteWithChildren
+  AuthenticatedStudentsRoute: typeof AuthenticatedStudentsRoute
   AuthenticatedTeamRoute: typeof AuthenticatedTeamRoute
   AuthenticatedTrainingRoute: typeof AuthenticatedTrainingRoute
 }
@@ -449,6 +469,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedNotesRoute: AuthenticatedNotesRoute,
   AuthenticatedPoliciesRoute: AuthenticatedPoliciesRouteWithChildren,
   AuthenticatedSopsRoute: AuthenticatedSopsRouteWithChildren,
+  AuthenticatedStudentsRoute: AuthenticatedStudentsRoute,
   AuthenticatedTeamRoute: AuthenticatedTeamRoute,
   AuthenticatedTrainingRoute: AuthenticatedTrainingRoute,
 }
