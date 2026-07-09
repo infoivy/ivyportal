@@ -12,8 +12,12 @@ import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   BarChart, Bar, Cell,
 } from "recharts";
-import { format, subDays } from "date-fns";
+import { format, subDays, differenceInCalendarDays } from "date-fns";
 import { CashLeaderboard } from "@/components/weekly-leaderboard";
+import { RangePicker, type DateRange, rangeFor, daysBetween } from "@/components/range-picker";
+import { StatDrilldown, type MetricKey } from "@/components/stat-drilldown";
+import { DashboardSettingsSheet } from "@/components/dashboard-settings-sheet";
+import { useDashboardPrefs } from "@/lib/dashboard-prefs";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — ISA Team" }] }),
