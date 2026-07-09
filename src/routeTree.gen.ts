@@ -25,6 +25,7 @@ import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated.analytics'
 import { Route as AuthenticatedPoliciesIndexRouteImport } from './routes/_authenticated.policies.index'
 import { Route as AuthenticatedSopsIsaSettingProcessRouteImport } from './routes/_authenticated.sops.isa-setting-process'
+import { Route as AuthenticatedPoliciesCrmHygieneRouteImport } from './routes/_authenticated.policies.crm-hygiene'
 
 const PrintRoute = PrintRouteImport.update({
   id: '/print',
@@ -107,6 +108,12 @@ const AuthenticatedSopsIsaSettingProcessRoute =
     path: '/isa-setting-process',
     getParentRoute: () => AuthenticatedSopsRoute,
   } as any)
+const AuthenticatedPoliciesCrmHygieneRoute =
+  AuthenticatedPoliciesCrmHygieneRouteImport.update({
+    id: '/crm-hygiene',
+    path: '/crm-hygiene',
+    getParentRoute: () => AuthenticatedPoliciesRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -122,6 +129,7 @@ export interface FileRoutesByFullPath {
   '/sops': typeof AuthenticatedSopsRouteWithChildren
   '/team': typeof AuthenticatedTeamRoute
   '/training': typeof AuthenticatedTrainingRoute
+  '/policies/crm-hygiene': typeof AuthenticatedPoliciesCrmHygieneRoute
   '/sops/isa-setting-process': typeof AuthenticatedSopsIsaSettingProcessRoute
   '/policies/': typeof AuthenticatedPoliciesIndexRoute
 }
@@ -138,6 +146,7 @@ export interface FileRoutesByTo {
   '/sops': typeof AuthenticatedSopsRouteWithChildren
   '/team': typeof AuthenticatedTeamRoute
   '/training': typeof AuthenticatedTrainingRoute
+  '/policies/crm-hygiene': typeof AuthenticatedPoliciesCrmHygieneRoute
   '/sops/isa-setting-process': typeof AuthenticatedSopsIsaSettingProcessRoute
   '/policies': typeof AuthenticatedPoliciesIndexRoute
 }
@@ -157,6 +166,7 @@ export interface FileRoutesById {
   '/_authenticated/sops': typeof AuthenticatedSopsRouteWithChildren
   '/_authenticated/team': typeof AuthenticatedTeamRoute
   '/_authenticated/training': typeof AuthenticatedTrainingRoute
+  '/_authenticated/policies/crm-hygiene': typeof AuthenticatedPoliciesCrmHygieneRoute
   '/_authenticated/sops/isa-setting-process': typeof AuthenticatedSopsIsaSettingProcessRoute
   '/_authenticated/policies/': typeof AuthenticatedPoliciesIndexRoute
 }
@@ -176,6 +186,7 @@ export interface FileRouteTypes {
     | '/sops'
     | '/team'
     | '/training'
+    | '/policies/crm-hygiene'
     | '/sops/isa-setting-process'
     | '/policies/'
   fileRoutesByTo: FileRoutesByTo
@@ -192,6 +203,7 @@ export interface FileRouteTypes {
     | '/sops'
     | '/team'
     | '/training'
+    | '/policies/crm-hygiene'
     | '/sops/isa-setting-process'
     | '/policies'
   id:
@@ -210,6 +222,7 @@ export interface FileRouteTypes {
     | '/_authenticated/sops'
     | '/_authenticated/team'
     | '/_authenticated/training'
+    | '/_authenticated/policies/crm-hygiene'
     | '/_authenticated/sops/isa-setting-process'
     | '/_authenticated/policies/'
   fileRoutesById: FileRoutesById
@@ -335,14 +348,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSopsIsaSettingProcessRouteImport
       parentRoute: typeof AuthenticatedSopsRoute
     }
+    '/_authenticated/policies/crm-hygiene': {
+      id: '/_authenticated/policies/crm-hygiene'
+      path: '/crm-hygiene'
+      fullPath: '/policies/crm-hygiene'
+      preLoaderRoute: typeof AuthenticatedPoliciesCrmHygieneRouteImport
+      parentRoute: typeof AuthenticatedPoliciesRoute
+    }
   }
 }
 
 interface AuthenticatedPoliciesRouteChildren {
+  AuthenticatedPoliciesCrmHygieneRoute: typeof AuthenticatedPoliciesCrmHygieneRoute
   AuthenticatedPoliciesIndexRoute: typeof AuthenticatedPoliciesIndexRoute
 }
 
 const AuthenticatedPoliciesRouteChildren: AuthenticatedPoliciesRouteChildren = {
+  AuthenticatedPoliciesCrmHygieneRoute: AuthenticatedPoliciesCrmHygieneRoute,
   AuthenticatedPoliciesIndexRoute: AuthenticatedPoliciesIndexRoute,
 }
 
