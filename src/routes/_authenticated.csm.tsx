@@ -96,6 +96,7 @@ function CsmPage() {
     setTally((tallyRes.data ?? []) as TallyRow[]);
     setCalls((callsRes.data ?? []) as StudentCall[]);
     setStudentEods((sEodRes.data ?? []) as StudentEodLite[]);
+    setAdhoc((adhocRes.data ?? []) as AdHocItem[]);
   };
 
   useEffect(() => { if (canUse) load(); /* eslint-disable-next-line */ }, [canUse, user]);
