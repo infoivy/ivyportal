@@ -163,6 +163,115 @@ export type Database = {
         }
         Relationships: []
       }
+      installment_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          due_date: string
+          id: string
+          installment_id: string
+          notes: string | null
+          paid_at: string | null
+          payment_method: string | null
+          reminded_1d_at: string | null
+          reminded_3d_at: string | null
+          sequence: number
+          status: Database["public"]["Enums"]["installment_payment_status"]
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          due_date: string
+          id?: string
+          installment_id: string
+          notes?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          reminded_1d_at?: string | null
+          reminded_3d_at?: string | null
+          sequence?: number
+          status?: Database["public"]["Enums"]["installment_payment_status"]
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          due_date?: string
+          id?: string
+          installment_id?: string
+          notes?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          reminded_1d_at?: string | null
+          reminded_3d_at?: string | null
+          sequence?: number
+          status?: Database["public"]["Enums"]["installment_payment_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "installment_payments_installment_id_fkey"
+            columns: ["installment_id"]
+            isOneToOne: false
+            referencedRelation: "installments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      installments: {
+        Row: {
+          closer_id: string | null
+          coach_id: string | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          id: string
+          notes: string | null
+          student_id: string | null
+          student_name: string
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          closer_id?: string | null
+          coach_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          id?: string
+          notes?: string | null
+          student_id?: string | null
+          student_name: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          closer_id?: string | null
+          coach_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          id?: string
+          notes?: string | null
+          student_id?: string | null
+          student_name?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "installments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notes: {
         Row: {
           content: string
@@ -422,6 +531,12 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "closer" | "setter" | "coach" | "student" | "csm"
+      installment_payment_status:
+        | "upcoming"
+        | "paid"
+        | "late"
+        | "missed"
+        | "waived"
       student_phase:
         | "uncategorized"
         | "onboarding"
@@ -558,6 +673,13 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "closer", "setter", "coach", "student", "csm"],
+      installment_payment_status: [
+        "upcoming",
+        "paid",
+        "late",
+        "missed",
+        "waived",
+      ],
       student_phase: [
         "uncategorized",
         "onboarding",

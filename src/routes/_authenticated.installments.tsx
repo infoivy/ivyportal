@@ -1,0 +1,507 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth-context";
+import { toast } from "sonner";
+import {
+  DollarSign, Plus, Trash2, X, AlertTriangle, Bell, CheckCircle2,
+  Calendar as CalendarIcon, Edit3, Search,
+} from "lucide-react";
+
+export const Route = createFileRoute("/_authenticated/installments")({
+  head: () => ({ meta: [{ title: "Installments — ISA" }] }),
+  component: InstallmentsPage,
+});
+
+type PayStatus = "upcoming" | "paid" | "late" | "missed" | "waived";
+type Payment = {
+  id: string;
+  installment_id: string;
+  sequence: number;
+  amount: number;
+  currency: string;
+  due_date: string; // yyyy-mm-dd
+  status: PayStatus;
+  paid_at: string | null;
+  payment_method: string | null;
+  notes: string | null;
+  reminded_3d_at: string | null;
+  reminded_1d_at: string | null;
+};
+type Installment = {
+  id: string;
+  student_id: string | null;
+  student_name: string;
+  coach_id: string | null;
+  closer_id: string | null;
+  total_amount: number;
+  currency: string;
+  notes: string | null;
+  created_at: string;
+};
+type Student = { id: string; full_name: string };
+type Person = { id: string; display_name: string | null };
+
+const STATUS_META: Record<PayStatus, { label: string; cls: string }> = {
+  upcoming: { label: "Upcoming", cls: "text-sky-400 border-sky-500/30 bg-sky-500/10" },
+  paid:     { label: "Paid",     cls: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10" },
+  late:     { label: "Late",     cls: "text-amber-400 border-amber-500/30 bg-amber-500/10" },
+  missed:   { label: "Missed",   cls: "text-rose-400 border-rose-500/30 bg-rose-500/10" },
+  waived:   { label: "Waived",   cls: "text-zinc-400 border-zinc-500/30 bg-zinc-500/5" },
+};
+
+const fmtMoney = (n: number, cur: string) =>
+  new Intl.NumberFormat(undefined, { style: "currency", currency: cur || "USD" }).format(n || 0);
+
+const daysUntil = (d: string) => {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const due = new Date(d + "T00:00:00");
+  return Math.round((due.getTime() - today.getTime()) / 86_400_000);
+};
+
+function InstallmentsPage() {
+  const { user, roles } = useAuth();
+  const canDelete = roles.includes("admin");
+
+  const [installments, setInstallments] = useState<Installment[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [team, setTeam] = useState<Person[]>([]);
+  const [q, setQ] = useState("");
+  const [addOpen, setAddOpen] = useState(false);
+  const [editing, setEditing] = useState<Installment | null>(null);
+
+  const load = async () => {
+    const [iRes, pRes, sRes, tRes] = await Promise.all([
+      (supabase.from("installments" as any).select("*").order("created_at", { ascending: false }) as any),
+      (supabase.from("installment_payments" as any).select("*").order("due_date", { ascending: true }) as any),
+      supabase.from("students").select("id, full_name").order("full_name"),
+      supabase.from("profiles").select("id, display_name" as any),
+    ]);
+    setInstallments((iRes.data ?? []) as Installment[]);
+    setPayments((pRes.data ?? []) as Payment[]);
+    setStudents((sRes.data ?? []) as Student[]);
+    setTeam(((tRes.data ?? []) as any[]).map(p => ({ id: p.id, display_name: p.display_name })) as Person[]);
+  };
+  useEffect(() => { load(); }, []);
+
+  const paymentsByInstallment = useMemo(() => {
+    const map = new Map<string, Payment[]>();
+    for (const p of payments) {
+      if (!map.has(p.installment_id)) map.set(p.installment_id, []);
+      map.get(p.installment_id)!.push(p);
+    }
+    return map;
+  }, [payments]);
+
+  const teamName = (id: string | null) => id ? (team.find(t => t.id === id)?.display_name ?? id.slice(0,8)) : "—";
+
+  const filtered = installments.filter(i =>
+    !q || i.student_name.toLowerCase().includes(q.toLowerCase())
+  );
+
+  const overdue = payments.filter(p => p.status !== "paid" && p.status !== "waived" && daysUntil(p.due_date) < 0);
+  const dueIn1 = payments.filter(p => p.status === "upcoming" && daysUntil(p.due_date) === 1);
+  const dueIn3 = payments.filter(p => p.status === "upcoming" && daysUntil(p.due_date) === 3);
+  const dueSoon = payments.filter(p => p.status === "upcoming" && daysUntil(p.due_date) >= 0 && daysUntil(p.due_date) <= 7);
+
+  const totalOutstanding = payments
+    .filter(p => p.status !== "paid" && p.status !== "waived")
+    .reduce((s, p) => s + Number(p.amount || 0), 0);
+  const collectedThisMonth = payments
+    .filter(p => p.status === "paid" && p.paid_at && new Date(p.paid_at).getMonth() === new Date().getMonth() && new Date(p.paid_at).getFullYear() === new Date().getFullYear())
+    .reduce((s, p) => s + Number(p.amount || 0), 0);
+
+  const setStatus = async (id: string, status: PayStatus) => {
+    const patch: any = { status };
+    if (status === "paid") patch.paid_at = new Date().toISOString().slice(0,10);
+    const { error } = await (supabase.from("installment_payments" as any).update(patch).eq("id", id) as any);
+    if (error) return toast.error(error.message);
+    setPayments(prev => prev.map(p => p.id === id ? { ...p, ...patch } : p));
+  };
+
+  const removePayment = async (id: string) => {
+    const { error } = await (supabase.from("installment_payments" as any).delete().eq("id", id) as any);
+    if (error) return toast.error(error.message);
+    setPayments(prev => prev.filter(p => p.id !== id));
+  };
+
+  const removeInstallment = async (id: string) => {
+    if (!confirm("Delete this installment plan and all its payments?")) return;
+    const { error } = await (supabase.from("installments" as any).delete().eq("id", id) as any);
+    if (error) return toast.error(error.message);
+    setInstallments(prev => prev.filter(i => i.id !== id));
+    setPayments(prev => prev.filter(p => p.installment_id !== id));
+  };
+
+  const dismissReminder = async (id: string, which: "3d" | "1d") => {
+    const patch: any = which === "3d" ? { reminded_3d_at: new Date().toISOString() } : { reminded_1d_at: new Date().toISOString() };
+    const { error } = await (supabase.from("installment_payments" as any).update(patch).eq("id", id) as any);
+    if (error) return toast.error(error.message);
+    setPayments(prev => prev.map(p => p.id === id ? { ...p, ...patch } : p));
+  };
+
+  const nameFor = (p: Payment) => {
+    const inst = installments.find(i => i.id === p.installment_id);
+    return inst?.student_name ?? "—";
+  };
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-semibold flex items-center gap-2"><DollarSign className="h-6 w-6" /> Installments</h1>
+          <p className="text-sm text-muted-foreground">Track closed deals paid in installments and follow up on due payments.</p>
+        </div>
+        <button onClick={() => { setEditing(null); setAddOpen(true); }} className="inline-flex items-center gap-2 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm hover:opacity-90">
+          <Plus className="h-4 w-4" /> New installment plan
+        </button>
+      </div>
+
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <StatCard icon={<AlertTriangle className="h-4 w-4" />} label="Overdue" value={overdue.length} tone="rose" />
+        <StatCard icon={<Bell className="h-4 w-4" />} label="Due in 1 day" value={dueIn1.length} tone="amber" />
+        <StatCard icon={<Bell className="h-4 w-4" />} label="Due in 3 days" value={dueIn3.length} tone="sky" />
+        <StatCard icon={<CheckCircle2 className="h-4 w-4" />} label="Collected (MTD)" value={fmtMoney(collectedThisMonth, "USD")} tone="emerald" />
+      </div>
+
+      {/* Reminder queue */}
+      {(dueIn3.length > 0 || dueIn1.length > 0 || overdue.length > 0) && (
+        <section className="rounded-lg border border-border bg-card">
+          <header className="px-4 py-3 border-b border-border flex items-center gap-2">
+            <Bell className="h-4 w-4 text-amber-400" />
+            <h2 className="font-medium text-sm">Follow-up queue</h2>
+            <span className="text-xs text-muted-foreground">Payments to reach out about today</span>
+          </header>
+          <div className="divide-y divide-border">
+            {[...overdue, ...dueIn1, ...dueIn3].map(p => {
+              const dLeft = daysUntil(p.due_date);
+              const tone = dLeft < 0 ? "rose" : dLeft === 1 ? "amber" : "sky";
+              const label = dLeft < 0 ? `${Math.abs(dLeft)}d overdue` : dLeft === 0 ? "Due today" : `${dLeft}d away`;
+              return (
+                <div key={p.id} className="px-4 py-3 flex items-center gap-3 flex-wrap">
+                  <span className={`text-[11px] px-2 py-0.5 rounded-full border ${tone === "rose" ? "text-rose-400 border-rose-500/30 bg-rose-500/10" : tone === "amber" ? "text-amber-400 border-amber-500/30 bg-amber-500/10" : "text-sky-400 border-sky-500/30 bg-sky-500/10"}`}>{label}</span>
+                  <span className="font-medium">{nameFor(p)}</span>
+                  <span className="text-sm text-muted-foreground">Payment #{p.sequence} · {fmtMoney(Number(p.amount), p.currency)}</span>
+                  <span className="text-xs text-muted-foreground flex items-center gap-1"><CalendarIcon className="h-3 w-3" /> {p.due_date}</span>
+                  <div className="ml-auto flex items-center gap-2">
+                    <button onClick={() => setStatus(p.id, "paid")} className="text-xs px-2 py-1 rounded border border-border hover:bg-accent">Mark paid</button>
+                    {dLeft >= 2 && !p.reminded_3d_at && (
+                      <button onClick={() => dismissReminder(p.id, "3d")} className="text-xs px-2 py-1 rounded border border-border hover:bg-accent">Followed up (3d)</button>
+                    )}
+                    {dLeft <= 1 && !p.reminded_1d_at && (
+                      <button onClick={() => dismissReminder(p.id, "1d")} className="text-xs px-2 py-1 rounded border border-border hover:bg-accent">Followed up (1d)</button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* Search */}
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="h-4 w-4 absolute left-2 top-2.5 text-muted-foreground" />
+          <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search students…" className="w-full pl-8 pr-3 py-2 rounded-md border border-border bg-background text-sm" />
+        </div>
+        <div className="text-xs text-muted-foreground ml-auto">Outstanding: <span className="text-foreground font-medium">{fmtMoney(totalOutstanding, "USD")}</span></div>
+      </div>
+
+      {/* Plans list */}
+      <div className="space-y-3">
+        {filtered.length === 0 && (
+          <div className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+            No installment plans yet. Click "New installment plan" to add one.
+          </div>
+        )}
+        {filtered.map(inst => {
+          const pays = (paymentsByInstallment.get(inst.id) ?? []).sort((a,b) => a.sequence - b.sequence);
+          const paid = pays.filter(p => p.status === "paid").reduce((s,p) => s + Number(p.amount), 0);
+          const pct = inst.total_amount > 0 ? Math.min(100, Math.round((paid / Number(inst.total_amount)) * 100)) : 0;
+          return (
+            <section key={inst.id} className="rounded-lg border border-border bg-card">
+              <header className="px-4 py-3 border-b border-border flex items-center gap-3 flex-wrap">
+                <div className="flex-1 min-w-[200px]">
+                  <div className="font-medium">{inst.student_name}</div>
+                  <div className="text-xs text-muted-foreground">
+                    Closer: {teamName(inst.closer_id)} · Coach: {teamName(inst.coach_id)}
+                  </div>
+                </div>
+                <div className="text-sm">
+                  <span className="text-emerald-400 font-medium">{fmtMoney(paid, inst.currency)}</span>
+                  <span className="text-muted-foreground"> / {fmtMoney(Number(inst.total_amount), inst.currency)}</span>
+                </div>
+                <div className="w-40 h-1.5 bg-muted rounded-full overflow-hidden"><div className="h-full bg-emerald-500" style={{ width: `${pct}%` }} /></div>
+                <button onClick={() => { setEditing(inst); setAddOpen(true); }} className="text-xs px-2 py-1 rounded border border-border hover:bg-accent inline-flex items-center gap-1"><Edit3 className="h-3 w-3" />Edit</button>
+                {canDelete && (
+                  <button onClick={() => removeInstallment(inst.id)} className="text-xs px-2 py-1 rounded border border-border hover:bg-accent text-rose-400 inline-flex items-center gap-1"><Trash2 className="h-3 w-3" />Delete</button>
+                )}
+              </header>
+              {inst.notes && <div className="px-4 py-2 text-xs text-muted-foreground border-b border-border">{inst.notes}</div>}
+              <div className="divide-y divide-border">
+                {pays.map(p => {
+                  const dLeft = daysUntil(p.due_date);
+                  return (
+                    <div key={p.id} className="px-4 py-2 flex items-center gap-3 flex-wrap text-sm">
+                      <span className="text-xs text-muted-foreground w-6">#{p.sequence}</span>
+                      <span className="font-medium w-28">{fmtMoney(Number(p.amount), p.currency)}</span>
+                      <span className="text-xs text-muted-foreground flex items-center gap-1"><CalendarIcon className="h-3 w-3" /> {p.due_date}
+                        {p.status === "upcoming" && (
+                          <span className={`ml-1 px-1.5 py-0.5 rounded ${dLeft < 0 ? "text-rose-400" : dLeft <= 3 ? "text-amber-400" : "text-muted-foreground"}`}>
+                            ({dLeft < 0 ? `${Math.abs(dLeft)}d late` : dLeft === 0 ? "today" : `in ${dLeft}d`})
+                          </span>
+                        )}
+                      </span>
+                      <select
+                        value={p.status}
+                        onChange={e => setStatus(p.id, e.target.value as PayStatus)}
+                        className={`text-xs px-2 py-1 rounded border ${STATUS_META[p.status].cls}`}
+                      >
+                        {(Object.keys(STATUS_META) as PayStatus[]).map(s => <option key={s} value={s}>{STATUS_META[s].label}</option>)}
+                      </select>
+                      {p.payment_method && <span className="text-xs text-muted-foreground">{p.payment_method}</span>}
+                      {p.notes && <span className="text-xs text-muted-foreground italic truncate max-w-[240px]">"{p.notes}"</span>}
+                      <div className="ml-auto flex items-center gap-2">
+                        {canDelete && (
+                          <button onClick={() => removePayment(p.id)} className="text-xs text-rose-400 hover:underline"><Trash2 className="h-3 w-3" /></button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+                {pays.length === 0 && <div className="px-4 py-3 text-xs text-muted-foreground">No payments scheduled — edit this plan to add some.</div>}
+              </div>
+            </section>
+          );
+        })}
+      </div>
+
+      {addOpen && (
+        <PlanEditor
+          initial={editing}
+          initialPayments={editing ? (paymentsByInstallment.get(editing.id) ?? []) : []}
+          students={students}
+          team={team}
+          currentUserId={user?.id ?? null}
+          onClose={() => { setAddOpen(false); setEditing(null); }}
+          onSaved={async () => { setAddOpen(false); setEditing(null); await load(); }}
+        />
+      )}
+    </div>
+  );
+}
+
+function StatCard({ icon, label, value, tone }: { icon: React.ReactNode; label: string; value: React.ReactNode; tone: "rose" | "amber" | "sky" | "emerald" }) {
+  const toneCls = {
+    rose:    "text-rose-400",
+    amber:   "text-amber-400",
+    sky:     "text-sky-400",
+    emerald: "text-emerald-400",
+  }[tone];
+  return (
+    <div className="rounded-lg border border-border bg-card p-3">
+      <div className={`flex items-center gap-2 text-xs ${toneCls}`}>{icon}{label}</div>
+      <div className="mt-1 text-xl font-semibold">{value}</div>
+    </div>
+  );
+}
+
+type Draft = {
+  amount: string;
+  due_date: string;
+  payment_method: string;
+  notes: string;
+  status: PayStatus;
+};
+
+function PlanEditor({
+  initial, initialPayments, students, team, currentUserId, onClose, onSaved,
+}: {
+  initial: Installment | null;
+  initialPayments: Payment[];
+  students: Student[];
+  team: Person[];
+  currentUserId: string | null;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [studentId, setStudentId] = useState<string>(initial?.student_id ?? "");
+  const [studentName, setStudentName] = useState<string>(initial?.student_name ?? "");
+  const [coachId, setCoachId] = useState<string>(initial?.coach_id ?? "");
+  const [closerId, setCloserId] = useState<string>(initial?.closer_id ?? "");
+  const [currency, setCurrency] = useState<string>(initial?.currency ?? "USD");
+  const [total, setTotal] = useState<string>(initial ? String(initial.total_amount) : "");
+  const [notes, setNotes] = useState<string>(initial?.notes ?? "");
+  const [drafts, setDrafts] = useState<Draft[]>(
+    initialPayments.length
+      ? initialPayments
+          .sort((a,b) => a.sequence - b.sequence)
+          .map(p => ({
+            amount: String(p.amount),
+            due_date: p.due_date,
+            payment_method: p.payment_method ?? "",
+            notes: p.notes ?? "",
+            status: p.status,
+          }))
+      : [{ amount: "", due_date: new Date().toISOString().slice(0,10), payment_method: "", notes: "", status: "upcoming" }]
+  );
+  const [saving, setSaving] = useState(false);
+
+  const addDraft = () => setDrafts(d => [...d, { amount: "", due_date: new Date().toISOString().slice(0,10), payment_method: "", notes: "", status: "upcoming" }]);
+  const removeDraft = (i: number) => setDrafts(d => d.filter((_, idx) => idx !== i));
+
+  const generateMonthly = () => {
+    const t = Number(total) || 0;
+    const n = drafts.length || 1;
+    const each = (t / n).toFixed(2);
+    setDrafts(d => d.map((row, i) => {
+      const base = new Date(); base.setHours(0,0,0,0);
+      base.setMonth(base.getMonth() + i);
+      return { ...row, amount: each, due_date: base.toISOString().slice(0,10) };
+    }));
+  };
+
+  const save = async () => {
+    const name = (studentId ? students.find(s => s.id === studentId)?.full_name : studentName) ?? studentName;
+    if (!name) { toast.error("Student name required"); return; }
+    setSaving(true);
+    try {
+      let planId = initial?.id;
+      if (!planId) {
+        const { data, error } = await (supabase.from("installments" as any).insert({
+          student_id: studentId || null,
+          student_name: name,
+          coach_id: coachId || null,
+          closer_id: closerId || null,
+          total_amount: Number(total) || 0,
+          currency,
+          notes: notes || null,
+          created_by: currentUserId,
+        }).select("id").single() as any);
+        if (error) throw error;
+        planId = data.id as string;
+      } else {
+        const { error } = await (supabase.from("installments" as any).update({
+          student_id: studentId || null,
+          student_name: name,
+          coach_id: coachId || null,
+          closer_id: closerId || null,
+          total_amount: Number(total) || 0,
+          currency,
+          notes: notes || null,
+        }).eq("id", planId) as any);
+        if (error) throw error;
+        await (supabase.from("installment_payments" as any).delete().eq("installment_id", planId) as any);
+      }
+      const rows = drafts
+        .filter(d => d.amount && d.due_date)
+        .map((d, i) => ({
+          installment_id: planId,
+          sequence: i + 1,
+          amount: Number(d.amount) || 0,
+          currency,
+          due_date: d.due_date,
+          status: d.status,
+          payment_method: d.payment_method || null,
+          notes: d.notes || null,
+        }));
+      if (rows.length) {
+        const { error } = await (supabase.from("installment_payments" as any).insert(rows) as any);
+        if (error) throw error;
+      }
+      toast.success("Installment plan saved");
+      onSaved();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to save");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="w-full max-w-3xl max-h-[90vh] overflow-auto rounded-lg border border-border bg-card" onClick={e => e.stopPropagation()}>
+        <header className="px-4 py-3 border-b border-border flex items-center gap-2">
+          <h3 className="font-medium">{initial ? "Edit installment plan" : "New installment plan"}</h3>
+          <button onClick={onClose} className="ml-auto p-1 hover:bg-accent rounded"><X className="h-4 w-4" /></button>
+        </header>
+        <div className="p-4 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <Field label="Existing student">
+              <select value={studentId} onChange={e => setStudentId(e.target.value)} className="w-full px-2 py-1.5 rounded border border-border bg-background text-sm">
+                <option value="">— None (enter name manually) —</option>
+                {students.map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
+              </select>
+            </Field>
+            <Field label="Student name">
+              <input value={studentName} onChange={e => setStudentName(e.target.value)} placeholder="e.g. Jane Doe" className="w-full px-2 py-1.5 rounded border border-border bg-background text-sm" />
+            </Field>
+            <Field label="Closer">
+              <select value={closerId} onChange={e => setCloserId(e.target.value)} className="w-full px-2 py-1.5 rounded border border-border bg-background text-sm">
+                <option value="">Unassigned</option>
+                {team.map(t => <option key={t.id} value={t.id}>{t.display_name ?? t.id.slice(0,8)}</option>)}
+              </select>
+            </Field>
+            <Field label="Coach">
+              <select value={coachId} onChange={e => setCoachId(e.target.value)} className="w-full px-2 py-1.5 rounded border border-border bg-background text-sm">
+                <option value="">Unassigned</option>
+                {team.map(t => <option key={t.id} value={t.id}>{t.display_name ?? t.id.slice(0,8)}</option>)}
+              </select>
+            </Field>
+            <Field label="Total deal value">
+              <input value={total} onChange={e => setTotal(e.target.value)} type="number" min="0" step="0.01" className="w-full px-2 py-1.5 rounded border border-border bg-background text-sm" />
+            </Field>
+            <Field label="Currency">
+              <select value={currency} onChange={e => setCurrency(e.target.value)} className="w-full px-2 py-1.5 rounded border border-border bg-background text-sm">
+                {["USD","EUR","GBP","CAD","AUD","AED"].map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </Field>
+          </div>
+          <Field label="Deal notes (optional)">
+            <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} className="w-full px-2 py-1.5 rounded border border-border bg-background text-sm" />
+          </Field>
+
+          <div className="pt-2 border-t border-border">
+            <div className="flex items-center gap-2 mb-2">
+              <h4 className="text-sm font-medium">Scheduled payments</h4>
+              <button onClick={generateMonthly} className="text-xs px-2 py-1 rounded border border-border hover:bg-accent">Split evenly, monthly</button>
+              <button onClick={addDraft} className="ml-auto text-xs px-2 py-1 rounded border border-border hover:bg-accent inline-flex items-center gap-1"><Plus className="h-3 w-3" /> Add payment</button>
+            </div>
+            <div className="space-y-2">
+              {drafts.map((d, i) => (
+                <div key={i} className="grid grid-cols-12 gap-2 items-center">
+                  <span className="col-span-1 text-xs text-muted-foreground">#{i+1}</span>
+                  <input type="number" min="0" step="0.01" value={d.amount} onChange={e => setDrafts(list => list.map((r,idx) => idx === i ? { ...r, amount: e.target.value } : r))} placeholder="Amount" className="col-span-3 px-2 py-1.5 rounded border border-border bg-background text-sm" />
+                  <input type="date" value={d.due_date} onChange={e => setDrafts(list => list.map((r,idx) => idx === i ? { ...r, due_date: e.target.value } : r))} className="col-span-3 px-2 py-1.5 rounded border border-border bg-background text-sm" />
+                  <select value={d.status} onChange={e => setDrafts(list => list.map((r,idx) => idx === i ? { ...r, status: e.target.value as PayStatus } : r))} className="col-span-2 px-2 py-1.5 rounded border border-border bg-background text-sm">
+                    {(Object.keys(STATUS_META) as PayStatus[]).map(s => <option key={s} value={s}>{STATUS_META[s].label}</option>)}
+                  </select>
+                  <input value={d.payment_method} onChange={e => setDrafts(list => list.map((r,idx) => idx === i ? { ...r, payment_method: e.target.value } : r))} placeholder="Method" className="col-span-2 px-2 py-1.5 rounded border border-border bg-background text-sm" />
+                  <button onClick={() => removeDraft(i)} className="col-span-1 p-1 rounded hover:bg-accent text-rose-400 justify-self-end"><Trash2 className="h-3.5 w-3.5" /></button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <footer className="px-4 py-3 border-t border-border flex items-center gap-2">
+          <button onClick={onClose} className="ml-auto px-3 py-1.5 rounded border border-border text-sm hover:bg-accent">Cancel</button>
+          <button onClick={save} disabled={saving} className="px-3 py-1.5 rounded bg-primary text-primary-foreground text-sm hover:opacity-90 disabled:opacity-50">
+            {saving ? "Saving…" : "Save plan"}
+          </button>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <div className="text-xs text-muted-foreground mb-1">{label}</div>
+      {children}
+    </label>
+  );
+}
