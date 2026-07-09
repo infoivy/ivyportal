@@ -222,7 +222,7 @@ function StudentsLayout() {
           <div className="relative">
             <Search className="h-3 w-3 absolute left-2.5 top-2.5 text-muted-foreground" />
             <input
-              value={q}
+              value={qRaw}
               onChange={e => setQ(e.target.value)}
               placeholder="Search name or email…"
               className="h-8 pl-7 pr-3 rounded-sm border border-[#1f2530] bg-[#0f1116] text-xs w-56 focus:outline-none focus:border-emerald-500/40"
