@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import {
   Sparkles, Calendar as CalendarIcon, Columns3, List as ListIcon, Lightbulb,
-  Plus, ExternalLink, Trash2, X, ArrowRight, BookOpen, Loader2,
+  Plus, ExternalLink, Trash2, X, ArrowRight, BookOpen, Loader2, Instagram,
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, parseISO } from "date-fns";
 
@@ -109,6 +109,12 @@ function FounderPage() {
           <p className="text-xs text-muted-foreground mt-0.5">Content calendar, idea inbox, and strategy SOPs — private to you.</p>
         </div>
         <div className="flex gap-2">
+          <Link
+            to="/instagram"
+            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-sm border border-pink-500/30 bg-pink-500/5 hover:border-pink-500/60 text-pink-300 text-xs"
+          >
+            <Instagram className="h-3.5 w-3.5" /> IG Analytics
+          </Link>
           <Link
             to="/knowledge"
             className="inline-flex items-center gap-1.5 h-8 px-3 rounded-sm border border-[#1f2530] hover:border-fuchsia-500/40 text-xs"
