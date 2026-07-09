@@ -86,22 +86,8 @@ function ActionItemsHub() {
     });
   }, [rows, filt, coachFilter, user, today]);
 
-  const toggle = async (r: Row, done: boolean) => {
-    // optimistic
-    setCalls(prev => prev.map(c => {
-      if (c.id !== r.callId) return c;
-      const items = Array.isArray(c.action_items_json) ? [...c.action_items_json] : [];
-      items[r.index] = { ...items[r.index], done };
-      return { ...c, action_items_json: items };
-    }));
-    // Persist: rewrite the whole json for this call
-    const call = calls.find(c => c.id === r.callId);
-    if (!call) return;
-    const items = Array.isArray(call.action_items_json) ? [...call.action_items_json] : [];
-    items[r.index] = { ...items[r.index], done };
-    const { error } = await supabase.from("student_calls").update({ action_items_json: items } as any).eq("id", r.callId);
-    if (error) { toast.error(error.message); load(); }
-  };
+  // View-only: action items are ticked off by the student in their portal.
+  // Coaches add them from /calls; this hub is oversight for staff.
 
   const uniqueCoaches = useMemo(() => {
     const map = new Map<string, string>();
