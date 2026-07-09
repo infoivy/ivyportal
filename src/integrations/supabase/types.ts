@@ -89,6 +89,89 @@ export type Database = {
         }
         Relationships: []
       }
+      content_ideas: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          link: string | null
+          promoted_item_id: string | null
+          text: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          link?: string | null
+          promoted_item_id?: string | null
+          text: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          link?: string | null
+          promoted_item_id?: string | null
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_ideas_promoted_item_id_fkey"
+            columns: ["promoted_item_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_items: {
+        Row: {
+          created_at: string
+          created_by: string
+          format: string | null
+          hook: string
+          id: string
+          link_when_posted: string | null
+          platform: Database["public"]["Enums"]["content_platform"]
+          posted_at: string | null
+          scheduled_date: string | null
+          script: string | null
+          status: Database["public"]["Enums"]["content_status"]
+          tags: string[]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          format?: string | null
+          hook: string
+          id?: string
+          link_when_posted?: string | null
+          platform?: Database["public"]["Enums"]["content_platform"]
+          posted_at?: string | null
+          scheduled_date?: string | null
+          script?: string | null
+          status?: Database["public"]["Enums"]["content_status"]
+          tags?: string[]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          format?: string | null
+          hook?: string
+          id?: string
+          link_when_posted?: string | null
+          platform?: Database["public"]["Enums"]["content_platform"]
+          posted_at?: string | null
+          scheduled_date?: string | null
+          script?: string | null
+          status?: Database["public"]["Enums"]["content_status"]
+          tags?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       csm_student_notes: {
         Row: {
           created_at: string
@@ -902,6 +985,15 @@ export type Database = {
         | "student"
         | "csm"
         | "founder"
+      content_platform:
+        | "instagram"
+        | "tiktok"
+        | "youtube"
+        | "twitter"
+        | "linkedin"
+        | "threads"
+        | "other"
+      content_status: "idea" | "scripted" | "filmed" | "edited" | "posted"
       csm_tally_kind: "loom" | "roleplay" | "checkin" | "escalation"
       deal_payment_type: "pif" | "deposit" | "split"
       doc_category:
@@ -1066,6 +1158,16 @@ export const Constants = {
         "csm",
         "founder",
       ],
+      content_platform: [
+        "instagram",
+        "tiktok",
+        "youtube",
+        "twitter",
+        "linkedin",
+        "threads",
+        "other",
+      ],
+      content_status: ["idea", "scripted", "filmed", "edited", "posted"],
       csm_tally_kind: ["loom", "roleplay", "checkin", "escalation"],
       deal_payment_type: ["pif", "deposit", "split"],
       doc_category: [
