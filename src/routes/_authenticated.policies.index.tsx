@@ -34,7 +34,7 @@ function PoliciesIndex() {
 
       <div className="grid gap-4 sm:grid-cols-2">
         {policies.map((p) => (
-          <Link key={p.slug} to={"/policies/$slug" as never} params={{ slug: p.slug } as never}>
+          <Link key={p.slug} to="/policies/crm-hygiene">
             <Card className="p-5 hover:border-primary/60 transition group h-full">
               <div className="flex items-start justify-between gap-3">
                 <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center">

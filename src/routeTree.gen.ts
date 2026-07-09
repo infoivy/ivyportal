@@ -23,6 +23,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedCrmRouteImport } from './routes/_authenticated.crm'
 import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticated.calendar'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated.analytics'
+import { Route as AuthenticatedPoliciesIndexRouteImport } from './routes/_authenticated.policies.index'
 import { Route as AuthenticatedSopsIsaSettingProcessRouteImport } from './routes/_authenticated.sops.isa-setting-process'
 
 const PrintRoute = PrintRouteImport.update({
@@ -94,6 +95,12 @@ const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedPoliciesIndexRoute =
+  AuthenticatedPoliciesIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedPoliciesRoute,
+  } as any)
 const AuthenticatedSopsIsaSettingProcessRoute =
   AuthenticatedSopsIsaSettingProcessRouteImport.update({
     id: '/isa-setting-process',
@@ -111,11 +118,12 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/eods': typeof AuthenticatedEodsRoute
   '/notes': typeof AuthenticatedNotesRoute
-  '/policies': typeof AuthenticatedPoliciesRoute
+  '/policies': typeof AuthenticatedPoliciesRouteWithChildren
   '/sops': typeof AuthenticatedSopsRouteWithChildren
   '/team': typeof AuthenticatedTeamRoute
   '/training': typeof AuthenticatedTrainingRoute
   '/sops/isa-setting-process': typeof AuthenticatedSopsIsaSettingProcessRoute
+  '/policies/': typeof AuthenticatedPoliciesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -127,11 +135,11 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/eods': typeof AuthenticatedEodsRoute
   '/notes': typeof AuthenticatedNotesRoute
-  '/policies': typeof AuthenticatedPoliciesRoute
   '/sops': typeof AuthenticatedSopsRouteWithChildren
   '/team': typeof AuthenticatedTeamRoute
   '/training': typeof AuthenticatedTrainingRoute
   '/sops/isa-setting-process': typeof AuthenticatedSopsIsaSettingProcessRoute
+  '/policies': typeof AuthenticatedPoliciesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -145,11 +153,12 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/eods': typeof AuthenticatedEodsRoute
   '/_authenticated/notes': typeof AuthenticatedNotesRoute
-  '/_authenticated/policies': typeof AuthenticatedPoliciesRoute
+  '/_authenticated/policies': typeof AuthenticatedPoliciesRouteWithChildren
   '/_authenticated/sops': typeof AuthenticatedSopsRouteWithChildren
   '/_authenticated/team': typeof AuthenticatedTeamRoute
   '/_authenticated/training': typeof AuthenticatedTrainingRoute
   '/_authenticated/sops/isa-setting-process': typeof AuthenticatedSopsIsaSettingProcessRoute
+  '/_authenticated/policies/': typeof AuthenticatedPoliciesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -168,6 +177,7 @@ export interface FileRouteTypes {
     | '/team'
     | '/training'
     | '/sops/isa-setting-process'
+    | '/policies/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -179,11 +189,11 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/eods'
     | '/notes'
-    | '/policies'
     | '/sops'
     | '/team'
     | '/training'
     | '/sops/isa-setting-process'
+    | '/policies'
   id:
     | '__root__'
     | '/'
@@ -201,6 +211,7 @@ export interface FileRouteTypes {
     | '/_authenticated/team'
     | '/_authenticated/training'
     | '/_authenticated/sops/isa-setting-process'
+    | '/_authenticated/policies/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -310,6 +321,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAnalyticsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/policies/': {
+      id: '/_authenticated/policies/'
+      path: '/'
+      fullPath: '/policies/'
+      preLoaderRoute: typeof AuthenticatedPoliciesIndexRouteImport
+      parentRoute: typeof AuthenticatedPoliciesRoute
+    }
     '/_authenticated/sops/isa-setting-process': {
       id: '/_authenticated/sops/isa-setting-process'
       path: '/isa-setting-process'
@@ -319,6 +337,19 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface AuthenticatedPoliciesRouteChildren {
+  AuthenticatedPoliciesIndexRoute: typeof AuthenticatedPoliciesIndexRoute
+}
+
+const AuthenticatedPoliciesRouteChildren: AuthenticatedPoliciesRouteChildren = {
+  AuthenticatedPoliciesIndexRoute: AuthenticatedPoliciesIndexRoute,
+}
+
+const AuthenticatedPoliciesRouteWithChildren =
+  AuthenticatedPoliciesRoute._addFileChildren(
+    AuthenticatedPoliciesRouteChildren,
+  )
 
 interface AuthenticatedSopsRouteChildren {
   AuthenticatedSopsIsaSettingProcessRoute: typeof AuthenticatedSopsIsaSettingProcessRoute
@@ -339,7 +370,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEodsRoute: typeof AuthenticatedEodsRoute
   AuthenticatedNotesRoute: typeof AuthenticatedNotesRoute
-  AuthenticatedPoliciesRoute: typeof AuthenticatedPoliciesRoute
+  AuthenticatedPoliciesRoute: typeof AuthenticatedPoliciesRouteWithChildren
   AuthenticatedSopsRoute: typeof AuthenticatedSopsRouteWithChildren
   AuthenticatedTeamRoute: typeof AuthenticatedTeamRoute
   AuthenticatedTrainingRoute: typeof AuthenticatedTrainingRoute
@@ -352,7 +383,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEodsRoute: AuthenticatedEodsRoute,
   AuthenticatedNotesRoute: AuthenticatedNotesRoute,
-  AuthenticatedPoliciesRoute: AuthenticatedPoliciesRoute,
+  AuthenticatedPoliciesRoute: AuthenticatedPoliciesRouteWithChildren,
   AuthenticatedSopsRoute: AuthenticatedSopsRouteWithChildren,
   AuthenticatedTeamRoute: AuthenticatedTeamRoute,
   AuthenticatedTrainingRoute: AuthenticatedTrainingRoute,
