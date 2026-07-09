@@ -61,23 +61,28 @@ type OpsCounts = {
 };
 
 function Dashboard() {
-  const { displayName, roles } = useAuth();
-  const [range, setRange] = useState<RangeKey>("30d");
+  const { user, displayName, roles } = useAuth();
+  const [dateRange, setDateRange] = useState<DateRange>(() => rangeFor("30d"));
+  const [compare, setCompare] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [drilldown, setDrilldown] = useState<MetricKey | null>(null);
   const [eods, setEods] = useState<EodRow[]>([]);
   const [prevEods, setPrevEods] = useState<EodRow[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [ops, setOps] = useState<OpsCounts | null>(null);
   const [loading, setLoading] = useState(true);
+  const { prefs, save: savePrefs } = useDashboardPrefs(user?.id);
 
-  const days = RANGES.find((r) => r.key === range)!.days;
+  const days = daysBetween(dateRange);
 
   useEffect(() => {
     setLoading(true);
     const now = new Date();
     const today = format(now, "yyyy-MM-dd");
-    const from = format(subDays(now, days - 1), "yyyy-MM-dd");
-    const prevFrom = format(subDays(now, days * 2 - 1), "yyyy-MM-dd");
-    const prevTo = format(subDays(now, days), "yyyy-MM-dd");
+    const from = format(dateRange.from, "yyyy-MM-dd");
+    const to = format(dateRange.to, "yyyy-MM-dd");
+    const prevFrom = format(subDays(dateRange.from, days), "yyyy-MM-dd");
+    const prevTo = format(subDays(dateRange.from, 1), "yyyy-MM-dd");
     const in3 = format(new Date(now.getTime() + 3 * 86400000), "yyyy-MM-dd");
     const in7 = format(new Date(now.getTime() + 7 * 86400000), "yyyy-MM-dd");
     const eodRisk = format(subDays(now, 5), "yyyy-MM-dd");
@@ -85,8 +90,10 @@ function Dashboard() {
 
     (async () => {
       const [cur, prev, profs, students, callsThisWeek, callsRecent, eodsRecent, todayEods, installmentsDue, installmentsLate, testimonials, actionCalls] = await Promise.all([
-        supabase.from("eods").select("*").gte("report_date", from).order("report_date", { ascending: true }),
-        supabase.from("eods").select("*").gte("report_date", prevFrom).lte("report_date", prevTo),
+        supabase.from("eods").select("*").gte("report_date", from).lte("report_date", to).order("report_date", { ascending: true }),
+        compare
+          ? supabase.from("eods").select("*").gte("report_date", prevFrom).lte("report_date", prevTo)
+          : Promise.resolve({ data: [] as EodRow[] }),
         supabase.from("profiles").select("id, display_name"),
         supabase.from("students").select("id, status").eq("status", "active"),
         supabase.from("student_calls").select("id", { count: "exact", head: true }).eq("status", "scheduled").gte("call_date", today).lte("call_date", in7),
@@ -130,12 +137,12 @@ function Dashboard() {
       });
       setLoading(false);
     })();
-  }, [days]);
+  }, [dateRange.from.getTime(), dateRange.to.getTime(), compare]);
 
   const totals = useMemo(() => sumRows(eods), [eods]);
   const prevTotals = useMemo(() => sumRows(prevEods), [prevEods]);
   const trend = useMemo(() => buildTrend(eods, days), [eods, days]);
-  const hasPrev = prevEods.length > 0;
+  const hasPrev = compare && prevEods.length > 0;
 
   const showRate = totals.shows + totals.no_shows > 0
     ? Math.round((totals.shows / (totals.shows + totals.no_shows)) * 100) : 0;
