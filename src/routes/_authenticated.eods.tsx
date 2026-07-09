@@ -429,7 +429,11 @@ function EODsPage() {
   );
 }
 
-function EodGrid({ eods, days }: { eods: (EOD & { display_name?: string })[]; days: number }) {
+type GridEod = EOD & { display_name?: string; primary_role?: string };
+type RoleFilt = "all" | "setter" | "closer" | "csm";
+
+function EodGrid({ eods, days }: { eods: GridEod[]; days: number }) {
+  const [roleFilt, setRoleFilt] = useState<RoleFilt>("all");
   const today = new Date();
   const dayList: string[] = [];
   for (let i = 0; i < days; i++) {
@@ -437,56 +441,134 @@ function EodGrid({ eods, days }: { eods: (EOD & { display_name?: string })[]; da
     d.setDate(d.getDate() - i);
     dayList.push(d.toISOString().slice(0, 10));
   }
-  const users = new Map<string, string>();
-  eods.forEach(e => { if (!users.has(e.user_id)) users.set(e.user_id, e.display_name ?? "Unknown"); });
-  const key = (uid: string, date: string) => `${uid}::${date}`;
-  const map = new Map<string, EOD>();
-  eods.forEach(e => map.set(key(e.user_id, e.report_date), e));
 
-  if (users.size === 0) return <EmptyState text="No team EODs yet." />;
+  const matchesFilt = (role: string | undefined) => {
+    if (roleFilt === "all") return true;
+    if (roleFilt === "closer") return role === "closer" || role === "coach";
+    return role === roleFilt;
+  };
+
+  const users = new Map<string, { name: string; role: string }>();
+  eods.forEach(e => {
+    if (!matchesFilt(e.primary_role)) return;
+    if (!users.has(e.user_id)) users.set(e.user_id, { name: e.display_name ?? "Unknown", role: e.primary_role ?? "member" });
+  });
+  const key = (uid: string, date: string) => `${uid}::${date}`;
+  const map = new Map<string, GridEod>();
+  eods.forEach(e => { if (matchesFilt(e.primary_role)) map.set(key(e.user_id, e.report_date), e); });
+
+  const roleTiles: { key: RoleFilt; label: string }[] = [
+    { key: "all", label: "All roles" },
+    { key: "setter", label: "Setters" },
+    { key: "closer", label: "Closers / Coaches" },
+    { key: "csm", label: "CSMs" },
+  ];
+
+  const renderCell = (e: GridEod, name: string, d: string, role: string) => {
+    // Choose metrics per role
+    if (role === "csm") {
+      const primary = (e.student_checkins ?? 0) + (e.escalations_resolved ?? 0);
+      const secondary = (e.looms_reviewed ?? 0) + (e.roleplays_reviewed ?? 0);
+      const tone = primary >= 3 ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
+        : primary >= 1 ? "bg-amber-500/15 border-amber-500/40 text-amber-300"
+        : "bg-[#14171e] border-[#1f2530] text-muted-foreground";
+      return (
+        <div title={`${name} · ${d}\nCheck-ins+Escalations: ${primary}\nLooms+Roleplays: ${secondary}`}
+             className={`inline-flex flex-col leading-none px-1 py-1 rounded-sm border font-mono text-[10px] ${tone}`}>
+          <span className="font-semibold">{primary}</span>
+          <span className="text-[8px] opacity-70">{secondary}</span>
+        </div>
+      );
+    }
+    if (role === "closer" || role === "coach") {
+      const closes = e.closes ?? 0;
+      const taken = e.calls_taken ?? 0;
+      const tone = closes >= 1 ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
+        : taken >= 1 ? "bg-amber-500/15 border-amber-500/40 text-amber-300"
+        : "bg-[#14171e] border-[#1f2530] text-muted-foreground";
+      return (
+        <div title={`${name} · ${d}\nCalls taken: ${taken}\nCloses: ${closes}`}
+             className={`inline-flex flex-col leading-none px-1 py-1 rounded-sm border font-mono text-[10px] ${tone}`}>
+          <span className="font-semibold">{closes}</span>
+          <span className="text-[8px] opacity-70">{taken}</span>
+        </div>
+      );
+    }
+    // Setter / default
+    const booked = e.calls_booked ?? 0;
+    const dms = e.dms_sent ?? 0;
+    const shows = e.shows ?? 0;
+    const tone = booked >= 3 ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
+      : booked >= 1 ? "bg-amber-500/15 border-amber-500/40 text-amber-300"
+      : "bg-[#14171e] border-[#1f2530] text-muted-foreground";
+    return (
+      <div title={`${name} · ${d}\nDMs: ${dms}\nBooked: ${booked}\nShows: ${shows}`}
+           className={`inline-flex flex-col leading-none px-1 py-1 rounded-sm border font-mono text-[10px] ${tone}`}>
+        <span className="font-semibold">{booked}</span>
+        <span className="text-[8px] opacity-70">{dms}</span>
+      </div>
+    );
+  };
+
+  const legend = roleFilt === "csm"
+    ? <>Cell: <b className="text-foreground">check-ins+escalations</b> / <span className="opacity-70">looms+roleplays</span></>
+    : roleFilt === "closer"
+    ? <>Cell: <b className="text-foreground">closes</b> / <span className="opacity-70">calls taken</span></>
+    : roleFilt === "setter"
+    ? <>Cell: <b className="text-foreground">booked</b> / <span className="opacity-70">dms</span></>
+    : <>Setter cells show <b className="text-foreground">booked</b>/<span className="opacity-70">dms</span>, closer cells show <b className="text-foreground">closes</b>/<span className="opacity-70">taken</span>, CSM cells show <b className="text-foreground">check-ins+esc</b>/<span className="opacity-70">looms+rp</span></>;
 
   return (
-    <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm overflow-x-auto">
-      <table className="w-full text-xs">
-        <thead>
-          <tr className="border-b border-[#1f2530] text-[10px] uppercase tracking-wider text-muted-foreground">
-            <th className="text-left px-3 py-2 sticky left-0 bg-[#0f1116] z-10">Person</th>
-            {dayList.map(d => {
-              const dd = new Date(d);
-              return <th key={d} className="px-1.5 py-2 text-center font-normal">{dd.getMonth() + 1}/{dd.getDate()}</th>;
-            })}
-          </tr>
-        </thead>
-        <tbody>
-          {Array.from(users.entries()).map(([uid, name]) => (
-            <tr key={uid} className="border-b border-[#1a1f29] last:border-0">
-              <td className="px-3 py-2 sticky left-0 bg-[#0f1116] font-medium truncate max-w-[160px]">{name}</td>
-              {dayList.map(d => {
-                const e = map.get(key(uid, d));
-                if (!e) return <td key={d} className="px-1 py-1 text-center"><span className="inline-block h-6 w-6 rounded-sm bg-[#1a1f29]/40 border border-dashed border-[#2a3140]" title="Missing" /></td>;
-                const booked = e.calls_booked ?? 0;
-                const dms = e.dms_sent ?? 0;
-                const shows = e.shows ?? 0;
-                const tone = booked >= 3 ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300" : booked >= 1 ? "bg-amber-500/15 border-amber-500/40 text-amber-300" : "bg-[#14171e] border-[#1f2530] text-muted-foreground";
-                return (
-                  <td key={d} className="px-1 py-1 text-center">
-                    <div title={`${name} · ${d}\nDMs: ${dms}\nBooked: ${booked}\nShows: ${shows}`} className={`inline-flex flex-col leading-none px-1 py-1 rounded-sm border font-mono text-[10px] ${tone}`}>
-                      <span className="font-semibold">{booked}</span>
-                      <span className="text-[8px] opacity-70">{dms}</span>
-                    </div>
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <div className="px-3 py-2 border-t border-[#1f2530] text-[10px] text-muted-foreground flex items-center gap-3">
-        <span>Each cell: <b className="text-foreground">booked</b> / <span className="opacity-70">dms</span></span>
-        <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-emerald-500/40" /> ≥3 booked</span>
-        <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-amber-500/40" /> 1–2 booked</span>
-        <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-sm border border-dashed border-[#2a3140]" /> No EOD</span>
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-1.5">
+        {roleTiles.map(t => (
+          <button
+            key={t.key}
+            onClick={() => setRoleFilt(t.key)}
+            className={`text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-sm border transition ${
+              roleFilt === t.key
+                ? "text-foreground border-[#2a3140] bg-[#1a1f29]"
+                : "text-muted-foreground border-[#1f2530] hover:border-[#2a3140]"
+            }`}
+          >{t.label}</button>
+        ))}
       </div>
+      {users.size === 0 ? <EmptyState text="No EODs in this filter." /> : (
+        <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-[#1f2530] text-[10px] uppercase tracking-wider text-muted-foreground">
+                <th className="text-left px-3 py-2 sticky left-0 bg-[#0f1116] z-10">Person</th>
+                {dayList.map(d => {
+                  const dd = new Date(d);
+                  return <th key={d} className="px-1.5 py-2 text-center font-normal">{dd.getMonth() + 1}/{dd.getDate()}</th>;
+                })}
+              </tr>
+            </thead>
+            <tbody>
+              {Array.from(users.entries()).map(([uid, u]) => (
+                <tr key={uid} className="border-b border-[#1a1f29] last:border-0">
+                  <td className="px-3 py-2 sticky left-0 bg-[#0f1116] font-medium truncate max-w-[180px]">
+                    <div>{u.name}</div>
+                    <div className="text-[9px] uppercase tracking-wider text-muted-foreground">{u.role}</div>
+                  </td>
+                  {dayList.map(d => {
+                    const e = map.get(key(uid, d));
+                    if (!e) return <td key={d} className="px-1 py-1 text-center"><span className="inline-block h-6 w-6 rounded-sm bg-[#1a1f29]/40 border border-dashed border-[#2a3140]" title="Missing" /></td>;
+                    return <td key={d} className="px-1 py-1 text-center">{renderCell(e, u.name, d, u.role)}</td>;
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="px-3 py-2 border-t border-[#1f2530] text-[10px] text-muted-foreground flex items-center gap-3 flex-wrap">
+            <span>{legend}</span>
+            <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-emerald-500/40" /> strong</span>
+            <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-amber-500/40" /> partial</span>
+            <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-sm border border-dashed border-[#2a3140]" /> missing</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
