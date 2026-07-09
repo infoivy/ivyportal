@@ -143,15 +143,28 @@ function EODsPage() {
 
   const submit = async () => {
     if (!user) return;
-    // Cross-field sanity checks (warn, don't hard-block)
+    // For CSMs, force setter/closer-only fields to zero so a CSM EOD never
+    // gets written with stray funnel/close numbers from state or stale drafts.
+    const cleaned = isCsm
+      ? {
+          ...form,
+          dms_sent: 0, convos_started: 0, calls_booked: 0, calls_scheduled: 0,
+          shows: 0, no_shows: 0,
+          calls_taken: 0, closes: 0, deposits: 0,
+          cash_collected: 0, deferred_cash: 0, follow_ups_done: 0,
+        }
+      : form;
+    // Cross-field sanity checks (warn, don't hard-block) — only meaningful for setters
     const warnings: string[] = [];
-    if (form.calls_booked > form.convos_started) warnings.push(`Calls booked (${form.calls_booked}) is higher than convos started (${form.convos_started}).`);
-    if (form.convos_started > form.dms_sent) warnings.push(`Convos started (${form.convos_started}) is higher than DMs sent (${form.dms_sent}).`);
-    if ((form.shows + form.no_shows) > form.calls_booked) warnings.push(`Shows + no-shows (${form.shows + form.no_shows}) exceeds calls booked (${form.calls_booked}).`);
+    if (!isCsm) {
+      if (cleaned.calls_booked > cleaned.convos_started) warnings.push(`Calls booked (${cleaned.calls_booked}) is higher than convos started (${cleaned.convos_started}).`);
+      if (cleaned.convos_started > cleaned.dms_sent) warnings.push(`Convos started (${cleaned.convos_started}) is higher than DMs sent (${cleaned.dms_sent}).`);
+      if ((cleaned.shows + cleaned.no_shows) > cleaned.calls_booked) warnings.push(`Shows + no-shows (${cleaned.shows + cleaned.no_shows}) exceeds calls booked (${cleaned.calls_booked}).`);
+    }
     if (warnings.length && !confirm(warnings.join("\n") + "\n\nAre you sure these numbers are right?")) return;
     setSaving(true);
     const wasNew = !existingId;
-    const payload = { user_id: user.id, report_date: today, ...form };
+    const payload = { user_id: user.id, report_date: today, ...cleaned };
     const { error } = await supabase.from("eods").upsert(payload, { onConflict: "user_id,report_date" });
     setSaving(false);
     if (error) toast.error(error.message);
