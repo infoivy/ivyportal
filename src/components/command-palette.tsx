@@ -166,11 +166,44 @@ export function CommandPalette() {
                 </div>
               );
             }
+            if (it.kind === "person") {
+              return (
+                <div key={`u-${it.id}`} className={base} onMouseEnter={() => setActive(i)} onClick={() => go(it)}>
+                  <Users className="h-3.5 w-3.5 text-sky-400" />
+                  <span className="flex-1 truncate">{it.name}</span>
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{it.role ?? "Team"}</span>
+                </div>
+              );
+            }
+            if (it.kind === "doc") {
+              return (
+                <div key={`d-${it.slug}`} className={base} onMouseEnter={() => setActive(i)} onClick={() => go(it)}>
+                  <BookOpen className="h-3.5 w-3.5 text-emerald-400" />
+                  <div className="flex-1 min-w-0">
+                    <div className="truncate">{it.title}</div>
+                    {it.category && <div className="text-[10px] text-muted-foreground truncate">{it.category}</div>}
+                  </div>
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Doc</span>
+                </div>
+              );
+            }
+            if (it.kind === "testimonial") {
+              return (
+                <div key={`t-${it.id}`} className={base} onMouseEnter={() => setActive(i)} onClick={() => go(it)}>
+                  <Star className="h-3.5 w-3.5 text-amber-400" />
+                  <span className="flex-1 truncate">{it.title}</span>
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Testimonial</span>
+                </div>
+              );
+            }
             return (
-              <div key={`u-${it.id}`} className={base} onMouseEnter={() => setActive(i)} onClick={() => go(it)}>
-                <Users className="h-3.5 w-3.5 text-sky-400" />
-                <span className="flex-1 truncate">{it.name}</span>
-                <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{it.role ?? "Team"}</span>
+              <div key={`c-${it.id}`} className={base} onMouseEnter={() => setActive(i)} onClick={() => go(it)}>
+                <Sparkles className="h-3.5 w-3.5 text-fuchsia-400" />
+                <div className="flex-1 min-w-0">
+                  <div className="truncate">{it.title}</div>
+                  {it.platform && <div className="text-[10px] text-muted-foreground truncate">{it.platform}</div>}
+                </div>
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Content</span>
               </div>
             );
           })}
