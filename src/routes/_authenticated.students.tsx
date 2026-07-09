@@ -620,7 +620,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
   const [saving, setSaving] = useState(false);
 
   // Fetch closers (users with closer or admin role)
-  useState(() => {
+  useEffect(() => {
     (async () => {
       const { data: roleRows } = await supabase.from("user_roles").select("user_id, role").in("role", ["closer", "admin"]);
       const ids = Array.from(new Set((roleRows ?? []).map((r: any) => r.user_id)));
@@ -630,7 +630,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
       if (user?.id && ids.includes(user.id)) setCloserId(user.id);
       else if (ids.length === 1) setCloserId(ids[0]);
     })();
-  });
+  }, [user?.id]);
 
   const tv = Number(totalAmount) || 0;
   const dep = Number(depositAmount) || 0;
