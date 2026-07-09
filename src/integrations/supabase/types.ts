@@ -129,6 +129,7 @@ export type Database = {
           created_at: string
           created_by: string
           format: string | null
+          funnel_stage: string | null
           hook: string
           id: string
           link_when_posted: string | null
@@ -139,11 +140,13 @@ export type Database = {
           status: Database["public"]["Enums"]["content_status"]
           tags: string[]
           updated_at: string
+          week_start: string | null
         }
         Insert: {
           created_at?: string
           created_by: string
           format?: string | null
+          funnel_stage?: string | null
           hook: string
           id?: string
           link_when_posted?: string | null
@@ -154,11 +157,13 @@ export type Database = {
           status?: Database["public"]["Enums"]["content_status"]
           tags?: string[]
           updated_at?: string
+          week_start?: string | null
         }
         Update: {
           created_at?: string
           created_by?: string
           format?: string | null
+          funnel_stage?: string | null
           hook?: string
           id?: string
           link_when_posted?: string | null
@@ -169,6 +174,81 @@ export type Database = {
           status?: Database["public"]["Enums"]["content_status"]
           tags?: string[]
           updated_at?: string
+          week_start?: string | null
+        }
+        Relationships: []
+      }
+      content_week_ideas: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          matched_creative_type: string | null
+          position: number
+          promoted_item_id: string | null
+          stage: string
+          text: string
+          updated_at: string
+          week_start: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          matched_creative_type?: string | null
+          position: number
+          promoted_item_id?: string | null
+          stage: string
+          text?: string
+          updated_at?: string
+          week_start: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          matched_creative_type?: string | null
+          position?: number
+          promoted_item_id?: string | null
+          stage?: string
+          text?: string
+          updated_at?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_week_ideas_promoted_item_id_fkey"
+            columns: ["promoted_item_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_week_plans: {
+        Row: {
+          auto_provisioned: boolean
+          created_at: string
+          created_by: string
+          notes: string | null
+          updated_at: string
+          week_start: string
+        }
+        Insert: {
+          auto_provisioned?: boolean
+          created_at?: string
+          created_by: string
+          notes?: string | null
+          updated_at?: string
+          week_start: string
+        }
+        Update: {
+          auto_provisioned?: boolean
+          created_at?: string
+          created_by?: string
+          notes?: string | null
+          updated_at?: string
+          week_start?: string
         }
         Relationships: []
       }

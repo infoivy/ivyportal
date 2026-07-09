@@ -5,9 +5,10 @@ import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import {
   Sparkles, Calendar as CalendarIcon, Columns3, List as ListIcon, Lightbulb,
-  Plus, ExternalLink, Trash2, X, ArrowRight, BookOpen, Loader2, Instagram,
+  Plus, ExternalLink, Trash2, X, ArrowRight, BookOpen, Loader2, Instagram, LayoutGrid,
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, parseISO } from "date-fns";
+import { WeeklyPlan } from "@/components/weekly-plan";
 
 export const Route = createFileRoute("/_authenticated/founder")({
   head: () => ({ meta: [{ title: "Founder Space — ISA Portal" }] }),
@@ -68,7 +69,7 @@ function FounderPage() {
 
   const [items, setItems] = useState<ContentItem[]>([]);
   const [ideas, setIdeas] = useState<Idea[]>([]);
-  const [view, setView] = useState<"calendar" | "kanban" | "list">("kanban");
+  const [view, setView] = useState<"weekly" | "calendar" | "kanban" | "list">("weekly");
   const [monthCursor, setMonthCursor] = useState(new Date());
   const [editing, setEditing] = useState<ContentItem | null>(null);
   const [creating, setCreating] = useState(false);
@@ -106,7 +107,7 @@ function FounderPage() {
             <Sparkles className="h-3 w-3" /> Founder space
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">Content & Strategy</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">Content calendar, idea inbox, and strategy SOPs — private to you.</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Weekly reel plan, ideation, calendar — with an autonomous ideation engine.</p>
         </div>
         <div className="flex gap-2">
           <Link
@@ -132,12 +133,26 @@ function FounderPage() {
 
       {/* View switcher */}
       <div className="flex items-center gap-1 border-b border-[#1f2530]">
+        <ViewTab active={view === "weekly"}   onClick={() => setView("weekly")}   icon={LayoutGrid}   label="Weekly plan" />
         <ViewTab active={view === "calendar"} onClick={() => setView("calendar")} icon={CalendarIcon} label="Calendar" />
         <ViewTab active={view === "kanban"}   onClick={() => setView("kanban")}   icon={Columns3}     label="Kanban" />
         <ViewTab active={view === "list"}     onClick={() => setView("list")}     icon={ListIcon}     label="List" />
       </div>
 
-      {loading ? (
+      {view === "weekly" ? (
+        <WeeklyPlan
+          onOpenItem={(id) => {
+            const it = items.find(i => i.id === id);
+            if (it) setEditing(it);
+            else {
+              // item may have just been provisioned server-side; refetch and open after
+              supabase.from("content_items").select("*").eq("id", id).maybeSingle().then(({ data }) => {
+                if (data) setEditing(data as ContentItem);
+              });
+            }
+          }}
+        />
+      ) : loading ? (
         <div className="flex items-center gap-2 text-muted-foreground p-6"><Loader2 className="h-4 w-4 animate-spin" /> Loading…</div>
       ) : (
         <div className="grid lg:grid-cols-[minmax(0,1fr)_320px] gap-4">
