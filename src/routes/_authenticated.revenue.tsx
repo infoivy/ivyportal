@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { WeeklyLeaderboard } from "@/components/weekly-leaderboard";
+import { CashLeaderboard } from "@/components/weekly-leaderboard";
 import { toast } from "sonner";
 import {
   Plus, DollarSign, TrendingUp, Trophy, ClipboardList, Pencil, Trash2,
