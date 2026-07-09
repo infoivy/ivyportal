@@ -359,26 +359,22 @@ function CallModal({ call, onClose, onSaved, students, coaches, defaultCoachId }
               {coaches.map(c => <option key={c.id} value={c.id}>{c.display_name ?? c.id}</option>)}
             </select>
           </Field>
-          <Field label="Status">
-            <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value as CallStatus }))} className={inputCls}>
-              {KANBAN_COLS.map(s => <option key={s} value={s}>{STATUS_META[s].label}</option>)}
-            </select>
-          </Field>
           <Field label="Call date">
             <input type="date" value={form.call_date} onChange={e => setForm(f => ({ ...f, call_date: e.target.value }))} className={inputCls} />
           </Field>
           <Field label="Duration (min)">
             <input type="number" min={0} value={form.duration_min} onChange={e => setForm(f => ({ ...f, duration_min: parseInt(e.target.value) || 0 }))} className={inputCls} />
           </Field>
-          <Field label="Progress rating" full>
+          <Field label="Progress rating (1 = stuck, 5 = crushing it)" full>
             <div className="flex items-center gap-1">
               {[1, 2, 3, 4, 5].map(n => (
                 <button key={n} type="button" onClick={() => setForm(f => ({ ...f, progress_rating: f.progress_rating === n ? 0 : n }))}>
                   <Star className={`h-5 w-5 ${n <= form.progress_rating ? "fill-amber-400 text-amber-400" : "text-[#2a3140]"}`} />
                 </button>
               ))}
-              <span className="text-[10px] text-muted-foreground ml-2">{form.progress_rating || "not rated"}</span>
+              <span className="text-[10px] text-muted-foreground ml-2">{form.progress_rating ? `${form.progress_rating}/5` : "not rated"}</span>
             </div>
+            <p className="text-[10px] text-muted-foreground mt-1">How the student is progressing overall — not just this call.</p>
           </Field>
           <Field label="Fathom recording URL" full>
             <input value={form.fathom_url} onChange={e => setForm(f => ({ ...f, fathom_url: e.target.value }))} placeholder="https://fathom.video/…" className={inputCls} />
