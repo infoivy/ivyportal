@@ -72,6 +72,7 @@ function FounderPage() {
   const [monthCursor, setMonthCursor] = useState(new Date());
   const [editing, setEditing] = useState<ContentItem | null>(null);
   const [creating, setCreating] = useState(false);
+  const [promotingIdea, setPromotingIdea] = useState<Idea | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
