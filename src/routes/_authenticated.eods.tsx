@@ -84,9 +84,29 @@ function EODsPage() {
     const { data } = await supabase.from("eods").select("*").order("report_date", { ascending: false }).limit(50);
     const eods = (data ?? []) as EOD[];
     const userIds = Array.from(new Set(eods.map(e => e.user_id)));
-    const { data: profiles } = await supabase.from("profiles").select("id, display_name").in("id", userIds);
-    const nameMap = new Map(profiles?.map(p => [p.id, p.display_name]) ?? []);
-    setTeamEods(eods.map(e => ({ ...e, display_name: nameMap.get(e.user_id) ?? "Unknown" })));
+    const [profRes, rolesRes] = await Promise.all([
+      supabase.from("profiles").select("id, display_name").in("id", userIds),
+      supabase.from("user_roles").select("user_id, role").in("user_id", userIds),
+    ]);
+    const nameMap = new Map(profRes.data?.map(p => [p.id, p.display_name]) ?? []);
+    const roleMap = new Map<string, string[]>();
+    (rolesRes.data ?? []).forEach(r => {
+      const arr = roleMap.get(r.user_id) ?? [];
+      arr.push(r.role);
+      roleMap.set(r.user_id, arr);
+    });
+    // Priority: csm > closer > coach > setter > admin (for cell metric selection)
+    const priority = ["csm", "closer", "coach", "setter", "admin"];
+    const primaryRole = (uid: string): string => {
+      const rs = roleMap.get(uid) ?? [];
+      for (const p of priority) if (rs.includes(p)) return p;
+      return rs[0] ?? "member";
+    };
+    setTeamEods(eods.map(e => ({
+      ...e,
+      display_name: nameMap.get(e.user_id) ?? "Unknown",
+      primary_role: primaryRole(e.user_id),
+    })));
   };
 
   const syncCsmTally = async () => {
