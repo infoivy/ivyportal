@@ -41,15 +41,26 @@ export const ensureWeekProvisioned = createServerFn({ method: "POST" })
       await context.supabase.from("content_week_plans").insert({ week_start: week, created_by: context.userId });
     }
 
-    // Ensure 10 idea rows (positions 1-10; 1-5 MOF, 6-10 TOF)
-    const { data: ideas } = await context.supabase
+    // Dedupe idea rows: keep the oldest row per (week_start, position).
+    const { data: allIdeas } = await context.supabase
       .from("content_week_ideas")
-      .select("position")
-      .eq("week_start", week);
-    const havePositions = new Set((ideas ?? []).map((r: any) => r.position));
-    const missing = [];
+      .select("id, position, created_at")
+      .eq("week_start", week)
+      .order("created_at", { ascending: true });
+    const seenPos = new Set<number>();
+    const dupIdeaIds: string[] = [];
+    for (const r of (allIdeas ?? []) as any[]) {
+      if (seenPos.has(r.position)) dupIdeaIds.push(r.id);
+      else seenPos.add(r.position);
+    }
+    if (dupIdeaIds.length) {
+      await context.supabase.from("content_week_ideas").delete().in("id", dupIdeaIds);
+    }
+
+    // Ensure 10 idea rows (positions 1-10; 1-5 MOF, 6-10 TOF)
+    const missing: any[] = [];
     for (let p = 1; p <= 10; p++) {
-      if (!havePositions.has(p)) {
+      if (!seenPos.has(p)) {
         missing.push({
           week_start: week,
           position: p,
@@ -63,44 +74,61 @@ export const ensureWeekProvisioned = createServerFn({ method: "POST" })
       await context.supabase.from("content_week_ideas").insert(missing);
     }
 
-    // Ensure 7 reel slots (Mon-Thu TOF, Fri-Sun MOF). Only create if this week has no items yet.
+    // Dedupe auto-provisioned reel slots. An auto slot is identified by
+    // hook matching /^(TOF|MOF) · \d of \d$/ — user-authored slots are left
+    // alone. Keep the earliest slot per (scheduled_date, hook).
+    const { data: allItems } = await context.supabase
+      .from("content_items")
+      .select("id, scheduled_date, hook, created_at, status")
+      .eq("week_start", week)
+      .order("created_at", { ascending: true });
+    const autoPattern = /^(TOF|MOF) · \d of \d$/;
+    const seenAuto = new Map<string, string>(); // "date|hook" -> id
+    const dupItemIds: string[] = [];
+    for (const r of (allItems ?? []) as any[]) {
+      if (!r.hook || !autoPattern.test(r.hook) || !r.scheduled_date) continue;
+      // only dedupe untouched placeholders (status still 'idea')
+      if (r.status && r.status !== "idea") continue;
+      const key = `${r.scheduled_date}|${r.hook}`;
+      if (seenAuto.has(key)) dupItemIds.push(r.id);
+      else seenAuto.set(key, r.id);
+    }
+    if (dupItemIds.length) {
+      await context.supabase.from("content_items").delete().in("id", dupItemIds);
+    }
+
+    // Compute the canonical 7 slots for this week.
+    const monday = new Date(`${week}T00:00:00Z`);
+    const canonical: { date: string; stage: "tof" | "mof"; label: string }[] = [
+      { date: ymdUTC(new Date(Date.UTC(monday.getUTCFullYear(), monday.getUTCMonth(), monday.getUTCDate() + 0))), stage: "tof", label: "TOF · 1 of 4" },
+      { date: ymdUTC(new Date(Date.UTC(monday.getUTCFullYear(), monday.getUTCMonth(), monday.getUTCDate() + 1))), stage: "tof", label: "TOF · 2 of 4" },
+      { date: ymdUTC(new Date(Date.UTC(monday.getUTCFullYear(), monday.getUTCMonth(), monday.getUTCDate() + 2))), stage: "tof", label: "TOF · 3 of 4" },
+      { date: ymdUTC(new Date(Date.UTC(monday.getUTCFullYear(), monday.getUTCMonth(), monday.getUTCDate() + 3))), stage: "tof", label: "TOF · 4 of 4" },
+      { date: ymdUTC(new Date(Date.UTC(monday.getUTCFullYear(), monday.getUTCMonth(), monday.getUTCDate() + 4))), stage: "mof", label: "MOF · 1 of 3" },
+      { date: ymdUTC(new Date(Date.UTC(monday.getUTCFullYear(), monday.getUTCMonth(), monday.getUTCDate() + 5))), stage: "mof", label: "MOF · 2 of 3" },
+      { date: ymdUTC(new Date(Date.UTC(monday.getUTCFullYear(), monday.getUTCMonth(), monday.getUTCDate() + 6))), stage: "mof", label: "MOF · 3 of 3" },
+    ];
+
+    // Insert only the canonical slots that don't already exist (idempotent).
+    const rowsToInsert = canonical
+      .filter((c) => !seenAuto.has(`${c.date}|${c.label}`))
+      .map((c) => ({
+        created_by: context.userId,
+        scheduled_date: c.date,
+        platform: "instagram" as const,
+        format: "Reel",
+        hook: c.label,
+        status: "idea" as const,
+        funnel_stage: c.stage,
+        week_start: week,
+        tags: [] as string[],
+      }));
+    if (rowsToInsert.length) {
+      const { error } = await context.supabase.from("content_items").insert(rowsToInsert);
+      if (error) throw new Error(error.message);
+    }
+
     if (!existingPlan?.auto_provisioned) {
-      const { data: weekItems } = await context.supabase
-        .from("content_items")
-        .select("id")
-        .eq("week_start", week)
-        .limit(1);
-
-      if (!weekItems || weekItems.length === 0) {
-        const monday = new Date(`${week}T00:00:00Z`);
-        const slots: { offset: number; stage: "tof" | "mof"; label: string }[] = [
-          { offset: 0, stage: "tof", label: "TOF · 1 of 4" },
-          { offset: 1, stage: "tof", label: "TOF · 2 of 4" },
-          { offset: 2, stage: "tof", label: "TOF · 3 of 4" },
-          { offset: 3, stage: "tof", label: "TOF · 4 of 4" },
-          { offset: 4, stage: "mof", label: "MOF · 1 of 3" },
-          { offset: 5, stage: "mof", label: "MOF · 2 of 3" },
-          { offset: 6, stage: "mof", label: "MOF · 3 of 3" },
-        ];
-        const rows = slots.map((s) => {
-          const d = new Date(monday);
-          d.setUTCDate(d.getUTCDate() + s.offset);
-          return {
-            created_by: context.userId,
-            scheduled_date: d.toISOString().slice(0, 10),
-            platform: "instagram" as const,
-            format: "Reel",
-            hook: s.label,
-            status: "idea" as const,
-            funnel_stage: s.stage,
-            week_start: week,
-            tags: [] as string[],
-          };
-        });
-        const { error } = await context.supabase.from("content_items").insert(rows);
-        if (error) throw new Error(error.message);
-      }
-
       await context.supabase
         .from("content_week_plans")
         .update({ auto_provisioned: true })
