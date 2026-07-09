@@ -412,7 +412,6 @@ function ItemDialog({ initial, userId, onClose, onSaved, promotingIdea: pIdea }:
   promotingIdea: Idea | null;
 }) {
   const isNew = !initial?.id;
-  const pIdea = promotingIdea;
   const [scheduled, setScheduled] = useState(initial?.scheduled_date ?? "");
   const [platform, setPlatform] = useState<Platform>(initial?.platform ?? "instagram");
   const [format, setFormat] = useState(initial?.format ?? "");
