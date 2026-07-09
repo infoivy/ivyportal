@@ -45,19 +45,20 @@ function RevenuePage() {
   const [rates, setRates] = useState<CommissionRates>(DEFAULT_RATES);
   const [rateRows, setRateRows] = useState<{ id: string; key: string; label: string; rate: number; active: boolean }[]>([]);
   const [closers, setClosers] = useState<Profile[]>([]);
+  const [setters, setSetters] = useState<Profile[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [logOpen, setLogOpen] = useState(false);
   const [editing, setEditing] = useState<Deal | null>(null);
 
   const load = async () => {
-    const [dealsRes, ratesRes, closersRes, studentsRes] = await Promise.all([
+    const [dealsRes, ratesRes, rolesRes, studentsRes] = await Promise.all([
       supabase.from("deals").select("*").order("deal_date", { ascending: false }).limit(500),
       supabase.from("commission_rates").select("*").eq("active", true),
       supabase
         .from("user_roles")
         .select("user_id, role")
-        .in("role", ["closer", "coach", "admin"]),
+        .in("role", ["closer", "coach", "admin", "setter"]),
       supabase.from("students").select("id, full_name").order("full_name"),
     ]);
 
@@ -66,17 +67,24 @@ function RevenuePage() {
     const rows: { id: string; key: string; label: string; rate: number; active: boolean }[] = [];
     for (const row of ratesRes.data ?? []) {
       rows.push({ id: row.id, key: row.key, label: row.label, rate: Number(row.rate), active: row.active });
-      if (row.key === "new_close") r.new_close = Number(row.rate);
-      if (row.key === "pif_under_30d") r.pif_under_30d = Number(row.rate);
-      if (row.key === "payment_plan") r.payment_plan = Number(row.rate);
+      const k = row.key as keyof CommissionRates;
+      if (k in r) (r as Record<string, number>)[k] = Number(row.rate);
     }
     setRates(r);
     setRateRows(rows);
 
-    const closerIds = Array.from(new Set((closersRes.data ?? []).map((r) => r.user_id)));
-    if (closerIds.length > 0) {
-      const { data: profs } = await supabase.from("profiles").select("id, display_name").in("id", closerIds);
-      setClosers((profs ?? []) as Profile[]);
+    const closerIds = Array.from(
+      new Set((rolesRes.data ?? []).filter((r) => r.role !== "setter").map((r) => r.user_id)),
+    );
+    const setterIds = Array.from(
+      new Set((rolesRes.data ?? []).filter((r) => r.role === "setter" || r.role === "admin").map((r) => r.user_id)),
+    );
+    const allIds = Array.from(new Set([...closerIds, ...setterIds]));
+    if (allIds.length > 0) {
+      const { data: profs } = await supabase.from("profiles").select("id, display_name").in("id", allIds);
+      const profMap = new Map(((profs ?? []) as Profile[]).map((p) => [p.id, p]));
+      setClosers(closerIds.map((id) => profMap.get(id)).filter(Boolean) as Profile[]);
+      setSetters(setterIds.map((id) => profMap.get(id)).filter(Boolean) as Profile[]);
     }
     setStudents((studentsRes.data ?? []) as Student[]);
     setLoading(false);
