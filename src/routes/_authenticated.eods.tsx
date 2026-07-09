@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { CheckCircle2, Clock, TrendingUp, Users, Phone, Target, AlertTriangle, ChevronRight } from "lucide-react";
+import { CheckCircle2, Clock, TrendingUp, Users, Phone, Target, AlertTriangle, ChevronRight, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/eods")({
   head: () => ({ meta: [{ title: "EOD Reports — ISA Team" }] }),
