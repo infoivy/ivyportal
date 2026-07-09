@@ -704,6 +704,7 @@ export type Database = {
           status: Database["public"]["Enums"]["student_status"]
           student_grade: string | null
           testimonial_collected: boolean
+          testimonial_requested: boolean
           trustpilot_collected: boolean
           updated_at: string
           user_id: string | null
@@ -729,6 +730,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["student_status"]
           student_grade?: string | null
           testimonial_collected?: boolean
+          testimonial_requested?: boolean
           trustpilot_collected?: boolean
           updated_at?: string
           user_id?: string | null
@@ -754,12 +756,69 @@ export type Database = {
           status?: Database["public"]["Enums"]["student_status"]
           student_grade?: string | null
           testimonial_collected?: boolean
+          testimonial_requested?: boolean
           trustpilot_collected?: boolean
           updated_at?: string
           user_id?: string | null
           whatsapp?: string | null
         }
         Relationships: []
+      }
+      testimonials: {
+        Row: {
+          collected_at: string | null
+          collected_by: string | null
+          content_text: string | null
+          created_at: string
+          file_path: string | null
+          id: string
+          source_url: string | null
+          status: Database["public"]["Enums"]["testimonial_status"]
+          student_id: string | null
+          tags: string[]
+          title: string | null
+          type: Database["public"]["Enums"]["testimonial_type"]
+          updated_at: string
+        }
+        Insert: {
+          collected_at?: string | null
+          collected_by?: string | null
+          content_text?: string | null
+          created_at?: string
+          file_path?: string | null
+          id?: string
+          source_url?: string | null
+          status?: Database["public"]["Enums"]["testimonial_status"]
+          student_id?: string | null
+          tags?: string[]
+          title?: string | null
+          type: Database["public"]["Enums"]["testimonial_type"]
+          updated_at?: string
+        }
+        Update: {
+          collected_at?: string | null
+          collected_by?: string | null
+          content_text?: string | null
+          created_at?: string
+          file_path?: string | null
+          id?: string
+          source_url?: string | null
+          status?: Database["public"]["Enums"]["testimonial_status"]
+          student_id?: string | null
+          tags?: string[]
+          title?: string | null
+          type?: Database["public"]["Enums"]["testimonial_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "testimonials_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -826,6 +885,8 @@ export type Database = {
         | "graduated"
         | "paused"
       student_status: "active" | "inactive" | "ghosting"
+      testimonial_status: "requested" | "received" | "approved" | "published"
+      testimonial_type: "video" | "image" | "text" | "trustpilot"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -982,6 +1043,8 @@ export const Constants = {
         "paused",
       ],
       student_status: ["active", "inactive", "ghosting"],
+      testimonial_status: ["requested", "received", "approved", "published"],
+      testimonial_type: ["video", "image", "text", "trustpilot"],
     },
   },
 } as const
