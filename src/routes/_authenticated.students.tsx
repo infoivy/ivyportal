@@ -667,13 +667,17 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
       if (!closerId) return toast.error("Pick who closed this deal");
       if (payMode === "installments") {
         if (dep > tv) return toast.error("Deposit cannot exceed total");
-        if (n < 1) return toast.error("At least 1 installment");
+        if (scheduleMode === "even" && n < 1) return toast.error("At least 1 installment");
+        if (scheduleMode === "custom") {
+          const cleanRows = customRows.filter(r => Number(r.amount) > 0);
+          if (cleanRows.length === 0) return toast.error("Add at least one payment row");
+          if (cleanRows.some(r => !r.due_date)) return toast.error("Each payment row needs a due date");
+        }
       }
     }
 
     setSaving(true);
     try {
-      // 1) Student
       const paymentState: PaymentState | null =
         payMode === "pif" ? "paid_in_full" : payMode === "installments" ? "installments" : null;
       const callsAllotted = pkg === "one_on_one" ? 10 : 0;
@@ -694,7 +698,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
       if (stuErr) throw new Error("Student: " + stuErr.message);
       const studentId = newStu.id;
 
-      // 2) Deal
+      // Deal
       if (payMode !== "none") {
         const cashUpfront = payMode === "pif" ? tv : dep;
         const paymentType = payMode === "pif" ? "pif" : dep > 0 ? "deposit" : "split";
@@ -702,46 +706,73 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
           student_id: studentId,
           student_name: fullName.trim(),
           closer_id: closerId,
+          setter_id: setterId || null,
           program_type: pkg === "one_on_one" ? "1:1 Pathway" : "Group Coaching",
           total_value: tv,
           cash_collected_upfront: cashUpfront,
           payment_type: paymentType as any,
           deal_date: dealDate,
           created_by: user?.id ?? null,
-        });
+        } as any);
         if (dealErr) throw new Error("Deal: " + dealErr.message);
       }
 
-      // 3) Installments plan + payments
-      if (payMode === "installments" && remaining > 0 && n > 0) {
-        const { data: plan, error: planErr } = await supabase.from("installments").insert({
-          student_id: studentId,
-          student_name: fullName.trim(),
-          closer_id: closerId,
-          coach_id: coachId || null,
-          total_amount: remaining,
-          currency: "USD",
-          created_by: user?.id ?? null,
-        }).select("id").single();
-        if (planErr) throw new Error("Installment plan: " + planErr.message);
+      // Installments plan + payments
+      if (payMode === "installments") {
+        const cleanCustom = customRows.filter(r => Number(r.amount) > 0);
+        const planTotal = scheduleMode === "custom"
+          ? cleanCustom.reduce((a, r) => a + Number(r.amount), 0)
+          : remaining;
 
-        const start = new Date(firstDueDate + "T00:00:00");
-        const rows = Array.from({ length: n }, (_, i) => {
-          const due = new Date(start);
-          if (frequency === "monthly") due.setMonth(start.getMonth() + i);
-          else if (frequency === "biweekly") due.setDate(start.getDate() + i * 14);
-          else due.setDate(start.getDate() + i * 7);
-          return {
-            installment_id: plan.id,
-            sequence: i + 1,
-            amount: perInstallment,
+        if (planTotal > 0) {
+          const { data: plan, error: planErr } = await supabase.from("installments").insert({
+            student_id: studentId,
+            student_name: fullName.trim(),
+            closer_id: closerId,
+            setter_id: setterId || null,
+            coach_id: coachId || null,
+            total_amount: planTotal,
             currency: "USD",
-            due_date: due.toISOString().slice(0, 10),
-            status: "upcoming" as const,
-          };
-        });
-        const { error: payErr } = await supabase.from("installment_payments").insert(rows);
-        if (payErr) throw new Error("Installment schedule: " + payErr.message);
+            created_by: user?.id ?? null,
+          } as any).select("id").single();
+          if (planErr) throw new Error("Installment plan: " + planErr.message);
+
+          let rows: any[] = [];
+          if (scheduleMode === "even" && n > 0) {
+            const start = new Date(firstDueDate + "T00:00:00");
+            rows = Array.from({ length: n }, (_, i) => {
+              const due = new Date(start);
+              if (frequency === "monthly") due.setMonth(start.getMonth() + i);
+              else if (frequency === "biweekly") due.setDate(start.getDate() + i * 14);
+              else due.setDate(start.getDate() + i * 7);
+              return {
+                installment_id: plan.id,
+                sequence: i + 1,
+                amount: perInstallment,
+                currency: "USD",
+                due_date: due.toISOString().slice(0, 10),
+                status: "upcoming" as const,
+              };
+            });
+          } else {
+            rows = cleanCustom
+              .slice()
+              .sort((a, b) => a.due_date.localeCompare(b.due_date))
+              .map((r, i) => ({
+                installment_id: plan.id,
+                sequence: i + 1,
+                amount: Number(r.amount),
+                currency: "USD",
+                due_date: r.due_date,
+                status: "upcoming" as const,
+                payment_method: r.payment_method.trim() || null,
+              }));
+          }
+          if (rows.length) {
+            const { error: payErr } = await supabase.from("installment_payments").insert(rows);
+            if (payErr) throw new Error("Installment schedule: " + payErr.message);
+          }
+        }
       }
 
       toast.success("Student added — deal & installments created.");
