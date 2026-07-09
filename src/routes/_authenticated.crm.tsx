@@ -443,3 +443,200 @@ function StatCard({
     </div>
   );
 }
+
+function LeadDetailDrawer({
+  lead, onClose, onNotesChanged,
+}: { lead: Lead | null; onClose: () => void; onNotesChanged: (leadId: string) => void }) {
+  const { user, roles } = useAuth();
+  const isAdmin = roles.includes("admin");
+  const list = useServerFn(listLeadNotes);
+  const create = useServerFn(createLeadNote);
+  const update = useServerFn(updateLeadNote);
+  const del = useServerFn(deleteLeadNote);
+
+  const [notes, setNotes] = useState<LeadNote[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [body, setBody] = useState("");
+  const [pinned, setPinned] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editBody, setEditBody] = useState("");
+
+  useEffect(() => {
+    if (!lead) return;
+    let alive = true;
+    setLoading(true);
+    list({ data: { leadId: lead.id } })
+      .then((rows) => { if (alive) setNotes(rows ?? []); })
+      .catch((e: any) => toast.error(e?.message ?? "Failed to load notes"))
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, [lead?.id]);
+
+  if (!lead) return null;
+
+  const submit = async () => {
+    const txt = body.trim();
+    if (!txt) return;
+    setSaving(true);
+    try {
+      await create({ data: { leadId: lead.id, leadName: lead.name, body: txt, pinned } });
+      setBody(""); setPinned(false);
+      const rows = await list({ data: { leadId: lead.id } });
+      setNotes(rows ?? []);
+      onNotesChanged(lead.id);
+      toast.success("Note added");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to add note");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const togglePin = async (n: LeadNote) => {
+    try {
+      await update({ data: { id: n.id, pinned: !n.pinned } });
+      const rows = await list({ data: { leadId: lead.id } });
+      setNotes(rows ?? []);
+    } catch (e: any) { toast.error(e?.message ?? "Failed"); }
+  };
+
+  const saveEdit = async (n: LeadNote) => {
+    const txt = editBody.trim();
+    if (!txt) return;
+    try {
+      await update({ data: { id: n.id, body: txt } });
+      setEditingId(null); setEditBody("");
+      const rows = await list({ data: { leadId: lead.id } });
+      setNotes(rows ?? []);
+    } catch (e: any) { toast.error(e?.message ?? "Failed"); }
+  };
+
+  const remove = async (n: LeadNote) => {
+    if (!confirm("Delete this note?")) return;
+    try {
+      await del({ data: { id: n.id } });
+      const rows = await list({ data: { leadId: lead.id } });
+      setNotes(rows ?? []);
+      onNotesChanged(lead.id);
+    } catch (e: any) { toast.error(e?.message ?? "Failed"); }
+  };
+
+  const c = STATUS_TYPE_COLOR[lead.status_type] ?? "#a855f7";
+
+  return (
+    <div className="fixed inset-0 z-50 flex" role="dialog" aria-modal="true">
+      <button onClick={onClose} className="flex-1 bg-black/60" aria-label="Close" />
+      <aside className="w-full max-w-[520px] bg-[#0b0d12] border-l border-border h-full overflow-y-auto flex flex-col">
+        <div className="px-4 py-3 border-b border-border flex items-start justify-between gap-3 sticky top-0 bg-[#0b0d12] z-10">
+          <div className="min-w-0">
+            <div className="text-sm font-bold truncate">{lead.name}</div>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="text-[10px] uppercase tracking-wider" style={{ color: c }}>{lead.status}</span>
+              <span className="text-[10px] text-muted-foreground">·</span>
+              <span className="text-[10px] font-mono text-emerald-400">{lead.value > 0 ? currency(lead.value) : "—"}</span>
+              <span className="text-[10px] text-muted-foreground">·</span>
+              <span className="text-[10px] text-muted-foreground">updated {relTime(lead.updated_at)}</span>
+            </div>
+          </div>
+          <button onClick={onClose} className="h-7 w-7 grid place-items-center rounded-sm border border-border hover:border-rose-500/40">
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+
+        <div className="p-4 space-y-3 border-b border-border">
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Add internal note</div>
+          <textarea
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            placeholder="What happened on this lead? Context, follow-up, objections…"
+            rows={3}
+            className="w-full text-xs bg-white/[0.02] border border-border rounded-sm p-2 focus:outline-none focus:border-emerald-500/40 resize-y"
+          />
+          <div className="flex items-center justify-between gap-2">
+            <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
+              <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} className="accent-fuchsia-500" />
+              <Pin className="h-3 w-3" /> Pin to top
+            </label>
+            <Button size="sm" onClick={submit} disabled={saving || !body.trim()}>
+              {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Send className="h-3 w-3 mr-1" /> Save note</>}
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex-1 p-4">
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">
+            History · {notes.length} {notes.length === 1 ? "note" : "notes"}
+          </div>
+          {loading ? (
+            <div className="text-xs text-muted-foreground py-6 text-center">Loading…</div>
+          ) : notes.length === 0 ? (
+            <div className="text-xs text-muted-foreground py-6 text-center border border-dashed border-border rounded-sm">
+              No notes yet. Log the first one above.
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {notes.map((n) => {
+                const canEdit = isAdmin || n.created_by === user?.id;
+                const editing = editingId === n.id;
+                return (
+                  <div key={n.id} className="rounded-sm border border-border bg-white/[0.02] p-2.5">
+                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                      <div className="flex items-center gap-2 min-w-0">
+                        {n.pinned && <Pin className="h-3 w-3 text-fuchsia-400 shrink-0" />}
+                        <span className="text-[11px] font-medium truncate">{n.author_name || "Team member"}</span>
+                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">{relTime(n.created_at)}</span>
+                      </div>
+                      {canEdit && (
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            onClick={() => togglePin(n)}
+                            title={n.pinned ? "Unpin" : "Pin"}
+                            className="h-6 w-6 grid place-items-center rounded-sm hover:bg-white/[0.04] text-muted-foreground hover:text-fuchsia-400"
+                          >
+                            <Pin className="h-3 w-3" />
+                          </button>
+                          {!editing && (
+                            <button
+                              onClick={() => { setEditingId(n.id); setEditBody(n.body); }}
+                              className="text-[10px] px-1.5 py-0.5 rounded-sm border border-border text-muted-foreground hover:text-foreground"
+                            >
+                              Edit
+                            </button>
+                          )}
+                          <button
+                            onClick={() => remove(n)}
+                            title="Delete"
+                            className="h-6 w-6 grid place-items-center rounded-sm hover:bg-white/[0.04] text-muted-foreground hover:text-rose-400"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    {editing ? (
+                      <div className="space-y-1.5">
+                        <textarea
+                          value={editBody}
+                          onChange={(e) => setEditBody(e.target.value)}
+                          rows={3}
+                          className="w-full text-xs bg-white/[0.02] border border-border rounded-sm p-2 focus:outline-none focus:border-emerald-500/40"
+                        />
+                        <div className="flex justify-end gap-1.5">
+                          <Button size="sm" variant="outline" onClick={() => { setEditingId(null); setEditBody(""); }}>Cancel</Button>
+                          <Button size="sm" onClick={() => saveEdit(n)}>Save</Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-xs whitespace-pre-wrap leading-relaxed">{n.body}</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </aside>
+    </div>
+  );
+}
