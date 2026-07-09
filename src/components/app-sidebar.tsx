@@ -64,37 +64,64 @@ export function AppSidebar({ roles }: { roles: string[] }) {
     const filtered = items.filter(i => !i.roles || i.roles.some(r => roles.includes(r)));
     if (filtered.length === 0) return null;
     return (
-      <SidebarGroup>
-        {!collapsed && <SidebarGroupLabel>{label}</SidebarGroupLabel>}
+      <SidebarGroup className="px-2 py-1.5">
+        {!collapsed && (
+          <SidebarGroupLabel className="px-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70">
+            {label}
+          </SidebarGroupLabel>
+        )}
         <SidebarGroupContent>
-          <SidebarMenu>
-            {filtered.map(item => (
-              <SidebarMenuItem key={item.url}>
-                <SidebarMenuButton asChild isActive={isActive(item.url)}>
-                  <Link to={item.url} className="flex items-center gap-2">
-                    <item.icon className="h-4 w-4 shrink-0" />
-                    {!collapsed && <span>{item.title}</span>}
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
+          <SidebarMenu className="gap-0.5">
+            {filtered.map(item => {
+              const active = isActive(item.url);
+              return (
+                <SidebarMenuItem key={item.url}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={active}
+                    className={
+                      "relative h-9 rounded-md transition-colors " +
+                      (active
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[3px] before:rounded-full before:bg-primary"
+                        : "text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-accent/60")
+                    }
+                  >
+                    <Link to={item.url} className="flex items-center gap-2.5 pl-3">
+                      <item.icon className={"h-4 w-4 shrink-0 " + (active ? "text-primary" : "text-sidebar-foreground/60")} />
+                      {!collapsed && <span className="text-sm">{item.title}</span>}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            })}
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
     );
   };
 
+  const header = (label: string) => (
+    <SidebarHeader className="border-b border-sidebar-border/60">
+      <div className="px-2 py-2 flex items-center gap-2.5">
+        <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-emerald-600 text-primary-foreground flex items-center justify-center text-[11px] font-bold shadow-sm ring-1 ring-primary/30">
+          ISA
+        </div>
+        {!collapsed && (
+          <div className="flex flex-col leading-tight">
+            <span className="font-semibold text-sm text-sidebar-foreground">Ivy Portal</span>
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground/70">{label}</span>
+          </div>
+        )}
+      </div>
+    </SidebarHeader>
+  );
+
   // Student-only view: minimal nav
   if (isStudent && !isTeam) {
     return (
-      <Sidebar collapsible="icon">
-        <SidebarHeader>
-          <div className="px-2 py-1 flex items-center gap-2">
-            <div className="h-7 w-7 rounded-md bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">ISA</div>
-            {!collapsed && <span className="font-semibold text-sm">Student</span>}
-          </div>
-        </SidebarHeader>
-        <SidebarContent>
+      <Sidebar collapsible="icon" className="border-r border-sidebar-border">
+        {header("Student")}
+        <SidebarContent className="gap-0 py-2">
           {renderGroup("You", studentItems)}
         </SidebarContent>
       </Sidebar>
@@ -102,14 +129,9 @@ export function AppSidebar({ roles }: { roles: string[] }) {
   }
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader>
-        <div className="px-2 py-1 flex items-center gap-2">
-          <div className="h-7 w-7 rounded-md bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">ISA</div>
-          {!collapsed && <span className="font-semibold text-sm">Team</span>}
-        </div>
-      </SidebarHeader>
-      <SidebarContent>
+    <Sidebar collapsible="icon" className="border-r border-sidebar-border">
+      {header(isAdmin ? "Admin" : "Team")}
+      <SidebarContent className="gap-0 py-2">
         {renderGroup("Work", workItems)}
         {renderGroup("Knowledge", knowledgeItems)}
         {renderGroup("Ops", opsItems)}
