@@ -6,6 +6,7 @@ import {
   Users, UserPlus, Eye, Zap, MessageSquare, Heart, MessagesSquare,
   Link2, FileText, Target, Globe, ArrowRightLeft, Calendar as CalIcon,
   Settings, CheckCircle2, AlertTriangle, DollarSign, Phone, Star, ChevronDown,
+  ListChecks, Flame, TrendingUp, TrendingDown, Minus, Sunrise,
 } from "lucide-react";
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -51,6 +52,7 @@ type OpsCounts = {
   callsThisWeek: number;
   eodsMissingToday: number;
   testimonialsPending: number;
+  openActionItems: number;
 };
 
 function Dashboard() {
