@@ -23,6 +23,8 @@ type EOD = {
   dms_sent: number; convos_started: number; calls_booked: number; calls_scheduled: number;
   shows: number; no_shows: number;
   looms_reviewed: number; roleplays_reviewed: number; student_checkins: number; escalations_resolved: number;
+  calls_taken: number; closes: number; deposits: number;
+  cash_collected: number; deferred_cash: number; follow_ups_done: number;
   wins: string | null; blockers: string | null; tomorrow_focus: string | null; summary: string | null;
 };
 
@@ -30,6 +32,8 @@ const emptyForm = {
   dms_sent: 0, convos_started: 0, calls_booked: 0, calls_scheduled: 0,
   shows: 0, no_shows: 0,
   looms_reviewed: 0, roleplays_reviewed: 0, student_checkins: 0, escalations_resolved: 0,
+  calls_taken: 0, closes: 0, deposits: 0,
+  cash_collected: 0, deferred_cash: 0, follow_ups_done: 0,
   wins: "", blockers: "", tomorrow_focus: "", summary: "",
 };
 
@@ -37,6 +41,7 @@ function EODsPage() {
   const { user, roles } = useAuth();
   const canViewTeam = roles.includes("admin") || roles.includes("closer");
   const isCsm = roles.includes("csm");
+  const isCloser = roles.includes("closer") || roles.includes("coach");
   const today = new Date().toISOString().slice(0, 10);
 
   const [form, setForm] = useState(emptyForm);
@@ -60,6 +65,12 @@ function EODsPage() {
         roleplays_reviewed: todayEod.roleplays_reviewed ?? 0,
         student_checkins: todayEod.student_checkins ?? 0,
         escalations_resolved: todayEod.escalations_resolved ?? 0,
+        calls_taken: todayEod.calls_taken ?? 0,
+        closes: todayEod.closes ?? 0,
+        deposits: todayEod.deposits ?? 0,
+        cash_collected: Number(todayEod.cash_collected ?? 0),
+        deferred_cash: Number(todayEod.deferred_cash ?? 0),
+        follow_ups_done: todayEod.follow_ups_done ?? 0,
         wins: todayEod.wins ?? "", blockers: todayEod.blockers ?? "",
         tomorrow_focus: todayEod.tomorrow_focus ?? "", summary: todayEod.summary ?? "",
       });
@@ -103,6 +114,7 @@ function EODsPage() {
   };
 
   const setNum = (k: keyof typeof form) => (v: string) => setForm(f => ({ ...f, [k]: parseInt(v) || 0 }));
+  const setFloat = (k: keyof typeof form) => (v: string) => setForm(f => ({ ...f, [k]: parseFloat(v) || 0 }));
 
   // 7-day rolling summary for the current user + streak
   const weekly = useMemo(() => {
@@ -195,6 +207,34 @@ function EODsPage() {
                     <NumField label="Escalations solved" value={form.escalations_resolved} onChange={setNum("escalations_resolved")} />
                   </div>
                 </div>
+              )}
+
+              {isCloser && (
+                <>
+                  <div className="space-y-3">
+                    <SectionLabel>Closer — call activity</SectionLabel>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <NumField label="Calls taken" value={form.calls_taken} onChange={setNum("calls_taken")} />
+                      <NumField label="Closes" value={form.closes} onChange={setNum("closes")} />
+                      <NumField label="Deposits" value={form.deposits} onChange={setNum("deposits")} />
+                      <NumField label="Follow-ups done" value={form.follow_ups_done} onChange={setNum("follow_ups_done")} />
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <SectionLabel>Closer — cash</SectionLabel>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Cash collected today ($)</Label>
+                        <Input type="number" min={0} step="0.01" value={form.cash_collected} onChange={e => setFloat("cash_collected")(e.target.value)} onFocus={e => e.currentTarget.select()} className="bg-[#0a0b0f] border-[#1f2530] rounded-sm h-9 font-mono text-sm focus-visible:ring-emerald-500/40 focus-visible:border-emerald-500/40" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Deferred cash — PIF &lt;30d ($)</Label>
+                        <Input type="number" min={0} step="0.01" value={form.deferred_cash} onChange={e => setFloat("deferred_cash")(e.target.value)} onFocus={e => e.currentTarget.select()} className="bg-[#0a0b0f] border-[#1f2530] rounded-sm h-9 font-mono text-sm focus-visible:ring-emerald-500/40 focus-visible:border-emerald-500/40" />
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">Deferred = PIF cash expected within 30 days per the EOD SOP.</p>
+                  </div>
+                </>
               )}
 
               <div className="space-y-3">

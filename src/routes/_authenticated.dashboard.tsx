@@ -13,6 +13,7 @@ import {
   BarChart, Bar, Cell,
 } from "recharts";
 import { format, subDays } from "date-fns";
+import { CashLeaderboard } from "@/components/weekly-leaderboard";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — ISA Team" }] }),
@@ -303,6 +304,10 @@ function Dashboard() {
             </Panel>
           )}
         </div>
+
+        {(roles.includes("admin") || roles.includes("closer") || roles.includes("coach")) && (
+          <CashLeaderboard compact />
+        )}
 
         {/* Row 3: Top Setters + Goals + Audience */}
         <div className="grid gap-3 lg:grid-cols-[1.5fr_1fr]">
