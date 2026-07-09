@@ -188,7 +188,7 @@ function StudentsLayout() {
       </header>
 
       {/* Phase filter chips */}
-      <div className="flex flex-wrap gap-1.5">
+      <div className="flex flex-wrap gap-1.5 items-center">
         <button
           onClick={() => setPhaseFilter("all")}
           className={`text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-sm border transition ${
@@ -208,68 +208,144 @@ function StudentsLayout() {
             {p.label} · {students.filter(s => s.phase === p.key).length}
           </button>
         ))}
+        <button
+          onClick={() => setPhaseFilter("at_risk")}
+          className={`flex items-center gap-1 text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-sm border transition ${
+            phaseFilter === "at_risk" ? "text-rose-400 border-rose-500/30 bg-rose-500/10" : "text-muted-foreground border-[#1f2530] hover:border-rose-500/30"
+          }`}
+        >
+          <AlertTriangle className="h-3 w-3" /> At risk · {atRiskCount}
+        </button>
+
+        {view === "kanban" && (
+          <div className="ml-auto flex items-center border border-[#1f2530] bg-[#0f1116] rounded-sm p-0.5">
+            <button onClick={() => setKanbanBy("phase")} className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm ${kanbanBy === "phase" ? "bg-[#1a1f29] text-foreground" : "text-muted-foreground"}`}>By phase</button>
+            <button onClick={() => setKanbanBy("coach")} className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm flex items-center gap-1 ${kanbanBy === "coach" ? "bg-[#1a1f29] text-foreground" : "text-muted-foreground"}`}>
+              <Users className="h-3 w-3" /> By coach
+            </button>
+          </div>
+        )}
       </div>
 
       {view === "table" ? (
         <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm overflow-hidden">
-          <div className="grid grid-cols-[1.5fr_1fr_1fr_1fr_0.6fr_auto] items-center px-4 py-2 border-b border-[#1f2530] text-[10px] uppercase tracking-widest text-muted-foreground">
-            <span>Student</span><span>Phase</span><span>Status</span><span>Coach</span><span>Joined</span><span />
+          <div className="grid grid-cols-[1.4fr_1fr_1fr_1fr_0.5fr_auto] items-center px-4 py-2 border-b border-[#1f2530] text-[10px] uppercase tracking-widest text-muted-foreground gap-2">
+            <span>Student</span><span>Phase</span><span>Status</span><span>Coach</span><span>Last 1:1</span><span />
           </div>
           {filtered.length === 0 && <div className="p-8 text-center text-xs text-muted-foreground">No students match your filters.</div>}
           {filtered.map(s => {
-            const pm = phaseMeta(s.phase);
-            const sm = statusMeta(s.status);
+            const last = lastCallByStudent[s.id];
+            const risky = isAtRisk(s);
             return (
-              <Link key={s.id} to={"/students/$id" as any} params={{ id: s.id } as any} className="grid grid-cols-[1.5fr_1fr_1fr_1fr_0.6fr_auto] items-center gap-2 px-4 py-3 border-b border-[#1a1f29] last:border-0 hover:bg-[#14171e] transition">
-                <div className="min-w-0">
-                  <div className="text-sm font-medium truncate">{s.full_name}</div>
-                  <div className="text-[10px] text-muted-foreground truncate">{s.email ?? "no email"}</div>
-                </div>
-                <span className={`inline-flex items-center text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border w-fit ${pm.color}`}>{pm.label}</span>
-                <span className={`inline-flex items-center text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border w-fit ${sm.color}`}>{sm.label}</span>
-                <span className="text-xs text-muted-foreground truncate">{coachName(s.coach_id)}</span>
-                <span className="text-[10px] text-muted-foreground font-mono">{s.join_date}</span>
+              <div key={s.id} className={`grid grid-cols-[1.4fr_1fr_1fr_1fr_0.5fr_auto] items-center gap-2 px-4 py-3 border-b border-[#1a1f29] last:border-0 hover:bg-[#14171e] transition`}>
+                <Link to={"/students/$id" as any} params={{ id: s.id } as any} className="min-w-0 flex items-center gap-2">
+                  {risky && <AlertTriangle className="h-3 w-3 text-rose-400 shrink-0" />}
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium truncate">{s.full_name}</div>
+                    <div className="text-[10px] text-muted-foreground truncate">{s.email ?? "no email"}</div>
+                  </div>
+                </Link>
+                {canManage ? (
+                  <select
+                    value={s.phase}
+                    onChange={e => updateStudent(s.id, { phase: e.target.value as Phase })}
+                    className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border bg-transparent w-fit ${phaseMeta(s.phase).color}`}
+                  >
+                    {PHASES.map(p => <option key={p.key} value={p.key} className="bg-[#0f1116]">{p.label}</option>)}
+                  </select>
+                ) : (
+                  <span className={`inline-flex items-center text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border w-fit ${phaseMeta(s.phase).color}`}>{phaseMeta(s.phase).label}</span>
+                )}
+                {canManage ? (
+                  <select
+                    value={s.status}
+                    onChange={e => updateStudent(s.id, { status: e.target.value as Status })}
+                    className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border bg-transparent w-fit ${statusMeta(s.status).color}`}
+                  >
+                    {STATUSES.map(x => <option key={x.key} value={x.key} className="bg-[#0f1116]">{x.label}</option>)}
+                  </select>
+                ) : (
+                  <span className={`inline-flex items-center text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border w-fit ${statusMeta(s.status).color}`}>{statusMeta(s.status).label}</span>
+                )}
+                {canManage ? (
+                  <select
+                    value={s.coach_id ?? ""}
+                    onChange={e => updateStudent(s.id, { coach_id: e.target.value || null })}
+                    className="text-xs h-7 px-2 rounded-sm border border-[#1f2530] bg-transparent w-fit"
+                  >
+                    <option value="">Unassigned</option>
+                    {coaches.map(c => <option key={c.id} value={c.id} className="bg-[#0f1116]">{c.display_name ?? c.id}</option>)}
+                  </select>
+                ) : (
+                  <span className="text-xs text-muted-foreground truncate">{coachName(s.coach_id)}</span>
+                )}
+                <span className={`text-[10px] font-mono ${last && daysSince(last) > 14 ? "text-rose-400" : "text-muted-foreground"}`}>
+                  {last ? `${daysSince(last)}d ago` : "—"}
+                </span>
                 <div className="flex items-center gap-1 justify-end">
+                  <Link to={"/students/$id" as any} params={{ id: s.id } as any} className="text-muted-foreground hover:text-foreground p-1">
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </Link>
                   {canManage && roles.includes("admin") && (
                     <button
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteStudent(s.id); }}
+                      onClick={() => deleteStudent(s.id)}
                       className="p-1 rounded hover:bg-rose-500/10 text-muted-foreground hover:text-rose-400"
                       title="Delete student"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   )}
-                  <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
-              </Link>
+              </div>
             );
           })}
         </div>
-      ) : (
+      ) : kanbanBy === "phase" ? (
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
           {PHASES.map(p => (
-            <div key={p.key} className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-2 min-h-[200px]">
+            <div
+              key={p.key}
+              onDragOver={e => { if (canManage) e.preventDefault(); }}
+              onDrop={e => { const id = e.dataTransfer.getData("text/plain"); if (id && canManage) onDropToPhase(id, p.key); }}
+              className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-2 min-h-[200px]"
+            >
               <div className={`flex items-center justify-between text-[10px] uppercase tracking-wider px-1 py-1 mb-2 rounded-sm ${p.color}`}>
                 <span>{p.label}</span>
                 <span className="font-mono">{byPhase.get(p.key)!.length}</span>
               </div>
               <div className="space-y-1.5">
                 {byPhase.get(p.key)!.map(s => (
-                  <Link key={s.id} to={"/students/$id" as any} params={{ id: s.id } as any}
-                        className="block p-2 rounded-sm bg-[#14171e] border border-[#1f2530] hover:border-[#2a3140] transition">
-                    <div className="text-xs font-medium truncate">{s.full_name}</div>
-                    <div className="flex items-center justify-between mt-1">
-                      <span className={`text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm border ${statusMeta(s.status).color}`}>{statusMeta(s.status).label}</span>
-                      <span className="text-[9px] text-muted-foreground truncate ml-1">{coachName(s.coach_id).slice(0, 12)}</span>
-                    </div>
-                  </Link>
+                  <StudentCard key={s.id} s={s} canDrag={canManage} coachName={coachName(s.coach_id)} atRisk={isAtRisk(s)} />
                 ))}
-                {byPhase.get(p.key)!.length === 0 && <div className="text-[10px] text-muted-foreground text-center py-3">Empty</div>}
+                {byPhase.get(p.key)!.length === 0 && <div className="text-[10px] text-muted-foreground text-center py-3">Drop here</div>}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
+          {["__unassigned__", ...coaches.map(c => c.id)].map(cid => (
+            <div
+              key={cid}
+              onDragOver={e => { if (canManage) e.preventDefault(); }}
+              onDrop={e => { const id = e.dataTransfer.getData("text/plain"); if (id && canManage) onDropToCoach(id, cid === "__unassigned__" ? null : cid); }}
+              className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-2 min-h-[200px]"
+            >
+              <div className="flex items-center justify-between text-[10px] uppercase tracking-wider px-1 py-1 mb-2 rounded-sm text-sky-400 border-sky-500/30 bg-sky-500/10 border">
+                <span className="truncate">{cid === "__unassigned__" ? "Unassigned" : coachName(cid)}</span>
+                <span className="font-mono">{byCoach.get(cid)?.length ?? 0}</span>
+              </div>
+              <div className="space-y-1.5">
+                {(byCoach.get(cid) ?? []).map(s => (
+                  <StudentCard key={s.id} s={s} canDrag={canManage} coachName={phaseMeta(s.phase).label} atRisk={isAtRisk(s)} />
+                ))}
+                {(byCoach.get(cid)?.length ?? 0) === 0 && <div className="text-[10px] text-muted-foreground text-center py-3">Drop here</div>}
               </div>
             </div>
           ))}
         </div>
       )}
+
 
       {addOpen && <AddStudentModal onClose={() => setAddOpen(false)} onCreated={() => { setAddOpen(false); load(); }} coaches={coaches} />}
     </div>
