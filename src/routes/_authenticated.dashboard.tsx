@@ -515,17 +515,19 @@ function PanelHead({ title, subtitle, legend }: { title: string; subtitle?: stri
     </div>
   );
 }
-function Kpi({ icon: Icon, label, value, suffix, color, highlight, onClick, delta }: {
+function Kpi({ icon: Icon, label, value, suffix, color, highlight, onClick, delta, title }: {
   icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
   label: string; value: number; suffix?: string; color?: string; highlight?: boolean;
   onClick?: () => void;
   delta?: number | null;
+  title?: string;
 }) {
   const c = color ?? "#94a3b8";
   const clickable = !!onClick;
   return (
     <div
       onClick={onClick}
+      title={title}
       role={clickable ? "button" : undefined}
       tabIndex={clickable ? 0 : undefined}
       onKeyDown={clickable ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick!(); } } : undefined}
