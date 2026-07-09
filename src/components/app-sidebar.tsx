@@ -41,6 +41,10 @@ const opsItems: Item[] = [
 ];
 
 
+const founderItems: Item[] = [
+  { title: "Founder Space", url: "/founder", icon: Sparkles, roles: ["founder"] },
+];
+
 const adminItems: Item[] = [
   { title: "Admin", url: "/admin", icon: Shield, roles: ["admin"] },
   { title: "Team", url: "/team", icon: Users, roles: ["admin"] },
