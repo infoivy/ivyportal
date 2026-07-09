@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { CheckCircle2, Clock, TrendingUp, Users, Phone, Target, AlertTriangle, ChevronRight, Trash2 } from "lucide-react";
+import { CheckCircle2, Clock, TrendingUp, Users, Phone, Target, AlertTriangle, ChevronRight, Trash2, HeartHandshake } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/eods")({
   head: () => ({ meta: [{ title: "EOD Reports — ISA Team" }] }),
@@ -21,18 +21,21 @@ type EOD = {
   report_date: string;
   dms_sent: number; convos_started: number; calls_booked: number; calls_scheduled: number;
   shows: number; no_shows: number;
+  looms_reviewed: number; roleplays_reviewed: number; student_checkins: number; escalations_resolved: number;
   wins: string | null; blockers: string | null; tomorrow_focus: string | null; summary: string | null;
 };
 
 const emptyForm = {
   dms_sent: 0, convos_started: 0, calls_booked: 0, calls_scheduled: 0,
   shows: 0, no_shows: 0,
+  looms_reviewed: 0, roleplays_reviewed: 0, student_checkins: 0, escalations_resolved: 0,
   wins: "", blockers: "", tomorrow_focus: "", summary: "",
 };
 
 function EODsPage() {
   const { user, roles } = useAuth();
   const canViewTeam = roles.includes("admin") || roles.includes("closer");
+  const isCsm = roles.includes("csm");
   const today = new Date().toISOString().slice(0, 10);
 
   const [form, setForm] = useState(emptyForm);
@@ -52,6 +55,10 @@ function EODsPage() {
         dms_sent: todayEod.dms_sent, convos_started: todayEod.convos_started,
         calls_booked: todayEod.calls_booked, calls_scheduled: todayEod.calls_scheduled,
         shows: todayEod.shows, no_shows: todayEod.no_shows,
+        looms_reviewed: todayEod.looms_reviewed ?? 0,
+        roleplays_reviewed: todayEod.roleplays_reviewed ?? 0,
+        student_checkins: todayEod.student_checkins ?? 0,
+        escalations_resolved: todayEod.escalations_resolved ?? 0,
         wins: todayEod.wins ?? "", blockers: todayEod.blockers ?? "",
         tomorrow_focus: todayEod.tomorrow_focus ?? "", summary: todayEod.summary ?? "",
       });
@@ -98,6 +105,7 @@ function EODsPage() {
     return {
       dms: sum("dms_sent"), convos: sum("convos_started"), booked: sum("calls_booked"),
       shows: sum("shows"), noshows: sum("no_shows"), submitted: recent.length,
+      looms: sum("looms_reviewed"), roleplays: sum("roleplays_reviewed"), checkins: sum("student_checkins"), escalations: sum("escalations_resolved"),
     };
   }, [myEods]);
 
@@ -122,10 +130,10 @@ function EODsPage() {
       </header>
 
       <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
-        <WeekTile label="7d DMs" value={weekly.dms} icon={<Users className="h-3 w-3" />} />
-        <WeekTile label="7d Convos" value={weekly.convos} icon={<TrendingUp className="h-3 w-3" />} />
-        <WeekTile label="7d Booked" value={weekly.booked} icon={<Phone className="h-3 w-3" />} accent />
-        <WeekTile label="7d Shows" value={weekly.shows} icon={<Target className="h-3 w-3" />} />
+        <WeekTile label={isCsm ? "7d looms" : "7d DMs"} value={isCsm ? weekly.looms : weekly.dms} icon={isCsm ? <HeartHandshake className="h-3 w-3" /> : <Users className="h-3 w-3" />} />
+        <WeekTile label={isCsm ? "7d roleplays" : "7d Convos"} value={isCsm ? weekly.roleplays : weekly.convos} icon={<TrendingUp className="h-3 w-3" />} />
+        <WeekTile label={isCsm ? "7d check-ins" : "7d Booked"} value={isCsm ? weekly.checkins : weekly.booked} icon={<Phone className="h-3 w-3" />} accent />
+        <WeekTile label={isCsm ? "7d escalations" : "7d Shows"} value={isCsm ? weekly.escalations : weekly.shows} icon={<Target className="h-3 w-3" />} />
         <WeekTile label="7d No-shows" value={weekly.noshows} icon={<AlertTriangle className="h-3 w-3" />} />
         <WeekTile label="Reports" value={`${weekly.submitted}/7`} icon={<CheckCircle2 className="h-3 w-3" />} />
       </div>
@@ -165,6 +173,18 @@ function EODsPage() {
                 </div>
               </div>
 
+              {isCsm && (
+                <div className="space-y-3">
+                  <SectionLabel>CSM reviews</SectionLabel>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <NumField label="Looms reviewed" value={form.looms_reviewed} onChange={setNum("looms_reviewed")} />
+                    <NumField label="Roleplays reviewed" value={form.roleplays_reviewed} onChange={setNum("roleplays_reviewed")} />
+                    <NumField label="Student check-ins" value={form.student_checkins} onChange={setNum("student_checkins")} />
+                    <NumField label="Escalations solved" value={form.escalations_resolved} onChange={setNum("escalations_resolved")} />
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-3">
                 <SectionLabel>Narrative</SectionLabel>
                 <TextField label="Wins" value={form.wins} onChange={v => setForm(f => ({ ...f, wins: v }))} />
@@ -193,6 +213,8 @@ function EODsPage() {
                 <MiniStat label="Booked" value={form.calls_booked} highlight />
                 <MiniStat label="Shows" value={form.shows} />
                 <MiniStat label="No-shows" value={form.no_shows} />
+                {isCsm && <MiniStat label="Looms" value={form.looms_reviewed} />}
+                {isCsm && <MiniStat label="Roleplays" value={form.roleplays_reviewed} />}
               </div>
               <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-4 text-[11px] text-muted-foreground leading-relaxed">
                 <div className="text-[10px] uppercase tracking-widest text-emerald-400 mb-2">Pro tip</div>
@@ -309,7 +331,7 @@ function EODRow({ eod, author, onDelete }: { eod: EOD; author?: string; onDelete
             <RowStat label="Booked" value={eod.calls_booked} accent />
             <RowStat label="Sched" value={eod.calls_scheduled} />
             <RowStat label="Shows" value={eod.shows} />
-            <RowStat label="Conv%" value={`${conv}%`} />
+            <RowStat label={(eod.looms_reviewed || eod.roleplays_reviewed) ? "Looms" : "Conv%"} value={(eod.looms_reviewed || eod.roleplays_reviewed) ? eod.looms_reviewed : `${conv}%`} />
           </div>
         </button>
         {onDelete && (

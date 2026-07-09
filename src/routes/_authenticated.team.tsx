@@ -3,20 +3,21 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
-import { Users, Shield, Phone, UserCircle2, GraduationCap, Pencil, X } from "lucide-react";
+import { Users, Shield, Phone, UserCircle2, GraduationCap, Pencil, X, HeartHandshake } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/team")({
   head: () => ({ meta: [{ title: "Team — ISA" }] }),
   component: TeamPage,
 });
 
-type AppRole = "admin" | "closer" | "setter" | "coach";
+type AppRole = "admin" | "closer" | "setter" | "coach" | "csm";
 type Member = { id: string; display_name: string | null; avatar_url: string | null; roles: string[] };
 const ROLES: { key: AppRole; icon: React.ComponentType<{ className?: string }>; color: string }[] = [
   { key: "admin", icon: Shield, color: "text-rose-400 border-rose-500/30 bg-rose-500/5" },
   { key: "closer", icon: Phone, color: "text-sky-400 border-sky-500/30 bg-sky-500/5" },
   { key: "setter", icon: UserCircle2, color: "text-emerald-400 border-emerald-500/30 bg-emerald-500/5" },
   { key: "coach", icon: GraduationCap, color: "text-fuchsia-400 border-fuchsia-500/30 bg-fuchsia-500/5" },
+  { key: "csm", icon: HeartHandshake, color: "text-amber-400 border-amber-500/30 bg-amber-500/5" },
 ];
 
 function TeamPage() {
@@ -72,6 +73,7 @@ function TeamPage() {
     coaches: members.filter(m => m.roles.includes("coach")).length,
     closers: members.filter(m => m.roles.includes("closer")).length,
     setters: members.filter(m => m.roles.includes("setter")).length,
+    csms: members.filter(m => m.roles.includes("csm")).length,
   };
 
   return (
@@ -90,12 +92,13 @@ function TeamPage() {
         />
       </header>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
         <StatTile label="Members" value={counts.total} icon={<Users className="h-3 w-3" />} />
         <StatTile label="Admins" value={counts.admins} icon={<Shield className="h-3 w-3" />} accent="rose" />
         <StatTile label="Coaches" value={counts.coaches} icon={<GraduationCap className="h-3 w-3" />} accent="fuchsia" />
         <StatTile label="Closers" value={counts.closers} icon={<Phone className="h-3 w-3" />} accent="sky" />
         <StatTile label="Setters" value={counts.setters} icon={<UserCircle2 className="h-3 w-3" />} accent="emerald" />
+        <StatTile label="CSMs" value={counts.csms} icon={<HeartHandshake className="h-3 w-3" />} accent="amber" />
       </div>
 
       <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm overflow-hidden">
@@ -195,11 +198,12 @@ function EditProfileModal({ member, onClose, onSaved }: { member: Member; onClos
   );
 }
 
-function StatTile({ label, value, icon, accent }: { label: string; value: number; icon: React.ReactNode; accent?: "emerald" | "sky" | "rose" | "fuchsia" }) {
+function StatTile({ label, value, icon, accent }: { label: string; value: number; icon: React.ReactNode; accent?: "emerald" | "sky" | "rose" | "fuchsia" | "amber" }) {
   const color =
     accent === "emerald" ? "text-emerald-400" :
     accent === "sky" ? "text-sky-400" :
     accent === "rose" ? "text-rose-400" :
+    accent === "amber" ? "text-amber-400" :
     accent === "fuchsia" ? "text-fuchsia-400" : "text-foreground";
   return (
     <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-3">
