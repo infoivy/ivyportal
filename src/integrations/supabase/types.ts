@@ -59,6 +59,44 @@ export type Database = {
         }
         Relationships: []
       }
+      csm_student_notes: {
+        Row: {
+          created_at: string
+          id: string
+          note: string
+          student_id: string
+          tags: string[] | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          note: string
+          student_id: string
+          tags?: string[] | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          note?: string
+          student_id?: string
+          tags?: string[] | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "csm_student_notes_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       eods: {
         Row: {
           blockers: string | null
@@ -67,10 +105,14 @@ export type Database = {
           convos_started: number
           created_at: string
           dms_sent: number
+          escalations_resolved: number
           id: string
+          looms_reviewed: number
           no_shows: number
           report_date: string
+          roleplays_reviewed: number
           shows: number
+          student_checkins: number
           summary: string | null
           tomorrow_focus: string | null
           updated_at: string
@@ -84,10 +126,14 @@ export type Database = {
           convos_started?: number
           created_at?: string
           dms_sent?: number
+          escalations_resolved?: number
           id?: string
+          looms_reviewed?: number
           no_shows?: number
           report_date?: string
+          roleplays_reviewed?: number
           shows?: number
+          student_checkins?: number
           summary?: string | null
           tomorrow_focus?: string | null
           updated_at?: string
@@ -101,10 +147,14 @@ export type Database = {
           convos_started?: number
           created_at?: string
           dms_sent?: number
+          escalations_resolved?: number
           id?: string
+          looms_reviewed?: number
           no_shows?: number
           report_date?: string
+          roleplays_reviewed?: number
           shows?: number
+          student_checkins?: number
           summary?: string | null
           tomorrow_focus?: string | null
           updated_at?: string
@@ -344,7 +394,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "closer" | "setter" | "coach" | "student"
+      app_role: "admin" | "closer" | "setter" | "coach" | "student" | "csm"
       student_phase:
         | "uncategorized"
         | "onboarding"
@@ -480,7 +530,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "closer", "setter", "coach", "student"],
+      app_role: ["admin", "closer", "setter", "coach", "student", "csm"],
       student_phase: [
         "uncategorized",
         "onboarding",
