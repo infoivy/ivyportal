@@ -1,6 +1,16 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+// Local YYYY-MM-DD from a UTC-midnight Date. Avoid toISOString() — for a Date
+// built via Date.UTC() it returns the intended day, but we standardize here
+// to prevent regressions.
+function ymdUTC(d: Date): string {
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 async function requireFounderOrAdmin(context: { supabase: any; userId: string }) {
   const [{ data: isFounder }, { data: isAdmin }] = await Promise.all([
     context.supabase.rpc("has_role", { _user_id: context.userId, _role: "founder" }),
