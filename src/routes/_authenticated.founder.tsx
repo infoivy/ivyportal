@@ -110,6 +110,12 @@ function FounderPage() {
         </div>
         <div className="flex gap-2">
           <Link
+            to="/instagram"
+            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-sm border border-pink-500/30 bg-pink-500/5 hover:border-pink-500/60 text-pink-300 text-xs"
+          >
+            <Instagram className="h-3.5 w-3.5" /> IG Analytics
+          </Link>
+          <Link
             to="/knowledge"
             className="inline-flex items-center gap-1.5 h-8 px-3 rounded-sm border border-[#1f2530] hover:border-fuchsia-500/40 text-xs"
           >
