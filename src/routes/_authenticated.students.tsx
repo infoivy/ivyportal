@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -586,76 +586,273 @@ function StudentCard({ s, canDrag, coachName, atRisk }: { s: Student; canDrag: b
 
 
 
+type Closer = { id: string; display_name: string | null };
+
 function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void; onCreated: () => void; coaches: Coach[] }) {
-  const [form, setForm] = useState({
-    full_name: "", email: "", phase: "onboarding" as Phase, status: "active" as Status,
-    coach_id: "", join_date: new Date().toISOString().slice(0, 10), calls_included: 10, notes: "",
+  const { user } = useAuth();
+  const [closers, setClosers] = useState<Closer[]>([]);
+
+  // Basics
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
+  const [joinDate, setJoinDate] = useState(new Date().toISOString().slice(0, 10));
+  const [coachId, setCoachId] = useState("");
+  const [notes, setNotes] = useState("");
+
+  // Package
+  const [pkg, setPkg] = useState<"one_on_one" | "group_only">("one_on_one");
+
+  // Payment
+  const [totalAmount, setTotalAmount] = useState<string>("");
+  const [payMode, setPayMode] = useState<"pif" | "installments" | "none">("pif");
+  const [closerId, setCloserId] = useState<string>("");
+  const [dealDate, setDealDate] = useState(new Date().toISOString().slice(0, 10));
+
+  // Installments detail
+  const [depositAmount, setDepositAmount] = useState<string>("0");
+  const [numInstallments, setNumInstallments] = useState<string>("3");
+  const [firstDueDate, setFirstDueDate] = useState<string>(() => {
+    const d = new Date(); d.setMonth(d.getMonth() + 1); return d.toISOString().slice(0, 10);
   });
+  const [frequency, setFrequency] = useState<"monthly" | "biweekly" | "weekly">("monthly");
+
   const [saving, setSaving] = useState(false);
 
+  // Fetch closers (users with closer or admin role)
+  useEffect(() => {
+    (async () => {
+      const { data: roleRows } = await supabase.from("user_roles").select("user_id, role").in("role", ["closer", "admin"]);
+      const ids = Array.from(new Set((roleRows ?? []).map((r: any) => r.user_id)));
+      if (!ids.length) return;
+      const { data: profs } = await supabase.from("profiles").select("id, display_name").in("id", ids);
+      setClosers((profs ?? []) as Closer[]);
+      if (user?.id && ids.includes(user.id)) setCloserId(user.id);
+      else if (ids.length === 1) setCloserId(ids[0]);
+    })();
+  }, [user?.id]);
+
+  const tv = Number(totalAmount) || 0;
+  const dep = Number(depositAmount) || 0;
+  const n = Math.max(1, Math.min(24, Number(numInstallments) || 0));
+  const remaining = Math.max(0, tv - dep);
+  const perInstallment = payMode === "installments" && n > 0 ? remaining / n : 0;
+
   const submit = async () => {
-    if (!form.full_name.trim()) return toast.error("Name required");
-    const email = form.email.trim().toLowerCase();
-    if (!email) return toast.error("Email is required — it's how the student's login links to this record.");
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return toast.error("Enter a valid email address.");
+    if (!fullName.trim()) return toast.error("Name required");
+    const emailNorm = email.trim().toLowerCase();
+    if (!emailNorm || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailNorm)) return toast.error("Valid email required");
+    if (payMode !== "none") {
+      if (tv <= 0) return toast.error("Total amount must be > 0");
+      if (!closerId) return toast.error("Pick who closed this deal");
+      if (payMode === "installments") {
+        if (dep > tv) return toast.error("Deposit cannot exceed total");
+        if (n < 1) return toast.error("At least 1 installment");
+      }
+    }
+
     setSaving(true);
-    const { error } = await supabase.from("students").insert({
-      full_name: form.full_name.trim(),
-      email,
-      phase: form.phase,
-      status: form.status,
-      coach_id: form.coach_id || null,
-      join_date: form.join_date,
-      calls_included: form.calls_included,
-      notes: form.notes.trim() || null,
-    });
-    setSaving(false);
-    if (error) return toast.error(error.message);
-    toast.success("Student added");
-    onCreated();
+    try {
+      // 1) Student
+      const paymentState: PaymentState | null =
+        payMode === "pif" ? "paid_in_full" : payMode === "installments" ? "installments" : null;
+      const callsAllotted = pkg === "one_on_one" ? 10 : 0;
+
+      const { data: newStu, error: stuErr } = await supabase.from("students").insert({
+        full_name: fullName.trim(),
+        email: emailNorm,
+        phase: "onboarding" as Phase,
+        status: "active" as Status,
+        coach_id: coachId || null,
+        join_date: joinDate,
+        calls_included: callsAllotted,
+        calls_allotted: callsAllotted,
+        whatsapp: whatsapp.trim() || null,
+        notes: notes.trim() || null,
+        payment_state: paymentState,
+      }).select("id").single();
+      if (stuErr) throw new Error("Student: " + stuErr.message);
+      const studentId = newStu.id;
+
+      // 2) Deal
+      if (payMode !== "none") {
+        const cashUpfront = payMode === "pif" ? tv : dep;
+        const paymentType = payMode === "pif" ? "pif" : dep > 0 ? "deposit" : "split";
+        const { error: dealErr } = await supabase.from("deals").insert({
+          student_id: studentId,
+          student_name: fullName.trim(),
+          closer_id: closerId,
+          program_type: pkg === "one_on_one" ? "1:1 Pathway" : "Group Coaching",
+          total_value: tv,
+          cash_collected_upfront: cashUpfront,
+          payment_type: paymentType as any,
+          deal_date: dealDate,
+          created_by: user?.id ?? null,
+        });
+        if (dealErr) throw new Error("Deal: " + dealErr.message);
+      }
+
+      // 3) Installments plan + payments
+      if (payMode === "installments" && remaining > 0 && n > 0) {
+        const { data: plan, error: planErr } = await supabase.from("installments").insert({
+          student_id: studentId,
+          student_name: fullName.trim(),
+          closer_id: closerId,
+          coach_id: coachId || null,
+          total_amount: remaining,
+          currency: "USD",
+          created_by: user?.id ?? null,
+        }).select("id").single();
+        if (planErr) throw new Error("Installment plan: " + planErr.message);
+
+        const start = new Date(firstDueDate + "T00:00:00");
+        const rows = Array.from({ length: n }, (_, i) => {
+          const due = new Date(start);
+          if (frequency === "monthly") due.setMonth(start.getMonth() + i);
+          else if (frequency === "biweekly") due.setDate(start.getDate() + i * 14);
+          else due.setDate(start.getDate() + i * 7);
+          return {
+            installment_id: plan.id,
+            sequence: i + 1,
+            amount: perInstallment,
+            currency: "USD",
+            due_date: due.toISOString().slice(0, 10),
+            status: "upcoming" as const,
+          };
+        });
+        const { error: payErr } = await supabase.from("installment_payments").insert(rows);
+        if (payErr) throw new Error("Installment schedule: " + payErr.message);
+      }
+
+      toast.success("Student added — deal & installments created.");
+      onCreated();
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed");
+    } finally {
+      setSaving(false);
+    }
   };
 
-
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-[#0f1116] border border-[#1f2530] rounded-sm max-w-lg w-full p-5 space-y-4" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto" onClick={onClose}>
+      <div className="bg-[#0f1116] border border-[#1f2530] rounded-sm max-w-2xl w-full my-8 p-5 space-y-4" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold">Add student</h2>
+          <div>
+            <h2 className="text-sm font-semibold">Add student</h2>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Creates the student, logs the deal, and sets up their installment plan in one go.</p>
+          </div>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Full name" full>
-            <input value={form.full_name} onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))} className={inputCls} />
-          </Field>
-          <Field label="Email (required)" full>
-            <input type="email" required value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} className={inputCls} placeholder="Needed to auto-link their login" />
-          </Field>
-          <Field label="Phase">
-            <select value={form.phase} onChange={e => setForm(f => ({ ...f, phase: e.target.value as Phase }))} className={inputCls}>
-              {PHASES.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
-            </select>
-          </Field>
-          <Field label="Status">
-            <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value as Status }))} className={inputCls}>
-              {STATUSES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
-            </select>
-          </Field>
-          <Field label="Assigned coach">
-            <select value={form.coach_id} onChange={e => setForm(f => ({ ...f, coach_id: e.target.value }))} className={inputCls}>
-              <option value="">Unassigned</option>
-              {coaches.map(c => <option key={c.id} value={c.id}>{c.display_name ?? c.id}</option>)}
-            </select>
-          </Field>
-          <Field label="Calls included (max 10)">
-            <input type="number" min={0} max={10} value={form.calls_included} onChange={e => setForm(f => ({ ...f, calls_included: Math.min(10, Math.max(0, parseInt(e.target.value) || 0)) }))} className={inputCls} />
-          </Field>
-          <Field label="Join date">
-            <input type="date" value={form.join_date} onChange={e => setForm(f => ({ ...f, join_date: e.target.value }))} className={inputCls} />
-          </Field>
-          <Field label="Notes" full>
-            <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={2} className={inputCls} />
-          </Field>
-        </div>
+
+        {/* Section 1: Basics */}
+        <Section title="1 · Student details">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Full name" full>
+              <input value={fullName} onChange={e => setFullName(e.target.value)} className={inputCls} />
+            </Field>
+            <Field label="Email (required)">
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} className={inputCls} placeholder="student@email.com" />
+            </Field>
+            <Field label="WhatsApp (optional)">
+              <input value={whatsapp} onChange={e => setWhatsapp(e.target.value)} className={inputCls} placeholder="+44…" />
+            </Field>
+            <Field label="Join date">
+              <input type="date" value={joinDate} onChange={e => setJoinDate(e.target.value)} className={inputCls} />
+            </Field>
+            <Field label="Assigned coach">
+              <select value={coachId} onChange={e => setCoachId(e.target.value)} className={inputCls}>
+                <option value="">Unassigned</option>
+                {coaches.map(c => <option key={c.id} value={c.id}>{c.display_name ?? c.id}</option>)}
+              </select>
+            </Field>
+          </div>
+        </Section>
+
+        {/* Section 2: Package */}
+        <Section title="2 · Package">
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setPkg("one_on_one")}
+              className={`text-left p-3 rounded-sm border transition ${pkg === "one_on_one" ? "border-fuchsia-500/50 bg-fuchsia-500/10" : "border-[#1f2530] hover:border-[#2a3140]"}`}
+            >
+              <div className="text-xs font-medium">1:1 Pathway</div>
+              <div className="text-[10px] text-muted-foreground mt-0.5">Up to 10 coaching calls (2/week × 5 weeks) + group access</div>
+            </button>
+            <button
+              type="button"
+              onClick={() => setPkg("group_only")}
+              className={`text-left p-3 rounded-sm border transition ${pkg === "group_only" ? "border-sky-500/50 bg-sky-500/10" : "border-[#1f2530] hover:border-[#2a3140]"}`}
+            >
+              <div className="text-xs font-medium">Group Coaching Only</div>
+              <div className="text-[10px] text-muted-foreground mt-0.5">Group calls only, no 1:1s</div>
+            </button>
+          </div>
+        </Section>
+
+        {/* Section 3: Payment */}
+        <Section title="3 · Payment">
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            {(["pif", "installments", "none"] as const).map(m => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setPayMode(m)}
+                className={`p-2 rounded-sm border text-xs transition ${payMode === m ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-300" : "border-[#1f2530] text-muted-foreground hover:border-[#2a3140]"}`}
+              >
+                {m === "pif" ? "Paid in full" : m === "installments" ? "Installments" : "Skip for now"}
+              </button>
+            ))}
+          </div>
+
+          {payMode !== "none" && (
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Total amount ($)">
+                <input type="number" min="0" value={totalAmount} onChange={e => setTotalAmount(e.target.value)} className={inputCls} placeholder="e.g. 3000" />
+              </Field>
+              <Field label="Closer (who sold this)">
+                <select value={closerId} onChange={e => setCloserId(e.target.value)} className={inputCls}>
+                  <option value="">— Select closer —</option>
+                  {closers.map(c => <option key={c.id} value={c.id}>{c.display_name ?? c.id.slice(0, 8)}</option>)}
+                </select>
+              </Field>
+              <Field label="Deal date">
+                <input type="date" value={dealDate} onChange={e => setDealDate(e.target.value)} className={inputCls} />
+              </Field>
+
+              {payMode === "installments" && (
+                <>
+                  <Field label="Deposit / cash upfront ($)">
+                    <input type="number" min="0" value={depositAmount} onChange={e => setDepositAmount(e.target.value)} className={inputCls} />
+                  </Field>
+                  <Field label="Number of installments" full={false}>
+                    <input type="number" min="1" max="24" value={numInstallments} onChange={e => setNumInstallments(e.target.value)} className={inputCls} />
+                  </Field>
+                  <Field label="Frequency">
+                    <select value={frequency} onChange={e => setFrequency(e.target.value as any)} className={inputCls}>
+                      <option value="monthly">Monthly</option>
+                      <option value="biweekly">Every 2 weeks</option>
+                      <option value="weekly">Weekly</option>
+                    </select>
+                  </Field>
+                  <Field label="First payment due">
+                    <input type="date" value={firstDueDate} onChange={e => setFirstDueDate(e.target.value)} className={inputCls} />
+                  </Field>
+                  <div className="col-span-2 text-[11px] text-muted-foreground bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-2">
+                    {n} × ${perInstallment.toFixed(2)} = ${(n * perInstallment).toFixed(2)} remaining
+                    {dep > 0 && <> · ${dep.toFixed(2)} upfront</>}
+                    <> · total ${tv.toFixed(2)}</>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </Section>
+
+        <Field label="Internal notes (optional)" full>
+          <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} className={inputCls} />
+        </Field>
+
         <div className="flex justify-end gap-2 pt-2 border-t border-[#1f2530]">
           <button onClick={onClose} className="text-xs text-muted-foreground hover:text-foreground px-3 py-1.5">Cancel</button>
           <button onClick={submit} disabled={saving} className="text-xs bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-medium px-3 py-1.5 rounded-sm">
@@ -673,6 +870,15 @@ function Field({ label, children, full }: { label: string; children: React.React
   return (
     <div className={`space-y-1 ${full ? "col-span-2" : ""}`}>
       <label className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</label>
+      {children}
+    </div>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-2 pt-3 border-t border-[#1f2530] first:border-0 first:pt-0">
+      <div className="text-[10px] uppercase tracking-[0.18em] text-fuchsia-400">{title}</div>
       {children}
     </div>
   );
