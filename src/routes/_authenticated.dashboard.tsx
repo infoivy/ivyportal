@@ -63,6 +63,8 @@ type OpsCounts = {
 
 function Dashboard() {
   const { user, displayName, roles } = useAuth();
+  const navigate = useNavigate();
+  const isFounder = roles.includes("admin") && !roles.includes("setter") && !roles.includes("closer") && !roles.includes("coach") && !roles.includes("csm");
   const [dateRange, setDateRange] = useState<DateRange>(() => rangeFor("30d"));
   const [compare, setCompare] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
