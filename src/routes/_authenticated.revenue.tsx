@@ -705,9 +705,24 @@ function LogDealDialog({
               {!isAdmin && <p className="text-[10px] text-muted-foreground">Only admins can assign to another closer.</p>}
             </div>
             <div className="space-y-1.5">
-              <Label>Program type</Label>
-              <Input value={programType} onChange={(e) => setProgramType(e.target.value)} placeholder="e.g. Setter Accelerator" />
+              <Label>Setter (optional)</Label>
+              <select
+                value={setterId}
+                onChange={(e) => setSetterId(e.target.value)}
+                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="">— None —</option>
+                {setters.map((s) => (
+                  <option key={s.id} value={s.id}>{s.display_name || s.id.slice(0, 8)}</option>
+                ))}
+              </select>
+              <p className="text-[10px] text-muted-foreground">Attribute to a setter for base + PIF-bonus commission.</p>
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Program type</Label>
+            <Input value={programType} onChange={(e) => setProgramType(e.target.value)} placeholder="e.g. Setter Accelerator" />
           </div>
 
           <div className="grid sm:grid-cols-3 gap-3">
