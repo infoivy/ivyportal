@@ -516,6 +516,7 @@ function LogDealDialog({
       setStudentId("");
       setStudentName("");
       setCloserId(currentUserId ?? "");
+      setSetterId("");
       setProgramType("");
       setTotalValue("0");
       setCashUpfront("0");
