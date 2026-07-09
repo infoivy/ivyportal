@@ -83,7 +83,12 @@ function AuthedLayout() {
   };
 
   if (state.loading) {
-    return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
+    return (
+      <div className="dashboard-dark min-h-screen bg-[#0a0b0f]">
+        <div className="h-12 border-b border-[#1f2530] bg-[#0a0b0f]/95" />
+        <PageSkeleton />
+      </div>
+    );
   }
 
   const isStudent = state.roles.includes("student");
