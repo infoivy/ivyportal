@@ -155,17 +155,9 @@ function CsmPage() {
     setQuickKind(null); setQuickNote(""); setQuickStudent("");
   };
 
-  const toggleActionItem = async (callId: string, index: number, done: boolean) => {
-    // Update the JSON array in-place
-    const call = calls.find(c => c.id === callId);
-    if (!call) return;
-    const arr = Array.isArray(call.action_items_json) ? [...(call.action_items_json as ActionItem[])] : [];
-    if (!arr[index]) return;
-    arr[index] = { ...arr[index], done };
-    const { error } = await supabase.from("student_calls").update({ action_items_json: arr }).eq("id", callId);
-    if (error) return toast.error(error.message);
-    setCalls(prev => prev.map(c => c.id === callId ? { ...c, action_items_json: arr } : c));
-  };
+  // NOTE: Action items are owned by the coach → student flow. Coaches set them
+  // during 1:1 calls in /calls; the student ticks them off in their portal via
+  // the student_toggle_action_item RPC. CSMs and staff view only, never toggle.
 
   const saveNote = async () => {
     if (!user || !studentId || !note.trim()) return;
@@ -291,24 +283,27 @@ function CsmPage() {
                 <AccountStat label="Roleplays reviewed (14d)" value={studentRoleplaysReviewed.length} />
               </div>
 
-              {/* Action items list */}
+              {/* Action items list — read-only. Only the student ticks these off in their portal. */}
               <div className="p-4">
-                <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-2">Action items from 1:1s</div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Action items from 1:1s</div>
+                  <div className="text-[10px] text-muted-foreground italic">Student ticks off in their portal</div>
+                </div>
                 {openActionItems.length === 0 ? (
                   <div className="text-xs text-muted-foreground py-2">No action items logged from calls yet.</div>
                 ) : (
                   <ul className="space-y-1.5">
                     {openActionItems.map(it => (
-                      <li key={it.callId + it.index} className="flex items-start gap-2 group">
-                        <button onClick={() => toggleActionItem(it.callId, it.index, !it.done)} className="mt-0.5 shrink-0">
+                      <li key={it.callId + it.index} className="flex items-start gap-2">
+                        <span className="mt-0.5 shrink-0" aria-hidden>
                           {it.done
                             ? <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                            : <Circle className="h-4 w-4 text-muted-foreground group-hover:text-amber-400" />}
-                        </button>
+                            : <Circle className="h-4 w-4 text-muted-foreground" />}
+                        </span>
                         <div className="flex-1 min-w-0">
                           <div className={`text-sm ${it.done ? "line-through text-muted-foreground" : ""}`}>{it.text || <em className="text-muted-foreground">(no text)</em>}</div>
                           <div className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
-                            <Clock className="h-2.5 w-2.5" /> from call on {it.call_date}
+                            <Clock className="h-2.5 w-2.5" /> from call on {it.call_date}{it.done ? " · ticked by student" : ""}
                           </div>
                         </div>
                       </li>
@@ -316,6 +311,7 @@ function CsmPage() {
                   </ul>
                 )}
               </div>
+
 
               {/* Recent loom/roleplay taps */}
               {(studentLoomsReviewed.length + studentRoleplaysReviewed.length) > 0 && (
