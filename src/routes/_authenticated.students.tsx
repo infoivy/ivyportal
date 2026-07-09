@@ -183,7 +183,7 @@ function StudentsLayout() {
   const updateStudent = async (id: string, patch: Partial<Student>) => {
     const { error } = await supabase.from("students").update(patch).eq("id", id);
     if (error) return toast.error(error.message);
-    setStudents(prev => prev.map(s => s.id === id ? { ...s, ...patch } : s));
+    qc.setQueryData<Student[]>(["students", "all"], prev => (prev ?? []).map(s => s.id === id ? { ...s, ...patch } : s));
   };
 
   const onDropToPhase = async (studentId: string, phase: Phase) => {
@@ -201,8 +201,9 @@ function StudentsLayout() {
     const { error } = await supabase.from("students").delete().eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Student deleted");
-    load();
+    invalidateAll();
   };
+
 
 
   return (
