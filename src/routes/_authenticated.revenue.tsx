@@ -119,6 +119,26 @@ function RevenuePage() {
       .sort((a, b) => b.cash - a.cash);
   }, [monthDeals, closers, rates]);
 
+  // Per-setter breakdown (MTD)
+  const perSetter = useMemo(() => {
+    const map = new Map<string, { booked: number; deals: number; pifBonus: number; commission: number }>();
+    for (const d of monthDeals) {
+      if (!d.setter_id) continue;
+      const c = map.get(d.setter_id) ?? { booked: 0, deals: 0, pifBonus: 0, commission: 0 };
+      c.booked += Number(d.total_value);
+      c.deals += 1;
+      const comm = setterCommissionForDeal(d, rates);
+      c.commission += comm;
+      const base = Number(d.total_value) * rates.setter_base;
+      if (comm > base + 0.001) c.pifBonus += 1;
+      map.set(d.setter_id, c);
+    }
+    const nameMap = new Map(setters.map((s) => [s.id, s.display_name || "Unknown"]));
+    return Array.from(map.entries())
+      .map(([id, v]) => ({ setter_id: id, name: nameMap.get(id) ?? "Unknown", ...v }))
+      .sort((a, b) => b.commission - a.commission);
+  }, [monthDeals, setters, rates]);
+
   // Monthly trend (last 6 months)
   const trend = useMemo(() => {
     const now = new Date();
