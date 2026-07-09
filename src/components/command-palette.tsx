@@ -5,12 +5,16 @@ import { useAuth } from "@/lib/auth-context";
 import {
   Search, School, Users, LayoutDashboard, FileText, Phone, DollarSign,
   BarChart3, Calendar, GraduationCap, ListChecks, Trophy, Shield, HeartHandshake,
+  BookOpen, Star, Sparkles,
 } from "lucide-react";
 
 type PageItem = { kind: "page"; title: string; to: string; icon: React.ComponentType<{ className?: string }>; roles?: string[] };
 type StudentItem = { kind: "student"; id: string; name: string; email: string | null };
 type PersonItem = { kind: "person"; id: string; name: string; role?: string };
-type Item = PageItem | StudentItem | PersonItem;
+type DocItem = { kind: "doc"; slug: string; title: string; category: string | null };
+type TestimonialItem = { kind: "testimonial"; id: string; title: string };
+type ContentItem = { kind: "content"; id: string; title: string; platform: string };
+type Item = PageItem | StudentItem | PersonItem | DocItem | TestimonialItem | ContentItem;
 
 const PAGES: PageItem[] = [
   { kind: "page", title: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
