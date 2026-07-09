@@ -423,6 +423,10 @@ function sumRows(rows: EodRow[]) {
     no_shows: a.no_shows + r.no_shows,
   }), { dms_sent: 0, convos_started: 0, calls_booked: 0, calls_scheduled: 0, shows: 0, no_shows: 0 });
 }
+function pctDelta(prev: number, curr: number): number | null {
+  if (!prev) return curr > 0 ? 100 : null;
+  return ((curr - prev) / prev) * 100;
+}
 function prevShowRateOf(t: ReturnType<typeof sumRows>) {
   return t.shows + t.no_shows > 0 ? Math.round((t.shows / (t.shows + t.no_shows)) * 100) : 0;
 }
