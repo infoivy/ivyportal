@@ -19,13 +19,11 @@ const workItems: Item[] = [
 ];
 
 const knowledgeItems: Item[] = [
-const knowledgeItems: Item[] = [
   { title: "SOPs", url: "/sops", icon: BookOpen },
   { title: "Policies", url: "/policies", icon: ShieldCheck },
   { title: "Training", url: "/training", icon: GraduationCap },
 ];
 
-];
 
 const opsItems: Item[] = [
   { title: "Calendar", url: "/calendar", icon: Calendar },
