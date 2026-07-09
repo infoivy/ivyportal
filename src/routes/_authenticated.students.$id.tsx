@@ -714,3 +714,96 @@ function CallForm({ studentId, onCancel, onDone }: { studentId: string; onCancel
     </div>
   );
 }
+
+type TimelineEvent = {
+  key: string;
+  ts: string;
+  kind: "call" | "eod" | "csm" | "payment" | "milestone";
+  title: string;
+  detail?: string;
+  meta?: string;
+};
+
+function TimelineFeed({ student, calls, eods, csmNotes, csmAuthors, coachName, payments }: {
+  student: Student;
+  calls: Call[];
+  eods: SEod[];
+  csmNotes: CsmNote[];
+  csmAuthors: Record<string, string>;
+  coachName: (uid: string | null) => string;
+  payments: Payment[];
+}) {
+  const events: TimelineEvent[] = [];
+  calls.forEach(c => events.push({
+    key: `c-${c.id}`,
+    ts: c.call_date,
+    kind: "call",
+    title: `1:1 ${c.status ?? ""} with ${coachName(c.coach_id)}`,
+    detail: c.coach_notes ?? c.outcome ?? undefined,
+    meta: c.progress_rating ? `${c.progress_rating}/5` : undefined,
+  }));
+  eods.forEach(e => events.push({
+    key: `e-${e.id}`,
+    ts: e.report_date,
+    kind: "eod",
+    title: `EOD · ${e.applications_submitted} apps · ${e.interviews} interviews`,
+    detail: e.wins || e.blockers || undefined,
+  }));
+  csmNotes.forEach(n => events.push({
+    key: `n-${n.id}`,
+    ts: n.created_at.slice(0, 10),
+    kind: "csm",
+    title: `CSM · ${csmAuthors[n.user_id] ?? "Unknown"}`,
+    detail: n.note,
+  }));
+  payments.filter(p => p.status === "paid" && p.paid_at).forEach(p => events.push({
+    key: `p-${p.id}`,
+    ts: (p.paid_at ?? "").slice(0, 10),
+    kind: "payment",
+    title: `Payment ${p.sequence} · ${p.currency} ${Number(p.amount).toLocaleString()}`,
+  }));
+  if (student.first_win_at) events.push({ key: "m-fw", ts: student.first_win_at.slice(0, 10), kind: "milestone", title: "🌟 First win" });
+  if (student.offer_landed_at) events.push({ key: "m-off", ts: student.offer_landed_at.slice(0, 10), kind: "milestone", title: "🏆 Offer landed" });
+  events.sort((a, b) => b.ts.localeCompare(a.ts));
+
+  const tones: Record<TimelineEvent["kind"], { icon: any; color: string }> = {
+    call:      { icon: Phone,      color: "text-sky-400 border-sky-500/40 bg-sky-500/5" },
+    eod:       { icon: FileText,   color: "text-emerald-400 border-emerald-500/40 bg-emerald-500/5" },
+    csm:       { icon: HeartHandshake, color: "text-amber-400 border-amber-500/40 bg-amber-500/5" },
+    payment:   { icon: DollarSign, color: "text-emerald-400 border-emerald-500/40 bg-emerald-500/5" },
+    milestone: { icon: Trophy,     color: "text-amber-400 border-amber-500/40 bg-amber-500/5" },
+  };
+
+  return (
+    <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm">
+      <div className="px-4 py-3 border-b border-[#1f2530] text-xs font-semibold flex items-center gap-2">
+        <Activity className="h-3.5 w-3.5 text-fuchsia-400" /> Activity · {events.length}
+      </div>
+      {events.length === 0 ? (
+        <div className="p-6 text-center text-xs text-muted-foreground">No activity yet.</div>
+      ) : (
+        <ol className="divide-y divide-[#1a1f29]">
+          {events.map(ev => {
+            const t = tones[ev.kind];
+            const Icon = t.icon;
+            return (
+              <li key={ev.key} className="p-3 flex items-start gap-3">
+                <div className={`h-7 w-7 rounded-sm border flex items-center justify-center shrink-0 ${t.color}`}>
+                  <Icon className="h-3.5 w-3.5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-xs font-medium truncate">{ev.title}</div>
+                    <span className="text-[10px] font-mono text-muted-foreground shrink-0">{ev.ts}{ev.meta ? ` · ${ev.meta}` : ""}</span>
+                  </div>
+                  {ev.detail && <div className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">{ev.detail}</div>}
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+    </div>
+  );
+}
+
