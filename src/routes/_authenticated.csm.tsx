@@ -155,17 +155,9 @@ function CsmPage() {
     setQuickKind(null); setQuickNote(""); setQuickStudent("");
   };
 
-  const toggleActionItem = async (callId: string, index: number, done: boolean) => {
-    // Update the JSON array in-place
-    const call = calls.find(c => c.id === callId);
-    if (!call) return;
-    const arr = Array.isArray(call.action_items_json) ? [...(call.action_items_json as ActionItem[])] : [];
-    if (!arr[index]) return;
-    arr[index] = { ...arr[index], done };
-    const { error } = await supabase.from("student_calls").update({ action_items_json: arr }).eq("id", callId);
-    if (error) return toast.error(error.message);
-    setCalls(prev => prev.map(c => c.id === callId ? { ...c, action_items_json: arr } : c));
-  };
+  // NOTE: Action items are owned by the coach → student flow. Coaches set them
+  // during 1:1 calls in /calls; the student ticks them off in their portal via
+  // the student_toggle_action_item RPC. CSMs and staff view only, never toggle.
 
   const saveNote = async () => {
     if (!user || !studentId || !note.trim()) return;
