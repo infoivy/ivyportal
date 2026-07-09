@@ -502,6 +502,7 @@ export type Database = {
           avatar_path: string | null
           avatar_url: string | null
           created_at: string
+          dashboard_prefs: Json
           display_name: string | null
           id: string
           phone: string | null
@@ -512,6 +513,7 @@ export type Database = {
           avatar_path?: string | null
           avatar_url?: string | null
           created_at?: string
+          dashboard_prefs?: Json
           display_name?: string | null
           id: string
           phone?: string | null
@@ -522,10 +524,41 @@ export type Database = {
           avatar_path?: string | null
           avatar_url?: string | null
           created_at?: string
+          dashboard_prefs?: Json
           display_name?: string | null
           id?: string
           phone?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      service_credentials: {
+        Row: {
+          created_at: string
+          id: string
+          key: string
+          label: string | null
+          updated_at: string
+          updated_by: string | null
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          key: string
+          label?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          value: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          key?: string
+          label?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          value?: string
         }
         Relationships: []
       }
