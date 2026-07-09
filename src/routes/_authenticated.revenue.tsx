@@ -370,6 +370,7 @@ function RevenuePage() {
         open={logOpen}
         onOpenChange={setLogOpen}
         closers={closers}
+        setters={setters}
         students={students}
         currentUserId={user?.id}
         isAdmin={isAdmin}
