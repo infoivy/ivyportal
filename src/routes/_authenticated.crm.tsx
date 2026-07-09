@@ -4,10 +4,15 @@ import { useAuth } from "@/lib/auth-context";
 import { useServerFn } from "@tanstack/react-start";
 import {
   ExternalLink, Zap, Search, DollarSign, Users, Phone, TrendingUp, CheckCircle2, Trash2, RefreshCw, Loader2,
+  StickyNote, Pin, X, Send,
 } from "lucide-react";
 import {
   getCloseStatus, saveCloseApiKey, testCloseConnection, listCloseLeads, deleteCloseApiKey,
 } from "@/lib/close-crm.functions";
+import {
+  listLeadNotes, createLeadNote, updateLeadNote, deleteLeadNote, countLeadNotes,
+  type LeadNote,
+} from "@/lib/crm-lead-notes.functions";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
