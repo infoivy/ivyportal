@@ -436,6 +436,87 @@ export type Database = {
         }
         Relationships: []
       }
+      ig_connections: {
+        Row: {
+          access_token: string | null
+          connected_at: string | null
+          created_at: string
+          display_name: string | null
+          expires_at: string | null
+          id: string
+          ig_user_id: string | null
+          last_synced_at: string | null
+          page_id: string | null
+          status: string
+          subtitle: string | null
+          updated_at: string
+          user_id: string
+          username: string | null
+        }
+        Insert: {
+          access_token?: string | null
+          connected_at?: string | null
+          created_at?: string
+          display_name?: string | null
+          expires_at?: string | null
+          id?: string
+          ig_user_id?: string | null
+          last_synced_at?: string | null
+          page_id?: string | null
+          status?: string
+          subtitle?: string | null
+          updated_at?: string
+          user_id: string
+          username?: string | null
+        }
+        Update: {
+          access_token?: string | null
+          connected_at?: string | null
+          created_at?: string
+          display_name?: string | null
+          expires_at?: string | null
+          id?: string
+          ig_user_id?: string | null
+          last_synced_at?: string | null
+          page_id?: string | null
+          status?: string
+          subtitle?: string | null
+          updated_at?: string
+          user_id?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
+      ig_dashboards: {
+        Row: {
+          created_at: string
+          data: Json
+          id: string
+          month_label: string
+          period_label: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          id?: string
+          month_label?: string
+          period_label?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          id?: string
+          month_label?: string
+          period_label?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       installment_payments: {
         Row: {
           amount: number
