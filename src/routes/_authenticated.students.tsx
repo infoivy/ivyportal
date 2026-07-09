@@ -5,8 +5,10 @@ import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import {
   School, Search, Plus, LayoutGrid, Table as TableIcon, Trash2, X,
-  ChevronRight,
+  ChevronRight, Users, AlertTriangle,
 } from "lucide-react";
+
+
 
 export const Route = createFileRoute("/_authenticated/students")({
   head: () => ({ meta: [{ title: "Students — ISA Team" }] }),
