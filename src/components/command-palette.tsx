@@ -1,0 +1,166 @@
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth-context";
+import {
+  Search, School, Users, LayoutDashboard, FileText, Phone, DollarSign,
+  BarChart3, Calendar, GraduationCap, ListChecks, Trophy, Shield, HeartHandshake,
+} from "lucide-react";
+
+type PageItem = { kind: "page"; title: string; to: string; icon: React.ComponentType<{ className?: string }>; roles?: string[] };
+type StudentItem = { kind: "student"; id: string; name: string; email: string | null };
+type PersonItem = { kind: "person"; id: string; name: string; role?: string };
+type Item = PageItem | StudentItem | PersonItem;
+
+const PAGES: PageItem[] = [
+  { kind: "page", title: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
+  { kind: "page", title: "EOD Reports", to: "/eods", icon: FileText },
+  { kind: "page", title: "Action Items", to: "/action-items", icon: ListChecks },
+  { kind: "page", title: "Students", to: "/students", icon: School },
+  { kind: "page", title: "1-on-1 Calls", to: "/calls", icon: Phone, roles: ["admin", "coach"] },
+  { kind: "page", title: "Installments", to: "/installments", icon: DollarSign },
+  { kind: "page", title: "Analytics", to: "/analytics", icon: BarChart3 },
+  { kind: "page", title: "Coach Capacity", to: "/coaches", icon: Trophy, roles: ["admin", "coach", "csm"] },
+  { kind: "page", title: "CSM", to: "/csm", icon: HeartHandshake, roles: ["admin", "csm"] },
+  { kind: "page", title: "Calendar", to: "/calendar", icon: Calendar },
+  { kind: "page", title: "Team", to: "/team", icon: Users, roles: ["admin"] },
+  { kind: "page", title: "Admin", to: "/admin", icon: Shield, roles: ["admin"] },
+  { kind: "page", title: "Notes", to: "/notes", icon: FileText },
+  { kind: "page", title: "Training", to: "/training", icon: GraduationCap },
+];
+
+export function CommandPalette() {
+  const { roles } = useAuth();
+  const nav = useNavigate();
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const [students, setStudents] = useState<StudentItem[]>([]);
+  const [people, setPeople] = useState<PersonItem[]>([]);
+  const [active, setActive] = useState(0);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setOpen(v => !v);
+      } else if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    let alive = true;
+    (async () => {
+      const [sRes, pRes, rRes] = await Promise.all([
+        supabase.from("students").select("id, full_name, email").order("full_name").limit(500),
+        supabase.from("profiles").select("id, display_name").limit(200),
+        supabase.from("user_roles").select("user_id, role"),
+      ]);
+      if (!alive) return;
+      setStudents(((sRes.data ?? []) as any[]).map(s => ({ kind: "student", id: s.id, name: s.full_name, email: s.email })));
+      const roleMap = new Map<string, string[]>();
+      ((rRes.data ?? []) as any[]).forEach(r => {
+        const arr = roleMap.get(r.user_id) ?? []; arr.push(r.role); roleMap.set(r.user_id, arr);
+      });
+      setPeople(((pRes.data ?? []) as any[]).map(p => ({
+        kind: "person", id: p.id, name: p.display_name ?? "Unnamed",
+        role: (roleMap.get(p.id) ?? [])[0],
+      })));
+    })();
+    return () => { alive = false; };
+  }, [open]);
+
+  const visiblePages = useMemo(
+    () => PAGES.filter(p => !p.roles || p.roles.some(r => roles.includes(r))),
+    [roles]
+  );
+
+  const results = useMemo<Item[]>(() => {
+    const term = q.trim().toLowerCase();
+    const pages = visiblePages.filter(p => !term || p.title.toLowerCase().includes(term)).slice(0, 8);
+    const st = (term
+      ? students.filter(s => s.name.toLowerCase().includes(term) || (s.email ?? "").toLowerCase().includes(term))
+      : students
+    ).slice(0, 10);
+    const pe = (term
+      ? people.filter(p => p.name.toLowerCase().includes(term))
+      : []
+    ).slice(0, 6);
+    return [...pages, ...st, ...pe];
+  }, [q, visiblePages, students, people]);
+
+  useEffect(() => { setActive(0); }, [q, open]);
+
+  const go = (it: Item) => {
+    setOpen(false); setQ("");
+    if (it.kind === "page") nav({ to: it.to as any });
+    else if (it.kind === "student") nav({ to: "/students/$id", params: { id: it.id } });
+    else nav({ to: "/team" });
+  };
+
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-start justify-center pt-[10vh] p-4" onClick={() => setOpen(false)}>
+      <div className="w-full max-w-xl bg-[#0f1116] border border-[#1f2530] rounded-md shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center gap-2 px-3 border-b border-[#1f2530]">
+          <Search className="h-4 w-4 text-muted-foreground" />
+          <input
+            autoFocus
+            value={q}
+            onChange={e => setQ(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === "ArrowDown") { e.preventDefault(); setActive(a => Math.min(a + 1, results.length - 1)); }
+              if (e.key === "ArrowUp") { e.preventDefault(); setActive(a => Math.max(0, a - 1)); }
+              if (e.key === "Enter" && results[active]) { e.preventDefault(); go(results[active]); }
+            }}
+            placeholder="Search students, team, pages…"
+            className="flex-1 h-11 bg-transparent text-sm focus:outline-none placeholder:text-muted-foreground"
+          />
+          <span className="text-[10px] text-muted-foreground font-mono border border-[#1f2530] rounded px-1.5 py-0.5">ESC</span>
+        </div>
+        <div className="max-h-[50vh] overflow-y-auto py-1">
+          {results.length === 0 && <div className="p-6 text-center text-xs text-muted-foreground">No matches.</div>}
+          {results.map((it, i) => {
+            const isActive = i === active;
+            const base = `flex items-center gap-2.5 px-3 py-2 text-sm cursor-pointer ${isActive ? "bg-[#1a1f29]" : "hover:bg-[#14171e]"}`;
+            if (it.kind === "page") {
+              const Icon = it.icon;
+              return (
+                <div key={`p-${it.to}`} className={base} onMouseEnter={() => setActive(i)} onClick={() => go(it)}>
+                  <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="flex-1 truncate">{it.title}</span>
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Page</span>
+                </div>
+              );
+            }
+            if (it.kind === "student") {
+              return (
+                <div key={`s-${it.id}`} className={base} onMouseEnter={() => setActive(i)} onClick={() => go(it)}>
+                  <School className="h-3.5 w-3.5 text-fuchsia-400" />
+                  <div className="flex-1 min-w-0">
+                    <div className="truncate">{it.name}</div>
+                    {it.email && <div className="text-[10px] text-muted-foreground truncate">{it.email}</div>}
+                  </div>
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Student</span>
+                </div>
+              );
+            }
+            return (
+              <div key={`u-${it.id}`} className={base} onMouseEnter={() => setActive(i)} onClick={() => go(it)}>
+                <Users className="h-3.5 w-3.5 text-sky-400" />
+                <span className="flex-1 truncate">{it.name}</span>
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{it.role ?? "Team"}</span>
+              </div>
+            );
+          })}
+        </div>
+        <div className="border-t border-[#1f2530] px-3 py-1.5 flex items-center justify-between text-[10px] text-muted-foreground">
+          <span>↑↓ navigate · ↵ open</span>
+          <span className="font-mono">⌘K</span>
+        </div>
+      </div>
+    </div>
+  );
+}
