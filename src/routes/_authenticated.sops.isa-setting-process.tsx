@@ -93,7 +93,7 @@ function Toolbar({ dark, setDark, onNotes, counter, setCounter, onReset, onHelp 
     setCounter(next);
   };
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-background border border-border rounded-full shadow-lg px-2 py-1.5 max-w-[calc(100vw-16px)] overflow-x-auto no-scrollbar">
+    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-background border border-border rounded-full shadow-lg px-2 py-1.5 max-w-[calc(100%-16px)] overflow-x-auto no-scrollbar">
       <button onClick={() => zoomOut(0.15)} className="w-8 h-8 shrink-0 rounded-full hover:bg-muted flex items-center justify-center" title="Zoom out">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14"/></svg>
       </button>
