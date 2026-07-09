@@ -104,7 +104,7 @@ function EODsPage() {
 
   const setNum = (k: keyof typeof form) => (v: string) => setForm(f => ({ ...f, [k]: parseInt(v) || 0 }));
 
-  // 7-day rolling summary for the current user
+  // 7-day rolling summary for the current user + streak
   const weekly = useMemo(() => {
     const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 7);
     const recent = myEods.filter(e => new Date(e.report_date) >= cutoff);
@@ -115,6 +115,7 @@ function EODsPage() {
       looms: sum("looms_reviewed"), roleplays: sum("roleplays_reviewed"), checkins: sum("student_checkins"), escalations: sum("escalations_resolved"),
     };
   }, [myEods]);
+  const streak = useMemo(() => computeStreak(myEods.map(e => e.report_date)), [myEods]);
 
   const conv = form.convos_started > 0 ? Math.round((form.calls_booked / form.convos_started) * 100) : 0;
   const showRate = (form.shows + form.no_shows) > 0 ? Math.round((form.shows / (form.shows + form.no_shows)) * 100) : 0;
@@ -136,7 +137,11 @@ function EODsPage() {
         </div>
       </header>
 
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-7 gap-2">
+        <div className="border rounded-sm p-2.5 border-amber-500/40 bg-amber-500/5">
+          <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-amber-400 mb-1"><Flame className="h-3 w-3" /> Streak</div>
+          <div className="text-lg font-mono font-semibold text-amber-400">{streak}<span className="text-xs text-muted-foreground ml-1">days</span></div>
+        </div>
         <WeekTile label={isCsm ? "7d looms" : "7d DMs"} value={isCsm ? weekly.looms : weekly.dms} icon={isCsm ? <HeartHandshake className="h-3 w-3" /> : <Users className="h-3 w-3" />} />
         <WeekTile label={isCsm ? "7d roleplays" : "7d Convos"} value={isCsm ? weekly.roleplays : weekly.convos} icon={<TrendingUp className="h-3 w-3" />} />
         <WeekTile label={isCsm ? "7d check-ins" : "7d Booked"} value={isCsm ? weekly.checkins : weekly.booked} icon={<Phone className="h-3 w-3" />} accent />
