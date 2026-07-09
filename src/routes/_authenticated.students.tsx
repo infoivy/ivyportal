@@ -257,6 +257,25 @@ function StudentsLayout() {
               <LayoutGrid className="h-3.5 w-3.5" />
             </button>
           </div>
+          {view === "table" && (
+            <div className="relative">
+              <button onClick={() => setColsOpen(o => !o)} className="flex items-center gap-1 h-8 px-2 rounded-sm border border-[#1f2530] bg-[#0f1116] text-xs text-muted-foreground hover:text-foreground" title="Column visibility">
+                <Columns3 className="h-3.5 w-3.5" />
+              </button>
+              {colsOpen && (
+                <div className="absolute right-0 top-full mt-1 z-20 w-52 border border-[#1f2530] bg-[#0f1116] rounded-sm shadow-lg p-2" onMouseLeave={() => setColsOpen(false)}>
+                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground px-1 pb-1.5 border-b border-[#1f2530]">Columns</div>
+                  {COLUMNS.filter(c => c.key !== "student").map(c => (
+                    <label key={c.key} className="flex items-center gap-2 px-1 py-1.5 text-xs hover:bg-[#14171e] rounded-sm cursor-pointer">
+                      <input type="checkbox" checked={visibleCols.has(c.key)} onChange={() => toggleCol(c.key)} className="accent-emerald-500" />
+                      {c.label}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {canManage && (
             <button
               onClick={() => setAddOpen(true)}
