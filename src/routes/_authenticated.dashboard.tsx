@@ -306,7 +306,7 @@ function Dashboard() {
         </div>
 
         {(roles.includes("admin") || roles.includes("closer") || roles.includes("coach")) && (
-          <WeeklyLeaderboard compact />
+          <CashLeaderboard compact />
         )}
 
         {/* Row 3: Top Setters + Goals + Audience */}
