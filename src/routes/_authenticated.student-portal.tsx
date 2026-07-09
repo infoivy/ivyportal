@@ -68,6 +68,7 @@ function StudentPortal() {
   const [coach, setCoach] = useState<Coach | null>(null);
   const [eods, setEods] = useState<SEod[]>([]);
   const [calls, setCalls] = useState<Call[]>([]);
+  const [adhocItems, setAdhocItems] = useState<AdhocItem[]>([]);
   const [docs, setDocs] = useState<Doc[]>([]);
   const [form, setForm] = useState(empty);
   const [existingId, setExistingId] = useState<string | null>(null);
@@ -88,14 +89,16 @@ function StudentPortal() {
     if (!s) { setLoading(false); return; }
     const st = s as Student;
 
-    const [{ data: e }, { data: c }, coachRes, docsRes] = await Promise.all([
+    const [{ data: e }, { data: c }, { data: ah }, coachRes, docsRes] = await Promise.all([
       supabase.from("student_eods").select("*").eq("student_id", st.id).order("report_date", { ascending: false }).limit(60),
       supabase.from("student_calls").select("id, call_date, status, progress_rating, next_call_date, action_items_json").eq("student_id", st.id).order("call_date", { ascending: false }),
+      supabase.from("student_action_items").select("id, student_id, text, done, due_date, created_at, source_call_id").eq("student_id", st.id).order("created_at", { ascending: false }),
       st.coach_id ? supabase.from("profiles").select("id, display_name, avatar_url").eq("id", st.coach_id).maybeSingle() : Promise.resolve({ data: null }),
       supabase.from("docs").select("slug, title, category").contains("role_visibility", ["student"]).order("pinned", { ascending: false }).order("sort_order").limit(8),
     ]);
     setEods((e ?? []) as SEod[]);
     setCalls((c ?? []) as Call[]);
+    setAdhocItems((ah ?? []) as AdhocItem[]);
     setCoach((coachRes.data as Coach) ?? null);
     setDocs((docsRes.data ?? []) as Doc[]);
 
