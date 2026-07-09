@@ -351,13 +351,22 @@ function EODsPage() {
             <aside className="space-y-3">
               <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-4">
                 <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-3">Today at a glance</div>
-                <MiniStat label="DMs sent" value={form.dms_sent} />
-                <MiniStat label="Convos" value={form.convos_started} />
-                <MiniStat label="Booked" value={form.calls_booked} highlight />
-                <MiniStat label="Shows" value={form.shows} />
-                <MiniStat label="No-shows" value={form.no_shows} />
-                {isCsm && <MiniStat label="Looms" value={form.looms_reviewed} />}
-                {isCsm && <MiniStat label="Roleplays" value={form.roleplays_reviewed} />}
+                {isCsm ? (
+                  <>
+                    <MiniStat label="Looms" value={form.looms_reviewed} highlight />
+                    <MiniStat label="Roleplays" value={form.roleplays_reviewed} />
+                    <MiniStat label="Check-ins" value={form.student_checkins} />
+                    <MiniStat label="Escalations" value={form.escalations_resolved} />
+                  </>
+                ) : (
+                  <>
+                    <MiniStat label="DMs sent" value={form.dms_sent} />
+                    <MiniStat label="Convos" value={form.convos_started} />
+                    <MiniStat label="Booked" value={form.calls_booked} highlight />
+                    <MiniStat label="Shows" value={form.shows} />
+                    <MiniStat label="No-shows" value={form.no_shows} />
+                  </>
+                )}
               </div>
               <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-4 text-[11px] text-muted-foreground leading-relaxed">
                 <div className="text-[10px] uppercase tracking-widest text-emerald-400 mb-2">Pro tip</div>
