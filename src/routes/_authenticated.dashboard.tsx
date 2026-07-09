@@ -670,3 +670,174 @@ function InstallmentReminders() {
     </div>
   );
 }
+
+/* ---------------- My Day (role-aware landing block) ---------------- */
+function MyDayBlock({ roles }: { roles: string[] }) {
+  const { user } = useAuth();
+  const [state, setState] = useState<{ loading: boolean; parts: { label: string; value: string; tone: string; to?: string }[] }>({ loading: true, parts: [] });
+
+  useEffect(() => {
+    if (!user) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const in7 = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+    const eodRisk = new Date(Date.now() - 5 * 86400000).toISOString().slice(0, 10);
+    const staleCall = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
+    (async () => {
+      const parts: { label: string; value: string; tone: string; to?: string }[] = [];
+
+      if (roles.includes("admin")) {
+        // Admins: brief snapshot — Ops row is right below.
+        setState({ loading: false, parts: [{ label: "Admin view", value: "Ops row below", tone: "sky" }] });
+        return;
+      }
+
+      if (roles.includes("coach")) {
+        const [todaysCalls, myActionCalls, myStudents] = await Promise.all([
+          supabase.from("student_calls").select("id, call_date").eq("coach_id", user.id).eq("status", "scheduled").eq("call_date", today),
+          supabase.from("student_calls").select("action_items_json").eq("coach_id", user.id).not("action_items_json", "is", null).limit(500),
+          supabase.from("students").select("id").eq("coach_id", user.id).eq("status", "active"),
+        ]);
+        let overdue = 0;
+        ((myActionCalls.data as any[]) ?? []).forEach(c => {
+          (c.action_items_json as any[] ?? []).forEach(it => {
+            const due = it?.due ?? it?.due_date;
+            if (!it?.done && due && due < today) overdue++;
+          });
+        });
+        parts.push({ label: "1:1s today", value: String(todaysCalls.data?.length ?? 0), tone: "sky", to: "/calls" });
+        parts.push({ label: "Overdue action items", value: String(overdue), tone: overdue > 0 ? "rose" : "muted", to: "/action-items" });
+        parts.push({ label: "Active students", value: String(myStudents.data?.length ?? 0), tone: "emerald", to: "/students" });
+      } else if (roles.includes("csm")) {
+        // Students with no touch in 7d
+        const cutoff = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+        const [notes, students] = await Promise.all([
+          supabase.from("csm_student_notes").select("student_id, created_at").gte("created_at", cutoff),
+          supabase.from("students").select("id, full_name").eq("status", "active"),
+        ]);
+        const touched = new Set((notes.data ?? []).map((n: any) => n.student_id));
+        const cold = (students.data ?? []).filter((s: any) => !touched.has(s.id)).length;
+        parts.push({ label: "Cold >7d", value: String(cold), tone: cold > 0 ? "amber" : "emerald", to: "/csm" });
+      } else if (roles.includes("setter") || roles.includes("closer")) {
+        const eodRow = await supabase.from("eods").select("dms_sent, convos_started, calls_booked, shows").eq("user_id", user.id).eq("report_date", today).maybeSingle();
+        parts.push({ label: "Today EOD", value: eodRow.data ? "Submitted" : "Pending", tone: eodRow.data ? "emerald" : "amber", to: "/eods" });
+        const booked = (eodRow.data as any)?.calls_booked ?? 0;
+        const goal = Math.round(GOALS.calls / 90);
+        parts.push({ label: "Booked today", value: `${booked}/${goal}`, tone: booked >= goal ? "emerald" : "amber" });
+      }
+
+      if (parts.length === 0) parts.push({ label: "Welcome", value: "No role blocks", tone: "muted" });
+      setState({ loading: false, parts });
+    })();
+  }, [user, roles]);
+
+  return (
+    <div>
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-2">
+        <Sunrise className="h-3 w-3 text-amber-400" /> <span>My day</span>
+        <span className="h-px flex-1 bg-border" />
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+        {state.parts.map((p, i) => {
+          const tones: Record<string, string> = {
+            rose: "border-rose-500/40 bg-rose-500/5 text-rose-400",
+            amber: "border-amber-500/40 bg-amber-500/5 text-amber-400",
+            emerald: "border-emerald-500/40 bg-emerald-500/5 text-emerald-400",
+            sky: "border-sky-500/40 bg-sky-500/5 text-sky-400",
+            muted: "border-border bg-card text-foreground",
+          };
+          const inner = (
+            <div className={`rounded-md border p-3 ${tones[p.tone] ?? tones.muted}`}>
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{p.label}</div>
+              <div className="text-lg font-bold mt-1">{p.value}</div>
+            </div>
+          );
+          return p.to
+            ? <Link key={i} to={p.to as any}>{inner}</Link>
+            : <div key={i}>{inner}</div>;
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Weekly leaderboard ---------------- */
+function WeeklyLeaderboard({ profiles, eods }: { profiles: Record<string, Profile>; eods: EodRow[] }) {
+  const today = new Date();
+  const monday = new Date(today);
+  monday.setHours(0, 0, 0, 0);
+  const day = monday.getDay();
+  monday.setDate(monday.getDate() - ((day + 6) % 7)); // Mon
+  const lastMonday = new Date(monday); lastMonday.setDate(lastMonday.getDate() - 7);
+  const lastSunday = new Date(monday); lastSunday.setDate(lastSunday.getDate() - 1);
+
+  const inRange = (d: string, a: Date, b: Date) => {
+    const t = new Date(d).getTime();
+    return t >= a.getTime() && t <= b.getTime();
+  };
+
+  const acc = (rows: EodRow[]) => {
+    const m: Record<string, { dms: number; booked: number; shows: number; calls: number }> = {};
+    for (const r of rows) {
+      const b = m[r.user_id] ?? (m[r.user_id] = { dms: 0, booked: 0, shows: 0, calls: 0 });
+      b.dms += r.dms_sent; b.booked += r.calls_booked; b.shows += r.shows;
+    }
+    return m;
+  };
+
+  const thisWeek = acc(eods.filter(r => inRange(r.report_date, monday, today)));
+  const lastWeek = acc(eods.filter(r => inRange(r.report_date, lastMonday, lastSunday)));
+
+  const users = Array.from(new Set([...Object.keys(thisWeek), ...Object.keys(lastWeek)]));
+  const rows = users.map(uid => {
+    const t = thisWeek[uid] ?? { dms: 0, booked: 0, shows: 0, calls: 0 };
+    const l = lastWeek[uid] ?? { dms: 0, booked: 0, shows: 0, calls: 0 };
+    return { uid, name: profiles[uid]?.display_name ?? "Unknown", t, l };
+  }).sort((a, b) => b.t.booked - a.t.booked).slice(0, 10);
+
+  return (
+    <div className="rounded-md border border-border bg-card">
+      <div className="px-3 py-2 border-b border-border flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-bold">Weekly leaderboard</span>
+          <span className="text-[10px] text-muted-foreground">this week vs last · resets Monday</span>
+        </div>
+      </div>
+      {rows.length === 0 ? (
+        <div className="p-6 text-center text-xs text-muted-foreground">Nothing submitted yet this week.</div>
+      ) : (
+        <div className="overflow-x-auto">
+          <div className="grid grid-cols-[minmax(0,1.5fr)_repeat(3,minmax(70px,1fr))] gap-2 px-3 py-1.5 text-[10px] uppercase tracking-widest text-muted-foreground border-b border-border">
+            <span>Member</span>
+            <span className="text-right">DMs</span>
+            <span className="text-right">Booked</span>
+            <span className="text-right">Shows</span>
+          </div>
+          {rows.map(r => (
+            <div key={r.uid} className="grid grid-cols-[minmax(0,1.5fr)_repeat(3,minmax(70px,1fr))] gap-2 px-3 py-2 border-b border-border/50 last:border-0 text-xs">
+              <span className="truncate font-medium">{r.name}</span>
+              <MoveCell curr={r.t.dms} prev={r.l.dms} />
+              <MoveCell curr={r.t.booked} prev={r.l.booked} highlight />
+              <MoveCell curr={r.t.shows} prev={r.l.shows} />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MoveCell({ curr, prev, highlight }: { curr: number; prev: number; highlight?: boolean }) {
+  const diff = curr - prev;
+  const Icon = diff > 0 ? TrendingUp : diff < 0 ? TrendingDown : Minus;
+  const color = diff > 0 ? "text-emerald-400" : diff < 0 ? "text-rose-400" : "text-muted-foreground";
+  return (
+    <span className="text-right tabular-nums inline-flex items-center justify-end gap-1">
+      <span className={highlight ? "font-semibold text-emerald-400" : ""}>{curr}</span>
+      <span className={`inline-flex items-center gap-0.5 text-[10px] ${color}`}>
+        <Icon className="h-2.5 w-2.5" />
+        {diff > 0 ? `+${diff}` : diff}
+      </span>
+    </span>
+  );
+}
+
