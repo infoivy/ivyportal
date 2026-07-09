@@ -205,7 +205,7 @@ function EODsPage() {
         <TabsContent value="mine">
           <div className="space-y-2">
             {myEods.length === 0 && <EmptyState text="No EODs yet. Submit your first one above." />}
-            {myEods.map(e => <EODRow key={e.id} eod={e} />)}
+            {myEods.map(e => <EODRow key={e.id} eod={e} onDelete={deleteEod} />)}
           </div>
         </TabsContent>
 
