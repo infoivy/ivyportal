@@ -78,17 +78,38 @@ function StudentsLayout() {
   const [students, setStudents] = useState<Student[]>([]);
   const [coaches, setCoaches] = useState<Coach[]>([]);
   const [lastCallByStudent, setLastCallByStudent] = useState<Record<string, string>>({});
+  const [lastEodByStudent, setLastEodByStudent] = useState<Record<string, string>>({});
+  const [callsUsedByStudent, setCallsUsedByStudent] = useState<Record<string, number>>({});
+  const [apps7dByStudent, setApps7dByStudent] = useState<Record<string, number>>({});
   const [q, setQ] = useState("");
   const [phaseFilter, setPhaseFilter] = useState<Phase | "all" | "at_risk">("all");
   const [view, setView] = useState<"table" | "kanban">("table");
   const [kanbanBy, setKanbanBy] = useState<"phase" | "coach">("phase");
   const [addOpen, setAddOpen] = useState(false);
+  const [colsOpen, setColsOpen] = useState(false);
+  const [visibleCols, setVisibleCols] = useState<Set<ColKey>>(() => {
+    try {
+      const saved = localStorage.getItem("students.visibleCols");
+      if (saved) return new Set(JSON.parse(saved) as ColKey[]);
+    } catch {}
+    return new Set(COLUMNS.filter(c => c.default).map(c => c.key));
+  });
+  const toggleCol = (k: ColKey) => {
+    setVisibleCols(prev => {
+      const next = new Set(prev);
+      if (next.has(k)) next.delete(k); else next.add(k);
+      next.add("student"); // always visible
+      try { localStorage.setItem("students.visibleCols", JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  };
 
   const load = async () => {
-    const [sRes, cRes, callRes] = await Promise.all([
+    const [sRes, cRes, callRes, eodRes] = await Promise.all([
       supabase.from("students").select("*").order("created_at", { ascending: false }),
       supabase.from("user_roles").select("user_id, role").in("role", ["coach", "admin"]),
-      supabase.from("student_calls").select("student_id, call_date").order("call_date", { ascending: false }).limit(1000),
+      supabase.from("student_calls").select("student_id, call_date, status").order("call_date", { ascending: false }).limit(2000),
+      supabase.from("student_eods").select("student_id, report_date, applications_submitted").order("report_date", { ascending: false }).limit(3000),
     ]);
     setStudents((sRes.data ?? []) as Student[]);
     const coachIds = Array.from(new Set((cRes.data ?? []).map(r => r.user_id)));
@@ -96,9 +117,26 @@ function StudentsLayout() {
       const { data: profs } = await supabase.from("profiles").select("id, display_name").in("id", coachIds);
       setCoaches((profs ?? []) as Coach[]);
     }
-    const map: Record<string, string> = {};
-    (callRes.data ?? []).forEach((c: any) => { if (!map[c.student_id]) map[c.student_id] = c.call_date; });
-    setLastCallByStudent(map);
+    const lastCall: Record<string, string> = {};
+    const callsUsed: Record<string, number> = {};
+    (callRes.data ?? []).forEach((c: any) => {
+      if (!lastCall[c.student_id]) lastCall[c.student_id] = c.call_date;
+      if (c.status === "completed") callsUsed[c.student_id] = (callsUsed[c.student_id] ?? 0) + 1;
+    });
+    setLastCallByStudent(lastCall);
+    setCallsUsedByStudent(callsUsed);
+
+    const lastEod: Record<string, string> = {};
+    const apps7d: Record<string, number> = {};
+    const cutoff = Date.now() - 7 * 86400000;
+    (eodRes.data ?? []).forEach((e: any) => {
+      if (!lastEod[e.student_id]) lastEod[e.student_id] = e.report_date;
+      if (new Date(e.report_date).getTime() >= cutoff) {
+        apps7d[e.student_id] = (apps7d[e.student_id] ?? 0) + (e.applications_submitted ?? 0);
+      }
+    });
+    setLastEodByStudent(lastEod);
+    setApps7dByStudent(apps7d);
   };
 
   useEffect(() => { load(); }, []);
@@ -106,14 +144,29 @@ function StudentsLayout() {
   const coachName = (id: string | null) => (id ? coaches.find(c => c.id === id)?.display_name ?? "—" : "Unassigned");
 
   const daysSince = (dateStr: string) => Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
-  const isAtRisk = (s: Student) => {
-    if (s.status === "ghosting") return true;
+  const atRiskInfo = (s: Student): { risky: boolean; reasons: string[] } => {
+    const reasons: string[] = [];
+    if (s.status === "ghosting") reasons.push("Ghosting");
+    const lastEod = lastEodByStudent[s.id];
+    const eodDays = lastEod ? daysSince(lastEod) : null;
+    if (eodDays == null && s.phase !== "onboarding" && s.phase !== "graduated" && s.phase !== "paused") {
+      reasons.push("No EOD ever");
+    } else if (eodDays != null && eodDays >= 5) {
+      reasons.push(`No EOD ${eodDays}d`);
+    }
     if (s.phase === "coaching_1on1") {
       const last = lastCallByStudent[s.id];
-      if (!last || daysSince(last) > 14) return true;
+      const d = last ? daysSince(last) : null;
+      if (d == null) reasons.push("No 1:1 yet");
+      else if (d > 14) reasons.push(`No 1:1 ${d}d`);
     }
-    return false;
+    const apps = apps7dByStudent[s.id] ?? 0;
+    if (s.phase !== "onboarding" && s.phase !== "graduated" && s.phase !== "paused" && apps === 0 && lastEod && daysSince(lastEod) < 7) {
+      reasons.push("Low apps");
+    }
+    return { risky: reasons.length > 0, reasons };
   };
+  const isAtRisk = (s: Student) => atRiskInfo(s).risky;
 
   const filtered = useMemo(() => students.filter(s => {
     const matchesQ = !q || s.full_name.toLowerCase().includes(q.toLowerCase()) || (s.email ?? "").toLowerCase().includes(q.toLowerCase());
@@ -122,7 +175,7 @@ function StudentsLayout() {
       phaseFilter === "at_risk" ? isAtRisk(s) :
       s.phase === phaseFilter;
     return matchesQ && matchesPhase;
-  }), [students, q, phaseFilter, lastCallByStudent]);
+  }), [students, q, phaseFilter, lastCallByStudent, lastEodByStudent, apps7dByStudent]);
 
   const byPhase = useMemo(() => {
     const map = new Map<Phase, Student[]>();
@@ -144,6 +197,7 @@ function StudentsLayout() {
   }, [filtered, coaches]);
 
   const atRiskCount = students.filter(isAtRisk).length;
+
 
   // Under a detail path, hide the list UI and just render <Outlet />
   if (isDetail) return <Outlet />;
