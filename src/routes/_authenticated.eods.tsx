@@ -114,6 +114,7 @@ function EODsPage() {
   };
 
   const setNum = (k: keyof typeof form) => (v: string) => setForm(f => ({ ...f, [k]: parseInt(v) || 0 }));
+  const setFloat = (k: keyof typeof form) => (v: string) => setForm(f => ({ ...f, [k]: parseFloat(v) || 0 }));
 
   // 7-day rolling summary for the current user + streak
   const weekly = useMemo(() => {
