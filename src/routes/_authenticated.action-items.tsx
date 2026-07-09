@@ -166,21 +166,26 @@ function ActionItemsHub() {
           const due = dueOf(r);
           const overdue = isOverdue(r);
           return (
-            <label
+            <div
               key={`${r.callId}-${r.index}`}
-              className="grid grid-cols-[24px_minmax(0,1fr)_140px_120px_90px] gap-2 items-center px-3 py-2.5 border-b border-[#1a1f29] last:border-0 hover:bg-[#14171e] cursor-pointer"
+              className="grid grid-cols-[24px_minmax(0,1fr)_140px_120px_90px] gap-2 items-center px-3 py-2.5 border-b border-[#1a1f29] last:border-0 hover:bg-[#14171e]"
+              title="Students tick off their own action items from the student portal."
             >
               <input
                 type="checkbox"
                 checked={!!r.item.done}
-                onChange={e => toggle(r, e.target.checked)}
-                className="h-4 w-4 accent-emerald-500"
+                readOnly
+                disabled
+                aria-label={r.item.done ? "Done" : "Open"}
+                className="h-4 w-4 accent-emerald-500 opacity-70 cursor-not-allowed"
               />
               <div className="min-w-0">
                 <div className={`text-xs truncate ${r.item.done ? "line-through text-muted-foreground" : ""}`}>
                   {r.item.text || <span className="italic text-muted-foreground">(no text)</span>}
                 </div>
-                <div className="text-[10px] font-mono text-muted-foreground">from call {r.callDate}</div>
+                <div className="text-[10px] font-mono text-muted-foreground">
+                  from call {r.callDate}{r.item.done ? " · ticked by student" : ""}
+                </div>
               </div>
               <Link to="/students/$id" params={{ id: r.studentId }} className="text-xs truncate hover:text-emerald-400 flex items-center gap-1">
                 <User className="h-3 w-3 text-muted-foreground" /> {r.studentName}
@@ -189,7 +194,7 @@ function ActionItemsHub() {
               <span className={`text-[11px] font-mono text-right ${overdue ? "text-rose-400" : due ? "text-muted-foreground" : "text-[#2a3140]"}`}>
                 {due ? (overdue ? <span className="inline-flex items-center gap-1"><AlertTriangle className="h-3 w-3" />{due}</span> : due) : "—"}
               </span>
-            </label>
+            </div>
           );
         })}
       </div>
