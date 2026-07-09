@@ -512,7 +512,7 @@ function StudentsLayout() {
       )}
 
 
-      {addOpen && <AddStudentModal onClose={() => setAddOpen(false)} onCreated={() => { setAddOpen(false); load(); }} coaches={coaches} />}
+      {addOpen && <AddStudentModal onClose={() => setAddOpen(false)} onCreated={() => { setAddOpen(false); invalidateAll(); }} coaches={coaches} />}
     </div>
   );
 }
