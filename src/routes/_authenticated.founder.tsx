@@ -324,22 +324,13 @@ function ListView({ items, onOpen }: { items: ContentItem[]; onOpen: (i: Content
 }
 
 // -- Idea inbox --
-let setPromotingIdea: (i: Idea | null) => void = () => {}; // module-scoped setter shim
-let promotingIdea: Idea | null = null; // module-scoped state shim
-
-function IdeaInbox({ ideas, userId, onChange, promoteViaEditing }: {
+function IdeaInbox({ ideas, userId, onChange, onPromote }: {
   ideas: Idea[]; userId: string | null; onChange: () => void;
   onPromote: (i: Idea) => void;
-  promoteViaEditing: (item: ContentItem) => void;
 }) {
   const [text, setText] = useState("");
   const [link, setLink] = useState("");
   const [saving, setSaving] = useState(false);
-
-  const [, force] = useState({});
-  useEffect(() => {
-    setPromotingIdea = (i) => { promotingIdea = i; force({}); };
-  }, []);
 
   const add = async () => {
     if (!userId || !text.trim()) return;
@@ -355,17 +346,8 @@ function IdeaInbox({ ideas, userId, onChange, promoteViaEditing }: {
     if (error) toast.error(error.message); else onChange();
   };
 
-  const promote = (idea: Idea) => {
-    // Open new-item dialog prefilled from the idea (handled by ItemDialog via promotingIdea shim)
-    promoteViaEditing({
-      id: "", created_by: userId ?? "",
-      scheduled_date: null, platform: "instagram", format: null,
-      hook: idea.text, script: idea.link ? `Source: ${idea.link}` : null,
-      status: "idea", link_when_posted: null, tags: [], posted_at: null,
-      created_at: "", updated_at: "",
-    });
-    setPromotingIdea(idea);
-  };
+  const promote = (idea: Idea) => { onPromote(idea); };
+
 
   return (
     <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm">
