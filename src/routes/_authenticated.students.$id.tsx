@@ -139,7 +139,7 @@ function StudentDetail() {
   const graduationSteps = useMemo(() => student ? [
     { key: "first_win", label: "First win", done: !!student.first_win_at, at: student.first_win_at, icon: Star },
     { key: "offer", label: "Offer landed", done: !!student.offer_landed_at, at: student.offer_landed_at, icon: Trophy },
-    { key: "testimonial", label: "Testimonial", done: student.testimonial_collected, at: null, icon: Award },
+    { key: "testimonial", label: student.testimonial_requested && !student.testimonial_collected ? "Testimonial (requested)" : "Testimonial", done: student.testimonial_collected, at: null, icon: Award },
     { key: "trustpilot", label: "Trustpilot", done: student.trustpilot_collected, at: null, icon: MessageSquare },
   ] : [], [student]);
   const graduationDone = graduationSteps.filter(s => s.done).length;
