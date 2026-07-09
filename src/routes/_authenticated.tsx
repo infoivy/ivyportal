@@ -87,6 +87,15 @@ function AuthedLayout() {
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   Live
                 </div>
+                {eodSubmitted === false && (
+                  <Link
+                    to="/eods"
+                    className="hidden sm:flex items-center gap-1.5 text-[10px] font-medium px-2 py-1 rounded-sm border border-amber-500/30 bg-amber-500/5 text-amber-400 hover:bg-amber-500/10 transition"
+                  >
+                    <AlertCircle className="h-3 w-3" />
+                    EOD due
+                  </Link>
+                )}
                 <div className="text-[11px] text-muted-foreground hidden md:flex flex-col items-end leading-tight">
                   <span className="text-foreground font-medium">{state.displayName}</span>
                   <span className="uppercase tracking-wider text-[9px]">{state.roles.join(" · ") || "member"}</span>
