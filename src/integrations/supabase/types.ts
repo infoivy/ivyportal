@@ -127,6 +127,41 @@ export type Database = {
           },
         ]
       }
+      csm_tally: {
+        Row: {
+          created_at: string
+          id: string
+          kind: Database["public"]["Enums"]["csm_tally_kind"]
+          note: string | null
+          student_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: Database["public"]["Enums"]["csm_tally_kind"]
+          note?: string | null
+          student_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["csm_tally_kind"]
+          note?: string | null
+          student_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "csm_tally_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deals: {
         Row: {
           cash_collected_upfront: number
@@ -860,6 +895,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "closer" | "setter" | "coach" | "student" | "csm"
+      csm_tally_kind: "loom" | "roleplay" | "checkin" | "escalation"
       deal_payment_type: "pif" | "deposit" | "split"
       doc_category:
         | "setting"
@@ -1015,6 +1051,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "closer", "setter", "coach", "student", "csm"],
+      csm_tally_kind: ["loom", "roleplay", "checkin", "escalation"],
       deal_payment_type: ["pif", "deposit", "split"],
       doc_category: [
         "setting",
