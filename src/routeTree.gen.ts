@@ -25,6 +25,7 @@ import { Route as AuthenticatedPoliciesRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedNotesRouteImport } from './routes/_authenticated.notes'
 import { Route as AuthenticatedKnowledgeRouteImport } from './routes/_authenticated.knowledge'
 import { Route as AuthenticatedInstallmentsRouteImport } from './routes/_authenticated.installments'
+import { Route as AuthenticatedFounderRouteImport } from './routes/_authenticated.founder'
 import { Route as AuthenticatedEodsRouteImport } from './routes/_authenticated.eods'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
 import { Route as AuthenticatedCsmRouteImport } from './routes/_authenticated.csm'
@@ -128,6 +129,11 @@ const AuthenticatedInstallmentsRoute =
     path: '/installments',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedFounderRoute = AuthenticatedFounderRouteImport.update({
+  id: '/founder',
+  path: '/founder',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedEodsRoute = AuthenticatedEodsRouteImport.update({
   id: '/eods',
   path: '/eods',
@@ -254,6 +260,7 @@ export interface FileRoutesByFullPath {
   '/csm': typeof AuthenticatedCsmRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/eods': typeof AuthenticatedEodsRoute
+  '/founder': typeof AuthenticatedFounderRoute
   '/installments': typeof AuthenticatedInstallmentsRoute
   '/knowledge': typeof AuthenticatedKnowledgeRouteWithChildren
   '/notes': typeof AuthenticatedNotesRoute
@@ -291,6 +298,7 @@ export interface FileRoutesByTo {
   '/csm': typeof AuthenticatedCsmRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/eods': typeof AuthenticatedEodsRoute
+  '/founder': typeof AuthenticatedFounderRoute
   '/installments': typeof AuthenticatedInstallmentsRoute
   '/notes': typeof AuthenticatedNotesRoute
   '/profile': typeof AuthenticatedProfileRoute
@@ -328,6 +336,7 @@ export interface FileRoutesById {
   '/_authenticated/csm': typeof AuthenticatedCsmRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/eods': typeof AuthenticatedEodsRoute
+  '/_authenticated/founder': typeof AuthenticatedFounderRoute
   '/_authenticated/installments': typeof AuthenticatedInstallmentsRoute
   '/_authenticated/knowledge': typeof AuthenticatedKnowledgeRouteWithChildren
   '/_authenticated/notes': typeof AuthenticatedNotesRoute
@@ -367,6 +376,7 @@ export interface FileRouteTypes {
     | '/csm'
     | '/dashboard'
     | '/eods'
+    | '/founder'
     | '/installments'
     | '/knowledge'
     | '/notes'
@@ -404,6 +414,7 @@ export interface FileRouteTypes {
     | '/csm'
     | '/dashboard'
     | '/eods'
+    | '/founder'
     | '/installments'
     | '/notes'
     | '/profile'
@@ -440,6 +451,7 @@ export interface FileRouteTypes {
     | '/_authenticated/csm'
     | '/_authenticated/dashboard'
     | '/_authenticated/eods'
+    | '/_authenticated/founder'
     | '/_authenticated/installments'
     | '/_authenticated/knowledge'
     | '/_authenticated/notes'
@@ -583,6 +595,13 @@ declare module '@tanstack/react-router' {
       path: '/installments'
       fullPath: '/installments'
       preLoaderRoute: typeof AuthenticatedInstallmentsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/founder': {
+      id: '/_authenticated/founder'
+      path: '/founder'
+      fullPath: '/founder'
+      preLoaderRoute: typeof AuthenticatedFounderRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/eods': {
@@ -813,6 +832,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedCsmRoute: typeof AuthenticatedCsmRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEodsRoute: typeof AuthenticatedEodsRoute
+  AuthenticatedFounderRoute: typeof AuthenticatedFounderRoute
   AuthenticatedInstallmentsRoute: typeof AuthenticatedInstallmentsRoute
   AuthenticatedKnowledgeRoute: typeof AuthenticatedKnowledgeRouteWithChildren
   AuthenticatedNotesRoute: typeof AuthenticatedNotesRoute
@@ -839,6 +859,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedCsmRoute: AuthenticatedCsmRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEodsRoute: AuthenticatedEodsRoute,
+  AuthenticatedFounderRoute: AuthenticatedFounderRoute,
   AuthenticatedInstallmentsRoute: AuthenticatedInstallmentsRoute,
   AuthenticatedKnowledgeRoute: AuthenticatedKnowledgeRouteWithChildren,
   AuthenticatedNotesRoute: AuthenticatedNotesRoute,

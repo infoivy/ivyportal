@@ -2,7 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, FileText, BookOpen, Calendar, GraduationCap,
   BarChart3, Database, Users, StickyNote, Shield, UserCircle, School, HeartHandshake, Phone, DollarSign,
-  ListChecks, Trophy, TrendingUp, Quote,
+  ListChecks, Trophy, TrendingUp, Quote, Sparkles,
 } from "lucide-react";
 
 
@@ -40,6 +40,10 @@ const opsItems: Item[] = [
   { title: "Testimonials", url: "/testimonials", icon: Quote, roles: ["admin", "coach", "closer", "setter", "csm"] },
 ];
 
+
+const founderItems: Item[] = [
+  { title: "Founder Space", url: "/founder", icon: Sparkles, roles: ["founder"] },
+];
 
 const adminItems: Item[] = [
   { title: "Admin", url: "/admin", icon: Shield, roles: ["admin"] },
@@ -137,6 +141,7 @@ export function AppSidebar({ roles }: { roles: string[] }) {
         {renderGroup("Work", workItems)}
         {renderGroup("Knowledge", knowledgeItems)}
         {renderGroup("Ops", opsItems)}
+        {roles.includes("founder") && renderGroup("Founder", founderItems)}
         {isAdmin && renderGroup("Admin", adminItems)}
         {renderGroup("Account", [{ title: "Profile", url: "/profile", icon: UserCircle }])}
       </SidebarContent>
