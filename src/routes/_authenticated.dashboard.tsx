@@ -374,6 +374,9 @@ function Dashboard() {
           </div>
         </div>
 
+        <WeeklyLeaderboard profiles={profiles} eods={eods} />
+
+
         {/* Quick actions */}
         <div className="grid gap-2 sm:grid-cols-4">
           <QuickAction to="/eods"     icon={FileText}   label="Submit EOD" />
