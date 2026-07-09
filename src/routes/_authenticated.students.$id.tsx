@@ -67,16 +67,17 @@ function StudentDetail() {
 
   useEffect(() => { load(); }, [id]);
 
-  if (!student) return <div className="p-6 text-sm text-muted-foreground">Loading…</div>;
-
-  const coachName = (uid: string | null) => uid ? (coaches.find(c => c.id === uid)?.display_name ?? uid.slice(0, 8)) : "Unassigned";
-
+  // All hooks MUST be declared before any conditional return (Rules of Hooks).
   const totals = useMemo(() => eods.reduce((a, e) => ({
     apps: a.apps + e.applications_submitted,
     outreach: a.outreach + e.outreach_sent,
     replies: a.replies + e.replies,
     interviews: a.interviews + e.interviews,
   }), { apps: 0, outreach: 0, replies: 0, interviews: 0 }), [eods]);
+
+  if (!student) return <div className="p-6 text-sm text-muted-foreground">Loading…</div>;
+
+  const coachName = (uid: string | null) => uid ? (coaches.find(c => c.id === uid)?.display_name ?? uid.slice(0, 8)) : "Unassigned";
 
   const deleteCall = async (cid: string) => {
     if (!confirm("Delete this call record?")) return;
@@ -85,6 +86,7 @@ function StudentDetail() {
     toast.success("Call deleted");
     load();
   };
+
 
   return (
     <div className="p-4 sm:p-6 max-w-[1400px] mx-auto space-y-5">

@@ -311,6 +311,9 @@ function CallModal({ call, onClose, onSaved, students, coaches, defaultCoachId }
 
   const save = async () => {
     if (!form.student_id) return toast.error("Pick a student");
+    if (form.status === "completed" && (!form.progress_rating || form.progress_rating < 1)) {
+      return toast.error("Set a 1–5 progress rating before saving a completed call.");
+    }
     setSaving(true);
     const payload: any = {
       student_id: form.student_id,
