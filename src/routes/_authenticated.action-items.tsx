@@ -111,7 +111,7 @@ function ActionItemsHub() {
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">Open action items</h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Every open item from every 1:1, across all coaches and students.
+            Oversight view. Coaches set items in <span className="text-foreground">/calls</span>; students tick them off in their portal.
           </p>
         </div>
         <div className="flex gap-2 items-center text-[11px] font-mono text-muted-foreground">
