@@ -463,11 +463,12 @@ function CommissionRatesCard({
 /* ---------- Log a close dialog ---------- */
 
 function LogDealDialog({
-  open, onOpenChange, closers, students, currentUserId, isAdmin, editing, onSaved,
+  open, onOpenChange, closers, setters, students, currentUserId, isAdmin, editing, onSaved,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   closers: Profile[];
+  setters: Profile[];
   students: Student[];
   currentUserId?: string;
   isAdmin: boolean;
@@ -478,6 +479,7 @@ function LogDealDialog({
   const [studentId, setStudentId] = useState<string>("");
   const [studentName, setStudentName] = useState("");
   const [closerId, setCloserId] = useState<string>("");
+  const [setterId, setSetterId] = useState<string>("");
   const [programType, setProgramType] = useState("");
   const [totalValue, setTotalValue] = useState<string>("0");
   const [cashUpfront, setCashUpfront] = useState<string>("0");
