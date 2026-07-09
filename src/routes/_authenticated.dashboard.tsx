@@ -223,15 +223,19 @@ function Dashboard() {
             <span>Ops today</span>
             <span className="h-px flex-1 bg-border" />
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2">
             <OpsCard to="/students" search={{ view: "atRisk" }} tone={ops && ops.atRisk > 0 ? "rose" : "muted"} icon={AlertTriangle} label="At-risk students" value={ops?.atRisk} />
             <OpsCard to="/installments" tone={ops && ops.installmentsOverdue > 0 ? "rose" : "muted"} icon={DollarSign} label="Installments overdue" value={ops?.installmentsOverdue} />
             <OpsCard to="/installments" tone={ops && ops.installmentsDueSoon > 0 ? "amber" : "muted"} icon={DollarSign} label="Due in ≤3 days" value={ops?.installmentsDueSoon} />
             <OpsCard to="/calls" tone="sky" icon={Phone} label="1:1s this week" value={ops?.callsThisWeek} />
             <OpsCard to="/eods" tone={ops && ops.eodsMissingToday > 0 ? "amber" : "muted"} icon={FileText} label="EODs missing today" value={ops?.eodsMissingToday} />
             <OpsCard to="/students" tone={ops && ops.testimonialsPending > 0 ? "amber" : "muted"} icon={Star} label="Testimonials pending" value={ops?.testimonialsPending} />
+            <OpsCard to="/action-items" tone={ops && ops.openActionItems > 0 ? "amber" : "muted"} icon={ListChecks} label="Open action items" value={ops?.openActionItems} />
           </div>
         </div>
+
+        <MyDayBlock roles={roles} />
+
 
         <InstallmentReminders />
 
