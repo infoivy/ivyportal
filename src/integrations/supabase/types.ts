@@ -894,7 +894,14 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "closer" | "setter" | "coach" | "student" | "csm"
+      app_role:
+        | "admin"
+        | "closer"
+        | "setter"
+        | "coach"
+        | "student"
+        | "csm"
+        | "founder"
       csm_tally_kind: "loom" | "roleplay" | "checkin" | "escalation"
       deal_payment_type: "pif" | "deposit" | "split"
       doc_category:
@@ -1050,7 +1057,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "closer", "setter", "coach", "student", "csm"],
+      app_role: [
+        "admin",
+        "closer",
+        "setter",
+        "coach",
+        "student",
+        "csm",
+        "founder",
+      ],
       csm_tally_kind: ["loom", "roleplay", "checkin", "escalation"],
       deal_payment_type: ["pif", "deposit", "split"],
       doc_category: [
