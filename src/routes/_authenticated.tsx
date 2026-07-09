@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { LogOut, AlertCircle } from "lucide-react";
 import { Toaster } from "sonner";
 import { AuthContext, type AuthState } from "@/lib/auth-context";
+import { installSessionOnlyCleanup } from "@/components/auth-page";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -30,6 +31,7 @@ function AuthedLayout() {
   };
 
   useEffect(() => {
+    const cleanupSessionOnly = installSessionOnlyCleanup();
     let alive = true;
     const load = async (userId: string | null) => {
       if (!userId) {
@@ -69,7 +71,7 @@ function AuthedLayout() {
         load(session?.user.id ?? null);
       }
     });
-    return () => { alive = false; sub.subscription.unsubscribe(); };
+    return () => { alive = false; sub.subscription.unsubscribe(); cleanupSessionOnly(); };
   }, [navigate]);
 
   const signOut = async () => {
