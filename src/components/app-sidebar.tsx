@@ -1,7 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, FileText, BookOpen, Calendar, GraduationCap,
-  BarChart3, Database, Users, StickyNote, ShieldCheck,
+  BarChart3, Database, Users, StickyNote, ShieldCheck, Shield,
 } from "lucide-react";
 
 import {
