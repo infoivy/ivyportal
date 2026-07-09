@@ -7,6 +7,7 @@ import {
   CommissionRates,
   DEFAULT_RATES,
   commissionForDeal,
+  setterCommissionForDeal,
   money,
   isSameMonth,
 } from "@/lib/revenue";
@@ -18,6 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { CashLeaderboard } from "@/components/weekly-leaderboard";
+import { SetterLeaderboard } from "@/components/setter-leaderboard";
 import { toast } from "sonner";
 import {
   Plus, DollarSign, TrendingUp, Trophy, ClipboardList, Pencil, Trash2,
@@ -43,19 +45,20 @@ function RevenuePage() {
   const [rates, setRates] = useState<CommissionRates>(DEFAULT_RATES);
   const [rateRows, setRateRows] = useState<{ id: string; key: string; label: string; rate: number; active: boolean }[]>([]);
   const [closers, setClosers] = useState<Profile[]>([]);
+  const [setters, setSetters] = useState<Profile[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [logOpen, setLogOpen] = useState(false);
   const [editing, setEditing] = useState<Deal | null>(null);
 
   const load = async () => {
-    const [dealsRes, ratesRes, closersRes, studentsRes] = await Promise.all([
+    const [dealsRes, ratesRes, rolesRes, studentsRes] = await Promise.all([
       supabase.from("deals").select("*").order("deal_date", { ascending: false }).limit(500),
       supabase.from("commission_rates").select("*").eq("active", true),
       supabase
         .from("user_roles")
         .select("user_id, role")
-        .in("role", ["closer", "coach", "admin"]),
+        .in("role", ["closer", "coach", "admin", "setter"]),
       supabase.from("students").select("id, full_name").order("full_name"),
     ]);
 
@@ -64,17 +67,24 @@ function RevenuePage() {
     const rows: { id: string; key: string; label: string; rate: number; active: boolean }[] = [];
     for (const row of ratesRes.data ?? []) {
       rows.push({ id: row.id, key: row.key, label: row.label, rate: Number(row.rate), active: row.active });
-      if (row.key === "new_close") r.new_close = Number(row.rate);
-      if (row.key === "pif_under_30d") r.pif_under_30d = Number(row.rate);
-      if (row.key === "payment_plan") r.payment_plan = Number(row.rate);
+      const k = row.key as keyof CommissionRates;
+      if (k in r) (r as Record<string, number>)[k] = Number(row.rate);
     }
     setRates(r);
     setRateRows(rows);
 
-    const closerIds = Array.from(new Set((closersRes.data ?? []).map((r) => r.user_id)));
-    if (closerIds.length > 0) {
-      const { data: profs } = await supabase.from("profiles").select("id, display_name").in("id", closerIds);
-      setClosers((profs ?? []) as Profile[]);
+    const closerIds = Array.from(
+      new Set((rolesRes.data ?? []).filter((r) => r.role !== "setter").map((r) => r.user_id)),
+    );
+    const setterIds = Array.from(
+      new Set((rolesRes.data ?? []).filter((r) => r.role === "setter" || r.role === "admin").map((r) => r.user_id)),
+    );
+    const allIds = Array.from(new Set([...closerIds, ...setterIds]));
+    if (allIds.length > 0) {
+      const { data: profs } = await supabase.from("profiles").select("id, display_name").in("id", allIds);
+      const profMap = new Map(((profs ?? []) as Profile[]).map((p) => [p.id, p]));
+      setClosers(closerIds.map((id) => profMap.get(id)).filter(Boolean) as Profile[]);
+      setSetters(setterIds.map((id) => profMap.get(id)).filter(Boolean) as Profile[]);
     }
     setStudents((studentsRes.data ?? []) as Student[]);
     setLoading(false);
@@ -108,6 +118,26 @@ function RevenuePage() {
       .map(([id, v]) => ({ closer_id: id, name: nameMap.get(id) ?? "Unknown", ...v }))
       .sort((a, b) => b.cash - a.cash);
   }, [monthDeals, closers, rates]);
+
+  // Per-setter breakdown (MTD)
+  const perSetter = useMemo(() => {
+    const map = new Map<string, { booked: number; deals: number; pifBonus: number; commission: number }>();
+    for (const d of monthDeals) {
+      if (!d.setter_id) continue;
+      const c = map.get(d.setter_id) ?? { booked: 0, deals: 0, pifBonus: 0, commission: 0 };
+      c.booked += Number(d.total_value);
+      c.deals += 1;
+      const comm = setterCommissionForDeal(d, rates);
+      c.commission += comm;
+      const base = Number(d.total_value) * rates.setter_base;
+      if (comm > base + 0.001) c.pifBonus += 1;
+      map.set(d.setter_id, c);
+    }
+    const nameMap = new Map(setters.map((s) => [s.id, s.display_name || "Unknown"]));
+    return Array.from(map.entries())
+      .map(([id, v]) => ({ setter_id: id, name: nameMap.get(id) ?? "Unknown", ...v }))
+      .sort((a, b) => b.commission - a.commission);
+  }, [monthDeals, setters, rates]);
 
   // Monthly trend (last 6 months)
   const trend = useMemo(() => {
@@ -164,7 +194,7 @@ function RevenuePage() {
       </div>
 
       <div className="grid lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-1">
           <Card className="p-5">
             <h3 className="text-sm font-semibold mb-3">Monthly trend</h3>
             <div className="h-64">
@@ -185,6 +215,7 @@ function RevenuePage() {
           </Card>
         </div>
         <CashLeaderboard />
+        <SetterLeaderboard />
       </div>
 
       {/* Per-closer breakdown */}
@@ -227,6 +258,46 @@ function RevenuePage() {
         </div>
       </Card>
 
+      {/* Per-setter breakdown */}
+      <Card className="overflow-hidden">
+        <div className="p-4 border-b border-[#1f2530] flex items-center justify-between">
+          <h3 className="text-sm font-semibold">Per-setter breakdown (MTD)</h3>
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+            {(rates.setter_base * 100).toFixed(1)}% base · +{(rates.setter_pif_bonus * 100).toFixed(1)}% PIF bonus
+          </span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="text-xs uppercase tracking-wider text-muted-foreground/70 bg-[#0f1116]">
+              <tr>
+                <th className="text-left px-4 py-2.5">Setter</th>
+                <th className="text-right px-4 py-2.5">Set closes</th>
+                <th className="text-right px-4 py-2.5">PIF bonuses</th>
+                <th className="text-right px-4 py-2.5">Booked</th>
+                <th className="text-right px-4 py-2.5">Commission</th>
+              </tr>
+            </thead>
+            <tbody>
+              {perSetter.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="text-center text-muted-foreground py-8">No setter-attributed deals this month.</td>
+                </tr>
+              ) : (
+                perSetter.map((r) => (
+                  <tr key={r.setter_id} className="border-t border-[#1f2530]">
+                    <td className="px-4 py-3 font-medium">{r.name}</td>
+                    <td className="px-4 py-3 text-right tabular-nums">{r.deals}</td>
+                    <td className="px-4 py-3 text-right tabular-nums text-sky-400">{r.pifBonus}</td>
+                    <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">{money(r.booked)}</td>
+                    <td className="px-4 py-3 text-right tabular-nums font-semibold text-emerald-400">{money(r.commission)}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
       {/* Recent deals */}
       <Card className="overflow-hidden">
         <div className="p-4 border-b border-[#1f2530]">
@@ -239,6 +310,7 @@ function RevenuePage() {
                 <th className="text-left px-4 py-2.5">Date</th>
                 <th className="text-left px-4 py-2.5">Student</th>
                 <th className="text-left px-4 py-2.5">Closer</th>
+                <th className="text-left px-4 py-2.5">Setter</th>
                 <th className="text-left px-4 py-2.5">Type</th>
                 <th className="text-right px-4 py-2.5">Value</th>
                 <th className="text-right px-4 py-2.5">Cash</th>
@@ -249,11 +321,15 @@ function RevenuePage() {
               {deals.slice(0, 25).map((d) => {
                 const canEdit = isAdmin || d.created_by === user?.id;
                 const closerName = closers.find((c) => c.id === d.closer_id)?.display_name || "—";
+                const setterName = d.setter_id
+                  ? setters.find((s) => s.id === d.setter_id)?.display_name || "—"
+                  : "—";
                 return (
                   <tr key={d.id} className="border-t border-[#1f2530]">
                     <td className="px-4 py-3 text-muted-foreground tabular-nums">{d.deal_date}</td>
                     <td className="px-4 py-3 font-medium">{d.student_name}</td>
                     <td className="px-4 py-3">{closerName}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{setterName}</td>
                     <td className="px-4 py-3">
                       <span className="text-[10px] uppercase tracking-wider border border-[#1f2530] rounded-full px-2 py-0.5">
                         {d.payment_type}
@@ -280,7 +356,7 @@ function RevenuePage() {
               })}
               {deals.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="text-center text-muted-foreground py-8">No deals logged yet.</td>
+                  <td colSpan={8} className="text-center text-muted-foreground py-8">No deals logged yet.</td>
                 </tr>
               )}
             </tbody>
@@ -294,6 +370,7 @@ function RevenuePage() {
         open={logOpen}
         onOpenChange={setLogOpen}
         closers={closers}
+        setters={setters}
         students={students}
         currentUserId={user?.id}
         isAdmin={isAdmin}
@@ -386,11 +463,12 @@ function CommissionRatesCard({
 /* ---------- Log a close dialog ---------- */
 
 function LogDealDialog({
-  open, onOpenChange, closers, students, currentUserId, isAdmin, editing, onSaved,
+  open, onOpenChange, closers, setters, students, currentUserId, isAdmin, editing, onSaved,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   closers: Profile[];
+  setters: Profile[];
   students: Student[];
   currentUserId?: string;
   isAdmin: boolean;
@@ -401,6 +479,7 @@ function LogDealDialog({
   const [studentId, setStudentId] = useState<string>("");
   const [studentName, setStudentName] = useState("");
   const [closerId, setCloserId] = useState<string>("");
+  const [setterId, setSetterId] = useState<string>("");
   const [programType, setProgramType] = useState("");
   const [totalValue, setTotalValue] = useState<string>("0");
   const [cashUpfront, setCashUpfront] = useState<string>("0");
@@ -421,6 +500,7 @@ function LogDealDialog({
       setStudentId(editing.student_id ?? "");
       setStudentName(editing.student_name);
       setCloserId(editing.closer_id);
+      setSetterId(editing.setter_id ?? "");
       setProgramType(editing.program_type);
       setTotalValue(String(editing.total_value));
       setCashUpfront(String(editing.cash_collected_upfront));
@@ -436,6 +516,7 @@ function LogDealDialog({
       setStudentId("");
       setStudentName("");
       setCloserId(currentUserId ?? "");
+      setSetterId("");
       setProgramType("");
       setTotalValue("0");
       setCashUpfront("0");
@@ -489,6 +570,7 @@ function LogDealDialog({
       student_id: finalStudentId,
       student_name: finalStudentName,
       closer_id: closerId,
+      setter_id: setterId || null,
       program_type: programType,
       total_value: tv,
       cash_collected_upfront: cu,
@@ -623,9 +705,24 @@ function LogDealDialog({
               {!isAdmin && <p className="text-[10px] text-muted-foreground">Only admins can assign to another closer.</p>}
             </div>
             <div className="space-y-1.5">
-              <Label>Program type</Label>
-              <Input value={programType} onChange={(e) => setProgramType(e.target.value)} placeholder="e.g. Setter Accelerator" />
+              <Label>Setter (optional)</Label>
+              <select
+                value={setterId}
+                onChange={(e) => setSetterId(e.target.value)}
+                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="">— None —</option>
+                {setters.map((s) => (
+                  <option key={s.id} value={s.id}>{s.display_name || s.id.slice(0, 8)}</option>
+                ))}
+              </select>
+              <p className="text-[10px] text-muted-foreground">Attribute to a setter for base + PIF-bonus commission.</p>
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Program type</Label>
+            <Input value={programType} onChange={(e) => setProgramType(e.target.value)} placeholder="e.g. Setter Accelerator" />
           </div>
 
           <div className="grid sm:grid-cols-3 gap-3">
