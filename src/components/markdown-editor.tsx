@@ -10,7 +10,7 @@ const turndown = new TurndownService({
   codeBlockStyle: "fenced",
 });
 turndown.addRule("strikethrough", {
-  filter: ["s", "strike", "del" as never],
+  filter: ["del", "s"],
   replacement: (c) => `~~${c}~~`,
 });
 
