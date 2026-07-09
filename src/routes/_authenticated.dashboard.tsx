@@ -168,7 +168,11 @@ function Dashboard() {
     { label: "Booked → Shows", value: totals.shows, color: "#ef4444" },
   ];
 
-  const rangeLabel = range === "7d" ? "Last 7 days" : range === "30d" ? "Last 30 days" : `Last 90 days · ${currentQuarterLabel()}`;
+  const rangeLabel =
+    dateRange.preset === "7d" ? "Last 7 days"
+    : dateRange.preset === "30d" ? "Last 30 days"
+    : dateRange.preset === "90d" ? `Last 90 days · ${currentQuarterLabel()}`
+    : `${format(dateRange.from, "MMM d")} → ${format(dateRange.to, "MMM d, yyyy")}`;
   const goalsLabel = `${currentQuarterLabel()} Goals`;
 
   return (
@@ -192,25 +196,24 @@ function Dashboard() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="inline-flex rounded-sm border border-border bg-card p-0.5">
-              {RANGES.map((r) => (
-                <button
-                  key={r.key}
-                  onClick={() => setRange(r.key)}
-                  className={`text-[11px] font-semibold px-2.5 py-1 rounded-[2px] transition ${
-                    range === r.key ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >{r.label}</button>
-              ))}
-            </div>
-            <button className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1.5 rounded-sm border border-border text-muted-foreground hover:text-foreground">
+          <div className="flex items-center gap-2 flex-wrap">
+            <RangePicker value={dateRange} onChange={setDateRange} />
+            <button
+              onClick={() => setCompare((c) => !c)}
+              className={`hidden sm:inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1.5 rounded-sm border transition ${
+                compare
+                  ? "border-emerald-500/40 text-emerald-400 bg-emerald-500/5"
+                  : "border-border text-muted-foreground hover:text-foreground"
+              }`}
+              title="Toggle previous-period comparison"
+            >
               <ArrowRightLeft className="h-3 w-3" /> Compare
             </button>
-            <Link to="/eods" className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1.5 rounded-sm border border-border text-muted-foreground hover:text-foreground">
-              <CalIcon className="h-3 w-3" /> <span className="hidden sm:inline">{format(new Date(), "MMMM yyyy")}</span>
-            </Link>
-            <button className="p-1.5 rounded-sm border border-border text-muted-foreground hover:text-foreground">
+            <button
+              onClick={() => setSettingsOpen(true)}
+              className="p-1.5 rounded-sm border border-border text-muted-foreground hover:text-foreground"
+              title="Dashboard settings"
+            >
               <Settings className="h-3.5 w-3.5" />
             </button>
           </div>
