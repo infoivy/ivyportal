@@ -243,10 +243,11 @@ function EODsPage() {
         </div>
       )}
 
-      <Tabs defaultValue="submit" className="space-y-4">
+      <Tabs defaultValue={isFounder ? "grid" : "submit"} className="space-y-4">
         <TabsList className="bg-[#0f1116] border border-[#1f2530] rounded-sm h-9 p-0.5">
-          <TabsTrigger value="submit" className="text-xs h-8 rounded-sm data-[state=active]:bg-[#1a1f29]">Today's EOD</TabsTrigger>
-          <TabsTrigger value="mine" className="text-xs h-8 rounded-sm data-[state=active]:bg-[#1a1f29]">My history</TabsTrigger>
+          {!isFounder && <TabsTrigger value="submit" className="text-xs h-8 rounded-sm data-[state=active]:bg-[#1a1f29]">Today's EOD</TabsTrigger>}
+          {!isFounder && <TabsTrigger value="mine" className="text-xs h-8 rounded-sm data-[state=active]:bg-[#1a1f29]">My history</TabsTrigger>}
+          {canViewTeam && <TabsTrigger value="grid" className="text-xs h-8 rounded-sm data-[state=active]:bg-[#1a1f29]">Grid</TabsTrigger>}
           {canViewTeam && <TabsTrigger value="team" className="text-xs h-8 rounded-sm data-[state=active]:bg-[#1a1f29]">Team feed</TabsTrigger>}
         </TabsList>
 
