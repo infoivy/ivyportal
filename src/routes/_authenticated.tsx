@@ -83,7 +83,7 @@ function AuthedLayout() {
                 </Button>
               </div>
             </header>
-            <main className="flex-1 min-w-0 overflow-auto">
+            <main className="flex-1 min-w-0 overflow-auto relative">
               <Outlet />
             </main>
           </div>

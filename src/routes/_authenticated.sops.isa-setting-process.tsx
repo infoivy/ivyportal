@@ -93,7 +93,7 @@ function Toolbar({ dark, setDark, onNotes, counter, setCounter, onReset, onHelp 
     setCounter(next);
   };
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-background border border-border rounded-full shadow-lg px-2 py-1.5 max-w-[calc(100vw-16px)] overflow-x-auto no-scrollbar">
+    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-background border border-border rounded-full shadow-lg px-2 py-1.5 max-w-[calc(100%-16px)] overflow-x-auto no-scrollbar">
       <button onClick={() => zoomOut(0.15)} className="w-8 h-8 shrink-0 rounded-full hover:bg-muted flex items-center justify-center" title="Zoom out">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14"/></svg>
       </button>
@@ -158,7 +158,7 @@ function Toolbar({ dark, setDark, onNotes, counter, setCounter, onReset, onHelp 
 
 function Header({ onJump, query, setQuery, innerRef }: { onJump: (id: TabId) => void; query: string; setQuery: (v: string) => void; innerRef?: React.RefObject<HTMLDivElement | null> }) {
   return (
-    <div ref={innerRef} className="fixed top-0 left-0 right-0 z-[80] px-3 sm:px-6 py-2 sm:py-3 bg-background border-b border-border shadow-sm">
+    <div ref={innerRef} className="absolute top-0 left-0 right-0 z-40 px-3 sm:px-6 py-2 sm:py-3 bg-background border-b border-border shadow-sm">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 sm:gap-3">
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <img src={logoAsset.url} alt="Ivy Sales Academy" className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 object-contain" loading="eager" />
@@ -570,7 +570,7 @@ function MobileToolbar({ dark, setDark, onNotes, counter, setCounter, onHelp }: 
     setCounter({ ...counter, [k]: Math.max(0, counter[k] + d) });
   };
   return (
-    <div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-background border border-border rounded-full shadow-lg px-2 py-1.5 max-w-[calc(100vw-16px)] overflow-x-auto no-scrollbar">
+    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-background border border-border rounded-full shadow-lg px-2 py-1.5 max-w-[calc(100%-16px)] overflow-x-auto no-scrollbar">
       {COUNTER_FIELDS.map(({ key, label, full }) => (
         <div key={key} className="flex items-center h-8 shrink-0 rounded-full bg-muted/60 pl-1.5 pr-1 gap-1" title={full}>
           <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{label}</span>
@@ -864,7 +864,7 @@ function Index() {
 
   if (isMobile) {
     return (
-      <div ref={containerRef} className="min-h-screen bg-background">
+      <div ref={containerRef} className="relative min-h-full bg-background">
         <MobileView matched={matched} query={deferredQuery} headerH={headerH} />
         <Header innerRef={headerRef} onJump={jumpTo} query={query} setQuery={setQuery} />
         <MobileToolbar dark={dark} setDark={setDark} onNotes={() => setNotesOpen(true)} counter={counter} setCounter={setCounter} onHelp={() => setHelpOpen(true)} />
@@ -875,7 +875,7 @@ function Index() {
   }
 
   return (
-    <div ref={containerRef} className="fixed inset-0 overflow-hidden bg-background">
+    <div ref={containerRef} className="absolute inset-0 overflow-hidden bg-background">
       {/* Zoom/pan canvas — clipped inside a container that starts BELOW the header.
           Header, rail, toolbar, and modals live OUTSIDE this wrapper so no
           transform/stacking-context can trap them below the header. */}
