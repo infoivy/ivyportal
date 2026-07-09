@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import {
   Sparkles, Calendar as CalendarIcon, Columns3, List as ListIcon, Lightbulb,
-  Plus, ExternalLink, Trash2, X, ArrowRight, BookOpen, Loader2,
+  Plus, ExternalLink, Trash2, X, ArrowRight, BookOpen, Loader2, Instagram,
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, parseISO } from "date-fns";
 
