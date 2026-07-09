@@ -9,6 +9,9 @@ import { Toaster } from "sonner";
 import { AuthContext, type AuthState } from "@/lib/auth-context";
 import { installSessionOnlyCleanup } from "@/components/auth-page";
 import { NotificationsBell } from "@/components/notifications-bell";
+import { CommandPalette } from "@/components/command-palette";
+import { StudentBottomNav } from "@/components/student-bottom-nav";
+import { setStudentPortalTab, getStudentPortalTab, onStudentPortalTab } from "@/lib/student-portal-bus";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
