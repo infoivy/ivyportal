@@ -264,7 +264,6 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/calendar'
     | '/calls'
-    | '/installments'
     | '/crm'
     | '/csm'
     | '/dashboard'
