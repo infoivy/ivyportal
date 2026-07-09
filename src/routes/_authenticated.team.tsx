@@ -21,6 +21,7 @@ type Member = {
   id: string;
   display_name: string | null;
   avatar_path: string | null;
+  phone: string | null;
   active: boolean;
   roles: string[];
 };
@@ -46,7 +47,7 @@ function TeamPage() {
   const load = async () => {
     const { data: profs } = await supabase
       .from("profiles")
-      .select("id, display_name, avatar_path, active" as any);
+      .select("id, display_name, avatar_path, active, phone" as any);
     const { data: rolesData } = await supabase.from("user_roles").select("user_id, role");
     const rolesByUser = new Map<string, string[]>();
     (rolesData ?? []).forEach(r => {
@@ -58,6 +59,7 @@ function TeamPage() {
       id: p.id,
       display_name: p.display_name,
       avatar_path: p.avatar_path ?? null,
+      phone: p.phone ?? null,
       active: p.active ?? true,
       roles: rolesByUser.get(p.id) ?? [],
     }));
@@ -223,6 +225,7 @@ function TeamPage() {
 
 function EditProfileModal({ member, initialUrl, onClose, onSaved }: { member: Member; initialUrl: string | null; onClose: () => void; onSaved: () => void }) {
   const [displayName, setDisplayName] = useState(member.display_name ?? "");
+  const [phone, setPhone] = useState(member.phone ?? "");
   const [avatarPath, setAvatarPath] = useState<string | null>(member.avatar_path);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(initialUrl);
   const [saving, setSaving] = useState(false);
@@ -248,6 +251,7 @@ function EditProfileModal({ member, initialUrl, onClose, onSaved }: { member: Me
     const { error } = await supabase.from("profiles").update({
       display_name: displayName.trim() || null,
       avatar_path: avatarPath,
+      phone: phone.trim() || null,
     } as any).eq("id", member.id);
     setSaving(false);
     if (error) return toast.error(error.message);
@@ -278,6 +282,11 @@ function EditProfileModal({ member, initialUrl, onClose, onSaved }: { member: Me
         <div className="space-y-1">
           <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Display name</label>
           <input value={displayName} onChange={e => setDisplayName(e.target.value)}
+                 className="w-full h-9 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-sm" />
+        </div>
+        <div className="space-y-1">
+          <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Phone (optional)</label>
+          <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="+1 555 123 4567" inputMode="tel"
                  className="w-full h-9 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-sm" />
         </div>
         <div className="flex justify-end gap-2 pt-2 border-t border-[#1f2530]">

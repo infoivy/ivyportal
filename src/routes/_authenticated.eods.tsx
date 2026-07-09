@@ -78,6 +78,12 @@ function EODsPage() {
 
   const submit = async () => {
     if (!user) return;
+    // Cross-field sanity checks (warn, don't hard-block)
+    const warnings: string[] = [];
+    if (form.calls_booked > form.convos_started) warnings.push(`Calls booked (${form.calls_booked}) is higher than convos started (${form.convos_started}).`);
+    if (form.convos_started > form.dms_sent) warnings.push(`Convos started (${form.convos_started}) is higher than DMs sent (${form.dms_sent}).`);
+    if ((form.shows + form.no_shows) > form.calls_booked) warnings.push(`Shows + no-shows (${form.shows + form.no_shows}) exceeds calls booked (${form.calls_booked}).`);
+    if (warnings.length && !confirm(warnings.join("\n") + "\n\nAre you sure these numbers are right?")) return;
     setSaving(true);
     const payload = { user_id: user.id, report_date: today, ...form };
     const { error } = await supabase.from("eods").upsert(payload, { onConflict: "user_id,report_date" });
