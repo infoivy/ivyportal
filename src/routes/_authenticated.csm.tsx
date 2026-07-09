@@ -31,6 +31,10 @@ type StudentCall = {
 type ActionItem = { text: string; done: boolean };
 
 type StudentEodLite = { student_id: string; report_date: string };
+type AdHocItem = {
+  id: string; student_id: string; text: string; done: boolean;
+  due_date: string | null; created_at: string; created_by: string;
+};
 
 const KIND_META: Record<TallyKind, { label: string; icon: typeof Video; color: string; ring: string }> = {
   loom:       { label: "Loom reviewed",     icon: Video,          color: "bg-blue-500/10 text-blue-300 hover:bg-blue-500/20 border-blue-500/30",         ring: "focus:ring-blue-400/40" },
@@ -50,6 +54,10 @@ function CsmPage() {
   const [tally, setTally] = useState<TallyRow[]>([]);
   const [calls, setCalls] = useState<StudentCall[]>([]);
   const [studentEods, setStudentEods] = useState<StudentEodLite[]>([]);
+  const [adhoc, setAdhoc] = useState<AdHocItem[]>([]);
+  const [newAdhocText, setNewAdhocText] = useState("");
+  const [newAdhocDue, setNewAdhocDue] = useState("");
+  const [savingAdhoc, setSavingAdhoc] = useState(false);
   const [studentId, setStudentId] = useState("");
   const [note, setNote] = useState("");
   const [tags, setTags] = useState("progress, check-in");
@@ -64,12 +72,13 @@ function CsmPage() {
   const load = async () => {
     if (!user) return;
     const since = new Date(Date.now() - 14 * 86400000).toISOString();
-    const [studentsRes, notesRes, tallyRes, callsRes, sEodRes] = await Promise.all([
+    const [studentsRes, notesRes, tallyRes, callsRes, sEodRes, adhocRes] = await Promise.all([
       supabase.from("students").select("id, full_name, email, phase, status, coach_id").order("full_name", { ascending: true }),
       supabase.from("csm_student_notes").select("*").order("created_at", { ascending: false }).limit(200),
       supabase.from("csm_tally").select("*").eq("user_id", user.id).gte("created_at", since).order("created_at", { ascending: false }),
       supabase.from("student_calls").select("id, student_id, call_date, action_items_json, next_call_date").order("call_date", { ascending: false }).limit(600),
       supabase.from("student_eods").select("student_id, report_date").order("report_date", { ascending: false }).limit(1000),
+      supabase.from("student_action_items").select("id, student_id, text, done, due_date, created_at, created_by").order("created_at", { ascending: false }).limit(500),
     ]);
     const studentRows = (studentsRes.data ?? []) as Student[];
     setStudents(studentRows);
@@ -87,6 +96,7 @@ function CsmPage() {
     setTally((tallyRes.data ?? []) as TallyRow[]);
     setCalls((callsRes.data ?? []) as StudentCall[]);
     setStudentEods((sEodRes.data ?? []) as StudentEodLite[]);
+    setAdhoc((adhocRes.data ?? []) as AdHocItem[]);
   };
 
   useEffect(() => { if (canUse) load(); /* eslint-disable-next-line */ }, [canUse, user]);
@@ -125,6 +135,48 @@ function CsmPage() {
   const lastStudentEod = useMemo(() => studentEods.find(e => e.student_id === studentId)?.report_date ?? null, [studentEods, studentId]);
   const studentLoomsReviewed = useMemo(() => tally.filter(t => t.student_id === studentId && t.kind === "loom"), [tally, studentId]);
   const studentRoleplaysReviewed = useMemo(() => tally.filter(t => t.student_id === studentId && t.kind === "roleplay"), [tally, studentId]);
+  const selectedAdhoc = useMemo(
+    () => adhoc.filter(a => a.student_id === studentId).sort((a, b) => (a.done === b.done ? 0 : a.done ? 1 : -1)),
+    [adhoc, studentId],
+  );
+
+  const addAdhoc = async () => {
+    if (!user || !studentId || !newAdhocText.trim()) return;
+    setSavingAdhoc(true);
+    const { data, error } = await supabase
+      .from("student_action_items")
+      .insert({
+        student_id: studentId,
+        created_by: user.id,
+        text: newAdhocText.trim(),
+        due_date: newAdhocDue || null,
+      })
+      .select()
+      .single();
+    setSavingAdhoc(false);
+    if (error) return toast.error(error.message);
+    setAdhoc(prev => [data as AdHocItem, ...prev]);
+    setNewAdhocText(""); setNewAdhocDue("");
+    toast.success("Action item added");
+  };
+
+  const toggleAdhoc = async (it: AdHocItem) => {
+    const next = !it.done;
+    const { error } = await supabase
+      .from("student_action_items")
+      .update({ done: next, done_at: next ? new Date().toISOString() : null })
+      .eq("id", it.id);
+    if (error) return toast.error(error.message);
+    setAdhoc(prev => prev.map(a => a.id === it.id ? { ...a, done: next } : a));
+  };
+
+  const deleteAdhoc = async (id: string) => {
+    if (!confirm("Delete this action item?")) return;
+    const { error } = await supabase.from("student_action_items").delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    setAdhoc(prev => prev.filter(a => a.id !== id));
+    toast.success("Deleted");
+  };
 
   const addTally = async (kind: TallyKind, opts?: { student_id?: string | null; note?: string | null }) => {
     if (!user) return;
@@ -311,6 +363,71 @@ function CsmPage() {
                   </ul>
                 )}
               </div>
+
+              {/* Ad-hoc action items — CSMs can add these directly */}
+              <div className="p-4 border-t border-[#1f2530]">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-fuchsia-400">Ad-hoc action items</div>
+                  <div className="text-[10px] text-muted-foreground italic">Assign anytime · outside of calls</div>
+                </div>
+                {selectedAdhoc.length === 0 ? (
+                  <div className="text-xs text-muted-foreground py-2">No ad-hoc items for this student.</div>
+                ) : (
+                  <ul className="space-y-1.5 mb-3">
+                    {selectedAdhoc.map(it => (
+                      <li key={it.id} className="flex items-start gap-2">
+                        <button
+                          onClick={() => toggleAdhoc(it)}
+                          className="mt-0.5 shrink-0 cursor-pointer"
+                          aria-label={it.done ? "Mark not done" : "Mark done"}
+                        >
+                          {it.done
+                            ? <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                            : <Circle className="h-4 w-4 text-muted-foreground hover:text-fuchsia-400" />}
+                        </button>
+                        <div className="flex-1 min-w-0">
+                          <div className={`text-sm ${it.done ? "line-through text-muted-foreground" : ""}`}>{it.text}</div>
+                          <div className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
+                            <Clock className="h-2.5 w-2.5" />
+                            {it.due_date ? `due ${it.due_date}` : `added ${it.created_at.slice(0, 10)}`}
+                          </div>
+                        </div>
+                        {(it.created_by === user?.id || roles.includes("admin")) && (
+                          <button
+                            onClick={() => deleteAdhoc(it.id)}
+                            className="p-1 rounded-sm text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10"
+                            title="Delete"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <div className="grid grid-cols-[minmax(0,1fr)_120px_auto] gap-2">
+                  <input
+                    value={newAdhocText}
+                    onChange={e => setNewAdhocText(e.target.value)}
+                    placeholder="New action item…"
+                    className="h-8 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs outline-none focus:border-fuchsia-500/40"
+                  />
+                  <input
+                    type="date"
+                    value={newAdhocDue}
+                    onChange={e => setNewAdhocDue(e.target.value)}
+                    className="h-8 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs outline-none focus:border-fuchsia-500/40"
+                  />
+                  <button
+                    onClick={addAdhoc}
+                    disabled={savingAdhoc || !newAdhocText.trim()}
+                    className="h-8 px-3 rounded-sm bg-fuchsia-500 hover:bg-fuchsia-400 text-fuchsia-950 text-xs font-medium disabled:opacity-40"
+                  >
+                    {savingAdhoc ? "…" : "Add"}
+                  </button>
+                </div>
+              </div>
+
 
 
               {/* Recent loom/roleplay taps */}
