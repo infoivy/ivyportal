@@ -29,6 +29,7 @@ const knowledgeItems: Item[] = [
 const opsItems: Item[] = [
   { title: "Students", url: "/students", icon: School },
   { title: "1-on-1 Calls", url: "/calls", icon: Phone, roles: ["admin", "coach"] },
+  { title: "Installments", url: "/installments", icon: DollarSign, roles: ["admin", "setter", "coach", "csm"] },
   { title: "Calendar", url: "/calendar", icon: Calendar },
   { title: "Analytics", url: "/analytics", icon: BarChart3 },
   { title: "CRM", url: "/crm", icon: Database },
