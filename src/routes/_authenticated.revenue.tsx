@@ -7,6 +7,7 @@ import {
   CommissionRates,
   DEFAULT_RATES,
   commissionForDeal,
+  setterCommissionForDeal,
   money,
   isSameMonth,
 } from "@/lib/revenue";
