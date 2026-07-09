@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { signAvatars, uploadAvatar } from "@/lib/avatars";
 import { deleteTeamMember, setMemberActive } from "@/lib/team-admin.functions";
+import { fetchAllTemplates, progressPercent, type OnboardingTemplate } from "@/lib/onboarding";
 
 export const Route = createFileRoute("/_authenticated/team")({
   head: () => ({ meta: [{ title: "Team — ISA" }] }),
@@ -40,6 +41,8 @@ function TeamPage() {
   const [avatarUrls, setAvatarUrls] = useState<Record<string, string>>({});
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState<Member | null>(null);
+  const [templates, setTemplates] = useState<OnboardingTemplate[]>([]);
+  const [progressByUser, setProgressByUser] = useState<Map<string, Set<string>>>(new Map());
 
   const deleteMemberFn = useServerFn(deleteTeamMember);
   const setActiveFn = useServerFn(setMemberActive);
@@ -65,6 +68,28 @@ function TeamPage() {
     }));
     setMembers(list);
     setAvatarUrls(await signAvatars(list.map(m => m.avatar_path)));
+    const [tpls, { data: progressRows }] = await Promise.all([
+      fetchAllTemplates(),
+      supabase.from("onboarding_progress").select("user_id, role, step_id"),
+    ]);
+    setTemplates(tpls);
+    const pmap = new Map<string, Set<string>>();
+    ((progressRows ?? []) as any[]).forEach(r => {
+      const s = pmap.get(r.user_id) ?? new Set<string>();
+      s.add(`${r.role}:${r.step_id}`);
+      pmap.set(r.user_id, s);
+    });
+    setProgressByUser(pmap);
+  };
+
+  const memberOnboardingPct = (m: Member): number | null => {
+    for (const r of ["setter", "closer", "coach", "csm"] as const) {
+      if (!m.roles.includes(r)) continue;
+      const t = templates.find(t => t.role === r);
+      if (!t) continue;
+      return progressPercent(t.steps, progressByUser.get(m.id) ?? new Set(), r);
+    }
+    return null;
   };
 
   useEffect(() => { load(); }, []);
@@ -166,7 +191,21 @@ function TeamPage() {
                   {!m.active && <span className="text-[9px] uppercase tracking-wider text-rose-400 border border-rose-500/30 bg-rose-500/10 px-1.5 py-0.5 rounded-sm">Inactive</span>}
                   <button onClick={() => setEditing(m)} className="text-muted-foreground hover:text-foreground"><Pencil className="h-3 w-3" /></button>
                 </div>
-                <div className="text-[10px] text-muted-foreground font-mono">{m.id === user?.id ? "You" : m.id.slice(0, 8)}</div>
+                <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-mono">
+                  <span>{m.id === user?.id ? "You" : m.id.slice(0, 8)}</span>
+                  {(() => {
+                    const pct = memberOnboardingPct(m);
+                    if (pct === null) return null;
+                    const color = pct === 100 ? "text-emerald-400 border-emerald-500/30 bg-emerald-500/5"
+                      : pct >= 50 ? "text-amber-400 border-amber-500/30 bg-amber-500/5"
+                      : "text-rose-400 border-rose-500/30 bg-rose-500/5";
+                    return (
+                      <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm border ${color}`} title="Onboarding progress">
+                        <GraduationCap className="h-2.5 w-2.5" /> {pct}%
+                      </span>
+                    );
+                  })()}
+                </div>
               </div>
             </div>
             <div className="flex gap-1.5 flex-wrap justify-end">

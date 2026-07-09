@@ -572,6 +572,60 @@ export type Database = {
         }
         Relationships: []
       }
+      onboarding_progress: {
+        Row: {
+          done_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          step_id: string
+          user_id: string
+        }
+        Insert: {
+          done_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          step_id: string
+          user_id: string
+        }
+        Update: {
+          done_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          step_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      onboarding_templates: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          steps: Json
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          steps?: Json
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          steps?: Json
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payment_links: {
         Row: {
           active: boolean
