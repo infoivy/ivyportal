@@ -86,6 +86,10 @@ function AuthedLayout() {
     return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
   }
 
+  const isStudent = state.roles.includes("student");
+  const isTeam = state.roles.some(r => ["admin", "coach", "closer", "setter", "csm"].includes(r));
+  const studentOnly = isStudent && !isTeam;
+
   return (
     <AuthContext.Provider value={state}>
       <SidebarProvider>
@@ -103,7 +107,7 @@ function AuthedLayout() {
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   Live
                 </div>
-                {eodSubmitted === false && (
+                {eodSubmitted === false && !studentOnly && (
                   <Link
                     to="/eods"
                     className="hidden sm:flex items-center gap-1.5 text-[10px] font-medium px-2 py-1 rounded-sm border border-amber-500/30 bg-amber-500/5 text-amber-400 hover:bg-amber-500/10 transition"
@@ -122,14 +126,22 @@ function AuthedLayout() {
                 </Button>
               </div>
             </header>
-            <main className="flex-1 min-w-0 overflow-auto relative bg-[#0a0b0f]">
+            <main className={`flex-1 min-w-0 overflow-auto relative bg-[#0a0b0f] ${studentOnly ? "pb-16 sm:pb-0" : ""}`}>
               <Outlet />
             </main>
           </div>
         </div>
         <Toaster theme="dark" toastOptions={{ style: { background: "#0f1116", border: "1px solid #1f2530", color: "#e5e7eb" } }} />
+        <CommandPalette />
+        {studentOnly && <StudentBottomNavBridge />}
       </SidebarProvider>
     </AuthContext.Provider>
   );
+}
+
+function StudentBottomNavBridge() {
+  const [tab, setTab] = useState(getStudentPortalTab());
+  useEffect(() => onStudentPortalTab(setTab), []);
+  return <StudentBottomNav activeTab={tab} onTabChange={setStudentPortalTab} />;
 }
 
