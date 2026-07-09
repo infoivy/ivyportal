@@ -143,7 +143,12 @@ function FounderPage() {
 
           {/* Idea inbox */}
           <aside>
-            <IdeaInbox ideas={ideas} userId={user?.id ?? null} onChange={load} onPromote={(idea) => setCreating(true) || setPromotingIdea(idea)} promoteViaEditing={(item) => setEditing(item)} />
+            <IdeaInbox
+              ideas={ideas}
+              userId={user?.id ?? null}
+              onChange={load}
+              onPromote={(idea) => { setPromotingIdea(idea); setCreating(true); }}
+            />
           </aside>
         </div>
       )}
