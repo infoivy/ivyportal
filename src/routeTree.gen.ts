@@ -127,11 +127,6 @@ const AuthenticatedCallsRoute = AuthenticatedCallsRouteImport.update({
   path: '/calls',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedInstallmentsRoute = AuthenticatedInstallmentsRouteImport.update({
-  id: '/installments',
-  path: '/installments',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
 const AuthenticatedCalendarRoute = AuthenticatedCalendarRouteImport.update({
   id: '/calendar',
   path: '/calendar',
