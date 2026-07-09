@@ -57,9 +57,12 @@ function Crm() {
   const isAdmin = roles.includes("admin");
   const getStatus = useServerFn(getCloseStatus);
   const listLeads = useServerFn(listCloseLeads);
+  const countNotes = useServerFn(countLeadNotes);
 
   const [connected, setConnected] = useState<boolean | null>(null);
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [noteCounts, setNoteCounts] = useState<Record<string, number>>({});
+  const [activeLead, setActiveLead] = useState<Lead | null>(null);
   const [loading, setLoading] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
   const [q, setQ] = useState("");
