@@ -350,7 +350,8 @@ function buildTrend(rows: EodRow[], days: number) {
 function Kpi({
   icon: Icon, label, value, prev, suffix, accent, invertDelta,
 }: {
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
+
   label: string;
   value: number;
   prev: number;
