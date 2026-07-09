@@ -875,7 +875,7 @@ function Index() {
   }
 
   return (
-    <div ref={containerRef} className="fixed inset-0 overflow-hidden bg-background">
+    <div ref={containerRef} className="absolute inset-0 overflow-hidden bg-background">
       {/* Zoom/pan canvas — clipped inside a container that starts BELOW the header.
           Header, rail, toolbar, and modals live OUTSIDE this wrapper so no
           transform/stacking-context can trap them below the header. */}
