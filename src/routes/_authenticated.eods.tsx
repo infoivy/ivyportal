@@ -209,6 +209,34 @@ function EODsPage() {
                 </div>
               )}
 
+              {isCloser && (
+                <>
+                  <div className="space-y-3">
+                    <SectionLabel>Closer — call activity</SectionLabel>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <NumField label="Calls taken" value={form.calls_taken} onChange={setNum("calls_taken")} />
+                      <NumField label="Closes" value={form.closes} onChange={setNum("closes")} />
+                      <NumField label="Deposits" value={form.deposits} onChange={setNum("deposits")} />
+                      <NumField label="Follow-ups done" value={form.follow_ups_done} onChange={setNum("follow_ups_done")} />
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <SectionLabel>Closer — cash</SectionLabel>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Cash collected today ($)</Label>
+                        <Input type="number" min={0} step="0.01" value={form.cash_collected} onChange={e => setFloat("cash_collected")(e.target.value)} onFocus={e => e.currentTarget.select()} className="bg-[#0a0b0f] border-[#1f2530] rounded-sm h-9 font-mono text-sm focus-visible:ring-emerald-500/40 focus-visible:border-emerald-500/40" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Deferred cash — PIF &lt;30d ($)</Label>
+                        <Input type="number" min={0} step="0.01" value={form.deferred_cash} onChange={e => setFloat("deferred_cash")(e.target.value)} onFocus={e => e.currentTarget.select()} className="bg-[#0a0b0f] border-[#1f2530] rounded-sm h-9 font-mono text-sm focus-visible:ring-emerald-500/40 focus-visible:border-emerald-500/40" />
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">Deferred = PIF cash expected within 30 days per the EOD SOP.</p>
+                  </div>
+                </>
+              )}
+
               <div className="space-y-3">
                 <SectionLabel>Narrative</SectionLabel>
                 <TextField label="Wins" value={form.wins} onChange={v => setForm(f => ({ ...f, wins: v }))} />
