@@ -157,6 +157,28 @@ function NotesPage() {
               {saving ? "Saving…" : "Save note"}
             </button>
           </div>
+          <div className="mt-2 flex flex-wrap items-center gap-1">
+            <span className="text-[9px] text-muted-foreground uppercase tracking-wider mr-1">Quick tags</span>
+            {["objection", "win", "script-tweak", "insight"].map(preset => {
+              const current = tagsStr.split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
+              const on = current.includes(preset);
+              return (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => {
+                    const next = on ? current.filter(t => t !== preset) : [...current, preset];
+                    setTagsStr(next.join(", "));
+                  }}
+                  className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-sm border transition ${
+                    on
+                      ? "bg-emerald-500 text-black border-emerald-500"
+                      : "border-border text-muted-foreground hover:text-foreground"
+                  }`}
+                >#{preset}</button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Filters */}
