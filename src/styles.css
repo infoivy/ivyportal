@@ -130,3 +130,18 @@
 /* Hide native scrollbars on mobile pill row */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { scrollbar-width: none; }
+
+/* Sharp dark dashboard aesthetic (matches creator-dashboard reference) */
+.dashboard-dark {
+  --background: #0a0b0f;
+  --card: #0f1116;
+  --border: #1f2530;
+  --muted: #14171e;
+  --muted-foreground: #64748b;
+  --foreground: #e5e7eb;
+  --card-foreground: #e5e7eb;
+  background-color: #0a0b0f;
+  color: #e5e7eb;
+}
+.dashboard-dark * { border-color: #1f2530; }
+
