@@ -546,3 +546,106 @@ function QuickAction({ to, icon: Icon, label }: { to: string; icon: React.Compon
 function Skeleton() {
   return <div className="h-full w-full rounded bg-white/5 animate-pulse" />;
 }
+
+type ReminderRow = {
+  id: string;
+  amount: number;
+  currency: string;
+  due_date: string;
+  days: number;
+  student_id: string | null;
+  student_name: string;
+  coach_name: string | null;
+};
+
+function InstallmentReminders() {
+  const { user, roles } = useAuth();
+  const [rows, setRows] = useState<ReminderRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const isAdmin = roles.includes("admin");
+  const isCoach = roles.includes("coach");
+  const canSee = isAdmin || isCoach;
+
+  useEffect(() => {
+    if (!user || !canSee) { setLoading(false); return; }
+    let alive = true;
+    (async () => {
+      const today = new Date();
+      const in3 = new Date(today); in3.setDate(in3.getDate() + 3);
+      const to = in3.toISOString().slice(0, 10);
+      let q = supabase
+        .from("installment_payments")
+        .select("id, amount, currency, due_date, installments!inner(coach_id, student_id, students(id, full_name), coach:profiles!installments_coach_id_fkey(display_name))")
+        .eq("status", "upcoming")
+        .lte("due_date", to)
+        .order("due_date", { ascending: true })
+        .limit(25);
+      if (!isAdmin && isCoach) q = q.eq("installments.coach_id", user.id);
+      const { data } = await q;
+      if (!alive) return;
+      const now = new Date(new Date().toISOString().slice(0, 10));
+      const mapped: ReminderRow[] = (data ?? []).map((r: any) => {
+        const student = r.installments?.students;
+        const days = Math.round((new Date(r.due_date).getTime() - now.getTime()) / 86400000);
+        return {
+          id: r.id,
+          amount: r.amount,
+          currency: r.currency,
+          due_date: r.due_date,
+          days,
+          student_id: student?.id ?? null,
+          student_name: student?.full_name ?? "Unknown",
+          coach_name: r.installments?.coach?.display_name ?? null,
+        };
+      });
+      setRows(mapped);
+      setLoading(false);
+    })();
+    return () => { alive = false; };
+  }, [user?.id, isAdmin, isCoach, canSee]);
+
+  if (!canSee) return null;
+
+  return (
+    <div className="rounded-md border border-border bg-card">
+      <div className="px-3 py-2 border-b border-border flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="text-xs font-semibold">Installment reminders</span>
+          <span className="text-[10px] text-muted-foreground">next 3 days + overdue</span>
+        </div>
+        <Link to="/installments" className="text-[10px] text-muted-foreground hover:text-foreground">Open →</Link>
+      </div>
+      {loading ? (
+        <div className="p-4"><Skeleton /></div>
+      ) : rows.length === 0 ? (
+        <div className="px-3 py-6 text-center text-xs text-muted-foreground">Nothing due in the next 3 days 🎉</div>
+      ) : (
+        <div className="divide-y divide-border">
+          {rows.map(r => {
+            const tone = r.days < 0 ? "text-rose-400" : r.days === 0 ? "text-amber-400" : r.days === 1 ? "text-amber-300" : "text-muted-foreground";
+            const label = r.days < 0 ? `Overdue ${Math.abs(r.days)}d` : r.days === 0 ? "Due today" : r.days === 1 ? "Due tomorrow" : `Due in ${r.days}d`;
+            const inner = (
+              <>
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs truncate">{r.student_name}</div>
+                  <div className="text-[10px] text-muted-foreground truncate">
+                    {r.currency} {Number(r.amount).toLocaleString()} · {r.due_date}{r.coach_name ? ` · Coach: ${r.coach_name}` : ""}
+                  </div>
+                </div>
+                <span className={`text-[10px] font-medium whitespace-nowrap ${tone}`}>{label}</span>
+              </>
+            );
+            return r.student_id ? (
+              <Link key={r.id} to="/students/$id" params={{ id: r.student_id }} className="flex items-center gap-3 px-3 py-2 hover:bg-white/5 transition">
+                {inner}
+              </Link>
+            ) : (
+              <div key={r.id} className="flex items-center gap-3 px-3 py-2">{inner}</div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
