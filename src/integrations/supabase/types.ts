@@ -821,6 +821,66 @@ export type Database = {
         }
         Relationships: []
       }
+      student_action_items: {
+        Row: {
+          assignee_id: string | null
+          created_at: string
+          created_by: string
+          done: boolean
+          done_at: string | null
+          due_date: string | null
+          id: string
+          notes: string | null
+          source_call_id: string | null
+          student_id: string
+          text: string
+          updated_at: string
+        }
+        Insert: {
+          assignee_id?: string | null
+          created_at?: string
+          created_by: string
+          done?: boolean
+          done_at?: string | null
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          source_call_id?: string | null
+          student_id: string
+          text: string
+          updated_at?: string
+        }
+        Update: {
+          assignee_id?: string | null
+          created_at?: string
+          created_by?: string
+          done?: boolean
+          done_at?: string | null
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          source_call_id?: string | null
+          student_id?: string
+          text?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_action_items_source_call_id_fkey"
+            columns: ["source_call_id"]
+            isOneToOne: false
+            referencedRelation: "student_calls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_action_items_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_calls: {
         Row: {
           action_items: string | null
