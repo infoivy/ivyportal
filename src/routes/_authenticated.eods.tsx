@@ -213,7 +213,7 @@ function EODsPage() {
           <TabsContent value="team">
             <div className="space-y-2">
               {teamEods.length === 0 && <EmptyState text="No team EODs yet." />}
-              {teamEods.map(e => <EODRow key={e.id} eod={e} author={e.display_name} />)}
+              {teamEods.map(e => <EODRow key={e.id} eod={e} author={e.display_name} onDelete={roles.includes("admin") ? deleteEod : undefined} />)}
             </div>
           </TabsContent>
         )}
