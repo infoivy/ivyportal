@@ -141,7 +141,7 @@ function AuthedLayout() {
 
 function StudentBottomNavBridge() {
   const [tab, setTab] = useState(getStudentPortalTab());
-  useEffect(() => onStudentPortalTab(setTab), []);
+  useEffect(() => { const off = onStudentPortalTab(setTab); return () => { off(); }; }, []);
   return <StudentBottomNav activeTab={tab} onTabChange={setStudentPortalTab} />;
 }
 
