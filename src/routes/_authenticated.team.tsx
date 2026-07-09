@@ -12,8 +12,9 @@ export const Route = createFileRoute("/_authenticated/team")({
   component: TeamPage,
 });
 
+type AppRole = "admin" | "closer" | "setter";
 type Member = { id: string; display_name: string | null; roles: string[] };
-const ROLES = ["admin", "closer", "setter"] as const;
+const ROLES: AppRole[] = ["admin", "closer", "setter"];
 
 function TeamPage() {
   const { roles, user } = useAuth();
@@ -34,12 +35,12 @@ function TeamPage() {
 
   useEffect(() => { load(); }, []);
 
-  const toggleRole = async (userId: string, role: string, has: boolean) => {
+  const toggleRole = async (userId: string, role: AppRole, has: boolean) => {
     if (has) {
       const { error } = await supabase.from("user_roles").delete().eq("user_id", userId).eq("role", role);
       if (error) return toast.error(error.message);
     } else {
-      const { error } = await supabase.from("user_roles").insert({ user_id: userId, role: role as any });
+      const { error } = await supabase.from("user_roles").insert({ user_id: userId, role });
       if (error) return toast.error(error.message);
     }
     toast.success("Role updated");

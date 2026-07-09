@@ -10,6 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as PrintRouteImport } from './routes/print'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedTrainingRouteImport } from './routes/_authenticated.training'
+import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated.team'
+import { Route as AuthenticatedSopsRouteImport } from './routes/_authenticated.sops'
+import { Route as AuthenticatedNotesRouteImport } from './routes/_authenticated.notes'
+import { Route as AuthenticatedEodsRouteImport } from './routes/_authenticated.eods'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
+import { Route as AuthenticatedCrmRouteImport } from './routes/_authenticated.crm'
+import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticated.calendar'
+import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated.analytics'
 import { Route as AuthenticatedSopsIsaSettingProcessRouteImport } from './routes/_authenticated.sops.isa-setting-process'
 
 const PrintRoute = PrintRouteImport.update({
@@ -17,37 +29,173 @@ const PrintRoute = PrintRouteImport.update({
   path: '/print',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedTrainingRoute = AuthenticatedTrainingRouteImport.update({
+  id: '/training',
+  path: '/training',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedTeamRoute = AuthenticatedTeamRouteImport.update({
+  id: '/team',
+  path: '/team',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedSopsRoute = AuthenticatedSopsRouteImport.update({
+  id: '/sops',
+  path: '/sops',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedNotesRoute = AuthenticatedNotesRouteImport.update({
+  id: '/notes',
+  path: '/notes',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedEodsRoute = AuthenticatedEodsRouteImport.update({
+  id: '/eods',
+  path: '/eods',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedCrmRoute = AuthenticatedCrmRouteImport.update({
+  id: '/crm',
+  path: '/crm',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedCalendarRoute = AuthenticatedCalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedSopsIsaSettingProcessRoute =
   AuthenticatedSopsIsaSettingProcessRouteImport.update({
-    id: '/_authenticated/sops/isa-setting-process',
-    path: '/sops/isa-setting-process',
-    getParentRoute: () => rootRouteImport,
+    id: '/isa-setting-process',
+    path: '/isa-setting-process',
+    getParentRoute: () => AuthenticatedSopsRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/print': typeof PrintRoute
+  '/analytics': typeof AuthenticatedAnalyticsRoute
+  '/calendar': typeof AuthenticatedCalendarRoute
+  '/crm': typeof AuthenticatedCrmRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/eods': typeof AuthenticatedEodsRoute
+  '/notes': typeof AuthenticatedNotesRoute
+  '/sops': typeof AuthenticatedSopsRouteWithChildren
+  '/team': typeof AuthenticatedTeamRoute
+  '/training': typeof AuthenticatedTrainingRoute
   '/sops/isa-setting-process': typeof AuthenticatedSopsIsaSettingProcessRoute
 }
 export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/print': typeof PrintRoute
+  '/analytics': typeof AuthenticatedAnalyticsRoute
+  '/calendar': typeof AuthenticatedCalendarRoute
+  '/crm': typeof AuthenticatedCrmRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/eods': typeof AuthenticatedEodsRoute
+  '/notes': typeof AuthenticatedNotesRoute
+  '/sops': typeof AuthenticatedSopsRouteWithChildren
+  '/team': typeof AuthenticatedTeamRoute
+  '/training': typeof AuthenticatedTrainingRoute
   '/sops/isa-setting-process': typeof AuthenticatedSopsIsaSettingProcessRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/auth': typeof AuthRoute
   '/print': typeof PrintRoute
+  '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
+  '/_authenticated/calendar': typeof AuthenticatedCalendarRoute
+  '/_authenticated/crm': typeof AuthenticatedCrmRoute
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/eods': typeof AuthenticatedEodsRoute
+  '/_authenticated/notes': typeof AuthenticatedNotesRoute
+  '/_authenticated/sops': typeof AuthenticatedSopsRouteWithChildren
+  '/_authenticated/team': typeof AuthenticatedTeamRoute
+  '/_authenticated/training': typeof AuthenticatedTrainingRoute
   '/_authenticated/sops/isa-setting-process': typeof AuthenticatedSopsIsaSettingProcessRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/print' | '/sops/isa-setting-process'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/print'
+    | '/analytics'
+    | '/calendar'
+    | '/crm'
+    | '/dashboard'
+    | '/eods'
+    | '/notes'
+    | '/sops'
+    | '/team'
+    | '/training'
+    | '/sops/isa-setting-process'
   fileRoutesByTo: FileRoutesByTo
-  to: '/print' | '/sops/isa-setting-process'
-  id: '__root__' | '/print' | '/_authenticated/sops/isa-setting-process'
+  to:
+    | '/'
+    | '/auth'
+    | '/print'
+    | '/analytics'
+    | '/calendar'
+    | '/crm'
+    | '/dashboard'
+    | '/eods'
+    | '/notes'
+    | '/sops'
+    | '/team'
+    | '/training'
+    | '/sops/isa-setting-process'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/print'
+    | '/_authenticated/analytics'
+    | '/_authenticated/calendar'
+    | '/_authenticated/crm'
+    | '/_authenticated/dashboard'
+    | '/_authenticated/eods'
+    | '/_authenticated/notes'
+    | '/_authenticated/sops'
+    | '/_authenticated/team'
+    | '/_authenticated/training'
+    | '/_authenticated/sops/isa-setting-process'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  AuthRoute: typeof AuthRoute
   PrintRoute: typeof PrintRoute
-  AuthenticatedSopsIsaSettingProcessRoute: typeof AuthenticatedSopsIsaSettingProcessRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -59,20 +207,145 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrintRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/training': {
+      id: '/_authenticated/training'
+      path: '/training'
+      fullPath: '/training'
+      preLoaderRoute: typeof AuthenticatedTrainingRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/team': {
+      id: '/_authenticated/team'
+      path: '/team'
+      fullPath: '/team'
+      preLoaderRoute: typeof AuthenticatedTeamRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/sops': {
+      id: '/_authenticated/sops'
+      path: '/sops'
+      fullPath: '/sops'
+      preLoaderRoute: typeof AuthenticatedSopsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/notes': {
+      id: '/_authenticated/notes'
+      path: '/notes'
+      fullPath: '/notes'
+      preLoaderRoute: typeof AuthenticatedNotesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/eods': {
+      id: '/_authenticated/eods'
+      path: '/eods'
+      fullPath: '/eods'
+      preLoaderRoute: typeof AuthenticatedEodsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/crm': {
+      id: '/_authenticated/crm'
+      path: '/crm'
+      fullPath: '/crm'
+      preLoaderRoute: typeof AuthenticatedCrmRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/calendar': {
+      id: '/_authenticated/calendar'
+      path: '/calendar'
+      fullPath: '/calendar'
+      preLoaderRoute: typeof AuthenticatedCalendarRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/analytics': {
+      id: '/_authenticated/analytics'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof AuthenticatedAnalyticsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/sops/isa-setting-process': {
       id: '/_authenticated/sops/isa-setting-process'
-      path: '/sops/isa-setting-process'
+      path: '/isa-setting-process'
       fullPath: '/sops/isa-setting-process'
       preLoaderRoute: typeof AuthenticatedSopsIsaSettingProcessRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthenticatedSopsRoute
     }
   }
 }
 
-const rootRouteChildren: RootRouteChildren = {
-  PrintRoute: PrintRoute,
+interface AuthenticatedSopsRouteChildren {
+  AuthenticatedSopsIsaSettingProcessRoute: typeof AuthenticatedSopsIsaSettingProcessRoute
+}
+
+const AuthenticatedSopsRouteChildren: AuthenticatedSopsRouteChildren = {
   AuthenticatedSopsIsaSettingProcessRoute:
     AuthenticatedSopsIsaSettingProcessRoute,
+}
+
+const AuthenticatedSopsRouteWithChildren =
+  AuthenticatedSopsRoute._addFileChildren(AuthenticatedSopsRouteChildren)
+
+interface AuthenticatedRouteChildren {
+  AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
+  AuthenticatedCalendarRoute: typeof AuthenticatedCalendarRoute
+  AuthenticatedCrmRoute: typeof AuthenticatedCrmRoute
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedEodsRoute: typeof AuthenticatedEodsRoute
+  AuthenticatedNotesRoute: typeof AuthenticatedNotesRoute
+  AuthenticatedSopsRoute: typeof AuthenticatedSopsRouteWithChildren
+  AuthenticatedTeamRoute: typeof AuthenticatedTeamRoute
+  AuthenticatedTrainingRoute: typeof AuthenticatedTrainingRoute
+}
+
+const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
+  AuthenticatedCalendarRoute: AuthenticatedCalendarRoute,
+  AuthenticatedCrmRoute: AuthenticatedCrmRoute,
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedEodsRoute: AuthenticatedEodsRoute,
+  AuthenticatedNotesRoute: AuthenticatedNotesRoute,
+  AuthenticatedSopsRoute: AuthenticatedSopsRouteWithChildren,
+  AuthenticatedTeamRoute: AuthenticatedTeamRoute,
+  AuthenticatedTrainingRoute: AuthenticatedTrainingRoute,
+}
+
+const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
+  AuthenticatedRouteChildren,
+)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  AuthRoute: AuthRoute,
+  PrintRoute: PrintRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
