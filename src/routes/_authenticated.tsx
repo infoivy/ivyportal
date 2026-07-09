@@ -48,6 +48,7 @@ function AuthedLayout() {
         displayName: profileRes.data?.display_name ?? userRes.data.user?.email ?? null,
         loading: false,
       });
+      checkEod(userId);
     };
     supabase.auth.getSession().then(({ data }) => load(data.session?.user.id ?? null));
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
