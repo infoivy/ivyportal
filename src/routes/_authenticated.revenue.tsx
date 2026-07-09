@@ -570,6 +570,7 @@ function LogDealDialog({
       student_id: finalStudentId,
       student_name: finalStudentName,
       closer_id: closerId,
+      setter_id: setterId || null,
       program_type: programType,
       total_value: tv,
       cash_collected_upfront: cu,
