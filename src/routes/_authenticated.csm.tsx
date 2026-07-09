@@ -322,6 +322,71 @@ function CsmPage() {
                 )}
               </div>
 
+              {/* Ad-hoc action items — CSMs can add these directly */}
+              <div className="p-4 border-t border-[#1f2530]">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-fuchsia-400">Ad-hoc action items</div>
+                  <div className="text-[10px] text-muted-foreground italic">Assign anytime · outside of calls</div>
+                </div>
+                {selectedAdhoc.length === 0 ? (
+                  <div className="text-xs text-muted-foreground py-2">No ad-hoc items for this student.</div>
+                ) : (
+                  <ul className="space-y-1.5 mb-3">
+                    {selectedAdhoc.map(it => (
+                      <li key={it.id} className="flex items-start gap-2">
+                        <button
+                          onClick={() => toggleAdhoc(it)}
+                          className="mt-0.5 shrink-0 cursor-pointer"
+                          aria-label={it.done ? "Mark not done" : "Mark done"}
+                        >
+                          {it.done
+                            ? <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                            : <Circle className="h-4 w-4 text-muted-foreground hover:text-fuchsia-400" />}
+                        </button>
+                        <div className="flex-1 min-w-0">
+                          <div className={`text-sm ${it.done ? "line-through text-muted-foreground" : ""}`}>{it.text}</div>
+                          <div className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
+                            <Clock className="h-2.5 w-2.5" />
+                            {it.due_date ? `due ${it.due_date}` : `added ${it.created_at.slice(0, 10)}`}
+                          </div>
+                        </div>
+                        {(it.created_by === user?.id || roles.includes("admin")) && (
+                          <button
+                            onClick={() => deleteAdhoc(it.id)}
+                            className="p-1 rounded-sm text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10"
+                            title="Delete"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <div className="grid grid-cols-[minmax(0,1fr)_120px_auto] gap-2">
+                  <input
+                    value={newAdhocText}
+                    onChange={e => setNewAdhocText(e.target.value)}
+                    placeholder="New action item…"
+                    className="h-8 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs outline-none focus:border-fuchsia-500/40"
+                  />
+                  <input
+                    type="date"
+                    value={newAdhocDue}
+                    onChange={e => setNewAdhocDue(e.target.value)}
+                    className="h-8 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs outline-none focus:border-fuchsia-500/40"
+                  />
+                  <button
+                    onClick={addAdhoc}
+                    disabled={savingAdhoc || !newAdhocText.trim()}
+                    className="h-8 px-3 rounded-sm bg-fuchsia-500 hover:bg-fuchsia-400 text-fuchsia-950 text-xs font-medium disabled:opacity-40"
+                  >
+                    {savingAdhoc ? "…" : "Add"}
+                  </button>
+                </div>
+              </div>
+
+
 
               {/* Recent loom/roleplay taps */}
               {(studentLoomsReviewed.length + studentRoleplaysReviewed.length) > 0 && (
