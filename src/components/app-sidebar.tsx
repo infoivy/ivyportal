@@ -37,6 +37,7 @@ const opsItems: Item[] = [
   { title: "Calendar", url: "/calendar", icon: Calendar },
   { title: "Analytics", url: "/analytics", icon: BarChart3 },
   { title: "CRM", url: "/crm", icon: Database },
+  { title: "Testimonials", url: "/testimonials", icon: Quote, roles: ["admin", "coach", "closer", "setter", "csm"] },
 ];
 
 
