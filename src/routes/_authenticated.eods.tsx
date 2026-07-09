@@ -50,7 +50,7 @@ function EODsPage() {
   const [form, setForm] = useState(emptyForm);
   const [existingId, setExistingId] = useState<string | null>(null);
   const [myEods, setMyEods] = useState<EOD[]>([]);
-  const [teamEods, setTeamEods] = useState<(EOD & { display_name?: string })[]>([]);
+  const [teamEods, setTeamEods] = useState<(EOD & { display_name?: string; primary_role?: string })[]>([]);
   const [saving, setSaving] = useState(false);
 
   const loadMine = async () => {
