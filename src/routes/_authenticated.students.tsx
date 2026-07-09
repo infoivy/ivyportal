@@ -1,0 +1,313 @@
+import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth-context";
+import { toast } from "sonner";
+import {
+  School, Search, Plus, LayoutGrid, Table as TableIcon, Trash2, X,
+  ChevronRight,
+} from "lucide-react";
+
+export const Route = createFileRoute("/_authenticated/students")({
+  head: () => ({ meta: [{ title: "Students — ISA Team" }] }),
+  component: StudentsLayout,
+});
+
+type Phase = "uncategorized" | "onboarding" | "coaching_1on1" | "training" | "graduated" | "paused";
+type Status = "active" | "inactive" | "ghosting";
+type Student = {
+  id: string; user_id: string | null; full_name: string; email: string | null;
+  phase: Phase; status: Status; coach_id: string | null;
+  join_date: string; calls_included: number; notes: string | null;
+  created_at: string; updated_at: string;
+};
+type Coach = { id: string; display_name: string | null };
+
+const PHASES: { key: Phase; label: string; color: string }[] = [
+  { key: "uncategorized", label: "Uncategorized", color: "text-slate-400 border-slate-500/30 bg-slate-500/5" },
+  { key: "onboarding", label: "Onboarding", color: "text-sky-400 border-sky-500/30 bg-sky-500/10" },
+  { key: "coaching_1on1", label: "1:1 Coaching", color: "text-fuchsia-400 border-fuchsia-500/30 bg-fuchsia-500/10" },
+  { key: "training", label: "Training", color: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10" },
+  { key: "graduated", label: "Graduated", color: "text-amber-400 border-amber-500/30 bg-amber-500/10" },
+  { key: "paused", label: "Paused", color: "text-zinc-400 border-zinc-500/30 bg-zinc-500/5" },
+];
+const STATUSES: { key: Status; label: string; color: string }[] = [
+  { key: "active", label: "Active", color: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10" },
+  { key: "inactive", label: "Inactive", color: "text-zinc-400 border-zinc-500/30 bg-zinc-500/5" },
+  { key: "ghosting", label: "Ghosting", color: "text-rose-400 border-rose-500/30 bg-rose-500/10" },
+];
+
+const phaseMeta = (p: Phase) => PHASES.find(x => x.key === p)!;
+const statusMeta = (s: Status) => STATUSES.find(x => x.key === s)!;
+
+function StudentsLayout() {
+  const { roles } = useAuth();
+  const pathname = useRouterState({ select: s => s.location.pathname });
+  const isDetail = /^\/students\/[^/]+/.test(pathname);
+  const canManage = roles.includes("admin") || roles.includes("coach");
+
+  const [students, setStudents] = useState<Student[]>([]);
+  const [coaches, setCoaches] = useState<Coach[]>([]);
+  const [q, setQ] = useState("");
+  const [phaseFilter, setPhaseFilter] = useState<Phase | "all">("all");
+  const [view, setView] = useState<"table" | "kanban">("table");
+  const [addOpen, setAddOpen] = useState(false);
+
+  const load = async () => {
+    const [sRes, cRes] = await Promise.all([
+      supabase.from("students").select("*").order("created_at", { ascending: false }),
+      supabase.from("user_roles").select("user_id, role").in("role", ["coach", "admin"]),
+    ]);
+    setStudents((sRes.data ?? []) as Student[]);
+    const coachIds = Array.from(new Set((cRes.data ?? []).map(r => r.user_id)));
+    if (coachIds.length) {
+      const { data: profs } = await supabase.from("profiles").select("id, display_name").in("id", coachIds);
+      setCoaches((profs ?? []) as Coach[]);
+    }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const coachName = (id: string | null) => (id ? coaches.find(c => c.id === id)?.display_name ?? "—" : "Unassigned");
+
+  const filtered = useMemo(() => students.filter(s => {
+    const matchesQ = !q || s.full_name.toLowerCase().includes(q.toLowerCase()) || (s.email ?? "").toLowerCase().includes(q.toLowerCase());
+    const matchesPhase = phaseFilter === "all" || s.phase === phaseFilter;
+    return matchesQ && matchesPhase;
+  }), [students, q, phaseFilter]);
+
+  const byPhase = useMemo(() => {
+    const map = new Map<Phase, Student[]>();
+    PHASES.forEach(p => map.set(p.key, []));
+    filtered.forEach(s => map.get(s.phase)!.push(s));
+    return map;
+  }, [filtered]);
+
+  // Under a detail path, hide the list UI and just render <Outlet />
+  if (isDetail) return <Outlet coaches={coaches as any} students={students as any} onReload={load as any} />;
+
+  const deleteStudent = async (id: string) => {
+    if (!confirm("Delete this student and all their data?")) return;
+    const { error } = await supabase.from("students").delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Student deleted");
+    load();
+  };
+
+  return (
+    <div className="p-4 sm:p-6 max-w-[1500px] mx-auto space-y-5">
+      <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[#1f2530] pb-4">
+        <div>
+          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-fuchsia-400 mb-1">
+            <School className="h-3 w-3" /> Student Tracker
+          </div>
+          <h1 className="text-2xl font-semibold tracking-tight">Students</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {filtered.length} shown · {students.length} total · {students.filter(s => s.phase === "coaching_1on1").length} in 1:1
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search className="h-3 w-3 absolute left-2.5 top-2.5 text-muted-foreground" />
+            <input
+              value={q}
+              onChange={e => setQ(e.target.value)}
+              placeholder="Search name or email…"
+              className="h-8 pl-7 pr-3 rounded-sm border border-[#1f2530] bg-[#0f1116] text-xs w-56 focus:outline-none focus:border-emerald-500/40"
+            />
+          </div>
+          <div className="flex items-center border border-[#1f2530] bg-[#0f1116] rounded-sm p-0.5">
+            <button onClick={() => setView("table")} className={`px-2 py-1 rounded-sm transition ${view === "table" ? "bg-[#1a1f29] text-foreground" : "text-muted-foreground"}`} title="Table">
+              <TableIcon className="h-3.5 w-3.5" />
+            </button>
+            <button onClick={() => setView("kanban")} className={`px-2 py-1 rounded-sm transition ${view === "kanban" ? "bg-[#1a1f29] text-foreground" : "text-muted-foreground"}`} title="Kanban">
+              <LayoutGrid className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          {canManage && (
+            <button
+              onClick={() => setAddOpen(true)}
+              className="flex items-center gap-1.5 h-8 px-3 rounded-sm bg-emerald-500 hover:bg-emerald-400 text-emerald-950 text-xs font-medium"
+            >
+              <Plus className="h-3.5 w-3.5" /> Add student
+            </button>
+          )}
+        </div>
+      </header>
+
+      {/* Phase filter chips */}
+      <div className="flex flex-wrap gap-1.5">
+        <button
+          onClick={() => setPhaseFilter("all")}
+          className={`text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-sm border transition ${
+            phaseFilter === "all" ? "text-foreground border-[#2a3140] bg-[#1a1f29]" : "text-muted-foreground border-[#1f2530]"
+          }`}
+        >
+          All · {students.length}
+        </button>
+        {PHASES.map(p => (
+          <button
+            key={p.key}
+            onClick={() => setPhaseFilter(p.key)}
+            className={`text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-sm border transition ${
+              phaseFilter === p.key ? p.color : "text-muted-foreground border-[#1f2530] hover:border-[#2a3140]"
+            }`}
+          >
+            {p.label} · {students.filter(s => s.phase === p.key).length}
+          </button>
+        ))}
+      </div>
+
+      {view === "table" ? (
+        <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm overflow-hidden">
+          <div className="grid grid-cols-[1.5fr_1fr_1fr_1fr_0.6fr_auto] items-center px-4 py-2 border-b border-[#1f2530] text-[10px] uppercase tracking-widest text-muted-foreground">
+            <span>Student</span><span>Phase</span><span>Status</span><span>Coach</span><span>Joined</span><span />
+          </div>
+          {filtered.length === 0 && <div className="p-8 text-center text-xs text-muted-foreground">No students match your filters.</div>}
+          {filtered.map(s => {
+            const pm = phaseMeta(s.phase);
+            const sm = statusMeta(s.status);
+            return (
+              <Link key={s.id} to={"/students/$id" as any} params={{ id: s.id } as any} className="grid grid-cols-[1.5fr_1fr_1fr_1fr_0.6fr_auto] items-center gap-2 px-4 py-3 border-b border-[#1a1f29] last:border-0 hover:bg-[#14171e] transition">
+                <div className="min-w-0">
+                  <div className="text-sm font-medium truncate">{s.full_name}</div>
+                  <div className="text-[10px] text-muted-foreground truncate">{s.email ?? "no email"}</div>
+                </div>
+                <span className={`inline-flex items-center text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border w-fit ${pm.color}`}>{pm.label}</span>
+                <span className={`inline-flex items-center text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border w-fit ${sm.color}`}>{sm.label}</span>
+                <span className="text-xs text-muted-foreground truncate">{coachName(s.coach_id)}</span>
+                <span className="text-[10px] text-muted-foreground font-mono">{s.join_date}</span>
+                <div className="flex items-center gap-1 justify-end">
+                  {canManage && roles.includes("admin") && (
+                    <button
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteStudent(s.id); }}
+                      className="p-1 rounded hover:bg-rose-500/10 text-muted-foreground hover:text-rose-400"
+                      title="Delete student"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                  <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+          {PHASES.map(p => (
+            <div key={p.key} className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-2 min-h-[200px]">
+              <div className={`flex items-center justify-between text-[10px] uppercase tracking-wider px-1 py-1 mb-2 rounded-sm ${p.color}`}>
+                <span>{p.label}</span>
+                <span className="font-mono">{byPhase.get(p.key)!.length}</span>
+              </div>
+              <div className="space-y-1.5">
+                {byPhase.get(p.key)!.map(s => (
+                  <Link key={s.id} to={"/students/$id" as any} params={{ id: s.id } as any}
+                        className="block p-2 rounded-sm bg-[#14171e] border border-[#1f2530] hover:border-[#2a3140] transition">
+                    <div className="text-xs font-medium truncate">{s.full_name}</div>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className={`text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm border ${statusMeta(s.status).color}`}>{statusMeta(s.status).label}</span>
+                      <span className="text-[9px] text-muted-foreground truncate ml-1">{coachName(s.coach_id).slice(0, 12)}</span>
+                    </div>
+                  </Link>
+                ))}
+                {byPhase.get(p.key)!.length === 0 && <div className="text-[10px] text-muted-foreground text-center py-3">Empty</div>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {addOpen && <AddStudentModal onClose={() => setAddOpen(false)} onCreated={() => { setAddOpen(false); load(); }} coaches={coaches} />}
+    </div>
+  );
+}
+
+function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void; onCreated: () => void; coaches: Coach[] }) {
+  const [form, setForm] = useState({
+    full_name: "", email: "", phase: "onboarding" as Phase, status: "active" as Status,
+    coach_id: "", join_date: new Date().toISOString().slice(0, 10), calls_included: 4, notes: "",
+  });
+  const [saving, setSaving] = useState(false);
+
+  const submit = async () => {
+    if (!form.full_name.trim()) return toast.error("Name required");
+    setSaving(true);
+    const { error } = await supabase.from("students").insert({
+      full_name: form.full_name.trim(),
+      email: form.email.trim() || null,
+      phase: form.phase,
+      status: form.status,
+      coach_id: form.coach_id || null,
+      join_date: form.join_date,
+      calls_included: form.calls_included,
+      notes: form.notes.trim() || null,
+    });
+    setSaving(false);
+    if (error) return toast.error(error.message);
+    toast.success("Student added");
+    onCreated();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-[#0f1116] border border-[#1f2530] rounded-sm max-w-lg w-full p-5 space-y-4" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold">Add student</h2>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Full name" full>
+            <input value={form.full_name} onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))} className={inputCls} />
+          </Field>
+          <Field label="Email" full>
+            <input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} className={inputCls} placeholder="They'll auto-link on signup" />
+          </Field>
+          <Field label="Phase">
+            <select value={form.phase} onChange={e => setForm(f => ({ ...f, phase: e.target.value as Phase }))} className={inputCls}>
+              {PHASES.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
+            </select>
+          </Field>
+          <Field label="Status">
+            <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value as Status }))} className={inputCls}>
+              {STATUSES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
+            </select>
+          </Field>
+          <Field label="Assigned coach">
+            <select value={form.coach_id} onChange={e => setForm(f => ({ ...f, coach_id: e.target.value }))} className={inputCls}>
+              <option value="">Unassigned</option>
+              {coaches.map(c => <option key={c.id} value={c.id}>{c.display_name ?? c.id}</option>)}
+            </select>
+          </Field>
+          <Field label="Calls included">
+            <input type="number" min={0} value={form.calls_included} onChange={e => setForm(f => ({ ...f, calls_included: parseInt(e.target.value) || 0 }))} className={inputCls} />
+          </Field>
+          <Field label="Join date">
+            <input type="date" value={form.join_date} onChange={e => setForm(f => ({ ...f, join_date: e.target.value }))} className={inputCls} />
+          </Field>
+          <Field label="Notes" full>
+            <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={2} className={inputCls} />
+          </Field>
+        </div>
+        <div className="flex justify-end gap-2 pt-2 border-t border-[#1f2530]">
+          <button onClick={onClose} className="text-xs text-muted-foreground hover:text-foreground px-3 py-1.5">Cancel</button>
+          <button onClick={submit} disabled={saving} className="text-xs bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-medium px-3 py-1.5 rounded-sm">
+            {saving ? "Saving…" : "Add student"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const inputCls = "w-full h-9 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs focus:outline-none focus:border-emerald-500/40";
+
+function Field({ label, children, full }: { label: string; children: React.ReactNode; full?: boolean }) {
+  return (
+    <div className={`space-y-1 ${full ? "col-span-2" : ""}`}>
+      <label className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</label>
+      {children}
+    </div>
+  );
+}
