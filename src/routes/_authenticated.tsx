@@ -65,31 +65,37 @@ function AuthedLayout() {
   return (
     <AuthContext.Provider value={state}>
       <SidebarProvider>
-        <div className="min-h-screen flex w-full">
+        <div className="dashboard-dark min-h-screen flex w-full">
           <AppSidebar roles={state.roles} />
           <div className="flex-1 flex flex-col min-w-0">
-            <header className="h-14 flex items-center justify-between border-b px-3 bg-background/80 backdrop-blur">
-              <div className="flex items-center gap-2">
-                <SidebarTrigger />
-                <span className="text-sm font-medium">ISA Team</span>
+            <header className="h-12 flex items-center justify-between border-b border-[#1f2530] px-3 bg-[#0a0b0f]/95 backdrop-blur sticky top-0 z-30">
+              <div className="flex items-center gap-2 min-w-0">
+                <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
+                <div className="h-5 w-px bg-[#1f2530] mx-1" />
+                <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">ISA / Team</span>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="text-xs text-muted-foreground hidden sm:flex flex-col items-end">
-                  <span>{state.displayName}</span>
-                  <span className="uppercase tracking-wider">{state.roles.join(" · ") || "member"}</span>
+              <div className="flex items-center gap-2">
+                <div className="hidden sm:flex items-center gap-1.5 text-[10px] font-medium px-2 py-1 rounded-sm border border-[#1f2530] bg-[#0f1116] text-muted-foreground">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Live
                 </div>
-                <Button variant="ghost" size="sm" onClick={signOut}>
-                  <LogOut className="h-4 w-4 mr-1" /> Sign out
+                <div className="text-[11px] text-muted-foreground hidden md:flex flex-col items-end leading-tight">
+                  <span className="text-foreground font-medium">{state.displayName}</span>
+                  <span className="uppercase tracking-wider text-[9px]">{state.roles.join(" · ") || "member"}</span>
+                </div>
+                <Button variant="ghost" size="sm" onClick={signOut} className="text-muted-foreground hover:text-foreground h-8">
+                  <LogOut className="h-3.5 w-3.5 mr-1" /> Sign out
                 </Button>
               </div>
             </header>
-            <main className="flex-1 min-w-0 overflow-auto relative">
+            <main className="flex-1 min-w-0 overflow-auto relative bg-[#0a0b0f]">
               <Outlet />
             </main>
           </div>
         </div>
-        <Toaster />
+        <Toaster theme="dark" toastOptions={{ style: { background: "#0f1116", border: "1px solid #1f2530", color: "#e5e7eb" } }} />
       </SidebarProvider>
     </AuthContext.Provider>
   );
 }
+

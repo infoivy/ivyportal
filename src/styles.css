@@ -133,15 +133,45 @@
 
 /* Sharp dark dashboard aesthetic (matches creator-dashboard reference) */
 .dashboard-dark {
+  --radius: 0.375rem;
   --background: #0a0b0f;
   --card: #0f1116;
-  --border: #1f2530;
-  --muted: #14171e;
-  --muted-foreground: #64748b;
-  --foreground: #e5e7eb;
   --card-foreground: #e5e7eb;
+  --popover: #0f1116;
+  --popover-foreground: #e5e7eb;
+  --border: #1f2530;
+  --input: #1f2530;
+  --muted: #14171e;
+  --muted-foreground: #94a3b8;
+  --foreground: #e5e7eb;
+  --secondary: #14171e;
+  --secondary-foreground: #e5e7eb;
+  --accent: #1a1f29;
+  --accent-foreground: #e5e7eb;
+  --primary: #10b981;
+  --primary-foreground: #04120c;
+  --ring: #10b981;
+  --sidebar: #0a0b0f;
+  --sidebar-foreground: #cbd5e1;
+  --sidebar-primary: #10b981;
+  --sidebar-primary-foreground: #04120c;
+  --sidebar-accent: #14171e;
+  --sidebar-accent-foreground: #e5e7eb;
+  --sidebar-border: #1f2530;
+  --sidebar-ring: #10b981;
   background-color: #0a0b0f;
   color: #e5e7eb;
+  color-scheme: dark;
 }
 .dashboard-dark * { border-color: #1f2530; }
+.dashboard-dark ::selection { background: rgba(16,185,129,0.35); color: #fff; }
+
+/* Subtle grid backdrop */
+.grid-bg {
+  background-image:
+    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
 
