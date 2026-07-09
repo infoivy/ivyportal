@@ -58,7 +58,7 @@ function StudentPortal() {
   const today = todayStr();
   const [tab, setTab] = useState<Tab>(() => (getStudentPortalTab() as Tab) || "eod");
   useEffect(() => { setStudentPortalTab(tab); }, [tab]);
-  useEffect(() => onStudentPortalTab(t => setTab(t as Tab)), []);
+  useEffect(() => { const off = onStudentPortalTab(t => setTab(t as Tab)); return () => { off(); }; }, []);
 
   const [student, setStudent] = useState<Student | null>(null);
   const [coach, setCoach] = useState<Coach | null>(null);
