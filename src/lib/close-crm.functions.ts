@@ -83,28 +83,42 @@ export const testCloseConnection = createServerFn({ method: "POST" })
     }
   });
 
-/** List leads from Close. Returns null when not configured (caller falls back to sample). */
+/** List leads from Close. Supports optional search query. Returns null when not configured (caller falls back to sample). */
 export const listCloseLeads = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((input: { query?: string; limit?: number } | undefined) => ({
+    query: input?.query?.trim() || "",
+    limit: Math.min(Math.max(input?.limit ?? 200, 1), 500),
+  }))
+  .handler(async ({ context, data }) => {
     const key = await readCloseKey(context);
     if (!key) return { configured: false, leads: [] };
     const basic = Buffer.from(`${key}:`).toString("base64");
+    const params = new URLSearchParams();
+    params.set("_limit", String(data.limit));
+    if (data.query) params.set("query", data.query);
     try {
-      const res = await fetch("https://api.close.com/api/v1/lead/?_limit=25", {
+      const res = await fetch(`https://api.close.com/api/v1/lead/?${params.toString()}`, {
         headers: { Authorization: `Basic ${basic}` },
       });
       if (!res.ok) return { configured: true, error: `Close API ${res.status}`, leads: [] };
       const json = (await res.json()) as { data?: any[] };
-      const leads = (json.data ?? []).map((l: any) => ({
-        id: String(l.id ?? ""),
-        name: String(l.display_name ?? l.name ?? "Unnamed"),
-        status: String(l.status_label ?? "Unknown"),
-        value: Number(l.opportunities?.[0]?.value ?? 0),
-        updated_at: String(l.date_updated ?? ""),
-      }));
+      const leads = (json.data ?? []).map((l: any) => {
+        const opps: any[] = Array.isArray(l.opportunities) ? l.opportunities : [];
+        const value = opps.reduce((a, o) => a + Number(o.value ?? 0), 0);
+        const activeOpp = opps.find((o) => o.status_type === "active") ?? opps[0];
+        return {
+          id: String(l.id ?? ""),
+          name: String(l.display_name ?? l.name ?? "Unnamed"),
+          status: String(l.status_label ?? "Unknown"),
+          status_type: String(activeOpp?.status_type ?? l.status_type ?? ""),
+          value,
+          updated_at: String(l.date_updated ?? ""),
+        };
+      });
       return { configured: true, leads };
     } catch (e: any) {
       return { configured: true, error: e?.message ?? "Network error", leads: [] };
     }
   });
+
