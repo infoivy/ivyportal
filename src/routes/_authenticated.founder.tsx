@@ -107,7 +107,7 @@ function FounderPage() {
             <Sparkles className="h-3 w-3" /> Founder space
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">Content & Strategy</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">Content calendar, idea inbox, and strategy SOPs — private to you.</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Weekly reel plan, ideation, calendar — with an autonomous ideation engine.</p>
         </div>
         <div className="flex gap-2">
           <Link
@@ -133,12 +133,26 @@ function FounderPage() {
 
       {/* View switcher */}
       <div className="flex items-center gap-1 border-b border-[#1f2530]">
+        <ViewTab active={view === "weekly"}   onClick={() => setView("weekly")}   icon={LayoutGrid}   label="Weekly plan" />
         <ViewTab active={view === "calendar"} onClick={() => setView("calendar")} icon={CalendarIcon} label="Calendar" />
         <ViewTab active={view === "kanban"}   onClick={() => setView("kanban")}   icon={Columns3}     label="Kanban" />
         <ViewTab active={view === "list"}     onClick={() => setView("list")}     icon={ListIcon}     label="List" />
       </div>
 
-      {loading ? (
+      {view === "weekly" ? (
+        <WeeklyPlan
+          onOpenItem={(id) => {
+            const it = items.find(i => i.id === id);
+            if (it) setEditing(it);
+            else {
+              // item may have just been provisioned server-side; refetch and open after
+              supabase.from("content_items").select("*").eq("id", id).maybeSingle().then(({ data }) => {
+                if (data) setEditing(data as ContentItem);
+              });
+            }
+          }}
+        />
+      ) : loading ? (
         <div className="flex items-center gap-2 text-muted-foreground p-6"><Loader2 className="h-4 w-4 animate-spin" /> Loading…</div>
       ) : (
         <div className="grid lg:grid-cols-[minmax(0,1fr)_320px] gap-4">
