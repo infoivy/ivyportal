@@ -50,15 +50,18 @@ function StudentsLayout() {
 
   const [students, setStudents] = useState<Student[]>([]);
   const [coaches, setCoaches] = useState<Coach[]>([]);
+  const [lastCallByStudent, setLastCallByStudent] = useState<Record<string, string>>({});
   const [q, setQ] = useState("");
-  const [phaseFilter, setPhaseFilter] = useState<Phase | "all">("all");
+  const [phaseFilter, setPhaseFilter] = useState<Phase | "all" | "at_risk">("all");
   const [view, setView] = useState<"table" | "kanban">("table");
+  const [kanbanBy, setKanbanBy] = useState<"phase" | "coach">("phase");
   const [addOpen, setAddOpen] = useState(false);
 
   const load = async () => {
-    const [sRes, cRes] = await Promise.all([
+    const [sRes, cRes, callRes] = await Promise.all([
       supabase.from("students").select("*").order("created_at", { ascending: false }),
       supabase.from("user_roles").select("user_id, role").in("role", ["coach", "admin"]),
+      supabase.from("student_calls").select("student_id, call_date").order("call_date", { ascending: false }).limit(1000),
     ]);
     setStudents((sRes.data ?? []) as Student[]);
     const coachIds = Array.from(new Set((cRes.data ?? []).map(r => r.user_id)));
@@ -66,17 +69,33 @@ function StudentsLayout() {
       const { data: profs } = await supabase.from("profiles").select("id, display_name").in("id", coachIds);
       setCoaches((profs ?? []) as Coach[]);
     }
+    const map: Record<string, string> = {};
+    (callRes.data ?? []).forEach((c: any) => { if (!map[c.student_id]) map[c.student_id] = c.call_date; });
+    setLastCallByStudent(map);
   };
 
   useEffect(() => { load(); }, []);
 
   const coachName = (id: string | null) => (id ? coaches.find(c => c.id === id)?.display_name ?? "—" : "Unassigned");
 
+  const daysSince = (dateStr: string) => Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
+  const isAtRisk = (s: Student) => {
+    if (s.status === "ghosting") return true;
+    if (s.phase === "coaching_1on1") {
+      const last = lastCallByStudent[s.id];
+      if (!last || daysSince(last) > 14) return true;
+    }
+    return false;
+  };
+
   const filtered = useMemo(() => students.filter(s => {
     const matchesQ = !q || s.full_name.toLowerCase().includes(q.toLowerCase()) || (s.email ?? "").toLowerCase().includes(q.toLowerCase());
-    const matchesPhase = phaseFilter === "all" || s.phase === phaseFilter;
+    const matchesPhase =
+      phaseFilter === "all" ? true :
+      phaseFilter === "at_risk" ? isAtRisk(s) :
+      s.phase === phaseFilter;
     return matchesQ && matchesPhase;
-  }), [students, q, phaseFilter]);
+  }), [students, q, phaseFilter, lastCallByStudent]);
 
   const byPhase = useMemo(() => {
     const map = new Map<Phase, Student[]>();
@@ -85,8 +104,38 @@ function StudentsLayout() {
     return map;
   }, [filtered]);
 
+  const byCoach = useMemo(() => {
+    const map = new Map<string, Student[]>();
+    map.set("__unassigned__", []);
+    coaches.forEach(c => map.set(c.id, []));
+    filtered.forEach(s => {
+      const k = s.coach_id ?? "__unassigned__";
+      if (!map.has(k)) map.set(k, []);
+      map.get(k)!.push(s);
+    });
+    return map;
+  }, [filtered, coaches]);
+
+  const atRiskCount = students.filter(isAtRisk).length;
+
   // Under a detail path, hide the list UI and just render <Outlet />
   if (isDetail) return <Outlet />;
+
+  const updateStudent = async (id: string, patch: Partial<Student>) => {
+    const { error } = await supabase.from("students").update(patch).eq("id", id);
+    if (error) return toast.error(error.message);
+    setStudents(prev => prev.map(s => s.id === id ? { ...s, ...patch } : s));
+  };
+
+  const onDropToPhase = async (studentId: string, phase: Phase) => {
+    await updateStudent(studentId, { phase });
+    toast.success(`Moved to ${phaseMeta(phase).label}`);
+  };
+
+  const onDropToCoach = async (studentId: string, coachId: string | null) => {
+    await updateStudent(studentId, { coach_id: coachId });
+    toast.success(`Assigned to ${coachId ? coachName(coachId) : "Unassigned"}`);
+  };
 
   const deleteStudent = async (id: string) => {
     if (!confirm("Delete this student and all their data?")) return;
@@ -95,6 +144,7 @@ function StudentsLayout() {
     toast.success("Student deleted");
     load();
   };
+
 
   return (
     <div className="p-4 sm:p-6 max-w-[1500px] mx-auto space-y-5">
