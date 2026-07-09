@@ -43,6 +43,8 @@ function EODsPage() {
   const canViewTeam = roles.includes("admin") || roles.includes("closer");
   const isCsm = roles.includes("csm");
   const isCloser = roles.includes("closer") || roles.includes("coach");
+  const filesEods = roles.includes("setter") || roles.includes("closer") || roles.includes("coach") || roles.includes("csm");
+  const isFounder = roles.includes("admin") && !filesEods;
   const today = new Date().toISOString().slice(0, 10);
 
   const [form, setForm] = useState(emptyForm);
@@ -216,31 +218,36 @@ function EODsPage() {
           <p className="text-xs text-muted-foreground mt-0.5">Log your numbers. Track the funnel. Ship consistency.</p>
         </div>
         <div className="flex items-center gap-2">
-          <div className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-sm border ${existingId ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-400" : "border-amber-500/30 bg-amber-500/5 text-amber-400"}`}>
-            {existingId ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Clock className="h-3.5 w-3.5" />}
-            {existingId ? "Today submitted" : "Today pending"}
-          </div>
+          {!isFounder && (
+            <div className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-sm border ${existingId ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-400" : "border-amber-500/30 bg-amber-500/5 text-amber-400"}`}>
+              {existingId ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Clock className="h-3.5 w-3.5" />}
+              {existingId ? "Today submitted" : "Today pending"}
+            </div>
+          )}
           <span className="text-[11px] text-muted-foreground font-mono">{today}</span>
         </div>
       </header>
 
-      <div className="grid grid-cols-2 md:grid-cols-7 gap-2">
-        <div className="border rounded-sm p-2.5 border-amber-500/40 bg-amber-500/5">
-          <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-amber-400 mb-1"><Flame className="h-3 w-3" /> Streak</div>
-          <div className="text-lg font-mono font-semibold text-amber-400">{streak}<span className="text-xs text-muted-foreground ml-1">days</span></div>
+      {!isFounder && (
+        <div className="grid grid-cols-2 md:grid-cols-7 gap-2">
+          <div className="border rounded-sm p-2.5 border-amber-500/40 bg-amber-500/5">
+            <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-amber-400 mb-1"><Flame className="h-3 w-3" /> Streak</div>
+            <div className="text-lg font-mono font-semibold text-amber-400">{streak}<span className="text-xs text-muted-foreground ml-1">days</span></div>
+          </div>
+          <WeekTile label={isCsm ? "7d looms" : "7d DMs"} value={isCsm ? weekly.looms : weekly.dms} icon={isCsm ? <HeartHandshake className="h-3 w-3" /> : <Users className="h-3 w-3" />} />
+          <WeekTile label={isCsm ? "7d roleplays" : "7d Convos"} value={isCsm ? weekly.roleplays : weekly.convos} icon={<TrendingUp className="h-3 w-3" />} />
+          <WeekTile label={isCsm ? "7d check-ins" : "7d Booked"} value={isCsm ? weekly.checkins : weekly.booked} icon={<Phone className="h-3 w-3" />} accent />
+          <WeekTile label={isCsm ? "7d escalations" : "7d Shows"} value={isCsm ? weekly.escalations : weekly.shows} icon={<Target className="h-3 w-3" />} />
+          <WeekTile label="7d No-shows" value={weekly.noshows} icon={<AlertTriangle className="h-3 w-3" />} />
+          <WeekTile label="Reports" value={`${weekly.submitted}/7`} icon={<CheckCircle2 className="h-3 w-3" />} />
         </div>
-        <WeekTile label={isCsm ? "7d looms" : "7d DMs"} value={isCsm ? weekly.looms : weekly.dms} icon={isCsm ? <HeartHandshake className="h-3 w-3" /> : <Users className="h-3 w-3" />} />
-        <WeekTile label={isCsm ? "7d roleplays" : "7d Convos"} value={isCsm ? weekly.roleplays : weekly.convos} icon={<TrendingUp className="h-3 w-3" />} />
-        <WeekTile label={isCsm ? "7d check-ins" : "7d Booked"} value={isCsm ? weekly.checkins : weekly.booked} icon={<Phone className="h-3 w-3" />} accent />
-        <WeekTile label={isCsm ? "7d escalations" : "7d Shows"} value={isCsm ? weekly.escalations : weekly.shows} icon={<Target className="h-3 w-3" />} />
-        <WeekTile label="7d No-shows" value={weekly.noshows} icon={<AlertTriangle className="h-3 w-3" />} />
-        <WeekTile label="Reports" value={`${weekly.submitted}/7`} icon={<CheckCircle2 className="h-3 w-3" />} />
-      </div>
+      )}
 
-      <Tabs defaultValue="submit" className="space-y-4">
+      <Tabs defaultValue={isFounder ? "grid" : "submit"} className="space-y-4">
         <TabsList className="bg-[#0f1116] border border-[#1f2530] rounded-sm h-9 p-0.5">
-          <TabsTrigger value="submit" className="text-xs h-8 rounded-sm data-[state=active]:bg-[#1a1f29]">Today's EOD</TabsTrigger>
-          <TabsTrigger value="mine" className="text-xs h-8 rounded-sm data-[state=active]:bg-[#1a1f29]">My history</TabsTrigger>
+          {!isFounder && <TabsTrigger value="submit" className="text-xs h-8 rounded-sm data-[state=active]:bg-[#1a1f29]">Today's EOD</TabsTrigger>}
+          {!isFounder && <TabsTrigger value="mine" className="text-xs h-8 rounded-sm data-[state=active]:bg-[#1a1f29]">My history</TabsTrigger>}
+          {canViewTeam && <TabsTrigger value="grid" className="text-xs h-8 rounded-sm data-[state=active]:bg-[#1a1f29]">Grid</TabsTrigger>}
           {canViewTeam && <TabsTrigger value="team" className="text-xs h-8 rounded-sm data-[state=active]:bg-[#1a1f29]">Team feed</TabsTrigger>}
         </TabsList>
 
@@ -384,6 +391,12 @@ function EODsPage() {
         </TabsContent>
 
         {canViewTeam && (
+          <TabsContent value="grid">
+            <EodGrid eods={teamEods} days={14} />
+          </TabsContent>
+        )}
+
+        {canViewTeam && (
           <TabsContent value="team">
             <div className="space-y-2">
               {teamEods.length === 0 && <EmptyState text="No team EODs yet." />}
@@ -392,6 +405,68 @@ function EODsPage() {
           </TabsContent>
         )}
       </Tabs>
+    </div>
+  );
+}
+
+function EodGrid({ eods, days }: { eods: (EOD & { display_name?: string })[]; days: number }) {
+  const today = new Date();
+  const dayList: string[] = [];
+  for (let i = 0; i < days; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    dayList.push(d.toISOString().slice(0, 10));
+  }
+  const users = new Map<string, string>();
+  eods.forEach(e => { if (!users.has(e.user_id)) users.set(e.user_id, e.display_name ?? "Unknown"); });
+  const key = (uid: string, date: string) => `${uid}::${date}`;
+  const map = new Map<string, EOD>();
+  eods.forEach(e => map.set(key(e.user_id, e.report_date), e));
+
+  if (users.size === 0) return <EmptyState text="No team EODs yet." />;
+
+  return (
+    <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm overflow-x-auto">
+      <table className="w-full text-xs">
+        <thead>
+          <tr className="border-b border-[#1f2530] text-[10px] uppercase tracking-wider text-muted-foreground">
+            <th className="text-left px-3 py-2 sticky left-0 bg-[#0f1116] z-10">Person</th>
+            {dayList.map(d => {
+              const dd = new Date(d);
+              return <th key={d} className="px-1.5 py-2 text-center font-normal">{dd.getMonth() + 1}/{dd.getDate()}</th>;
+            })}
+          </tr>
+        </thead>
+        <tbody>
+          {Array.from(users.entries()).map(([uid, name]) => (
+            <tr key={uid} className="border-b border-[#1a1f29] last:border-0">
+              <td className="px-3 py-2 sticky left-0 bg-[#0f1116] font-medium truncate max-w-[160px]">{name}</td>
+              {dayList.map(d => {
+                const e = map.get(key(uid, d));
+                if (!e) return <td key={d} className="px-1 py-1 text-center"><span className="inline-block h-6 w-6 rounded-sm bg-[#1a1f29]/40 border border-dashed border-[#2a3140]" title="Missing" /></td>;
+                const booked = e.calls_booked ?? 0;
+                const dms = e.dms_sent ?? 0;
+                const shows = e.shows ?? 0;
+                const tone = booked >= 3 ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300" : booked >= 1 ? "bg-amber-500/15 border-amber-500/40 text-amber-300" : "bg-[#14171e] border-[#1f2530] text-muted-foreground";
+                return (
+                  <td key={d} className="px-1 py-1 text-center">
+                    <div title={`${name} · ${d}\nDMs: ${dms}\nBooked: ${booked}\nShows: ${shows}`} className={`inline-flex flex-col leading-none px-1 py-1 rounded-sm border font-mono text-[10px] ${tone}`}>
+                      <span className="font-semibold">{booked}</span>
+                      <span className="text-[8px] opacity-70">{dms}</span>
+                    </div>
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div className="px-3 py-2 border-t border-[#1f2530] text-[10px] text-muted-foreground flex items-center gap-3">
+        <span>Each cell: <b className="text-foreground">booked</b> / <span className="opacity-70">dms</span></span>
+        <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-emerald-500/40" /> ≥3 booked</span>
+        <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-amber-500/40" /> 1–2 booked</span>
+        <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-sm border border-dashed border-[#2a3140]" /> No EOD</span>
+      </div>
     </div>
   );
 }

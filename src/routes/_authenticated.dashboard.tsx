@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -63,6 +63,8 @@ type OpsCounts = {
 
 function Dashboard() {
   const { user, displayName, roles } = useAuth();
+  const navigate = useNavigate();
+  const isFounder = roles.includes("admin") && !roles.includes("setter") && !roles.includes("closer") && !roles.includes("coach") && !roles.includes("csm");
   const [dateRange, setDateRange] = useState<DateRange>(() => rangeFor("30d"));
   const [compare, setCompare] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -226,7 +228,7 @@ function Dashboard() {
         {prefs.showKpis && (
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-9 gap-2">
             <Kpi icon={Users}         label="Active Setters" value={activeSetters} highlight />
-            <Kpi icon={UserPlus}      label="EODs Filed"     value={totalEods} />
+            <Kpi icon={UserPlus}      label="EODs Filed"     value={totalEods} onClick={() => navigate({ to: "/eods" })} title={`${totalEods} EOD reports filed by the team in ${rangeLabel.toLowerCase()}. Click to open EOD reports.`} />
             <Kpi icon={Eye}            label="DMs Sent"       value={totals.dms_sent} color="#3b82f6" onClick={() => setDrilldown("dms_sent")} delta={compare ? pctDelta(prevTotals.dms_sent, totals.dms_sent) : null} />
             <Kpi icon={Zap}            label="Convos"         value={totals.convos_started} color="#a855f7" onClick={() => setDrilldown("convos_started")} delta={compare ? pctDelta(prevTotals.convos_started, totals.convos_started) : null} />
             <Kpi icon={Users}          label="Booked"         value={totals.calls_booked} color="#22c55e" onClick={() => setDrilldown("calls_booked")} delta={compare ? pctDelta(prevTotals.calls_booked, totals.calls_booked) : null} />
@@ -249,7 +251,7 @@ function Dashboard() {
               <OpsCard to="/installments" tone={ops && ops.installmentsOverdue > 0 ? "rose" : "muted"} icon={DollarSign} label="Installments overdue" value={ops?.installmentsOverdue} />
               <OpsCard to="/installments" tone={ops && ops.installmentsDueSoon > 0 ? "amber" : "muted"} icon={DollarSign} label="Due in ≤3 days" value={ops?.installmentsDueSoon} />
               <OpsCard to="/calls" tone="sky" icon={Phone} label="1:1s this week" value={ops?.callsThisWeek} />
-              <OpsCard to="/eods" tone={ops && ops.eodsMissingToday > 0 ? "amber" : "muted"} icon={FileText} label="EODs missing today" value={ops?.eodsMissingToday} />
+              {!isFounder && <OpsCard to="/eods" tone={ops && ops.eodsMissingToday > 0 ? "amber" : "muted"} icon={FileText} label="EODs missing today" value={ops?.eodsMissingToday} />}
               <OpsCard to="/students" tone={ops && ops.testimonialsPending > 0 ? "amber" : "muted"} icon={Star} label="Testimonials pending" value={ops?.testimonialsPending} />
               <OpsCard to="/action-items" tone={ops && ops.openActionItems > 0 ? "amber" : "muted"} icon={ListChecks} label="Open action items" value={ops?.openActionItems} />
             </div>
@@ -513,17 +515,19 @@ function PanelHead({ title, subtitle, legend }: { title: string; subtitle?: stri
     </div>
   );
 }
-function Kpi({ icon: Icon, label, value, suffix, color, highlight, onClick, delta }: {
+function Kpi({ icon: Icon, label, value, suffix, color, highlight, onClick, delta, title }: {
   icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
   label: string; value: number; suffix?: string; color?: string; highlight?: boolean;
   onClick?: () => void;
   delta?: number | null;
+  title?: string;
 }) {
   const c = color ?? "#94a3b8";
   const clickable = !!onClick;
   return (
     <div
       onClick={onClick}
+      title={title}
       role={clickable ? "button" : undefined}
       tabIndex={clickable ? 0 : undefined}
       onKeyDown={clickable ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick!(); } } : undefined}
