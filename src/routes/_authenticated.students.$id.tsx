@@ -353,12 +353,25 @@ function StudentDetail() {
 
       {/* Tabs */}
       <div className="flex items-center gap-1 border-b border-[#1f2530] overflow-x-auto">
-        <TabBtn active={tab === "calls"} onClick={() => setTab("calls")} icon={<Phone className="h-3 w-3" />}>1:1 timeline ({calls.length})</TabBtn>
+        <TabBtn active={tab === "timeline"} onClick={() => setTab("timeline")} icon={<Activity className="h-3 w-3" />}>Timeline</TabBtn>
+        <TabBtn active={tab === "calls"} onClick={() => setTab("calls")} icon={<Phone className="h-3 w-3" />}>1:1s ({calls.length})</TabBtn>
         <TabBtn active={tab === "eods"} onClick={() => setTab("eods")} icon={<User className="h-3 w-3" />}>Student EODs ({eods.length})</TabBtn>
         {isCsm && <TabBtn active={tab === "csm"} onClick={() => setTab("csm")} icon={<HeartHandshake className="h-3 w-3" />}>CSM notes ({csmNotes.length})</TabBtn>}
         <TabBtn active={tab === "installments"} onClick={() => setTab("installments")} icon={<DollarSign className="h-3 w-3" />}>Installments {installment ? `(${payments.filter(p => p.status === "paid").length}/${payments.length})` : ""}</TabBtn>
         <TabBtn active={tab === "notes"} onClick={() => setTab("notes")} icon={<FileText className="h-3 w-3" />}>General notes</TabBtn>
       </div>
+
+      {tab === "timeline" && (
+        <TimelineFeed
+          student={student}
+          calls={calls}
+          eods={eods}
+          csmNotes={csmNotes}
+          csmAuthors={csmAuthors}
+          coachName={coachName}
+          payments={payments}
+        />
+      )}
 
       {tab === "calls" && (
         <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm">
