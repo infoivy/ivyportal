@@ -471,19 +471,35 @@ function PanelHead({ title, subtitle, legend }: { title: string; subtitle?: stri
     </div>
   );
 }
-function Kpi({ icon: Icon, label, value, suffix, color, highlight }: {
+function Kpi({ icon: Icon, label, value, suffix, color, highlight, onClick, delta }: {
   icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
   label: string; value: number; suffix?: string; color?: string; highlight?: boolean;
+  onClick?: () => void;
+  delta?: number | null;
 }) {
   const c = color ?? "#94a3b8";
+  const clickable = !!onClick;
   return (
-    <div className={`rounded-md border p-2.5 bg-card ${highlight ? "border-blue-500/60 shadow-[0_0_0_1px_rgba(59,130,246,0.15)_inset]" : "border-border"}`}>
+    <div
+      onClick={onClick}
+      role={clickable ? "button" : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      onKeyDown={clickable ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick!(); } } : undefined}
+      className={`rounded-md border p-2.5 bg-card ${highlight ? "border-blue-500/60 shadow-[0_0_0_1px_rgba(59,130,246,0.15)_inset]" : "border-border"} ${clickable ? "cursor-pointer hover:bg-white/[0.03] transition" : ""}`}
+    >
       <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
         <Icon className="h-3 w-3" style={{ color: c }} />
         <span className="truncate">{label}</span>
       </div>
-      <div className="text-xl font-bold tabular-nums mt-1" style={{ color: c }}>
-        {value >= 1000 ? `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}K` : value.toLocaleString()}{suffix}
+      <div className="flex items-baseline gap-2">
+        <div className="text-xl font-bold tabular-nums mt-1" style={{ color: c }}>
+          {value >= 1000 ? `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}K` : value.toLocaleString()}{suffix}
+        </div>
+        {delta != null && Number.isFinite(delta) && (
+          <span className={`text-[10px] font-semibold tabular-nums ${delta > 0 ? "text-emerald-400" : delta < 0 ? "text-rose-400" : "text-muted-foreground"}`}>
+            {delta > 0 ? "+" : ""}{delta.toFixed(0)}%
+          </span>
+        )}
       </div>
     </div>
   );
