@@ -155,7 +155,7 @@ function TeamPage() {
     <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-[32px] font-bold tracking-[-0.02em] text-foreground leading-none">Team</h1>
+          <h1 className="text-display text-foreground">Team</h1>
           <p className="text-[13px] text-muted-foreground mt-0.5">Assign roles, edit profiles, deactivate or permanently remove team members.</p>
         </div>
         <div className="flex items-center gap-2">

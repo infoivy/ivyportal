@@ -218,10 +218,10 @@ function Dashboard() {
         {/* Header */}
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="text-[32px] font-bold tracking-[-0.02em] text-foreground leading-none">
+            <h1 className="text-display text-foreground">
               {displayName ?? "Team"}
             </h1>
-            <p className="text-[15px] text-muted-foreground mt-1.5">
+            <p className="text-body text-muted-foreground mt-1">
               {rangeLabel} · {roles.length ? roles.join(", ") : "member"}
             </p>
           </div>

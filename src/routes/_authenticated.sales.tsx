@@ -75,8 +75,8 @@ function SalesInner() {
     <div className="max-w-[1400px] mx-auto p-4 sm:p-5 space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-[32px] font-bold tracking-[-0.02em] text-foreground leading-none">Sales</h1>
-          <p className="text-[15px] text-muted-foreground mt-1.5">Team compliance, pipeline, and full-funnel trends</p>
+          <h1 className="text-display text-foreground">Sales</h1>
+          <p className="text-body text-muted-foreground mt-1">Team compliance, pipeline, and full-funnel trends</p>
         </div>
         <SegmentedControl segments={TABS} value={activeTab} onChange={setTab} />
       </div>
@@ -253,14 +253,14 @@ function OperationsTab() {
                             defaultValue=""
                             onChange={e => { if (e.target.value) updateSetterType(s.id, e.target.value as "phone" | "dm"); }}
                             onClick={e => e.stopPropagation()}
-                            className="text-[11px] h-5 px-1 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 cursor-pointer border-0"
+                            className="text-[11px] h-5 px-1 rounded-md bg-warning-bg text-warning-fg cursor-pointer border-0"
                           >
                             <option value="" disabled>Set type…</option>
                             <option value="phone">Phone</option>
                             <option value="dm">DM</option>
                           </select>
                         ) : (
-                          <div className="text-[12px] text-amber-600 dark:text-amber-400">Type not set</div>
+                          <div className="text-[12px] text-warning-fg">Type not set</div>
                         )}
                       </div>
                     </div>
@@ -268,19 +268,19 @@ function OperationsTab() {
                       {submitted ? (
                         <>
                           {hit && primaryTarget !== null && primaryVal !== null && (
-                            <span className={`text-[12px] px-2 py-0.5 rounded-full ${hit.primary ? "bg-primary/10 text-primary" : "bg-amber-500/10 text-amber-600 dark:text-amber-400"}`}>
+                            <span className={`text-[12px] px-2 py-0.5 rounded-full ${hit.primary ? "bg-primary/10 text-primary" : "bg-warning-bg text-warning-fg"}`}>
                               {primaryVal}/{primaryTarget} {primaryLabel}
                             </span>
                           )}
                           {hit && (
-                            <span className={`text-[12px] px-2 py-0.5 rounded-full ${hit.sets ? "bg-primary/10 text-primary" : "bg-amber-500/10 text-amber-600 dark:text-amber-400"}`}>
+                            <span className={`text-[12px] px-2 py-0.5 rounded-full ${hit.sets ? "bg-primary/10 text-primary" : "bg-warning-bg text-warning-fg"}`}>
                               {eod?.calls_booked}/3 sets
                             </span>
                           )}
                           <CheckCircle2 className="h-4 w-4 text-primary" />
                         </>
                       ) : (
-                        <span className="flex items-center gap-1 text-[12px] text-red-500 dark:text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full">
+                        <span className="flex items-center gap-1 text-[12px] text-danger-fg dark:text-danger-fg bg-danger-bg px-2 py-0.5 rounded-full">
                           <XCircle className="h-3.5 w-3.5" /> Missing
                         </span>
                       )}
@@ -294,7 +294,7 @@ function OperationsTab() {
           {missedYesterday.length > 0 && (
             <div className="space-y-2">
               <div className="text-[13px] text-muted-foreground flex items-center gap-1.5">
-                <AlertTriangle className="h-3.5 w-3.5 text-amber-500" /> Missed yesterday — send nudge
+                <AlertTriangle className="h-3.5 w-3.5 text-warning-fg" /> Missed yesterday — send nudge
               </div>
               <div className="card-surface overflow-hidden">
                 {missedYesterday.map(s => (
@@ -681,7 +681,7 @@ function ScorecardRow({ setter, eods, expanded, onToggle }: { setter: SetterProf
               const bothHit = hit.primary && hit.sets;
               const oneHit = hit.primary || hit.sets;
               return (
-                <div key={e.id} className={`rounded-lg px-2 py-1.5 text-[12px] ${bothHit ? "bg-primary/10 text-primary" : oneHit ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" : "bg-red-500/10 text-red-500 dark:text-red-400"}`}>
+                <div key={e.id} className={`rounded-lg px-2 py-1.5 text-[12px] ${bothHit ? "bg-primary/10 text-primary" : oneHit ? "bg-warning-bg text-warning-fg" : "bg-danger-bg text-danger-fg dark:text-danger-fg"}`}>
                   {e.report_date.slice(5)} · {setter.setter_type === "phone" ? e.dials : e.leads_contacted} {setter.setter_type === "phone" ? "dials" : "leads"} · {e.calls_booked} sets
                 </div>
               );
@@ -700,7 +700,7 @@ function ScorecardRow({ setter, eods, expanded, onToggle }: { setter: SetterProf
 }
 
 function RatePill({ label, pct }: { label: string; pct: number }) {
-  const color = pct >= 80 ? "bg-primary/10 text-primary" : pct >= 50 ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" : "bg-red-500/10 text-red-500 dark:text-red-400";
+  const color = pct >= 80 ? "bg-primary/10 text-primary" : pct >= 50 ? "bg-warning-bg text-warning-fg" : "bg-danger-bg text-danger-fg dark:text-danger-fg";
   return (
     <div className={`hidden sm:flex flex-col items-center text-[12px] rounded-lg px-2.5 py-1 ${color}`}>
       <span className="font-semibold tabular-nums">{pct}%</span>

@@ -41,10 +41,10 @@ const SUGGESTIONS = ["objections", "budget", "halal", "hijrah", "mindset", "fami
 
 // Constraint filter chips (one-tap during a live convo)
 const CONSTRAINT_CHIPS: { label: string; query: string; color: string }[] = [
-  { label: "Money", query: "money", color: "var(--tab-dmclose)" },
-  { label: "Time", query: "time", color: "var(--tab-conv)" },
-  { label: "Belief", query: "belief", color: "var(--tab-psych)" },
-  { label: "Deen", query: "deen", color: "var(--tab-engage)" },
+  { label: "Money", query: "money", color: "var(--muted-foreground)" },
+  { label: "Time", query: "time", color: "var(--muted-foreground)" },
+  { label: "Belief", query: "belief", color: "var(--muted-foreground)" },
+  { label: "Deen", query: "deen", color: "var(--muted-foreground)" },
 ];
 
 const SEARCH_TAGS: Record<TabId, string[]> = {
@@ -178,7 +178,7 @@ function Header({ onJump, query, setQuery, innerRef }: { onJump: (id: TabId) => 
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="Search…  (press /)"
-            className="text-xs bg-card border border-border rounded-full pl-7 pr-3 py-1.5 w-32 sm:w-56 focus:outline-none focus:ring-2 focus:ring-[color:var(--tab-stages)]/30"
+            className="text-xs bg-card border border-border rounded-full pl-7 pr-3 py-1.5 w-32 sm:w-56 focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
       </div>
@@ -558,7 +558,7 @@ function NotesModal({ open, onClose, counter, setCounter }: { open: boolean; onC
                 {syncing ? "Syncing…" : "Sync to EOD Reports"}
               </button>
             )}
-            <button onClick={copy} className="px-3 py-1.5 rounded-md bg-[color:var(--tab-stages)] text-white text-xs font-semibold hover:opacity-90">
+            <button onClick={copy} className="px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90">
               {copied ? "Copied!" : "Copy"}
             </button>
           </div>

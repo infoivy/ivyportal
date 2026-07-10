@@ -116,7 +116,7 @@ function CallsPage() {
           <div className="flex items-center gap-2 text-[10px] text-blue-400 mb-1">
             <Phone className="h-3 w-3" /> 1-on-1 tracker
           </div>
-          <h1 className="text-[32px] font-bold tracking-[-0.02em] text-foreground leading-none">1-on-1 Calls</h1>
+          <h1 className="text-display text-foreground">1-on-1 Calls</h1>
           <p className="text-xs text-muted-foreground mt-0.5">
             {stats.total} calls · {stats.completed} done · {stats.followUp} follow-up · {stats.noShow} no-show · avg rating {stats.avgRating} · {stats.openActions} open action items
           </p>

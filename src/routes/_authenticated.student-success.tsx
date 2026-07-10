@@ -197,8 +197,8 @@ function StudentSuccessInner() {
     <div className="min-h-full">
       <div className="max-w-[1400px] mx-auto p-4 sm:p-5 space-y-4">
         <div>
-          <h1 className="text-[32px] font-bold tracking-[-0.02em] text-foreground leading-none">Student Success</h1>
-          <p className="text-[15px] text-muted-foreground mt-1.5">At-risk flags, this week's calls, open action items, testimonial pipeline.</p>
+          <h1 className="text-display text-foreground">Student Success</h1>
+          <p className="text-body text-muted-foreground mt-1">At-risk flags, this week's calls, open action items, testimonial pipeline.</p>
         </div>
 
         {/* Summary strip */}

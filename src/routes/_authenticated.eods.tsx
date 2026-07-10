@@ -233,12 +233,12 @@ function EODsPage() {
     <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3 pb-5 mb-1">
         <div>
-          <h1 className="text-[32px] font-bold tracking-[-0.02em] text-foreground leading-none">End of Day</h1>
-          <p className="text-[15px] text-muted-foreground mt-1.5">Log your numbers. Track the funnel. Ship consistency.</p>
+          <h1 className="text-display text-foreground">End of Day</h1>
+          <p className="text-body text-muted-foreground mt-1">Log your numbers. Track the funnel. Ship consistency.</p>
         </div>
         <div className="flex items-center gap-2">
           {!isFounder && (
-            <div className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-sm border ${existingId ? "border-green-500/30 bg-green-500/5 text-green-400" : "border-amber-500/30 bg-amber-500/5 text-amber-400"}`}>
+            <div className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-sm border ${existingId ? "border-success/25 bg-success-bg text-success-fg" : "border-warning/25 bg-warning-bg text-warning-fg"}`}>
               {existingId ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Clock className="h-3.5 w-3.5" />}
               {existingId ? "Today submitted" : "Today pending"}
             </div>
@@ -316,8 +316,8 @@ function EODsPage() {
               </div>
 
               {isSetter && !mySetterType && (
-                <div className="rounded-sm border border-amber-500/30 bg-amber-500/5 p-3">
-                  <div className="text-[11px] text-amber-300 mb-2">Pick your setter type — this drives your daily KPI.</div>
+                <div className="rounded-sm border border-warning/25 bg-warning-bg p-3">
+                  <div className="text-[11px] text-warning-fg mb-2">Pick your setter type — this drives your daily KPI.</div>
                   <div className="flex gap-2">
                     <Button size="sm" variant="outline" onClick={() => saveSetterType("phone")}>Phone setter</Button>
                     <Button size="sm" variant="outline" onClick={() => saveSetterType("dm")}>DM setter</Button>
@@ -404,7 +404,7 @@ function EODsPage() {
               </div>
 
               <div className="flex items-center justify-end pt-2 border-t border-[var(--border)]">
-                <Button onClick={submit} disabled={saving || !form.wins.trim()} className="bg-green-500 hover:bg-green-400 text-green-950 font-medium h-8 rounded-sm text-xs">
+                <Button onClick={submit} disabled={saving || !form.wins.trim()} className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium h-8 rounded-sm text-xs">
                   {saving ? "Saving…" : existingId ? "Update EOD" : "Submit EOD"}
                 </Button>
               </div>
@@ -526,9 +526,9 @@ function TeamOverview({ roster, eods, today }: { roster: RosterEntry[]; eods: Gr
       <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-4">
         <div className="text-sm">
           <span className="font-semibold">{fmtLong(today)}</span> —{" "}
-          <span className="text-green-400">{submittedCount} of {cards.length} submitted</span> ·{" "}
-          <span className="text-green-400">{kpiHitCount} hit KPI</span> ·{" "}
-          <span className="text-amber-400">{pendingCount} pending</span>
+          <span className="text-success-fg">{submittedCount} of {cards.length} submitted</span> ·{" "}
+          <span className="text-success-fg">{kpiHitCount} hit KPI</span> ·{" "}
+          <span className="text-warning-fg">{pendingCount} pending</span>
         </div>
       </div>
       <div className="grid md:grid-cols-2 gap-3">
@@ -545,7 +545,7 @@ function OverviewCard({ card }: { card: {
   weeklyLabel: string; weeklyValue: string | number; todayEod: EOD | undefined;
 } }) {
   const [open, setOpen] = useState(false);
-  const dotColor = card.status === "green" ? "bg-green-500" : card.status === "amber" ? "bg-amber-500" : "bg-red-500";
+  const dotColor = card.status === "green" ? "bg-success" : card.status === "amber" ? "bg-warning" : "bg-danger";
   const setterTypeLabel = card.r.setter_type === "phone" ? "Phone Setter" : card.r.setter_type === "dm" ? "DM Setter" : ROLE_LABEL[card.r.primary_role] ?? card.r.primary_role;
   return (
     <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-4 space-y-3">
@@ -567,7 +567,7 @@ function OverviewCard({ card }: { card: {
         <div className="flex gap-1.5">
           {card.week.map(w => {
             const dt = new Date(w.d + "T00:00:00");
-            const bg = w.status === "green" ? "bg-green-500/10 border-green-500/25" : w.status === "amber" ? "bg-amber-500/10 border-amber-500/25" : "bg-red-500/[0.07] border-red-500/20";
+            const bg = w.status === "green" ? "bg-success-bg border-success/25" : w.status === "amber" ? "bg-warning-bg border-warning/25" : "bg-danger-bg border-danger/25";
             return (
               <div key={w.d} className={`flex-1 border rounded-sm px-1 py-1 text-center ${bg}`} title={fmtLong(w.d)}>
                 <div className="text-[9px] text-muted-foreground">{WEEKDAY[dt.getDay()]}</div>
@@ -584,7 +584,7 @@ function OverviewCard({ card }: { card: {
         <div className="border-t border-[var(--border)] pt-3 space-y-2 text-xs">
           {card.week.map(w => (
             <div key={w.d} className="flex items-start gap-2">
-              <span className={`mt-1 h-2 w-2 rounded-full shrink-0 ${w.status === "green" ? "bg-green-500" : w.status === "amber" ? "bg-amber-500" : "bg-red-500"}`} />
+              <span className={`mt-1 h-2 w-2 rounded-full shrink-0 ${w.status === "green" ? "bg-success" : w.status === "amber" ? "bg-warning" : "bg-danger"}`} />
               <div className="flex-1">
                 <div className="text-muted-foreground">{fmtLong(w.d)}</div>
                 {w.e ? (
@@ -598,11 +598,11 @@ function OverviewCard({ card }: { card: {
                     {card.r.primary_role === "csm" && (
                       <span>{w.e.student_checkins} check-ins, {w.e.looms_reviewed} looms</span>
                     )}
-                    {w.status === "amber" && <span className="text-amber-400"> — missed KPI</span>}
-                    {w.e.wins && <div className="text-muted-foreground mt-0.5"><span className="text-green-400">Wins:</span> {w.e.wins}</div>}
-                    {w.e.blockers && <div className="text-muted-foreground"><span className="text-amber-400">Blockers:</span> {w.e.blockers}</div>}
+                    {w.status === "amber" && <span className="text-warning-fg"> — missed KPI</span>}
+                    {w.e.wins && <div className="text-muted-foreground mt-0.5"><span className="text-success-fg">Wins:</span> {w.e.wins}</div>}
+                    {w.e.blockers && <div className="text-muted-foreground"><span className="text-warning-fg">Blockers:</span> {w.e.blockers}</div>}
                   </div>
-                ) : <div className="text-red-400">No EOD</div>}
+                ) : <div className="text-danger-fg">No EOD</div>}
               </div>
             </div>
           ))}
@@ -654,7 +654,7 @@ function MyHistory({ myEods, setterType, isSetter, isCloser, onDelete }: { myEod
                 {isSetter && (setterType === "dm" ? <span>{leads} leads</span> : <span>{dials} dials</span>)}
                 {isSetter && <span>{sets} sets</span>}
                 {isCloser && <span>${Math.round(cash).toLocaleString()} cash</span>}
-                {setterType && <span className={kpiDays >= 5 ? "text-green-400" : "text-amber-400"}>KPI {kpiDays} of {submitted}</span>}
+                {setterType && <span className={kpiDays >= 5 ? "text-success-fg" : "text-warning-fg"}>KPI {kpiDays} of {submitted}</span>}
               </div>
             </button>
             {isOpen && (
@@ -674,7 +674,7 @@ function MyHistory({ myEods, setterType, isSetter, isCloser, onDelete }: { myEod
 function HistoryDayRow({ eod, setterType, isSetter, isCloser, onDelete }: { eod: EOD; setterType: SetterType; isSetter: boolean; isCloser: boolean; onDelete: (id: string) => void }) {
   const [open, setOpen] = useState(false);
   const kpi = setterType ? didHitKpi(eod, setterType) : null;
-  const dotClass = kpi === null ? "bg-muted" : kpi ? "bg-green-500" : "bg-amber-500";
+  const dotClass = kpi === null ? "bg-muted" : kpi ? "bg-success" : "bg-warning";
   const rawConv = eod.convos_started > 0 ? (eod.calls_booked / eod.convos_started) * 100 : 0;
   const dataError = eod.calls_booked > eod.convos_started && eod.convos_started > 0;
   const convDisplay = Math.min(100, Math.round(rawConv));
@@ -697,11 +697,11 @@ function HistoryDayRow({ eod, setterType, isSetter, isCloser, onDelete }: { eod:
           {isCloser && <RowStat label="Closes" value={eod.closes} accent />}
           {isCloser && <RowStat label="Cash" value={`$${Math.round(Number(eod.cash_collected)).toLocaleString()}`} />}
         </div>
-        {dataError && <span className="text-[10px] text-amber-400 flex items-center gap-1 shrink-0"><AlertTriangle className="h-3 w-3" /> data error</span>}
+        {dataError && <span className="text-[10px] text-warning-fg flex items-center gap-1 shrink-0"><AlertTriangle className="h-3 w-3" /> data error</span>}
       </button>
       {open && (
         <div className="px-4 pb-4 space-y-2 text-xs bg-[var(--background)]">
-          {dataError && <div className="text-amber-400 text-[11px]">⚠ Booked exceeds convos — this report may have an error. Consider editing.</div>}
+          {dataError && <div className="text-warning-fg text-[11px]">⚠ Booked exceeds convos — this report may have an error. Consider editing.</div>}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             <RowStat label="DMs" value={eod.dms_sent} />
             <RowStat label="Convos" value={eod.convos_started} />
@@ -710,12 +710,12 @@ function HistoryDayRow({ eod, setterType, isSetter, isCloser, onDelete }: { eod:
             <RowStat label="Shows" value={eod.shows} />
             <RowStat label="No-shows" value={eod.no_shows} />
           </div>
-          {eod.wins && <p><span className="text-green-400">Wins:</span> {eod.wins}</p>}
-          {eod.blockers && <p><span className="text-amber-400">Blockers:</span> {eod.blockers}</p>}
+          {eod.wins && <p><span className="text-success-fg">Wins:</span> {eod.wins}</p>}
+          {eod.blockers && <p><span className="text-warning-fg">Blockers:</span> {eod.blockers}</p>}
           {(eod.summary || eod.tomorrow_focus) && <p className="text-muted-foreground italic">{eod.summary || eod.tomorrow_focus}</p>}
           <div className="flex justify-end gap-2 pt-1">
             {canDelete && (
-              <button onClick={() => { if (confirm("Delete this EOD?")) onDelete(eod.id); }} className="text-[11px] text-muted-foreground hover:text-red-400 flex items-center gap-1">
+              <button onClick={() => { if (confirm("Delete this EOD?")) onDelete(eod.id); }} className="text-[11px] text-muted-foreground hover:text-danger-fg flex items-center gap-1">
                 <Trash2 className="h-3 w-3" /> Delete
               </button>
             )}
@@ -811,16 +811,16 @@ function ComplianceMatrix({ eods, roster }: { eods: GridEod[]; roster: RosterEnt
                           const eod = byUserDate.get(`${m.user_id}::${d}`);
                           if (beforeJoin) return <td key={d} className="px-1 py-1 text-center"><span className="text-[#3a3f4a] text-[11px]">—</span></td>;
                           const status = dayStatus(eod, st);
-                          const cls = status === "green" ? "bg-green-500/10 border-green-500/25 text-green-400" : status === "amber" ? "bg-amber-500/10 border-amber-500/25 text-amber-400" : "bg-red-500/[0.07] border-red-500/20 text-red-400";
+                          const cls = status === "green" ? "bg-success-bg border-success/25 text-success-fg" : status === "amber" ? "bg-warning-bg border-warning/25 text-warning-fg" : "bg-danger-bg border-danger/25 text-danger-fg";
                           const glyph = status === "red" ? "✗" : status === "amber" ? "!" : "✓";
                           return (<td key={d} className="px-1 py-1 text-center"><span title={`${m.display_name} · ${fmtLong(d)} · ${status}`} className={`inline-flex items-center justify-center h-5 w-5 rounded-sm border text-[11px] ${cls}`}>{glyph}</span></td>);
                         })}
                         <td className="px-3 py-2 text-right text-xs">
-                          <span className={s.streak >= 3 ? "text-amber-400" : "text-foreground"}>{s.streak}</span>
+                          <span className={s.streak >= 3 ? "text-warning-fg" : "text-foreground"}>{s.streak}</span>
                           <span className="text-muted-foreground text-[10px] ml-1">d</span>
                         </td>
                         <td className="px-3 py-2 text-right text-xs">
-                          <span className={s.pct >= 90 ? "text-green-400" : s.pct >= 70 ? "text-amber-400" : "text-red-400"}>{s.pct}%</span>
+                          <span className={s.pct >= 90 ? "text-success-fg" : s.pct >= 70 ? "text-warning-fg" : "text-danger-fg"}>{s.pct}%</span>
                           <span className="text-muted-foreground text-[10px] ml-1">({s.submitted}/{s.required})</span>
                         </td>
                       </tr>
@@ -937,7 +937,7 @@ function SubmissionsGrid({ dayList, roster, eods }: { dayList: string[]; roster:
                 {dayList.map(d => {
                   const beforeJoin = r.joined_at && d < r.joined_at;
                   const eod = byUserDate.get(`${r.user_id}::${d}`);
-                  const bg = beforeJoin ? "bg-white/[0.04]" : !eod ? "bg-red-500/25" : st ? (didHitKpi(eod, st) ? "bg-green-500/35" : "bg-amber-500/30") : "bg-green-500/35";
+                  const bg = beforeJoin ? "bg-muted" : !eod ? "bg-danger/25" : st ? (didHitKpi(eod, st) ? "bg-success/35" : "bg-warning/30") : "bg-success/35";
                   return <div key={d} className={`h-3 w-3 rounded-[2px] ${bg}`} title={`${r.display_name} · ${fmtLong(d)} · ${!eod ? "missed" : "submitted"}`} />;
                 })}
               </div>
@@ -1090,9 +1090,9 @@ function FeedCard({ e, isAdmin, onDelete }: { e: GridEod; isAdmin: boolean; onDe
           <div className="text-[12px] text-muted-foreground">{st ? `${st} setter` : e.primary_role}</div>
         </div>
         <div className="flex items-center gap-2">
-          {kpi !== null && <span className={`text-[10px] px-1.5 py-0.5 rounded-sm ${kpi ? "bg-green-500/15 text-green-400" : "bg-amber-500/15 text-amber-400"}`}>KPI {kpi ? "✓" : "✗"}</span>}
+          {kpi !== null && <span className={`text-[10px] px-1.5 py-0.5 rounded-sm ${kpi ? "bg-success-bg text-success-fg" : "bg-warning-bg text-warning-fg"}`}>KPI {kpi ? "✓" : "✗"}</span>}
           {isAdmin && (
-            <button onClick={() => { if (confirm("Delete this EOD?")) onDelete(e.id); }} className="text-muted-foreground hover:text-red-400" title="Delete">
+            <button onClick={() => { if (confirm("Delete this EOD?")) onDelete(e.id); }} className="text-muted-foreground hover:text-danger-fg" title="Delete">
               <Trash2 className="h-3 w-3" />
             </button>
           )}
@@ -1105,8 +1105,8 @@ function FeedCard({ e, isAdmin, onDelete }: { e: GridEod; isAdmin: boolean; onDe
           </span>
         ))}
       </div>
-      {e.wins && <p className="text-[11px]"><span className="text-green-400">Wins:</span> {e.wins}</p>}
-      {e.blockers && <p className="text-[11px]"><span className="text-amber-400">Blockers:</span> {e.blockers}</p>}
+      {e.wins && <p className="text-[11px]"><span className="text-success-fg">Wins:</span> {e.wins}</p>}
+      {e.blockers && <p className="text-[11px]"><span className="text-warning-fg">Blockers:</span> {e.blockers}</p>}
     </div>
   );
 }
@@ -1122,7 +1122,7 @@ function SubmittedTodayPanel({ roster, eods, today }: { roster: RosterEntry[]; e
         {roster.map(r => (
           <div key={r.user_id} className="flex items-center justify-between">
             <span className="truncate">{r.display_name}</span>
-            {submittedIds.has(r.user_id) ? <span className="text-green-400 text-[11px]">✓</span> : <span className="text-amber-400 text-[11px]">pending</span>}
+            {submittedIds.has(r.user_id) ? <span className="text-success-fg text-[11px]">✓</span> : <span className="text-warning-fg text-[11px]">pending</span>}
           </div>
         ))}
         {roster.length === 0 && <div className="text-muted-foreground">No team yet.</div>}
@@ -1142,7 +1142,7 @@ function MyLast7Panel({ myEods, today, setterType }: { myEods: EOD[]; today: str
           const e = byDate.get(d);
           const status = dayStatus(e, setterType);
           const glyph = !e ? "✗" : status === "amber" ? "!" : "✓";
-          const cls = !e ? "text-red-400" : status === "amber" ? "text-amber-400" : "text-green-400";
+          const cls = !e ? "text-danger-fg" : status === "amber" ? "text-warning-fg" : "text-success-fg";
           return (<div key={d} className="flex items-center justify-between"><span className="text-muted-foreground">{fmtLong(d)}</span><span className={`text-[11px] ${cls}`}>{glyph}</span></div>);
         })}
       </div>
@@ -1157,7 +1157,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 function MiniChip({ label, value, tone, icon }: { label: string; value: number | string; tone?: "green" | "amber" | "default"; icon?: React.ReactNode }) {
-  const valueColor = tone === "green" ? "text-primary" : tone === "amber" ? "text-amber-600 dark:text-amber-400" : "text-foreground";
+  const valueColor = tone === "green" ? "text-primary" : tone === "amber" ? "text-warning-fg" : "text-foreground";
   return (
     <div className="card-surface p-2">
       <div className="flex items-center gap-1 text-[12px] text-muted-foreground mb-0.5">{icon}{label}</div>
@@ -1173,10 +1173,10 @@ function KpiBar({ label, value, target }: { label: string; value: number; target
     <div>
       <div className="flex items-baseline justify-between mb-1">
         <span className="text-[13px] text-muted-foreground">{label}</span>
-        <span className={`text-[11px] ${hit ? "text-green-400 font-semibold" : "text-foreground"}`}>{value} / {target}</span>
+        <span className={`text-[11px] ${hit ? "text-success-fg font-semibold" : "text-foreground"}`}>{value} / {target}</span>
       </div>
       <div className="h-1.5 bg-[var(--accent)] rounded-sm overflow-hidden">
-        <div className={`h-full ${hit ? "bg-green-500" : "bg-amber-500"}`} style={{ width: `${pct}%` }} />
+        <div className={`h-full ${hit ? "bg-success" : "bg-warning"}`} style={{ width: `${pct}%` }} />
       </div>
     </div>
   );
@@ -1213,7 +1213,7 @@ function RowStat({ label, value, accent }: { label: string; value: number | stri
   return (
     <div className="flex items-baseline gap-1.5">
       <span className="text-[12px] text-muted-foreground">{label}</span>
-      <span className={`${accent ? "text-green-400 font-semibold" : "text-foreground"}`}>{value}</span>
+      <span className={`${accent ? "text-success-fg font-semibold" : "text-foreground"}`}>{value}</span>
     </div>
   );
 }

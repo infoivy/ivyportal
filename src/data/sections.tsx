@@ -64,7 +64,7 @@ const Tag = ({ children, tone = "neutral" }: { children: React.ReactNode; tone?:
   return <span className={`inline-block text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${toneCls}`}>{children}</span>;
 };
 
-const NumStep = ({ n, title, sub, color = "var(--tab-stages)" }: { n: number; title: string; sub: string; color?: string }) => (
+const NumStep = ({ n, title, sub, color = "var(--muted-foreground)" }: { n: number; title: string; sub: string; color?: string }) => (
   <div className="flex gap-3 items-start">
     <div className="w-6 h-6 rounded-full text-white text-[12px] font-semibold flex items-center justify-center flex-shrink-0" style={{ backgroundColor: color }}>{n}</div>
     <div className="min-w-0">
@@ -79,7 +79,7 @@ export const SECTIONS: Section[] = [
   {
     id: "stages",
     heading: "The 8-Stage Setting Process",
-    color: "var(--tab-stages)",
+    color: "var(--muted-foreground)",
     cards: [
       {
         title: "The Setter's Identity",
@@ -316,7 +316,7 @@ export const SECTIONS: Section[] = [
   {
     id: "inbound",
     heading: "Inbound Conversation Flow",
-    color: "var(--tab-inbound)",
+    color: "var(--muted-foreground)",
     cards: [
       {
         title: "The Inbound Flow",
@@ -334,7 +334,7 @@ export const SECTIONS: Section[] = [
               ["Close to Call", "Permission close or transition to DM Close"],
             ].map(([t, s], i) => (
               <div key={i} className="flex gap-3 items-start">
-                <div className="w-6 h-6 rounded-full bg-[color:var(--tab-inbound)] text-white text-[12px] font-semibold flex items-center justify-center flex-shrink-0">{i + 1}</div>
+                <div className="w-6 h-6 rounded-full bg-[color:var(--muted-foreground)] text-white text-[12px] font-semibold flex items-center justify-center flex-shrink-0">{i + 1}</div>
                 <div><div className="text-[13px] font-semibold">{t}</div><div className="text-[12px] text-muted-foreground">{s}</div></div>
               </div>
             ))}
@@ -431,7 +431,7 @@ export const SECTIONS: Section[] = [
   {
     id: "outbound",
     heading: "Outbound Direct DM Openers",
-    color: "var(--tab-outbound)",
+    color: "var(--muted-foreground)",
     cards: [
       {
         title: "The Goal",
@@ -587,7 +587,7 @@ export const SECTIONS: Section[] = [
   {
     id: "story",
     heading: "Outbound Story Replies",
-    color: "var(--tab-story)",
+    color: "var(--muted-foreground)",
     cards: [
       {
         title: "DNA of a Good Story Reply",
@@ -702,7 +702,7 @@ export const SECTIONS: Section[] = [
   {
     id: "conv",
     heading: "Outbound Conversational Flow",
-    color: "var(--tab-conv)",
+    color: "var(--muted-foreground)",
     cards: [
       {
         title: "The Outbound Flow",
@@ -718,7 +718,7 @@ export const SECTIONS: Section[] = [
               ["Post-Close Nurture", "Pre-call video, story engagement, keep value flowing"],
             ].map(([t, s], i) => (
               <div key={i} className="flex gap-3 items-start">
-                <div className="w-6 h-6 rounded-full bg-[color:var(--tab-conv)] text-white text-[12px] font-semibold flex items-center justify-center flex-shrink-0">{i + 1}</div>
+                <div className="w-6 h-6 rounded-full bg-[color:var(--muted-foreground)] text-white text-[12px] font-semibold flex items-center justify-center flex-shrink-0">{i + 1}</div>
                 <div><div className="text-[13px] font-semibold">{t}</div><div className="text-[12px] text-muted-foreground">{s}</div></div>
               </div>
             ))}
@@ -859,7 +859,7 @@ export const SECTIONS: Section[] = [
   {
     id: "dmclose",
     heading: "DM Close Playbook",
-    color: "var(--tab-dmclose)",
+    color: "var(--muted-foreground)",
     cards: [
       {
         title: "The DM Close Flow",
@@ -874,7 +874,7 @@ export const SECTIONS: Section[] = [
               ["Next Steps", "Move fast, remove friction, confirm booking"],
             ].map(([t, s], i) => (
               <div key={i} className="flex gap-3 items-start">
-                <div className="w-6 h-6 rounded-full bg-[color:var(--tab-dmclose)] text-white text-[12px] font-semibold flex items-center justify-center flex-shrink-0">{i + 1}</div>
+                <div className="w-6 h-6 rounded-full bg-[color:var(--muted-foreground)] text-white text-[12px] font-semibold flex items-center justify-center flex-shrink-0">{i + 1}</div>
                 <div><div className="text-[13px] font-semibold">{t}</div><div className="text-[12px] text-muted-foreground">{s}</div></div>
               </div>
             ))}
@@ -976,7 +976,7 @@ export const SECTIONS: Section[] = [
   {
     id: "followup",
     heading: "Follow-Ups",
-    color: "var(--tab-followup)",
+    color: "var(--muted-foreground)",
     cards: [
       {
         title: "Follow-Up Rules",
@@ -1182,7 +1182,7 @@ export const SECTIONS: Section[] = [
   {
     id: "psych",
     heading: "Psychology — 9 Principles",
-    color: "var(--tab-psych)",
+    color: "var(--muted-foreground)",
     cards: [
       {
         title: "1 — Reference Their Words",
@@ -1259,7 +1259,7 @@ export const SECTIONS: Section[] = [
   {
     id: "engage",
     heading: "Lead Engagement System",
-    color: "var(--tab-engage)",
+    color: "var(--muted-foreground)",
     cards: [
       {
         title: "Why Engagement Matters",
@@ -1357,7 +1357,7 @@ export const SECTIONS: Section[] = [
   {
     id: "pacing",
     heading: "Tracking & Operations",
-    color: "var(--tab-pacing)",
+    color: "var(--muted-foreground)",
     cards: [
       {
         title: "The Daily Setting Flow",

@@ -80,7 +80,7 @@ function Training() {
       <div className="max-w-[1400px] mx-auto p-4 sm:p-5 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-[32px] font-bold tracking-[-0.02em] text-foreground leading-none">Training</h1>
+            <h1 className="text-display text-foreground">Training</h1>
             <p className="text-[13px] text-muted-foreground mt-0.5">
               {videos.length === 0 ? "No videos yet — admins can add them below." : `${videos.length} video${videos.length === 1 ? "" : "s"}`}
             </p>
@@ -139,14 +139,14 @@ function Training() {
                 {/* Thumbnail */}
                 <div
                   className="aspect-video relative flex items-center justify-center cursor-pointer"
-                  style={{ background: `linear-gradient(135deg, ${v.thumbnail_color}, var(--background))` }}
+                  style={{ background: `color-mix(in srgb, ${v.thumbnail_color} 14%, var(--card))` }}
                   onClick={() => v.video_url && window.open(v.video_url, "_blank")}
                 >
                   <div className={`grid h-12 w-12 place-items-center rounded-full bg-white/90 group-hover:scale-110 transition ${v.video_url ? "cursor-pointer" : "opacity-40"}`}>
                     <Play className="h-5 w-5 text-black fill-black ml-0.5" />
                   </div>
                   {!v.video_url && (
-                    <div className="absolute bottom-2 left-2 text-[10px] px-1.5 py-0.5 rounded-sm bg-black/70 text-amber-400">
+                    <div className="absolute bottom-2 left-2 text-[10px] px-1.5 py-0.5 rounded-sm bg-black/70 text-warning-fg">
                       No URL yet
                     </div>
                   )}
@@ -160,7 +160,7 @@ function Training() {
                       </button>
                       <button
                         onClick={e => { e.stopPropagation(); deleteVideo(v.id); }}
-                        className="h-6 w-6 grid place-items-center rounded-sm bg-black/70 hover:bg-red-900/90 text-red-400"
+                        className="h-6 w-6 grid place-items-center rounded-sm bg-black/70 hover:bg-danger/90 text-danger-fg"
                       >
                         <Trash2 className="h-3 w-3" />
                       </button>

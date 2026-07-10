@@ -92,11 +92,11 @@ function NotesPage() {
         {/* Header */}
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:justify-between">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-amber-500/10 border border-amber-500/40">
-              <StickyNote className="h-4 w-4 text-amber-400" />
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-warning-bg border border-warning/25">
+              <StickyNote className="h-4 w-4 text-warning-fg" />
             </div>
             <div className="min-w-0">
-              <h1 className="text-[32px] font-bold tracking-[-0.02em] text-foreground leading-none truncate">Notes</h1>
+              <h1 className="text-display text-foreground truncate">Notes</h1>
               <p className="text-[11px] text-muted-foreground mt-0.5">
                 {filtered.length} · {scope === "mine" ? "personal" : "team-wide"}
               </p>
@@ -124,8 +124,8 @@ function NotesPage() {
         {/* Composer */}
         <div className="rounded-md border border-border bg-card p-3.5">
           <div className="flex items-center gap-2 mb-2">
-            <div className="grid h-6 w-6 place-items-center rounded-sm bg-emerald-500/15 border border-emerald-500/40">
-              <Plus className="h-3 w-3 text-emerald-400" />
+            <div className="grid h-6 w-6 place-items-center rounded-sm bg-primary/15 border border-primary/25">
+              <Plus className="h-3 w-3 text-primary" />
             </div>
             <h3 className="text-sm font-bold">New note</h3>
             <span className="ml-auto text-[10px] text-muted-foreground">⌘ + Enter to save</span>
@@ -136,7 +136,7 @@ function NotesPage() {
             onKeyDown={onKey}
             rows={3}
             placeholder="Capture an objection you heard, a win, a script tweak, a coaching thought…"
-            className="w-full bg-[var(--background)] border border-border rounded-sm px-3 py-2 text-sm outline-none focus:border-emerald-500/60 resize-none"
+            className="w-full bg-[var(--background)] border border-border rounded-sm px-3 py-2 text-sm outline-none focus:border-primary/25 resize-none"
           />
           <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] gap-2">
             <div className="relative">
@@ -146,13 +146,13 @@ function NotesPage() {
                 onChange={e => setTagsStr(e.target.value)}
                 onKeyDown={onKey}
                 placeholder="tags (comma-separated) e.g. objection, script, win"
-                className="w-full bg-[var(--background)] border border-border rounded-sm pl-7 pr-3 py-1.5 text-xs outline-none focus:border-emerald-500/60"
+                className="w-full bg-[var(--background)] border border-border rounded-sm pl-7 pr-3 py-1.5 text-xs outline-none focus:border-primary/25"
               />
             </div>
             <button
               onClick={add}
               disabled={!content.trim() || saving}
-              className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-sm bg-emerald-500 text-black hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-sm bg-primary text-black hover:bg-primary disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {saving ? "Saving…" : "Save note"}
             </button>
@@ -172,7 +172,7 @@ function NotesPage() {
                   }}
                   className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-sm border transition ${
                     on
-                      ? "bg-emerald-500 text-black border-emerald-500"
+                      ? "bg-primary text-black border-emerald-500"
                       : "border-border text-muted-foreground hover:text-foreground"
                   }`}
                 >#{preset}</button>
@@ -189,7 +189,7 @@ function NotesPage() {
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder="Search notes, tags, authors…"
-              className="w-full bg-[var(--background)] border border-border rounded-sm pl-8 pr-3 py-1.5 text-xs outline-none focus:border-emerald-500/60"
+              className="w-full bg-[var(--background)] border border-border rounded-sm pl-8 pr-3 py-1.5 text-xs outline-none focus:border-primary/25"
             />
           </div>
           {allTags.length > 0 && (
@@ -208,7 +208,7 @@ function NotesPage() {
                   onClick={() => setActiveTag(tag === activeTag ? null : tag)}
                   className={`text-[10px] font-semibold px-2 py-0.5 rounded-sm border transition ${
                     activeTag === tag
-                      ? "bg-emerald-500 text-black border-emerald-500"
+                      ? "bg-primary text-black border-emerald-500"
                       : "border-border text-muted-foreground hover:text-foreground"
                   }`}
                 >#{tag} <span className="opacity-60 tabular-nums">{count}</span></button>
@@ -230,7 +230,7 @@ function NotesPage() {
           {filtered.map(n => (
             <div
               key={n.id}
-              className="group rounded-md border border-border bg-card p-3 hover:border-emerald-500/40 transition"
+              className="group rounded-md border border-border bg-card p-3 hover:border-primary/25 transition"
             >
               <p className="whitespace-pre-wrap text-sm leading-relaxed break-words">{n.content}</p>
               <div className="mt-2.5 flex items-center flex-wrap gap-1.5 pt-2 border-t border-border/60">
@@ -238,7 +238,7 @@ function NotesPage() {
                   <button
                     key={t}
                     onClick={() => setActiveTag(t)}
-                    className="text-[9px] font-semibold px-1.5 py-0.5 rounded-sm bg-blue-500/10 text-blue-400 border border-blue-500/30 hover:bg-blue-500/20"
+                    className="text-[9px] font-semibold px-1.5 py-0.5 rounded-sm bg-muted text-muted-foreground border border-border hover:bg-muted"
                   >#{t}</button>
                 ))}
                 <span className="ml-auto text-[10px] text-muted-foreground">
@@ -248,7 +248,7 @@ function NotesPage() {
                 {n.user_id === user?.id && (
                   <button
                     onClick={() => del(n.id)}
-                    className="opacity-0 group-hover:opacity-100 p-1 rounded-sm text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition"
+                    className="opacity-0 group-hover:opacity-100 p-1 rounded-sm text-muted-foreground hover:text-danger-fg hover:bg-danger-bg transition"
                     title="Delete"
                   >
                     <Trash2 className="h-3 w-3" />

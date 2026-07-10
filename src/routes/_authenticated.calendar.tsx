@@ -295,7 +295,7 @@ function DayColumn({ day, events, onSelect }: { day: Date; events: TeamEvent[]; 
             style={{
               top: Math.max(0, top),
               height,
-              background: `linear-gradient(180deg, ${e.color}30, ${e.color}18)`,
+              background: `${e.color}22`,
               borderLeft: `3px solid ${e.color}`,
               color: "var(--foreground)",
             }}

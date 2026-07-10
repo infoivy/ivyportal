@@ -87,7 +87,7 @@ function ProfilePage() {
   return (
     <div className="p-4 sm:p-6 max-w-2xl mx-auto space-y-5">
       <header>
-        <h1 className="text-[32px] font-bold tracking-[-0.02em] text-foreground leading-none">Profile</h1>
+        <h1 className="text-display text-foreground">Profile</h1>
         <p className="text-[13px] text-muted-foreground mt-0.5">{user?.email} · {roles.join(" · ") || "member"}</p>
       </header>
 

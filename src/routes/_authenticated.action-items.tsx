@@ -188,22 +188,22 @@ function ActionItemsHub() {
     <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-5">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] pb-4 mb-1">
         <div>
-          <div className="flex items-center gap-2 text-[10px] text-blue-400 mb-1">
+          <div className="flex items-center gap-2 text-[10px] text-muted-foreground mb-1">
             <ListChecks className="h-3 w-3" /> Action Items Hub
           </div>
-          <h1 className="text-[32px] font-bold tracking-[-0.02em] text-foreground leading-none">Open action items</h1>
+          <h1 className="text-display text-foreground">Open action items</h1>
           <p className="text-xs text-muted-foreground mt-0.5">
             Coaches log items in <span className="text-foreground">/calls</span>; staff can add ad-hoc ones here anytime.
           </p>
         </div>
         <div className="flex gap-2 items-center">
           <div className="text-[11px] text-muted-foreground">
-            {counts.open} open <span className="mx-1">·</span> <span className="text-red-400">{counts.overdue} overdue</span>
+            {counts.open} open <span className="mx-1">·</span> <span className="text-danger-fg">{counts.overdue} overdue</span>
           </div>
           {isStaff && (
             <button
               onClick={() => setAddOpen(true)}
-              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-sm bg-blue-500 hover:bg-blue-400 text-blue-950 text-xs font-medium"
+              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-sm bg-muted hover:bg-muted text-muted-foreground text-xs font-medium"
             >
               <Plus className="h-3.5 w-3.5" /> Add ad-hoc item
             </button>
@@ -218,7 +218,7 @@ function ActionItemsHub() {
             onClick={() => setFilt(k)}
             className={`text-[10px] px-2.5 py-1 rounded-sm border transition ${
               filt === k
-                ? k === "overdue" ? "text-red-400 border-red-500/30 bg-red-500/10"
+                ? k === "overdue" ? "text-danger-fg border-danger/25 bg-danger-bg"
                 : "text-foreground border-[#2a3140] bg-[var(--accent)]"
                 : "text-muted-foreground border-[var(--border)] hover:border-[#2a3140]"
             }`}
@@ -271,7 +271,7 @@ function ActionItemsHub() {
               />
               <div className="min-w-0">
                 <div className={`text-xs flex items-center gap-1.5 ${r.done ? "line-through text-muted-foreground" : ""}`}>
-                  {r.source === "adhoc" && <Sparkles className="h-3 w-3 text-blue-400 shrink-0" />}
+                  {r.source === "adhoc" && <Sparkles className="h-3 w-3 text-muted-foreground shrink-0" />}
                   <span className="truncate">{r.text || <span className="italic text-muted-foreground">(no text)</span>}</span>
                 </div>
                 <div className="text-[10px] text-muted-foreground">
@@ -279,18 +279,18 @@ function ActionItemsHub() {
                   {r.done ? " · ticked" : ""}
                 </div>
               </div>
-              <Link to="/students/$id" params={{ id: r.studentId }} className="text-xs truncate hover:text-green-400 flex items-center gap-1">
+              <Link to="/students/$id" params={{ id: r.studentId }} className="text-xs truncate hover:text-success-fg flex items-center gap-1">
                 <User className="h-3 w-3 text-muted-foreground" /> {r.studentName}
               </Link>
               <span className="text-xs text-muted-foreground truncate" title={r.ownerLabel}>{r.ownerName}</span>
-              <span className={`text-[11px] text-right ${overdue ? "text-red-400" : r.due ? "text-muted-foreground" : "text-[#2a3140]"}`}>
+              <span className={`text-[11px] text-right ${overdue ? "text-danger-fg" : r.due ? "text-muted-foreground" : "text-[#2a3140]"}`}>
                 {r.due ? (overdue ? <span className="inline-flex items-center gap-1"><AlertTriangle className="h-3 w-3" />{r.due}</span> : r.due) : "—"}
               </span>
               <span className="flex justify-end">
                 {r.canDelete && r.adhocId && (
                   <button
                     onClick={() => deleteAdhoc(r.adhocId!)}
-                    className="p-1 rounded text-muted-foreground hover:text-red-400 hover:bg-red-500/10"
+                    className="p-1 rounded text-muted-foreground hover:text-danger-fg hover:bg-danger-bg"
                     title="Delete"
                   >
                     <Trash2 className="h-3 w-3" />
@@ -312,7 +312,7 @@ function ActionItemsHub() {
               <select
                 value={newStudent}
                 onChange={e => setNewStudent(e.target.value)}
-                className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-blue-500/40"
+                className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border"
               >
                 <option value="">— Select student —</option>
                 {studentList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -325,7 +325,7 @@ function ActionItemsHub() {
                 onChange={e => setNewText(e.target.value)}
                 rows={3}
                 placeholder="e.g. Send updated resume by Friday"
-                className="w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-sm resize-none focus:outline-none focus:border-blue-500/40"
+                className="w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-sm resize-none focus:outline-none focus:border-border"
               />
             </div>
             <div className="space-y-1">
@@ -334,7 +334,7 @@ function ActionItemsHub() {
                 type="date"
                 value={newDue}
                 onChange={e => setNewDue(e.target.value)}
-                className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-blue-500/40"
+                className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border"
               />
             </div>
             <div className="flex justify-end gap-2 pt-1">
@@ -342,7 +342,7 @@ function ActionItemsHub() {
               <button
                 onClick={submitAdhoc}
                 disabled={saving || !newStudent || !newText.trim()}
-                className="h-8 px-3 rounded-sm bg-blue-500 hover:bg-blue-400 text-blue-950 text-xs font-medium disabled:opacity-40"
+                className="h-8 px-3 rounded-sm bg-muted hover:bg-muted text-muted-foreground text-xs font-medium disabled:opacity-40"
               >
                 {saving ? "Saving…" : "Add item"}
               </button>

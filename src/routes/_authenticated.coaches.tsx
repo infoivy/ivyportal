@@ -72,7 +72,7 @@ function CoachesPage() {
           <div className="flex items-center gap-2 text-[10px] text-sky-400 mb-1">
             <Users className="h-3 w-3" /> Coach capacity
           </div>
-          <h1 className="text-[32px] font-bold tracking-[-0.02em] text-foreground leading-none">Coaches</h1>
+          <h1 className="text-display text-foreground">Coaches</h1>
           <p className="text-xs text-muted-foreground mt-0.5">
             Use when assigning new students. Lower load + high rating = green light.
           </p>

@@ -153,7 +153,7 @@ function AdminConsole() {
     <div className="p-4 sm:p-6 max-w-[1400px] mx-auto space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--border)] pb-4">
         <div>
-          <h1 className="text-[32px] font-bold tracking-[-0.02em] text-foreground leading-none">Admin</h1>
+          <h1 className="text-display text-foreground">Admin</h1>
           <p className="text-[13px] text-muted-foreground mt-0.5">Team health & administration</p>
         </div>
         <div className="inline-flex rounded-lg bg-muted p-[3px]">

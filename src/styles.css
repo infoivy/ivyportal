@@ -156,19 +156,6 @@
   /* Functional highlight (search matches) */
   --highlight: rgba(250, 204, 21, 0.45);
 
-  /* DEPRECATED — legacy training tab palette, aliased to neutral until
-     sections.tsx / sops references are removed. Do not use in new code. */
-  --tab-stages:   var(--muted-foreground);
-  --tab-inbound:  var(--muted-foreground);
-  --tab-outbound: var(--muted-foreground);
-  --tab-story:    var(--muted-foreground);
-  --tab-conv:     var(--muted-foreground);
-  --tab-dmclose:  var(--muted-foreground);
-  --tab-followup: var(--muted-foreground);
-  --tab-psych:    var(--muted-foreground);
-  --tab-engage:   var(--muted-foreground);
-  --tab-pacing:   var(--muted-foreground);
-
   /* Motion */
   --duration-fast: 150ms;
   --duration-base: 200ms;

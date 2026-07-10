@@ -78,7 +78,7 @@ function KnowledgeIndex() {
             <BookOpen className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-[32px] font-bold tracking-[-0.02em] text-foreground leading-none">Knowledge Hub</h1>
+            <h1 className="text-display text-foreground">Knowledge Hub</h1>
             <p className="text-[13px] text-muted-foreground">SOPs, playbooks, and policies for the team.</p>
           </div>
         </div>
