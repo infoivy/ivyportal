@@ -1,8 +1,6 @@
 
--- Grant founder to Sair (Abdulrahman)
-INSERT INTO public.user_roles (user_id, role)
-VALUES ('05d77fa6-63e7-47f7-bc72-14331a403257', 'founder')
-ON CONFLICT (user_id, role) DO NOTHING;
+-- Founder access is assigned by an administrator after signup. Do not seed a
+-- historical user ID here: a fresh Supabase project has no matching auth user.
 
 -- Enums
 CREATE TYPE public.content_platform AS ENUM ('instagram','tiktok','youtube','twitter','linkedin','threads','other');

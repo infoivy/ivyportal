@@ -2,7 +2,6 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import isaLogo from "@/assets/isa-logo.png.asset.json";
 
 const SESSION_ONLY_KEY = "isaportal_session_only";
@@ -70,8 +69,11 @@ export function AuthPage() {
 
   const handleGoogle = async () => {
     applyRememberChoice();
-    const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
-    if (result.error) toast.error(result.error.message || "Google sign-in failed");
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: window.location.origin },
+    });
+    if (error) toast.error(error.message || "Google sign-in failed");
   };
 
   return (

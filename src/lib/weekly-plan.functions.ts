@@ -138,7 +138,7 @@ export const ensureWeekProvisioned = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-/** Generate 10 content ideas for the week using Lovable AI Gateway. Fills empty positions. */
+/** Generate 10 content ideas through a configurable OpenAI-compatible API. Fills empty positions. */
 export const generateWeekIdeas = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { weekStart: string; brandContext?: string; overwrite?: boolean }) => {
@@ -151,8 +151,12 @@ export const generateWeekIdeas = createServerFn({ method: "POST" })
   })
   .handler(async ({ context, data }) => {
     await requireFounderOrAdmin(context);
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("Lovable AI key not configured");
+    const apiBaseUrl = process.env.AI_API_BASE_URL;
+    const apiKey = process.env.AI_API_KEY;
+    const model = process.env.AI_MODEL;
+    if (!apiBaseUrl || !apiKey || !model) {
+      throw new Error("AI ideation is not configured. Set AI_API_BASE_URL, AI_API_KEY, and AI_MODEL in the server environment.");
+    }
 
     const systemPrompt = `You are a content strategist generating a week's short-form video ideation pad.
 Return exactly 10 ideas as a JSON array. Ideas 1-5 are Middle of Funnel (MOF): social proof, breakdowns, results, deeper value, CTAs — for warm followers who already know the creator.
@@ -162,11 +166,11 @@ Return ONLY the JSON array, no markdown fences, no prose.`;
 
     const userPrompt = `Brand / niche context:\n${data.brandContext || "(no context provided — assume a business coach / info-product creator)"}\n\nGenerate 10 ideas for the week starting ${data.weekStart}.`;
 
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const res = await fetch(`${apiBaseUrl.replace(/\/$/, "")}/chat/completions`, {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
@@ -176,8 +180,8 @@ Return ONLY the JSON array, no markdown fences, no prose.`;
     if (!res.ok) {
       const t = await res.text();
       if (res.status === 429) throw new Error("AI rate limit hit — try again in a minute");
-      if (res.status === 402) throw new Error("AI credits exhausted — top up in Lovable settings");
-      throw new Error(`AI gateway ${res.status}: ${t.slice(0, 200)}`);
+      if (res.status === 402) throw new Error("AI provider credits are exhausted");
+      throw new Error(`AI provider ${res.status}: ${t.slice(0, 200)}`);
     }
     const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
     const raw = json.choices?.[0]?.message?.content ?? "";
