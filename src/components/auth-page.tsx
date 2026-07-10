@@ -1,9 +1,9 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
+import isaLogo from "@/assets/isa-logo.png.asset.json";
 
 const SESSION_ONLY_KEY = "isaportal_session_only";
 
@@ -81,8 +81,8 @@ export function AuthPage() {
 
       <div className="relative w-full max-w-md">
         <div className="flex items-center gap-2 mb-6 justify-center">
-          <div className="grid h-9 w-9 place-items-center rounded-md bg-emerald-500/10 border border-emerald-500/40">
-            <Zap className="h-4 w-4 text-emerald-400" />
+          <div className="h-9 w-9 flex items-center justify-center">
+            <img src={isaLogo.url} alt="ISA" className="h-7 w-7 object-contain" />
           </div>
           <div>
             <div className="text-xs font-bold tracking-[0.2em] uppercase text-foreground">ISA Portal</div>
