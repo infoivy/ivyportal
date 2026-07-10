@@ -18,6 +18,7 @@ import { RangePicker, type DateRange, rangeFor, daysBetween } from "@/components
 import { StatDrilldown, type MetricKey } from "@/components/stat-drilldown";
 import { DashboardSettingsSheet } from "@/components/dashboard-settings-sheet";
 import { useDashboardPrefs } from "@/lib/dashboard-prefs";
+import { VolumeAreaChart, VolumeLegend } from "@/components/ui/volume-area-chart";
 import { OnboardingPanel } from "@/components/onboarding-panel";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -268,29 +269,30 @@ function Dashboard() {
           <div className={`grid gap-3 ${hasPrev ? "lg:grid-cols-[1.2fr_1fr_1fr]" : "lg:grid-cols-[1.5fr_1fr]"}`}>
             {prefs.showGrowth && (
               <Panel>
-                <PanelHead title="Growth Trend" subtitle={rangeLabel} legend={[
-                  { color: "#22c55e", label: "Booked" },
-                  { color: "#3b82f6", label: "DMs" },
-                  { color: "#f59e0b", label: "Convos" },
-                ]} />
-                <div className="h-[220px] mt-1">
-                  {loading ? <Skeleton /> : (
-                    <ResponsiveContainer>
-                      <LineChart data={trend} margin={{ top: 5, right: 10, left: -18, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.06)" vertical={false} />
-                        <XAxis dataKey="label" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
-                        <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
-                        <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 4, fontSize: 11 }} />
-                        <Line type="monotone" dataKey="dms"    stroke="#9CA3AF" strokeWidth={1.5} dot={false} />
-                        <Line type="monotone" dataKey="convos" stroke="#3B82F6" strokeWidth={1.5} dot={false} />
-                        <Line type="monotone" dataKey="booked" stroke="#22C55E" strokeWidth={2}   dot={false} />
-
-                      </LineChart>
-                    </ResponsiveContainer>
-                  )}
+                <div className="mb-2">
+                  <div className="text-[15px] font-semibold text-foreground">Volume trend</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">DMs, convos &amp; booked · {rangeLabel}</div>
                 </div>
+                {loading ? <div className="h-[240px]"><Skeleton /></div> : (
+                  <>
+                    <VolumeAreaChart
+                      data={trend}
+                      series={[
+                        { key: "dms",    label: "DMs",    color: "#9CA3AF" },
+                        { key: "convos", label: "Convos", color: "#3B82F6" },
+                        { key: "booked", label: "Booked", color: "#22C55E", strokeWidth: 2 },
+                      ]}
+                    />
+                    <VolumeLegend series={[
+                      { key: "dms",    label: "DMs",    color: "#9CA3AF" },
+                      { key: "convos", label: "Convos", color: "#3B82F6" },
+                      { key: "booked", label: "Booked", color: "#22C55E" },
+                    ]} />
+                  </>
+                )}
               </Panel>
             )}
+
 
             {prefs.showFunnel && (
               <Panel>
