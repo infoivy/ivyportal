@@ -332,8 +332,8 @@ function Dashboard() {
           </div>
         )}
 
-        {prefs.showCashLeaderboard && (roles.includes("admin") || roles.includes("closer") || roles.includes("coach")) && (
-          <CashLeaderboard compact />
+        {(prefs.showCashLeaderboard || prefs.showTopSetters || prefs.showWeeklyLeaderboard) && (
+          <UnifiedLeaderboard profiles={profiles} eods={eods} />
         )}
 
         {/* Row 3: Top Setters + Goals + Audience */}
