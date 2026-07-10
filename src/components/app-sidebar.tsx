@@ -2,7 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, FileText, BookOpen, Calendar, GraduationCap,
   BarChart3, Database, Users, StickyNote, Shield, UserCircle, School, HeartHandshake, Phone, DollarSign,
-  ListChecks, Trophy, TrendingUp, Quote, Sparkles,
+  ListChecks, Trophy, TrendingUp, Quote, Sparkles, Building2,
 } from "lucide-react";
 
 
@@ -17,6 +17,7 @@ type Item = { title: string; url: string; icon: React.ComponentType<{ className?
 
 const workItems: Item[] = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Sales HQ", url: "/sales-hq", icon: Building2, roles: ["admin", "closer"] },
   { title: "EOD Reports", url: "/eods", icon: FileText },
   { title: "Action Items", url: "/action-items", icon: ListChecks },
   { title: "Notes", url: "/notes", icon: StickyNote },

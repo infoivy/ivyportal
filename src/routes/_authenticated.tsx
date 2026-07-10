@@ -68,7 +68,7 @@ function AuthedLayout() {
           navigate({ to: "/student-portal", replace: true });
         } else if (!rolesArr.includes("admin") && !rolesArr.includes("founder")) {
           if (rolesArr.includes("setter")) navigate({ to: "/eods", replace: true });
-          else if (rolesArr.includes("closer")) navigate({ to: "/revenue", replace: true });
+          else if (rolesArr.includes("closer")) navigate({ to: "/sales-hq", replace: true });
           else if (rolesArr.includes("csm")) navigate({ to: "/csm", replace: true });
           else if (rolesArr.includes("coach")) navigate({ to: "/calls", replace: true });
         }
