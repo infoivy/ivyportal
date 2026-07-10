@@ -422,7 +422,13 @@ function EODsPage() {
 
         {canViewTeam && (
           <TabsContent value="grid">
-            <EodGrid eods={teamEods} days={14} />
+            <ComplianceMatrix eods={teamEods} roster={teamRoster} />
+          </TabsContent>
+        )}
+
+        {canViewTeam && (
+          <TabsContent value="graphs">
+            <ComplianceGraphs eods={teamEods} roster={teamRoster} />
           </TabsContent>
         )}
 
