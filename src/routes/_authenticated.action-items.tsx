@@ -7,6 +7,12 @@ import { listTeamMembers } from "@/lib/team-admin.functions";
 import { toast } from "sonner";
 import { ListChecks, AlertTriangle, User, Filter, Plus, Trash2, Sparkles } from "lucide-react";
 import { DateField } from "@/components/ui/date-field";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/action-items")({
   head: () => ({ meta: [{ title: "Action Items — ISA Team" }] }),
@@ -55,7 +61,6 @@ function ActionItemsHub() {
   // Create form
   const [addOpen, setAddOpen] = useState(false);
   const [newTargets, setNewTargets] = useState<Set<string>>(new Set()); // "s:<studentId>" | "t:<userId>"
-  const [targetQuery, setTargetQuery] = useState("");
   const [newText, setNewText] = useState("");
   const [newDue, setNewDue] = useState("");
   const [saving, setSaving] = useState(false);
@@ -177,7 +182,7 @@ function ActionItemsHub() {
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success(rows.length === 1 ? "Action item added" : `Action item added for ${rows.length} people`);
-    setNewText(""); setNewDue(""); setNewTargets(new Set()); setTargetQuery(""); setAddOpen(false);
+    setNewText(""); setNewDue(""); setNewTargets(new Set()); setAddOpen(false);
     load();
   };
 
@@ -294,13 +299,11 @@ function ActionItemsHub() {
               className="grid grid-cols-[24px_minmax(0,1fr)_140px_120px_90px_28px] gap-2 items-center px-3 py-2.5 border-b border-[var(--accent)] last:border-0 hover:bg-[var(--muted)]"
               title={r.source === "call" ? "From 1:1 call — student ticks off in portal" : "Ad-hoc — staff or student can tick off"}
             >
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={r.done}
-                onChange={() => r.source === "adhoc" && toggleAdhoc(r)}
+                onCheckedChange={() => r.source === "adhoc" && toggleAdhoc(r)}
                 disabled={r.source === "call"}
                 aria-label={r.done ? "Done" : "Open"}
-                className={`h-4 w-4 accent-[var(--primary)] ${r.source === "call" ? "opacity-70 cursor-not-allowed" : "cursor-pointer"}`}
               />
               <div className="min-w-0">
                 <div className={`text-xs flex items-center gap-1.5 ${r.done ? "line-through text-muted-foreground" : ""}`}>
@@ -345,84 +348,79 @@ function ActionItemsHub() {
       ))}
 
       {/* Add ad-hoc modal */}
-      {addOpen && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setAddOpen(false)}>
-          <div className="w-full max-w-md bg-[var(--card)] border border-[var(--border)] rounded-sm p-4 space-y-3" onClick={e => e.stopPropagation()}>
-            <div className="text-sm font-semibold">Add ad-hoc action item</div>
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="text-[10px] text-muted-foreground">For</label>
-                <span className="text-[10px] text-muted-foreground">{newTargets.size} selected</span>
-              </div>
-              <input
-                value={targetQuery}
-                onChange={e => setTargetQuery(e.target.value)}
-                placeholder="Search students or team…"
-                className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border"
-              />
-              <div className="max-h-52 overflow-y-auto rounded-sm border border-[var(--border)] divide-y divide-border/60">
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add action item</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label className="text-caption text-muted-foreground">For</Label>
+              <span className="text-caption text-muted-foreground">{newTargets.size} selected</span>
+            </div>
+            <Command className="rounded-md border border-border">
+              <CommandInput placeholder="Search students or team…" />
+              <CommandList className="max-h-56">
+                <CommandEmpty>No one matches.</CommandEmpty>
                 {([
                   { label: "Students", items: studentList.map(s => ({ key: `s:${s.id}`, name: s.name })) },
                   { label: "Team members", items: teamList.map(m => ({ key: `t:${m.id}`, name: m.name })) },
-                ] as const).map(group => {
-                  const visible = group.items.filter(i => !targetQuery.trim() || i.name.toLowerCase().includes(targetQuery.trim().toLowerCase()));
-                  if (visible.length === 0) return null;
-                  const allOn = visible.every(i => newTargets.has(i.key));
-                  return (
-                    <div key={group.label}>
-                      <div className="flex items-center justify-between px-2 py-1.5 bg-[var(--muted)] sticky top-0">
-                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{group.label}</span>
+                ] as const).map(group => (
+                  <CommandGroup
+                    key={group.label}
+                    heading={
+                      <span className="flex items-center justify-between w-full">
+                        {group.label}
                         <button
                           type="button"
-                          onClick={() => setGroup(visible.map(i => i.key), !allOn)}
-                          className="text-[10px] text-primary hover:underline"
+                          onClick={() => {
+                            const keys = group.items.map(i => i.key);
+                            setGroup(keys, !keys.every(k => newTargets.has(k)));
+                          }}
+                          className="text-[10px] font-normal normal-case text-primary hover:underline"
                         >
-                          {allOn ? "Deselect all" : `All ${group.label.toLowerCase()}`}
+                          {group.items.every(i => newTargets.has(i.key)) ? "Deselect all" : `All ${group.label.toLowerCase()}`}
                         </button>
-                      </div>
-                      {visible.map(i => (
-                        <label key={i.key} className="flex items-center gap-2 px-2 py-1.5 text-xs cursor-pointer hover:bg-[var(--muted)]">
-                          <input
-                            type="checkbox"
-                            checked={newTargets.has(i.key)}
-                            onChange={() => toggleTarget(i.key)}
-                            className="h-3.5 w-3.5 accent-[var(--primary)]"
-                          />
-                          <span className="truncate">{i.name}</span>
-                        </label>
-                      ))}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] text-muted-foreground">Action item</label>
-              <textarea
-                value={newText}
-                onChange={e => setNewText(e.target.value)}
-                rows={3}
-                placeholder="e.g. Send updated resume by Friday"
-                className="w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-sm resize-none focus:outline-none focus:border-border"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] text-muted-foreground">Due date (optional)</label>
-              <DateField value={newDue} onChange={setNewDue} placeholder="No due date" />
-            </div>
-            <div className="flex justify-end gap-2 pt-1">
-              <button onClick={() => setAddOpen(false)} className="h-8 px-3 rounded-sm border border-[var(--border)] text-xs">Cancel</button>
-              <button
-                onClick={submitAdhoc}
-                disabled={saving || newTargets.size === 0 || !newText.trim()}
-                className="h-8 px-3 rounded-sm bg-muted hover:opacity-80 text-muted-foreground text-xs font-medium disabled:opacity-40"
-              >
-                {saving ? "Saving…" : "Add item"}
-              </button>
-            </div>
+                      </span>
+                    }
+                  >
+                    {group.items.map(i => (
+                      <CommandItem key={i.key} value={`${group.label} ${i.name}`} onSelect={() => toggleTarget(i.key)}>
+                        <Checkbox checked={newTargets.has(i.key)} className="mr-2 pointer-events-none" />
+                        <span className="truncate">{i.name}</span>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                ))}
+              </CommandList>
+            </Command>
           </div>
-        </div>
-      )}
+
+          <div className="space-y-1.5">
+            <Label className="text-caption text-muted-foreground">Action item</Label>
+            <Textarea
+              value={newText}
+              onChange={e => setNewText(e.target.value)}
+              rows={3}
+              placeholder="e.g. Send updated resume by Friday"
+              className="resize-none text-sm"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-caption text-muted-foreground">Due date (optional)</Label>
+            <DateField value={newDue} onChange={setNewDue} placeholder="No due date" />
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setAddOpen(false)}>Cancel</Button>
+            <Button size="sm" onClick={submitAdhoc} disabled={saving || newTargets.size === 0 || !newText.trim()}>
+              {saving ? "Saving…" : newTargets.size > 1 ? `Add for ${newTargets.size} people` : "Add item"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

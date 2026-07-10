@@ -15,6 +15,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/lib/auth-context";
 import { DateField } from "@/components/ui/date-field";
 import {
@@ -34,10 +35,45 @@ export const Route = createFileRoute("/_authenticated/calendar")({
   component: CalendarPage,
 });
 
-const HOUR_START = 7;   // 7am
-const HOUR_END = 22;    // 10pm
-const HOUR_ROWS = HOUR_END - HOUR_START;
+const DEFAULT_HOUR_START = 7; // 7am
+const DEFAULT_HOUR_END = 22;  // 10pm
 const ROW_PX = 44;
+
+/** Google Calendar descriptions arrive as HTML (Zoom invites etc.) — flatten to text. */
+function cleanDescription(html: string): string {
+  const withBreaks = html
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n")
+    .replace(/<\/li>/gi, "\n");
+  const text = typeof window !== "undefined"
+    ? new DOMParser().parseFromString(withBreaks, "text/html").body.textContent ?? ""
+    : withBreaks.replace(/<[^>]+>/g, "");
+  return text.replace(/[—–_-]{6,}/g, "").replace(/\n{3,}/g, "\n\n").trim();
+}
+
+const URL_RE = /(https?:\/\/[^\s<>"']+)/g;
+
+function Linkified({ text }: { text: string }) {
+  const parts = text.split(URL_RE);
+  return (
+    <>
+      {parts.map((part, i) =>
+        /^https?:\/\//.test(part) ? (
+          <a key={i} href={part} target="_blank" rel="noreferrer" className="text-primary hover:underline break-all">
+            {part}
+          </a>
+        ) : (
+          <span key={i}>{part}</span>
+        ),
+      )}
+    </>
+  );
+}
+
+function zoomLink(text: string): string | null {
+  const m = text.match(/https:\/\/[\w.-]*zoom\.us\/j\/[^\s<>"']+/);
+  return m ? m[0] : null;
+}
 
 /** Every IANA timezone the browser knows, with the region's common ones first. */
 function tzOptions(): { value: string; label: string }[] {
@@ -152,6 +188,22 @@ function CalendarPage() {
 
   const teamList = team.data ?? [];
   const visibleEvents = (events.data ?? []).filter((e) => !hiddenUsers.has(e.user_id));
+
+  // Grid window stretches to fit the week's events (default 7am–10pm)
+  const { hourStart, hourEnd } = useMemo(() => {
+    let start = DEFAULT_HOUR_START;
+    let end = DEFAULT_HOUR_END;
+    for (const e of visibleEvents) {
+      if (e.all_day) continue;
+      const s = toLocal(e.start);
+      const en = toLocal(e.end);
+      start = Math.min(start, s.getHours());
+      end = Math.max(end, en.getMinutes() > 0 ? en.getHours() + 1 : en.getHours());
+    }
+    return { hourStart: Math.max(0, start), hourEnd: Math.min(24, end) };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visibleEvents, tz]);
+  const hourRows = hourEnd - hourStart;
 
   const toggleUser = (uid: string) => {
     setHiddenUsers((prev) => {
@@ -292,13 +344,13 @@ function CalendarPage() {
 
             {/* hour rows */}
             <div className="relative">
-              {Array.from({ length: HOUR_ROWS }, (_, i) => (
+              {Array.from({ length: hourRows }, (_, i) => (
                 <div
                   key={i}
                   className="border-b border-border/40 pr-1 text-right text-[10px] text-muted-foreground"
                   style={{ height: ROW_PX }}
                 >
-                  <span className="pr-1">{formatHour(HOUR_START + i)}</span>
+                  <span className="pr-1">{formatHour(hourStart + i)}</span>
                 </div>
               ))}
             </div>
@@ -309,6 +361,8 @@ function CalendarPage() {
                 events={visibleEvents}
                 onSelect={setSelectedEvent}
                 toLocal={toLocal}
+                hourStart={hourStart}
+                hourRows={hourRows}
               />
             ))}
           </div>
@@ -381,7 +435,7 @@ function CalendarPage() {
               try {
                 const start = new Date(ev.start);
                 const durationMin = Math.max(15, Math.round((new Date(ev.end).getTime() - start.getTime()) / 60000));
-                await setReminderFn({ data: { prospect: ev.summary.replace(/^Set:\s*/i, ""), startISO: ev.start, durationMin, notes: ev.description ?? undefined, source: "claimed" } });
+                await setReminderFn({ data: { prospect: ev.summary.replace(/^Set:\s*/i, ""), startISO: ev.start, durationMin, notes: ev.description ? cleanDescription(ev.description) : undefined, source: "claimed" } });
                 toast.success("Set claimed — it's on your calendar with reminders 2d · 1d · 3h · 1h before.");
                 qc.invalidateQueries({ queryKey: ["cal", "sets"] });
                 setSelectedEvent(null);
@@ -428,14 +482,14 @@ function formatHour(h: number) {
   return `${hh}${suffix}`;
 }
 
-function DayColumn({ day, events, onSelect, toLocal }: { day: Date; events: TeamEvent[]; onSelect: (e: TeamEvent) => void; toLocal: (iso: string | Date) => Date }) {
+function DayColumn({ day, events, onSelect, toLocal, hourStart, hourRows }: { day: Date; events: TeamEvent[]; onSelect: (e: TeamEvent) => void; toLocal: (iso: string | Date) => Date; hourStart: number; hourRows: number }) {
   const dayEvents = events.filter((e) => isSameDay(toLocal(e.start), day) && !e.all_day);
   const allDay = events.filter((e) => isSameDay(toLocal(e.start), day) && e.all_day);
 
   return (
-    <div className="relative border-l border-border/60" style={{ height: HOUR_ROWS * ROW_PX }}>
+    <div className="relative border-l border-border/60" style={{ height: hourRows * ROW_PX }}>
       {/* hour grid lines */}
-      {Array.from({ length: HOUR_ROWS }, (_, i) => (
+      {Array.from({ length: hourRows }, (_, i) => (
         <div key={i} className="border-b border-border/40" style={{ height: ROW_PX }} />
       ))}
       {/* All-day chips at the top */}
@@ -475,9 +529,9 @@ function DayColumn({ day, events, onSelect, toLocal }: { day: Date; events: Team
           const cols = Math.max(1, ...overlapping.map((o) => o.lane + 1));
           const startMin = s.getHours() * 60 + s.getMinutes();
           const endMin = en.getHours() * 60 + en.getMinutes();
-          const top = ((startMin - HOUR_START * 60) / 60) * ROW_PX;
+          const top = ((startMin - hourStart * 60) / 60) * ROW_PX;
           const height = Math.max(20, ((endMin - startMin) / 60) * ROW_PX);
-          if (top + height < 0 || top > HOUR_ROWS * ROW_PX) return null;
+          if (top + height < 0 || top > hourRows * ROW_PX) return null;
           const compact = height < 36; // one line only — no clipped second line
           const widthPct = 100 / cols;
           return (
@@ -541,8 +595,19 @@ function EventModal({ e, onClose, canClaim, onClaim, toLocal }: {
           <div className="text-muted-foreground">
             {format(s, "EEE, MMM d · h:mm a")} – {format(en, "h:mm a")}
           </div>
-          {e.description && <p className="whitespace-pre-wrap text-sm">{e.description}</p>}
+          {e.description && (
+            <p className="whitespace-pre-wrap text-caption text-muted-foreground max-h-44 overflow-y-auto rounded-md bg-muted/40 p-2.5">
+              <Linkified text={cleanDescription(e.description)} />
+            </p>
+          )}
           <div className="flex flex-wrap gap-2 pt-2">
+            {e.description && zoomLink(cleanDescription(e.description)) && (
+              <Button asChild size="sm" variant="secondary">
+                <a href={zoomLink(cleanDescription(e.description))!} target="_blank" rel="noreferrer">
+                  <Video className="h-3.5 w-3.5 mr-1.5" /> Join Zoom
+                </a>
+              </Button>
+            )}
             {e.meet_link && (
               <Button asChild size="sm" variant="secondary">
                 <a href={e.meet_link} target="_blank" rel="noreferrer">
@@ -605,14 +670,14 @@ function SetReminderDialog({ onClose, onCreate }: {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="w-full max-w-md card-surface p-4 space-y-3" onClick={(e) => e.stopPropagation()}>
-        <div>
-          <div className="text-sm font-semibold">Log a set</div>
-          <p className="text-caption text-muted-foreground mt-0.5">
+    <Dialog open onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Log a set</DialogTitle>
+          <p className="text-caption text-muted-foreground">
             Creates the call on your Google Calendar with reminders 2 days, 1 day, 3 hours, and 1 hour before.
           </p>
-        </div>
+        </DialogHeader>
         <div className="space-y-1">
           <label className="text-[10px] text-muted-foreground">Prospect</label>
           <Input value={prospect} onChange={(e) => setProspect(e.target.value)} placeholder="e.g. Ahmed R." className="h-9 text-sm" />
@@ -635,12 +700,12 @@ function SetReminderDialog({ onClose, onCreate }: {
           <label className="text-[10px] text-muted-foreground">Notes (optional)</label>
           <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Objections, context…" className="h-9 text-sm" />
         </div>
-        <div className="flex justify-end gap-2 pt-1">
+        <DialogFooter>
           <Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
           <Button size="sm" onClick={submit} disabled={saving}>{saving ? "Creating…" : "Create reminder"}</Button>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
