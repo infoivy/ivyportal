@@ -24,7 +24,7 @@ export const Route = createFileRoute("/_authenticated/sales")({
   component: Sales,
 });
 
-type SetterProfile = { id: string; display_name: string; setter_type: "phone" | "dm" | null };
+type SetterProfile = { id: string; display_name: string; setter_type: "phone" | "dm" | "full_cycle" | null };
 type EODRow = { id: string; user_id: string; report_date: string; dials: number; leads_contacted: number; calls_booked: number };
 type TrendsRow = {
   id: string; user_id: string; report_date: string;
@@ -34,9 +34,10 @@ type TrendsRow = {
 
 const isoDate = (d: Date) => d.toISOString().slice(0, 10);
 
-function kpiHit(eod: EODRow, setterType: "phone" | "dm" | null) {
+function kpiHit(eod: EODRow, setterType: "phone" | "dm" | "full_cycle" | null) {
   if (setterType === "phone") return { primary: eod.dials >= 100, sets: eod.calls_booked >= 3 };
   if (setterType === "dm") return { primary: eod.leads_contacted >= 125, sets: eod.calls_booked >= 3 };
+  if (setterType === "full_cycle") return { primary: eod.dials >= 100 && eod.leads_contacted >= 50, sets: eod.calls_booked >= 3 };
   return { primary: false, sets: false };
 }
 
@@ -122,7 +123,7 @@ function OperationsTab() {
   const yesterdayByUser = useMemo(() => { const m = new Map<string, EODRow>(); yesterdayEods.forEach(e => m.set(e.user_id, e)); return m; }, [yesterdayEods]);
   const missedYesterday = useMemo(() => setters.filter(s => !yesterdayByUser.has(s.id)), [setters, yesterdayByUser]);
 
-  const updateSetterType = async (id: string, type: "phone" | "dm") => {
+  const updateSetterType = async (id: string, type: "phone" | "dm" | "full_cycle") => {
     const { error } = await (supabase as any).from("profiles").update({ setter_type: type }).eq("id", id);
     if (error) { toast.error(error.message); return; }
     setSetters(prev => prev.map(s => s.id === id ? { ...s, setter_type: type } : s));
@@ -197,18 +198,19 @@ function OperationsTab() {
                         <div className="text-[14px] font-medium">{s.display_name}</div>
                         {s.setter_type ? (
                           <div className="text-[12px] text-muted-foreground">
-                            {s.setter_type === "phone" ? "Phone · 100 dials" : "DM · 125 leads"}
+                            {s.setter_type === "phone" ? "Phone · 100 dials" : s.setter_type === "full_cycle" ? "Full cycle · 100 dials + 50 outreached" : "DM · 125 leads"}
                           </div>
                         ) : canEditSetterType ? (
                           <select
                             defaultValue=""
-                            onChange={e => { if (e.target.value) updateSetterType(s.id, e.target.value as "phone" | "dm"); }}
+                            onChange={e => { if (e.target.value) updateSetterType(s.id, e.target.value as "phone" | "dm" | "full_cycle"); }}
                             onClick={e => e.stopPropagation()}
                             className="text-[11px] h-5 px-1 rounded-md bg-warning-bg text-warning-fg cursor-pointer border-0"
                           >
                             <option value="" disabled>Set type…</option>
                             <option value="phone">Phone</option>
                             <option value="dm">DM</option>
+                            <option value="full_cycle">Full cycle</option>
                           </select>
                         ) : (
                           <div className="text-[12px] text-warning-fg">Type not set</div>
@@ -543,7 +545,7 @@ function ScorecardRow({ setter, eods, expanded, onToggle }: { setter: SetterProf
   const primaryRate = Math.round((primaryHits / totalDays) * 100);
   const setsRate = Math.round((setsHits / totalDays) * 100);
   const avgSets = (eods.reduce((s, e) => s + e.calls_booked, 0) / totalDays).toFixed(1);
-  const primaryKey = setter.setter_type === "phone" ? "dials" : "leads_contacted";
+  const primaryKey = setter.setter_type === "dm" ? "leads_contacted" : "dials";
   const avgPrimary = (eods.reduce((s, e) => s + (e as any)[primaryKey], 0) / totalDays).toFixed(0);
 
   return (
@@ -559,9 +561,9 @@ function ScorecardRow({ setter, eods, expanded, onToggle }: { setter: SetterProf
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <RatePill label={setter.setter_type === "phone" ? "Dials hit" : "Leads hit"} pct={primaryRate} />
+          <RatePill label={setter.setter_type === "phone" ? "Dials hit" : setter.setter_type === "full_cycle" ? "Cycle hit" : "Leads hit"} pct={primaryRate} />
           <RatePill label="Sets hit" pct={setsRate} />
-          <span className="text-[12px] text-muted-foreground hidden sm:block w-52 text-right tabular-nums shrink-0">avg {avgSets} sets/day · {avgPrimary} {setter.setter_type === "phone" ? "dials" : "leads"}/day</span>
+          <span className="text-[12px] text-muted-foreground hidden sm:block w-52 text-right tabular-nums shrink-0">avg {avgSets} sets/day · {avgPrimary} {setter.setter_type === "dm" ? "leads" : "dials"}/day</span>
           {expanded ? <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" /> : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />}
         </div>
       </button>

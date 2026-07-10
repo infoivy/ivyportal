@@ -34,15 +34,19 @@ type EOD = {
   wins: string | null; blockers: string | null; tomorrow_focus: string | null; summary: string | null;
 };
 
-type SetterType = "phone" | "dm" | null;
+type SetterType = "phone" | "dm" | "full_cycle" | null;
 type RosterEntry = { user_id: string; display_name: string; primary_role: string; setter_type: SetterType; joined_at: string };
 type GridEod = EOD & { display_name?: string; primary_role?: string; setter_type?: SetterType };
 
 // KPI defaults — plain numbers; adjust in Admin → Settings later
 const KPI = {
-  phone: { primary: { key: "dials" as const, label: "Dials", target: 100 }, sets: 3 },
-  dm:    { primary: { key: "leads_contacted" as const, label: "Leads contacted", target: 125 }, sets: 3 },
+  phone:      { primary: { key: "dials" as const, label: "Dials", target: 100 }, secondary: null, sets: 3 },
+  dm:         { primary: { key: "leads_contacted" as const, label: "Leads contacted", target: 125 }, secondary: null, sets: 3 },
+  // Full cycle does both: dials AND outreach must hit
+  full_cycle: { primary: { key: "dials" as const, label: "Dials", target: 100 }, secondary: { key: "leads_contacted" as const, label: "Outreached", target: 50 }, sets: 3 },
 };
+
+const SETTER_TYPE_LABEL: Record<string, string> = { phone: "Phone setter", dm: "DM setter", full_cycle: "Full cycle" };
 
 const emptyForm = {
   dms_sent: 0, convos_started: 0, calls_booked: 0, calls_scheduled: 0,
@@ -227,6 +231,7 @@ function EODsPage() {
 
   const kpi = mySetterType ? KPI[mySetterType] : null;
   const primaryVal = mySetterType === "dm" ? form.leads_contacted : form.dials;
+  // full_cycle primary = dials; its outreach bar reads form.leads_contacted directly
 
   const defaultTab = isFounder ? "overview" : (canViewTeam ? "overview" : "submit");
 
@@ -319,9 +324,10 @@ function EODsPage() {
               {isSetter && !mySetterType && (
                 <div className="rounded-sm border border-warning/25 bg-warning-bg p-3">
                   <div className="text-[11px] text-warning-fg mb-2">Pick your setter type — this drives your daily KPI.</div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     <Button size="sm" variant="outline" onClick={() => saveSetterType("phone")}>Phone setter</Button>
                     <Button size="sm" variant="outline" onClick={() => saveSetterType("dm")}>DM setter</Button>
+                    <Button size="sm" variant="outline" onClick={() => saveSetterType("full_cycle")}>Full cycle</Button>
                   </div>
                 </div>
               )}
@@ -329,11 +335,12 @@ function EODsPage() {
               {isSetter && kpi && (
                 <div className="rounded-sm border border-[var(--border)] bg-[var(--background)] p-3">
                   <div className="flex items-center justify-between mb-2">
-                    <div className="text-[11px] text-muted-foreground">Today's KPI ({mySetterType === "phone" ? "Phone setter" : "DM setter"})</div>
-                    <button className="text-[10px] text-muted-foreground hover:text-foreground underline" onClick={() => saveSetterType(mySetterType === "phone" ? "dm" : "phone")}>Switch type</button>
+                    <div className="text-[11px] text-muted-foreground">Today's KPI ({SETTER_TYPE_LABEL[mySetterType ?? ""] ?? "Setter"})</div>
+                    <button className="text-[10px] text-muted-foreground hover:text-foreground underline" onClick={() => saveSetterType(mySetterType === "phone" ? "dm" : mySetterType === "dm" ? "full_cycle" : "phone")}>Switch type</button>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className={`grid gap-3 ${kpi.secondary ? "grid-cols-3" : "grid-cols-2"}`}>
                     <KpiBar label={kpi.primary.label} value={primaryVal} target={kpi.primary.target} />
+                    {kpi.secondary && <KpiBar label={kpi.secondary.label} value={form.leads_contacted} target={kpi.secondary.target} />}
                     <KpiBar label="Calls booked (sets)" value={form.calls_booked} target={kpi.sets} />
                   </div>
                 </div>
@@ -343,10 +350,11 @@ function EODsPage() {
                 <div className="space-y-3">
                   <SectionLabel>Setting activity</SectionLabel>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {mySetterType === "dm" ? (
-                      <NumField label="Leads contacted" value={form.leads_contacted} onChange={setNum("leads_contacted")} />
-                    ) : (
+                    {(mySetterType === "phone" || mySetterType === "full_cycle" || !mySetterType) && (
                       <NumField label="Dials" value={form.dials} onChange={setNum("dials")} />
+                    )}
+                    {(mySetterType === "dm" || mySetterType === "full_cycle") && (
+                      <NumField label={mySetterType === "full_cycle" ? "Leads outreached" : "Leads contacted"} value={form.leads_contacted} onChange={setNum("leads_contacted")} />
                     )}
                     <NumField label="DMs sent" value={form.dms_sent} onChange={setNum("dms_sent")} />
                     <NumField label="Convos started" value={form.convos_started} onChange={setNum("convos_started")} />
@@ -456,8 +464,10 @@ function EODsPage() {
 function didHitKpi(e: EOD, st: SetterType): boolean {
   if (!st) return false;
   const cfg = KPI[st];
-  const primary = st === "dm" ? (e.leads_contacted ?? 0) : (e.dials ?? 0);
-  return primary >= cfg.primary.target && (e.calls_booked ?? 0) >= cfg.sets;
+  const primary = (e[cfg.primary.key] ?? 0) as number;
+  if (primary < cfg.primary.target) return false;
+  if (cfg.secondary && ((e[cfg.secondary.key] ?? 0) as number) < cfg.secondary.target) return false;
+  return (e.calls_booked ?? 0) >= cfg.sets;
 }
 
 function dayStatus(e: EOD | undefined, st: SetterType): "green" | "amber" | "red" {

@@ -18,7 +18,7 @@ export const Route = createFileRoute("/_authenticated/team")({
 });
 
 type AppRole = "admin" | "closer" | "setter" | "coach" | "csm" | "founder" | "student";
-type SetterType = "phone" | "dm" | null;
+type SetterType = "phone" | "dm" | "full_cycle" | null;
 type Member = {
   id: string;
   display_name: string | null;
@@ -212,7 +212,7 @@ function TeamPage() {
                 <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
                   {m.roles.includes("setter") && m.setter_type && (
                     <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm border border-success/25 bg-success-bg text-success-fg">
-                      {m.setter_type === "phone" ? "Phone setter" : "DM setter"}
+                      {m.setter_type === "phone" ? "Phone setter" : m.setter_type === "full_cycle" ? "Full cycle" : "DM setter"}
                     </span>
                   )}
                   {m.roles.length === 0 && (
@@ -406,6 +406,7 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
                 { key: null, label: "Not set" },
                 { key: "phone" as const, label: "Phone setter (100 dials + 3 sets/day)" },
                 { key: "dm" as const, label: "DM setter (125 contacted + 3 sets/day)" },
+                { key: "full_cycle" as const, label: "Full cycle (100 dials + 50 outreached + 3 sets/day)" },
               ]).map(opt => (
                 <button
                   key={String(opt.key)}
@@ -536,6 +537,7 @@ function InviteModal({ onClose, invitedBy }: { onClose: () => void; invitedBy: s
                     { key: null, label: "Not set" },
                     { key: "phone" as const, label: "Phone (100 dials)" },
                     { key: "dm" as const, label: "DM (125 leads)" },
+                    { key: "full_cycle" as const, label: "Full cycle (100 dials + 50 outreached)" },
                   ]).map(opt => (
                     <button
                       key={String(opt.key)} type="button"
