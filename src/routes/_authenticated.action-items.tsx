@@ -359,9 +359,9 @@ function ActionItemsHub() {
               <Label className="text-caption text-muted-foreground">For</Label>
               <span className="text-caption text-muted-foreground">{newTargets.size} selected</span>
             </div>
-            <Command className="rounded-md border border-border">
+            <Command className="rounded-md border border-border h-64 [&_[cmdk-item]]:py-1.5">
               <CommandInput placeholder="Search students or team…" />
-              <CommandList className="max-h-56">
+              <CommandList className="flex-1 max-h-none">
                 <CommandEmpty>No one matches.</CommandEmpty>
                 {([
                   { label: "Students", items: studentList.map(s => ({ key: `s:${s.id}`, name: s.name })) },
