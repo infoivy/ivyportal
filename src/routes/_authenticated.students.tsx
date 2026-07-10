@@ -35,22 +35,22 @@ type Student = {
 type Coach = { id: string; display_name: string | null };
 
 const PHASES: { key: Phase; label: string; color: string }[] = [
-  { key: "uncategorized", label: "Uncategorized", color: "text-slate-400 border-slate-500/30 bg-slate-500/5" },
-  { key: "onboarding", label: "Onboarding", color: "text-sky-400 border-sky-500/30 bg-sky-500/10" },
-  { key: "coaching_1on1", label: "1:1 Coaching", color: "text-blue-400 border-blue-500/30 bg-blue-500/10" },
-  { key: "training", label: "Training", color: "text-green-400 border-green-500/30 bg-green-500/10" },
-  { key: "graduated", label: "Graduated", color: "text-amber-400 border-amber-500/30 bg-amber-500/10" },
-  { key: "paused", label: "Paused", color: "text-zinc-400 border-zinc-500/30 bg-zinc-500/5" },
+  { key: "uncategorized", label: "Uncategorized", color: "text-muted-foreground border-border bg-slate-500/5" },
+  { key: "onboarding", label: "Onboarding", color: "text-muted-foreground border-border bg-muted" },
+  { key: "coaching_1on1", label: "1:1 Coaching", color: "text-muted-foreground border-border bg-muted" },
+  { key: "training", label: "Training", color: "text-success-fg border-success/25 bg-success-bg" },
+  { key: "graduated", label: "Graduated", color: "text-warning-fg border-warning/25 bg-warning-bg" },
+  { key: "paused", label: "Paused", color: "text-muted-foreground border-border bg-zinc-500/5" },
 ];
 const STATUSES: { key: Status; label: string; color: string }[] = [
-  { key: "active", label: "Active", color: "text-green-400 border-green-500/30 bg-green-500/10" },
-  { key: "inactive", label: "Inactive", color: "text-zinc-400 border-zinc-500/30 bg-zinc-500/5" },
-  { key: "ghosting", label: "Ghosting", color: "text-red-400 border-red-500/30 bg-red-500/10" },
+  { key: "active", label: "Active", color: "text-success-fg border-success/25 bg-success-bg" },
+  { key: "inactive", label: "Inactive", color: "text-muted-foreground border-border bg-zinc-500/5" },
+  { key: "ghosting", label: "Ghosting", color: "text-danger-fg border-danger/25 bg-danger-bg" },
 ];
 const PAYMENT_META: Record<PaymentState, { label: string; color: string }> = {
-  paid_in_full: { label: "Paid", color: "text-green-400 border-green-500/30 bg-green-500/10" },
-  installments: { label: "Installments", color: "text-sky-400 border-sky-500/30 bg-sky-500/10" },
-  behind: { label: "Behind", color: "text-red-400 border-red-500/30 bg-red-500/10" },
+  paid_in_full: { label: "Paid", color: "text-success-fg border-success/25 bg-success-bg" },
+  installments: { label: "Installments", color: "text-muted-foreground border-border bg-muted" },
+  behind: { label: "Behind", color: "text-danger-fg border-danger/25 bg-danger-bg" },
 };
 
 const phaseMeta = (p: Phase) => PHASES.find(x => x.key === p)!;
@@ -223,7 +223,7 @@ function StudentsLayout() {
               value={qRaw}
               onChange={e => setQ(e.target.value)}
               placeholder="Search name or email…"
-              className="h-8 pl-7 pr-3 rounded-sm border border-[var(--border)] bg-[var(--card)] text-xs w-56 focus:outline-none focus:border-green-500/40"
+              className="h-8 pl-7 pr-3 rounded-sm border border-[var(--border)] bg-[var(--card)] text-xs w-56 focus:outline-none focus:border-ring"
             />
           </div>
           <div className="flex items-center border border-[var(--border)] bg-[var(--card)] rounded-sm p-0.5">
@@ -233,7 +233,7 @@ function StudentsLayout() {
             <button onClick={() => setView("kanban")} className={`px-2 py-1 rounded-sm transition ${view === "kanban" ? "bg-[var(--accent)] text-foreground" : "text-muted-foreground"}`} title="Kanban">
               <LayoutGrid className="h-3.5 w-3.5" />
             </button>
-            <button onClick={() => setView("graduation")} className={`px-2 py-1 rounded-sm transition ${view === "graduation" ? "bg-[var(--accent)] text-amber-400" : "text-muted-foreground"}`} title="Graduation pipeline">
+            <button onClick={() => setView("graduation")} className={`px-2 py-1 rounded-sm transition ${view === "graduation" ? "bg-[var(--accent)] text-warning-fg" : "text-muted-foreground"}`} title="Graduation pipeline">
               <Trophy className="h-3.5 w-3.5" />
             </button>
           </div>
@@ -270,7 +270,7 @@ function StudentsLayout() {
           {canManage && (
             <button
               onClick={() => setAddOpen(true)}
-              className="flex items-center gap-1.5 h-8 px-3 rounded-sm bg-green-500 hover:bg-green-400 text-green-950 text-xs font-medium"
+              className="flex items-center gap-1.5 h-8 px-3 rounded-sm bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium"
             >
               <Plus className="h-3.5 w-3.5" /> Add student
             </button>
@@ -302,7 +302,7 @@ function StudentsLayout() {
         <button
           onClick={() => setPhaseFilter("at_risk")}
           className={`flex items-center gap-1 text-[13px] font-medium px-3 py-1.5 rounded-md motion-safe:transition-colors ${
-            phaseFilter === "at_risk" ? "bg-red-500/10 text-red-500 dark:text-red-400" : "bg-muted text-muted-foreground hover:text-foreground"
+            phaseFilter === "at_risk" ? "bg-danger-bg text-danger-fg dark:text-danger-fg" : "bg-muted text-muted-foreground hover:text-foreground"
           }`}
         >
           <AlertTriangle className="h-3.5 w-3.5" /> At risk · {atRiskCount}
@@ -354,16 +354,16 @@ function StudentsLayout() {
                   <tr key={s.id} className="border-b border-[var(--accent)] last:border-0 hover:bg-[var(--muted)] transition">
                     <td className="px-4 py-3 min-w-[220px]">
                       <Link to={"/students/$id" as any} params={{ id: s.id } as any} className="flex items-center gap-2 min-w-0">
-                        {info.risky && <AlertTriangle className="h-3 w-3 text-red-400 shrink-0" />}
+                        {info.risky && <AlertTriangle className="h-3 w-3 text-danger-fg shrink-0" />}
                         <div className="min-w-0">
                           <div className="text-sm font-medium truncate">{s.full_name}</div>
-                          <div className={`text-[10px] truncate flex items-center gap-1 ${s.email ? "text-muted-foreground" : "text-amber-400"}`}>
+                          <div className={`text-[10px] truncate flex items-center gap-1 ${s.email ? "text-muted-foreground" : "text-warning-fg"}`}>
                             {s.email ?? "⚠ No email — cannot auto-link login"}
                           </div>
                           {showReasons && info.reasons.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-1">
                               {info.reasons.map(r => (
-                                <span key={r} className="text-[11px] bg-red-500/10 text-red-500 dark:text-red-400 px-1.5 py-0.5 rounded-md">{r}</span>
+                                <span key={r} className="text-[11px] bg-danger-bg text-danger-fg dark:text-danger-fg px-1.5 py-0.5 rounded-md">{r}</span>
                               ))}
                             </div>
                           )}
@@ -372,7 +372,7 @@ function StudentsLayout() {
                     </td>
                     {visibleCols.has("grade") && (
                       <td className="px-2 py-3">
-                        <span className={`text-[11px] px-1.5 py-0.5 rounded-md ${s.student_grade ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" : "bg-muted text-muted-foreground"}`}>
+                        <span className={`text-[11px] px-1.5 py-0.5 rounded-md ${s.student_grade ? "bg-warning-bg text-warning-fg" : "bg-muted text-muted-foreground"}`}>
                           {s.student_grade ?? "—"}
                         </span>
                       </td>
@@ -419,17 +419,17 @@ function StudentsLayout() {
                       </td>
                     )}
                     {visibleCols.has("calls_remaining") && (
-                      <td className={`px-2 py-3 text-right text-xs ${remaining === 0 ? "text-red-400" : "text-foreground"}`}>
+                      <td className={`px-2 py-3 text-right text-xs ${remaining === 0 ? "text-danger-fg" : "text-foreground"}`}>
                         {remaining}<span className="text-muted-foreground">/{s.calls_allotted}</span>
                       </td>
                     )}
                     {visibleCols.has("last_call") && (
-                      <td className={`px-2 py-3 text-right text-[10px] ${last && daysSince(last) > 14 ? "text-red-400" : "text-muted-foreground"}`}>
+                      <td className={`px-2 py-3 text-right text-[10px] ${last && daysSince(last) > 14 ? "text-danger-fg" : "text-muted-foreground"}`}>
                         {last ? `${daysSince(last)}d` : "—"}
                       </td>
                     )}
                     {visibleCols.has("last_eod") && (
-                      <td className={`px-2 py-3 text-right text-[10px] ${lastEod && daysSince(lastEod) >= 5 ? "text-red-400" : "text-muted-foreground"}`}>
+                      <td className={`px-2 py-3 text-right text-[10px] ${lastEod && daysSince(lastEod) >= 5 ? "text-danger-fg" : "text-muted-foreground"}`}>
                         {lastEod ? `${daysSince(lastEod)}d` : "—"}
                       </td>
                     )}
@@ -440,7 +440,7 @@ function StudentsLayout() {
                             defaultValue={s.next_action ?? ""}
                             onBlur={e => { if (e.target.value !== (s.next_action ?? "")) updateStudent(s.id, { next_action: e.target.value.trim() || null }); }}
                             placeholder="—"
-                            className="w-full h-7 px-2 rounded-sm border border-transparent hover:border-[var(--border)] focus:border-green-500/40 bg-transparent text-xs focus:outline-none"
+                            className="w-full h-7 px-2 rounded-sm border border-transparent hover:border-[var(--border)] focus:border-ring bg-transparent text-xs focus:outline-none"
                           />
                         ) : (
                           <span className="text-xs text-muted-foreground">{s.next_action ?? "—"}</span>
@@ -450,8 +450,8 @@ function StudentsLayout() {
                     {visibleCols.has("badges") && (
                       <td className="px-2 py-3">
                         <div className="flex gap-1">
-                          <span title="Testimonial" className={s.testimonial_collected ? "text-amber-400" : "text-[#2a3140]"}><Award className="h-3.5 w-3.5" /></span>
-                          <span title="Trustpilot" className={s.trustpilot_collected ? "text-green-400" : "text-[#2a3140]"}><MessageSquare className="h-3.5 w-3.5" /></span>
+                          <span title="Testimonial" className={s.testimonial_collected ? "text-warning-fg" : "text-[#2a3140]"}><Award className="h-3.5 w-3.5" /></span>
+                          <span title="Trustpilot" className={s.trustpilot_collected ? "text-success-fg" : "text-[#2a3140]"}><MessageSquare className="h-3.5 w-3.5" /></span>
                         </div>
                       </td>
                     )}
@@ -461,7 +461,7 @@ function StudentsLayout() {
                           <ChevronRight className="h-3.5 w-3.5" />
                         </Link>
                         {canManage && roles.includes("admin") && (
-                          <button onClick={() => deleteStudent(s.id)} className="p-1 rounded hover:bg-red-500/10 text-muted-foreground hover:text-red-400" title="Delete student">
+                          <button onClick={() => deleteStudent(s.id)} className="p-1 rounded hover:bg-danger-bg text-muted-foreground hover:text-danger-fg" title="Delete student">
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         )}
@@ -528,15 +528,15 @@ function StudentsLayout() {
 
 function GraduationKanban({ students }: { students: Student[] }) {
   const stages = [
-    { key: "first_win", label: "1. First win pending", color: "text-slate-300 border-slate-500/30 bg-slate-500/5",
+    { key: "first_win", label: "1. First win pending", color: "text-muted-foreground border-border bg-slate-500/5",
       match: (s: Student) => !s.first_win_at },
-    { key: "offer", label: "2. Offer landing", color: "text-sky-400 border-sky-500/30 bg-sky-500/10",
+    { key: "offer", label: "2. Offer landing", color: "text-muted-foreground border-border bg-muted",
       match: (s: Student) => !!s.first_win_at && !s.offer_landed_at },
-    { key: "testimonial", label: "3. Testimonial pending", color: "text-blue-400 border-blue-500/30 bg-blue-500/10",
+    { key: "testimonial", label: "3. Testimonial pending", color: "text-muted-foreground border-border bg-muted",
       match: (s: Student) => !!s.offer_landed_at && !s.testimonial_collected },
-    { key: "trustpilot", label: "4. Trustpilot pending", color: "text-amber-400 border-amber-500/30 bg-amber-500/10",
+    { key: "trustpilot", label: "4. Trustpilot pending", color: "text-warning-fg border-warning/25 bg-warning-bg",
       match: (s: Student) => !!s.testimonial_collected && !s.trustpilot_collected },
-    { key: "complete", label: "🏆 Complete", color: "text-green-400 border-green-500/30 bg-green-500/10",
+    { key: "complete", label: "🏆 Complete", color: "text-success-fg border-success/25 bg-success-bg",
       match: (s: Student) => !!s.testimonial_collected && !!s.trustpilot_collected },
   ];
   const active = students.filter(s => s.status === "active" || (!!s.testimonial_collected && !!s.trustpilot_collected));
@@ -556,10 +556,10 @@ function GraduationKanban({ students }: { students: Student[] }) {
                   className="block p-2 rounded-sm bg-[var(--muted)] border border-[var(--border)] hover:border-[#2a3140]">
                   <div className="text-xs font-medium truncate">{s.full_name}</div>
                   <div className="flex items-center gap-1 mt-1">
-                    {s.first_win_at && <span title="First win" className="text-amber-400 text-[10px]">★</span>}
-                    {s.offer_landed_at && <span title="Offer landed" className="text-sky-400"><Trophy className="h-3 w-3" /></span>}
-                    {s.testimonial_collected && <span title="Testimonial"><Award className="h-3 w-3 text-blue-400" /></span>}
-                    {s.trustpilot_collected && <span title="Trustpilot"><MessageSquare className="h-3 w-3 text-green-400" /></span>}
+                    {s.first_win_at && <span title="First win" className="text-warning-fg text-[10px]">★</span>}
+                    {s.offer_landed_at && <span title="Offer landed" className="text-muted-foreground"><Trophy className="h-3 w-3" /></span>}
+                    {s.testimonial_collected && <span title="Testimonial"><Award className="h-3 w-3 text-muted-foreground" /></span>}
+                    {s.trustpilot_collected && <span title="Trustpilot"><MessageSquare className="h-3 w-3 text-success-fg" /></span>}
                   </div>
                 </Link>
               ))}
@@ -579,10 +579,10 @@ function StudentCard({ s, canDrag, coachName, atRisk }: { s: Student; canDrag: b
       params={{ id: s.id } as any}
       draggable={canDrag}
       onDragStart={e => e.dataTransfer.setData("text/plain", s.id)}
-      className={`block p-2 rounded-sm bg-[var(--muted)] border transition cursor-pointer ${atRisk ? "border-red-500/30 hover:border-red-500/60" : "border-[var(--border)] hover:border-[#2a3140]"}`}
+      className={`block p-2 rounded-sm bg-[var(--muted)] border transition cursor-pointer ${atRisk ? "border-danger/25 hover:border-danger/25" : "border-[var(--border)] hover:border-[#2a3140]"}`}
     >
       <div className="flex items-center gap-1.5">
-        {atRisk && <AlertTriangle className="h-3 w-3 text-red-400 shrink-0" />}
+        {atRisk && <AlertTriangle className="h-3 w-3 text-danger-fg shrink-0" />}
         <div className="text-xs font-medium truncate flex-1">{s.full_name}</div>
       </div>
       <div className="flex items-center justify-between mt-1">
@@ -847,7 +847,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
             <button
               type="button"
               onClick={() => setPkg("one_on_one")}
-              className={`text-left p-3 rounded-sm border transition ${pkg === "one_on_one" ? "border-blue-500/50 bg-blue-500/10" : "border-[var(--border)] hover:border-[#2a3140]"}`}
+              className={`text-left p-3 rounded-sm border transition ${pkg === "one_on_one" ? "border-border bg-muted" : "border-[var(--border)] hover:border-[#2a3140]"}`}
             >
               <div className="text-xs font-medium">1:1 Pathway</div>
               <div className="text-[10px] text-muted-foreground mt-0.5">Up to 10 coaching calls (2/week × 5 weeks) + group access</div>
@@ -855,7 +855,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
             <button
               type="button"
               onClick={() => setPkg("group_only")}
-              className={`text-left p-3 rounded-sm border transition ${pkg === "group_only" ? "border-sky-500/50 bg-sky-500/10" : "border-[var(--border)] hover:border-[#2a3140]"}`}
+              className={`text-left p-3 rounded-sm border transition ${pkg === "group_only" ? "border-border bg-muted" : "border-[var(--border)] hover:border-[#2a3140]"}`}
             >
               <div className="text-xs font-medium">Group Coaching Only</div>
               <div className="text-[10px] text-muted-foreground mt-0.5">Group calls only, no 1:1s</div>
@@ -871,7 +871,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
                 key={m}
                 type="button"
                 onClick={() => setPayMode(m)}
-                className={`p-2 rounded-sm border text-xs transition ${payMode === m ? "border-green-500/50 bg-green-500/10 text-green-300" : "border-[var(--border)] text-muted-foreground hover:border-[#2a3140]"}`}
+                className={`p-2 rounded-sm border text-xs transition ${payMode === m ? "border-success/25 bg-success-bg text-success-fg" : "border-[var(--border)] text-muted-foreground hover:border-[#2a3140]"}`}
               >
                 {m === "pif" ? "Paid in full" : m === "installments" ? "Installments" : "Skip for now"}
               </button>
@@ -909,12 +909,12 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
                     <button
                       type="button"
                       onClick={() => setScheduleMode("even")}
-                      className={`flex-1 p-2 rounded-sm border text-xs transition ${scheduleMode === "even" ? "border-sky-500/50 bg-sky-500/10 text-sky-300" : "border-[var(--border)] text-muted-foreground hover:border-[#2a3140]"}`}
+                      className={`flex-1 p-2 rounded-sm border text-xs transition ${scheduleMode === "even" ? "border-border bg-muted text-muted-foreground" : "border-[var(--border)] text-muted-foreground hover:border-[#2a3140]"}`}
                     >Split evenly</button>
                     <button
                       type="button"
                       onClick={() => setScheduleMode("custom")}
-                      className={`flex-1 p-2 rounded-sm border text-xs transition ${scheduleMode === "custom" ? "border-sky-500/50 bg-sky-500/10 text-sky-300" : "border-[var(--border)] text-muted-foreground hover:border-[#2a3140]"}`}
+                      className={`flex-1 p-2 rounded-sm border text-xs transition ${scheduleMode === "custom" ? "border-border bg-muted text-muted-foreground" : "border-[var(--border)] text-muted-foreground hover:border-[#2a3140]"}`}
                     >Custom schedule</button>
                   </div>
 
@@ -945,7 +945,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
                     <div className="col-span-2 space-y-2">
                       <div className="text-[13px] text-muted-foreground flex items-center justify-between">
                         <span>Scheduled payments</span>
-                        <button type="button" onClick={addCustomRow} className="text-[10px] text-green-400 hover:text-green-300">+ Add payment</button>
+                        <button type="button" onClick={addCustomRow} className="text-[10px] text-success-fg hover:text-success-fg">+ Add payment</button>
                       </div>
                       {customRows.map((r, i) => (
                         <div key={r.id} className="grid grid-cols-[24px_1fr_1.1fr_1fr_28px] gap-2 items-center">
@@ -953,10 +953,10 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
                           <input type="number" min="0" step="0.01" value={r.amount} onChange={e => updateCustomRow(r.id, { amount: e.target.value })} placeholder="Amount" className={inputCls} />
                           <input type="date" value={r.due_date} onChange={e => updateCustomRow(r.id, { due_date: e.target.value })} className={inputCls} />
                           <input value={r.payment_method} onChange={e => updateCustomRow(r.id, { payment_method: e.target.value })} placeholder="Method (optional)" className={inputCls} />
-                          <button type="button" onClick={() => removeCustomRow(r.id)} disabled={customRows.length === 1} className="text-muted-foreground hover:text-red-400 disabled:opacity-30"><X className="h-3.5 w-3.5" /></button>
+                          <button type="button" onClick={() => removeCustomRow(r.id)} disabled={customRows.length === 1} className="text-muted-foreground hover:text-danger-fg disabled:opacity-30"><X className="h-3.5 w-3.5" /></button>
                         </div>
                       ))}
-                      <div className={`text-[11px] rounded-sm p-2 border ${Math.abs(customDelta) < 0.01 ? "text-green-300 border-green-500/30 bg-green-500/5" : "text-amber-300 border-amber-500/30 bg-amber-500/5"}`}>
+                      <div className={`text-[11px] rounded-sm p-2 border ${Math.abs(customDelta) < 0.01 ? "text-success-fg border-success/25 bg-success-bg" : "text-warning-fg border-warning/25 bg-warning-bg"}`}>
                         Scheduled ${customTotal.toFixed(2)}{dep > 0 ? ` + $${dep.toFixed(2)} upfront` : ""} = ${(customTotal + dep).toFixed(2)} of ${tv.toFixed(2)}
                         {Math.abs(customDelta) >= 0.01 && (
                           <span className="ml-1">· {customDelta > 0 ? `$${customDelta.toFixed(2)} unallocated` : `$${Math.abs(customDelta).toFixed(2)} over total`}</span>
@@ -976,7 +976,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
 
         <div className="flex justify-end gap-2 pt-2 border-t border-[var(--border)]">
           <button onClick={onClose} className="text-xs text-muted-foreground hover:text-foreground px-3 py-1.5">Cancel</button>
-          <button onClick={submit} disabled={saving} className="text-xs bg-green-500 hover:bg-green-400 text-green-950 font-medium px-3 py-1.5 rounded-sm">
+          <button onClick={submit} disabled={saving} className="text-xs bg-primary hover:bg-primary/90 text-primary-foreground font-medium px-3 py-1.5 rounded-sm">
             {saving ? "Saving…" : "Add student"}
           </button>
         </div>
@@ -985,7 +985,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
   );
 }
 
-const inputCls = "w-full h-9 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs focus:outline-none focus:border-green-500/40";
+const inputCls = "w-full h-9 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs focus:outline-none focus:border-ring";
 
 function Field({ label, children, full }: { label: string; children: React.ReactNode; full?: boolean }) {
   return (

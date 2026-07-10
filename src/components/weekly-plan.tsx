@@ -322,7 +322,7 @@ function WeekBlock({
               const stageColor = meta.stage === "tof" ? "border-blue-500/30 bg-blue-500/5" : "border-green-500/30 bg-green-500/5";
               const stageBadge = meta.stage === "tof" ? "bg-blue-500/15 text-blue-300 border-blue-500/30" : "bg-green-500/15 text-green-300 border-green-500/30";
               return (
-                <div key={day} className={`border rounded-sm ${stageColor} ${isToday ? "ring-1 ring-blue-500/40" : ""}`}>
+                <div key={day} className={`border rounded-sm ${stageColor} ${isToday ? "ring-1 ring-ring" : ""}`}>
                   <div className="flex items-center gap-2 px-2.5 py-1.5 border-b border-white/5">
                     <span className="text-[10px] w-14 text-muted-foreground">{day} {format(addDays(monday, idx), "d")}</span>
                     <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-sm border ${stageBadge}`}>{meta.stage} · {meta.position}</span>

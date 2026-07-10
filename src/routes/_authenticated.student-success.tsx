@@ -222,14 +222,14 @@ function StudentSuccessInner() {
             {/* At-risk */}
             <section className="space-y-2">
               <h2 className="text-[13px] text-muted-foreground flex items-center gap-1.5">
-                <AlertTriangle className="h-3 w-3 text-red-400" /> At-risk students
+                <AlertTriangle className="h-3 w-3 text-danger-fg" /> At-risk students
               </h2>
               {atRisk.length === 0 ? (
-                <div className="flex items-center gap-2 text-xs text-green-400 border border-green-500/20 bg-green-500/5 rounded-sm px-4 py-3">
+                <div className="flex items-center gap-2 text-xs text-success-fg border border-success/25 bg-success-bg rounded-sm px-4 py-3">
                   <CheckCircle2 className="h-4 w-4" /> No at-risk students right now.
                 </div>
               ) : (
-                <div className="rounded-sm border border-red-500/20 bg-card overflow-hidden">
+                <div className="rounded-sm border border-danger/25 bg-card overflow-hidden">
                   {atRisk.map(s => {
                     const flags: string[] = [];
                     const recentCall = calls.find(c => c.student_id === s.id);
@@ -241,19 +241,19 @@ function StudentSuccessInner() {
                     return (
                       <div key={s.id} className="flex items-center justify-between gap-3 px-4 py-3 border-b border-accent last:border-0">
                         <div>
-                          <Link to="/students/$id" params={{ id: s.id }} className="text-sm font-medium hover:text-green-400 transition">
+                          <Link to="/students/$id" params={{ id: s.id }} className="text-sm font-medium hover:text-success-fg transition">
                             {s.full_name}
                           </Link>
                           <div className="flex gap-1.5 mt-0.5 flex-wrap">
                             {flags.map(f => (
-                              <span key={f} className="text-[10px] px-1.5 py-0.5 rounded-sm border border-red-500/30 bg-red-500/10 text-red-400">{f}</span>
+                              <span key={f} className="text-[10px] px-1.5 py-0.5 rounded-sm border border-danger/25 bg-danger-bg text-danger-fg">{f}</span>
                             ))}
                           </div>
                         </div>
                         <span className={`text-[12px] px-2 py-0.5 rounded-md border ${
-                          s.status === "ghosting" ? "border-red-500/30 bg-red-500/10 text-red-400"
-                          : s.status === "active" ? "border-green-500/30 bg-green-500/10 text-green-400"
-                          : "border-zinc-500/30 bg-zinc-500/5 text-zinc-400"
+                          s.status === "ghosting" ? "border-danger/25 bg-danger-bg text-danger-fg"
+                          : s.status === "active" ? "border-success/25 bg-success-bg text-success-fg"
+                          : "border-border bg-zinc-500/5 text-muted-foreground"
                         }`}>
                           {s.status}
                         </span>
@@ -267,7 +267,7 @@ function StudentSuccessInner() {
             {/* This week's calls */}
             <section className="space-y-2">
               <h2 className="text-[13px] text-muted-foreground flex items-center gap-1.5">
-                <Calendar className="h-3 w-3 text-blue-400" /> This week's 1:1s ({weekStart} – {weekEnd})
+                <Calendar className="h-3 w-3 text-muted-foreground" /> This week's 1:1s ({weekStart} – {weekEnd})
               </h2>
               {thisWeekCalls.length === 0 ? (
                 <div className="text-xs text-muted-foreground border border-dashed border-border rounded-sm p-4 text-center">
@@ -277,7 +277,7 @@ function StudentSuccessInner() {
                 <div className="rounded-sm border border-border bg-card overflow-hidden">
                   {thisWeekCalls.map(c => (
                     <div key={c.student_id + c.call_date} className="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-accent last:border-0">
-                      <Link to="/students/$id" params={{ id: c.student_id }} className="text-sm font-medium hover:text-green-400 transition">
+                      <Link to="/students/$id" params={{ id: c.student_id }} className="text-sm font-medium hover:text-success-fg transition">
                         {studentName(c.student_id)}
                       </Link>
                       <div className="flex items-center gap-2">
@@ -297,14 +297,14 @@ function StudentSuccessInner() {
           <TabsContent value="action-items" className="space-y-3">
             <h2 className="text-[13px] text-muted-foreground">Open action items by student</h2>
             {adhoc.length === 0 ? (
-              <div className="text-xs text-green-400 border border-green-500/20 bg-green-500/5 rounded-sm px-4 py-3 flex items-center gap-2">
+              <div className="text-xs text-success-fg border border-success/25 bg-success-bg rounded-sm px-4 py-3 flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4" /> All action items resolved.
               </div>
             ) : (
               Array.from(actionByStudent.entries()).map(([sid, items]) => (
                 <div key={sid} className="rounded-sm border border-border bg-card overflow-hidden">
                   <div className="px-4 py-2 border-b border-border bg-card">
-                    <Link to="/students/$id" params={{ id: sid }} className="text-xs font-semibold hover:text-green-400 transition">
+                    <Link to="/students/$id" params={{ id: sid }} className="text-xs font-semibold hover:text-success-fg transition">
                       {studentName(sid)}
                     </Link>
                   </div>
@@ -314,7 +314,7 @@ function StudentSuccessInner() {
                       <div className="flex-1 min-w-0">
                         <div className="text-xs">{item.text}</div>
                         {item.due_date && (
-                          <div className={`text-[10px] mt-0.5 ${item.due_date < today ? "text-red-400" : "text-muted-foreground"}`}>
+                          <div className={`text-[10px] mt-0.5 ${item.due_date < today ? "text-danger-fg" : "text-muted-foreground"}`}>
                             Due {item.due_date}
                           </div>
                         )}
@@ -331,21 +331,21 @@ function StudentSuccessInner() {
             <h2 className="text-[13px] text-muted-foreground">Pending testimonials</h2>
             <p className="text-xs text-muted-foreground">Students in coaching or graduated phase who haven't provided a testimonial yet.</p>
             {pendingTestimonials.length === 0 ? (
-              <div className="text-xs text-green-400 border border-green-500/20 bg-green-500/5 rounded-sm px-4 py-3 flex items-center gap-2">
+              <div className="text-xs text-success-fg border border-success/25 bg-success-bg rounded-sm px-4 py-3 flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4" /> All eligible students have testimonials.
               </div>
             ) : (
               <div className="rounded-sm border border-border bg-card overflow-hidden">
                 {pendingTestimonials.map(s => (
                   <div key={s.id} className="flex items-center justify-between gap-3 px-4 py-3 border-b border-accent last:border-0">
-                    <Link to="/students/$id" params={{ id: s.id }} className="text-sm font-medium hover:text-green-400 transition">
+                    <Link to="/students/$id" params={{ id: s.id }} className="text-sm font-medium hover:text-success-fg transition">
                       {s.full_name}
                     </Link>
                     <div className="flex items-center gap-2">
                       <span className={`text-[12px] px-2 py-0.5 rounded-md border ${
                         s.phase === "graduated"
-                          ? "border-amber-500/30 bg-amber-500/10 text-amber-400"
-                          : "border-blue-500/30 bg-blue-500/10 text-blue-400"
+                          ? "border-warning/25 bg-warning-bg text-warning-fg"
+                          : "border-border bg-muted text-muted-foreground"
                       }`}>
                         {s.phase === "graduated" ? "Graduated" : "1:1 Coaching"}
                       </span>
@@ -363,10 +363,10 @@ function StudentSuccessInner() {
           <TabsContent value="digest" className="space-y-3">
             <h2 className="text-[13px] text-muted-foreground">Weekly digest — {weekStart} to {weekEnd}</h2>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <DigestCard label="New students this week" value={digest.newThisWeek} icon={<Users className="h-4 w-4 text-sky-400" />} />
-              <DigestCard label="Total graduated" value={digest.graduated} icon={<Trophy className="h-4 w-4 text-amber-400" />} />
-              <DigestCard label="1:1s this week" value={digest.callsThisWeek} icon={<Phone className="h-4 w-4 text-blue-400" />} />
-              <DigestCard label="CSM notes (14d)" value={digest.activeCsmNotes} icon={<TrendingUp className="h-4 w-4 text-green-400" />} />
+              <DigestCard label="New students this week" value={digest.newThisWeek} icon={<Users className="h-4 w-4 text-muted-foreground" />} />
+              <DigestCard label="Total graduated" value={digest.graduated} icon={<Trophy className="h-4 w-4 text-warning-fg" />} />
+              <DigestCard label="1:1s this week" value={digest.callsThisWeek} icon={<Phone className="h-4 w-4 text-muted-foreground" />} />
+              <DigestCard label="CSM notes (14d)" value={digest.activeCsmNotes} icon={<TrendingUp className="h-4 w-4 text-success-fg" />} />
             </div>
             <div className="rounded-sm border border-border bg-card p-4 space-y-2">
               <h3 className="text-xs font-semibold">At-a-glance</h3>
@@ -388,7 +388,7 @@ function SummaryChip({ label, value, icon, accent }: {
   label: string; value: number; icon: React.ReactNode;
   accent?: "red" | "amber" | "green";
 }) {
-  const color = accent === "red" ? "text-red-400" : accent === "amber" ? "text-amber-400" : accent === "green" ? "text-green-400" : "text-foreground";
+  const color = accent === "red" ? "text-danger-fg" : accent === "amber" ? "text-warning-fg" : accent === "green" ? "text-success-fg" : "text-foreground";
   return (
     <div className="card-surface p-3">
       <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground mb-1">

@@ -203,7 +203,7 @@ function ActionItemsHub() {
           {isStaff && (
             <button
               onClick={() => setAddOpen(true)}
-              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-sm bg-muted hover:bg-muted text-muted-foreground text-xs font-medium"
+              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-sm bg-muted hover:opacity-80 text-muted-foreground text-xs font-medium"
             >
               <Plus className="h-3.5 w-3.5" /> Add ad-hoc item
             </button>
@@ -342,7 +342,7 @@ function ActionItemsHub() {
               <button
                 onClick={submitAdhoc}
                 disabled={saving || !newStudent || !newText.trim()}
-                className="h-8 px-3 rounded-sm bg-muted hover:bg-muted text-muted-foreground text-xs font-medium disabled:opacity-40"
+                className="h-8 px-3 rounded-sm bg-muted hover:opacity-80 text-muted-foreground text-xs font-medium disabled:opacity-40"
               >
                 {saving ? "Saving…" : "Add item"}
               </button>

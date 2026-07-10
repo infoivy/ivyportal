@@ -69,7 +69,7 @@ function CoachesPage() {
       <CoachingTabBar />
       <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--border)] pb-4">
         <div>
-          <div className="flex items-center gap-2 text-[10px] text-sky-400 mb-1">
+          <div className="flex items-center gap-2 text-[10px] text-muted-foreground mb-1">
             <Users className="h-3 w-3" /> Coach capacity
           </div>
           <h1 className="text-display text-foreground">Coaches</h1>
@@ -85,7 +85,7 @@ function CoachesPage() {
           <div key={coach.id} className="border border-[var(--border)] bg-[var(--card)] rounded-md p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 min-w-0">
-                <div className="h-9 w-9 rounded-md bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400 font-bold text-sm shrink-0">
+                <div className="h-9 w-9 rounded-md bg-muted border border-border flex items-center justify-center text-muted-foreground font-bold text-sm shrink-0">
                   {(coach.display_name ?? "?").slice(0, 1).toUpperCase()}
                 </div>
                 <div className="min-w-0">
@@ -94,7 +94,7 @@ function CoachesPage() {
                 </div>
               </div>
               {stale.length > 0 && (
-                <span className="flex items-center gap-1 text-[10px] text-red-400 border border-red-500/30 bg-red-500/10 px-1.5 py-0.5 rounded-sm">
+                <span className="flex items-center gap-1 text-[10px] text-danger-fg border border-danger/25 bg-danger-bg px-1.5 py-0.5 rounded-sm">
                   <AlertTriangle className="h-2.5 w-2.5" /> {stale.length} stale
                 </span>
               )}
@@ -108,10 +108,10 @@ function CoachesPage() {
 
             {stale.length > 0 && (
               <div className="border-t border-[var(--border)] pt-2">
-                <div className="text-[10px] text-red-400 mb-1">&gt;14 days since 1:1</div>
+                <div className="text-[10px] text-danger-fg mb-1">&gt;14 days since 1:1</div>
                 <div className="flex flex-wrap gap-1">
                   {stale.slice(0, 6).map(s => (
-                    <Link key={s.id} to="/students/$id" params={{ id: s.id }} className="text-[10px] px-1.5 py-0.5 rounded-sm border border-red-500/30 bg-red-500/5 text-red-300 hover:bg-red-500/10">
+                    <Link key={s.id} to="/students/$id" params={{ id: s.id }} className="text-[10px] px-1.5 py-0.5 rounded-sm border border-danger/25 bg-danger-bg text-danger-fg hover:bg-danger-bg">
                       {s.full_name}
                     </Link>
                   ))}
@@ -132,7 +132,7 @@ function CoachesPage() {
 }
 
 function Stat({ label, value, sub, icon, tone }: { label: string; value: number | string; sub?: string; icon: React.ReactNode; tone: "emerald" | "amber" | "rose" | "sky" }) {
-  const colors = { emerald: "text-green-400", amber: "text-amber-400", rose: "text-red-400", sky: "text-sky-400" }[tone];
+  const colors = { emerald: "text-success-fg", amber: "text-warning-fg", rose: "text-danger-fg", sky: "text-muted-foreground" }[tone];
   return (
     <div className="border border-[var(--border)] bg-[var(--background)] rounded-sm p-2">
       <div className="flex items-center gap-1 text-[9px] text-muted-foreground mb-0.5">{icon}{label}</div>

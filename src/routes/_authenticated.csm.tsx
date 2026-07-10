@@ -38,10 +38,10 @@ type AdHocItem = {
 };
 
 const KIND_META: Record<TallyKind, { label: string; icon: typeof Video; color: string; ring: string }> = {
-  loom:       { label: "Loom reviewed",     icon: Video,          color: "bg-blue-500/10 text-blue-300 hover:bg-blue-500/20 border-blue-500/30",         ring: "focus:ring-blue-400/40" },
-  roleplay:   { label: "Roleplay reviewed", icon: MessageSquare,  color: "bg-blue-500/10 text-blue-300 hover:bg-blue-500/20 border-blue-500/30", ring: "focus:ring-blue-400/40" },
-  checkin:    { label: "Check-in done",     icon: PhoneCall,      color: "bg-green-500/10 text-green-300 hover:bg-green-500/20 border-green-500/30", ring: "focus:ring-green-400/40" },
-  escalation: { label: "Escalation",        icon: AlertTriangle,  color: "bg-red-500/10 text-red-300 hover:bg-red-500/20 border-red-500/30",         ring: "focus:ring-red-400/40" },
+  loom:       { label: "Loom reviewed",     icon: Video,          color: "bg-muted text-muted-foreground hover:text-foreground border-border",         ring: "focus:ring-ring" },
+  roleplay:   { label: "Roleplay reviewed", icon: MessageSquare,  color: "bg-muted text-muted-foreground hover:text-foreground border-border", ring: "focus:ring-ring" },
+  checkin:    { label: "Check-in done",     icon: PhoneCall,      color: "bg-success-bg text-success-fg hover:bg-success/20 border-success/25", ring: "focus:ring-ring" },
+  escalation: { label: "Escalation",        icon: AlertTriangle,  color: "bg-danger-bg text-danger-fg hover:bg-danger/20 border-danger/25",         ring: "focus:ring-ring" },
 };
 
 const isToday = (iso: string) => iso.slice(0, 10) === todayBiz();
@@ -258,13 +258,13 @@ function CsmPage() {
     <div className="p-4 sm:p-6 max-w-[1400px] mx-auto space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--border)] pb-4">
         <div>
-          <div className="flex items-center gap-2 text-[10px] text-amber-400 mb-1">
+          <div className="flex items-center gap-2 text-[10px] text-warning-fg mb-1">
             <HeartHandshake className="h-3 w-3" /> Client success
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">CSM Workspace</h1>
           <p className="text-xs text-muted-foreground mt-0.5">Tally today's work, chase accountability, log notes.</p>
         </div>
-        <button onClick={submitCsmEod} className="inline-flex items-center gap-1.5 h-8 px-3 rounded-sm bg-green-500 hover:bg-green-400 text-green-950 text-xs font-medium">
+        <button onClick={submitCsmEod} className="inline-flex items-center gap-1.5 h-8 px-3 rounded-sm bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium">
           <FileText className="h-3.5 w-3.5" /> Submit to Team Reports
         </button>
       </header>
@@ -319,12 +319,12 @@ function CsmPage() {
           <div className="p-3 border-b border-[var(--border)]">
             <div className="relative">
               <Search className="h-3.5 w-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search students…" className="w-full h-8 pl-8 pr-3 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-green-500/40" />
+              <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search students…" className="w-full h-8 pl-8 pr-3 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-ring" />
             </div>
           </div>
           <div className="max-h-[720px] overflow-auto divide-y divide-[var(--accent)]">
             {filteredStudents.map(s => (
-              <button key={s.id} onClick={() => setStudentId(s.id)} className={`w-full text-left p-3 hover:bg-[var(--muted)] transition ${studentId === s.id ? "bg-amber-500/5 border-l-2 border-amber-400" : ""}`}>
+              <button key={s.id} onClick={() => setStudentId(s.id)} className={`w-full text-left p-3 hover:bg-[var(--muted)] transition ${studentId === s.id ? "bg-warning-bg border-l-2 border-warning" : ""}`}>
                 <div className="text-sm font-medium truncate">{s.full_name}</div>
                 <div className="text-[10px] text-muted-foreground truncate">{s.email ?? "no email"}</div>
                 <div className="mt-1 flex gap-1">
@@ -342,11 +342,11 @@ function CsmPage() {
             <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm">
               <div className="p-4 border-b border-[var(--border)] flex items-start justify-between gap-3">
                 <div>
-                  <div className="text-[10px] text-amber-400 mb-1">Accountability</div>
+                  <div className="text-[10px] text-warning-fg mb-1">Accountability</div>
                   <h2 className="text-lg font-semibold">{selected.full_name}</h2>
                   <p className="text-[11px] text-muted-foreground">{selected.email ?? "no email"}</p>
                 </div>
-                <Link to={"/students/$id" as unknown as string} params={{ id: selected.id } as { id: string }} className="text-[11px] text-green-400 hover:text-green-300 shrink-0">Open tracker →</Link>
+                <Link to={"/students/$id" as unknown as string} params={{ id: selected.id } as { id: string }} className="text-[11px] text-success-fg hover:text-success-fg shrink-0">Open tracker →</Link>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-[var(--border)]">
                 <AccountStat label="Open action items" value={openCount} tone={openCount > 0 ? "warn" : "ok"} />
@@ -369,7 +369,7 @@ function CsmPage() {
                       <li key={it.callId + it.index} className="flex items-start gap-2">
                         <span className="mt-0.5 shrink-0" aria-hidden>
                           {it.done
-                            ? <CheckCircle2 className="h-4 w-4 text-green-400" />
+                            ? <CheckCircle2 className="h-4 w-4 text-success-fg" />
                             : <Circle className="h-4 w-4 text-muted-foreground" />}
                         </span>
                         <div className="flex-1 min-w-0">
@@ -387,7 +387,7 @@ function CsmPage() {
               {/* Ad-hoc action items — CSMs can add these directly */}
               <div className="p-4 border-t border-[var(--border)]">
                 <div className="flex items-center justify-between mb-2">
-                  <div className="text-[10px] text-blue-400">Ad-hoc action items</div>
+                  <div className="text-[10px] text-muted-foreground">Ad-hoc action items</div>
                   <div className="text-[10px] text-muted-foreground italic">Assign anytime · outside of calls</div>
                 </div>
                 {selectedAdhoc.length === 0 ? (
@@ -402,8 +402,8 @@ function CsmPage() {
                           aria-label={it.done ? "Mark not done" : "Mark done"}
                         >
                           {it.done
-                            ? <CheckCircle2 className="h-4 w-4 text-green-400" />
-                            : <Circle className="h-4 w-4 text-muted-foreground hover:text-blue-400" />}
+                            ? <CheckCircle2 className="h-4 w-4 text-success-fg" />
+                            : <Circle className="h-4 w-4 text-muted-foreground hover:text-muted-foreground" />}
                         </button>
                         <div className="flex-1 min-w-0">
                           <div className={`text-sm ${it.done ? "line-through text-muted-foreground" : ""}`}>{it.text}</div>
@@ -415,7 +415,7 @@ function CsmPage() {
                         {(it.created_by === user?.id || roles.includes("admin")) && (
                           <button
                             onClick={() => deleteAdhoc(it.id)}
-                            className="p-1 rounded-sm text-muted-foreground hover:text-red-400 hover:bg-red-500/10"
+                            className="p-1 rounded-sm text-muted-foreground hover:text-danger-fg hover:bg-danger-bg"
                             title="Delete"
                           >
                             <Trash2 className="h-3 w-3" />
@@ -430,18 +430,18 @@ function CsmPage() {
                     value={newAdhocText}
                     onChange={e => setNewAdhocText(e.target.value)}
                     placeholder="New action item…"
-                    className="h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-blue-500/40"
+                    className="h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border"
                   />
                   <input
                     type="date"
                     value={newAdhocDue}
                     onChange={e => setNewAdhocDue(e.target.value)}
-                    className="h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-blue-500/40"
+                    className="h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border"
                   />
                   <button
                     onClick={addAdhoc}
                     disabled={savingAdhoc || !newAdhocText.trim()}
-                    className="h-8 px-3 rounded-sm bg-blue-500 hover:bg-blue-400 text-blue-950 text-xs font-medium disabled:opacity-40"
+                    className="h-8 px-3 rounded-sm bg-muted hover:opacity-80 text-muted-foreground text-xs font-medium disabled:opacity-40"
                   >
                     {savingAdhoc ? "…" : "Add"}
                   </button>
@@ -478,10 +478,10 @@ function CsmPage() {
           {/* Notes flow (unchanged) */}
           <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-4">
             <div className="text-[10px] text-muted-foreground mb-2">Add CSM note</div>
-            <textarea value={note} onChange={e => setNote(e.target.value)} rows={3} placeholder="Add a student success note, risk signal, follow-up, accountability update…" className="w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-sm resize-none focus:outline-none focus:border-green-500/40" />
+            <textarea value={note} onChange={e => setNote(e.target.value)} rows={3} placeholder="Add a student success note, risk signal, follow-up, accountability update…" className="w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-sm resize-none focus:outline-none focus:border-ring" />
             <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] gap-2">
-              <input value={tags} onChange={e => setTags(e.target.value)} placeholder="tags, comma-separated" className="h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-green-500/40" />
-              <button onClick={saveNote} disabled={saving || !note.trim() || !studentId} className="h-8 px-3 rounded-sm bg-green-500 hover:bg-green-400 text-green-950 text-xs font-medium disabled:opacity-40">
+              <input value={tags} onChange={e => setTags(e.target.value)} placeholder="tags, comma-separated" className="h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-ring" />
+              <button onClick={saveNote} disabled={saving || !note.trim() || !studentId} className="h-8 px-3 rounded-sm bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium disabled:opacity-40">
                 {saving ? "Saving…" : "Save note"}
               </button>
             </div>
@@ -492,14 +492,14 @@ function CsmPage() {
             {selectedNotes.map(n => (
               <div key={n.id} className="group border border-[var(--border)] bg-[var(--card)] rounded-sm p-3">
                 <div className="flex items-start gap-2">
-                  <StickyNote className="h-3.5 w-3.5 text-amber-400 mt-0.5" />
+                  <StickyNote className="h-3.5 w-3.5 text-warning-fg mt-0.5" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{n.note}</p>
                     <div className="mt-2 flex flex-wrap gap-1.5 items-center text-[10px] text-muted-foreground">
-                      {(n.tags ?? []).map(tag => <span key={tag} className="px-1.5 py-0.5 rounded-sm border border-amber-500/30 text-amber-400">#{tag}</span>)}
+                      {(n.tags ?? []).map(tag => <span key={tag} className="px-1.5 py-0.5 rounded-sm border border-warning/25 text-warning-fg">#{tag}</span>)}
                       <span className="ml-auto">{n.author} · {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}</span>
                       {(n.user_id === user?.id || roles.includes("admin")) && (
-                        <button onClick={() => deleteNote(n.id)} className="p-1 rounded-sm text-muted-foreground hover:text-red-400 hover:bg-red-500/10" title="Delete note">
+                        <button onClick={() => deleteNote(n.id)} className="p-1 rounded-sm text-muted-foreground hover:text-danger-fg hover:bg-danger-bg" title="Delete note">
                           <Trash2 className="h-3 w-3" />
                         </button>
                       )}
@@ -522,18 +522,18 @@ function CsmPage() {
             </div>
             <div>
               <label className="text-[10px] text-muted-foreground">Student (optional)</label>
-              <select value={quickStudent} onChange={e => setQuickStudent(e.target.value)} className="mt-1 w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-green-500/40">
+              <select value={quickStudent} onChange={e => setQuickStudent(e.target.value)} className="mt-1 w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-ring">
                 <option value="">— none —</option>
                 {students.map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
               </select>
             </div>
             <div>
               <label className="text-[10px] text-muted-foreground">Note (optional)</label>
-              <textarea value={quickNote} onChange={e => setQuickNote(e.target.value)} rows={3} className="mt-1 w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-sm resize-none focus:outline-none focus:border-green-500/40" placeholder="What was reviewed / said?" />
+              <textarea value={quickNote} onChange={e => setQuickNote(e.target.value)} rows={3} className="mt-1 w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-sm resize-none focus:outline-none focus:border-ring" placeholder="What was reviewed / said?" />
             </div>
             <div className="flex justify-end gap-2 pt-1">
               <button onClick={() => setQuickKind(null)} className="h-8 px-3 rounded-sm border border-[var(--border)] text-xs">Cancel</button>
-              <button onClick={submitQuick} className="h-8 px-3 rounded-sm bg-green-500 hover:bg-green-400 text-green-950 text-xs font-medium">+1 & save</button>
+              <button onClick={submitQuick} className="h-8 px-3 rounded-sm bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium">+1 & save</button>
             </div>
           </div>
         </div>
@@ -543,7 +543,7 @@ function CsmPage() {
 }
 
 function AccountStat({ label, value, tone }: { label: string; value: string | number; tone?: "ok" | "warn" }) {
-  const color = tone === "warn" ? "text-amber-400" : tone === "ok" ? "text-green-400" : "text-foreground";
+  const color = tone === "warn" ? "text-warning-fg" : tone === "ok" ? "text-success-fg" : "text-foreground";
   return (
     <div className="bg-[var(--card)] p-3">
       <div className="text-[9px] text-muted-foreground mb-1">{label}</div>

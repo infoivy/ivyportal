@@ -41,16 +41,16 @@ type Testimonial = {
 type StudentLite = { id: string; full_name: string };
 
 const TYPE_META: Record<TType, { label: string; icon: typeof Video; color: string }> = {
-  video:      { label: "Video",      icon: Video,      color: "bg-blue-500/10 text-blue-400 border-blue-500/30" },
-  image:      { label: "Image",      icon: ImageIcon,  color: "bg-blue-500/10 text-blue-400 border-blue-500/30" },
-  text:       { label: "Text",       icon: Quote,      color: "bg-green-500/10 text-green-400 border-green-500/30" },
-  trustpilot: { label: "Trustpilot", icon: Star,       color: "bg-amber-500/10 text-amber-400 border-amber-500/30" },
+  video:      { label: "Video",      icon: Video,      color: "bg-muted text-muted-foreground border-border" },
+  image:      { label: "Image",      icon: ImageIcon,  color: "bg-muted text-muted-foreground border-border" },
+  text:       { label: "Text",       icon: Quote,      color: "bg-success-bg text-success-fg border-success/25" },
+  trustpilot: { label: "Trustpilot", icon: Star,       color: "bg-warning-bg text-warning-fg border-warning/25" },
 };
 
 const STATUS_META: Record<TStatus, string> = {
-  requested: "bg-amber-500/10 text-amber-400 border-amber-500/30",
-  received:  "bg-blue-500/10 text-blue-400 border-blue-500/30",
-  approved:  "bg-green-500/10 text-green-400 border-green-500/30",
+  requested: "bg-warning-bg text-warning-fg border-warning/25",
+  received:  "bg-muted text-muted-foreground border-border",
+  approved:  "bg-success-bg text-success-fg border-success/25",
   published: "bg-primary/15 text-primary border-primary/30",
 };
 
@@ -310,7 +310,7 @@ function TestimonialCard({
       {t.type === "trustpilot" && (
         <div className="p-5 pb-3 bg-gradient-to-br from-amber-500/5 to-transparent">
           <div className="flex items-center gap-1 mb-2">
-            {Array.from({ length: 5 }).map((_, i) => <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />)}
+            {Array.from({ length: 5 }).map((_, i) => <Star key={i} className="h-4 w-4 fill-amber-400 text-warning-fg" />)}
           </div>
           {t.content_text && <p className="text-sm leading-relaxed">{t.content_text}</p>}
         </div>
