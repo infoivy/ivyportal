@@ -840,12 +840,28 @@ function ComplianceMatrix({ eods, roster }: { eods: GridEod[]; roster: RosterEnt
 
 // ---------- Graphs (with per-person filter, github-grid) ----------
 
+function buildDayListFrom(days: number, anchorDate: Date): string[] {
+  const list: string[] = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(anchorDate); d.setDate(d.getDate() - i);
+    list.push(isoDate(d));
+  }
+  return list;
+}
+
 function ComplianceGraphs({ eods, roster }: { eods: GridEod[]; roster: RosterEntry[] }) {
   const [days, setDays] = useState<7 | 30 | 90>(30);
+  const [compare, setCompare] = useState(false);
   const [personFilter, setPersonFilter] = useState<string>("all");
   const dayList = useMemo(() => buildDayList(days), [days]);
   const filteredEods = useMemo(() => personFilter === "all" ? eods : eods.filter(e => e.user_id === personFilter), [eods, personFilter]);
   const filteredRoster = useMemo(() => personFilter === "all" ? roster : roster.filter(r => r.user_id === personFilter), [roster, personFilter]);
+
+  // Previous period day list (aligned by day-index)
+  const prevDayList = useMemo(() => {
+    const anchor = new Date(); anchor.setDate(anchor.getDate() - days);
+    return buildDayListFrom(days, anchor);
+  }, [days]);
 
   const submissionsData = useMemo(() => dayList.map(d => {
     const submitted = filteredEods.filter(e => e.report_date === d).length;
@@ -853,16 +869,22 @@ function ComplianceGraphs({ eods, roster }: { eods: GridEod[]; roster: RosterEnt
     return { date: d, label: fmtDayShort(new Date(d + "T00:00:00")), submitted, expected };
   }), [dayList, filteredEods, roster, personFilter]);
 
-  const funnelData = useMemo(() => dayList.map(d => {
+  const funnelData = useMemo(() => dayList.map((d, i) => {
     const dayEods = filteredEods.filter(e => e.report_date === d);
+    const pd = prevDayList[i];
+    const prevEods = compare ? filteredEods.filter(e => e.report_date === pd) : [];
     return {
       date: d, label: fmtDayShort(new Date(d + "T00:00:00")),
       dms: dayEods.reduce((a, e) => a + (e.dms_sent ?? 0), 0),
       convos: dayEods.reduce((a, e) => a + (e.convos_started ?? 0), 0),
       booked: dayEods.reduce((a, e) => a + (e.calls_booked ?? 0), 0),
       shows: dayEods.reduce((a, e) => a + (e.shows ?? 0), 0),
+      prev_dms: prevEods.reduce((a, e) => a + (e.dms_sent ?? 0), 0),
+      prev_convos: prevEods.reduce((a, e) => a + (e.convos_started ?? 0), 0),
+      prev_booked: prevEods.reduce((a, e) => a + (e.calls_booked ?? 0), 0),
+      prev_shows: prevEods.reduce((a, e) => a + (e.shows ?? 0), 0),
     };
-  }), [dayList, filteredEods]);
+  }), [dayList, prevDayList, filteredEods, compare]);
 
   const totalReports = filteredEods.filter(e => dayList.includes(e.report_date)).length;
 
@@ -878,14 +900,20 @@ function ComplianceGraphs({ eods, roster }: { eods: GridEod[]; roster: RosterEnt
           <option value="all">All team</option>
           {roster.map(r => <option key={r.user_id} value={r.user_id}>{r.display_name}</option>)}
         </select>
+        <button
+          onClick={() => setCompare(c => !c)}
+          className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1.5 rounded-sm border transition ${compare ? "border-emerald-500/40 text-emerald-400 bg-emerald-500/5" : "border-border text-muted-foreground hover:text-foreground"}`}
+        >
+          Compare prev
+        </button>
       </div>
 
       <GraphCard title="Reports submitted vs expected" subtitle="Green = submitted, gray = expected total">
         {totalReports === 0 ? <NoData /> : <SubmissionsChart data={submissionsData} />}
       </GraphCard>
 
-      <GraphCard title="Funnel volume — daily totals" subtitle="DMs · convos · booked · shows">
-        {totalReports === 0 ? <NoData /> : <FunnelChart data={funnelData} />}
+      <GraphCard title="Funnel volume — daily totals" subtitle={`DMs · convos · booked · shows${compare ? " (ghost = prev period)" : ""}`}>
+        {totalReports === 0 ? <NoData /> : <FunnelChart data={funnelData} compare={compare} />}
       </GraphCard>
 
       <GraphCard title="EOD submissions per person" subtitle="One square per day — green = submitted + hit KPI, amber = submitted only, red = missed">
@@ -952,7 +980,7 @@ function SubmissionsChart({ data }: { data: { label: string; submitted: number; 
   );
 }
 
-function FunnelChart({ data }: { data: { label: string; dms: number; convos: number; booked: number; shows: number }[] }) {
+function FunnelChart({ data, compare }: { data: any[]; compare?: boolean }) {
   return (
     <ResponsiveContainer width="100%" height="100%">
       <LineChart data={data}>
@@ -961,10 +989,14 @@ function FunnelChart({ data }: { data: { label: string; dms: number; convos: num
         <YAxis tick={{ fontSize: 10, fill: "#8A919C" }} allowDecimals={false} />
         <ReTooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", fontSize: 11 }} />
         <Legend wrapperStyle={{ fontSize: 10 }} />
-        <Line type="monotone" dataKey="dms" stroke="#3b82f6" strokeWidth={1.5} dot={false} name="DMs" />
-        <Line type="monotone" dataKey="convos" stroke="#a855f7" strokeWidth={1.5} dot={false} name="Convos" />
-        <Line type="monotone" dataKey="booked" stroke="#10b981" strokeWidth={2} dot={false} name="Booked" />
-        <Line type="monotone" dataKey="shows" stroke="#f59e0b" strokeWidth={1.5} dot={false} name="Shows" />
+        {compare && <Line type="monotone" dataKey="prev_dms"    stroke="#3b82f6" strokeWidth={1} strokeOpacity={0.35} dot={false} name="" legendType="none" isAnimationActive={false} />}
+        {compare && <Line type="monotone" dataKey="prev_convos" stroke="#a855f7" strokeWidth={1} strokeOpacity={0.35} dot={false} name="" legendType="none" isAnimationActive={false} />}
+        {compare && <Line type="monotone" dataKey="prev_booked" stroke="#10b981" strokeWidth={1} strokeOpacity={0.35} dot={false} name="" legendType="none" isAnimationActive={false} />}
+        {compare && <Line type="monotone" dataKey="prev_shows"  stroke="#f59e0b" strokeWidth={1} strokeOpacity={0.35} dot={false} name="" legendType="none" isAnimationActive={false} />}
+        <Line type="monotone" dataKey="dms"    stroke="#3b82f6" strokeWidth={1.5} dot={false} name="DMs"    isAnimationActive={false} />
+        <Line type="monotone" dataKey="convos" stroke="#a855f7" strokeWidth={1.5} dot={false} name="Convos" isAnimationActive={false} />
+        <Line type="monotone" dataKey="booked" stroke="#10b981" strokeWidth={2}   dot={false} name="Booked" isAnimationActive={false} />
+        <Line type="monotone" dataKey="shows"  stroke="#f59e0b" strokeWidth={1.5} dot={false} name="Shows"  isAnimationActive={false} />
       </LineChart>
     </ResponsiveContainer>
   );
