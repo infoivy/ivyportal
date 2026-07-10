@@ -464,24 +464,44 @@ function ItemDialog({ initial, userId, onClose, onSaved, promotingIdea: pIdea }:
   const [scheduled, setScheduled] = useState(initial?.scheduled_date ?? "");
   const [platform, setPlatform] = useState<Platform>(initial?.platform ?? "instagram");
   const [format, setFormat] = useState(initial?.format ?? "");
+  const [title, setTitle] = useState(initial?.title ?? "");
   const [hook, setHook] = useState(initial?.hook ?? pIdea?.text ?? "");
   const [script, setScript] = useState(initial?.script ?? (pIdea?.link ? `Source: ${pIdea.link}` : ""));
   const [status, setStatus] = useState<Status>(initial?.status ?? "idea");
   const [link, setLink] = useState(initial?.link_when_posted ?? "");
   const [tagsStr, setTagsStr] = useState(initial?.tags.join(", ") ?? "");
+  const [rawVideo, setRawVideo] = useState(initial?.raw_video_url ?? "");
+  const [editedReel, setEditedReel] = useState(initial?.edited_reel_url ?? "");
+  const [source, setSource] = useState(initial?.source ?? "");
+  const [duration, setDuration] = useState<string>(initial?.duration_sec ? String(initial.duration_sec) : "");
+  const [platformsMulti, setPlatformsMulti] = useState<string[]>(initial?.platforms ?? ["instagram"]);
+  const [reedit, setReedit] = useState<boolean>(initial?.reedit_flag ?? false);
   const [busy, setBusy] = useState(false);
+
+  const togglePlatform = (v: string) =>
+    setPlatformsMulti(prev => prev.includes(v) ? prev.filter(x => x !== v) : [...prev, v]);
 
   const save = async () => {
     if (!userId || !hook.trim()) { toast.error("Hook required"); return; }
     setBusy(true);
     const tags = tagsStr.split(",").map(t => t.trim()).filter(Boolean);
+    const durNum = duration.trim() ? parseInt(duration, 10) : null;
     const payload = {
       created_by: userId,
       scheduled_date: scheduled || null,
       platform, format: format || null, hook: hook.trim(),
+      title: title.trim() || null,
       script: script || null, status,
       link_when_posted: link || null, tags,
-      posted_at: status === "posted" ? (initial?.posted_at ?? new Date().toISOString()) : null,
+      raw_video_url: rawVideo.trim() || null,
+      edited_reel_url: editedReel.trim() || null,
+      source: source.trim() || null,
+      duration_sec: durNum && !Number.isNaN(durNum) ? durNum : null,
+      platforms: platformsMulti.length ? platformsMulti : ["instagram"],
+      reedit_flag: reedit,
+      posted_at: status === "posted" ? (initial?.posted_at ?? new Date().toISOString()) : (initial?.posted_at ?? null),
+      recorded_at: (status === "recorded" || status === "filmed") ? (initial?.recorded_at ?? new Date().toISOString()) : initial?.recorded_at ?? null,
+      edited_at: status === "edited" ? (initial?.edited_at ?? new Date().toISOString()) : initial?.edited_at ?? null,
     };
     if (isNew) {
       const { data, error } = await supabase.from("content_items").insert(payload).select().single();
@@ -509,7 +529,7 @@ function ItemDialog({ initial, userId, onClose, onSaved, promotingIdea: pIdea }:
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 flex items-start justify-center p-4 overflow-auto" onClick={onClose}>
-      <div className="w-full max-w-2xl my-8 bg-[#0f1116] border border-[#1f2530] rounded-sm" onClick={e => e.stopPropagation()}>
+      <div className="w-full max-w-3xl my-8 bg-[#0f1116] border border-[#1f2530] rounded-sm" onClick={e => e.stopPropagation()}>
         <div className="p-4 border-b border-[#1f2530] flex items-center justify-between">
           <div>
             <div className="text-sm font-semibold">{isNew ? "New content" : "Edit content"}</div>
@@ -518,30 +538,75 @@ function ItemDialog({ initial, userId, onClose, onSaved, promotingIdea: pIdea }:
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
         </div>
         <div className="p-4 space-y-3">
-          <div className="grid grid-cols-3 gap-2">
+          <Field label="Title (short label — for the record)">
+            <input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g., How I hire closers" className="w-full h-8 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-sm outline-none focus:border-fuchsia-500/40" />
+          </Field>
+          <Field label="Hook / opening line *">
+            <textarea value={hook} onChange={e => setHook(e.target.value)} rows={2} className="w-full bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-2 text-sm resize-none focus:outline-none focus:border-fuchsia-500/40" placeholder="First 3 seconds. Pattern break, promise, identity claim…" />
+          </Field>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <Field label="Status">
+              <select value={status} onChange={e => setStatus(e.target.value as Status)} className="w-full h-8 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs outline-none focus:border-fuchsia-500/40">
+                {STATUSES.filter(s => s.value !== "filmed").map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+              </select>
+            </Field>
             <Field label="Scheduled date">
               <input type="date" value={scheduled} onChange={e => setScheduled(e.target.value)} className="w-full h-8 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs outline-none focus:border-fuchsia-500/40" />
             </Field>
-            <Field label="Platform">
+            <Field label="Format / creative type">
+              <select value={format} onChange={e => setFormat(e.target.value)} className="w-full h-8 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs outline-none focus:border-fuchsia-500/40">
+                <option value="">—</option>
+                {CREATIVE_TYPES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </Field>
+            <Field label="Duration (sec)">
+              <input type="number" min={0} value={duration} onChange={e => setDuration(e.target.value)} placeholder="e.g., 45" className="w-full h-8 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs outline-none focus:border-fuchsia-500/40" />
+            </Field>
+          </div>
+
+          <Field label="Platforms (where this will post)">
+            <div className="flex flex-wrap gap-1.5">
+              {MULTI_PLATFORMS.map(p => {
+                const on = platformsMulti.includes(p.value);
+                return (
+                  <button
+                    type="button"
+                    key={p.value}
+                    onClick={() => togglePlatform(p.value)}
+                    className={`h-7 px-2.5 rounded-sm text-[11px] border transition ${on ? "bg-fuchsia-500/15 border-fuchsia-500/50 text-fuchsia-200" : "bg-[#0a0b0f] border-[#1f2530] text-muted-foreground hover:border-fuchsia-500/30"}`}
+                  >
+                    {p.label}
+                  </button>
+                );
+              })}
+            </div>
+          </Field>
+
+          <Field label="Script (markdown supported)">
+            <textarea value={script} onChange={e => setScript(e.target.value)} rows={10} className="w-full bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-2 text-sm font-mono resize-y focus:outline-none focus:border-fuchsia-500/40" placeholder={"Write the reel here.\n\n- Hook line\n- Body / points\n- CTA / close"} />
+          </Field>
+
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="Raw video URL">
+              <input value={rawVideo} onChange={e => setRawVideo(e.target.value)} placeholder="Drive / Frame.io link" className="w-full h-8 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs outline-none focus:border-fuchsia-500/40" />
+            </Field>
+            <Field label="Edited reel URL">
+              <input value={editedReel} onChange={e => setEditedReel(e.target.value)} placeholder="Editor delivery link" className="w-full h-8 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs outline-none focus:border-fuchsia-500/40" />
+            </Field>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="Source (where the idea came from)">
+              <input value={source} onChange={e => setSource(e.target.value)} placeholder="e.g., client call, Notion note, viral reel" className="w-full h-8 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs outline-none focus:border-fuchsia-500/40" />
+            </Field>
+            <Field label="Primary platform (for icon color)">
               <select value={platform} onChange={e => setPlatform(e.target.value as Platform)} className="w-full h-8 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs outline-none focus:border-fuchsia-500/40">
                 {PLATFORMS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
               </select>
             </Field>
-            <Field label="Status">
-              <select value={status} onChange={e => setStatus(e.target.value as Status)} className="w-full h-8 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs outline-none focus:border-fuchsia-500/40">
-                {STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-              </select>
-            </Field>
           </div>
-          <Field label="Format (e.g., talking-head, listicle, story…)">
-            <input value={format} onChange={e => setFormat(e.target.value)} className="w-full h-8 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs outline-none focus:border-fuchsia-500/40" />
-          </Field>
-          <Field label="Hook / idea *">
-            <textarea value={hook} onChange={e => setHook(e.target.value)} rows={2} className="w-full bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-2 text-sm resize-none focus:outline-none focus:border-fuchsia-500/40" />
-          </Field>
-          <Field label="Script (markdown supported)">
-            <textarea value={script} onChange={e => setScript(e.target.value)} rows={8} className="w-full bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-2 text-sm font-mono resize-none focus:outline-none focus:border-fuchsia-500/40" />
-          </Field>
+
           <div className="grid grid-cols-2 gap-2">
             <Field label="Link when posted">
               <input value={link} onChange={e => setLink(e.target.value)} placeholder="https://…" className="w-full h-8 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs outline-none focus:border-fuchsia-500/40" />
@@ -550,6 +615,11 @@ function ItemDialog({ initial, userId, onClose, onSaved, promotingIdea: pIdea }:
               <input value={tagsStr} onChange={e => setTagsStr(e.target.value)} className="w-full h-8 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs outline-none focus:border-fuchsia-500/40" />
             </Field>
           </div>
+
+          <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+            <input type="checkbox" checked={reedit} onChange={e => setReedit(e.target.checked)} className="accent-fuchsia-500" />
+            Needs re-edit (send back to editor)
+          </label>
         </div>
         <div className="p-4 border-t border-[#1f2530] flex items-center justify-between">
           <div>
