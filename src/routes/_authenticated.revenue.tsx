@@ -272,10 +272,10 @@ function RevenuePage() {
 
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-5">
-      <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--border)] pb-4">
+      <header className="flex flex-wrap items-end justify-between gap-3 pb-5 mb-1">
         <div>
-          <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-1">Sales</div>
-          <h1 className="text-2xl font-semibold tracking-tight">Revenue</h1>
+          <h1 className="text-[32px] font-bold tracking-[-0.02em] text-foreground leading-none">Revenue</h1>
+          <p className="text-[15px] text-muted-foreground mt-1.5">Deals, commissions, and cash performance</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <FilterToolbar value={dateRange} onChange={setDateRange} compare={compare} onCompareToggle={() => setCompare((c) => !c)} />
@@ -323,7 +323,7 @@ function RevenuePage() {
       </div>
 
       {/* Payment type breakdown */}
-      <div className="rounded-xl border border-white/[0.07] bg-card p-4">
+      <div className="card-surface p-4">
         <BreakdownBar segments={paymentBreakdown} title="Payment types" />
       </div>
 
@@ -337,12 +337,7 @@ function RevenuePage() {
                   <button
                     key={m}
                     onClick={() => setTrendMode(m)}
-                    className={
-                      "text-[10px] uppercase tracking-wider px-2 py-1 rounded border " +
-                      (trendMode === m
-                        ? "border-primary/60 bg-primary/10 text-primary"
-                        : "border-[var(--border)] text-muted-foreground hover:text-foreground")
-                    }
+                    className={`text-[13px] font-medium px-2.5 py-1 rounded-md motion-safe:transition-colors ${trendMode === m ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}
                   >
                     {m === "monthly" ? "6mo" : m === "weekly" ? "8wk" : "30d"}
                   </button>
@@ -352,11 +347,11 @@ function RevenuePage() {
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={trend}>
-                  <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.06)" vertical={false} />
-                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#8A919C" }} interval="preserveStartEnd" />
-                  <YAxis tick={{ fontSize: 11, fill: "#8A919C" }} />
+                  <CartesianGrid strokeDasharray="2 4" stroke="var(--color-border)" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }} interval="preserveStartEnd" tickLine={false} axisLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }} tickLine={false} axisLine={false} />
                   <Tooltip
-                    contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 12 }}
+                    contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: 10, fontSize: 12, boxShadow: "var(--shadow-overlay)" }}
                     formatter={(v: number, k: string) => (k === "deals" ? [v, "deals"] : [money(v), k === "cash" ? "cash" : "booked"])}
                   />
                   <Bar dataKey="booked" fill="#3B82F6" radius={[3, 3, 0, 0]} />
@@ -374,38 +369,33 @@ function RevenuePage() {
       <Card className="p-5">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <Trophy className="h-4 w-4 text-amber-400" />
-            <h3 className="text-sm font-semibold">Team cash milestones (MTD)</h3>
+            <Trophy className="h-4 w-4 text-amber-500" />
+            <h3 className="text-[15px] font-semibold">Team cash milestones (MTD)</h3>
           </div>
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-            Cash collected: <span className="text-emerald-400">{money(stats.cash)}</span>
+          <span className="text-[13px] text-muted-foreground">
+            Cash collected: <span className="text-primary font-semibold">{money(stats.cash)}</span>
           </span>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {milestones.map((m) => (
             <div
               key={m.threshold}
-              className={
-                "rounded-md border p-3 " +
-                (m.hit
-                  ? "border-emerald-500/40 bg-emerald-500/5"
-                  : "border-[var(--border)] bg-[var(--card)]")
-              }
+              className={`card-surface p-3 ${m.hit ? "ring-1 ring-primary/30" : ""}`}
             >
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs font-medium">{money(m.threshold)}</span>
-                <span className={"text-[10px] " + (m.hit ? "text-emerald-400" : "text-muted-foreground")}>
-                  {m.hit ? "UNLOCKED" : `${Math.floor(m.progress * 100)}%`}
+                <span className="text-[13px] font-medium">{money(m.threshold)}</span>
+                <span className={`text-[12px] ${m.hit ? "text-primary" : "text-muted-foreground"}`}>
+                  {m.hit ? "Unlocked" : `${Math.floor(m.progress * 100)}%`}
                 </span>
               </div>
-              <div className="h-1.5 rounded-full bg-[var(--border)] overflow-hidden mb-2">
+              <div className="h-1.5 rounded-full bg-muted overflow-hidden mb-2">
                 <div
-                  className={"h-full " + (m.hit ? "bg-emerald-500" : "bg-primary/60")}
+                  className={`h-full rounded-full ${m.hit ? "bg-primary" : "bg-primary/50"}`}
                   style={{ width: `${m.progress * 100}%` }}
                 />
               </div>
-              <div className="text-[11px] text-muted-foreground">
-                Team bonus <span className="text-amber-400">{money(m.bonus)}</span>
+              <div className="text-[12px] text-muted-foreground">
+                Team bonus <span className="text-amber-600 dark:text-amber-400 font-medium">{money(m.bonus)}</span>
               </div>
             </div>
           ))}
@@ -416,12 +406,12 @@ function RevenuePage() {
       {/* Per-closer breakdown */}
       <Card className="overflow-hidden">
         <div className="p-4 border-b border-[var(--border)] flex items-center justify-between">
-          <h3 className="text-sm font-semibold">Per-closer breakdown (MTD)</h3>
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{(rates.new_close * 100).toFixed(0)}% close-only · {(rates.set_close * 100).toFixed(0)}% set+close</span>
+          <h3 className="text-[15px] font-semibold">Per-closer breakdown (MTD)</h3>
+          <span className="text-[13px] text-muted-foreground">{(rates.new_close * 100).toFixed(0)}% close-only · {(rates.set_close * 100).toFixed(0)}% set+close</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[480px] text-sm">
-            <thead className="text-xs uppercase tracking-wider text-muted-foreground/70 bg-[var(--card)]">
+            <thead className="text-[12px] text-muted-foreground/70 bg-card">
               <tr>
                 <th className="text-left px-4 py-2.5">Closer</th>
                 <th className="text-right px-4 py-2.5">Deals</th>
@@ -442,7 +432,7 @@ function RevenuePage() {
                     <td className="px-4 py-3 text-right tabular-nums">{r.deals}</td>
                     <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">{r.setCloseDeals}/{r.deals}</td>
                     <td className="px-4 py-3 text-right tabular-nums">{money(r.cash)}</td>
-                    <td className="px-4 py-3 text-right tabular-nums font-semibold text-emerald-400">{money(r.commission)}</td>
+                    <td className="px-4 py-3 text-right tabular-nums font-semibold text-primary">{money(r.commission)}</td>
                   </tr>
                 ))
               )}
@@ -454,14 +444,14 @@ function RevenuePage() {
       {/* Per-setter breakdown */}
       <Card className="overflow-hidden">
         <div className="p-4 border-b border-[var(--border)] flex items-center justify-between">
-          <h3 className="text-sm font-semibold">Per-setter breakdown (MTD)</h3>
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+          <h3 className="text-[15px] font-semibold">Per-setter breakdown (MTD)</h3>
+          <span className="text-[13px] text-muted-foreground">
             {(rates.setter_base * 100).toFixed(1)}% base · $5k week → +1% bonus
           </span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[420px] text-sm">
-            <thead className="text-xs uppercase tracking-wider text-muted-foreground/70 bg-[var(--card)]">
+            <thead className="text-[12px] text-muted-foreground/70 bg-card">
               <tr>
                 <th className="text-left px-4 py-2.5">Setter</th>
                 <th className="text-right px-4 py-2.5">Set closes</th>
@@ -484,7 +474,7 @@ function RevenuePage() {
                       {r.weekBonus ? <span className="text-amber-400">✓ +1%</span> : <span className="text-muted-foreground">—</span>}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">{money(r.cash)}</td>
-                    <td className="px-4 py-3 text-right tabular-nums font-semibold text-emerald-400">{money(r.commission)}</td>
+                    <td className="px-4 py-3 text-right tabular-nums font-semibold text-primary">{money(r.commission)}</td>
                   </tr>
                 ))
               )}
@@ -496,21 +486,21 @@ function RevenuePage() {
       {/* Recent deals */}
       <Card className="overflow-hidden">
         <div className="p-4 border-b border-[var(--border)] flex items-center justify-between">
-          <h3 className="text-sm font-semibold">Recent deals</h3>
+          <h3 className="text-[15px] font-semibold">Recent deals</h3>
           <button
             onClick={() => exportToCsv("deals.csv", deals.map(d => ({
               date: d.deal_date, student: d.student_name,
               total_value: d.total_value, cash_upfront: d.cash_collected_upfront,
               payment_type: d.payment_type, program: d.program_type,
             })))}
-            className="h-7 px-2.5 flex items-center gap-1.5 rounded-sm border border-[var(--border)] text-[11px] text-muted-foreground hover:text-foreground transition"
+            className="inline-flex items-center gap-1.5 rounded-md bg-muted px-3 py-1.5 text-[13px] text-muted-foreground hover:text-foreground motion-safe:transition-colors"
           >
-            <Download className="h-3 w-3" /> Export CSV
+            <Download className="h-3.5 w-3.5" /> Export CSV
           </button>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] text-sm">
-            <thead className="text-xs uppercase tracking-wider text-muted-foreground/70 bg-[var(--card)]">
+            <thead className="text-[12px] text-muted-foreground/70 bg-card">
               <tr>
                 <th className="text-left px-4 py-2.5">Date</th>
                 <th className="text-left px-4 py-2.5">Student</th>
@@ -538,7 +528,7 @@ function RevenuePage() {
                     <td className="px-4 py-3">{closerName}</td>
                     <td className="px-4 py-3 text-muted-foreground">{setterName}</td>
                     <td className="px-4 py-3">
-                      <span className="text-[10px] uppercase tracking-wider border border-[var(--border)] rounded-full px-2 py-0.5">
+                      <span className="text-[12px] bg-muted rounded-full px-2 py-0.5">
                         {rateLabel}
                       </span>
                     </td>
