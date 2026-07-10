@@ -184,7 +184,7 @@ function Dashboard() {
         {/* Header */}
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:items-center sm:justify-between">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-emerald-500/10 border border-emerald-500/40 font-bold text-emerald-400">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-green-500/10 border border-green-500/40 font-bold text-green-400">
               {(displayName ?? "?").slice(0, 1).toUpperCase()}
             </div>
             <div className="min-w-0">
@@ -205,7 +205,7 @@ function Dashboard() {
               onClick={() => setCompare((c) => !c)}
               className={`hidden sm:inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1.5 rounded-sm border transition ${
                 compare
-                  ? "border-emerald-500/40 text-emerald-400 bg-emerald-500/5"
+                  ? "border-green-500/40 text-green-400 bg-green-500/5"
                   : "border-border text-muted-foreground hover:text-foreground"
               }`}
               title="Toggle previous-period comparison"
@@ -314,8 +314,8 @@ function Dashboard() {
             {hasPrev && (
               <Panel accent="emerald">
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="grid h-6 w-6 place-items-center rounded-sm bg-emerald-500/15 border border-emerald-500/40">
-                    <Zap className="h-3 w-3 text-emerald-400" />
+                  <div className="grid h-6 w-6 place-items-center rounded-sm bg-green-500/15 border border-green-500/40">
+                    <Zap className="h-3 w-3 text-green-400" />
                   </div>
                   <h3 className="text-sm font-bold">Period Deltas</h3>
                   <span className="ml-auto text-[10px] text-muted-foreground">vs previous {days}d</span>
@@ -360,8 +360,8 @@ function Dashboard() {
             {prefs.showTeamComp && (
               <Panel>
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="grid h-6 w-6 place-items-center rounded-sm bg-purple-500/15 border border-purple-500/40">
-                    <Globe className="h-3 w-3 text-purple-400" />
+                  <div className="grid h-6 w-6 place-items-center rounded-sm bg-blue-500/15 border border-blue-500/40">
+                    <Globe className="h-3 w-3 text-blue-400" />
                   </div>
                   <h3 className="text-sm font-bold">Team Composition</h3>
                 </div>
@@ -448,7 +448,7 @@ function buildTrend(rows: EodRow[], days: number) {
 /* subcomponents */
 function Panel({ children, accent }: { children: React.ReactNode; accent?: "emerald" }) {
   return (
-    <div className={`rounded-md border p-3.5 bg-card ${accent === "emerald" ? "border-emerald-500/40 shadow-[0_0_0_1px_rgba(16,185,129,0.06)_inset]" : "border-border"}`}>
+    <div className={`rounded-md border p-3.5 bg-card ${accent === "emerald" ? "border-green-500/40 " : "border-border"}`}>
       {children}
     </div>
   );
@@ -489,7 +489,7 @@ function Kpi({ icon: Icon, label, value, suffix, color, highlight, onClick, delt
       role={clickable ? "button" : undefined}
       tabIndex={clickable ? 0 : undefined}
       onKeyDown={clickable ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick!(); } } : undefined}
-      className={`rounded-md border p-2.5 bg-card ${highlight ? "border-blue-500/60 shadow-[0_0_0_1px_rgba(59,130,246,0.15)_inset]" : "border-border"} ${clickable ? "cursor-pointer hover:bg-white/[0.03] transition" : ""}`}
+      className={`rounded-md border p-2.5 bg-card ${highlight ? "border-blue-500/60 " : "border-border"} ${clickable ? "cursor-pointer hover:bg-white/[0.03] transition" : ""}`}
     >
       <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
         <Icon className="h-3 w-3" style={{ color: c }} />
@@ -500,7 +500,7 @@ function Kpi({ icon: Icon, label, value, suffix, color, highlight, onClick, delt
           {value >= 1000 ? `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}K` : value.toLocaleString()}{suffix}
         </div>
         {delta != null && Number.isFinite(delta) && (
-          <span className={`text-[10px] font-semibold tabular-nums ${delta > 0 ? "text-emerald-400" : delta < 0 ? "text-rose-400" : "text-muted-foreground"}`}>
+          <span className={`text-[10px] font-semibold tabular-nums ${delta > 0 ? "text-green-400" : delta < 0 ? "text-red-400" : "text-muted-foreground"}`}>
             {delta > 0 ? "+" : ""}{delta.toFixed(0)}%
           </span>
         )}
@@ -510,7 +510,7 @@ function Kpi({ icon: Icon, label, value, suffix, color, highlight, onClick, delt
 }
 
 const OPS_TONE: Record<string, { border: string; bg: string; text: string; iconBg: string }> = {
-  rose:   { border: "border-rose-500/40",    bg: "bg-rose-500/5",    text: "text-rose-400",    iconBg: "bg-rose-500/15" },
+  rose:   { border: "border-red-500/40",    bg: "bg-red-500/5",    text: "text-red-400",    iconBg: "bg-red-500/15" },
   amber:  { border: "border-amber-500/40",   bg: "bg-amber-500/5",   text: "text-amber-400",   iconBg: "bg-amber-500/15" },
   sky:    { border: "border-sky-500/40",     bg: "bg-sky-500/5",     text: "text-sky-400",     iconBg: "bg-sky-500/15" },
   muted:  { border: "border-border",         bg: "bg-card",          text: "text-foreground",  iconBg: "bg-white/5" },
@@ -551,7 +551,7 @@ function Transform({ label, prev, curr, suffix }: { label: string; prev: number;
       <div className="flex items-center gap-1.5 tabular-nums">
         <span className="text-muted-foreground text-[11px]">{prev.toLocaleString()}{suffix}</span>
         <span className="text-muted-foreground">→</span>
-        <span className="font-bold text-emerald-400">{curr.toLocaleString()}{suffix}</span>
+        <span className="font-bold text-green-400">{curr.toLocaleString()}{suffix}</span>
       </div>
     </div>
   );
@@ -563,7 +563,7 @@ function Goal({ label, value, target, suffix, color, warn }: { label: string; va
       <div className="flex items-center justify-between text-xs mb-1">
         <span className="inline-flex items-center gap-1.5">
           {label}
-          {warn ? <AlertTriangle className="h-3 w-3 text-red-400" /> : pct >= 100 ? <CheckCircle2 className="h-3 w-3 text-emerald-400" /> : null}
+          {warn ? <AlertTriangle className="h-3 w-3 text-red-400" /> : pct >= 100 ? <CheckCircle2 className="h-3 w-3 text-green-400" /> : null}
         </span>
         <span className="tabular-nums text-[11px] text-muted-foreground">
           <span className="font-bold text-foreground">{value.toLocaleString()}{suffix}</span> / {target.toLocaleString()}{suffix}
@@ -683,7 +683,7 @@ function InstallmentReminders() {
       ) : (
         <div className="divide-y divide-border">
           {rows.map(r => {
-            const tone = r.days < 0 ? "text-rose-400" : r.days === 0 ? "text-amber-400" : r.days === 1 ? "text-amber-300" : "text-muted-foreground";
+            const tone = r.days < 0 ? "text-red-400" : r.days === 0 ? "text-amber-400" : r.days === 1 ? "text-amber-300" : "text-muted-foreground";
             const label = r.days < 0 ? `Overdue ${Math.abs(r.days)}d` : r.days === 0 ? "Due today" : r.days === 1 ? "Due tomorrow" : `Due in ${r.days}d`;
             const inner = (
               <>
@@ -778,9 +778,9 @@ function MyDayBlock({ roles }: { roles: string[] }) {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
         {state.parts.map((p, i) => {
           const tones: Record<string, string> = {
-            rose: "border-rose-500/40 bg-rose-500/5 text-rose-400",
+            rose: "border-red-500/40 bg-red-500/5 text-red-400",
             amber: "border-amber-500/40 bg-amber-500/5 text-amber-400",
-            emerald: "border-emerald-500/40 bg-emerald-500/5 text-emerald-400",
+            emerald: "border-green-500/40 bg-green-500/5 text-green-400",
             sky: "border-sky-500/40 bg-sky-500/5 text-sky-400",
             muted: "border-border bg-card text-foreground",
           };
@@ -911,7 +911,7 @@ function UnifiedLeaderboard({ profiles, eods }: { profiles: Record<string, Profi
                 <div className="text-xs font-medium truncate">{r.name}</div>
                 <div className="text-[10px] text-muted-foreground truncate">{r.sub}</div>
               </div>
-              <div className="text-sm font-mono tabular-nums text-emerald-400">
+              <div className="text-sm font-mono tabular-nums text-green-400">
                 {mode === "cash" ? money(r.value) : r.value.toLocaleString()}
               </div>
             </div>

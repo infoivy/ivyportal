@@ -152,31 +152,31 @@ export function WeeklyPlan({ onOpenItem }: { onOpenItem: (id: string) => void })
     <div className="space-y-4">
       {/* Week header */}
       <div className="flex flex-wrap items-center gap-2 border border-[#1f2530] bg-[#0f1116] rounded-sm p-3">
-        <button onClick={() => shift(-1)} className="h-7 w-7 grid place-items-center rounded-sm border border-[#1f2530] hover:border-fuchsia-500/40">
+        <button onClick={() => shift(-1)} className="h-7 w-7 grid place-items-center rounded-sm border border-[#1f2530] hover:border-blue-500/40">
           <ChevronLeft className="h-3.5 w-3.5" />
         </button>
-        <button onClick={() => setWeekStart(mondayOf(new Date()))} className="h-7 px-2 rounded-sm border border-[#1f2530] text-[10px] hover:border-fuchsia-500/40 uppercase tracking-wider">This week</button>
-        <button onClick={() => shift(1)} className="h-7 w-7 grid place-items-center rounded-sm border border-[#1f2530] hover:border-fuchsia-500/40">
+        <button onClick={() => setWeekStart(mondayOf(new Date()))} className="h-7 px-2 rounded-sm border border-[#1f2530] text-[10px] hover:border-blue-500/40 uppercase tracking-wider">This week</button>
+        <button onClick={() => shift(1)} className="h-7 w-7 grid place-items-center rounded-sm border border-[#1f2530] hover:border-blue-500/40">
           <ChevronRight className="h-3.5 w-3.5" />
         </button>
         <div className="ml-2 flex items-center gap-2 min-w-0">
-          <CalendarIcon className="h-3.5 w-3.5 text-fuchsia-400" />
+          <CalendarIcon className="h-3.5 w-3.5 text-blue-400" />
           <span className="text-sm font-semibold">
             {format(monday, "MMM d")} – {format(nextEnd, "MMM d, yyyy")} <span className="text-[10px] text-muted-foreground font-normal">· 2-week horizon</span>
           </span>
-          {isThisWeek && <span className="text-[9px] px-1.5 py-0.5 rounded-sm bg-fuchsia-500/15 border border-fuchsia-500/30 text-fuchsia-300 uppercase tracking-wider">Now</span>}
+          {isThisWeek && <span className="text-[9px] px-1.5 py-0.5 rounded-sm bg-blue-500/15 border border-blue-500/30 text-blue-300 uppercase tracking-wider">Now</span>}
         </div>
         <div className="ml-auto flex items-center gap-2">
           <button
             onClick={() => setShowBrand(v => !v)}
-            className="h-7 px-2 rounded-sm border border-[#1f2530] hover:border-fuchsia-500/40 text-[11px] text-muted-foreground"
+            className="h-7 px-2 rounded-sm border border-[#1f2530] hover:border-blue-500/40 text-[11px] text-muted-foreground"
           >
             Brand context {brand ? "✓" : ""}
           </button>
           <button
             onClick={() => runGenerate(false)}
             disabled={generating || loading}
-            className="h-7 px-3 rounded-sm bg-fuchsia-500 hover:bg-fuchsia-400 text-fuchsia-950 text-[11px] font-medium disabled:opacity-40 inline-flex items-center gap-1"
+            className="h-7 px-3 rounded-sm bg-blue-500 hover:bg-blue-400 text-blue-950 text-[11px] font-medium disabled:opacity-40 inline-flex items-center gap-1"
           >
             {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3" />}
             AI fill empty
@@ -184,7 +184,7 @@ export function WeeklyPlan({ onOpenItem }: { onOpenItem: (id: string) => void })
           <button
             onClick={() => runGenerate(true)}
             disabled={generating || loading}
-            className="h-7 px-2 rounded-sm border border-fuchsia-500/40 hover:border-fuchsia-400 text-[11px] text-fuchsia-300 disabled:opacity-40"
+            className="h-7 px-2 rounded-sm border border-blue-500/40 hover:border-blue-400 text-[11px] text-blue-300 disabled:opacity-40"
             title="Overwrite existing ideas"
           >
             Regen all
@@ -202,7 +202,7 @@ export function WeeklyPlan({ onOpenItem }: { onOpenItem: (id: string) => void })
             onChange={(e) => setBrand(e.target.value)}
             rows={3}
             placeholder="e.g. I coach 6-figure agency owners on scaling ops. Voice: direct, blunt, no fluff. Signature angles: hiring, delegation, systems."
-            className="w-full bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-2 text-xs resize-y focus:outline-none focus:border-fuchsia-500/40"
+            className="w-full bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-2 text-xs resize-y focus:outline-none focus:border-blue-500/40"
           />
           <p className="text-[10px] text-muted-foreground mt-1">Saved on this device. Feed the model your niche, voice, and repeat themes.</p>
         </div>
@@ -217,12 +217,12 @@ export function WeeklyPlan({ onOpenItem }: { onOpenItem: (id: string) => void })
           </div>
           <div className="text-[10px] italic text-blue-400/70 mt-1">Would a total stranger stop at this?</div>
         </div>
-        <div className="border border-emerald-500/30 bg-emerald-500/5 rounded-sm p-3">
-          <div className="text-[10px] font-bold text-emerald-300 uppercase tracking-wider mb-1">MOF · Middle of Funnel · Fri–Sun</div>
+        <div className="border border-green-500/30 bg-green-500/5 rounded-sm p-3">
+          <div className="text-[10px] font-bold text-green-300 uppercase tracking-wider mb-1">MOF · Middle of Funnel · Fri–Sun</div>
           <div className="text-[11px] text-muted-foreground leading-relaxed">
             Move warm followers closer. Social proof, breakdowns, results, deeper value, CTAs.
           </div>
-          <div className="text-[10px] italic text-emerald-400/70 mt-1">Would a warm follower take action from this?</div>
+          <div className="text-[10px] italic text-green-400/70 mt-1">Would a warm follower take action from this?</div>
         </div>
       </div>
 
@@ -287,7 +287,7 @@ function WeekBlock({
   return (
     <div className="space-y-2">
       <div className="flex items-baseline gap-2 border-b border-[#1f2530] pb-1.5">
-        <span className="text-[10px] uppercase tracking-[0.18em] text-fuchsia-400 font-semibold">{label}</span>
+        <span className="text-[10px] uppercase tracking-[0.18em] text-blue-400 font-semibold">{label}</span>
         <span className="text-sm font-semibold">{format(monday, "MMM d")} – {format(weekEnd, "MMM d")}</span>
       </div>
       <div className="grid xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-4">
@@ -302,26 +302,26 @@ function WeekBlock({
               const daySlots = slotsByDay.get(date) ?? [];
               const meta = SLOT_LABELS[idx];
               const isToday = isSameDay(addDays(monday, idx), new Date());
-              const stageColor = meta.stage === "tof" ? "border-blue-500/30 bg-blue-500/5" : "border-emerald-500/30 bg-emerald-500/5";
-              const stageBadge = meta.stage === "tof" ? "bg-blue-500/15 text-blue-300 border-blue-500/30" : "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
+              const stageColor = meta.stage === "tof" ? "border-blue-500/30 bg-blue-500/5" : "border-green-500/30 bg-green-500/5";
+              const stageBadge = meta.stage === "tof" ? "bg-blue-500/15 text-blue-300 border-blue-500/30" : "bg-green-500/15 text-green-300 border-green-500/30";
               return (
-                <div key={day} className={`border rounded-sm ${stageColor} ${isToday ? "ring-1 ring-fuchsia-500/40" : ""}`}>
+                <div key={day} className={`border rounded-sm ${stageColor} ${isToday ? "ring-1 ring-blue-500/40" : ""}`}>
                   <div className="flex items-center gap-2 px-2.5 py-1.5 border-b border-white/5">
                     <span className="text-[10px] font-mono w-14 text-muted-foreground">{day} {format(addDays(monday, idx), "d")}</span>
                     <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-sm border ${stageBadge}`}>{meta.stage} · {meta.position}</span>
-                    {isToday && <span className="text-[9px] uppercase tracking-wider text-fuchsia-400 font-bold">Today</span>}
+                    {isToday && <span className="text-[9px] uppercase tracking-wider text-blue-400 font-bold">Today</span>}
                   </div>
                   <div className="p-2 space-y-1">
                     {daySlots.length === 0 ? (
-                      <button onClick={onRepair} className="text-[11px] text-fuchsia-400 hover:text-fuchsia-300 italic px-1 underline decoration-dotted">
+                      <button onClick={onRepair} className="text-[11px] text-blue-400 hover:text-blue-300 italic px-1 underline decoration-dotted">
                         Slot missing — click to repair
                       </button>
                     ) : daySlots.map(s => {
                       const isFilled = s.hook && !/^(TOF|MOF)\s·/.test(s.hook);
                       return (
-                        <button key={s.id} onClick={() => onOpenItem(s.id)} className="w-full text-left px-2 py-1.5 rounded-sm bg-[#0a0b0f]/60 hover:bg-[#0a0b0f] border border-transparent hover:border-fuchsia-500/40 transition">
+                        <button key={s.id} onClick={() => onOpenItem(s.id)} className="w-full text-left px-2 py-1.5 rounded-sm bg-[#0a0b0f]/60 hover:bg-[#0a0b0f] border border-transparent hover:border-blue-500/40 transition">
                           <div className="flex items-center gap-2">
-                            {isFilled ? <CheckCircle2 className="h-3 w-3 text-emerald-400 shrink-0" /> : <Sparkles className="h-3 w-3 text-muted-foreground shrink-0" />}
+                            {isFilled ? <CheckCircle2 className="h-3 w-3 text-green-400 shrink-0" /> : <Sparkles className="h-3 w-3 text-muted-foreground shrink-0" />}
                             <span className={`text-xs ${isFilled ? "" : "text-muted-foreground italic"} line-clamp-2`}>{isFilled ? s.hook : "Empty slot — click to draft"}</span>
                           </div>
                           <div className="flex items-center gap-2 mt-1 text-[9px] font-mono text-muted-foreground">
@@ -344,7 +344,7 @@ function WeekBlock({
             <span className="text-[10px] text-muted-foreground">1–5 MOF · 6–10 TOF</span>
           </div>
           <div className="space-y-1.5">
-            <IdeaGroup title="MOF · Ideas 1–5" stageColor="border-emerald-500/30" ideas={mofIdeas} slots={availableSlotsFor("mof")} onChange={onSaveIdea} onPromote={onPromote} />
+            <IdeaGroup title="MOF · Ideas 1–5" stageColor="border-green-500/30" ideas={mofIdeas} slots={availableSlotsFor("mof")} onChange={onSaveIdea} onPromote={onPromote} />
             <IdeaGroup title="TOF · Ideas 6–10" stageColor="border-blue-500/30" ideas={tofIdeas} slots={availableSlotsFor("tof")} onChange={onSaveIdea} onPromote={onPromote} />
           </div>
         </section>
@@ -400,19 +400,19 @@ function IdeaRow({
             onBlur={() => text !== idea.text && onChange(idea.id, { text })}
             placeholder={idea.stage === "mof" ? "Warm follower angle — story, proof, CTA…" : "Cold-scroll hook — pattern break, insight, identity…"}
             rows={2}
-            className="w-full bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-1.5 text-xs resize-none focus:outline-none focus:border-fuchsia-500/40"
+            className="w-full bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-1.5 text-xs resize-none focus:outline-none focus:border-blue-500/40"
           />
           <div className="flex flex-wrap items-center gap-1.5">
             <select
               value={ct}
               onChange={(e) => { setCt(e.target.value); onChange(idea.id, { matched_creative_type: e.target.value || null }); }}
-              className="h-6 px-1.5 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-[10px] outline-none focus:border-fuchsia-500/40"
+              className="h-6 px-1.5 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-[10px] outline-none focus:border-blue-500/40"
             >
               <option value="">Creative type…</option>
               {CREATIVE_TYPES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
             {promoted ? (
-              <span className="text-[10px] text-fuchsia-400 inline-flex items-center gap-0.5">
+              <span className="text-[10px] text-blue-400 inline-flex items-center gap-0.5">
                 <CheckCircle2 className="h-2.5 w-2.5" /> Promoted
               </span>
             ) : slots.length === 0 ? (
@@ -436,7 +436,7 @@ function PromoteMenu({
       <button
         onClick={() => setOpen(v => !v)}
         disabled={disabled}
-        className="h-6 px-2 rounded-sm border border-fuchsia-500/40 text-[10px] text-fuchsia-300 hover:bg-fuchsia-500/10 inline-flex items-center gap-0.5 disabled:opacity-40"
+        className="h-6 px-2 rounded-sm border border-blue-500/40 text-[10px] text-blue-300 hover:bg-blue-500/10 inline-flex items-center gap-0.5 disabled:opacity-40"
       >
         Promote <ArrowRight className="h-2.5 w-2.5" />
       </button>

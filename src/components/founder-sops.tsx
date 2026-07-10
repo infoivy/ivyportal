@@ -127,7 +127,7 @@ export function FounderSops() {
           <button
             onClick={createDoc}
             disabled={creating}
-            className="h-6 w-6 grid place-items-center rounded-sm border border-[#1f2530] hover:border-fuchsia-500/40"
+            className="h-6 w-6 grid place-items-center rounded-sm border border-[#1f2530] hover:border-blue-500/40"
             title="New SOP"
           >
             {creating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
@@ -139,7 +139,7 @@ export function FounderSops() {
           </div>
         ) : docs.length === 0 ? (
           <div className="p-4 text-xs text-muted-foreground">
-            No SOPs yet. Click <span className="text-fuchsia-400">+</span> to create one.
+            No SOPs yet. Click <span className="text-blue-400">+</span> to create one.
           </div>
         ) : (
           <ul className="divide-y divide-[#1a1f29]">
@@ -150,7 +150,7 @@ export function FounderSops() {
                 <li key={d.id}>
                   <button
                     onClick={() => { setSelectedId(d.id); setMode("view"); }}
-                    className={`w-full text-left px-3 py-2 hover:bg-[#14171e] ${active ? "bg-fuchsia-500/5 border-l-2 border-fuchsia-500" : ""}`}
+                    className={`w-full text-left px-3 py-2 hover:bg-[#14171e] ${active ? "bg-blue-500/5 border-l-2 border-blue-500" : ""}`}
                   >
                     <div className="text-xs font-medium line-clamp-2">{d.title}</div>
                     <div className="flex items-center gap-1 mt-1 text-[10px] text-muted-foreground">
@@ -183,13 +183,13 @@ export function FounderSops() {
               <div className="flex gap-2">
                 <button
                   onClick={markReviewed}
-                  className="h-8 px-3 rounded-sm border border-[#1f2530] hover:border-emerald-500/40 text-xs text-emerald-300"
+                  className="h-8 px-3 rounded-sm border border-[#1f2530] hover:border-green-500/40 text-xs text-green-300"
                 >
                   Mark reviewed
                 </button>
                 <button
                   onClick={startEdit}
-                  className="h-8 px-3 rounded-sm bg-fuchsia-500 hover:bg-fuchsia-400 text-fuchsia-950 text-xs font-medium inline-flex items-center gap-1"
+                  className="h-8 px-3 rounded-sm bg-blue-500 hover:bg-blue-400 text-blue-950 text-xs font-medium inline-flex items-center gap-1"
                 >
                   <Pencil className="h-3 w-3" /> Edit
                 </button>
@@ -200,7 +200,7 @@ export function FounderSops() {
                 <MarkdownView content={selected.content} />
               ) : (
                 <div className="rounded-sm border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-200">
-                  <strong className="font-semibold">Content missing</strong> — the original body did not survive migration. Click <span className="text-fuchsia-300">Edit</span> to paste it in.
+                  <strong className="font-semibold">Content missing</strong> — the original body did not survive migration. Click <span className="text-blue-300">Edit</span> to paste it in.
                 </div>
               )}
             </div>
@@ -223,7 +223,7 @@ export function FounderSops() {
                 <button
                   onClick={save}
                   disabled={saving}
-                  className="h-8 px-3 rounded-sm bg-emerald-500 hover:bg-emerald-400 text-emerald-950 text-xs font-medium inline-flex items-center gap-1 disabled:opacity-50"
+                  className="h-8 px-3 rounded-sm bg-green-500 hover:bg-green-400 text-green-950 text-xs font-medium inline-flex items-center gap-1 disabled:opacity-50"
                 >
                   {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />} Save
                 </button>

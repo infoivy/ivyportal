@@ -42,15 +42,15 @@ type StudentLite = { id: string; full_name: string };
 
 const TYPE_META: Record<TType, { label: string; icon: typeof Video; color: string }> = {
   video:      { label: "Video",      icon: Video,      color: "bg-blue-500/10 text-blue-400 border-blue-500/30" },
-  image:      { label: "Image",      icon: ImageIcon,  color: "bg-purple-500/10 text-purple-400 border-purple-500/30" },
-  text:       { label: "Text",       icon: Quote,      color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" },
+  image:      { label: "Image",      icon: ImageIcon,  color: "bg-blue-500/10 text-blue-400 border-blue-500/30" },
+  text:       { label: "Text",       icon: Quote,      color: "bg-green-500/10 text-green-400 border-green-500/30" },
   trustpilot: { label: "Trustpilot", icon: Star,       color: "bg-amber-500/10 text-amber-400 border-amber-500/30" },
 };
 
 const STATUS_META: Record<TStatus, string> = {
   requested: "bg-amber-500/10 text-amber-400 border-amber-500/30",
   received:  "bg-blue-500/10 text-blue-400 border-blue-500/30",
-  approved:  "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
+  approved:  "bg-green-500/10 text-green-400 border-green-500/30",
   published: "bg-primary/15 text-primary border-primary/30",
 };
 

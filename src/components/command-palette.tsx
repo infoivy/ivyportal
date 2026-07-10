@@ -157,7 +157,7 @@ export function CommandPalette() {
             if (it.kind === "student") {
               return (
                 <div key={`s-${it.id}`} className={base} onMouseEnter={() => setActive(i)} onClick={() => go(it)}>
-                  <School className="h-3.5 w-3.5 text-fuchsia-400" />
+                  <School className="h-3.5 w-3.5 text-blue-400" />
                   <div className="flex-1 min-w-0">
                     <div className="truncate">{it.name}</div>
                     {it.email && <div className="text-[10px] text-muted-foreground truncate">{it.email}</div>}
@@ -178,7 +178,7 @@ export function CommandPalette() {
             if (it.kind === "doc") {
               return (
                 <div key={`d-${it.slug}`} className={base} onMouseEnter={() => setActive(i)} onClick={() => go(it)}>
-                  <BookOpen className="h-3.5 w-3.5 text-emerald-400" />
+                  <BookOpen className="h-3.5 w-3.5 text-green-400" />
                   <div className="flex-1 min-w-0">
                     <div className="truncate">{it.title}</div>
                     {it.category && <div className="text-[10px] text-muted-foreground truncate">{it.category}</div>}
@@ -198,7 +198,7 @@ export function CommandPalette() {
             }
             return (
               <div key={`c-${it.id}`} className={base} onMouseEnter={() => setActive(i)} onClick={() => go(it)}>
-                <Sparkles className="h-3.5 w-3.5 text-fuchsia-400" />
+                <Sparkles className="h-3.5 w-3.5 text-blue-400" />
                 <div className="flex-1 min-w-0">
                   <div className="truncate">{it.title}</div>
                   {it.platform && <div className="text-[10px] text-muted-foreground truncate">{it.platform}</div>}

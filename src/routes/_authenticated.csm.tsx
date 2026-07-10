@@ -38,9 +38,9 @@ type AdHocItem = {
 
 const KIND_META: Record<TallyKind, { label: string; icon: typeof Video; color: string; ring: string }> = {
   loom:       { label: "Loom reviewed",     icon: Video,          color: "bg-blue-500/10 text-blue-300 hover:bg-blue-500/20 border-blue-500/30",         ring: "focus:ring-blue-400/40" },
-  roleplay:   { label: "Roleplay reviewed", icon: MessageSquare,  color: "bg-purple-500/10 text-purple-300 hover:bg-purple-500/20 border-purple-500/30", ring: "focus:ring-purple-400/40" },
-  checkin:    { label: "Check-in done",     icon: PhoneCall,      color: "bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 border-emerald-500/30", ring: "focus:ring-emerald-400/40" },
-  escalation: { label: "Escalation",        icon: AlertTriangle,  color: "bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 border-rose-500/30",         ring: "focus:ring-rose-400/40" },
+  roleplay:   { label: "Roleplay reviewed", icon: MessageSquare,  color: "bg-blue-500/10 text-blue-300 hover:bg-blue-500/20 border-blue-500/30", ring: "focus:ring-blue-400/40" },
+  checkin:    { label: "Check-in done",     icon: PhoneCall,      color: "bg-green-500/10 text-green-300 hover:bg-green-500/20 border-green-500/30", ring: "focus:ring-green-400/40" },
+  escalation: { label: "Escalation",        icon: AlertTriangle,  color: "bg-red-500/10 text-red-300 hover:bg-red-500/20 border-red-500/30",         ring: "focus:ring-red-400/40" },
 };
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
@@ -242,7 +242,7 @@ function CsmPage() {
           <h1 className="text-2xl font-semibold tracking-tight">CSM Workspace</h1>
           <p className="text-xs text-muted-foreground mt-0.5">Tally today's work, chase accountability, log notes.</p>
         </div>
-        <Link to="/eods" className="inline-flex items-center gap-1.5 h-8 px-3 rounded-sm bg-emerald-500 hover:bg-emerald-400 text-emerald-950 text-xs font-medium">
+        <Link to="/eods" className="inline-flex items-center gap-1.5 h-8 px-3 rounded-sm bg-green-500 hover:bg-green-400 text-green-950 text-xs font-medium">
           <FileText className="h-3.5 w-3.5" /> Submit CSM EOD
         </Link>
       </header>
@@ -299,7 +299,7 @@ function CsmPage() {
           <div className="p-3 border-b border-[#1f2530]">
             <div className="relative">
               <Search className="h-3.5 w-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search students…" className="w-full h-8 pl-8 pr-3 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs outline-none focus:border-emerald-500/40" />
+              <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search students…" className="w-full h-8 pl-8 pr-3 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs outline-none focus:border-green-500/40" />
             </div>
           </div>
           <div className="max-h-[720px] overflow-auto divide-y divide-[#1a1f29]">
@@ -326,7 +326,7 @@ function CsmPage() {
                   <h2 className="text-lg font-semibold">{selected.full_name}</h2>
                   <p className="text-[11px] text-muted-foreground">{selected.email ?? "no email"}</p>
                 </div>
-                <Link to={"/students/$id" as unknown as string} params={{ id: selected.id } as { id: string }} className="text-[11px] text-emerald-400 hover:text-emerald-300 shrink-0">Open tracker →</Link>
+                <Link to={"/students/$id" as unknown as string} params={{ id: selected.id } as { id: string }} className="text-[11px] text-green-400 hover:text-green-300 shrink-0">Open tracker →</Link>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-[#1f2530]">
                 <AccountStat label="Open action items" value={openCount} tone={openCount > 0 ? "warn" : "ok"} />
@@ -349,7 +349,7 @@ function CsmPage() {
                       <li key={it.callId + it.index} className="flex items-start gap-2">
                         <span className="mt-0.5 shrink-0" aria-hidden>
                           {it.done
-                            ? <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                            ? <CheckCircle2 className="h-4 w-4 text-green-400" />
                             : <Circle className="h-4 w-4 text-muted-foreground" />}
                         </span>
                         <div className="flex-1 min-w-0">
@@ -367,7 +367,7 @@ function CsmPage() {
               {/* Ad-hoc action items — CSMs can add these directly */}
               <div className="p-4 border-t border-[#1f2530]">
                 <div className="flex items-center justify-between mb-2">
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-fuchsia-400">Ad-hoc action items</div>
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-blue-400">Ad-hoc action items</div>
                   <div className="text-[10px] text-muted-foreground italic">Assign anytime · outside of calls</div>
                 </div>
                 {selectedAdhoc.length === 0 ? (
@@ -382,8 +382,8 @@ function CsmPage() {
                           aria-label={it.done ? "Mark not done" : "Mark done"}
                         >
                           {it.done
-                            ? <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                            : <Circle className="h-4 w-4 text-muted-foreground hover:text-fuchsia-400" />}
+                            ? <CheckCircle2 className="h-4 w-4 text-green-400" />
+                            : <Circle className="h-4 w-4 text-muted-foreground hover:text-blue-400" />}
                         </button>
                         <div className="flex-1 min-w-0">
                           <div className={`text-sm ${it.done ? "line-through text-muted-foreground" : ""}`}>{it.text}</div>
@@ -395,7 +395,7 @@ function CsmPage() {
                         {(it.created_by === user?.id || roles.includes("admin")) && (
                           <button
                             onClick={() => deleteAdhoc(it.id)}
-                            className="p-1 rounded-sm text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10"
+                            className="p-1 rounded-sm text-muted-foreground hover:text-red-400 hover:bg-red-500/10"
                             title="Delete"
                           >
                             <Trash2 className="h-3 w-3" />
@@ -410,18 +410,18 @@ function CsmPage() {
                     value={newAdhocText}
                     onChange={e => setNewAdhocText(e.target.value)}
                     placeholder="New action item…"
-                    className="h-8 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs outline-none focus:border-fuchsia-500/40"
+                    className="h-8 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs outline-none focus:border-blue-500/40"
                   />
                   <input
                     type="date"
                     value={newAdhocDue}
                     onChange={e => setNewAdhocDue(e.target.value)}
-                    className="h-8 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs outline-none focus:border-fuchsia-500/40"
+                    className="h-8 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs outline-none focus:border-blue-500/40"
                   />
                   <button
                     onClick={addAdhoc}
                     disabled={savingAdhoc || !newAdhocText.trim()}
-                    className="h-8 px-3 rounded-sm bg-fuchsia-500 hover:bg-fuchsia-400 text-fuchsia-950 text-xs font-medium disabled:opacity-40"
+                    className="h-8 px-3 rounded-sm bg-blue-500 hover:bg-blue-400 text-blue-950 text-xs font-medium disabled:opacity-40"
                   >
                     {savingAdhoc ? "…" : "Add"}
                   </button>
@@ -458,10 +458,10 @@ function CsmPage() {
           {/* Notes flow (unchanged) */}
           <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-4">
             <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-2">Add CSM note</div>
-            <textarea value={note} onChange={e => setNote(e.target.value)} rows={3} placeholder="Add a student success note, risk signal, follow-up, accountability update…" className="w-full bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-2 text-sm resize-none focus:outline-none focus:border-emerald-500/40" />
+            <textarea value={note} onChange={e => setNote(e.target.value)} rows={3} placeholder="Add a student success note, risk signal, follow-up, accountability update…" className="w-full bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-2 text-sm resize-none focus:outline-none focus:border-green-500/40" />
             <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] gap-2">
-              <input value={tags} onChange={e => setTags(e.target.value)} placeholder="tags, comma-separated" className="h-8 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs outline-none focus:border-emerald-500/40" />
-              <button onClick={saveNote} disabled={saving || !note.trim() || !studentId} className="h-8 px-3 rounded-sm bg-emerald-500 hover:bg-emerald-400 text-emerald-950 text-xs font-medium disabled:opacity-40">
+              <input value={tags} onChange={e => setTags(e.target.value)} placeholder="tags, comma-separated" className="h-8 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs outline-none focus:border-green-500/40" />
+              <button onClick={saveNote} disabled={saving || !note.trim() || !studentId} className="h-8 px-3 rounded-sm bg-green-500 hover:bg-green-400 text-green-950 text-xs font-medium disabled:opacity-40">
                 {saving ? "Saving…" : "Save note"}
               </button>
             </div>
@@ -479,7 +479,7 @@ function CsmPage() {
                       {(n.tags ?? []).map(tag => <span key={tag} className="px-1.5 py-0.5 rounded-sm border border-amber-500/30 text-amber-400 uppercase tracking-wider">#{tag}</span>)}
                       <span className="ml-auto">{n.author} · {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}</span>
                       {(n.user_id === user?.id || roles.includes("admin")) && (
-                        <button onClick={() => deleteNote(n.id)} className="p-1 rounded-sm text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10" title="Delete note">
+                        <button onClick={() => deleteNote(n.id)} className="p-1 rounded-sm text-muted-foreground hover:text-red-400 hover:bg-red-500/10" title="Delete note">
                           <Trash2 className="h-3 w-3" />
                         </button>
                       )}
@@ -502,18 +502,18 @@ function CsmPage() {
             </div>
             <div>
               <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Student (optional)</label>
-              <select value={quickStudent} onChange={e => setQuickStudent(e.target.value)} className="mt-1 w-full h-8 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs outline-none focus:border-emerald-500/40">
+              <select value={quickStudent} onChange={e => setQuickStudent(e.target.value)} className="mt-1 w-full h-8 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs outline-none focus:border-green-500/40">
                 <option value="">— none —</option>
                 {students.map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
               </select>
             </div>
             <div>
               <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Note (optional)</label>
-              <textarea value={quickNote} onChange={e => setQuickNote(e.target.value)} rows={3} className="mt-1 w-full bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-2 text-sm resize-none focus:outline-none focus:border-emerald-500/40" placeholder="What was reviewed / said?" />
+              <textarea value={quickNote} onChange={e => setQuickNote(e.target.value)} rows={3} className="mt-1 w-full bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-2 text-sm resize-none focus:outline-none focus:border-green-500/40" placeholder="What was reviewed / said?" />
             </div>
             <div className="flex justify-end gap-2 pt-1">
               <button onClick={() => setQuickKind(null)} className="h-8 px-3 rounded-sm border border-[#1f2530] text-xs">Cancel</button>
-              <button onClick={submitQuick} className="h-8 px-3 rounded-sm bg-emerald-500 hover:bg-emerald-400 text-emerald-950 text-xs font-medium">+1 & save</button>
+              <button onClick={submitQuick} className="h-8 px-3 rounded-sm bg-green-500 hover:bg-green-400 text-green-950 text-xs font-medium">+1 & save</button>
             </div>
           </div>
         </div>
@@ -523,7 +523,7 @@ function CsmPage() {
 }
 
 function AccountStat({ label, value, tone }: { label: string; value: string | number; tone?: "ok" | "warn" }) {
-  const color = tone === "warn" ? "text-amber-400" : tone === "ok" ? "text-emerald-400" : "text-foreground";
+  const color = tone === "warn" ? "text-amber-400" : tone === "ok" ? "text-green-400" : "text-foreground";
   return (
     <div className="bg-[#0f1116] p-3">
       <div className="text-[9px] uppercase tracking-wider text-muted-foreground mb-1">{label}</div>

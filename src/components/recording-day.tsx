@@ -85,7 +85,7 @@ export function RecordingDay({ onOpenItem }: { onOpenItem: (id: string) => void 
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3 border border-[#1f2530] bg-[#0f1116] rounded-sm p-3">
         <div className="flex items-center gap-2">
-          <Video className="h-4 w-4 text-fuchsia-400" />
+          <Video className="h-4 w-4 text-blue-400" />
           <div>
             <div className="text-sm font-semibold">Recording Day</div>
             <div className="text-[10px] text-muted-foreground">Batch-shoot the next 2 weeks in one session</div>
@@ -93,7 +93,7 @@ export function RecordingDay({ onOpenItem }: { onOpenItem: (id: string) => void 
         </div>
         <div className="ml-auto flex items-center gap-3">
           <div className="text-xs">
-            <span className="font-mono text-lg font-bold text-fuchsia-300">{readyCount}</span>
+            <span className="font-mono text-lg font-bold text-blue-300">{readyCount}</span>
             <span className="text-muted-foreground"> / {ordered.length} ready</span>
           </div>
           <div className="flex items-center gap-1">
@@ -105,7 +105,7 @@ export function RecordingDay({ onOpenItem }: { onOpenItem: (id: string) => void 
           <button
             onClick={() => setFocusIdx(0)}
             disabled={ordered.length === 0}
-            className="h-7 px-3 rounded-sm bg-fuchsia-500 hover:bg-fuchsia-400 text-fuchsia-950 text-[11px] font-medium disabled:opacity-40 inline-flex items-center gap-1"
+            className="h-7 px-3 rounded-sm bg-blue-500 hover:bg-blue-400 text-blue-950 text-[11px] font-medium disabled:opacity-40 inline-flex items-center gap-1"
           >
             <Play className="h-3 w-3" /> Focus mode
           </button>
@@ -114,7 +114,7 @@ export function RecordingDay({ onOpenItem }: { onOpenItem: (id: string) => void 
 
       {/* Progress bar */}
       <div className="h-1.5 rounded-full bg-[#0a0b0f] overflow-hidden border border-[#1f2530]">
-        <div className="h-full bg-fuchsia-500 transition-all" style={{ width: `${ordered.length ? (readyCount / ordered.length) * 100 : 0}%` }} />
+        <div className="h-full bg-blue-500 transition-all" style={{ width: `${ordered.length ? (readyCount / ordered.length) * 100 : 0}%` }} />
       </div>
 
       {/* Checklist */}
@@ -123,10 +123,10 @@ export function RecordingDay({ onOpenItem }: { onOpenItem: (id: string) => void 
           const ready = isReady(s);
           const filled = s.hook && !/^(TOF|MOF)\s·/.test(s.hook);
           const scripted = (s.script?.trim().length ?? 0) > 20;
-          const stageColor = s.funnel_stage === "tof" ? "text-blue-300 border-blue-500/30 bg-blue-500/5" : "text-emerald-300 border-emerald-500/30 bg-emerald-500/5";
+          const stageColor = s.funnel_stage === "tof" ? "text-blue-300 border-blue-500/30 bg-blue-500/5" : "text-green-300 border-green-500/30 bg-green-500/5";
           return (
-            <div key={s.id} className="flex items-center gap-3 border border-[#1f2530] bg-[#0f1116] rounded-sm p-2.5 hover:border-fuchsia-500/40 transition">
-              {ready ? <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" /> : <Circle className="h-4 w-4 text-muted-foreground shrink-0" />}
+            <div key={s.id} className="flex items-center gap-3 border border-[#1f2530] bg-[#0f1116] rounded-sm p-2.5 hover:border-blue-500/40 transition">
+              {ready ? <CheckCircle2 className="h-4 w-4 text-green-400 shrink-0" /> : <Circle className="h-4 w-4 text-muted-foreground shrink-0" />}
               <div className="flex-1 min-w-0 space-y-0.5">
                 <button onClick={() => onOpenItem(s.id)} className="text-left w-full">
                   <div className="flex items-center gap-2">
@@ -140,22 +140,22 @@ export function RecordingDay({ onOpenItem }: { onOpenItem: (id: string) => void 
                   </div>
                 </button>
                 <div className="flex items-center gap-2 text-[9px] text-muted-foreground">
-                  <span className={filled ? "text-emerald-400" : ""}>{filled ? "✓" : "○"} Hook</span>
-                  <span className={scripted ? "text-emerald-400" : ""}>{scripted ? "✓" : "○"} Script</span>
-                  <span className={READY_STATUSES.has(s.status) ? "text-emerald-400" : ""}>{READY_STATUSES.has(s.status) ? "✓" : "○"} Approved</span>
+                  <span className={filled ? "text-green-400" : ""}>{filled ? "✓" : "○"} Hook</span>
+                  <span className={scripted ? "text-green-400" : ""}>{scripted ? "✓" : "○"} Script</span>
+                  <span className={READY_STATUSES.has(s.status) ? "text-green-400" : ""}>{READY_STATUSES.has(s.status) ? "✓" : "○"} Approved</span>
                 </div>
               </div>
               {ready && (s.status === "approved" || s.status === "scripted") && (
                 <button
                   onClick={() => markRecorded(s.id)}
-                  className="h-7 px-2 rounded-sm border border-fuchsia-500/40 text-[10px] text-fuchsia-300 hover:bg-fuchsia-500/10 shrink-0"
+                  className="h-7 px-2 rounded-sm border border-blue-500/40 text-[10px] text-blue-300 hover:bg-blue-500/10 shrink-0"
                 >
                   Mark recorded
                 </button>
               )}
               <button
                 onClick={() => setFocusIdx(i)}
-                className="h-7 px-2 rounded-sm border border-[#1f2530] hover:border-fuchsia-500/40 text-[10px] text-muted-foreground hover:text-fuchsia-300 shrink-0 inline-flex items-center gap-0.5"
+                className="h-7 px-2 rounded-sm border border-[#1f2530] hover:border-blue-500/40 text-[10px] text-muted-foreground hover:text-blue-300 shrink-0 inline-flex items-center gap-0.5"
               >
                 Focus <ChevronRight className="h-2.5 w-2.5" />
               </button>
@@ -172,9 +172,9 @@ export function RecordingDay({ onOpenItem }: { onOpenItem: (id: string) => void 
       {/* Focus mode */}
       {current && (
         <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4" onClick={() => setFocusIdx(null)}>
-          <div className="w-full max-w-4xl bg-[#0f1116] border border-fuchsia-500/30 rounded-sm" onClick={e => e.stopPropagation()}>
+          <div className="w-full max-w-4xl bg-[#0f1116] border border-blue-500/30 rounded-sm" onClick={e => e.stopPropagation()}>
             <div className="p-4 border-b border-[#1f2530] flex items-center justify-between">
-              <div className="text-[10px] uppercase tracking-wider text-fuchsia-400">
+              <div className="text-[10px] uppercase tracking-wider text-blue-400">
                 {focusIdx! + 1} of {ordered.length} · {current.scheduled_date ? format(parseISO(current.scheduled_date), "EEE MMM d") : "—"}
               </div>
               <button onClick={() => setFocusIdx(null)} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
@@ -207,7 +207,7 @@ export function RecordingDay({ onOpenItem }: { onOpenItem: (id: string) => void 
                 {(current.status === "approved" || current.status === "scripted") && (
                   <button
                     onClick={async () => { await markRecorded(current.id); setFocusIdx(Math.min(ordered.length - 1, focusIdx! + 1)); }}
-                    className="h-8 px-3 rounded-sm bg-fuchsia-500 hover:bg-fuchsia-400 text-fuchsia-950 text-xs font-medium"
+                    className="h-8 px-3 rounded-sm bg-blue-500 hover:bg-blue-400 text-blue-950 text-xs font-medium"
                   >Mark recorded → Next</button>
                 )}
               </div>

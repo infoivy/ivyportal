@@ -44,9 +44,9 @@ type Person = { id: string; display_name: string | null };
 
 const STATUS_META: Record<PayStatus, { label: string; cls: string }> = {
   upcoming: { label: "Upcoming", cls: "text-sky-400 border-sky-500/30 bg-sky-500/10" },
-  paid:     { label: "Paid",     cls: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10" },
+  paid:     { label: "Paid",     cls: "text-green-400 border-green-500/30 bg-green-500/10" },
   late:     { label: "Late",     cls: "text-amber-400 border-amber-500/30 bg-amber-500/10" },
-  missed:   { label: "Missed",   cls: "text-rose-400 border-rose-500/30 bg-rose-500/10" },
+  missed:   { label: "Missed",   cls: "text-red-400 border-red-500/30 bg-red-500/10" },
   waived:   { label: "Waived",   cls: "text-zinc-400 border-zinc-500/30 bg-zinc-500/5" },
 };
 
@@ -181,7 +181,7 @@ function InstallmentsPage() {
               const label = dLeft < 0 ? `${Math.abs(dLeft)}d overdue` : dLeft === 0 ? "Due today" : `${dLeft}d away`;
               return (
                 <div key={p.id} className="px-4 py-3 flex items-center gap-3 flex-wrap">
-                  <span className={`text-[11px] px-2 py-0.5 rounded-full border ${tone === "rose" ? "text-rose-400 border-rose-500/30 bg-rose-500/10" : tone === "amber" ? "text-amber-400 border-amber-500/30 bg-amber-500/10" : "text-sky-400 border-sky-500/30 bg-sky-500/10"}`}>{label}</span>
+                  <span className={`text-[11px] px-2 py-0.5 rounded-full border ${tone === "rose" ? "text-red-400 border-red-500/30 bg-red-500/10" : tone === "amber" ? "text-amber-400 border-amber-500/30 bg-amber-500/10" : "text-sky-400 border-sky-500/30 bg-sky-500/10"}`}>{label}</span>
                   <span className="font-medium">{nameFor(p)}</span>
                   <span className="text-sm text-muted-foreground">Payment #{p.sequence} · {fmtMoney(Number(p.amount), p.currency)}</span>
                   <span className="text-xs text-muted-foreground flex items-center gap-1"><CalendarIcon className="h-3 w-3" /> {p.due_date}</span>
@@ -231,13 +231,13 @@ function InstallmentsPage() {
                   </div>
                 </div>
                 <div className="text-sm">
-                  <span className="text-emerald-400 font-medium">{fmtMoney(paid, inst.currency)}</span>
+                  <span className="text-green-400 font-medium">{fmtMoney(paid, inst.currency)}</span>
                   <span className="text-muted-foreground"> / {fmtMoney(Number(inst.total_amount), inst.currency)}</span>
                 </div>
-                <div className="w-40 h-1.5 bg-muted rounded-full overflow-hidden"><div className="h-full bg-emerald-500" style={{ width: `${pct}%` }} /></div>
+                <div className="w-40 h-1.5 bg-muted rounded-full overflow-hidden"><div className="h-full bg-green-500" style={{ width: `${pct}%` }} /></div>
                 <button onClick={() => { setEditing(inst); setAddOpen(true); }} className="text-xs px-2 py-1 rounded border border-border hover:bg-accent inline-flex items-center gap-1"><Edit3 className="h-3 w-3" />Edit</button>
                 {canDelete && (
-                  <button onClick={() => removeInstallment(inst.id)} className="text-xs px-2 py-1 rounded border border-border hover:bg-accent text-rose-400 inline-flex items-center gap-1"><Trash2 className="h-3 w-3" />Delete</button>
+                  <button onClick={() => removeInstallment(inst.id)} className="text-xs px-2 py-1 rounded border border-border hover:bg-accent text-red-400 inline-flex items-center gap-1"><Trash2 className="h-3 w-3" />Delete</button>
                 )}
               </header>
               {inst.notes && <div className="px-4 py-2 text-xs text-muted-foreground border-b border-border">{inst.notes}</div>}
@@ -250,7 +250,7 @@ function InstallmentsPage() {
                       <span className="font-medium w-28">{fmtMoney(Number(p.amount), p.currency)}</span>
                       <span className="text-xs text-muted-foreground flex items-center gap-1"><CalendarIcon className="h-3 w-3" /> {p.due_date}
                         {p.status === "upcoming" && (
-                          <span className={`ml-1 px-1.5 py-0.5 rounded ${dLeft < 0 ? "text-rose-400" : dLeft <= 3 ? "text-amber-400" : "text-muted-foreground"}`}>
+                          <span className={`ml-1 px-1.5 py-0.5 rounded ${dLeft < 0 ? "text-red-400" : dLeft <= 3 ? "text-amber-400" : "text-muted-foreground"}`}>
                             ({dLeft < 0 ? `${Math.abs(dLeft)}d late` : dLeft === 0 ? "today" : `in ${dLeft}d`})
                           </span>
                         )}
@@ -266,7 +266,7 @@ function InstallmentsPage() {
                       {p.notes && <span className="text-xs text-muted-foreground italic truncate max-w-[240px]">"{p.notes}"</span>}
                       <div className="ml-auto flex items-center gap-2">
                         {canDelete && (
-                          <button onClick={() => removePayment(p.id)} className="text-xs text-rose-400 hover:underline"><Trash2 className="h-3 w-3" /></button>
+                          <button onClick={() => removePayment(p.id)} className="text-xs text-red-400 hover:underline"><Trash2 className="h-3 w-3" /></button>
                         )}
                       </div>
                     </div>
@@ -296,10 +296,10 @@ function InstallmentsPage() {
 
 function StatCard({ icon, label, value, tone }: { icon: React.ReactNode; label: string; value: React.ReactNode; tone: "rose" | "amber" | "sky" | "emerald" }) {
   const toneCls = {
-    rose:    "text-rose-400",
+    rose:    "text-red-400",
     amber:   "text-amber-400",
     sky:     "text-sky-400",
-    emerald: "text-emerald-400",
+    emerald: "text-green-400",
   }[tone];
   return (
     <div className="rounded-lg border border-border bg-card p-3">
@@ -480,7 +480,7 @@ function PlanEditor({
                     {(Object.keys(STATUS_META) as PayStatus[]).map(s => <option key={s} value={s}>{STATUS_META[s].label}</option>)}
                   </select>
                   <input value={d.payment_method} onChange={e => setDrafts(list => list.map((r,idx) => idx === i ? { ...r, payment_method: e.target.value } : r))} placeholder="Method" className="col-span-2 px-2 py-1.5 rounded border border-border bg-background text-sm" />
-                  <button onClick={() => removeDraft(i)} className="col-span-1 p-1 rounded hover:bg-accent text-rose-400 justify-self-end"><Trash2 className="h-3.5 w-3.5" /></button>
+                  <button onClick={() => removeDraft(i)} className="col-span-1 p-1 rounded hover:bg-accent text-red-400 justify-self-end"><Trash2 className="h-3.5 w-3.5" /></button>
                 </div>
               ))}
             </div>

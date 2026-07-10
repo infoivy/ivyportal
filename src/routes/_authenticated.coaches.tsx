@@ -92,7 +92,7 @@ function CoachesPage() {
                 </div>
               </div>
               {stale.length > 0 && (
-                <span className="flex items-center gap-1 text-[10px] text-rose-400 border border-rose-500/30 bg-rose-500/10 px-1.5 py-0.5 rounded-sm">
+                <span className="flex items-center gap-1 text-[10px] text-red-400 border border-red-500/30 bg-red-500/10 px-1.5 py-0.5 rounded-sm">
                   <AlertTriangle className="h-2.5 w-2.5" /> {stale.length} stale
                 </span>
               )}
@@ -106,10 +106,10 @@ function CoachesPage() {
 
             {stale.length > 0 && (
               <div className="border-t border-[#1f2530] pt-2">
-                <div className="text-[10px] uppercase tracking-wider text-rose-400 mb-1">&gt;14 days since 1:1</div>
+                <div className="text-[10px] uppercase tracking-wider text-red-400 mb-1">&gt;14 days since 1:1</div>
                 <div className="flex flex-wrap gap-1">
                   {stale.slice(0, 6).map(s => (
-                    <Link key={s.id} to="/students/$id" params={{ id: s.id }} className="text-[10px] px-1.5 py-0.5 rounded-sm border border-rose-500/30 bg-rose-500/5 text-rose-300 hover:bg-rose-500/10">
+                    <Link key={s.id} to="/students/$id" params={{ id: s.id }} className="text-[10px] px-1.5 py-0.5 rounded-sm border border-red-500/30 bg-red-500/5 text-red-300 hover:bg-red-500/10">
                       {s.full_name}
                     </Link>
                   ))}
@@ -130,7 +130,7 @@ function CoachesPage() {
 }
 
 function Stat({ label, value, sub, icon, tone }: { label: string; value: number | string; sub?: string; icon: React.ReactNode; tone: "emerald" | "amber" | "rose" | "sky" }) {
-  const colors = { emerald: "text-emerald-400", amber: "text-amber-400", rose: "text-rose-400", sky: "text-sky-400" }[tone];
+  const colors = { emerald: "text-green-400", amber: "text-amber-400", rose: "text-red-400", sky: "text-sky-400" }[tone];
   return (
     <div className="border border-[#1f2530] bg-[#0a0b0f] rounded-sm p-2">
       <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-muted-foreground mb-0.5">{icon}{label}</div>

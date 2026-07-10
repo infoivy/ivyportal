@@ -153,14 +153,14 @@ function Crm() {
               <button
                 onClick={() => refresh(q)}
                 disabled={loading}
-                className="inline-flex items-center justify-center h-7 w-7 rounded-sm border border-border hover:border-emerald-500/40"
+                className="inline-flex items-center justify-center h-7 w-7 rounded-sm border border-border hover:border-green-500/40"
                 title="Refresh"
               >
                 {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
               </button>
             )}
             {connected ? (
-              <div className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-sm bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 uppercase tracking-wider">
+              <div className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-sm bg-green-500/10 text-green-400 border border-green-500/30 uppercase tracking-wider">
                 <CheckCircle2 className="h-3 w-3" /> Live
               </div>
             ) : (
@@ -171,7 +171,7 @@ function Crm() {
             {isAdmin && (
               <button
                 onClick={() => setOpenDialog(true)}
-                className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1.5 rounded-sm bg-emerald-500 text-black hover:bg-emerald-400"
+                className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1.5 rounded-sm bg-green-500 text-black hover:bg-green-400"
               >
                 <Zap className="h-3 w-3" /> {connected ? "Manage" : "Connect"}
               </button>
@@ -211,7 +211,7 @@ function Crm() {
                 onChange={(e) => setQ(e.target.value)}
                 placeholder={connected ? "Search leads by name, email, phone…" : "Connect Close to search"}
                 disabled={!connected}
-                className="w-full h-8 pl-8 pr-3 rounded-sm border border-border bg-white/[0.02] text-xs disabled:opacity-50 focus:outline-none focus:border-emerald-500/40"
+                className="w-full h-8 pl-8 pr-3 rounded-sm border border-border bg-white/[0.02] text-xs disabled:opacity-50 focus:outline-none focus:border-green-500/40"
               />
             </div>
             {loading && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
@@ -240,7 +240,7 @@ function Crm() {
                   onClick={() => setStatusFilter(p.stage === statusFilter ? "all" : p.stage)}
                   className={
                     "text-left rounded-sm border p-2.5 bg-white/[0.01] hover:bg-white/[0.03] transition " +
-                    (statusFilter === p.stage ? "border-emerald-500/50" : "border-border")
+                    (statusFilter === p.stage ? "border-green-500/50" : "border-border")
                   }
                 >
                   <div className="flex items-center gap-1.5 mb-1">
@@ -297,7 +297,7 @@ function Crm() {
                       className={
                         "inline-flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded-sm border " +
                         (nc > 0
-                          ? "border-fuchsia-500/40 bg-fuchsia-500/10 text-fuchsia-300"
+                          ? "border-blue-500/40 bg-blue-500/10 text-blue-300"
                           : "border-border/60 text-muted-foreground")
                       }
                       title={nc === 1 ? "1 internal note" : `${nc} internal notes`}
@@ -305,7 +305,7 @@ function Crm() {
                       <StickyNote className="h-3 w-3" />
                       {nc}
                     </span>
-                    <span className="text-xs font-bold tabular-nums text-emerald-400">{l.value > 0 ? currency(l.value) : "—"}</span>
+                    <span className="text-xs font-bold tabular-nums text-green-400">{l.value > 0 ? currency(l.value) : "—"}</span>
                     <span className="text-[10px] text-muted-foreground tabular-nums whitespace-nowrap">{relTime(l.updated_at)}</span>
                   </button>
                 );
@@ -334,7 +334,7 @@ function Chip({ active, onClick, label }: { active: boolean; onClick: () => void
       className={
         "text-[10px] px-2 py-0.5 rounded-sm border tabular-nums transition " +
         (active
-          ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300"
+          ? "bg-green-500/15 border-green-500/40 text-green-300"
           : "bg-white/[0.02] border-border text-muted-foreground hover:text-foreground")
       }
     >
@@ -413,8 +413,8 @@ function CloseKeyDialog({
               className={
                 "text-xs px-3 py-2 rounded-sm border " +
                 (result.ok
-                  ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-400"
-                  : "border-rose-500/30 bg-rose-500/5 text-rose-400")
+                  ? "border-green-500/30 bg-green-500/5 text-green-400"
+                  : "border-red-500/30 bg-red-500/5 text-red-400")
               }
             >
               {result.msg}
@@ -545,12 +545,12 @@ function LeadDetailDrawer({
             <div className="flex items-center gap-2 mt-0.5">
               <span className="text-[10px] uppercase tracking-wider" style={{ color: c }}>{lead.status}</span>
               <span className="text-[10px] text-muted-foreground">·</span>
-              <span className="text-[10px] font-mono text-emerald-400">{lead.value > 0 ? currency(lead.value) : "—"}</span>
+              <span className="text-[10px] font-mono text-green-400">{lead.value > 0 ? currency(lead.value) : "—"}</span>
               <span className="text-[10px] text-muted-foreground">·</span>
               <span className="text-[10px] text-muted-foreground">updated {relTime(lead.updated_at)}</span>
             </div>
           </div>
-          <button onClick={onClose} className="h-7 w-7 grid place-items-center rounded-sm border border-border hover:border-rose-500/40">
+          <button onClick={onClose} className="h-7 w-7 grid place-items-center rounded-sm border border-border hover:border-red-500/40">
             <X className="h-3.5 w-3.5" />
           </button>
         </div>
@@ -562,11 +562,11 @@ function LeadDetailDrawer({
             onChange={(e) => setBody(e.target.value)}
             placeholder="What happened on this lead? Context, follow-up, objections…"
             rows={3}
-            className="w-full text-xs bg-white/[0.02] border border-border rounded-sm p-2 focus:outline-none focus:border-emerald-500/40 resize-y"
+            className="w-full text-xs bg-white/[0.02] border border-border rounded-sm p-2 focus:outline-none focus:border-green-500/40 resize-y"
           />
           <div className="flex items-center justify-between gap-2">
             <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
-              <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} className="accent-fuchsia-500" />
+              <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} className="accent-blue-500" />
               <Pin className="h-3 w-3" /> Pin to top
             </label>
             <Button size="sm" onClick={submit} disabled={saving || !body.trim()}>
@@ -594,7 +594,7 @@ function LeadDetailDrawer({
                   <div key={n.id} className="rounded-sm border border-border bg-white/[0.02] p-2.5">
                     <div className="flex items-center justify-between gap-2 mb-1.5">
                       <div className="flex items-center gap-2 min-w-0">
-                        {n.pinned && <Pin className="h-3 w-3 text-fuchsia-400 shrink-0" />}
+                        {n.pinned && <Pin className="h-3 w-3 text-blue-400 shrink-0" />}
                         <span className="text-[11px] font-medium truncate">{n.author_name || "Team member"}</span>
                         <span className="text-[10px] text-muted-foreground whitespace-nowrap">{relTime(n.created_at)}</span>
                       </div>
@@ -603,7 +603,7 @@ function LeadDetailDrawer({
                           <button
                             onClick={() => togglePin(n)}
                             title={n.pinned ? "Unpin" : "Pin"}
-                            className="h-6 w-6 grid place-items-center rounded-sm hover:bg-white/[0.04] text-muted-foreground hover:text-fuchsia-400"
+                            className="h-6 w-6 grid place-items-center rounded-sm hover:bg-white/[0.04] text-muted-foreground hover:text-blue-400"
                           >
                             <Pin className="h-3 w-3" />
                           </button>
@@ -618,7 +618,7 @@ function LeadDetailDrawer({
                           <button
                             onClick={() => remove(n)}
                             title="Delete"
-                            className="h-6 w-6 grid place-items-center rounded-sm hover:bg-white/[0.04] text-muted-foreground hover:text-rose-400"
+                            className="h-6 w-6 grid place-items-center rounded-sm hover:bg-white/[0.04] text-muted-foreground hover:text-red-400"
                           >
                             <Trash2 className="h-3 w-3" />
                           </button>
@@ -631,7 +631,7 @@ function LeadDetailDrawer({
                           value={editBody}
                           onChange={(e) => setEditBody(e.target.value)}
                           rows={3}
-                          className="w-full text-xs bg-white/[0.02] border border-border rounded-sm p-2 focus:outline-none focus:border-emerald-500/40"
+                          className="w-full text-xs bg-white/[0.02] border border-border rounded-sm p-2 focus:outline-none focus:border-green-500/40"
                         />
                         <div className="flex justify-end gap-1.5">
                           <Button size="sm" variant="outline" onClick={() => { setEditingId(null); setEditBody(""); }}>Cancel</Button>

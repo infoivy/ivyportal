@@ -165,7 +165,7 @@ function IgPage() {
       {/* Header */}
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-lg font-bold text-emerald-950">
+          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center text-lg font-bold text-green-950">
             {(connection?.display_name ?? "?").slice(0, 1)}
           </div>
           <div>
@@ -191,20 +191,20 @@ function IgPage() {
           )}
           <button
             onClick={() => setLogOpen(true)}
-            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-emerald-500 hover:bg-emerald-400 text-emerald-950 text-xs font-medium"
+            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-green-500 hover:bg-green-400 text-green-950 text-xs font-medium"
           >
             <Plus className="h-3.5 w-3.5" /> {selected ? "Update month" : "Log this month"}
           </button>
           <button
             onClick={() => setConnectOpen(true)}
-            className="inline-flex items-center gap-2 h-9 px-3 rounded-md border border-[#1f2530] bg-[#0f1116] hover:border-pink-500/40 text-xs"
+            className="inline-flex items-center gap-2 h-9 px-3 rounded-md border border-[#1f2530] bg-[#0f1116] hover:border-blue-500/40 text-xs"
           >
-            <Instagram className="h-3.5 w-3.5 text-pink-400" />
+            <Instagram className="h-3.5 w-3.5 text-blue-400" />
             {connection?.username ? `@${connection.username}` : "Profile"}
           </button>
           <button
             onClick={() => setSettingsOpen(true)}
-            className="inline-flex items-center justify-center h-9 w-9 rounded-md border border-[#1f2530] bg-[#0f1116] hover:border-emerald-500/40"
+            className="inline-flex items-center justify-center h-9 w-9 rounded-md border border-[#1f2530] bg-[#0f1116] hover:border-green-500/40"
           >
             <Settings className="h-3.5 w-3.5" />
           </button>
@@ -212,13 +212,13 @@ function IgPage() {
       </header>
 
       {empty && (
-        <div className="border border-emerald-500/30 bg-emerald-500/5 rounded-md p-6 text-center">
-          <Instagram className="h-8 w-8 mx-auto text-emerald-400 mb-2" />
+        <div className="border border-green-500/30 bg-green-500/5 rounded-md p-6 text-center">
+          <Instagram className="h-8 w-8 mx-auto text-green-400 mb-2" />
           <div className="text-sm font-semibold mb-1">No snapshots yet</div>
           <p className="text-xs text-muted-foreground mb-3">Log the first month to populate this dashboard. Numbers come from your IG insights.</p>
           <button
             onClick={() => setLogOpen(true)}
-            className="inline-flex items-center gap-1.5 h-8 px-4 rounded-md bg-emerald-500 hover:bg-emerald-400 text-emerald-950 text-xs font-medium"
+            className="inline-flex items-center gap-1.5 h-8 px-4 rounded-md bg-green-500 hover:bg-green-400 text-green-950 text-xs font-medium"
           >
             <Plus className="h-3.5 w-3.5" /> Log this month
           </button>
@@ -259,7 +259,7 @@ function IgPage() {
 
             <Panel>
               <div className="flex items-center gap-2 mb-3">
-                <Target className="h-4 w-4 text-emerald-400" />
+                <Target className="h-4 w-4 text-green-400" />
                 <div className="text-sm font-semibold">Goals</div>
               </div>
               <div className="space-y-3">
@@ -330,7 +330,7 @@ function IgPage() {
 
 function StatCard({ icon, label, value, accent, active, delta }: { icon: React.ReactNode; label: string; value: string; accent?: "blue" | "cyan"; active?: boolean; delta?: number | null }) {
   const border = active ? "border-blue-500/50" : "border-[#1f2530]";
-  const valColor = accent === "cyan" ? "text-cyan-300" : accent === "blue" ? "text-blue-400" : "text-foreground";
+  const valColor = accent === "cyan" ? "text-blue-300" : accent === "blue" ? "text-blue-400" : "text-foreground";
   const up = delta != null && delta > 0;
   const down = delta != null && delta < 0;
   return (
@@ -340,7 +340,7 @@ function StatCard({ icon, label, value, accent, active, delta }: { icon: React.R
       </div>
       <div className={`text-lg font-semibold font-mono ${valColor}`}>{value}</div>
       {delta != null && delta !== 0 && (
-        <div className={`text-[10px] font-mono flex items-center gap-0.5 mt-0.5 ${up ? "text-emerald-400" : "text-rose-400"}`}>
+        <div className={`text-[10px] font-mono flex items-center gap-0.5 mt-0.5 ${up ? "text-green-400" : "text-red-400"}`}>
           {up ? <TrendingUp className="h-2.5 w-2.5" /> : <TrendingDown className="h-2.5 w-2.5" />}
           {up ? "+" : ""}{fmt(delta)}
         </div>
@@ -438,7 +438,7 @@ function ReelsTable({ reels }: { reels: TopReel[] }) {
                 <td className="py-2 text-right font-mono">{fmt(r.saves)}</td>
                 <td className="py-2 text-right font-mono">{fmt(r.shares)}</td>
                 <td className="py-2 text-right font-mono">{fmt(r.comments)}</td>
-                <td className="py-2 text-right font-mono text-emerald-400">{r.new_follows != null ? fmt(r.new_follows) : "—"}</td>
+                <td className="py-2 text-right font-mono text-green-400">{r.new_follows != null ? fmt(r.new_follows) : "—"}</td>
               </tr>
             );
           })}
@@ -460,12 +460,12 @@ function GoalBar({ goal }: { goal: GoalRow }) {
       <div className="flex items-center justify-between mb-1 text-xs">
         <div className="flex items-center gap-1.5">
           <span className="text-foreground">{goal.label}</span>
-          {done ? <CheckCircle2 className="h-3 w-3 text-emerald-400" /> : risky ? <AlertTriangle className="h-3 w-3 text-amber-400" /> : <CheckCircle2 className="h-3 w-3 text-muted-foreground/60" />}
+          {done ? <CheckCircle2 className="h-3 w-3 text-green-400" /> : risky ? <AlertTriangle className="h-3 w-3 text-amber-400" /> : <CheckCircle2 className="h-3 w-3 text-muted-foreground/60" />}
         </div>
         <div className="font-mono text-[11px] text-muted-foreground"><span className="text-foreground">{disp(goal.current)}</span> / {disp(goal.target)}</div>
       </div>
       <div className="h-1.5 rounded-full bg-[#0a0b0f] overflow-hidden">
-        <div className={`h-full rounded-full ${done ? "bg-emerald-500" : risky ? "bg-amber-500" : "bg-emerald-400"}`} style={{ width: `${pct}%` }} />
+        <div className={`h-full rounded-full ${done ? "bg-green-500" : risky ? "bg-amber-500" : "bg-green-400"}`} style={{ width: `${pct}%` }} />
       </div>
     </div>
   );
@@ -516,7 +516,7 @@ function AudienceCard({ row }: { row: AudienceRow }) {
           <div className="text-xs font-medium">{row.country}</div>
           <div className="text-[10px] text-muted-foreground">{row.timezone}</div>
         </div>
-        <div className="text-[10px] font-mono text-emerald-400">{row.engagement}%</div>
+        <div className="text-[10px] font-mono text-green-400">{row.engagement}%</div>
       </div>
       <div className="mt-2 h-1 rounded-full bg-[#0a0b0f] border border-[#141821] overflow-hidden">
         <div className="h-full rounded-full bg-blue-500" style={{ width: `${row.pct * 2}%`, maxWidth: "100%" }} />
@@ -609,13 +609,13 @@ function LogMonthDialog({ userId, month, existing, existingReels, onClose, onSav
 
           <div>
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Notes (optional)</div>
-            <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} className="w-full bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-2 text-xs resize-y focus:outline-none focus:border-emerald-500/40" placeholder="What worked / what didn't this month?" />
+            <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} className="w-full bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-2 text-xs resize-y focus:outline-none focus:border-green-500/40" placeholder="What worked / what didn't this month?" />
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-2">
               <div className="text-xs font-semibold">Top reels this month</div>
-              <button onClick={addReel} className="h-7 px-2 rounded-sm border border-[#1f2530] hover:border-emerald-500/40 text-[11px] inline-flex items-center gap-1">
+              <button onClick={addReel} className="h-7 px-2 rounded-sm border border-[#1f2530] hover:border-green-500/40 text-[11px] inline-flex items-center gap-1">
                 <Plus className="h-3 w-3" /> Add reel
               </button>
             </div>
@@ -624,12 +624,12 @@ function LogMonthDialog({ userId, month, existing, existingReels, onClose, onSav
               {reels.map((r, i) => (
                 <div key={i} className="border border-[#1f2530] bg-[#0a0b0f] rounded-sm p-2 space-y-1.5">
                   <div className="flex gap-1.5">
-                    <input value={r.topic ?? ""} onChange={e => updReel(i, { topic: e.target.value })} placeholder="Topic / hook" className="flex-1 h-7 px-2 rounded-sm border border-[#1f2530] bg-[#0f1116] text-xs outline-none focus:border-emerald-500/40" />
+                    <input value={r.topic ?? ""} onChange={e => updReel(i, { topic: e.target.value })} placeholder="Topic / hook" className="flex-1 h-7 px-2 rounded-sm border border-[#1f2530] bg-[#0f1116] text-xs outline-none focus:border-green-500/40" />
                     <select value={r.pillar ?? ""} onChange={e => updReel(i, { pillar: e.target.value || null })} className="h-7 px-1.5 rounded-sm border border-[#1f2530] bg-[#0f1116] text-[11px]">
                       <option value="">Pillar…</option>
                       {Object.keys(PILLAR_COLORS).map(p => <option key={p} value={p}>{p}</option>)}
                     </select>
-                    <button onClick={() => rmReel(i)} className="h-7 w-7 grid place-items-center rounded-sm border border-[#1f2530] text-muted-foreground hover:text-rose-400 hover:border-rose-500/40">
+                    <button onClick={() => rmReel(i)} className="h-7 w-7 grid place-items-center rounded-sm border border-[#1f2530] text-muted-foreground hover:text-red-400 hover:border-red-500/40">
                       <Trash2 className="h-3 w-3" />
                     </button>
                   </div>
@@ -647,7 +647,7 @@ function LogMonthDialog({ userId, month, existing, existingReels, onClose, onSav
         </div>
         <div className="p-4 border-t border-[#1f2530] flex justify-end gap-2">
           <button onClick={onClose} className="h-8 px-3 rounded-sm border border-[#1f2530] text-xs">Cancel</button>
-          <button onClick={save} disabled={saving} className="h-8 px-4 rounded-sm bg-emerald-500 hover:bg-emerald-400 text-emerald-950 text-xs font-medium">
+          <button onClick={save} disabled={saving} className="h-8 px-4 rounded-sm bg-green-500 hover:bg-green-400 text-green-950 text-xs font-medium">
             {saving ? "Saving…" : "Save month"}
           </button>
         </div>
@@ -674,7 +674,7 @@ function FieldNum({ label, value, onChange, compact, type, raw }: {
           const v = raw ? e.target.value : (e.target.value === "" ? 0 : Number(e.target.value));
           onChange(v as never);
         }}
-        className={`w-full ${compact ? "h-7 text-[11px]" : "h-8 text-xs"} px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] outline-none focus:border-emerald-500/40 font-mono`}
+        className={`w-full ${compact ? "h-7 text-[11px]" : "h-8 text-xs"} px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] outline-none focus:border-green-500/40 font-mono`}
       />
     </div>
   );
@@ -711,7 +711,7 @@ function ConnectDialog({ userId, existing, onClose, onSaved }: {
     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
       <div className="w-full max-w-md bg-[#0f1116] border border-[#1f2530] rounded-md p-5 space-y-3" onClick={e => e.stopPropagation()}>
         <div className="flex items-center gap-2">
-          <Instagram className="h-4 w-4 text-pink-400" />
+          <Instagram className="h-4 w-4 text-blue-400" />
           <div className="text-sm font-semibold">Instagram profile</div>
         </div>
         <TextField label="Instagram username" value={username} onChange={setUsername} placeholder="handle" />
@@ -719,7 +719,7 @@ function ConnectDialog({ userId, existing, onClose, onSaved }: {
         <TextField label="Subtitle" value={subtitle} onChange={setSubtitle} placeholder="Bio / one-liner" />
         <div className="flex justify-end gap-2 pt-2">
           <button onClick={onClose} className="h-8 px-3 rounded-sm border border-[#1f2530] text-xs">Cancel</button>
-          <button onClick={save} disabled={saving} className="h-8 px-3 rounded-sm bg-pink-500 hover:bg-pink-400 text-white text-xs font-medium">
+          <button onClick={save} disabled={saving} className="h-8 px-3 rounded-sm bg-blue-500 hover:bg-blue-400 text-white text-xs font-medium">
             {saving ? "Saving…" : "Save"}
           </button>
         </div>
@@ -753,7 +753,7 @@ function SettingsDialog({ userId, settings, onClose, onSaved }: {
     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
       <div className="w-full max-w-3xl bg-[#0f1116] border border-[#1f2530] rounded-md p-5 space-y-3 max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
         <div className="flex items-center gap-2">
-          <Pencil className="h-4 w-4 text-emerald-400" />
+          <Pencil className="h-4 w-4 text-green-400" />
           <div className="text-sm font-semibold">Goals · Pillars · Audience</div>
         </div>
         <div className="space-y-1 flex-1 flex flex-col min-h-0">
@@ -761,14 +761,14 @@ function SettingsDialog({ userId, settings, onClose, onSaved }: {
           <textarea
             value={text}
             onChange={e => setText(e.target.value)}
-            className="flex-1 min-h-[300px] bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-2 font-mono text-[11px] resize-none focus:outline-none focus:border-emerald-500/40"
+            className="flex-1 min-h-[300px] bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-2 font-mono text-[11px] resize-none focus:outline-none focus:border-green-500/40"
             spellCheck={false}
           />
           <p className="text-[10px] text-muted-foreground">Fields: goals, pillars, audience, formats.</p>
         </div>
         <div className="flex justify-end gap-2 pt-1">
           <button onClick={onClose} className="h-8 px-3 rounded-sm border border-[#1f2530] text-xs">Cancel</button>
-          <button onClick={save} disabled={saving} className="h-8 px-3 rounded-sm bg-emerald-500 hover:bg-emerald-400 text-emerald-950 text-xs font-medium">
+          <button onClick={save} disabled={saving} className="h-8 px-3 rounded-sm bg-green-500 hover:bg-green-400 text-green-950 text-xs font-medium">
             {saving ? "Saving…" : "Save"}
           </button>
         </div>
@@ -785,7 +785,7 @@ function TextField({ label, value, onChange, placeholder }: { label: string; val
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full h-9 bg-[#0a0b0f] border border-[#1f2530] rounded-sm px-2 text-sm focus:outline-none focus:border-emerald-500/40"
+        className="w-full h-9 bg-[#0a0b0f] border border-[#1f2530] rounded-sm px-2 text-sm focus:outline-none focus:border-green-500/40"
       />
     </div>
   );

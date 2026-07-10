@@ -113,7 +113,7 @@ function ProfilePage() {
                 <Upload className="h-3 w-3" /> {uploading ? "Uploading…" : "Upload image"}
               </button>
               {avatarPath && (
-                <button onClick={removeAvatar} className="flex items-center gap-1 text-xs text-rose-400 hover:text-rose-300 px-2 py-1.5">
+                <button onClick={removeAvatar} className="flex items-center gap-1 text-xs text-red-400 hover:text-red-300 px-2 py-1.5">
                   <Trash2 className="h-3 w-3" /> Remove
                 </button>
               )}
@@ -127,7 +127,7 @@ function ProfilePage() {
           <input
             value={displayName}
             onChange={e => setDisplayName(e.target.value)}
-            className="w-full h-9 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-sm focus:outline-none focus:border-emerald-500/40"
+            className="w-full h-9 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-sm focus:outline-none focus:border-green-500/40"
           />
         </div>
 
@@ -135,7 +135,7 @@ function ProfilePage() {
           <button onClick={changePassword} className="text-xs text-muted-foreground hover:text-foreground">
             Change password
           </button>
-          <button onClick={save} disabled={saving} className="flex items-center gap-1 bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-medium px-3 py-1.5 rounded-sm text-xs">
+          <button onClick={save} disabled={saving} className="flex items-center gap-1 bg-green-500 hover:bg-green-400 text-green-950 font-medium px-3 py-1.5 rounded-sm text-xs">
             <Save className="h-3 w-3" /> {saving ? "Saving…" : "Save changes"}
           </button>
         </div>
