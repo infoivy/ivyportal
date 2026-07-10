@@ -67,7 +67,7 @@ export function CashLeaderboard({ compact = false }: { compact?: boolean }) {
     <Card className={compact ? "p-4" : "p-5"}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Trophy className="h-4 w-4 text-amber-400" />
+          <Trophy className="h-4 w-4 text-warning-fg" />
           <h3 className="text-sm font-semibold">Weekly cash leaderboard</h3>
         </div>
         <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -86,11 +86,11 @@ export function CashLeaderboard({ compact = false }: { compact?: boolean }) {
               className={
                 "flex items-center gap-3 px-3 py-2 rounded-md border " +
                 (i === 0
-                  ? "border-amber-500/30 bg-amber-500/5"
+                  ? "border-warning/25 bg-warning-bg"
                   : "border-[var(--border)] bg-[var(--card)]")
               }
             >
-              <div className={"text-xs w-5 " + (i === 0 ? "text-amber-400" : "text-muted-foreground")}>
+              <div className={"text-xs w-5 " + (i === 0 ? "text-warning-fg" : "text-muted-foreground")}>
                 {i + 1}
               </div>
               <div className="flex-1 min-w-0">
@@ -101,7 +101,7 @@ export function CashLeaderboard({ compact = false }: { compact?: boolean }) {
               {i === 0 && (
                 <span
                   title="Top closer this week — eligible for double bookings next week per the Double Bookings SOP"
-                  className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
+                  className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/25"
                 >
                   <Zap className="h-3 w-3" /> 2× bookings
                 </span>

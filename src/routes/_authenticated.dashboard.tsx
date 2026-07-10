@@ -200,9 +200,9 @@ function Dashboard() {
   }, [eods]);
 
   const formatBreakdown = [
-    { label: "DMs → Convos", value: totals.convos_started, color: "#3b82f6" },
-    { label: "Convos → Booked", value: totals.calls_booked, color: "#f59e0b" },
-    { label: "Booked → Shows", value: totals.shows, color: "#ef4444" },
+    { label: "DMs → Convos", value: totals.convos_started, color: "var(--chart-1)" },
+    { label: "Convos → Booked", value: totals.calls_booked, color: "var(--chart-3)" },
+    { label: "Booked → Shows", value: totals.shows, color: "var(--chart-5)" },
   ];
 
   const rangeLabel =
@@ -256,7 +256,7 @@ function Dashboard() {
           <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-muted text-[13px] text-foreground">
             <span>No IG analytics logged this month — keep your growth data up to date.</span>
             <div className="flex items-center gap-2 shrink-0">
-              <a href="/instagram" className="font-medium text-primary hover:underline">Log now →</a>
+              <a href="/content?tab=instagram" className="font-medium text-primary hover:underline">Log now →</a>
               <button onClick={() => setIgReminderDismissed(true)} className="text-muted-foreground hover:text-foreground">✕</button>
             </div>
           </div>
@@ -337,15 +337,15 @@ function Dashboard() {
                     <VolumeAreaChart
                       data={trend}
                       series={[
-                        { key: "dms",    label: "DMs",    color: "#9CA3AF" },
-                        { key: "convos", label: "Convos", color: "#3B82F6" },
-                        { key: "booked", label: "Booked", color: "#22C55E", strokeWidth: 2 },
+                        { key: "dms",    label: "DMs",    color: "var(--color-muted-foreground)" },
+                        { key: "convos", label: "Convos", color: "var(--chart-1)" },
+                        { key: "booked", label: "Booked", color: "var(--chart-2)", strokeWidth: 2 },
                       ]}
                     />
                     <VolumeLegend series={[
-                      { key: "dms",    label: "DMs",    color: "#9CA3AF" },
-                      { key: "convos", label: "Convos", color: "#3B82F6" },
-                      { key: "booked", label: "Booked", color: "#22C55E" },
+                      { key: "dms",    label: "DMs",    color: "var(--color-muted-foreground)" },
+                      { key: "convos", label: "Convos", color: "var(--chart-1)" },
+                      { key: "booked", label: "Booked", color: "var(--chart-2)" },
                     ]} />
                   </>
                 )}
@@ -360,9 +360,9 @@ function Dashboard() {
                   {loading ? <Skeleton /> : (
                     <ResponsiveContainer>
                       <BarChart data={formatBreakdown} layout="vertical" margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
-                        <XAxis type="number" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
-                        <YAxis type="category" dataKey="label" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} width={100} />
-                        <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 4, fontSize: 11 }} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
+                        <XAxis type="number" stroke="var(--color-muted-foreground)" fontSize={10} tickLine={false} axisLine={false} />
+                        <YAxis type="category" dataKey="label" stroke="var(--color-muted-foreground)" fontSize={10} tickLine={false} axisLine={false} width={100} />
+                        <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 4, fontSize: 11 }} cursor={{ fill: "var(--muted)" }} />
                         <Bar dataKey="value" radius={[0, 2, 2, 0]}>
                           {formatBreakdown.map((f, i) => <Cell key={i} fill={f.color} />)}
                         </Bar>
@@ -376,8 +376,8 @@ function Dashboard() {
             {hasPrev && (
               <Panel accent="emerald">
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="grid h-6 w-6 place-items-center rounded-sm bg-green-500/15 border border-green-500/40">
-                    <Zap className="h-3 w-3 text-green-400" />
+                  <div className="grid h-6 w-6 place-items-center rounded-sm bg-success-bg border border-success/25">
+                    <Zap className="h-3 w-3 text-success-fg" />
                   </div>
                   <h3 className="text-sm font-bold">Period Deltas</h3>
                   <span className="ml-auto text-[10px] text-muted-foreground">vs previous {days}d</span>
@@ -443,7 +443,7 @@ function Dashboard() {
         {prefs.showQuickActions && (
           <div className="grid gap-2 sm:grid-cols-4">
             <QuickAction to="/eods"     icon={FileText}   label="Submit EOD" />
-            <QuickAction to="/analytics" icon={Target}    label="Full Analytics" />
+            <QuickAction to="/sales" search={{ tab: "trends" }} icon={Target} label="Sales Trends" />
             <QuickAction to="/training" icon={Zap}        label="Training" />
             <QuickAction to="/policies/crm-hygiene" icon={MessageSquare} label="CRM Hygiene" />
           </div>
@@ -564,8 +564,8 @@ function Kpi({ label, value, suffix, onClick, delta }: {
 }
 
 const OPS_TONE: Record<string, { dot: string; value: string }> = {
-  rose:   { dot: "bg-red-500",    value: "text-red-500 dark:text-red-400" },
-  amber:  { dot: "bg-amber-500",  value: "text-amber-600 dark:text-amber-400" },
+  rose:   { dot: "bg-danger",    value: "text-danger-fg" },
+  amber:  { dot: "bg-warning",  value: "text-warning-fg" },
   sky:    { dot: "bg-primary",    value: "text-foreground" },
   muted:  { dot: "bg-muted-foreground/40", value: "text-foreground" },
 };
@@ -604,7 +604,7 @@ function Transform({ label, prev, curr, suffix }: { label: string; prev: number;
       <div className="flex items-center gap-1.5 tabular-nums">
         <span className="text-muted-foreground text-[11px]">{prev.toLocaleString()}{suffix}</span>
         <span className="text-muted-foreground">→</span>
-        <span className="font-bold text-green-400">{curr.toLocaleString()}{suffix}</span>
+        <span className="font-bold text-success-fg">{curr.toLocaleString()}{suffix}</span>
       </div>
     </div>
   );
@@ -616,7 +616,7 @@ function Goal({ label, value, target, suffix, color, warn }: { label: string; va
       <div className="flex items-center justify-between text-xs mb-1">
         <span className="inline-flex items-center gap-1.5">
           {label}
-          {warn ? <AlertTriangle className="h-3 w-3 text-red-400" /> : pct >= 100 ? <CheckCircle2 className="h-3 w-3 text-green-400" /> : null}
+          {warn ? <AlertTriangle className="h-3 w-3 text-danger-fg" /> : pct >= 100 ? <CheckCircle2 className="h-3 w-3 text-success-fg" /> : null}
         </span>
         <span className="tabular-nums text-[11px] text-muted-foreground">
           <span className="font-bold text-foreground">{value.toLocaleString()}{suffix}</span> / {target.toLocaleString()}{suffix}
@@ -642,9 +642,9 @@ function AudienceRow({ label, value, total, color, suffix }: { label: string; va
     </div>
   );
 }
-function QuickAction({ to, icon: Icon, label }: { to: string; icon: React.ComponentType<{ className?: string }>; label: string }) {
+function QuickAction({ to, search, icon: Icon, label }: { to: string; search?: Record<string, string>; icon: React.ComponentType<{ className?: string }>; label: string }) {
   return (
-    <Link to={to} className="rounded-md border border-border bg-card p-3 hover:border-white/20 transition flex items-center gap-2">
+    <Link to={to} search={search} className="rounded-md border border-border bg-card p-3 hover:bg-muted/50 motion-safe:transition-colors flex items-center gap-2">
       <Icon className="h-3.5 w-3.5 text-muted-foreground" />
       <span className="text-xs font-medium">{label}</span>
     </Link>
@@ -736,7 +736,7 @@ function InstallmentReminders() {
       ) : (
         <div className="divide-y divide-border">
           {rows.map(r => {
-            const tone = r.days < 0 ? "text-red-400" : r.days === 0 ? "text-amber-400" : r.days === 1 ? "text-amber-300" : "text-muted-foreground";
+            const tone = r.days < 0 ? "text-danger-fg" : r.days === 0 ? "text-warning-fg" : r.days === 1 ? "text-warning-fg" : "text-muted-foreground";
             const label = r.days < 0 ? `Overdue ${Math.abs(r.days)}d` : r.days === 0 ? "Due today" : r.days === 1 ? "Due tomorrow" : `Due in ${r.days}d`;
             const inner = (
               <>
@@ -825,14 +825,14 @@ function MyDayBlock({ roles }: { roles: string[] }) {
   return (
     <div>
       <div className="text-[13px] text-muted-foreground mb-2 flex items-center gap-2">
-        <Sunrise className="h-3.5 w-3.5 text-amber-500" /> <span>My day</span>
+        <Sunrise className="h-3.5 w-3.5 text-muted-foreground" /> <span>My day</span>
         <span className="h-px flex-1 bg-border" />
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
         {state.parts.map((p, i) => {
           const toneValue: Record<string, string> = {
-            rose: "text-red-500 dark:text-red-400",
-            amber: "text-amber-600 dark:text-amber-400",
+            rose: "text-danger-fg",
+            amber: "text-warning-fg",
             emerald: "text-primary",
             sky: "text-primary",
             muted: "text-foreground",
@@ -861,7 +861,7 @@ function SecondaryKpi({ label, value, suffix, onClick, delta }: { label: string;
         {value >= 1000 ? `${(value / 1000).toFixed(1)}K` : value.toLocaleString()}{suffix}
       </span>
       {delta != null && delta !== 0 && (
-        <span className={`ml-1 text-[11px] ${up ? "text-green-400" : "text-red-400"}`}>{up ? "+" : ""}{delta}</span>
+        <span className={`ml-1 text-[11px] ${up ? "text-success-fg" : "text-danger-fg"}`}>{up ? "+" : ""}{delta}</span>
       )}
       <span className="ml-1.5 text-[12px] text-muted-foreground">{label}</span>
     </button>
@@ -873,7 +873,7 @@ function OpsChip({ to, search, danger, warn, count, label }: {
   danger?: boolean; warn?: boolean;
   count: number | undefined; label: string;
 }) {
-  const cls = danger ? "text-red-400" : warn ? "text-amber-400" : "text-muted-foreground";
+  const cls = danger ? "text-danger-fg" : warn ? "text-warning-fg" : "text-muted-foreground";
   return (
     <Link to={to as any} search={search as any}>
       <span className={`inline-flex items-baseline gap-1 ${cls} motion-safe:transition-colors hover:text-foreground`}>
@@ -952,7 +952,7 @@ function UnifiedLeaderboard({ profiles, eods }: { profiles: Record<string, Profi
     <div className="rounded-md border border-border bg-card">
       <div className="px-3 py-2 border-b border-border flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2 min-w-0">
-          <Star className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+          <Star className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
           <span className="text-sm font-bold">Weekly leaderboard</span>
           <span className="text-[10px] text-muted-foreground truncate">
             {startISO} → {endISO} · resets Monday
@@ -988,15 +988,15 @@ function UnifiedLeaderboard({ profiles, eods }: { profiles: Record<string, Profi
               key={r.uid}
               className={
                 "flex items-center gap-3 px-3 py-2 border-b border-border/50 last:border-0 " +
-                (i === 0 ? "bg-amber-500/5" : "")
+                (i === 0 ? "bg-warning-bg" : "")
               }
             >
-              <span className={"text-[11px] w-5 " + (i === 0 ? "text-amber-400" : "text-muted-foreground")}>{i + 1}</span>
+              <span className={"text-[11px] w-5 " + (i === 0 ? "text-warning-fg" : "text-muted-foreground")}>{i + 1}</span>
               <div className="min-w-0 flex-1">
                 <div className="text-xs font-medium truncate">{r.name}</div>
                 <div className="text-[10px] text-muted-foreground truncate">{r.sub}</div>
               </div>
-              <div className="text-sm tabular-nums text-green-400">
+              <div className="text-sm tabular-nums text-success-fg">
                 {mode === "cash" ? money(r.value) : r.value.toLocaleString()}
               </div>
             </div>

@@ -140,9 +140,9 @@ function AdminConsole() {
   if (!isAdmin) {
     return (
       <div className="p-6 max-w-3xl mx-auto">
-        <div className="border border-red-500/30 bg-red-500/5 rounded-sm p-8 text-center">
-          <Shield className="h-8 w-8 text-red-400 mx-auto mb-3" />
-          <div className="text-sm text-red-400 font-medium">Admin access required</div>
+        <div className="border border-danger/25 bg-danger-bg rounded-sm p-8 text-center">
+          <Shield className="h-8 w-8 text-danger-fg mx-auto mb-3" />
+          <div className="text-sm text-danger-fg font-medium">Admin access required</div>
           <p className="text-xs text-muted-foreground mt-1">You need the admin role to view this page.</p>
         </div>
       </div>
@@ -205,7 +205,7 @@ function AdminConsole() {
         <Panel
           title="EOD compliance"
           subtitle={`Reports submitted in last ${days} days`}
-          icon={<CheckCircle2 className="h-3.5 w-3.5 text-green-400" />}
+          icon={<CheckCircle2 className="h-3.5 w-3.5 text-success-fg" />}
         >
           <div className="divide-y divide-[var(--accent)]">
             {compliance.length === 0 && !loading && <Empty text="No team members yet." />}
@@ -221,11 +221,11 @@ function AdminConsole() {
                 <div className="flex items-center gap-2">
                   <div className="w-24 h-1.5 rounded-full bg-[var(--accent)] overflow-hidden">
                     <div
-                      className={`h-full ${c.rate >= 80 ? "bg-green-500" : c.rate >= 50 ? "bg-amber-500" : "bg-red-500"}`}
+                      className={`h-full ${c.rate >= 80 ? "bg-success" : c.rate >= 50 ? "bg-warning" : "bg-danger"}`}
                       style={{ width: `${c.rate}%` }}
                     />
                   </div>
-                  <div className={`text-xs w-14 text-right ${c.rate >= 80 ? "text-green-400" : c.rate >= 50 ? "text-amber-400" : "text-red-400"}`}>
+                  <div className={`text-xs w-14 text-right ${c.rate >= 80 ? "text-success-fg" : c.rate >= 50 ? "text-warning-fg" : "text-danger-fg"}`}>
                     {c.submitted}/{days}
                   </div>
                 </div>
@@ -237,7 +237,7 @@ function AdminConsole() {
         <Panel
           title="Unrated completed calls"
           subtitle="Coaches need to add a 1–5 progress rating"
-          icon={<ClipboardList className="h-3.5 w-3.5 text-amber-400" />}
+          icon={<ClipboardList className="h-3.5 w-3.5 text-warning-fg" />}
           action={<Link to="/calls" className="text-[11px] px-2.5 py-1 rounded-sm border border-border text-muted-foreground hover:text-foreground inline-flex items-center gap-1">Open Calls <ArrowUpRight className="h-3 w-3" /></Link>}
         >
           <div className="divide-y divide-[var(--accent)]">
@@ -320,7 +320,7 @@ function AdminConsole() {
                   else toast.success(next ? "CRM enabled" : "CRM disabled");
                 }
               }}
-              className={`relative h-5 w-9 rounded-full transition-colors ${crmEnabled ? "bg-green-500" : "bg-muted"}`}
+              className={`relative h-5 w-9 rounded-full transition-colors ${crmEnabled ? "bg-success" : "bg-muted"}`}
             >
               <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${crmEnabled ? "translate-x-4" : "translate-x-0.5"}`} />
             </button>
@@ -328,7 +328,7 @@ function AdminConsole() {
 
           {/* Backups note */}
           <div className="flex items-start gap-3 py-3 border-t border-border">
-            <CheckCircle2 className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
+            <CheckCircle2 className="h-4 w-4 text-warning-fg mt-0.5 shrink-0" />
             <div>
               <div className="text-xs font-medium">Database backups</div>
               <p className="text-[10px] text-muted-foreground mt-0.5">
@@ -338,7 +338,7 @@ function AdminConsole() {
                 href="https://supabase.com/docs/guides/platform/backups"
                 target="_blank"
                 rel="noopener"
-                className="text-[10px] text-green-400 hover:text-green-300 flex items-center gap-0.5 mt-1"
+                className="text-[10px] text-success-fg hover:text-success-fg flex items-center gap-0.5 mt-1"
               >
                 Supabase backup docs <ExternalLink className="h-2.5 w-2.5" />
               </a>
@@ -347,7 +347,7 @@ function AdminConsole() {
 
           {/* Email digest note */}
           <div className="flex items-start gap-3 py-3 border-t border-border">
-            <CheckCircle2 className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
+            <CheckCircle2 className="h-4 w-4 text-warning-fg mt-0.5 shrink-0" />
             <div>
               <div className="text-xs font-medium">Daily email digest (Resend)</div>
               <p className="text-[10px] text-muted-foreground mt-0.5">
@@ -383,9 +383,9 @@ function AdminConsole() {
                     <td className="py-2 pr-3 font-mono text-muted-foreground whitespace-nowrap">{new Date(e.created_at).toISOString().slice(0, 19).replace("T", " ")}</td>
                     <td className="py-2 pr-3">
                       <span className={`px-1.5 py-0.5 rounded-sm border text-[10px] uppercase ${
-                        e.action === "INSERT" ? "border-green-500/30 bg-green-500/10 text-green-400"
-                        : e.action === "DELETE" ? "border-red-500/30 bg-red-500/10 text-red-400"
-                        : "border-amber-500/30 bg-amber-500/10 text-amber-400"
+                        e.action === "INSERT" ? "border-success/25 bg-success-bg text-success-fg"
+                        : e.action === "DELETE" ? "border-danger/25 bg-danger-bg text-danger-fg"
+                        : "border-warning/25 bg-warning-bg text-warning-fg"
                       }`}>
                         {e.action}
                       </span>
@@ -405,7 +405,7 @@ function AdminConsole() {
         <Panel
           title="Students without email"
           subtitle="Can't auto-link a portal login"
-          icon={<Mail className="h-3.5 w-3.5 text-amber-400" />}
+          icon={<Mail className="h-3.5 w-3.5 text-warning-fg" />}
         >
           {studentsWithoutEmail.length === 0
             ? <Empty text="All active students have an email on file." />
@@ -416,10 +416,10 @@ function AdminConsole() {
                     key={s.id}
                     to="/students/$id"
                     params={{ id: s.id }}
-                    className="flex items-center justify-between py-2 text-xs hover:bg-white/[0.02]"
+                    className="flex items-center justify-between py-2 text-xs hover:bg-muted"
                   >
                     <span className="truncate">{s.full_name}</span>
-                    <span className="text-amber-400 text-[10px]">no email</span>
+                    <span className="text-warning-fg text-[10px]">no email</span>
                   </Link>
                 ))}
               </div>
@@ -429,7 +429,7 @@ function AdminConsole() {
         <Panel
           title="Students without coach"
           subtitle="Assign a coach so 1:1s and check-ins can happen"
-          icon={<UserX className="h-3.5 w-3.5 text-red-400" />}
+          icon={<UserX className="h-3.5 w-3.5 text-danger-fg" />}
         >
           {studentsWithoutCoach.length === 0
             ? <Empty text="Every active student has a coach assigned." />
@@ -440,10 +440,10 @@ function AdminConsole() {
                     key={s.id}
                     to="/students/$id"
                     params={{ id: s.id }}
-                    className="flex items-center justify-between py-2 text-xs hover:bg-white/[0.02]"
+                    className="flex items-center justify-between py-2 text-xs hover:bg-muted"
                   >
                     <span className="truncate">{s.full_name}</span>
-                    <span className="text-red-400 text-[10px]">unassigned</span>
+                    <span className="text-danger-fg text-[10px]">unassigned</span>
                   </Link>
                 ))}
               </div>
@@ -488,8 +488,8 @@ function buildCompliance(rows: EodRow[], userRoles: UserRole[], profiles: Record
 
 function Tile({ label, value, icon, tone = "muted" }: { label: string; value: number; icon: React.ReactNode; tone?: "muted" | "amber" | "rose" }) {
   const c =
-    tone === "amber" ? { extra: "border border-amber-500/40 bg-amber-500/5", text: "text-amber-400" } :
-    tone === "rose"  ? { extra: "border border-red-500/40 bg-red-500/5",     text: "text-red-400" } :
+    tone === "amber" ? { extra: "border border-warning/25 bg-warning-bg", text: "text-warning-fg" } :
+    tone === "rose"  ? { extra: "border border-danger/25 bg-danger-bg",     text: "text-danger-fg" } :
                        { extra: "card-surface",                               text: "text-foreground" };
   return (
     <div className={`rounded-lg p-2.5 ${c.extra}`}>
@@ -587,11 +587,11 @@ function GoLiveChecklist({ checklist }: { checklist: Record<string, boolean> }) 
   const allDone = done === total;
 
   return (
-    <div className={`border rounded-sm p-4 ${allDone ? "border-green-500/30 bg-green-500/5" : "border-amber-500/20 bg-amber-500/5"}`}>
+    <div className={`border rounded-sm p-4 ${allDone ? "border-success/25 bg-success-bg" : "border-warning/25 bg-warning-bg"}`}>
       <div className="flex items-center gap-2 mb-3">
-        <Rocket className={`h-4 w-4 ${allDone ? "text-green-400" : "text-amber-400"}`} />
+        <Rocket className={`h-4 w-4 ${allDone ? "text-success-fg" : "text-warning-fg"}`} />
         <span className="text-sm font-semibold">Go-live checklist</span>
-        <span className={`ml-auto text-xs font-mono ${allDone ? "text-green-400" : "text-amber-400"}`}>{done}/{total}</span>
+        <span className={`ml-auto text-xs font-mono ${allDone ? "text-success-fg" : "text-warning-fg"}`}>{done}/{total}</span>
       </div>
       <div className="space-y-1.5">
         {CHECKLIST_ITEMS.map(item => {
@@ -599,7 +599,7 @@ function GoLiveChecklist({ checklist }: { checklist: Record<string, boolean> }) 
           return (
             <div key={item.key} className="flex items-start gap-2">
               {checked
-                ? <CheckCircle2 className="h-3.5 w-3.5 text-green-400 mt-0.5 shrink-0" />
+                ? <CheckCircle2 className="h-3.5 w-3.5 text-success-fg mt-0.5 shrink-0" />
                 : <Circle className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
               }
               <div>
@@ -611,7 +611,7 @@ function GoLiveChecklist({ checklist }: { checklist: Record<string, boolean> }) 
         })}
       </div>
       {allDone && (
-        <div className="mt-3 text-xs text-green-400 font-medium">Portal is go-live ready ✓</div>
+        <div className="mt-3 text-xs text-success-fg font-medium">Portal is go-live ready ✓</div>
       )}
     </div>
   );

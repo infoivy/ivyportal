@@ -29,13 +29,13 @@ type Member = {
   setter_type: SetterType;
 };
 const ROLES: { key: AppRole; icon: React.ComponentType<{ className?: string }>; color: string }[] = [
-  { key: "admin", icon: Shield, color: "text-red-400 border-red-500/30 bg-red-500/5" },
-  { key: "closer", icon: Phone, color: "text-sky-400 border-sky-500/30 bg-sky-500/5" },
-  { key: "setter", icon: UserCircle2, color: "text-green-400 border-green-500/30 bg-green-500/5" },
-  { key: "coach", icon: GraduationCap, color: "text-blue-400 border-blue-500/30 bg-blue-500/5" },
-  { key: "csm", icon: HeartHandshake, color: "text-amber-400 border-amber-500/30 bg-amber-500/5" },
-  { key: "founder", icon: Sparkles, color: "text-fuchsia-400 border-fuchsia-500/30 bg-fuchsia-500/5" },
-  { key: "student", icon: School, color: "text-violet-400 border-violet-500/30 bg-violet-500/5" },
+  { key: "admin", icon: Shield, color: "text-danger-fg border-danger/25 bg-danger-bg" },
+  { key: "closer", icon: Phone, color: "text-muted-foreground border-border bg-muted" },
+  { key: "setter", icon: UserCircle2, color: "text-success-fg border-success/25 bg-success-bg" },
+  { key: "coach", icon: GraduationCap, color: "text-muted-foreground border-border bg-muted" },
+  { key: "csm", icon: HeartHandshake, color: "text-warning-fg border-warning/25 bg-warning-bg" },
+  { key: "founder", icon: Sparkles, color: "text-muted-foreground border-border bg-muted" },
+  { key: "student", icon: School, color: "text-muted-foreground border-border bg-muted" },
 ];
 
 function TeamPage() {
@@ -163,11 +163,11 @@ function TeamPage() {
             value={q}
             onChange={e => setQ(e.target.value)}
             placeholder="Search members…"
-            className="h-8 px-3 rounded-sm border border-[var(--border)] bg-[var(--card)] text-xs w-56 focus:outline-none focus:border-green-500/40"
+            className="h-8 px-3 rounded-sm border border-[var(--border)] bg-[var(--card)] text-xs w-56 focus:outline-none focus:border-ring"
           />
           <button
             onClick={() => setInviteOpen(true)}
-            className="h-8 flex items-center gap-1.5 text-xs font-medium px-3 rounded-sm border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition"
+            className="h-8 flex items-center gap-1.5 text-xs font-medium px-3 rounded-sm border border-primary/25 bg-primary/10 text-primary hover:bg-primary/20 transition"
           >
             <UserPlus className="h-3.5 w-3.5" /> Invite member
           </button>
@@ -201,12 +201,12 @@ function TeamPage() {
               <div className="min-w-0">
                 <div className="text-sm font-medium truncate flex items-center gap-2">
                   {m.display_name ?? "Unnamed"}
-                  {!m.active && <span className="text-[9px] text-red-400 border border-red-500/30 bg-red-500/10 px-1.5 py-0.5 rounded-sm">Inactive</span>}
+                  {!m.active && <span className="text-[9px] text-danger-fg border border-danger/25 bg-danger-bg px-1.5 py-0.5 rounded-sm">Inactive</span>}
                   <button onClick={() => setEditing(m)} className="text-muted-foreground hover:text-foreground"><Pencil className="h-3 w-3" /></button>
                 </div>
                 <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
                   {m.roles.includes("setter") && m.setter_type && (
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm border border-green-500/30 bg-green-500/5 text-green-400">
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm border border-success/25 bg-success-bg text-success-fg">
                       {m.setter_type === "phone" ? "Phone setter" : "DM setter"}
                     </span>
                   )}
@@ -216,9 +216,9 @@ function TeamPage() {
                   {(() => {
                     const pct = memberOnboardingPct(m);
                     if (pct === null) return null;
-                    const color = pct === 100 ? "text-green-400 border-green-500/30 bg-green-500/5"
-                      : pct >= 50 ? "text-amber-400 border-amber-500/30 bg-amber-500/5"
-                      : "text-red-400 border-red-500/30 bg-red-500/5";
+                    const color = pct === 100 ? "text-success-fg border-success/25 bg-success-bg"
+                      : pct >= 50 ? "text-warning-fg border-warning/25 bg-warning-bg"
+                      : "text-danger-fg border-danger/25 bg-danger-bg";
                     return (
                       <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm border ${color}`} title="Onboarding progress">
                         <GraduationCap className="h-2.5 w-2.5" /> {pct}%
@@ -256,14 +256,14 @@ function TeamPage() {
                   <button
                     onClick={() => toggleActive(m)}
                     title={m.active ? "Deactivate (block login)" : "Reactivate"}
-                    className={`p-1.5 rounded-sm border ${m.active ? "border-[var(--border)] text-muted-foreground hover:text-amber-400 hover:border-amber-500/30" : "border-green-500/30 text-green-400 hover:bg-green-500/10"}`}
+                    className={`p-1.5 rounded-sm border ${m.active ? "border-[var(--border)] text-muted-foreground hover:text-warning-fg hover:border-warning/25" : "border-success/25 text-success-fg hover:bg-success-bg"}`}
                   >
                     {m.active ? <PowerOff className="h-3.5 w-3.5" /> : <Power className="h-3.5 w-3.5" />}
                   </button>
                   <button
                     onClick={() => deleteMember(m)}
                     title="Permanently delete"
-                    className="p-1.5 rounded-sm border border-[var(--border)] text-muted-foreground hover:text-red-400 hover:border-red-500/30"
+                    className="p-1.5 rounded-sm border border-[var(--border)] text-muted-foreground hover:text-danger-fg hover:border-danger/25"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -407,7 +407,7 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
                   onClick={() => setSetterType(opt.key as SetterType)}
                   className={`text-[10px] px-2 py-1 rounded-sm border transition ${
                     setterType === opt.key
-                      ? "border-green-500/40 bg-green-500/10 text-green-400"
+                      ? "border-success/25 bg-success-bg text-success-fg"
                       : "border-[var(--border)] text-muted-foreground hover:border-[#2a3140]"
                   }`}
                 >
@@ -420,7 +420,7 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
         <div className="text-[12px] text-muted-foreground pt-1 border-t border-[var(--border)]">ID: {member.id}</div>
         <div className="flex justify-end gap-2 pt-2 border-t border-[var(--border)]">
           <button onClick={onClose} className="text-xs text-muted-foreground hover:text-foreground px-3 py-1.5">Cancel</button>
-          <button onClick={save} disabled={saving} className="text-xs bg-green-500 hover:bg-green-400 text-green-950 font-medium px-3 py-1.5 rounded-sm">
+          <button onClick={save} disabled={saving} className="text-xs bg-primary hover:bg-primary/90 text-primary-foreground font-medium px-3 py-1.5 rounded-sm">
             {saving ? "Saving…" : "Save"}
           </button>
         </div>
@@ -487,7 +487,7 @@ function InviteModal({ onClose, invitedBy }: { onClose: () => void; invitedBy: s
             </div>
             <button
               onClick={copy}
-              className="w-full flex items-center justify-center gap-2 text-xs font-medium px-3 py-2 rounded-sm bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 transition"
+              className="w-full flex items-center justify-center gap-2 text-xs font-medium px-3 py-2 rounded-sm bg-primary/10 border border-primary/25 text-primary hover:bg-primary/20 transition"
             >
               {copied ? <><Check className="h-3.5 w-3.5" /> Copied!</> : <><Copy className="h-3.5 w-3.5" /> Copy invite link</>}
             </button>
@@ -500,7 +500,7 @@ function InviteModal({ onClose, invitedBy }: { onClose: () => void; invitedBy: s
               <input
                 type="email" value={email} onChange={e => setEmail(e.target.value)}
                 placeholder="name@example.com" required autoFocus
-                className="w-full h-9 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-sm focus:outline-none focus:border-emerald-500/40"
+                className="w-full h-9 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-sm focus:outline-none focus:border-primary/25"
               />
             </div>
             <div className="space-y-1.5">
@@ -537,7 +537,7 @@ function InviteModal({ onClose, invitedBy }: { onClose: () => void; invitedBy: s
                       onClick={() => setSetterType(opt.key as SetterType)}
                       className={`text-[10px] px-2 py-1 rounded-sm border transition ${
                         setterType === opt.key
-                          ? "border-green-500/40 bg-green-500/10 text-green-400"
+                          ? "border-success/25 bg-success-bg text-success-fg"
                           : "border-[var(--border)] text-muted-foreground hover:border-[#2a3140]"
                       }`}
                     >
@@ -549,7 +549,7 @@ function InviteModal({ onClose, invitedBy }: { onClose: () => void; invitedBy: s
             )}
             <div className="flex justify-end gap-2 pt-2 border-t border-[var(--border)]">
               <button type="button" onClick={onClose} className="text-xs text-muted-foreground hover:text-foreground px-3 py-1.5">Cancel</button>
-              <button type="submit" disabled={saving} className="text-xs bg-emerald-500 hover:bg-emerald-400 text-black font-medium px-3 py-1.5 rounded-sm disabled:opacity-50">
+              <button type="submit" disabled={saving} className="text-xs bg-primary hover:bg-primary text-black font-medium px-3 py-1.5 rounded-sm disabled:opacity-50">
                 {saving ? "Creating…" : "Create invite link"}
               </button>
             </div>
@@ -562,11 +562,11 @@ function InviteModal({ onClose, invitedBy }: { onClose: () => void; invitedBy: s
 
 function StatTile({ label, value, icon, accent }: { label: string; value: number; icon: React.ReactNode; accent?: "emerald" | "sky" | "rose" | "fuchsia" | "amber" }) {
   const color =
-    accent === "emerald" ? "text-green-400" :
-    accent === "sky" ? "text-sky-400" :
-    accent === "rose" ? "text-red-400" :
-    accent === "amber" ? "text-amber-400" :
-    accent === "fuchsia" ? "text-blue-400" : "text-foreground";
+    accent === "emerald" ? "text-success-fg" :
+    accent === "sky" ? "text-muted-foreground" :
+    accent === "rose" ? "text-danger-fg" :
+    accent === "amber" ? "text-warning-fg" :
+    accent === "fuchsia" ? "text-muted-foreground" : "text-foreground";
   return (
     <div className="card-surface p-3">
       <div className="flex items-center gap-1 text-[12px] text-muted-foreground mb-1">{icon}{label}</div>

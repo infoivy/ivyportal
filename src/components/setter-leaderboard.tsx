@@ -72,7 +72,7 @@ export function SetterLeaderboard({ compact = false }: { compact?: boolean }) {
     <Card className={compact ? "p-4" : "p-5"}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Target className="h-4 w-4 text-sky-400" />
+          <Target className="h-4 w-4 text-muted-foreground" />
           <h3 className="text-sm font-semibold">Weekly setter leaderboard</h3>
         </div>
         <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -90,10 +90,10 @@ export function SetterLeaderboard({ compact = false }: { compact?: boolean }) {
               key={r.user_id}
               className={
                 "flex items-center gap-3 px-3 py-2 rounded-md border " +
-                (i === 0 ? "border-sky-500/30 bg-sky-500/5" : "border-[var(--border)] bg-[var(--card)]")
+                (i === 0 ? "border-border bg-muted" : "border-[var(--border)] bg-[var(--card)]")
               }
             >
-              <div className={"text-xs w-5 " + (i === 0 ? "text-sky-400" : "text-muted-foreground")}>
+              <div className={"text-xs w-5 " + (i === 0 ? "text-muted-foreground" : "text-muted-foreground")}>
                 {i + 1}
               </div>
               <div className="flex-1 min-w-0">
@@ -102,7 +102,7 @@ export function SetterLeaderboard({ compact = false }: { compact?: boolean }) {
                   {r.deals} set close{r.deals === 1 ? "" : "s"} · {money(r.booked)} booked
                 </div>
               </div>
-              <div className="text-sm tabular-nums text-emerald-400">{money(r.commission)}</div>
+              <div className="text-sm tabular-nums text-primary">{money(r.commission)}</div>
             </div>
           ))}
         </div>

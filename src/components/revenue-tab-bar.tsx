@@ -18,7 +18,7 @@ export function RevenueTabBar() {
             to={t.url}
             className={`px-4 py-2.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap ${
               active
-                ? "border-green-500 text-foreground"
+                ? "border-primary text-foreground"
                 : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >

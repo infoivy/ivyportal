@@ -354,8 +354,8 @@ function RevenuePage() {
                     contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: 10, fontSize: 12, boxShadow: "var(--shadow-overlay)" }}
                     formatter={(v: number, k: string) => (k === "deals" ? [v, "deals"] : [money(v), k === "cash" ? "cash" : "booked"])}
                   />
-                  <Bar dataKey="booked" fill="#3B82F6" radius={[3, 3, 0, 0]} />
-                  <Bar dataKey="cash" fill="#22C55E" radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="booked" fill="var(--chart-1)" radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="cash" fill="var(--chart-2)" radius={[3, 3, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -369,7 +369,7 @@ function RevenuePage() {
       <Card className="p-5">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <Trophy className="h-4 w-4 text-amber-500" />
+            <Trophy className="h-4 w-4 text-warning-fg" />
             <h3 className="text-[15px] font-semibold">Team cash milestones (MTD)</h3>
           </div>
           <span className="text-[13px] text-muted-foreground">
@@ -395,7 +395,7 @@ function RevenuePage() {
                 />
               </div>
               <div className="text-[12px] text-muted-foreground">
-                Team bonus <span className="text-amber-600 dark:text-amber-400 font-medium">{money(m.bonus)}</span>
+                Team bonus <span className="text-warning-fg font-medium">{money(m.bonus)}</span>
               </div>
             </div>
           ))}
@@ -471,7 +471,7 @@ function RevenuePage() {
                     <td className="px-4 py-3 font-medium">{r.name}</td>
                     <td className="px-4 py-3 text-right tabular-nums">{r.deals}</td>
                     <td className="px-4 py-3 text-right tabular-nums">
-                      {r.weekBonus ? <span className="text-amber-400">✓ +1%</span> : <span className="text-muted-foreground">—</span>}
+                      {r.weekBonus ? <span className="text-warning-fg">✓ +1%</span> : <span className="text-muted-foreground">—</span>}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">{money(r.cash)}</td>
                     <td className="px-4 py-3 text-right tabular-nums font-semibold text-primary">{money(r.commission)}</td>

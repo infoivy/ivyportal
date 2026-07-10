@@ -125,7 +125,7 @@ export function StatDrilldown({
           <div>
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">Per setter</div>
             <div className="border border-border rounded-sm overflow-hidden">
-              <div className="grid grid-cols-[minmax(0,1fr)_80px_80px] text-[10px] uppercase tracking-wider text-muted-foreground bg-white/[0.02] px-3 py-2 border-b border-border">
+              <div className="grid grid-cols-[minmax(0,1fr)_80px_80px] text-[10px] uppercase tracking-wider text-muted-foreground bg-muted px-3 py-2 border-b border-border">
                 <span>Setter</span>
                 <span className="text-right">{label}</span>
                 <span className="text-right">EODs</span>
@@ -135,7 +135,7 @@ export function StatDrilldown({
               ) : (
                 perSetter.map((s) => (
                   <details key={s.user_id} className="border-b border-border/50 last:border-0">
-                    <summary className="grid grid-cols-[minmax(0,1fr)_80px_80px] px-3 py-2 text-xs cursor-pointer hover:bg-white/[0.02] tabular-nums">
+                    <summary className="grid grid-cols-[minmax(0,1fr)_80px_80px] px-3 py-2 text-xs cursor-pointer hover:bg-muted tabular-nums">
                       <span className="font-medium truncate">{s.name}</span>
                       <span className="text-right" style={{ color }}>{s.total.toLocaleString()}</span>
                       <span className="text-right text-muted-foreground">{s.entries.length}</span>
@@ -145,7 +145,7 @@ export function StatDrilldown({
                         <Link
                           key={e.id}
                           to="/eods"
-                          className="flex items-center justify-between text-[11px] py-1 hover:text-emerald-400"
+                          className="flex items-center justify-between text-[11px] py-1 hover:text-primary"
                         >
                           <span className="text-muted-foreground">{e.report_date}</span>
                           <span className="tabular-nums">{Number(e[metric!]).toLocaleString()}</span>
