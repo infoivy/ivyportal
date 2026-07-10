@@ -265,10 +265,11 @@ function EODsPage() {
 
       <Tabs defaultValue={isFounder ? "grid" : "submit"} className="space-y-4">
         <TabsList className="bg-[#0f1116] border border-[#1f2530] rounded-sm h-9 p-0.5">
-          {!isFounder && <TabsTrigger value="submit" className="text-xs h-8 rounded-sm data-[state=active]:bg-[#1a1f29]">Today's EOD</TabsTrigger>}
+          {!isFounder && <TabsTrigger value="submit" className="text-xs h-8 rounded-sm data-[state=active]:bg-[#1a1f29]">My EOD</TabsTrigger>}
           {!isFounder && <TabsTrigger value="mine" className="text-xs h-8 rounded-sm data-[state=active]:bg-[#1a1f29]">My history</TabsTrigger>}
-          {canViewTeam && <TabsTrigger value="grid" className="text-xs h-8 rounded-sm data-[state=active]:bg-[#1a1f29]">Grid</TabsTrigger>}
-          {canViewTeam && <TabsTrigger value="team" className="text-xs h-8 rounded-sm data-[state=active]:bg-[#1a1f29]">Team feed</TabsTrigger>}
+          {canViewTeam && <TabsTrigger value="grid" className="text-xs h-8 rounded-sm data-[state=active]:bg-[#1a1f29]">Team Compliance</TabsTrigger>}
+          {canViewTeam && <TabsTrigger value="graphs" className="text-xs h-8 rounded-sm data-[state=active]:bg-[#1a1f29]">Graphs</TabsTrigger>}
+          {canViewTeam && <TabsTrigger value="team" className="text-xs h-8 rounded-sm data-[state=active]:bg-[#1a1f29]">Team Feed</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="submit" className="space-y-4">
