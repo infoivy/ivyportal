@@ -1290,6 +1290,48 @@ export type Database = {
         }
         Relationships: []
       }
+      set_reminders: {
+        Row: {
+          calendly_event_uri: string | null
+          created_at: string
+          duration_min: number
+          event_start: string
+          gcal_event_id: string | null
+          gcal_html_link: string | null
+          id: string
+          notes: string | null
+          owner_id: string | null
+          prospect: string
+          source: string
+        }
+        Insert: {
+          calendly_event_uri?: string | null
+          created_at?: string
+          duration_min?: number
+          event_start: string
+          gcal_event_id?: string | null
+          gcal_html_link?: string | null
+          id?: string
+          notes?: string | null
+          owner_id?: string | null
+          prospect: string
+          source?: string
+        }
+        Update: {
+          calendly_event_uri?: string | null
+          created_at?: string
+          duration_min?: number
+          event_start?: string
+          gcal_event_id?: string | null
+          gcal_html_link?: string | null
+          id?: string
+          notes?: string | null
+          owner_id?: string | null
+          prospect?: string
+          source?: string
+        }
+        Relationships: []
+      }
       student_action_items: {
         Row: {
           assignee_id: string | null
@@ -1425,9 +1467,11 @@ export type Database = {
           created_at: string
           id: string
           interviews: number
+          looms_sent: number
           outreach_sent: number
           replies: number
           report_date: string
+          roleplays: number
           student_id: string
           summary: string | null
           tomorrow_focus: string | null
@@ -1440,9 +1484,11 @@ export type Database = {
           created_at?: string
           id?: string
           interviews?: number
+          looms_sent?: number
           outreach_sent?: number
           replies?: number
           report_date: string
+          roleplays?: number
           student_id: string
           summary?: string | null
           tomorrow_focus?: string | null
@@ -1455,9 +1501,11 @@ export type Database = {
           created_at?: string
           id?: string
           interviews?: number
+          looms_sent?: number
           outreach_sent?: number
           replies?: number
           report_date?: string
+          roleplays?: number
           student_id?: string
           summary?: string | null
           tomorrow_focus?: string | null

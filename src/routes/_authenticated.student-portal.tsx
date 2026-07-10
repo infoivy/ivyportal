@@ -27,6 +27,7 @@ type Coach = { id: string; display_name: string | null; avatar_url: string | nul
 type SEod = {
   id: string; student_id: string; report_date: string;
   applications_submitted: number; outreach_sent: number; replies: number; interviews: number;
+  roleplays: number; looms_sent: number;
   wins: string | null; blockers: string | null; tomorrow_focus: string | null; summary: string | null;
 };
 type ActionItem = { text?: string; done?: boolean; due_date?: string | null };
@@ -42,6 +43,7 @@ type Doc = { slug: string; title: string; category: string };
 
 const empty = {
   applications_submitted: 0, outreach_sent: 0, replies: 0, interviews: 0,
+  roleplays: 0, looms_sent: 0,
   wins: "", blockers: "", tomorrow_focus: "", summary: "",
 };
 
@@ -108,6 +110,7 @@ function StudentPortal() {
       setForm({
         applications_submitted: t.applications_submitted, outreach_sent: t.outreach_sent,
         replies: t.replies, interviews: t.interviews,
+        roleplays: t.roleplays ?? 0, looms_sent: t.looms_sent ?? 0,
         wins: t.wins ?? "", blockers: t.blockers ?? "",
         tomorrow_focus: t.tomorrow_focus ?? "", summary: t.summary ?? "",
       });
@@ -129,7 +132,7 @@ function StudentPortal() {
   // Autosave draft
   useEffect(() => {
     if (!draftKey || existingId) return;
-    const isEmpty = form.applications_submitted === 0 && form.outreach_sent === 0 && form.replies === 0 && form.interviews === 0 && !form.wins && !form.blockers && !form.tomorrow_focus && !form.summary;
+    const isEmpty = form.applications_submitted === 0 && form.outreach_sent === 0 && form.replies === 0 && form.interviews === 0 && form.roleplays === 0 && form.looms_sent === 0 && !form.wins && !form.blockers && !form.tomorrow_focus && !form.summary;
     if (isEmpty) { try { localStorage.removeItem(draftKey); } catch {} return; }
     try { localStorage.setItem(draftKey, JSON.stringify(form)); } catch {}
   }, [form, draftKey, existingId]);
@@ -228,6 +231,8 @@ function StudentPortal() {
     () => completedCalls.filter(c => c.progress_rating != null).sort((a, b) => a.call_date.localeCompare(b.call_date)).map(c => ({ date: c.call_date, rating: c.progress_rating! })),
     [completedCalls]
   );
+
+  const isTraining = student?.phase === "training" || student?.phase === "onboarding";
 
   const submit = async () => {
     if (!student) return;
@@ -432,8 +437,21 @@ function StudentPortal() {
                   )}
                 </div>
 
+                {/* Daily targets — every student: 3 roleplays + 5 loom applications;
+                    training students also send 3 looms to the review channel */}
+                <div className="rounded-lg border border-border bg-background p-3">
+                  <div className="text-[11px] text-muted-foreground mb-2">Today's targets</div>
+                  <div className={`grid gap-3 ${isTraining ? "grid-cols-3" : "grid-cols-2"}`}>
+                    <TargetBar label="Roleplays" value={form.roleplays} target={3} />
+                    <TargetBar label="Loom applications" value={form.applications_submitted} target={5} />
+                    {isTraining && <TargetBar label="Looms for review" value={form.looms_sent} target={3} />}
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <Counter label="Applications" value={form.applications_submitted} onBump={d => bump("applications_submitted", d)} />
+                  <Counter label="Roleplays" value={form.roleplays} onBump={d => bump("roleplays", d)} />
+                  <Counter label="Loom applications" value={form.applications_submitted} onBump={d => bump("applications_submitted", d)} />
+                  {isTraining && <Counter label="Looms for review" value={form.looms_sent} onBump={d => bump("looms_sent", d)} />}
                   <Counter label="Outreach sent" value={form.outreach_sent} onBump={d => bump("outreach_sent", d)} />
                   <Counter label="Replies" value={form.replies} onBump={d => bump("replies", d)} />
                   <Counter label="Interviews" value={form.interviews} onBump={d => bump("interviews", d)} />
@@ -637,8 +655,8 @@ function JourneyStepper({ current }: { current: string }) {
         const active = i === currentIndex;
         return (
           <div key={p.key} className="flex items-center gap-2 flex-shrink-0">
-            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-sm border text-[11px] ${active ? "border-border bg-muted text-muted-foreground" : done ? "border-success/25 bg-success-bg text-success-fg" : "border-[var(--border)] text-muted-foreground"}`}>
-              <div className={`h-4 w-4 rounded-full flex items-center justify-center text-[9px] ${active ? "bg-muted text-muted-foreground" : done ? "bg-success text-success-fg" : "border border-[#2b3240]"}`}>
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-sm border text-[11px] ${active ? "border-primary/40 bg-primary/10 text-primary font-medium" : done ? "border-border bg-muted text-muted-foreground" : "border-[var(--border)] text-muted-foreground/60"}`}>
+              <div className={`h-4 w-4 rounded-full flex items-center justify-center text-[9px] ${active ? "bg-primary text-primary-foreground" : done ? "bg-muted-foreground/30 text-background" : "border border-border"}`}>
                 {done ? <CheckCircle2 className="h-2.5 w-2.5" /> : i + 1}
               </div>
               {p.label}
@@ -881,6 +899,22 @@ function ConfettiBurst() {
         />
       ))}
       <style>{`@keyframes confetti-fall { to { transform: translateY(110vh) rotate(720deg); opacity: 0; } }`}</style>
+    </div>
+  );
+}
+
+function TargetBar({ label, value, target }: { label: string; value: number; target: number }) {
+  const pct = Math.min(100, Math.round((value / target) * 100));
+  const hit = value >= target;
+  return (
+    <div>
+      <div className="flex items-center justify-between text-[11px] mb-1">
+        <span className="text-muted-foreground">{label}</span>
+        <span className={hit ? "text-success-fg font-semibold" : "text-foreground"}>{value} / {target}</span>
+      </div>
+      <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+        <div className={`h-full rounded-full ${hit ? "bg-success" : "bg-warning"}`} style={{ width: `${pct}%` }} />
+      </div>
     </div>
   );
 }
