@@ -162,7 +162,7 @@ export function WeeklyPlan({ onOpenItem }: { onOpenItem: (id: string) => void })
         <div className="ml-2 flex items-center gap-2 min-w-0">
           <CalendarIcon className="h-3.5 w-3.5 text-fuchsia-400" />
           <span className="text-sm font-semibold">
-            {format(monday, "MMM d")} – {format(weekEnd, "MMM d, yyyy")}
+            {format(monday, "MMM d")} – {format(nextEnd, "MMM d, yyyy")} <span className="text-[10px] text-muted-foreground font-normal">· 2-week horizon</span>
           </span>
           {isThisWeek && <span className="text-[9px] px-1.5 py-0.5 rounded-sm bg-fuchsia-500/15 border border-fuchsia-500/30 text-fuchsia-300 uppercase tracking-wider">Now</span>}
         </div>
