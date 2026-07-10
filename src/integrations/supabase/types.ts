@@ -1570,7 +1570,15 @@ export type Database = {
         | "linkedin"
         | "threads"
         | "other"
-      content_status: "idea" | "scripted" | "filmed" | "edited" | "posted"
+      content_status:
+        | "idea"
+        | "scripted"
+        | "approved"
+        | "recorded"
+        | "filmed"
+        | "edited"
+        | "scheduled"
+        | "posted"
       csm_tally_kind: "loom" | "roleplay" | "checkin" | "escalation"
       deal_payment_type: "pif" | "deposit" | "split"
       doc_category:
@@ -1744,7 +1752,16 @@ export const Constants = {
         "threads",
         "other",
       ],
-      content_status: ["idea", "scripted", "filmed", "edited", "posted"],
+      content_status: [
+        "idea",
+        "scripted",
+        "approved",
+        "recorded",
+        "filmed",
+        "edited",
+        "scheduled",
+        "posted",
+      ],
       csm_tally_kind: ["loom", "roleplay", "checkin", "escalation"],
       deal_payment_type: ["pif", "deposit", "split"],
       doc_category: [
