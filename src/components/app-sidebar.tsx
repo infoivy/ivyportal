@@ -11,6 +11,7 @@ import {
   SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
   useSidebar, SidebarHeader,
 } from "@/components/ui/sidebar";
+import isaLogo from "@/assets/isa-logo.png.asset.json";
 
 type Item = { title: string; url: string; icon: React.ComponentType<{ className?: string }>; roles?: string[] };
 
