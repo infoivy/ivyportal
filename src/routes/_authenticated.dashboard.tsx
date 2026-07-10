@@ -213,42 +213,34 @@ function Dashboard() {
   const goalsLabel = `${currentQuarterLabel()} Goals`;
 
   return (
-    <div className="dashboard-dark min-h-full">
-      <div className="max-w-[1400px] mx-auto p-4 sm:p-5"><div className="grid lg:grid-cols-[minmax(0,1fr)_220px] gap-6 items-start"><div className="space-y-4">
+    <div className="min-h-full">
+      <div className="max-w-[1400px] mx-auto p-4 sm:p-5"><div className="grid lg:grid-cols-[minmax(0,1fr)_220px] gap-6 items-start"><div className="space-y-5">
         {/* Header */}
-        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:items-center sm:justify-between">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-green-500/10 border border-green-500/40 font-bold text-green-400">
-              {(displayName ?? "?").slice(0, 1).toUpperCase()}
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h1 className="truncate text-lg font-bold">{displayName ?? "Team member"}</h1>
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-sm bg-amber-500/10 text-amber-400 border border-amber-500/30 uppercase tracking-wider">
-                  {rangeLabel}
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                {roles.length ? roles.join(" · ") : "member"} · ISA Team overview
-              </p>
-            </div>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-[32px] font-bold tracking-[-0.02em] text-foreground leading-none">
+              {displayName ?? "Team"}
+            </h1>
+            <p className="text-[15px] text-muted-foreground mt-1.5">
+              {rangeLabel} · {roles.length ? roles.join(", ") : "member"}
+            </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <RangePicker value={dateRange} onChange={setDateRange} />
             <button
               onClick={() => setCompare((c) => !c)}
-              className={`hidden sm:inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1.5 rounded-sm border transition ${
+              className={`inline-flex items-center gap-1.5 text-[13px] font-medium px-3 py-1.5 rounded-md motion-safe:transition-colors ${
                 compare
-                  ? "border-green-500/40 text-green-400 bg-green-500/5"
-                  : "border-border text-muted-foreground hover:text-foreground"
+                  ? "bg-primary/10 text-primary"
+                  : "bg-muted text-muted-foreground hover:text-foreground"
               }`}
               title="Toggle previous-period comparison"
             >
-              <ArrowRightLeft className="h-3 w-3" /> Compare
+              <ArrowRightLeft className="h-3.5 w-3.5" /> Compare
             </button>
             <button
               onClick={() => setSettingsOpen(true)}
-              className="p-1.5 rounded-sm border border-border text-muted-foreground hover:text-foreground"
+              className="p-2 rounded-md bg-muted text-muted-foreground hover:text-foreground motion-safe:transition-colors"
               title="Dashboard settings"
             >
               <Settings className="h-3.5 w-3.5" />
@@ -256,14 +248,15 @@ function Dashboard() {
           </div>
         </div>
 
-        {!isFounder && !(roles.includes("admin") && roles.length === 1) && <OnboardingPanel compact />}
+        {/* Onboarding — hidden for admin and founder */}
+        {!roles.includes("founder") && !roles.includes("admin") && <OnboardingPanel compact />}
 
-        {/* E20: IG monthly log reminder */}
+        {/* IG monthly log reminder */}
         {(roles.includes("founder") || roles.includes("admin")) && !igLoggedThisMonth && !igReminderDismissed && (
-          <div className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-sm border border-blue-500/30 bg-blue-500/5 text-xs text-blue-300">
+          <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-muted text-[13px] text-foreground">
             <span>No IG analytics logged this month — keep your growth data up to date.</span>
             <div className="flex items-center gap-2 shrink-0">
-              <a href="/instagram" className="font-medium underline hover:text-blue-200">Log now →</a>
+              <a href="/instagram" className="font-medium text-primary hover:underline">Log now →</a>
               <button onClick={() => setIgReminderDismissed(true)} className="text-muted-foreground hover:text-foreground">✕</button>
             </div>
           </div>
@@ -287,7 +280,7 @@ function Dashboard() {
         {/* Ops Row */}
         {prefs.showOps && (
           <div>
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-2">
+            <div className="text-[13px] text-muted-foreground mb-2 flex items-center gap-2">
               <span>Ops today</span>
               <span className="h-px flex-1 bg-border" />
             </div>
@@ -509,7 +502,7 @@ function buildTrend(rows: EodRow[], days: number) {
 /* subcomponents */
 function Panel({ children, accent }: { children: React.ReactNode; accent?: "emerald" }) {
   return (
-    <div className={`rounded-md border p-3.5 bg-card ${accent === "emerald" ? "border-green-500/40 " : "border-border"}`}>
+    <div className={`card-surface p-3.5 ${accent === "emerald" ? "ring-1 ring-primary/30" : ""}`}>
       {children}
     </div>
   );
@@ -518,8 +511,8 @@ function PanelHead({ title, subtitle, legend }: { title: string; subtitle?: stri
   return (
     <div className="flex items-start justify-between gap-2 mb-1">
       <div className="min-w-0">
-        <h3 className="text-sm font-bold truncate">{title}</h3>
-        {subtitle && <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">{subtitle}</p>}
+        <h3 className="text-[15px] font-semibold truncate">{title}</h3>
+        {subtitle && <p className="text-[13px] text-muted-foreground mt-0.5">{subtitle}</p>}
       </div>
       {legend && (
         <div className="flex items-center gap-2 text-[10px] text-muted-foreground shrink-0">
@@ -534,14 +527,13 @@ function PanelHead({ title, subtitle, legend }: { title: string; subtitle?: stri
     </div>
   );
 }
-function Kpi({ icon: Icon, label, value, suffix, color, highlight, onClick, delta, title }: {
-  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
+function Kpi({ icon: Icon, label, value, suffix, highlight, onClick, delta, title }: {
+  icon: React.ComponentType<{ className?: string }>;
   label: string; value: number; suffix?: string; color?: string; highlight?: boolean;
   onClick?: () => void;
   delta?: { value: number; format?: "money" | "count" | "pct"; positiveIsGood?: boolean } | null;
   title?: string;
 }) {
-  const c = color ?? "#94a3b8";
   const clickable = !!onClick;
   return (
     <div
@@ -550,14 +542,14 @@ function Kpi({ icon: Icon, label, value, suffix, color, highlight, onClick, delt
       role={clickable ? "button" : undefined}
       tabIndex={clickable ? 0 : undefined}
       onKeyDown={clickable ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick!(); } } : undefined}
-      className={`rounded-md border p-2.5 bg-card transition ${highlight ? "border-blue-500/60 " : "border-border"} ${clickable ? "cursor-pointer hover:bg-white/[0.03] motion-safe:hover:-translate-y-px" : ""}`}
+      className={`card-surface p-2.5 motion-safe:transition-transform ${highlight ? "ring-1 ring-primary/40" : ""} ${clickable ? "cursor-pointer motion-safe:hover:-translate-y-px" : ""}`}
     >
-      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
-        <Icon className="h-3 w-3" style={{ color: c }} />
+      <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
+        <Icon className="h-3 w-3 shrink-0" />
         <span className="truncate">{label}</span>
       </div>
       <div className="flex items-baseline gap-2 flex-wrap">
-        <div className="text-xl font-bold tabular-nums mt-1" style={{ color: c }}>
+        <div className="text-[20px] font-semibold tabular-nums mt-1 text-foreground tracking-[-0.01em]">
           {value >= 1000 ? `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}K` : value.toLocaleString()}{suffix}
         </div>
         {delta != null && (
@@ -568,11 +560,11 @@ function Kpi({ icon: Icon, label, value, suffix, color, highlight, onClick, delt
   );
 }
 
-const OPS_TONE: Record<string, { dot: string; value: string; bg: string }> = {
-  rose:   { dot: "bg-red-500",    value: "text-red-400",    bg: "bg-red-500/5 border-red-500/20" },
-  amber:  { dot: "bg-amber-500",  value: "text-amber-400",  bg: "bg-amber-500/5 border-amber-500/20" },
-  sky:    { dot: "bg-blue-500",   value: "text-foreground", bg: "" },
-  muted:  { dot: "bg-white/30",   value: "text-foreground", bg: "" },
+const OPS_TONE: Record<string, { dot: string; value: string }> = {
+  rose:   { dot: "bg-red-500",    value: "text-red-500 dark:text-red-400" },
+  amber:  { dot: "bg-amber-500",  value: "text-amber-600 dark:text-amber-400" },
+  sky:    { dot: "bg-primary",    value: "text-foreground" },
+  muted:  { dot: "bg-muted-foreground/40", value: "text-foreground" },
 };
 
 function OpsCard({
@@ -588,14 +580,14 @@ function OpsCard({
     <Link
       to={to as any}
       search={search as any}
-      className={`rounded-xl border p-4 transition motion-safe:hover:-translate-y-px block ${t.bg || "border-white/[0.07] bg-card hover:bg-white/[0.02]"}`}
+      className="card-surface p-4 block motion-safe:transition-transform motion-safe:hover:-translate-y-px"
     >
-      <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
-        <span className={`inline-block h-1.5 w-1.5 rounded-full ${t.dot}`} />
-        <Icon className="h-3 w-3 text-muted-foreground" />
+      <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
+        <span className={`inline-block h-1.5 w-1.5 rounded-full shrink-0 ${t.dot}`} />
+        <Icon className="h-3 w-3 shrink-0" />
         <span className="truncate">{label}</span>
       </div>
-      <div className={`text-2xl font-light tabular-nums mt-2 tracking-tight ${t.value}`}>
+      <div className={`text-[24px] font-semibold tabular-nums mt-2 tracking-[-0.01em] ${t.value}`}>
         {value == null ? <span className="text-muted-foreground text-sm">—</span> : value.toLocaleString()}
       </div>
     </Link>
@@ -829,23 +821,23 @@ function MyDayBlock({ roles }: { roles: string[] }) {
 
   return (
     <div>
-      <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-2">
-        <Sunrise className="h-3 w-3 text-amber-400" /> <span>My day</span>
+      <div className="text-[13px] text-muted-foreground mb-2 flex items-center gap-2">
+        <Sunrise className="h-3.5 w-3.5 text-amber-500" /> <span>My day</span>
         <span className="h-px flex-1 bg-border" />
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
         {state.parts.map((p, i) => {
-          const tones: Record<string, string> = {
-            rose: "border-red-500/40 bg-red-500/5 text-red-400",
-            amber: "border-amber-500/40 bg-amber-500/5 text-amber-400",
-            emerald: "border-green-500/40 bg-green-500/5 text-green-400",
-            sky: "border-sky-500/40 bg-sky-500/5 text-sky-400",
-            muted: "border-border bg-card text-foreground",
+          const toneValue: Record<string, string> = {
+            rose: "text-red-500 dark:text-red-400",
+            amber: "text-amber-600 dark:text-amber-400",
+            emerald: "text-primary",
+            sky: "text-primary",
+            muted: "text-foreground",
           };
           const inner = (
-            <div className={`rounded-md border p-3 ${tones[p.tone] ?? tones.muted}`}>
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{p.label}</div>
-              <div className="text-lg font-bold mt-1">{p.value}</div>
+            <div className="card-surface p-3">
+              <div className="text-[12px] text-muted-foreground">{p.label}</div>
+              <div className={`text-[18px] font-semibold mt-1 tabular-nums ${toneValue[p.tone] ?? "text-foreground"}`}>{p.value}</div>
             </div>
           );
           return p.to
@@ -859,10 +851,10 @@ function MyDayBlock({ roles }: { roles: string[] }) {
 
 function RightRailTile({ label, value, to, hint }: { label: string; value: string; to: string; hint?: string }) {
   return (
-    <Link to={to as any} className="block rounded-lg border border-white/[0.07] bg-card p-3 hover:bg-white/[0.02] transition motion-safe:hover:-translate-y-px">
-      <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</div>
-      <div className="text-xl font-light tabular-nums mt-1 text-foreground truncate">{value}</div>
-      {hint && <div className="text-[10px] text-muted-foreground mt-0.5 truncate">{hint}</div>}
+    <Link to={to as any} className="card-surface p-3 block motion-safe:transition-transform motion-safe:hover:-translate-y-px">
+      <div className="text-[12px] text-muted-foreground">{label}</div>
+      <div className="text-[20px] font-semibold tabular-nums mt-1 text-foreground truncate tracking-[-0.01em]">{value}</div>
+      {hint && <div className="text-[12px] text-muted-foreground mt-0.5 truncate">{hint}</div>}
     </Link>
   );
 }
@@ -947,10 +939,10 @@ function UnifiedLeaderboard({ profiles, eods }: { profiles: Record<string, Profi
               key={m}
               onClick={() => setMode(m)}
               className={
-                "text-[10px] uppercase tracking-wider px-2 py-1 rounded border " +
+                "text-[13px] font-medium px-3 py-1.5 rounded-md motion-safe:transition-colors " +
                 (mode === m
-                  ? "border-primary/60 bg-primary/10 text-primary"
-                  : "border-border text-muted-foreground hover:text-foreground")
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted")
               }
             >
               {m === "booked" ? "Booked (setters)" : "Cash (closers)"}
