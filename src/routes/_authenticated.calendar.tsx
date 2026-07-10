@@ -1,7 +1,7 @@
 import { createFileRoute, useSearch } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   addDays, addWeeks, endOfWeek, format, isSameDay, startOfWeek, subWeeks,
@@ -36,7 +36,6 @@ export const Route = createFileRoute("/_authenticated/calendar")({
 });
 
 const DEFAULT_HOUR_START = 7; // 7am
-const DEFAULT_HOUR_END = 22;  // 10pm
 const ROW_PX = 44;
 
 /** Google Calendar descriptions arrive as HTML (Zoom invites etc.) — flatten to text. */
@@ -189,21 +188,13 @@ function CalendarPage() {
   const teamList = team.data ?? [];
   const visibleEvents = (events.data ?? []).filter((e) => !hiddenUsers.has(e.user_id));
 
-  // Grid window stretches to fit the week's events (default 7am–10pm)
-  const { hourStart, hourEnd } = useMemo(() => {
-    let start = DEFAULT_HOUR_START;
-    let end = DEFAULT_HOUR_END;
-    for (const e of visibleEvents) {
-      if (e.all_day) continue;
-      const s = toLocal(e.start);
-      const en = toLocal(e.end);
-      start = Math.min(start, s.getHours());
-      end = Math.max(end, en.getMinutes() > 0 ? en.getHours() + 1 : en.getHours());
-    }
-    return { hourStart: Math.max(0, start), hourEnd: Math.min(24, end) };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visibleEvents, tz]);
-  const hourRows = hourEnd - hourStart;
+  // Full 24-hour grid, scrolled to the working day by default
+  const hourStart = 0;
+  const hourRows = 24;
+  const gridScrollRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    gridScrollRef.current?.scrollTo({ top: DEFAULT_HOUR_START * ROW_PX });
+  }, [weekStart]);
 
   const toggleUser = (uid: string) => {
     setHiddenUsers((prev) => {
@@ -327,15 +318,16 @@ function CalendarPage() {
           </div>
         </Card>
 
-        {/* Week grid */}
+        {/* Week grid — full 24h, scrollable, opens at the working day */}
         <Card className="p-0 border-border/60 overflow-hidden">
+          <div ref={gridScrollRef} className="max-h-[68vh] overflow-y-auto">
           <div className="grid" style={{ gridTemplateColumns: "48px repeat(7, minmax(0, 1fr))" }}>
             {/* header row */}
-            <div className="border-b border-border/60 bg-muted/30" />
+            <div className="sticky top-0 z-20 border-b border-border/60 bg-card" />
             {days.map((d) => {
               const today = isSameDay(d, toLocal(new Date()));
               return (
-                <div key={d.toISOString()} className="border-b border-l border-border/60 bg-muted/30 px-2 py-2 text-center">
+                <div key={d.toISOString()} className="sticky top-0 z-20 border-b border-l border-border/60 bg-card px-2 py-2 text-center">
                   <div className="text-[10px] uppercase text-muted-foreground tracking-wide">{format(d, "EEE")}</div>
                   <div className={`text-sm font-semibold tabular-nums ${today ? "text-primary" : ""}`}>{format(d, "d")}</div>
                 </div>
@@ -365,6 +357,7 @@ function CalendarPage() {
                 hourRows={hourRows}
               />
             ))}
+          </div>
           </div>
 
           {events.isLoading && (
