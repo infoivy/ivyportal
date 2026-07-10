@@ -6,7 +6,7 @@ import { DOC_CATEGORIES, CATEGORY_LABEL, type DocCategory } from "@/lib/knowledg
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Search, Plus, Pin, Clock, ExternalLink as ExtIcon, ArrowRight } from "lucide-react";
+import { BookOpen, Search, Plus, Pin, ExternalLink as ExtIcon, ArrowRight } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/knowledge/")({
   head: () => ({ meta: [{ title: "Knowledge Hub — ISA Team" }] }),
