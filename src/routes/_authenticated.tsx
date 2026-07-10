@@ -67,6 +67,13 @@ function AuthedLayout() {
       const isStudent = rolesArr.includes("student");
       const isTeam = rolesArr.some(r => ["admin", "coach", "closer", "setter"].includes(r));
 
+      // Sign-in happens on /auth before this layout mounts, so the SIGNED_IN
+      // event is missed — the auth page leaves a one-shot flag instead.
+      if (!fromSignIn && window.sessionStorage.getItem("isa-landing-pending")) {
+        window.sessionStorage.removeItem("isa-landing-pending");
+        fromSignIn = true;
+      }
+
       if (fromSignIn) {
         // Role-based landing: only fires on actual sign-in, not on page refresh
         if (isStudent && !isTeam) {

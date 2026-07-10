@@ -47,7 +47,7 @@ export function RangePicker({ value, onChange }: { value: DateRange; onChange: (
           <button
             key={p.key}
             onClick={() => onChange(rangeFor(p.key))}
-            className={`text-[11px] font-semibold px-2.5 py-1 rounded-[2px] transition ${
+            className={`text-[11px] font-semibold px-2.5 py-1 rounded-sm transition ${
               value.preset === p.key ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
             }`}
           >

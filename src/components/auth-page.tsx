@@ -34,8 +34,13 @@ export function AuthPage() {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) navigate({ to: "/dashboard", replace: true });
     });
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
-      if (session) navigate({ to: "/dashboard", replace: true });
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        // The authed layout mounts after this navigation, so it never sees the
+        // SIGNED_IN event — hand it the role-landing signal explicitly.
+        if (event === "SIGNED_IN") window.sessionStorage.setItem("isa-landing-pending", "1");
+        navigate({ to: "/dashboard", replace: true });
+      }
     });
     return () => sub.subscription.unsubscribe();
   }, [navigate]);
@@ -112,13 +117,13 @@ export function AuthPage() {
           <div className="inline-flex w-full rounded-sm border border-border bg-[var(--background)] p-0.5">
             <button
               onClick={() => setTab("signin")}
-              className={`flex-1 text-[11px] font-semibold px-2.5 py-1.5 rounded-[2px] transition ${
+              className={`flex-1 text-[11px] font-semibold px-2.5 py-1.5 rounded-sm transition ${
                 tab === "signin" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
               }`}
             >Sign in</button>
             <button
               onClick={() => setTab("signup")}
-              className={`flex-1 text-[11px] font-semibold px-2.5 py-1.5 rounded-[2px] transition ${
+              className={`flex-1 text-[11px] font-semibold px-2.5 py-1.5 rounded-sm transition ${
                 tab === "signup" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
               }`}
             >Sign up</button>

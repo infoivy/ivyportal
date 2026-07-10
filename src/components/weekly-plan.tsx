@@ -323,7 +323,7 @@ function WeekBlock({
               const stageBadge = meta.stage === "tof" ? "bg-muted text-muted-foreground border-border" : "bg-success-bg text-success-fg border-success/25";
               return (
                 <div key={day} className={`border rounded-sm ${stageColor} ${isToday ? "ring-1 ring-ring" : ""}`}>
-                  <div className="flex items-center gap-2 px-2.5 py-1.5 border-b border-white/5">
+                  <div className="flex items-center gap-2 px-2.5 py-1.5 border-b border-border">
                     <span className="text-[10px] w-14 text-muted-foreground">{day} {format(addDays(monday, idx), "d")}</span>
                     <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-sm border ${stageBadge}`}>{meta.stage} · {meta.position}</span>
                     {isToday && <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold">Today</span>}
@@ -382,7 +382,7 @@ function IdeaGroup({
 }) {
   return (
     <div className={`border ${stageColor} bg-[var(--card)] rounded-sm`}>
-      <div className="px-2.5 py-1.5 border-b border-white/5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{title}</div>
+      <div className="px-2.5 py-1.5 border-b border-border text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{title}</div>
       <div className="divide-y divide-white/5">
         {ideas.map((idea) => (
           <IdeaRow key={idea.id} idea={idea} slots={slots} onChange={onChange} onPromote={onPromote} />
@@ -465,7 +465,7 @@ function PromoteMenu({
               <button
                 key={s.id}
                 onClick={() => { onPromote(s.id); setOpen(false); }}
-                className="w-full text-left px-2 py-1.5 text-[11px] hover:bg-[#141821] border-b border-white/5 last:border-0"
+                className="w-full text-left px-2 py-1.5 text-[11px] hover:bg-muted border-b border-border last:border-0"
               >
                 <div className="text-[10px] text-muted-foreground">{s.scheduled_date}</div>
                 <div className="line-clamp-1">{s.hook}</div>

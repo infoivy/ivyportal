@@ -91,7 +91,7 @@ function Training() {
               <input
                 value={query} onChange={e => setQuery(e.target.value)}
                 placeholder="Search videos…"
-                className="pl-8 pr-3 py-1.5 rounded-sm border border-border bg-card text-xs w-44 sm:w-56 focus:outline-none focus:border-white/30"
+                className="pl-8 pr-3 py-1.5 rounded-sm border border-border bg-card text-xs w-44 sm:w-56 focus:outline-none focus:border-ring"
               />
             </div>
             {isAdmin && (
