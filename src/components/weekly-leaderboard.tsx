@@ -19,24 +19,17 @@ export function CashLeaderboard({ compact = false }: { compact?: boolean }) {
   const [rows, setRows] = useState<{ user_id: string; name: string; cash: number; closes: number }[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    (async () => {
-      const start = startOfWeekMon(new Date());
-      const end = endOfWeekSun(new Date());
-      const startISO = isoDay(start);
-      const endISO = isoDay(end);
+  const load = async () => {
+    setLoading(true);
+    try {
+      const startISO = isoDay(startOfWeekMon(new Date()));
+      const endISO = isoDay(endOfWeekSun(new Date()));
 
       const [dealsRes, eodsRes] = await Promise.all([
-        supabase
-          .from("deals")
-          .select("closer_id, cash_collected_upfront, deal_date")
-          .gte("deal_date", startISO)
-          .lte("deal_date", endISO),
-        supabase
-          .from("eods")
-          .select("user_id, cash_collected, closes, report_date")
-          .gte("report_date", startISO)
-          .lte("report_date", endISO),
+        supabase.from("deals").select("closer_id, cash_collected_upfront, deal_date")
+          .gte("deal_date", startISO).lte("deal_date", endISO),
+        supabase.from("eods").select("user_id, cash_collected, closes, report_date")
+          .gte("report_date", startISO).lte("report_date", endISO),
       ]);
 
       const totals = new Map<string, { cash: number; closes: number }>();
@@ -49,37 +42,26 @@ export function CashLeaderboard({ compact = false }: { compact?: boolean }) {
       for (const e of eodsRes.data ?? []) {
         const key = e.user_id as string;
         const cur = totals.get(key) ?? { cash: 0, closes: 0 };
-        // Prefer EOD cash if higher (avoid double-counting same deal cash reported both places by taking max per user)
-        // But typical usage: eod.cash_collected is the daily banked cash from closes; deals table has the deal itself.
-        // Keep additive for simplicity — coaches can reconcile.
         cur.cash += Number(e.cash_collected) || 0;
         totals.set(key, cur);
       }
 
       const userIds = Array.from(totals.keys());
-      if (userIds.length === 0) {
-        setRows([]);
-        setLoading(false);
-        return;
-      }
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, display_name")
-        .in("id", userIds);
+      if (userIds.length === 0) { setRows([]); return; }
+      const { data: profiles } = await supabase.from("profiles").select("id, display_name").in("id", userIds);
       const nameMap = new Map((profiles ?? []).map((p) => [p.id, p.display_name || "Unknown"]));
-
-      const out = userIds
-        .map((id) => ({
-          user_id: id,
-          name: nameMap.get(id) ?? "Unknown",
-          cash: totals.get(id)!.cash,
-          closes: totals.get(id)!.closes,
-        }))
-        .sort((a, b) => b.cash - a.cash);
-      setRows(out);
+      setRows(userIds.map((id) => ({
+        user_id: id, name: nameMap.get(id) ?? "Unknown",
+        cash: totals.get(id)!.cash, closes: totals.get(id)!.closes,
+      })).sort((a, b) => b.cash - a.cash));
+    } catch (e) {
+      console.error("CashLeaderboard load failed", e);
+      setRows([]);
+    } finally {
       setLoading(false);
-    })();
-  }, []);
+    }
+  };
+  useEffect(() => { load(); }, []);
 
   return (
     <Card className={compact ? "p-4" : "p-5"}>
