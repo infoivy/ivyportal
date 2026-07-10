@@ -29,6 +29,7 @@ type WeekSlot = {
   status: string;
   format: string | null;
   link_when_posted: string | null;
+  week_start: string | null;
 };
 
 // Kept in sync with the "Content Brainstorm Session" SOP → Step 3 video formats.
