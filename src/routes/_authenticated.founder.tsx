@@ -106,7 +106,7 @@ function FounderPage() {
       <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[#1f2530] pb-4">
         <div>
           <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-fuchsia-400 mb-1">
-            <Sparkles className="h-3 w-3" /> Founder space
+            <Sparkles className="h-3 w-3" /> Founder Hub
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">Content & Strategy</h1>
           <p className="text-xs text-muted-foreground mt-0.5">Weekly reel plan, ideation, calendar — with an autonomous ideation engine.</p>
