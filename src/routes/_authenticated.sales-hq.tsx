@@ -9,6 +9,8 @@ import {
   CheckCircle2, XCircle, AlertTriangle, Copy, Check, ChevronDown, ChevronRight,
   TrendingUp, Users, Loader2, BarChart3, GraduationCap,
 } from "lucide-react";
+import { StatCard } from "@/components/ui/stat-card";
+import { BreakdownBar } from "@/components/ui/breakdown-bar";
 
 export const Route = createFileRoute("/_authenticated/sales-hq")({
   head: () => ({ meta: [{ title: "Sales HQ — ISA Team" }] }),
@@ -193,12 +195,55 @@ function SalesHQInner() {
         </div>
 
         {/* Summary strip */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          <StatChip label="Active setters" value={setters.length} />
-          <StatChip label="Filed today" value={setters.filter(s => todayByUser.has(s.id)).length} accent="green" />
-          <StatChip label="Missed yesterday" value={missedYesterday.length} accent={missedYesterday.length > 0 ? "red" : "green"} />
-          <StatChip label="7-day avg. sets/day" value={sevenDayAvgSets(setters, recentEods)} />
-        </div>
+        {(() => {
+          const filedToday = setters.filter(s => todayByUser.has(s.id));
+          const filedAndHit = filedToday.filter(s => {
+            const eod = todayByUser.get(s.id)!;
+            const h = kpiHit(eod, s.setter_type);
+            return h.primary && h.sets;
+          });
+          const filedOnly = filedToday.length - filedAndHit.length;
+          const missing = setters.length - filedToday.length;
+          const setsSparkData = (() => {
+            const now = new Date();
+            const result: number[] = [];
+            for (let i = 29; i >= 0; i--) {
+              const d = new Date(now); d.setDate(d.getDate() - i);
+              const key = d.toISOString().slice(0, 10);
+              const dayEods = recentEods.filter(e => e.report_date === key);
+              result.push(dayEods.reduce((s, e) => s + e.calls_booked, 0));
+            }
+            return result;
+          })();
+          const complianceBreakdown = [
+            { label: "KPI hit", value: filedAndHit.length, color: "#22c55e" },
+            { label: "Submitted", value: filedOnly, color: "#f59e0b" },
+            { label: "Missing", value: missing, color: "#ef4444" },
+          ];
+          return (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <StatCard label="Active setters" value={setters.length} noData={setters.length === 0} />
+                <StatCard label="Filed today" value={filedToday.length} accent noData={setters.length === 0} />
+                <StatCard
+                  label="Missed yesterday"
+                  value={missedYesterday.length}
+                  hint={missedYesterday.length > 0 ? "needs nudge" : "all filed"}
+                  noData={setters.length === 0}
+                />
+                <StatCard
+                  label="7-day avg sets/day"
+                  value={sevenDayAvgSets(setters, recentEods)}
+                  sparkData={setsSparkData}
+                  noData={recentEods.length === 0}
+                />
+              </div>
+              <div className="rounded-xl border border-white/[0.07] bg-card p-4">
+                <BreakdownBar segments={complianceBreakdown} title="Today's compliance" />
+              </div>
+            </>
+          );
+        })()}
 
         <Tabs defaultValue="today" className="space-y-4">
           <TabsList className="bg-card border border-border">
