@@ -138,7 +138,7 @@ function FounderPage() {
             <Sparkles className="h-3 w-3" /> Founder Hub
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">Content & Strategy</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">Weekly reel plan, ideation, calendar — with an autonomous ideation engine.</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Plan, script, record, post.</p>
         </div>
         <div className="flex gap-2">
           <Link
