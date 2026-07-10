@@ -279,7 +279,7 @@ function IgPage() {
 
       <div className="text-[10px] text-muted-foreground pt-2 flex items-center gap-1.5">
         <Sparkles className="h-3 w-3" />
-        <Link to="/founder" className="hover:text-foreground">← Back to Founder Space</Link>
+        <Link to="/founder" className="hover:text-foreground">← Back to Founder Hub</Link>
       </div>
 
       {connectOpen && user && (
