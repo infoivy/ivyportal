@@ -90,12 +90,12 @@ export function AppSidebar({ roles }: { roles: string[] }) {
                     className={
                       "relative h-9 rounded-md transition-colors " +
                       (active
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[3px] before:rounded-full before:bg-primary"
-                        : "text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-accent/60")
+                        ? "bg-white/[0.04] text-sidebar-foreground font-medium before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[2px] before:rounded-full before:bg-primary"
+                        : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-white/[0.03]")
                     }
                   >
                     <Link to={item.url} className="flex items-center gap-2.5 pl-3">
-                      <item.icon className={"h-4 w-4 shrink-0 " + (active ? "text-primary" : "text-sidebar-foreground/60")} />
+                      <item.icon className={"h-4 w-4 shrink-0 " + (active ? "text-sidebar-foreground" : "text-sidebar-foreground/50")} />
                       {!collapsed && <span className="text-sm">{item.title}</span>}
                     </Link>
                   </SidebarMenuButton>
