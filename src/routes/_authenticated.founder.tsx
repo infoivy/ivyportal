@@ -18,7 +18,7 @@ export const Route = createFileRoute("/_authenticated/founder")({
 });
 
 type Platform = "instagram" | "tiktok" | "youtube" | "twitter" | "linkedin" | "threads" | "other";
-type Status = "idea" | "scripted" | "approved" | "recorded" | "edited" | "scheduled" | "posted";
+type Status = "idea" | "scripted" | "approved" | "recorded" | "filmed" | "edited" | "scheduled" | "posted";
 
 // Shared creative-type vocabulary. Must stay in sync with src/components/weekly-plan.tsx.
 export const CREATIVE_TYPES = [
