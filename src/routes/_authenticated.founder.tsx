@@ -6,11 +6,13 @@ import { toast } from "sonner";
 import {
   Sparkles, Calendar as CalendarIcon, Columns3, List as ListIcon, Lightbulb,
   Plus, ExternalLink, Trash2, X, ArrowRight, Loader2, Instagram, LayoutGrid,
-  BookOpen,
+  BookOpen, Video, Zap,
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, parseISO } from "date-fns";
 import { WeeklyPlan } from "@/components/weekly-plan";
 import { FounderSops } from "@/components/founder-sops";
+import { RecordingDay } from "@/components/recording-day";
+import { HookLibrary } from "@/components/hook-library";
 
 export const Route = createFileRoute("/_authenticated/founder")({
   head: () => ({ meta: [{ title: "Founder Hub — ISA Portal" }] }),
@@ -100,7 +102,7 @@ function FounderPage() {
 
   const [items, setItems] = useState<ContentItem[]>([]);
   const [ideas, setIdeas] = useState<Idea[]>([]);
-  const [view, setView] = useState<"weekly" | "calendar" | "kanban" | "list" | "sops">("weekly");
+  const [view, setView] = useState<"weekly" | "recording" | "hooks" | "calendar" | "kanban" | "list" | "sops">("weekly");
   const [monthCursor, setMonthCursor] = useState(new Date());
   const [editing, setEditing] = useState<ContentItem | null>(null);
   const [creating, setCreating] = useState(false);
@@ -158,15 +160,27 @@ function FounderPage() {
 
       {/* View switcher */}
       <div className="flex items-center gap-1 border-b border-[#1f2530] overflow-x-auto">
-        <ViewTab active={view === "weekly"}   onClick={() => setView("weekly")}   icon={LayoutGrid}   label="Weekly plan" />
-        <ViewTab active={view === "calendar"} onClick={() => setView("calendar")} icon={CalendarIcon} label="Calendar" />
-        <ViewTab active={view === "kanban"}   onClick={() => setView("kanban")}   icon={Columns3}     label="Kanban" />
-        <ViewTab active={view === "list"}     onClick={() => setView("list")}     icon={ListIcon}     label="List" />
-        <ViewTab active={view === "sops"}     onClick={() => setView("sops")}     icon={BookOpen}     label="SOPs & Playbooks" />
+        <ViewTab active={view === "weekly"}    onClick={() => setView("weekly")}    icon={LayoutGrid}   label="Weekly plan" />
+        <ViewTab active={view === "recording"} onClick={() => setView("recording")} icon={Video}        label="Recording day" />
+        <ViewTab active={view === "hooks"}     onClick={() => setView("hooks")}     icon={Zap}          label="Hook library" />
+        <ViewTab active={view === "calendar"}  onClick={() => setView("calendar")}  icon={CalendarIcon} label="Calendar" />
+        <ViewTab active={view === "kanban"}    onClick={() => setView("kanban")}    icon={Columns3}     label="Kanban" />
+        <ViewTab active={view === "list"}      onClick={() => setView("list")}      icon={ListIcon}     label="List" />
+        <ViewTab active={view === "sops"}      onClick={() => setView("sops")}      icon={BookOpen}     label="SOPs & Playbooks" />
       </div>
 
       {view === "sops" ? (
         <FounderSops />
+      ) : view === "hooks" ? (
+        <HookLibrary />
+      ) : view === "recording" ? (
+        <RecordingDay
+          onOpenItem={(id) => {
+            const it = items.find(i => i.id === id);
+            if (it) setEditing(it);
+            else supabase.from("content_items").select("*").eq("id", id).maybeSingle().then(({ data }) => { if (data) setEditing(data as ContentItem); });
+          }}
+        />
       ) : view === "weekly" ? (
         <WeeklyPlan
           onOpenItem={(id) => {
