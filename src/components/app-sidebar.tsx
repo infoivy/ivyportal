@@ -56,6 +56,7 @@ const founderItems: Item[] = [
 const adminItems: Item[] = [
   { title: "Admin", url: "/admin", icon: Shield, roles: ["admin"] },
   { title: "Team", url: "/team", icon: Users, roles: ["admin"] },
+  { title: "Payouts", url: "/payouts", icon: DollarSign, roles: ["admin"] },
 ];
 
 const studentItems: Item[] = [

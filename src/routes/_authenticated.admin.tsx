@@ -312,6 +312,17 @@ function AdminConsole() {
               </a>
             </div>
           </div>
+
+          {/* Email digest note */}
+          <div className="flex items-start gap-3 py-3 border-t border-border">
+            <CheckCircle2 className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
+            <div>
+              <div className="text-xs font-medium">Daily email digest (Resend)</div>
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                Add <code className="bg-accent px-1 rounded-sm">RESEND_API_KEY</code> to Vercel environment variables and to Supabase Edge Function secrets. Schedule the <code className="bg-accent px-1 rounded-sm">daily-digest</code> edge function at <code className="bg-accent px-1 rounded-sm">0 3 * * *</code> UTC (7am Dubai). Set <code className="bg-accent px-1 rounded-sm">DIGEST_RECIPIENTS</code> as a JSON array in edge function secrets.
+              </p>
+            </div>
+          </div>
         </div>
       </Panel>
 
