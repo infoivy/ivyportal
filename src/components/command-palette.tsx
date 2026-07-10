@@ -137,7 +137,7 @@ export function CommandPalette() {
             placeholder="Search students, team, pages…"
             className="flex-1 h-11 bg-transparent text-sm focus:outline-none placeholder:text-muted-foreground"
           />
-          <span className="text-[10px] text-muted-foreground font-mono border border-[var(--border)] rounded px-1.5 py-0.5">ESC</span>
+          <span className="text-[10px] text-muted-foreground border border-[var(--border)] rounded px-1.5 py-0.5">ESC</span>
         </div>
         <div className="max-h-[50vh] overflow-y-auto py-1">
           {results.length === 0 && <div className="p-6 text-center text-xs text-muted-foreground">No matches.</div>}
@@ -210,7 +210,7 @@ export function CommandPalette() {
         </div>
         <div className="border-t border-[var(--border)] px-3 py-1.5 flex items-center justify-between text-[10px] text-muted-foreground">
           <span>↑↓ navigate · ↵ open</span>
-          <span className="font-mono">⌘K</span>
+          <span className="">⌘K</span>
         </div>
       </div>
     </div>

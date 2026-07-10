@@ -379,11 +379,11 @@ function EODsPage() {
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
                         <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Cash collected today ($)</Label>
-                        <Input type="number" min={0} step="0.01" value={form.cash_collected} onChange={e => setFloat("cash_collected")(e.target.value)} onFocus={e => e.currentTarget.select()} className="bg-[var(--background)] border-[var(--border)] rounded-sm h-9 font-mono text-sm" />
+                        <Input type="number" min={0} step="0.01" value={form.cash_collected} onChange={e => setFloat("cash_collected")(e.target.value)} onFocus={e => e.currentTarget.select()} className="bg-[var(--background)] border-[var(--border)] rounded-sm h-9 text-sm" />
                       </div>
                       <div className="space-y-1">
                         <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Deferred cash — PIF &lt;30d ($)</Label>
-                        <Input type="number" min={0} step="0.01" value={form.deferred_cash} onChange={e => setFloat("deferred_cash")(e.target.value)} onFocus={e => e.currentTarget.select()} className="bg-[var(--background)] border-[var(--border)] rounded-sm h-9 font-mono text-sm" />
+                        <Input type="number" min={0} step="0.01" value={form.deferred_cash} onChange={e => setFloat("deferred_cash")(e.target.value)} onFocus={e => e.currentTarget.select()} className="bg-[var(--background)] border-[var(--border)] rounded-sm h-9 text-sm" />
                       </div>
                     </div>
                   </div>
@@ -411,7 +411,7 @@ function EODsPage() {
               )}
               <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-4 text-[11px] text-muted-foreground leading-relaxed">
                 <div className="text-[10px] uppercase tracking-widest text-green-400 mb-2">Pro tip</div>
-                Submit before <span className="text-foreground font-mono">23:59</span>. Missed days hurt the team's rolling average.
+                Submit before <span className="text-foreground">23:59</span>. Missed days hurt the team's rolling average.
               </div>
             </aside>
           </div>
@@ -564,7 +564,7 @@ function OverviewCard({ card }: { card: {
             return (
               <div key={w.d} className={`flex-1 border rounded-sm px-1 py-1 text-center ${bg}`} title={fmtLong(w.d)}>
                 <div className="text-[9px] text-muted-foreground">{WEEKDAY[dt.getDay()]}</div>
-                <div className="text-[10px] font-mono">{dt.getDate()}</div>
+                <div className="text-[10px]">{dt.getDate()}</div>
               </div>
             );
           })}
@@ -808,11 +808,11 @@ function ComplianceMatrix({ eods, roster }: { eods: GridEod[]; roster: RosterEnt
                           const glyph = status === "red" ? "✗" : status === "amber" ? "!" : "✓";
                           return (<td key={d} className="px-1 py-1 text-center"><span title={`${m.display_name} · ${fmtLong(d)} · ${status}`} className={`inline-flex items-center justify-center h-5 w-5 rounded-sm border text-[11px] ${cls}`}>{glyph}</span></td>);
                         })}
-                        <td className="px-3 py-2 text-right font-mono text-xs">
+                        <td className="px-3 py-2 text-right text-xs">
                           <span className={s.streak >= 3 ? "text-amber-400" : "text-foreground"}>{s.streak}</span>
                           <span className="text-muted-foreground text-[10px] ml-1">d</span>
                         </td>
-                        <td className="px-3 py-2 text-right font-mono text-xs">
+                        <td className="px-3 py-2 text-right text-xs">
                           <span className={s.pct >= 90 ? "text-green-400" : s.pct >= 70 ? "text-amber-400" : "text-red-400"}>{s.pct}%</span>
                           <span className="text-muted-foreground text-[10px] ml-1">({s.submitted}/{s.required})</span>
                         </td>
@@ -932,9 +932,9 @@ function SubmissionsChart({ data }: { data: { label: string; submitted: number; 
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-        <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#8a91a0" }} />
-        <YAxis tick={{ fontSize: 10, fill: "#8a91a0" }} allowDecimals={false} />
+        <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.06)" vertical={false} />
+        <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#8A919C" }} />
+        <YAxis tick={{ fontSize: 10, fill: "#8A919C" }} allowDecimals={false} />
         <ReTooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", fontSize: 11 }} />
         <Legend wrapperStyle={{ fontSize: 10 }} />
         <Bar dataKey="expected" fill="var(--border)" name="Expected" />
@@ -948,9 +948,9 @@ function FunnelChart({ data }: { data: { label: string; dms: number; convos: num
   return (
     <ResponsiveContainer width="100%" height="100%">
       <LineChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-        <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#8a91a0" }} />
-        <YAxis tick={{ fontSize: 10, fill: "#8a91a0" }} allowDecimals={false} />
+        <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.06)" vertical={false} />
+        <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#8A919C" }} />
+        <YAxis tick={{ fontSize: 10, fill: "#8A919C" }} allowDecimals={false} />
         <ReTooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", fontSize: 11 }} />
         <Legend wrapperStyle={{ fontSize: 10 }} />
         <Line type="monotone" dataKey="dms" stroke="#3b82f6" strokeWidth={1.5} dot={false} name="DMs" />
@@ -1052,7 +1052,7 @@ function FeedCard({ e, isAdmin, onDelete }: { e: GridEod; isAdmin: boolean; onDe
       <div className="flex gap-2 flex-wrap">
         {chips.map(c => (
           <span key={c.label} className="text-[11px] bg-[var(--background)] border border-[var(--border)] px-2 py-0.5 rounded-sm">
-            <span className="text-muted-foreground">{c.label}</span> <span className="font-mono">{c.value}</span>
+            <span className="text-muted-foreground">{c.label}</span> <span className="">{c.value}</span>
           </span>
         ))}
       </div>
@@ -1112,7 +1112,7 @@ function MiniChip({ label, value, tone, icon }: { label: string; value: number |
   return (
     <div className={`border rounded-sm p-2 ${cls}`}>
       <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-muted-foreground mb-0.5">{icon}{label}</div>
-      <div className="text-base font-mono font-semibold">{value}</div>
+      <div className="text-base font-semibold">{value}</div>
     </div>
   );
 }
@@ -1124,7 +1124,7 @@ function KpiBar({ label, value, target }: { label: string; value: number; target
     <div>
       <div className="flex items-baseline justify-between mb-1">
         <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</span>
-        <span className={`text-[11px] font-mono ${hit ? "text-green-400 font-semibold" : "text-foreground"}`}>{value} / {target}</span>
+        <span className={`text-[11px] ${hit ? "text-green-400 font-semibold" : "text-foreground"}`}>{value} / {target}</span>
       </div>
       <div className="h-1.5 bg-[var(--accent)] rounded-sm overflow-hidden">
         <div className={`h-full ${hit ? "bg-green-500" : "bg-amber-500"}`} style={{ width: `${pct}%` }} />
@@ -1140,7 +1140,7 @@ function NumField({ label, value, onChange }: { label: string; value: number; on
       <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</Label>
       <div className="flex items-center gap-1">
         <button type="button" onClick={() => bump(-1)} className="h-9 w-8 rounded-sm border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--accent)] text-lg leading-none">−</button>
-        <Input type="number" min={0} value={value} onChange={e => onChange(e.target.value)} onFocus={e => e.currentTarget.select()} className="bg-[var(--background)] border-[var(--border)] rounded-sm h-9 font-mono text-sm text-center" />
+        <Input type="number" min={0} value={value} onChange={e => onChange(e.target.value)} onFocus={e => e.currentTarget.select()} className="bg-[var(--background)] border-[var(--border)] rounded-sm h-9 text-sm text-center" />
         <button type="button" onClick={() => bump(1)} className="h-9 w-8 rounded-sm border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--accent)] text-lg leading-none">+</button>
       </div>
     </div>
@@ -1164,7 +1164,7 @@ function RowStat({ label, value, accent }: { label: string; value: number | stri
   return (
     <div className="flex items-baseline gap-1.5">
       <span className="text-[9px] uppercase tracking-wider text-muted-foreground">{label}</span>
-      <span className={`font-mono ${accent ? "text-green-400 font-semibold" : "text-foreground"}`}>{value}</span>
+      <span className={`${accent ? "text-green-400 font-semibold" : "text-foreground"}`}>{value}</span>
     </div>
   );
 }

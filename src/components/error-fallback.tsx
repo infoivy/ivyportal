@@ -13,7 +13,7 @@ export function DefaultErrorFallback({ error, reset }: { error: Error; reset: ()
           </div>
         </div>
         <div className="text-sm font-semibold text-red-300">Something went wrong on this page</div>
-        <p className="text-[11px] text-muted-foreground mt-2 font-mono break-words">
+        <p className="text-[11px] text-muted-foreground mt-2 break-words">
           {error?.message ?? "Unknown error"}
         </p>
         <div className="mt-4 flex justify-center gap-2">

@@ -75,7 +75,7 @@ function CoachesPage() {
             Use when assigning new students. Lower load + high rating = green light.
           </p>
         </div>
-        <div className="text-[11px] text-muted-foreground font-mono">{coaches.length} coaches</div>
+        <div className="text-[11px] text-muted-foreground">{coaches.length} coaches</div>
       </header>
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -134,7 +134,7 @@ function Stat({ label, value, sub, icon, tone }: { label: string; value: number 
   return (
     <div className="border border-[var(--border)] bg-[var(--background)] rounded-sm p-2">
       <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-muted-foreground mb-0.5">{icon}{label}</div>
-      <div className={`text-lg font-mono font-semibold ${colors}`}>{value}</div>
+      <div className={`text-lg font-semibold ${colors}`}>{value}</div>
       {sub && <div className="text-[9px] text-muted-foreground">{sub}</div>}
     </div>
   );

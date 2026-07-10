@@ -284,7 +284,7 @@ function StudentPortal() {
         <div className="border border-amber-500/30 bg-amber-500/5 rounded-sm p-8 text-center">
           <div className="text-amber-400 text-sm font-medium mb-2">Your account isn't linked to a student profile yet</div>
           <p className="text-xs text-muted-foreground">
-            Contact your coach so they can add you (email: <span className="font-mono text-foreground">{user?.email}</span>). Once linked, this page becomes your daily hub.
+            Contact your coach so they can add you (email: <span className="text-foreground">{user?.email}</span>). Once linked, this page becomes your daily hub.
           </p>
         </div>
       </div>
@@ -372,7 +372,7 @@ function StudentPortal() {
               {nextCallDate ? (
                 <div className="text-sm font-medium">
                   {nextCallDate}
-                  <span className="text-muted-foreground text-[11px] ml-2 font-mono">
+                  <span className="text-muted-foreground text-[11px] ml-2">
                     {nextCallInDays === 0 ? "today" : nextCallInDays === 1 ? "tomorrow" : `in ${nextCallInDays}d`}
                   </span>
                 </div>
@@ -489,8 +489,8 @@ function StudentPortal() {
               {eods.length === 0 && <div className="p-6 text-center text-xs text-muted-foreground">No EODs yet. Your first log starts your streak. 🔥</div>}
               {eods.map(e => (
                 <div key={e.id} className="grid grid-cols-[80px_1fr_auto] items-center gap-3 p-3 text-xs">
-                  <span className="font-mono text-muted-foreground">{e.report_date}</span>
-                  <div className="flex gap-3 text-[11px] text-muted-foreground font-mono flex-wrap">
+                  <span className="text-muted-foreground">{e.report_date}</span>
+                  <div className="flex gap-3 text-[11px] text-muted-foreground flex-wrap">
                     <span>Apps <span className="text-green-400">{e.applications_submitted}</span></span>
                     <span>Out <span className="text-foreground">{e.outreach_sent}</span></span>
                     <span>Repl <span className="text-foreground">{e.replies}</span></span>
@@ -538,7 +538,7 @@ function StudentPortal() {
           <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-5">
             <div className="flex items-center justify-between mb-2">
               <div className="text-xs font-semibold">Coaching calls</div>
-              <div className="text-[11px] font-mono text-muted-foreground">{callsUsed}/{callsAllotted} used</div>
+              <div className="text-[11px] text-muted-foreground">{callsUsed}/{callsAllotted} used</div>
             </div>
             <div className="h-2 rounded-sm bg-[var(--accent)] overflow-hidden">
               <div
@@ -546,7 +546,7 @@ function StudentPortal() {
                 style={{ width: `${callsAllotted ? Math.min(100, (callsUsed / callsAllotted) * 100) : 0}%` }}
               />
             </div>
-            <div className="flex justify-between text-[10px] text-muted-foreground mt-1.5 font-mono">
+            <div className="flex justify-between text-[10px] text-muted-foreground mt-1.5">
               <span>{Math.max(0, callsAllotted - callsUsed)} remaining</span>
               <span>{nextCallDate ? `Next · ${nextCallDate}` : "No call scheduled"}</span>
             </div>
@@ -556,7 +556,7 @@ function StudentPortal() {
           <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-5">
             <div className="flex items-center justify-between mb-3">
               <div className="text-xs font-semibold">Progress rating trend</div>
-              <div className="text-[11px] font-mono text-muted-foreground">Latest {ratings.at(-1)?.rating ?? "—"}/5</div>
+              <div className="text-[11px] text-muted-foreground">Latest {ratings.at(-1)?.rating ?? "—"}/5</div>
             </div>
             {ratings.length < 2 ? (
               <div className="text-[11px] text-muted-foreground py-8 text-center">Trend shows once you have 2+ rated calls.</div>
@@ -570,7 +570,7 @@ function StudentPortal() {
             <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm">
               <div className="px-4 py-3 border-b border-[var(--border)] flex items-center justify-between">
                 <div className="text-xs font-semibold">Last call action items</div>
-                <div className="text-[10px] font-mono text-muted-foreground">{lastCallItems.date}</div>
+                <div className="text-[10px] text-muted-foreground">{lastCallItems.date}</div>
               </div>
               <div className="divide-y divide-[var(--accent)]">
                 {lastCallItems.items.map((it, i) => (
@@ -590,9 +590,9 @@ function StudentPortal() {
               {completedCalls.length === 0 && <div className="p-6 text-center text-xs text-muted-foreground">No completed calls yet.</div>}
               {completedCalls.map(c => (
                 <div key={c.id} className="grid grid-cols-[100px_1fr_auto] items-center gap-3 p-3 text-xs">
-                  <span className="font-mono text-muted-foreground">{c.call_date}</span>
+                  <span className="text-muted-foreground">{c.call_date}</span>
                   <span className="text-muted-foreground">Completed</span>
-                  <span className="font-mono">{c.progress_rating ? `${c.progress_rating}/5` : "—"}</span>
+                  <span className="">{c.progress_rating ? `${c.progress_rating}/5` : "—"}</span>
                 </div>
               ))}
             </div>
@@ -622,7 +622,7 @@ function TabButton({ active, onClick, icon, label, badge, urgent }: { active: bo
     <button onClick={onClick} className={`flex items-center gap-1.5 px-3 py-2 text-xs border-b-2 -mb-px ${active ? "border-blue-400 text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
       {icon}{label}
       {badge != null && badge > 0 && (
-        <span className={`ml-1 text-[10px] font-mono px-1.5 py-0.5 rounded-full ${urgent ? "bg-red-500/20 text-red-400" : "bg-[var(--accent)] text-muted-foreground"}`}>{badge}</span>
+        <span className={`ml-1 text-[10px] px-1.5 py-0.5 rounded-full ${urgent ? "bg-red-500/20 text-red-400" : "bg-[var(--accent)] text-muted-foreground"}`}>{badge}</span>
       )}
     </button>
   );
@@ -638,7 +638,7 @@ function JourneyStepper({ current }: { current: string }) {
         return (
           <div key={p.key} className="flex items-center gap-2 flex-shrink-0">
             <div className={`flex items-center gap-2 px-3 py-1.5 rounded-sm border text-[11px] ${active ? "border-blue-500/40 bg-blue-500/10 text-blue-300" : done ? "border-green-500/30 bg-green-500/5 text-green-400" : "border-[var(--border)] text-muted-foreground"}`}>
-              <div className={`h-4 w-4 rounded-full flex items-center justify-center text-[9px] font-mono ${active ? "bg-blue-500 text-blue-950" : done ? "bg-green-500 text-green-950" : "border border-[#2b3240]"}`}>
+              <div className={`h-4 w-4 rounded-full flex items-center justify-center text-[9px] ${active ? "bg-blue-500 text-blue-950" : done ? "bg-green-500 text-green-950" : "border border-[#2b3240]"}`}>
                 {done ? <CheckCircle2 className="h-2.5 w-2.5" /> : i + 1}
               </div>
               {p.label}
@@ -662,11 +662,11 @@ function StatCard({ label, value, prev, series, accent, brandNew, icon }: { labe
       ) : (
         <>
           <div className="flex items-end justify-between gap-2">
-            <div className={`text-xl font-mono font-semibold ${accent ? "text-green-400" : "text-foreground"}`}>{value}</div>
+            <div className={`text-xl font-semibold ${accent ? "text-green-400" : "text-foreground"}`}>{value}</div>
             <Sparkline data={series} color={accent ? "#34d399" : "#a78bfa"} />
           </div>
           {prev > 0 || value > 0 ? (
-            <div className={`text-[10px] font-mono mt-1 ${up ? "text-green-400" : delta < 0 ? "text-red-400" : "text-muted-foreground"}`}>
+            <div className={`text-[10px] mt-1 ${up ? "text-green-400" : delta < 0 ? "text-red-400" : "text-muted-foreground"}`}>
               {up ? "↑" : delta < 0 ? "↓" : "→"} {Math.abs(delta)}% vs prev 7d
             </div>
           ) : (
@@ -699,9 +699,9 @@ function WeeklyRecap({ prev, totals }: { prev: any; evenPrior: any; totals: any 
         <div className="text-xs font-semibold text-blue-300">Weekly recap</div>
       </div>
       <div className="text-xs text-foreground">
-        Last week: <span className="font-mono font-semibold text-green-400">{prev.apps}</span> applications, <span className="font-mono font-semibold">{prev.replies}</span> replies, <span className="font-mono font-semibold">{prev.interviews}</span> interviews.
+        Last week: <span className="font-semibold text-green-400">{prev.apps}</span> applications, <span className="font-semibold">{prev.replies}</span> replies, <span className="font-semibold">{prev.interviews}</span> interviews.
       </div>
-      <div className="text-[11px] text-muted-foreground font-mono mt-1">
+      <div className="text-[11px] text-muted-foreground mt-1">
         Apps {pct(totals.apps, prev.apps)} · Replies {pct(totals.replies, prev.replies)} · Interviews {pct(totals.interviews, prev.interviews)} vs this week so far
       </div>
     </div>
@@ -720,7 +720,7 @@ function SubmittedRecap({ form, streak, onEdit }: { form: typeof empty; streak: 
         <div className="text-sm font-semibold text-green-300">Submitted ✓</div>
         <div className="text-[11px] text-muted-foreground mt-1">See you tomorrow.</div>
       </div>
-      <div className="flex justify-center gap-6 text-xs font-mono flex-wrap">
+      <div className="flex justify-center gap-6 text-xs flex-wrap">
         <span><span className="text-green-400 text-lg font-semibold">{form.applications_submitted}</span> <span className="text-muted-foreground">apps</span></span>
         <span><span className="text-foreground text-lg font-semibold">{form.outreach_sent}</span> <span className="text-muted-foreground">outreach</span></span>
         <span><span className="text-foreground text-lg font-semibold">{form.replies}</span> <span className="text-muted-foreground">replies</span></span>
@@ -764,7 +764,7 @@ function ActionRow({ a, today, onToggle }: { a: { kind?: "call" | "adhoc"; callI
         <div className={`text-xs ${a.item.done ? "line-through text-muted-foreground" : isOverdue ? "text-red-300" : "text-foreground"}`}>
           {a.item.text || <span className="italic text-muted-foreground">(no text)</span>}
         </div>
-        <div className="flex gap-2 mt-1 text-[10px] font-mono text-muted-foreground items-center flex-wrap">
+        <div className="flex gap-2 mt-1 text-[10px] text-muted-foreground items-center flex-wrap">
           {isAdhoc ? (
             <span className="px-1.5 py-0.5 rounded-sm border border-blue-500/30 bg-blue-500/10 text-blue-300 uppercase tracking-wider">
               Coach added
@@ -790,7 +790,7 @@ function MiniStat({ label, value, tone }: { label: string; value: number; tone: 
   return (
     <div className={`border rounded-sm p-3 ${cls}`}>
       <div className="text-[9px] uppercase tracking-wider opacity-80 mb-1">{label}</div>
-      <div className="text-xl font-mono font-semibold">{value}</div>
+      <div className="text-xl font-semibold">{value}</div>
     </div>
   );
 }
@@ -835,7 +835,7 @@ function Counter({ label, value, onBump }: { label: string; value: number; onBum
       <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">{label}</div>
       <div className="flex items-center gap-1">
         <button onClick={() => onBump(-1)} className="h-8 w-8 rounded-sm border border-[var(--border)] hover:bg-[var(--accent)] text-lg leading-none">−</button>
-        <div className="flex-1 text-center text-lg font-mono font-semibold">{value}</div>
+        <div className="flex-1 text-center text-lg font-semibold">{value}</div>
         <button onClick={() => onBump(1)} className="h-8 w-8 rounded-sm border border-[var(--border)] hover:bg-[var(--accent)] text-lg leading-none">+</button>
       </div>
     </div>

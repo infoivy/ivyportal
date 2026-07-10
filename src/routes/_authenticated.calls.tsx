@@ -178,7 +178,7 @@ function CallsPage() {
             const totalA = c.action_items_json?.length ?? 0;
             return (
               <div key={c.id} className="grid grid-cols-[0.7fr_1.3fr_1fr_0.9fr_0.9fr_0.7fr_auto] items-center gap-2 px-4 py-3 border-b border-[var(--accent)] last:border-0 hover:bg-[var(--muted)]">
-                <span className="text-xs font-mono text-muted-foreground">{c.call_date}</span>
+                <span className="text-xs text-muted-foreground">{c.call_date}</span>
                 <Link to={"/students/$id" as any} params={{ id: c.student_id } as any} className="text-sm truncate hover:text-green-400">
                   {studentName(c.student_id)}
                 </Link>
@@ -188,7 +188,7 @@ function CallsPage() {
                     <Star key={i} className={`h-3 w-3 ${i < c.progress_rating! ? "fill-amber-400 text-amber-400" : "text-[#2a3140]"}`} />
                   )) : <span className="text-muted-foreground">—</span>}
                 </span>
-                <span className={`text-xs font-mono ${openA > 0 ? "text-amber-400" : "text-muted-foreground"}`} title="Open / total action items from this call">
+                <span className={`text-xs ${openA > 0 ? "text-amber-400" : "text-muted-foreground"}`} title="Open / total action items from this call">
                   {totalA ? `${totalA - openA}/${totalA} done` : "—"}
                 </span>
                 <span>
@@ -214,7 +214,7 @@ function CallsPage() {
               <div key={col} className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-2 min-h-[200px]">
                 <div className={`flex items-center justify-between text-[10px] uppercase tracking-wider px-1 py-1 mb-2 rounded-sm ${meta.color}`}>
                   <span>{meta.label}</span>
-                  <span className="font-mono">{items.length}</span>
+                  <span className="">{items.length}</span>
                 </div>
                 <div className="space-y-1.5">
                   {items.map(c => {
@@ -227,7 +227,7 @@ function CallsPage() {
                       >
                         <div className="text-xs font-medium truncate">{studentName(c.student_id)}</div>
                         <div className="flex items-center justify-between mt-1 text-[10px] text-muted-foreground">
-                          <span className="font-mono">{c.call_date}</span>
+                          <span className="">{c.call_date}</span>
                           <span className="truncate ml-1">{coachName(c.coach_id).split(" ")[0]}</span>
                         </div>
                         <div className="flex items-center gap-2 mt-1 text-[10px]">

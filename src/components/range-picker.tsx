@@ -78,7 +78,7 @@ export function RangePicker({ value, onChange }: { value: DateRange; onChange: (
                 type="date"
                 value={fromDraft}
                 onChange={(e) => setFromDraft(e.target.value)}
-                className="w-full h-8 rounded-sm border border-input bg-background px-2 text-xs font-mono"
+                className="w-full h-8 rounded-sm border border-input bg-background px-2 text-xs"
               />
             </div>
             <div>
@@ -87,7 +87,7 @@ export function RangePicker({ value, onChange }: { value: DateRange; onChange: (
                 type="date"
                 value={toDraft}
                 onChange={(e) => setToDraft(e.target.value)}
-                className="w-full h-8 rounded-sm border border-input bg-background px-2 text-xs font-mono"
+                className="w-full h-8 rounded-sm border border-input bg-background px-2 text-xs"
               />
             </div>
             <div className="flex gap-2 pt-1">

@@ -138,7 +138,7 @@ function AdminConsole() {
           {["admin", "coach", "setter", "closer", "csm", "student"].map(r => (
             <div key={r} className="border border-[var(--border)] rounded-sm bg-[var(--background)] p-2.5">
               <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{r}</div>
-              <div className="text-lg font-mono font-semibold mt-0.5">{roleCounts[r] ?? 0}</div>
+              <div className="text-lg font-semibold mt-0.5">{roleCounts[r] ?? 0}</div>
             </div>
           ))}
         </div>
@@ -160,7 +160,7 @@ function AdminConsole() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium truncate">{c.name}</div>
-                  <div className="text-[10px] text-muted-foreground font-mono">{c.role}</div>
+                  <div className="text-[10px] text-muted-foreground">{c.role}</div>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-24 h-1.5 rounded-full bg-[var(--accent)] overflow-hidden">
@@ -169,7 +169,7 @@ function AdminConsole() {
                       style={{ width: `${c.rate}%` }}
                     />
                   </div>
-                  <div className={`text-xs font-mono w-14 text-right ${c.rate >= 80 ? "text-green-400" : c.rate >= 50 ? "text-amber-400" : "text-red-400"}`}>
+                  <div className={`text-xs w-14 text-right ${c.rate >= 80 ? "text-green-400" : c.rate >= 50 ? "text-amber-400" : "text-red-400"}`}>
                     {c.submitted}/{days}
                   </div>
                 </div>
@@ -191,7 +191,7 @@ function AdminConsole() {
               const coach = c.coach_id ? profiles[c.coach_id]?.display_name : null;
               return (
                 <div key={c.id} className="grid grid-cols-[80px_1fr_1fr] gap-3 py-2.5 text-xs items-center">
-                  <span className="font-mono text-muted-foreground">{c.call_date}</span>
+                  <span className="text-muted-foreground">{c.call_date}</span>
                   <span className="truncate">{student?.full_name ?? "Unknown student"}</span>
                   <span className="truncate text-muted-foreground">{coach ?? "—"}</span>
                 </div>
@@ -225,7 +225,7 @@ function AdminConsole() {
                     className="flex items-center justify-between py-2 text-xs hover:bg-white/[0.02]"
                   >
                     <span className="truncate">{s.full_name}</span>
-                    <span className="text-amber-400 text-[10px] font-mono">no email</span>
+                    <span className="text-amber-400 text-[10px]">no email</span>
                   </Link>
                 ))}
               </div>
@@ -249,7 +249,7 @@ function AdminConsole() {
                     className="flex items-center justify-between py-2 text-xs hover:bg-white/[0.02]"
                   >
                     <span className="truncate">{s.full_name}</span>
-                    <span className="text-red-400 text-[10px] font-mono">unassigned</span>
+                    <span className="text-red-400 text-[10px]">unassigned</span>
                   </Link>
                 ))}
               </div>
@@ -300,7 +300,7 @@ function Tile({ label, value, icon, tone = "muted" }: { label: string; value: nu
   return (
     <div className={`border rounded-sm p-2.5 ${c.border} ${c.bg}`}>
       <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-muted-foreground mb-1">{icon}{label}</div>
-      <div className={`text-lg font-mono font-semibold ${c.text}`}>{value}</div>
+      <div className={`text-lg font-semibold ${c.text}`}>{value}</div>
     </div>
   );
 }

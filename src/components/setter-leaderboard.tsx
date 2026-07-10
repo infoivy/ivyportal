@@ -93,7 +93,7 @@ export function SetterLeaderboard({ compact = false }: { compact?: boolean }) {
                 (i === 0 ? "border-sky-500/30 bg-sky-500/5" : "border-[var(--border)] bg-[var(--card)]")
               }
             >
-              <div className={"text-xs font-mono w-5 " + (i === 0 ? "text-sky-400" : "text-muted-foreground")}>
+              <div className={"text-xs w-5 " + (i === 0 ? "text-sky-400" : "text-muted-foreground")}>
                 {i + 1}
               </div>
               <div className="flex-1 min-w-0">
@@ -102,7 +102,7 @@ export function SetterLeaderboard({ compact = false }: { compact?: boolean }) {
                   {r.deals} set close{r.deals === 1 ? "" : "s"} · {money(r.booked)} booked
                 </div>
               </div>
-              <div className="text-sm font-mono tabular-nums text-emerald-400">{money(r.commission)}</div>
+              <div className="text-sm tabular-nums text-emerald-400">{money(r.commission)}</div>
             </div>
           ))}
         </div>

@@ -404,7 +404,7 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
             </div>
           </div>
         )}
-        <div className="text-[10px] text-muted-foreground font-mono pt-1 border-t border-[var(--border)]">ID: {member.id}</div>
+        <div className="text-[10px] text-muted-foreground pt-1 border-t border-[var(--border)]">ID: {member.id}</div>
         <div className="flex justify-end gap-2 pt-2 border-t border-[var(--border)]">
           <button onClick={onClose} className="text-xs text-muted-foreground hover:text-foreground px-3 py-1.5">Cancel</button>
           <button onClick={save} disabled={saving} className="text-xs bg-green-500 hover:bg-green-400 text-green-950 font-medium px-3 py-1.5 rounded-sm">
@@ -426,7 +426,7 @@ function StatTile({ label, value, icon, accent }: { label: string; value: number
   return (
     <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-3">
       <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-muted-foreground mb-1">{icon}{label}</div>
-      <div className={`text-xl font-mono font-semibold ${color}`}>{value}</div>
+      <div className={`text-xl font-semibold ${color}`}>{value}</div>
     </div>
   );
 }

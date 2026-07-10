@@ -281,9 +281,10 @@ function Dashboard() {
                         <XAxis dataKey="label" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
                         <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
                         <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 4, fontSize: 11 }} />
-                        <Line type="monotone" dataKey="dms"    stroke="#3b82f6" strokeWidth={1.5} dot={{ r: 2 }} />
-                        <Line type="monotone" dataKey="convos" stroke="#f59e0b" strokeWidth={1.5} dot={{ r: 2 }} />
-                        <Line type="monotone" dataKey="booked" stroke="#22c55e" strokeWidth={2}   dot={{ r: 2.5 }} />
+                        <Line type="monotone" dataKey="dms"    stroke="#9CA3AF" strokeWidth={1.5} dot={false} />
+                        <Line type="monotone" dataKey="convos" stroke="#3B82F6" strokeWidth={1.5} dot={false} />
+                        <Line type="monotone" dataKey="booked" stroke="#22C55E" strokeWidth={2}   dot={false} />
+
                       </LineChart>
                     </ResponsiveContainer>
                   )}
@@ -906,12 +907,12 @@ function UnifiedLeaderboard({ profiles, eods }: { profiles: Record<string, Profi
                 (i === 0 ? "bg-amber-500/5" : "")
               }
             >
-              <span className={"text-[11px] font-mono w-5 " + (i === 0 ? "text-amber-400" : "text-muted-foreground")}>{i + 1}</span>
+              <span className={"text-[11px] w-5 " + (i === 0 ? "text-amber-400" : "text-muted-foreground")}>{i + 1}</span>
               <div className="min-w-0 flex-1">
                 <div className="text-xs font-medium truncate">{r.name}</div>
                 <div className="text-[10px] text-muted-foreground truncate">{r.sub}</div>
               </div>
-              <div className="text-sm font-mono tabular-nums text-green-400">
+              <div className="text-sm tabular-nums text-green-400">
                 {mode === "cash" ? money(r.value) : r.value.toLocaleString()}
               </div>
             </div>

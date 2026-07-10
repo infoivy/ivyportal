@@ -288,7 +288,7 @@ function CalendarView({ items, monthCursor, setMonthCursor, onOpen }: {
             <div key={idx} className={`min-h-[96px] p-1.5 border-r border-b border-[var(--border)] last:border-r-0 ${isToday ? "bg-blue-500/5" : ""}`}>
               {day && (
                 <>
-                  <div className={`text-[10px] font-mono ${isToday ? "text-blue-300 font-bold" : "text-muted-foreground"} mb-1`}>{format(day, "d")}</div>
+                  <div className={`text-[10px] ${isToday ? "text-blue-300 font-bold" : "text-muted-foreground"} mb-1`}>{format(day, "d")}</div>
                   <div className="space-y-0.5">
                     {dayItems.slice(0, 3).map(i => (
                       <button
@@ -329,7 +329,7 @@ function KanbanView({ items, onOpen, onUpdate }: { items: ContentItem[]; onOpen:
           <div key={s.value} className="border border-[var(--border)] bg-[var(--card)] rounded-sm flex flex-col min-h-[400px]">
             <div className={`p-2 border-b border-[var(--border)] flex items-center justify-between ${s.color}`}>
               <span className="text-[10px] font-semibold uppercase tracking-wider">{s.label}</span>
-              <span className="text-[10px] font-mono">{col.length}</span>
+              <span className="text-[10px]">{col.length}</span>
             </div>
             <div className="p-1.5 flex-1 space-y-1.5 overflow-auto">
               {col.map(i => (
@@ -337,7 +337,7 @@ function KanbanView({ items, onOpen, onUpdate }: { items: ContentItem[]; onOpen:
                   <button onClick={() => onOpen(i)} className="w-full text-left space-y-1.5">
                     <div className="flex items-center justify-between gap-1">
                       <span className={`text-[9px] px-1.5 py-0.5 rounded-sm border ${PLATFORM_META[i.platform].color}`}>{PLATFORM_META[i.platform].label}</span>
-                      {i.scheduled_date && <span className="text-[9px] text-muted-foreground font-mono">{format(parseISO(i.scheduled_date), "MMM d")}</span>}
+                      {i.scheduled_date && <span className="text-[9px] text-muted-foreground">{format(parseISO(i.scheduled_date), "MMM d")}</span>}
                     </div>
                     <div className="text-xs font-medium line-clamp-3">{i.hook}</div>
                   </button>
@@ -383,7 +383,7 @@ function ListView({ items, onOpen }: { items: ContentItem[]; onOpen: (i: Content
           {items.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">No content items yet.</td></tr>}
           {items.map(i => (
             <tr key={i.id} className="hover:bg-[var(--muted)] cursor-pointer" onClick={() => onOpen(i)}>
-              <td className="p-2 font-mono">{i.scheduled_date ?? "—"}</td>
+              <td className="p-2">{i.scheduled_date ?? "—"}</td>
               <td className="p-2"><span className={`text-[10px] px-1.5 py-0.5 rounded-sm border ${PLATFORM_META[i.platform].color}`}>{PLATFORM_META[i.platform].label}</span></td>
               <td className="p-2 max-w-md truncate">{i.hook}</td>
               <td className="p-2 text-muted-foreground">{i.format ?? "—"}</td>
@@ -560,7 +560,7 @@ function IdeaInbox({ ideas, userId, onChange, onPromote }: {
             </div>
             <div className="p-4 text-xs">
               <div className="border border-[var(--border)] bg-[var(--background)] rounded-sm p-2.5">
-                <span className="text-2xl font-mono font-bold text-blue-300">{ideas.filter(i => !i.promoted_item_id && !i.harvested).length}</span>
+                <span className="text-2xl font-bold text-blue-300">{ideas.filter(i => !i.promoted_item_id && !i.harvested).length}</span>
                 <span className="text-muted-foreground text-[11px]"> ideas will be archived</span>
               </div>
             </div>
@@ -707,7 +707,7 @@ function ItemDialog({ initial, userId, onClose, onSaved, promotingIdea: pIdea }:
           </Field>
 
           <Field label="Script (markdown supported)">
-            <textarea value={script} onChange={e => setScript(e.target.value)} rows={10} className="w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-sm font-mono resize-y focus:outline-none focus:border-blue-500/40" placeholder={"Write the reel here.\n\n- Hook line\n- Body / points\n- CTA / close"} />
+            <textarea value={script} onChange={e => setScript(e.target.value)} rows={10} className="w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-sm resize-y focus:outline-none focus:border-blue-500/40" placeholder={"Write the reel here.\n\n- Hook line\n- Body / points\n- CTA / close"} />
           </Field>
 
           <div className="grid grid-cols-2 gap-2">

@@ -261,9 +261,9 @@ function RevenuePage() {
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={trend}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#9ca3af" }} interval="preserveStartEnd" />
-                  <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} />
+                  <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.06)" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#8A919C" }} interval="preserveStartEnd" />
+                  <YAxis tick={{ fontSize: 11, fill: "#8A919C" }} />
                   <Tooltip
                     contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 12 }}
                     formatter={(v: number, k: string) => (k === "deals" ? [v, "deals"] : [money(v), k === "cash" ? "cash" : "booked"])}
@@ -287,7 +287,7 @@ function RevenuePage() {
             <h3 className="text-sm font-semibold">Team cash milestones (MTD)</h3>
           </div>
           <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-            Cash collected: <span className="font-mono text-emerald-400">{money(stats.cash)}</span>
+            Cash collected: <span className="text-emerald-400">{money(stats.cash)}</span>
           </span>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -303,7 +303,7 @@ function RevenuePage() {
             >
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-xs font-medium">{money(m.threshold)}</span>
-                <span className={"text-[10px] font-mono " + (m.hit ? "text-emerald-400" : "text-muted-foreground")}>
+                <span className={"text-[10px] " + (m.hit ? "text-emerald-400" : "text-muted-foreground")}>
                   {m.hit ? "UNLOCKED" : `${Math.floor(m.progress * 100)}%`}
                 </span>
               </div>
@@ -314,7 +314,7 @@ function RevenuePage() {
                 />
               </div>
               <div className="text-[11px] text-muted-foreground">
-                Team bonus <span className="font-mono text-amber-400">{money(m.bonus)}</span>
+                Team bonus <span className="text-amber-400">{money(m.bonus)}</span>
               </div>
             </div>
           ))}
@@ -492,7 +492,7 @@ function KpiCard({ label, value, icon, accent }: { label: string; value: string;
         {icon}
         {label}
       </div>
-      <div className={"text-2xl font-mono font-semibold " + (accent ? "text-emerald-400" : "")}>{value}</div>
+      <div className={"text-2xl font-semibold " + (accent ? "text-emerald-400" : "")}>{value}</div>
     </Card>
   );
 }
@@ -548,7 +548,7 @@ function CommissionRatesCard({
                     d.map((x) => (x.id === r.id ? { ...x, rate: Math.max(0, Math.min(1, Number(e.target.value) || 0)) } : x)),
                   )
                 }
-                className="font-mono"
+                className=""
               />
               <span className="text-xs text-muted-foreground tabular-nums w-12">
                 {(r.rate * 100).toFixed(1)}%

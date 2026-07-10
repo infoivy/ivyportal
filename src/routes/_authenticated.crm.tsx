@@ -295,7 +295,7 @@ function Crm() {
                     </div>
                     <span
                       className={
-                        "inline-flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded-sm border " +
+                        "inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-sm border " +
                         (nc > 0
                           ? "border-blue-500/40 bg-blue-500/10 text-blue-300"
                           : "border-border/60 text-muted-foreground")
@@ -545,7 +545,7 @@ function LeadDetailDrawer({
             <div className="flex items-center gap-2 mt-0.5">
               <span className="text-[10px] uppercase tracking-wider" style={{ color: c }}>{lead.status}</span>
               <span className="text-[10px] text-muted-foreground">·</span>
-              <span className="text-[10px] font-mono text-green-400">{lead.value > 0 ? currency(lead.value) : "—"}</span>
+              <span className="text-[10px] text-green-400">{lead.value > 0 ? currency(lead.value) : "—"}</span>
               <span className="text-[10px] text-muted-foreground">·</span>
               <span className="text-[10px] text-muted-foreground">updated {relTime(lead.updated_at)}</span>
             </div>

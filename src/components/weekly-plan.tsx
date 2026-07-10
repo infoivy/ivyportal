@@ -307,7 +307,7 @@ function WeekBlock({
               return (
                 <div key={day} className={`border rounded-sm ${stageColor} ${isToday ? "ring-1 ring-blue-500/40" : ""}`}>
                   <div className="flex items-center gap-2 px-2.5 py-1.5 border-b border-white/5">
-                    <span className="text-[10px] font-mono w-14 text-muted-foreground">{day} {format(addDays(monday, idx), "d")}</span>
+                    <span className="text-[10px] w-14 text-muted-foreground">{day} {format(addDays(monday, idx), "d")}</span>
                     <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-sm border ${stageBadge}`}>{meta.stage} · {meta.position}</span>
                     {isToday && <span className="text-[9px] uppercase tracking-wider text-blue-400 font-bold">Today</span>}
                   </div>
@@ -324,7 +324,7 @@ function WeekBlock({
                             {isFilled ? <CheckCircle2 className="h-3 w-3 text-green-400 shrink-0" /> : <Sparkles className="h-3 w-3 text-muted-foreground shrink-0" />}
                             <span className={`text-xs ${isFilled ? "" : "text-muted-foreground italic"} line-clamp-2`}>{isFilled ? s.hook : "Empty slot — click to draft"}</span>
                           </div>
-                          <div className="flex items-center gap-2 mt-1 text-[9px] font-mono text-muted-foreground">
+                          <div className="flex items-center gap-2 mt-1 text-[9px] text-muted-foreground">
                             <span className="uppercase tracking-wider">{s.status}</span>
                             {s.format && <span>· {s.format}</span>}
                           </div>
@@ -392,7 +392,7 @@ function IdeaRow({
   return (
     <div className={`p-2 ${promoted ? "opacity-60" : ""}`}>
       <div className="flex items-start gap-2">
-        <span className="text-[10px] font-mono text-muted-foreground w-5 pt-1.5 text-center shrink-0">#{idea.position}</span>
+        <span className="text-[10px] text-muted-foreground w-5 pt-1.5 text-center shrink-0">#{idea.position}</span>
         <div className="flex-1 min-w-0 space-y-1.5">
           <textarea
             value={text}
@@ -450,7 +450,7 @@ function PromoteMenu({
                 onClick={() => { onPromote(s.id); setOpen(false); }}
                 className="w-full text-left px-2 py-1.5 text-[11px] hover:bg-[#141821] border-b border-white/5 last:border-0"
               >
-                <div className="font-mono text-[10px] text-muted-foreground">{s.scheduled_date}</div>
+                <div className="text-[10px] text-muted-foreground">{s.scheduled_date}</div>
                 <div className="line-clamp-1">{s.hook}</div>
               </button>
             ))}

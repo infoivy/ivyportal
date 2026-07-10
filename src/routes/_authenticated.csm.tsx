@@ -266,7 +266,7 @@ function CsmPage() {
                 >
                   <div className="flex items-center justify-between">
                     <Icon className="h-4 w-4" />
-                    <span className="text-2xl font-mono font-bold tabular-nums">{count}</span>
+                    <span className="text-2xl font-bold tabular-nums">{count}</span>
                   </div>
                   <div className="mt-2 text-sm font-medium">{M.label}</div>
                   <div className="text-[10px] opacity-80 mt-0.5">Tap +1 · today</div>
@@ -527,7 +527,7 @@ function AccountStat({ label, value, tone }: { label: string; value: string | nu
   return (
     <div className="bg-[var(--card)] p-3">
       <div className="text-[9px] uppercase tracking-wider text-muted-foreground mb-1">{label}</div>
-      <div className={`text-lg font-mono font-semibold ${color}`}>{value}</div>
+      <div className={`text-lg font-semibold ${color}`}>{value}</div>
     </div>
   );
 }

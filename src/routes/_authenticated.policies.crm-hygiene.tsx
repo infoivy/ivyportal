@@ -267,7 +267,7 @@ function CrmHygiene() {
 function SectionHeader({ icon: Icon, kicker, title }: { icon: React.ComponentType<{ className?: string }>; kicker: string; title: string }) {
   return (
     <div className="flex items-center gap-3 mb-3">
-      <span className="text-xs font-mono text-muted-foreground">{kicker}</span>
+      <span className="text-xs text-muted-foreground">{kicker}</span>
       <div className="h-px flex-1 bg-border" />
       <div className="flex items-center gap-2">
         <Icon className="h-4 w-4 text-primary" />
@@ -290,7 +290,7 @@ function MiniCard({ icon: Icon, title, body }: { icon: React.ComponentType<{ cla
 function Standard({ n, title, body }: { n: string; title: string; body: string }) {
   return (
     <Card className="p-4 flex gap-4">
-      <span className="text-xs font-mono text-muted-foreground shrink-0 pt-0.5">{n}</span>
+      <span className="text-xs text-muted-foreground shrink-0 pt-0.5">{n}</span>
       <div className="min-w-0">
         <p className="font-medium">{title}</p>
         <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{body}</p>

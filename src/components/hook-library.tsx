@@ -137,7 +137,7 @@ export function HookLibrary() {
             value={importText} onChange={e => setImportText(e.target.value)}
             rows={6}
             placeholder={"Nobody talks about this, but…\nHere's what I wish I knew at 22…\n3 mistakes killing your…"}
-            className="w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-xs font-mono resize-y focus:outline-none focus:border-blue-500/40"
+            className="w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-xs resize-y focus:outline-none focus:border-blue-500/40"
           />
           <div className="flex gap-2 justify-end">
             <button onClick={() => setShowImport(false)} className="h-7 px-3 rounded-sm border border-[var(--border)] text-[11px]">Cancel</button>

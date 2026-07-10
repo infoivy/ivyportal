@@ -409,7 +409,7 @@ function HelpOverlay({ open, onClose }: { open: boolean; onClose: () => void }) 
           {rows.map(([k, label]) => (
             <div key={k} className="flex items-center justify-between text-xs">
               <span className="text-muted-foreground">{label}</span>
-              <kbd className="px-2 py-0.5 rounded border border-border bg-muted/60 font-mono text-[11px]">{k}</kbd>
+              <kbd className="px-2 py-0.5 rounded border border-border bg-muted/60 text-[11px]">{k}</kbd>
             </div>
           ))}
         </div>
@@ -548,7 +548,7 @@ function NotesModal({ open, onClose, counter, setCounter }: { open: boolean; onC
           value={text}
           onChange={e => onChangeText(e.target.value)}
           onWheel={stopWheel}
-          className="flex-1 min-h-[380px] max-h-[60vh] p-3 mt-2 text-xs font-mono bg-background text-foreground resize-none focus:outline-none overflow-auto"
+          className="flex-1 min-h-[380px] max-h-[60vh] p-3 mt-2 text-xs bg-background text-foreground resize-none focus:outline-none overflow-auto"
         />
         <div className="flex items-center justify-between gap-2 px-4 py-3 border-t border-border">
           <button onClick={resetTpl} className="text-xs text-muted-foreground hover:text-foreground">Reset template</button>
