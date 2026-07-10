@@ -280,7 +280,7 @@ function Dashboard() {
                         <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.06)" vertical={false} />
                         <XAxis dataKey="label" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
                         <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
-                        <Tooltip contentStyle={{ background: "#0f1116", border: "1px solid #1f2530", borderRadius: 4, fontSize: 11 }} />
+                        <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 4, fontSize: 11 }} />
                         <Line type="monotone" dataKey="dms"    stroke="#3b82f6" strokeWidth={1.5} dot={{ r: 2 }} />
                         <Line type="monotone" dataKey="convos" stroke="#f59e0b" strokeWidth={1.5} dot={{ r: 2 }} />
                         <Line type="monotone" dataKey="booked" stroke="#22c55e" strokeWidth={2}   dot={{ r: 2.5 }} />
@@ -300,7 +300,7 @@ function Dashboard() {
                       <BarChart data={formatBreakdown} layout="vertical" margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
                         <XAxis type="number" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
                         <YAxis type="category" dataKey="label" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} width={100} />
-                        <Tooltip contentStyle={{ background: "#0f1116", border: "1px solid #1f2530", borderRadius: 4, fontSize: 11 }} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
+                        <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 4, fontSize: 11 }} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
                         <Bar dataKey="value" radius={[0, 2, 2, 0]}>
                           {formatBreakdown.map((f, i) => <Cell key={i} fill={f.color} />)}
                         </Bar>

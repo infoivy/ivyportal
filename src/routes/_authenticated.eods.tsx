@@ -229,7 +229,7 @@ function EODsPage() {
 
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-5">
-      <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[#1f2530] pb-4">
+      <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--border)] pb-4">
         <div>
           <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-1">Daily Reporting</div>
           <h1 className="text-2xl font-semibold tracking-tight">End of Day</h1>
@@ -250,7 +250,7 @@ function EODsPage() {
       {(filesEods || canViewTeam) && (
         <div className="grid md:grid-cols-2 gap-3">
           {filesEods && (
-            <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-3">
+            <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-3">
               <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground mb-2">My week (last 7 days)</div>
               <div className="grid grid-cols-4 gap-2">
                 <MiniChip label="Streak" value={`${streak}d`} tone="amber" icon={<Flame className="h-3 w-3" />} />
@@ -269,7 +269,7 @@ function EODsPage() {
             </div>
           )}
           {canViewTeam && (
-            <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-3">
+            <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-3">
               <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground mb-2">Team today</div>
               <div className="grid grid-cols-4 gap-2">
                 <MiniChip label="Submitted" value={`${teamToday.submitted}/${teamToday.expected}`} tone={teamToday.submitted === teamToday.expected ? "green" : "amber"} />
@@ -283,13 +283,13 @@ function EODsPage() {
       )}
 
       <Tabs defaultValue={defaultTab} className="space-y-4">
-        <TabsList className="bg-[#0f1116] border border-[#1f2530] rounded-sm h-9 p-0.5 flex-wrap">
-          {canViewTeam && <TabsTrigger value="overview" className="text-xs h-8 rounded-sm data-[state=active]:bg-[#1a1f29]">Team Overview</TabsTrigger>}
-          {!isFounder && <TabsTrigger value="submit" className="text-xs h-8 rounded-sm data-[state=active]:bg-[#1a1f29]">My EOD</TabsTrigger>}
-          {!isFounder && <TabsTrigger value="mine" className="text-xs h-8 rounded-sm data-[state=active]:bg-[#1a1f29]">My history</TabsTrigger>}
-          {canViewTeam && <TabsTrigger value="grid" className="text-xs h-8 rounded-sm data-[state=active]:bg-[#1a1f29]">Compliance</TabsTrigger>}
-          {canViewTeam && <TabsTrigger value="graphs" className="text-xs h-8 rounded-sm data-[state=active]:bg-[#1a1f29]">Graphs</TabsTrigger>}
-          {canViewTeam && <TabsTrigger value="team" className="text-xs h-8 rounded-sm data-[state=active]:bg-[#1a1f29]">Team Feed</TabsTrigger>}
+        <TabsList className="bg-[var(--card)] border border-[var(--border)] rounded-sm h-9 p-0.5 flex-wrap">
+          {canViewTeam && <TabsTrigger value="overview" className="text-xs h-8 rounded-sm data-[state=active]:bg-[var(--accent)]">Team Overview</TabsTrigger>}
+          {!isFounder && <TabsTrigger value="submit" className="text-xs h-8 rounded-sm data-[state=active]:bg-[var(--accent)]">My EOD</TabsTrigger>}
+          {!isFounder && <TabsTrigger value="mine" className="text-xs h-8 rounded-sm data-[state=active]:bg-[var(--accent)]">My history</TabsTrigger>}
+          {canViewTeam && <TabsTrigger value="grid" className="text-xs h-8 rounded-sm data-[state=active]:bg-[var(--accent)]">Compliance</TabsTrigger>}
+          {canViewTeam && <TabsTrigger value="graphs" className="text-xs h-8 rounded-sm data-[state=active]:bg-[var(--accent)]">Graphs</TabsTrigger>}
+          {canViewTeam && <TabsTrigger value="team" className="text-xs h-8 rounded-sm data-[state=active]:bg-[var(--accent)]">Team Feed</TabsTrigger>}
         </TabsList>
 
         {canViewTeam && (
@@ -300,7 +300,7 @@ function EODsPage() {
 
         <TabsContent value="submit" className="space-y-4">
           <div className="grid lg:grid-cols-3 gap-4">
-            <div className="lg:col-span-2 border border-[#1f2530] bg-[#0f1116] rounded-sm p-5 space-y-5">
+            <div className="lg:col-span-2 border border-[var(--border)] bg-[var(--card)] rounded-sm p-5 space-y-5">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-sm font-semibold">{existingId ? "Update today's numbers" : "Submit today's numbers"}</h2>
@@ -319,7 +319,7 @@ function EODsPage() {
               )}
 
               {isSetter && kpi && (
-                <div className="rounded-sm border border-[#1f2530] bg-[#0a0b0f] p-3">
+                <div className="rounded-sm border border-[var(--border)] bg-[var(--background)] p-3">
                   <div className="flex items-center justify-between mb-2">
                     <div className="text-[11px] text-muted-foreground">Today's KPI ({mySetterType === "phone" ? "Phone setter" : "DM setter"})</div>
                     <button className="text-[10px] text-muted-foreground hover:text-foreground underline" onClick={() => saveSetterType(mySetterType === "phone" ? "dm" : "phone")}>Switch type</button>
@@ -379,11 +379,11 @@ function EODsPage() {
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
                         <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Cash collected today ($)</Label>
-                        <Input type="number" min={0} step="0.01" value={form.cash_collected} onChange={e => setFloat("cash_collected")(e.target.value)} onFocus={e => e.currentTarget.select()} className="bg-[#0a0b0f] border-[#1f2530] rounded-sm h-9 font-mono text-sm" />
+                        <Input type="number" min={0} step="0.01" value={form.cash_collected} onChange={e => setFloat("cash_collected")(e.target.value)} onFocus={e => e.currentTarget.select()} className="bg-[var(--background)] border-[var(--border)] rounded-sm h-9 font-mono text-sm" />
                       </div>
                       <div className="space-y-1">
                         <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Deferred cash — PIF &lt;30d ($)</Label>
-                        <Input type="number" min={0} step="0.01" value={form.deferred_cash} onChange={e => setFloat("deferred_cash")(e.target.value)} onFocus={e => e.currentTarget.select()} className="bg-[#0a0b0f] border-[#1f2530] rounded-sm h-9 font-mono text-sm" />
+                        <Input type="number" min={0} step="0.01" value={form.deferred_cash} onChange={e => setFloat("deferred_cash")(e.target.value)} onFocus={e => e.currentTarget.select()} className="bg-[var(--background)] border-[var(--border)] rounded-sm h-9 font-mono text-sm" />
                       </div>
                     </div>
                   </div>
@@ -396,7 +396,7 @@ function EODsPage() {
                 <TextField label="Blockers (optional)" value={form.blockers} onChange={v => setForm(f => ({ ...f, blockers: v }))} rows={2} />
               </div>
 
-              <div className="flex items-center justify-end pt-2 border-t border-[#1f2530]">
+              <div className="flex items-center justify-end pt-2 border-t border-[var(--border)]">
                 <Button onClick={submit} disabled={saving || !form.wins.trim()} className="bg-green-500 hover:bg-green-400 text-green-950 font-medium h-8 rounded-sm text-xs">
                   {saving ? "Saving…" : existingId ? "Update EOD" : "Submit EOD"}
                 </Button>
@@ -409,7 +409,7 @@ function EODsPage() {
               ) : (
                 <MyLast7Panel myEods={myEods} today={today} setterType={mySetterType} />
               )}
-              <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-4 text-[11px] text-muted-foreground leading-relaxed">
+              <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-4 text-[11px] text-muted-foreground leading-relaxed">
                 <div className="text-[10px] uppercase tracking-widest text-green-400 mb-2">Pro tip</div>
                 Submit before <span className="text-foreground font-mono">23:59</span>. Missed days hurt the team's rolling average.
               </div>
@@ -516,7 +516,7 @@ function TeamOverview({ roster, eods, today }: { roster: RosterEntry[]; eods: Gr
 
   return (
     <div className="space-y-4">
-      <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-4">
+      <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-4">
         <div className="text-sm">
           <span className="font-semibold">{fmtLong(today)}</span> —{" "}
           <span className="text-green-400">{submittedCount} of {cards.length} submitted</span> ·{" "}
@@ -541,7 +541,7 @@ function OverviewCard({ card }: { card: {
   const dotColor = card.status === "green" ? "bg-green-500" : card.status === "amber" ? "bg-amber-500" : "bg-red-500";
   const setterTypeLabel = card.r.setter_type === "phone" ? "Phone Setter" : card.r.setter_type === "dm" ? "DM Setter" : ROLE_LABEL[card.r.primary_role] ?? card.r.primary_role;
   return (
-    <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-4 space-y-3">
+    <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-4 space-y-3">
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-base font-semibold">{card.r.display_name}</div>
@@ -574,7 +574,7 @@ function OverviewCard({ card }: { card: {
         <div className="text-sm"><span className="text-muted-foreground">{card.weeklyLabel}:</span> <span className="font-semibold ml-1">{card.weeklyValue}</span></div>
       )}
       {open && (
-        <div className="border-t border-[#1f2530] pt-3 space-y-2 text-xs">
+        <div className="border-t border-[var(--border)] pt-3 space-y-2 text-xs">
           {card.week.map(w => (
             <div key={w.d} className="flex items-start gap-2">
               <span className={`mt-1 h-2 w-2 rounded-full shrink-0 ${w.status === "green" ? "bg-green-500" : w.status === "amber" ? "bg-amber-500" : "bg-red-500"}`} />
@@ -636,8 +636,8 @@ function MyHistory({ myEods, setterType, isSetter, isCloser, onDelete }: { myEod
         const cash = rows.reduce((a, e) => a + Number(e.cash_collected ?? 0), 0);
         const kpiDays = rows.filter(e => didHitKpi(e, setterType)).length;
         return (
-          <div key={wk} className="border border-[#1f2530] bg-[#0f1116] rounded-sm">
-            <button onClick={() => toggle(wk)} className="w-full flex items-center justify-between p-3 text-left hover:bg-[#14171e]">
+          <div key={wk} className="border border-[var(--border)] bg-[var(--card)] rounded-sm">
+            <button onClick={() => toggle(wk)} className="w-full flex items-center justify-between p-3 text-left hover:bg-[var(--muted)]">
               <div className="flex items-center gap-2">
                 {isOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
                 <span className="text-sm font-semibold">Week of {fmtLong(wk)}</span>
@@ -651,7 +651,7 @@ function MyHistory({ myEods, setterType, isSetter, isCloser, onDelete }: { myEod
               </div>
             </button>
             {isOpen && (
-              <div className="border-t border-[#1f2530]">
+              <div className="border-t border-[var(--border)]">
                 {rows.sort((a, b) => b.report_date.localeCompare(a.report_date)).map(e => (
                   <HistoryDayRow key={e.id} eod={e} setterType={setterType} isSetter={isSetter} isCloser={isCloser} onDelete={onDelete} />
                 ))}
@@ -674,8 +674,8 @@ function HistoryDayRow({ eod, setterType, isSetter, isCloser, onDelete }: { eod:
   const today = isoDate(new Date());
   const canDelete = eod.report_date === today;
   return (
-    <div className="border-b border-[#1a1f29] last:border-0">
-      <button onClick={() => setOpen(o => !o)} className="w-full flex items-center gap-3 p-3 text-left hover:bg-[#14171e]">
+    <div className="border-b border-[var(--accent)] last:border-0">
+      <button onClick={() => setOpen(o => !o)} className="w-full flex items-center gap-3 p-3 text-left hover:bg-[var(--muted)]">
         <ChevronRight className={`h-3.5 w-3.5 text-muted-foreground shrink-0 transition-transform ${open ? "rotate-90" : ""}`} />
         <span className={`h-2 w-2 rounded-full shrink-0 ${dotClass}`} title={kpi === null ? "" : kpi ? "KPI hit" : "KPI missed"} />
         <div className="text-xs text-muted-foreground w-28 shrink-0">{fmtLong(eod.report_date)}</div>
@@ -693,7 +693,7 @@ function HistoryDayRow({ eod, setterType, isSetter, isCloser, onDelete }: { eod:
         {dataError && <span className="text-[10px] text-amber-400 flex items-center gap-1 shrink-0"><AlertTriangle className="h-3 w-3" /> data error</span>}
       </button>
       {open && (
-        <div className="px-4 pb-4 space-y-2 text-xs bg-[#0a0b0f]">
+        <div className="px-4 pb-4 space-y-2 text-xs bg-[var(--background)]">
           {dataError && <div className="text-amber-400 text-[11px]">⚠ Booked exceeds convos — this report may have an error. Consider editing.</div>}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             <RowStat label="DMs" value={eod.dms_sent} />
@@ -773,11 +773,11 @@ function ComplianceMatrix({ eods, roster }: { eods: GridEod[]; roster: RosterEnt
         </div>
       </div>
 
-      <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm overflow-x-auto">
+      <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-[#1f2530] text-[10px] uppercase tracking-wider text-muted-foreground">
-              <th className="text-left px-3 py-2 sticky left-0 bg-[#0f1116] z-10">Person</th>
+            <tr className="border-b border-[var(--border)] text-[10px] uppercase tracking-wider text-muted-foreground">
+              <th className="text-left px-3 py-2 sticky left-0 bg-[var(--card)] z-10">Person</th>
               {dayList.map(d => (<th key={d} className="px-1.5 py-2 text-center font-normal whitespace-nowrap">{fmtDayShort(new Date(d + "T00:00:00"))}</th>))}
               <th className="px-3 py-2 text-right font-normal">Streak</th>
               <th className="px-3 py-2 text-right font-normal">Compliance</th>
@@ -789,13 +789,13 @@ function ComplianceMatrix({ eods, roster }: { eods: GridEod[]; roster: RosterEnt
               if (!members.length) return null;
               return (
                 <React.Fragment key={group.key}>
-                  <tr className="bg-[#0a0b0f]"><td colSpan={dayList.length + 3} className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">{group.label} · {members.length}</td></tr>
+                  <tr className="bg-[var(--background)]"><td colSpan={dayList.length + 3} className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">{group.label} · {members.length}</td></tr>
                   {members.map(m => {
                     const s = rowStats(m);
                     const st: SetterType = m.primary_role === "setter" ? m.setter_type : null;
                     return (
-                      <tr key={m.user_id} className="border-b border-[#1a1f29] last:border-0">
-                        <td className="px-3 py-2 sticky left-0 bg-[#0f1116] font-medium truncate max-w-[180px]">
+                      <tr key={m.user_id} className="border-b border-[var(--accent)] last:border-0">
+                        <td className="px-3 py-2 sticky left-0 bg-[var(--card)] font-medium truncate max-w-[180px]">
                           <div className="text-xs">{m.display_name}</div>
                           <div className="text-[9px] uppercase tracking-wider text-muted-foreground">{m.setter_type ? `${m.setter_type} setter` : m.primary_role}</div>
                         </td>
@@ -866,7 +866,7 @@ function ComplianceGraphs({ eods, roster }: { eods: GridEod[]; roster: RosterEnt
             <button key={n} onClick={() => setDays(n as 7 | 30 | 90)} className={`text-[11px] font-semibold px-2.5 py-1 rounded-[2px] transition ${days === n ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"}`}>{n}D</button>
           ))}
         </div>
-        <select value={personFilter} onChange={e => setPersonFilter(e.target.value)} className="text-[11px] bg-[#0a0b0f] border border-[#1f2530] rounded-sm h-7 px-2">
+        <select value={personFilter} onChange={e => setPersonFilter(e.target.value)} className="text-[11px] bg-[var(--background)] border border-[var(--border)] rounded-sm h-7 px-2">
           <option value="all">All team</option>
           {roster.map(r => <option key={r.user_id} value={r.user_id}>{r.display_name}</option>)}
         </select>
@@ -918,7 +918,7 @@ function NoData() { return <div className="h-full flex items-center justify-cent
 
 function GraphCard({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
-    <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-4">
+    <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-4">
       <div className="mb-3">
         <div className="text-xs font-semibold text-foreground">{title}</div>
         {subtitle && <div className="text-[10px] text-muted-foreground mt-0.5">{subtitle}</div>}
@@ -932,12 +932,12 @@ function SubmissionsChart({ data }: { data: { label: string; submitted: number; 
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#1f2530" />
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
         <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#8a91a0" }} />
         <YAxis tick={{ fontSize: 10, fill: "#8a91a0" }} allowDecimals={false} />
-        <ReTooltip contentStyle={{ background: "#0f1116", border: "1px solid #1f2530", fontSize: 11 }} />
+        <ReTooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", fontSize: 11 }} />
         <Legend wrapperStyle={{ fontSize: 10 }} />
-        <Bar dataKey="expected" fill="#1f2530" name="Expected" />
+        <Bar dataKey="expected" fill="var(--border)" name="Expected" />
         <Bar dataKey="submitted" fill="#10b981" name="Submitted" />
       </BarChart>
     </ResponsiveContainer>
@@ -948,10 +948,10 @@ function FunnelChart({ data }: { data: { label: string; dms: number; convos: num
   return (
     <ResponsiveContainer width="100%" height="100%">
       <LineChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#1f2530" />
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
         <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#8a91a0" }} />
         <YAxis tick={{ fontSize: 10, fill: "#8a91a0" }} allowDecimals={false} />
-        <ReTooltip contentStyle={{ background: "#0f1116", border: "1px solid #1f2530", fontSize: 11 }} />
+        <ReTooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", fontSize: 11 }} />
         <Legend wrapperStyle={{ fontSize: 10 }} />
         <Line type="monotone" dataKey="dms" stroke="#3b82f6" strokeWidth={1.5} dot={false} name="DMs" />
         <Line type="monotone" dataKey="convos" stroke="#a855f7" strokeWidth={1.5} dot={false} name="Convos" />
@@ -990,11 +990,11 @@ function TeamFeed({ eods, isAdmin, onDelete }: { eods: GridEod[]; isAdmin: boole
             <button key={n} onClick={() => setDays(n as 7 | 14 | 30)} className={`text-[11px] font-semibold px-2.5 py-1 rounded-[2px] transition ${days === n ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"}`}>{n}D</button>
           ))}
         </div>
-        <select value={role} onChange={e => setRole(e.target.value)} className="text-[11px] bg-[#0a0b0f] border border-[#1f2530] rounded-sm h-7 px-2">
+        <select value={role} onChange={e => setRole(e.target.value)} className="text-[11px] bg-[var(--background)] border border-[var(--border)] rounded-sm h-7 px-2">
           <option value="all">All roles</option>
           {["setter","closer","coach","csm"].map(r => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
         </select>
-        <select value={person} onChange={e => setPerson(e.target.value)} className="text-[11px] bg-[#0a0b0f] border border-[#1f2530] rounded-sm h-7 px-2">
+        <select value={person} onChange={e => setPerson(e.target.value)} className="text-[11px] bg-[var(--background)] border border-[var(--border)] rounded-sm h-7 px-2">
           <option value="all">Everyone</option>
           {people.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
         </select>
@@ -1003,7 +1003,7 @@ function TeamFeed({ eods, isAdmin, onDelete }: { eods: GridEod[]; isAdmin: boole
       {grouped.length === 0 && <EmptyState text="No EODs in this range." />}
       {grouped.map(([day, rows]) => (
         <div key={day} className="space-y-2">
-          <div className="text-[11px] uppercase tracking-wider text-muted-foreground border-b border-[#1f2530] pb-1">
+          <div className="text-[11px] uppercase tracking-wider text-muted-foreground border-b border-[var(--border)] pb-1">
             {fmtLong(day)} — {rows.length} submitted
           </div>
           <div className="grid md:grid-cols-2 gap-2">
@@ -1034,7 +1034,7 @@ function FeedCard({ e, isAdmin, onDelete }: { e: GridEod; isAdmin: boolean; onDe
     chips.push({ label: "Roleplays", value: e.roleplays_reviewed });
   }
   return (
-    <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-3 space-y-2">
+    <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-3 space-y-2">
       <div className="flex items-start justify-between gap-2">
         <div>
           <div className="text-sm font-semibold">{e.display_name}</div>
@@ -1051,7 +1051,7 @@ function FeedCard({ e, isAdmin, onDelete }: { e: GridEod; isAdmin: boolean; onDe
       </div>
       <div className="flex gap-2 flex-wrap">
         {chips.map(c => (
-          <span key={c.label} className="text-[11px] bg-[#0a0b0f] border border-[#1f2530] px-2 py-0.5 rounded-sm">
+          <span key={c.label} className="text-[11px] bg-[var(--background)] border border-[var(--border)] px-2 py-0.5 rounded-sm">
             <span className="text-muted-foreground">{c.label}</span> <span className="font-mono">{c.value}</span>
           </span>
         ))}
@@ -1067,7 +1067,7 @@ function FeedCard({ e, isAdmin, onDelete }: { e: GridEod; isAdmin: boolean; onDe
 function SubmittedTodayPanel({ roster, eods, today }: { roster: RosterEntry[]; eods: GridEod[]; today: string }) {
   const submittedIds = new Set(eods.filter(e => e.report_date === today).map(e => e.user_id));
   return (
-    <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-4">
+    <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-4">
       <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-3">Who's submitted today</div>
       <div className="space-y-1.5 text-xs max-h-64 overflow-y-auto">
         {roster.map(r => (
@@ -1086,7 +1086,7 @@ function MyLast7Panel({ myEods, today, setterType }: { myEods: EOD[]; today: str
   const days = useMemo(() => { const list: string[] = []; const t = new Date(today + "T00:00:00"); for (let i = 6; i >= 0; i--) { const d = new Date(t); d.setDate(t.getDate() - i); list.push(isoDate(d)); } return list; }, [today]);
   const byDate = new Map(myEods.map(e => [e.report_date, e]));
   return (
-    <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-4">
+    <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-4">
       <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-3">My last 7 days</div>
       <div className="space-y-1.5 text-xs">
         {days.map(d => {
@@ -1104,11 +1104,11 @@ function MyLast7Panel({ myEods, today, setterType }: { myEods: EOD[]; today: str
 // ---------- Small parts ----------
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
-  return <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground border-b border-[#1f2530] pb-1.5">{children}</div>;
+  return <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground border-b border-[var(--border)] pb-1.5">{children}</div>;
 }
 
 function MiniChip({ label, value, tone, icon }: { label: string; value: number | string; tone?: "green" | "amber" | "default"; icon?: React.ReactNode }) {
-  const cls = tone === "green" ? "border-green-500/30 bg-green-500/5 text-green-400" : tone === "amber" ? "border-amber-500/30 bg-amber-500/5 text-amber-400" : "border-[#1f2530] bg-[#0a0b0f] text-foreground";
+  const cls = tone === "green" ? "border-green-500/30 bg-green-500/5 text-green-400" : tone === "amber" ? "border-amber-500/30 bg-amber-500/5 text-amber-400" : "border-[var(--border)] bg-[var(--background)] text-foreground";
   return (
     <div className={`border rounded-sm p-2 ${cls}`}>
       <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-muted-foreground mb-0.5">{icon}{label}</div>
@@ -1126,7 +1126,7 @@ function KpiBar({ label, value, target }: { label: string; value: number; target
         <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</span>
         <span className={`text-[11px] font-mono ${hit ? "text-green-400 font-semibold" : "text-foreground"}`}>{value} / {target}</span>
       </div>
-      <div className="h-1.5 bg-[#1a1f29] rounded-sm overflow-hidden">
+      <div className="h-1.5 bg-[var(--accent)] rounded-sm overflow-hidden">
         <div className={`h-full ${hit ? "bg-green-500" : "bg-amber-500"}`} style={{ width: `${pct}%` }} />
       </div>
     </div>
@@ -1139,9 +1139,9 @@ function NumField({ label, value, onChange }: { label: string; value: number; on
     <div className="space-y-1">
       <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</Label>
       <div className="flex items-center gap-1">
-        <button type="button" onClick={() => bump(-1)} className="h-9 w-8 rounded-sm border border-[#1f2530] bg-[#0a0b0f] hover:bg-[#1a1f29] text-lg leading-none">−</button>
-        <Input type="number" min={0} value={value} onChange={e => onChange(e.target.value)} onFocus={e => e.currentTarget.select()} className="bg-[#0a0b0f] border-[#1f2530] rounded-sm h-9 font-mono text-sm text-center" />
-        <button type="button" onClick={() => bump(1)} className="h-9 w-8 rounded-sm border border-[#1f2530] bg-[#0a0b0f] hover:bg-[#1a1f29] text-lg leading-none">+</button>
+        <button type="button" onClick={() => bump(-1)} className="h-9 w-8 rounded-sm border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--accent)] text-lg leading-none">−</button>
+        <Input type="number" min={0} value={value} onChange={e => onChange(e.target.value)} onFocus={e => e.currentTarget.select()} className="bg-[var(--background)] border-[var(--border)] rounded-sm h-9 font-mono text-sm text-center" />
+        <button type="button" onClick={() => bump(1)} className="h-9 w-8 rounded-sm border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--accent)] text-lg leading-none">+</button>
       </div>
     </div>
   );
@@ -1151,13 +1151,13 @@ function TextField({ label, value, onChange, rows = 2 }: { label: string; value:
   return (
     <div className="space-y-1">
       <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</Label>
-      <Textarea value={value} onChange={e => onChange(e.target.value)} rows={rows} className="bg-[#0a0b0f] border-[#1f2530] rounded-sm text-sm resize-none" />
+      <Textarea value={value} onChange={e => onChange(e.target.value)} rows={rows} className="bg-[var(--background)] border-[var(--border)] rounded-sm text-sm resize-none" />
     </div>
   );
 }
 
 function EmptyState({ text }: { text: string }) {
-  return <div className="border border-dashed border-[#1f2530] rounded-sm p-8 text-center text-xs text-muted-foreground">{text}</div>;
+  return <div className="border border-dashed border-[var(--border)] rounded-sm p-8 text-center text-xs text-muted-foreground">{text}</div>;
 }
 
 function RowStat({ label, value, accent }: { label: string; value: number | string; accent?: boolean }) {

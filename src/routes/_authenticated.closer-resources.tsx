@@ -144,7 +144,7 @@ function CloserResources() {
                               <div className="text-[11px] text-muted-foreground font-mono truncate mt-0.5 max-w-full">{r.url}</div>
                             )}
                             {hasDetails && (
-                              <pre className="mt-2 text-[11px] whitespace-pre-wrap font-mono text-muted-foreground bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-2">{r.notes}</pre>
+                              <pre className="mt-2 text-[11px] whitespace-pre-wrap font-mono text-muted-foreground bg-[var(--background)] border border-[var(--border)] rounded-sm p-2">{r.notes}</pre>
                             )}
                             {isPlaceholder && (
                               <div className="text-[11px] text-muted-foreground italic mt-1">{r.notes ?? "Details coming soon."}</div>

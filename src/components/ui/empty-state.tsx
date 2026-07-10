@@ -4,10 +4,10 @@ export function EmptyState({
   icon, title, description, action,
 }: { icon?: ReactNode; title: string; description?: ReactNode; action?: ReactNode }) {
   return (
-    <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-10 text-center">
+    <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-10 text-center">
       {icon && (
         <div className="flex justify-center mb-3 text-muted-foreground">
-          <div className="h-10 w-10 rounded-full border border-[#1f2530] bg-[#0a0b0f] flex items-center justify-center">
+          <div className="h-10 w-10 rounded-full border border-[var(--border)] bg-[var(--background)] flex items-center justify-center">
             {icon}
           </div>
         </div>

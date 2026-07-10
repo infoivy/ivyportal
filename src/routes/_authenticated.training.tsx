@@ -98,7 +98,7 @@ function Training() {
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map(v => (
             <div key={v.id} className={`rounded-md border border-border bg-card overflow-hidden group ${v.locked ? "opacity-60" : "hover:border-white/20 cursor-pointer"} transition`}>
-              <div className="aspect-video relative flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${v.thumb}, #0a0b0f)` }}>
+              <div className="aspect-video relative flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${v.thumb}, var(--background))` }}>
                 <div className={`grid h-12 w-12 place-items-center rounded-full ${v.locked ? "bg-white/10" : "bg-white/90 group-hover:scale-110"} transition`}>
                   {v.locked ? <Lock className="h-4 w-4 text-white" /> : <Play className="h-5 w-5 text-black fill-black ml-0.5" />}
                 </div>

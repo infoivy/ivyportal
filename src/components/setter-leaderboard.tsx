@@ -90,7 +90,7 @@ export function SetterLeaderboard({ compact = false }: { compact?: boolean }) {
               key={r.user_id}
               className={
                 "flex items-center gap-3 px-3 py-2 rounded-md border " +
-                (i === 0 ? "border-sky-500/30 bg-sky-500/5" : "border-[#1f2530] bg-[#0f1116]")
+                (i === 0 ? "border-sky-500/30 bg-sky-500/5" : "border-[var(--border)] bg-[var(--card)]")
               }
             >
               <div className={"text-xs font-mono w-5 " + (i === 0 ? "text-sky-400" : "text-muted-foreground")}>

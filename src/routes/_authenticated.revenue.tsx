@@ -215,7 +215,7 @@ function RevenuePage() {
 
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-5">
-      <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[#1f2530] pb-4">
+      <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--border)] pb-4">
         <div>
           <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-1">Sales</div>
           <h1 className="text-2xl font-semibold tracking-tight">Revenue</h1>
@@ -250,7 +250,7 @@ function RevenuePage() {
                       "text-[10px] uppercase tracking-wider px-2 py-1 rounded border " +
                       (trendMode === m
                         ? "border-primary/60 bg-primary/10 text-primary"
-                        : "border-[#1f2530] text-muted-foreground hover:text-foreground")
+                        : "border-[var(--border)] text-muted-foreground hover:text-foreground")
                     }
                   >
                     {m === "monthly" ? "6mo" : m === "weekly" ? "8wk" : "30d"}
@@ -261,11 +261,11 @@ function RevenuePage() {
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={trend}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1f2530" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#9ca3af" }} interval="preserveStartEnd" />
                   <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} />
                   <Tooltip
-                    contentStyle={{ background: "#0f1116", border: "1px solid #1f2530", borderRadius: 6, fontSize: 12 }}
+                    contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 12 }}
                     formatter={(v: number, k: string) => (k === "deals" ? [v, "deals"] : [money(v), k === "cash" ? "cash" : "booked"])}
                   />
                   <Bar dataKey="booked" fill="#3b82f6" radius={[3, 3, 0, 0]} />
@@ -298,7 +298,7 @@ function RevenuePage() {
                 "rounded-md border p-3 " +
                 (m.hit
                   ? "border-emerald-500/40 bg-emerald-500/5"
-                  : "border-[#1f2530] bg-[#0f1116]")
+                  : "border-[var(--border)] bg-[var(--card)]")
               }
             >
               <div className="flex items-center justify-between mb-1.5">
@@ -307,7 +307,7 @@ function RevenuePage() {
                   {m.hit ? "UNLOCKED" : `${Math.floor(m.progress * 100)}%`}
                 </span>
               </div>
-              <div className="h-1.5 rounded-full bg-[#1f2530] overflow-hidden mb-2">
+              <div className="h-1.5 rounded-full bg-[var(--border)] overflow-hidden mb-2">
                 <div
                   className={"h-full " + (m.hit ? "bg-emerald-500" : "bg-primary/60")}
                   style={{ width: `${m.progress * 100}%` }}
@@ -324,13 +324,13 @@ function RevenuePage() {
 
       {/* Per-closer breakdown */}
       <Card className="overflow-hidden">
-        <div className="p-4 border-b border-[#1f2530] flex items-center justify-between">
+        <div className="p-4 border-b border-[var(--border)] flex items-center justify-between">
           <h3 className="text-sm font-semibold">Per-closer breakdown (MTD)</h3>
           <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Commission via active rates</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="text-xs uppercase tracking-wider text-muted-foreground/70 bg-[#0f1116]">
+            <thead className="text-xs uppercase tracking-wider text-muted-foreground/70 bg-[var(--card)]">
               <tr>
                 <th className="text-left px-4 py-2.5">Closer</th>
                 <th className="text-right px-4 py-2.5">Deals</th>
@@ -347,7 +347,7 @@ function RevenuePage() {
                 </tr>
               ) : (
                 perCloser.map((r) => (
-                  <tr key={r.closer_id} className="border-t border-[#1f2530]">
+                  <tr key={r.closer_id} className="border-t border-[var(--border)]">
                     <td className="px-4 py-3 font-medium">{r.name}</td>
                     <td className="px-4 py-3 text-right tabular-nums">{r.deals}</td>
                     <td className="px-4 py-3 text-right tabular-nums">{r.pif}</td>
@@ -364,7 +364,7 @@ function RevenuePage() {
 
       {/* Per-setter breakdown */}
       <Card className="overflow-hidden">
-        <div className="p-4 border-b border-[#1f2530] flex items-center justify-between">
+        <div className="p-4 border-b border-[var(--border)] flex items-center justify-between">
           <h3 className="text-sm font-semibold">Per-setter breakdown (MTD)</h3>
           <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
             {(rates.setter_base * 100).toFixed(1)}% base · +{(rates.setter_pif_bonus * 100).toFixed(1)}% PIF bonus
@@ -372,7 +372,7 @@ function RevenuePage() {
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="text-xs uppercase tracking-wider text-muted-foreground/70 bg-[#0f1116]">
+            <thead className="text-xs uppercase tracking-wider text-muted-foreground/70 bg-[var(--card)]">
               <tr>
                 <th className="text-left px-4 py-2.5">Setter</th>
                 <th className="text-right px-4 py-2.5">Set closes</th>
@@ -388,7 +388,7 @@ function RevenuePage() {
                 </tr>
               ) : (
                 perSetter.map((r) => (
-                  <tr key={r.setter_id} className="border-t border-[#1f2530]">
+                  <tr key={r.setter_id} className="border-t border-[var(--border)]">
                     <td className="px-4 py-3 font-medium">{r.name}</td>
                     <td className="px-4 py-3 text-right tabular-nums">{r.deals}</td>
                     <td className="px-4 py-3 text-right tabular-nums text-sky-400">{r.pifBonus}</td>
@@ -404,12 +404,12 @@ function RevenuePage() {
 
       {/* Recent deals */}
       <Card className="overflow-hidden">
-        <div className="p-4 border-b border-[#1f2530]">
+        <div className="p-4 border-b border-[var(--border)]">
           <h3 className="text-sm font-semibold">Recent deals</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="text-xs uppercase tracking-wider text-muted-foreground/70 bg-[#0f1116]">
+            <thead className="text-xs uppercase tracking-wider text-muted-foreground/70 bg-[var(--card)]">
               <tr>
                 <th className="text-left px-4 py-2.5">Date</th>
                 <th className="text-left px-4 py-2.5">Student</th>
@@ -429,13 +429,13 @@ function RevenuePage() {
                   ? setters.find((s) => s.id === d.setter_id)?.display_name || "—"
                   : "—";
                 return (
-                  <tr key={d.id} className="border-t border-[#1f2530]">
+                  <tr key={d.id} className="border-t border-[var(--border)]">
                     <td className="px-4 py-3 text-muted-foreground tabular-nums">{d.deal_date}</td>
                     <td className="px-4 py-3 font-medium">{d.student_name}</td>
                     <td className="px-4 py-3">{closerName}</td>
                     <td className="px-4 py-3 text-muted-foreground">{setterName}</td>
                     <td className="px-4 py-3">
-                      <span className="text-[10px] uppercase tracking-wider border border-[#1f2530] rounded-full px-2 py-0.5">
+                      <span className="text-[10px] uppercase tracking-wider border border-[var(--border)] rounded-full px-2 py-0.5">
                         {d.payment_type}
                       </span>
                     </td>
@@ -888,7 +888,7 @@ function LogDealDialog({
           </div>
 
           {!editing && (
-            <div className="space-y-2 pt-2 border-t border-[#1f2530]">
+            <div className="space-y-2 pt-2 border-t border-[var(--border)]">
               {studentMode === "new" && (
                 <label className="flex items-center gap-2 text-sm">
                   <Checkbox

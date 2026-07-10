@@ -135,12 +135,12 @@ function KnowledgeDoc() {
               value={findQ}
               onChange={(e) => setFindQ(e.target.value)}
               placeholder="Search inside this doc…"
-              className="pl-9 h-9 text-sm bg-[#0f1116]"
+              className="pl-9 h-9 text-sm bg-[var(--card)]"
             />
           </div>
 
           {!doc.content || doc.content.trim().length < 20 ? (
-            <Card className="p-6 text-center bg-[#0f1116]">
+            <Card className="p-6 text-center bg-[var(--card)]">
               <FileText className="h-6 w-6 mx-auto text-muted-foreground/50 mb-2" />
               <p className="text-sm text-muted-foreground">
                 Content missing — {isAdmin ? "click Edit to paste it in." : "ask an admin to fill this in."}
@@ -153,7 +153,7 @@ function KnowledgeDoc() {
           )}
 
           {doc.external_links && doc.external_links.length > 0 && (
-            <div className="mt-10 pt-4 border-t border-[#1f2530]">
+            <div className="mt-10 pt-4 border-t border-[var(--border)]">
               <div className="text-[11px] uppercase tracking-widest text-muted-foreground/70 mb-2">
                 Original source
               </div>
@@ -173,7 +173,7 @@ function KnowledgeDoc() {
             </div>
           )}
 
-          <div className="mt-8 pt-4 border-t border-[#1f2530] text-xs text-muted-foreground">
+          <div className="mt-8 pt-4 border-t border-[var(--border)] text-xs text-muted-foreground">
             Last updated {new Date(doc.updated_at).toLocaleString()}
             {updatedByName ? ` by ${updatedByName}` : ""}
           </div>

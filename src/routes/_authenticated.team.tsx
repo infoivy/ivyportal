@@ -131,7 +131,7 @@ function TeamPage() {
   if (!isAdmin) {
     return (
       <div className="p-6 max-w-3xl mx-auto">
-        <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-8 text-center text-sm text-muted-foreground">
+        <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-8 text-center text-sm text-muted-foreground">
           Admins only.
         </div>
       </div>
@@ -150,7 +150,7 @@ function TeamPage() {
 
   return (
     <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-5">
-      <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[#1f2530] pb-4">
+      <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--border)] pb-4">
         <div>
           <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-1">Access control</div>
           <h1 className="text-2xl font-semibold tracking-tight">Team</h1>
@@ -160,7 +160,7 @@ function TeamPage() {
           value={q}
           onChange={e => setQ(e.target.value)}
           placeholder="Search members…"
-          className="h-8 px-3 rounded-sm border border-[#1f2530] bg-[#0f1116] text-xs w-56 focus:outline-none focus:border-green-500/40"
+          className="h-8 px-3 rounded-sm border border-[var(--border)] bg-[var(--card)] text-xs w-56 focus:outline-none focus:border-green-500/40"
         />
       </header>
 
@@ -173,17 +173,17 @@ function TeamPage() {
         <StatTile label="CSMs" value={counts.csms} icon={<HeartHandshake className="h-3 w-3" />} accent="amber" />
       </div>
 
-      <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm overflow-hidden">
-        <div className="grid grid-cols-[1fr_auto_auto] items-center px-4 py-2 border-b border-[#1f2530] text-[10px] uppercase tracking-widest text-muted-foreground gap-4">
+      <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm overflow-hidden">
+        <div className="grid grid-cols-[1fr_auto_auto] items-center px-4 py-2 border-b border-[var(--border)] text-[10px] uppercase tracking-widest text-muted-foreground gap-4">
           <span>Member</span>
           <span>Roles</span>
           <span>Actions</span>
         </div>
         {filtered.length === 0 && <div className="p-6 text-center text-xs text-muted-foreground">No members match "{q}"</div>}
         {filtered.map(m => (
-          <div key={m.id} className={`grid grid-cols-[1fr_auto_auto] items-center gap-4 px-4 py-3 border-b border-[#1a1f29] last:border-0 hover:bg-[#14171e] transition ${!m.active ? "opacity-50" : ""}`}>
+          <div key={m.id} className={`grid grid-cols-[1fr_auto_auto] items-center gap-4 px-4 py-3 border-b border-[var(--accent)] last:border-0 hover:bg-[var(--muted)] transition ${!m.active ? "opacity-50" : ""}`}>
             <div className="flex items-center gap-3 min-w-0">
-              <div className="h-9 w-9 rounded-sm bg-[#1a1f29] border border-[#1f2530] overflow-hidden flex items-center justify-center text-xs font-semibold text-muted-foreground shrink-0">
+              <div className="h-9 w-9 rounded-sm bg-[var(--accent)] border border-[var(--border)] overflow-hidden flex items-center justify-center text-xs font-semibold text-muted-foreground shrink-0">
                 {m.avatar_path && avatarUrls[m.avatar_path]
                   ? <img src={avatarUrls[m.avatar_path]} alt="" className="h-full w-full object-cover" />
                   : (m.display_name ?? "?").slice(0, 2).toUpperCase()}
@@ -246,14 +246,14 @@ function TeamPage() {
                   <button
                     onClick={() => toggleActive(m)}
                     title={m.active ? "Deactivate (block login)" : "Reactivate"}
-                    className={`p-1.5 rounded-sm border ${m.active ? "border-[#1f2530] text-muted-foreground hover:text-amber-400 hover:border-amber-500/30" : "border-green-500/30 text-green-400 hover:bg-green-500/10"}`}
+                    className={`p-1.5 rounded-sm border ${m.active ? "border-[var(--border)] text-muted-foreground hover:text-amber-400 hover:border-amber-500/30" : "border-green-500/30 text-green-400 hover:bg-green-500/10"}`}
                   >
                     {m.active ? <PowerOff className="h-3.5 w-3.5" /> : <Power className="h-3.5 w-3.5" />}
                   </button>
                   <button
                     onClick={() => deleteMember(m)}
                     title="Permanently delete"
-                    className="p-1.5 rounded-sm border border-[#1f2530] text-muted-foreground hover:text-red-400 hover:border-red-500/30"
+                    className="p-1.5 rounded-sm border border-[var(--border)] text-muted-foreground hover:text-red-400 hover:border-red-500/30"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -332,19 +332,19 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-[#0f1116] border border-[#1f2530] rounded-sm max-w-md w-full p-5 space-y-4" onClick={e => e.stopPropagation()}>
+      <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm max-w-md w-full p-5 space-y-4" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold">Edit member profile</h2>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
         </div>
         <div className="flex items-center gap-3">
-          <div className="h-16 w-16 rounded-md bg-[#1a1f29] border border-[#1f2530] overflow-hidden flex items-center justify-center text-lg font-bold text-muted-foreground shrink-0">
+          <div className="h-16 w-16 rounded-md bg-[var(--accent)] border border-[var(--border)] overflow-hidden flex items-center justify-center text-lg font-bold text-muted-foreground shrink-0">
             {avatarPreview ? <img src={avatarPreview} alt="" className="h-full w-full object-cover" /> : (displayName ?? "?").slice(0, 1).toUpperCase()}
           </div>
           <div className="flex-1 space-y-1.5">
             <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
             <button onClick={() => fileRef.current?.click()} disabled={uploading}
-              className="flex items-center gap-1 text-xs bg-[#1a1f29] hover:bg-[#232935] border border-[#2a3140] px-3 py-1.5 rounded-sm">
+              className="flex items-center gap-1 text-xs bg-[var(--accent)] hover:bg-[#232935] border border-[#2a3140] px-3 py-1.5 rounded-sm">
               <Upload className="h-3 w-3" /> {uploading ? "Uploading…" : "Upload picture"}
             </button>
             <p className="text-[10px] text-muted-foreground">PNG or JPG, up to 5MB.</p>
@@ -353,12 +353,12 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
         <div className="space-y-1">
           <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Display name</label>
           <input value={displayName} onChange={e => setDisplayName(e.target.value)}
-                 className="w-full h-9 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-sm" />
+                 className="w-full h-9 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-sm" />
         </div>
         <div className="space-y-1">
           <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Phone (optional)</label>
           <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="+1 555 123 4567" inputMode="tel"
-                 className="w-full h-9 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-sm" />
+                 className="w-full h-9 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-sm" />
         </div>
         <div className="space-y-1.5">
           <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Roles</label>
@@ -371,7 +371,7 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
                   key={r.key}
                   onClick={() => toggle(r.key)}
                   className={`flex items-center gap-1 text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border transition ${
-                    has ? r.color : "text-muted-foreground border-[#1f2530] bg-transparent hover:border-[#2a3140]"
+                    has ? r.color : "text-muted-foreground border-[var(--border)] bg-transparent hover:border-[#2a3140]"
                   }`}
                 >
                   <Icon className="h-3 w-3" /> {r.key}
@@ -395,7 +395,7 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
                   className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border transition ${
                     setterType === opt.key
                       ? "border-green-500/40 bg-green-500/10 text-green-400"
-                      : "border-[#1f2530] text-muted-foreground hover:border-[#2a3140]"
+                      : "border-[var(--border)] text-muted-foreground hover:border-[#2a3140]"
                   }`}
                 >
                   {opt.label}
@@ -404,8 +404,8 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
             </div>
           </div>
         )}
-        <div className="text-[10px] text-muted-foreground font-mono pt-1 border-t border-[#1f2530]">ID: {member.id}</div>
-        <div className="flex justify-end gap-2 pt-2 border-t border-[#1f2530]">
+        <div className="text-[10px] text-muted-foreground font-mono pt-1 border-t border-[var(--border)]">ID: {member.id}</div>
+        <div className="flex justify-end gap-2 pt-2 border-t border-[var(--border)]">
           <button onClick={onClose} className="text-xs text-muted-foreground hover:text-foreground px-3 py-1.5">Cancel</button>
           <button onClick={save} disabled={saving} className="text-xs bg-green-500 hover:bg-green-400 text-green-950 font-medium px-3 py-1.5 rounded-sm">
             {saving ? "Saving…" : "Save"}
@@ -424,7 +424,7 @@ function StatTile({ label, value, icon, accent }: { label: string; value: number
     accent === "amber" ? "text-amber-400" :
     accent === "fuchsia" ? "text-blue-400" : "text-foreground";
   return (
-    <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-3">
+    <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-3">
       <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-muted-foreground mb-1">{icon}{label}</div>
       <div className={`text-xl font-mono font-semibold ${color}`}>{value}</div>
     </div>

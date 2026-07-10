@@ -194,14 +194,14 @@ function StudentDetail() {
 
   return (
     <div className="p-4 sm:p-6 max-w-[1400px] mx-auto space-y-5">
-      <div className="flex items-center justify-between border-b border-[#1f2530] pb-4">
+      <div className="flex items-center justify-between border-b border-[var(--border)] pb-4">
         <button onClick={() => nav({ to: "/students" })} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-3.5 w-3.5" /> Back to students
         </button>
       </div>
 
       {/* Header */}
-      <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-5">
+      <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-5">
         <div className="flex items-start gap-4 flex-wrap">
           <div className="h-14 w-14 rounded-md bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 text-lg font-bold shrink-0">
             {student.full_name.slice(0, 2).toUpperCase()}
@@ -264,7 +264,7 @@ function StudentDetail() {
                 defaultValue={student.next_action ?? ""}
                 onBlur={e => { if (e.target.value !== (student.next_action ?? "")) saveNextAction(e.target.value); }}
                 placeholder="e.g. Follow up on portfolio review by Friday"
-                className="flex-1 h-8 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs focus:outline-none focus:border-green-500/40 disabled:opacity-60"
+                className="flex-1 h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs focus:outline-none focus:border-green-500/40 disabled:opacity-60"
               />
             </div>
           </div>
@@ -312,7 +312,7 @@ function StudentDetail() {
       </div>
 
       {/* Graduation checklist */}
-      <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-4">
+      <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-muted-foreground">
             <GraduationCap className="h-3 w-3 text-amber-400" /> Graduation checklist
@@ -332,7 +332,7 @@ function StudentDetail() {
                 className={`flex items-center gap-2 p-2.5 rounded-sm border text-left transition ${
                   step.done
                     ? "border-amber-500/40 bg-amber-500/10 text-amber-400"
-                    : "border-[#1f2530] bg-[#14171e] text-muted-foreground hover:border-[#2a3140]"
+                    : "border-[var(--border)] bg-[var(--muted)] text-muted-foreground hover:border-[#2a3140]"
                 } ${!canManage ? "cursor-default" : "cursor-pointer"}`}
               >
                 {step.done ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <Circle className="h-4 w-4 shrink-0" />}
@@ -346,13 +346,13 @@ function StudentDetail() {
             );
           })}
         </div>
-        <div className="mt-3 h-1.5 rounded-full bg-[#14171e] overflow-hidden">
+        <div className="mt-3 h-1.5 rounded-full bg-[var(--muted)] overflow-hidden">
           <div className="h-full bg-amber-400 transition-all" style={{ width: `${(graduationDone / 4) * 100}%` }} />
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-1 border-b border-[#1f2530] overflow-x-auto">
+      <div className="flex items-center gap-1 border-b border-[var(--border)] overflow-x-auto">
         <TabBtn active={tab === "timeline"} onClick={() => setTab("timeline")} icon={<Activity className="h-3 w-3" />}>Timeline</TabBtn>
         <TabBtn active={tab === "calls"} onClick={() => setTab("calls")} icon={<Phone className="h-3 w-3" />}>1:1s ({calls.length})</TabBtn>
         <TabBtn active={tab === "eods"} onClick={() => setTab("eods")} icon={<User className="h-3 w-3" />}>Student EODs ({eods.length})</TabBtn>
@@ -374,8 +374,8 @@ function StudentDetail() {
       )}
 
       {tab === "calls" && (
-        <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-[#1f2530]">
+        <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
             <div className="text-xs font-semibold flex items-center gap-1.5"><Phone className="h-3.5 w-3.5 text-sky-400" /> 1-on-1 calls · {calls.length}</div>
             {canManage && (
               <button onClick={() => setCallFormOpen(!callFormOpen)} className="text-[11px] flex items-center gap-1 px-2 py-1 rounded-sm bg-green-500 hover:bg-green-400 text-green-950 font-medium">
@@ -384,7 +384,7 @@ function StudentDetail() {
             )}
           </div>
           {callFormOpen && <CallForm studentId={student.id} onCancel={() => setCallFormOpen(false)} onDone={() => { setCallFormOpen(false); load(); }} />}
-          <div className="divide-y divide-[#1a1f29]">
+          <div className="divide-y divide-[var(--accent)]">
             {calls.length === 0 && <div className="p-6 text-center text-xs text-muted-foreground">No 1-on-1 calls logged yet.</div>}
             {calls.map(c => (
               <div key={c.id} className="p-3 space-y-1">
@@ -422,15 +422,15 @@ function StudentDetail() {
       )}
 
       {tab === "eods" && (
-        <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-[#1f2530]">
+        <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
             <div className="text-xs font-semibold flex items-center gap-1.5"><User className="h-3.5 w-3.5 text-green-400" /> Student EODs · {eods.length}</div>
             {!student.user_id && <span className="text-[10px] text-muted-foreground">Student hasn't signed in yet</span>}
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                <tr className="border-b border-[#1a1f29]">
+                <tr className="border-b border-[var(--accent)]">
                   <th className="text-left p-2">Date</th>
                   <th className="text-right p-2">Apps</th>
                   <th className="text-right p-2">Outreach</th>
@@ -443,7 +443,7 @@ function StudentDetail() {
               <tbody>
                 {eods.length === 0 && <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">No EODs yet.</td></tr>}
                 {eods.map(e => (
-                  <tr key={e.id} className="border-b border-[#1a1f29]">
+                  <tr key={e.id} className="border-b border-[var(--accent)]">
                     <td className="p-2 font-mono text-muted-foreground">{e.report_date}</td>
                     <td className="p-2 text-right font-mono text-green-400">{e.applications_submitted}</td>
                     <td className="p-2 text-right font-mono">{e.outreach_sent}</td>
@@ -464,7 +464,7 @@ function StudentDetail() {
       )}
 
       {tab === "installments" && (
-        <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-4 space-y-3">
+        <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-4 space-y-3">
           {!installment ? (
             <div className="text-center py-6 text-xs text-muted-foreground">
               No installment plan for this student.
@@ -483,13 +483,13 @@ function StudentDetail() {
               </div>
               <table className="w-full text-xs">
                 <thead className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                  <tr className="border-b border-[#1a1f29]"><th className="text-left p-2">#</th><th className="text-left p-2">Due</th><th className="text-right p-2">Amount</th><th className="text-left p-2">Status</th></tr>
+                  <tr className="border-b border-[var(--accent)]"><th className="text-left p-2">#</th><th className="text-left p-2">Due</th><th className="text-right p-2">Amount</th><th className="text-left p-2">Status</th></tr>
                 </thead>
                 <tbody>
                   {payments.map(p => {
                     const overdue = p.status !== "paid" && new Date(p.due_date) < new Date();
                     return (
-                      <tr key={p.id} className="border-b border-[#1a1f29]">
+                      <tr key={p.id} className="border-b border-[var(--accent)]">
                         <td className="p-2 font-mono text-muted-foreground">{p.sequence}</td>
                         <td className={`p-2 font-mono ${overdue ? "text-red-400" : "text-muted-foreground"}`}>{p.due_date}</td>
                         <td className="p-2 text-right font-mono">{p.currency} {Number(p.amount).toLocaleString()}</td>
@@ -505,7 +505,7 @@ function StudentDetail() {
       )}
 
       {tab === "notes" && (
-        <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-4">
+        <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-4">
           <div className="flex items-center justify-between mb-2">
             <div className="text-[10px] uppercase tracking-widest text-muted-foreground flex items-center gap-1"><FileText className="h-3 w-3" /> General notes</div>
             {canManage && (
@@ -518,7 +518,7 @@ function StudentDetail() {
             onChange={e => setStudent({ ...student, general_notes: e.target.value })}
             rows={8}
             placeholder="Anything worth remembering: personality, background, wins, ongoing themes…"
-            className="w-full bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-2 text-xs resize-none focus:outline-none focus:border-green-500/40"
+            className="w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-xs resize-none focus:outline-none focus:border-green-500/40"
           />
           <div className="mt-3 text-[10px] uppercase tracking-widest text-muted-foreground mb-1">Legacy coach notes</div>
           <textarea
@@ -528,7 +528,7 @@ function StudentDetail() {
             onBlur={async () => { await supabase.from("students").update({ notes: student.notes }).eq("id", student.id); }}
             rows={3}
             placeholder="Original coach notes field (kept for history)"
-            className="w-full bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-2 text-xs resize-none focus:outline-none focus:border-green-500/40"
+            className="w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-xs resize-none focus:outline-none focus:border-green-500/40"
           />
         </div>
       )}
@@ -539,7 +539,7 @@ function StudentDetail() {
 function CsmNotesPanel({ notes, authors, onAdd }: { notes: CsmNote[]; authors: Record<string, string>; onAdd: (n: string) => void }) {
   const [draft, setDraft] = useState("");
   return (
-    <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-4 space-y-3">
+    <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-4 space-y-3">
       <div className="flex items-center gap-1 text-[10px] uppercase tracking-widest text-muted-foreground">
         <HeartHandshake className="h-3 w-3 text-amber-400" /> CSM notes
       </div>
@@ -549,7 +549,7 @@ function CsmNotesPanel({ notes, authors, onAdd }: { notes: CsmNote[]; authors: R
           onChange={e => setDraft(e.target.value)}
           rows={2}
           placeholder="Loom reviewed, roleplay feedback, check-in outcome…"
-          className="flex-1 bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-2 text-xs resize-none focus:outline-none focus:border-green-500/40"
+          className="flex-1 bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-xs resize-none focus:outline-none focus:border-green-500/40"
         />
         <button
           onClick={() => { onAdd(draft); setDraft(""); }}
@@ -560,7 +560,7 @@ function CsmNotesPanel({ notes, authors, onAdd }: { notes: CsmNote[]; authors: R
       <div className="space-y-2">
         {notes.length === 0 && <div className="text-xs text-muted-foreground text-center py-4">No CSM notes yet.</div>}
         {notes.map(n => (
-          <div key={n.id} className="border border-[#1a1f29] bg-[#14171e] rounded-sm p-2.5">
+          <div key={n.id} className="border border-[var(--accent)] bg-[var(--muted)] rounded-sm p-2.5">
             <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1 font-mono">
               <span>{authors[n.user_id] ?? "Unknown"}</span>
               <span>{new Date(n.created_at).toISOString().slice(0, 10)}</span>
@@ -594,7 +594,7 @@ function StatCard({ label, value, sub, accent, icon, sparkline }: {
     emerald: "text-green-400", sky: "text-sky-400", rose: "text-red-400", amber: "text-amber-400", fuchsia: "text-blue-400",
   };
   return (
-    <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-3">
+    <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-3">
       <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-muted-foreground mb-1">{icon}{label}</div>
       <div className={`text-xl font-mono font-semibold ${colors[accent]}`}>{value}</div>
       {sub && <div className="text-[10px] text-muted-foreground mt-0.5">{sub}</div>}
@@ -634,7 +634,7 @@ function SelectChip({ value, onChange, options, color, prefix }: {
     <div className={`inline-flex items-center gap-1 text-[10px] uppercase tracking-wider pl-2 pr-1 py-0.5 rounded-sm border ${map[color]}`}>
       {prefix && <span>{prefix}</span>}
       <select value={value} onChange={e => onChange(e.target.value)} className="bg-transparent text-inherit outline-none pr-1">
-        {options.map(o => <option key={o.v} value={o.v} className="bg-[#0f1116] text-foreground normal-case">{o.l}</option>)}
+        {options.map(o => <option key={o.v} value={o.v} className="bg-[var(--card)] text-foreground normal-case">{o.l}</option>)}
       </select>
     </div>
   );
@@ -684,10 +684,10 @@ function CallForm({ studentId, onCancel, onDone }: { studentId: string; onCancel
   };
 
   return (
-    <div className="p-3 border-b border-[#1f2530] bg-[#14171e] space-y-2">
+    <div className="p-3 border-b border-[var(--border)] bg-[var(--muted)] space-y-2">
       <div className="grid md:grid-cols-3 gap-2">
-        <input type="date" value={form.call_date} onChange={e => setForm(f => ({ ...f, call_date: e.target.value }))} className="h-8 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs" />
-        <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="h-8 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs">
+        <input type="date" value={form.call_date} onChange={e => setForm(f => ({ ...f, call_date: e.target.value }))} className="h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs" />
+        <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs">
           <option value="scheduled">Scheduled</option>
           <option value="completed">Completed</option>
           <option value="follow_up">Follow-up</option>
@@ -702,9 +702,9 @@ function CallForm({ studentId, onCancel, onDone }: { studentId: string; onCancel
           ))}
         </div>
       </div>
-      <input placeholder="Fathom URL (optional)" value={form.fathom_url} onChange={e => setForm(f => ({ ...f, fathom_url: e.target.value }))} className="w-full h-8 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs" />
-      <textarea placeholder="Action items…" value={form.action_items} onChange={e => setForm(f => ({ ...f, action_items: e.target.value }))} rows={2} className="w-full p-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs resize-none" />
-      <textarea placeholder="Coach notes…" value={form.coach_notes} onChange={e => setForm(f => ({ ...f, coach_notes: e.target.value }))} rows={2} className="w-full p-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs resize-none" />
+      <input placeholder="Fathom URL (optional)" value={form.fathom_url} onChange={e => setForm(f => ({ ...f, fathom_url: e.target.value }))} className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs" />
+      <textarea placeholder="Action items…" value={form.action_items} onChange={e => setForm(f => ({ ...f, action_items: e.target.value }))} rows={2} className="w-full p-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs resize-none" />
+      <textarea placeholder="Coach notes…" value={form.coach_notes} onChange={e => setForm(f => ({ ...f, coach_notes: e.target.value }))} rows={2} className="w-full p-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs resize-none" />
       <div className="flex justify-end gap-2">
         <button onClick={onCancel} className="text-xs text-muted-foreground px-2 py-1">Cancel</button>
         <button onClick={submit} disabled={saving} className="text-xs bg-green-500 hover:bg-green-400 text-green-950 font-medium px-3 py-1 rounded-sm">
@@ -775,14 +775,14 @@ function TimelineFeed({ student, calls, eods, csmNotes, csmAuthors, coachName, p
   };
 
   return (
-    <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm">
-      <div className="px-4 py-3 border-b border-[#1f2530] text-xs font-semibold flex items-center gap-2">
+    <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm">
+      <div className="px-4 py-3 border-b border-[var(--border)] text-xs font-semibold flex items-center gap-2">
         <Activity className="h-3.5 w-3.5 text-blue-400" /> Activity · {events.length}
       </div>
       {events.length === 0 ? (
         <div className="p-6 text-center text-xs text-muted-foreground">No activity yet.</div>
       ) : (
-        <ol className="divide-y divide-[#1a1f29]">
+        <ol className="divide-y divide-[var(--accent)]">
           {events.map(ev => {
             const t = tones[ev.kind];
             const Icon = t.icon;

@@ -7,7 +7,7 @@ export function Skeleton({ className }: { className?: string }) {
 
 export function StatCardSkeleton() {
   return (
-    <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-3">
+    <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-3">
       <Skeleton className="h-2.5 w-16 mb-2" />
       <Skeleton className="h-6 w-14" />
     </div>
@@ -24,7 +24,7 @@ export function StatGridSkeleton({ count = 4 }: { count?: number }) {
 
 export function TableSkeleton({ rows = 8 }: { rows?: number }) {
   return (
-    <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm divide-y divide-[#1a1f29]">
+    <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm divide-y divide-[var(--accent)]">
       {Array.from({ length: rows }).map((_, i) => (
         <div key={i} className="grid grid-cols-[1fr_1fr_100px_100px] gap-3 p-3 items-center">
           <Skeleton className="h-3 w-3/4" />
@@ -40,7 +40,7 @@ export function TableSkeleton({ rows = 8 }: { rows?: number }) {
 export function PageSkeleton() {
   return (
     <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-5">
-      <div className="flex items-end justify-between border-b border-[#1f2530] pb-4">
+      <div className="flex items-end justify-between border-b border-[var(--border)] pb-4">
         <div className="space-y-2">
           <Skeleton className="h-2.5 w-24" />
           <Skeleton className="h-7 w-48" />

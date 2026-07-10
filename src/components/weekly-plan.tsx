@@ -151,12 +151,12 @@ export function WeeklyPlan({ onOpenItem }: { onOpenItem: (id: string) => void })
   return (
     <div className="space-y-4">
       {/* Week header */}
-      <div className="flex flex-wrap items-center gap-2 border border-[#1f2530] bg-[#0f1116] rounded-sm p-3">
-        <button onClick={() => shift(-1)} className="h-7 w-7 grid place-items-center rounded-sm border border-[#1f2530] hover:border-blue-500/40">
+      <div className="flex flex-wrap items-center gap-2 border border-[var(--border)] bg-[var(--card)] rounded-sm p-3">
+        <button onClick={() => shift(-1)} className="h-7 w-7 grid place-items-center rounded-sm border border-[var(--border)] hover:border-blue-500/40">
           <ChevronLeft className="h-3.5 w-3.5" />
         </button>
-        <button onClick={() => setWeekStart(mondayOf(new Date()))} className="h-7 px-2 rounded-sm border border-[#1f2530] text-[10px] hover:border-blue-500/40 uppercase tracking-wider">This week</button>
-        <button onClick={() => shift(1)} className="h-7 w-7 grid place-items-center rounded-sm border border-[#1f2530] hover:border-blue-500/40">
+        <button onClick={() => setWeekStart(mondayOf(new Date()))} className="h-7 px-2 rounded-sm border border-[var(--border)] text-[10px] hover:border-blue-500/40 uppercase tracking-wider">This week</button>
+        <button onClick={() => shift(1)} className="h-7 w-7 grid place-items-center rounded-sm border border-[var(--border)] hover:border-blue-500/40">
           <ChevronRight className="h-3.5 w-3.5" />
         </button>
         <div className="ml-2 flex items-center gap-2 min-w-0">
@@ -169,7 +169,7 @@ export function WeeklyPlan({ onOpenItem }: { onOpenItem: (id: string) => void })
         <div className="ml-auto flex items-center gap-2">
           <button
             onClick={() => setShowBrand(v => !v)}
-            className="h-7 px-2 rounded-sm border border-[#1f2530] hover:border-blue-500/40 text-[11px] text-muted-foreground"
+            className="h-7 px-2 rounded-sm border border-[var(--border)] hover:border-blue-500/40 text-[11px] text-muted-foreground"
           >
             Brand context {brand ? "✓" : ""}
           </button>
@@ -193,7 +193,7 @@ export function WeeklyPlan({ onOpenItem }: { onOpenItem: (id: string) => void })
       </div>
 
       {showBrand && (
-        <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-3">
+        <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-3">
           <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">
             Brand / niche context (used by AI ideation)
           </div>
@@ -202,7 +202,7 @@ export function WeeklyPlan({ onOpenItem }: { onOpenItem: (id: string) => void })
             onChange={(e) => setBrand(e.target.value)}
             rows={3}
             placeholder="e.g. I coach 6-figure agency owners on scaling ops. Voice: direct, blunt, no fluff. Signature angles: hiring, delegation, systems."
-            className="w-full bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-2 text-xs resize-y focus:outline-none focus:border-blue-500/40"
+            className="w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-xs resize-y focus:outline-none focus:border-blue-500/40"
           />
           <p className="text-[10px] text-muted-foreground mt-1">Saved on this device. Feed the model your niche, voice, and repeat themes.</p>
         </div>
@@ -286,7 +286,7 @@ function WeekBlock({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-baseline gap-2 border-b border-[#1f2530] pb-1.5">
+      <div className="flex items-baseline gap-2 border-b border-[var(--border)] pb-1.5">
         <span className="text-[10px] uppercase tracking-[0.18em] text-blue-400 font-semibold">{label}</span>
         <span className="text-sm font-semibold">{format(monday, "MMM d")} – {format(weekEnd, "MMM d")}</span>
       </div>
@@ -319,7 +319,7 @@ function WeekBlock({
                     ) : daySlots.map(s => {
                       const isFilled = s.hook && !/^(TOF|MOF)\s·/.test(s.hook);
                       return (
-                        <button key={s.id} onClick={() => onOpenItem(s.id)} className="w-full text-left px-2 py-1.5 rounded-sm bg-[#0a0b0f]/60 hover:bg-[#0a0b0f] border border-transparent hover:border-blue-500/40 transition">
+                        <button key={s.id} onClick={() => onOpenItem(s.id)} className="w-full text-left px-2 py-1.5 rounded-sm bg-[var(--background)]/60 hover:bg-[var(--background)] border border-transparent hover:border-blue-500/40 transition">
                           <div className="flex items-center gap-2">
                             {isFilled ? <CheckCircle2 className="h-3 w-3 text-green-400 shrink-0" /> : <Sparkles className="h-3 w-3 text-muted-foreground shrink-0" />}
                             <span className={`text-xs ${isFilled ? "" : "text-muted-foreground italic"} line-clamp-2`}>{isFilled ? s.hook : "Empty slot — click to draft"}</span>
@@ -364,7 +364,7 @@ function IdeaGroup({
   onPromote: (ideaId: string, contentItemId: string) => void;
 }) {
   return (
-    <div className={`border ${stageColor} bg-[#0f1116] rounded-sm`}>
+    <div className={`border ${stageColor} bg-[var(--card)] rounded-sm`}>
       <div className="px-2.5 py-1.5 border-b border-white/5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{title}</div>
       <div className="divide-y divide-white/5">
         {ideas.map((idea) => (
@@ -400,13 +400,13 @@ function IdeaRow({
             onBlur={() => text !== idea.text && onChange(idea.id, { text })}
             placeholder={idea.stage === "mof" ? "Warm follower angle — story, proof, CTA…" : "Cold-scroll hook — pattern break, insight, identity…"}
             rows={2}
-            className="w-full bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-1.5 text-xs resize-none focus:outline-none focus:border-blue-500/40"
+            className="w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-1.5 text-xs resize-none focus:outline-none focus:border-blue-500/40"
           />
           <div className="flex flex-wrap items-center gap-1.5">
             <select
               value={ct}
               onChange={(e) => { setCt(e.target.value); onChange(idea.id, { matched_creative_type: e.target.value || null }); }}
-              className="h-6 px-1.5 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-[10px] outline-none focus:border-blue-500/40"
+              className="h-6 px-1.5 rounded-sm border border-[var(--border)] bg-[var(--background)] text-[10px] outline-none focus:border-blue-500/40"
             >
               <option value="">Creative type…</option>
               {CREATIVE_TYPES.map(c => <option key={c} value={c}>{c}</option>)}
@@ -443,7 +443,7 @@ function PromoteMenu({
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 mt-1 z-50 min-w-[220px] border border-[#1f2530] bg-[#0f1116] rounded-sm shadow-lg">
+          <div className="absolute right-0 mt-1 z-50 min-w-[220px] border border-[var(--border)] bg-[var(--card)] rounded-sm shadow-lg">
             {slots.map(s => (
               <button
                 key={s.id}

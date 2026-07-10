@@ -87,7 +87,7 @@ export function CashLeaderboard({ compact = false }: { compact?: boolean }) {
                 "flex items-center gap-3 px-3 py-2 rounded-md border " +
                 (i === 0
                   ? "border-amber-500/30 bg-amber-500/5"
-                  : "border-[#1f2530] bg-[#0f1116]")
+                  : "border-[var(--border)] bg-[var(--card)]")
               }
             >
               <div className={"text-xs font-mono w-5 " + (i === 0 ? "text-amber-400" : "text-muted-foreground")}>

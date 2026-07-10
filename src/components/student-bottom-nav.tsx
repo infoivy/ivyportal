@@ -12,7 +12,7 @@ export function StudentBottomNav({ activeTab, onTabChange }: { activeTab?: strin
   const path = useRouterState({ select: s => s.location.pathname });
   const onPortal = path === "/student-portal";
   return (
-    <nav className="sm:hidden fixed bottom-0 inset-x-0 z-40 border-t border-[#1f2530] bg-[#0a0b0f]/95 backdrop-blur">
+    <nav className="sm:hidden fixed bottom-0 inset-x-0 z-40 border-t border-[var(--border)] bg-[var(--background)]/95 backdrop-blur">
       <div className="grid grid-cols-5">
         {items.map(it => {
           const Icon = it.icon;

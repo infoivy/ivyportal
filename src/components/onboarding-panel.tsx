@@ -76,7 +76,7 @@ export function OnboardingPanel({ compact }: { compact?: boolean }) {
           )}
         </div>
       </div>
-      <div className="h-1 rounded-full bg-[#1a1f29] overflow-hidden">
+      <div className="h-1 rounded-full bg-[var(--accent)] overflow-hidden">
         <div className="h-full bg-emerald-500 transition-all" style={{ width: `${pct}%` }} />
       </div>
       <ul className="space-y-1">

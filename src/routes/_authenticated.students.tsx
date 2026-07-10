@@ -208,7 +208,7 @@ function StudentsLayout() {
 
   return (
     <div className="p-4 sm:p-6 max-w-[1500px] mx-auto space-y-5">
-      <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[#1f2530] pb-4">
+      <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--border)] pb-4">
         <div>
           <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-blue-400 mb-1">
             <School className="h-3 w-3" /> Student Tracker
@@ -225,30 +225,30 @@ function StudentsLayout() {
               value={qRaw}
               onChange={e => setQ(e.target.value)}
               placeholder="Search name or email…"
-              className="h-8 pl-7 pr-3 rounded-sm border border-[#1f2530] bg-[#0f1116] text-xs w-56 focus:outline-none focus:border-green-500/40"
+              className="h-8 pl-7 pr-3 rounded-sm border border-[var(--border)] bg-[var(--card)] text-xs w-56 focus:outline-none focus:border-green-500/40"
             />
           </div>
-          <div className="flex items-center border border-[#1f2530] bg-[#0f1116] rounded-sm p-0.5">
-            <button onClick={() => setView("table")} className={`px-2 py-1 rounded-sm transition ${view === "table" ? "bg-[#1a1f29] text-foreground" : "text-muted-foreground"}`} title="Table">
+          <div className="flex items-center border border-[var(--border)] bg-[var(--card)] rounded-sm p-0.5">
+            <button onClick={() => setView("table")} className={`px-2 py-1 rounded-sm transition ${view === "table" ? "bg-[var(--accent)] text-foreground" : "text-muted-foreground"}`} title="Table">
               <TableIcon className="h-3.5 w-3.5" />
             </button>
-            <button onClick={() => setView("kanban")} className={`px-2 py-1 rounded-sm transition ${view === "kanban" ? "bg-[#1a1f29] text-foreground" : "text-muted-foreground"}`} title="Kanban">
+            <button onClick={() => setView("kanban")} className={`px-2 py-1 rounded-sm transition ${view === "kanban" ? "bg-[var(--accent)] text-foreground" : "text-muted-foreground"}`} title="Kanban">
               <LayoutGrid className="h-3.5 w-3.5" />
             </button>
-            <button onClick={() => setView("graduation")} className={`px-2 py-1 rounded-sm transition ${view === "graduation" ? "bg-[#1a1f29] text-amber-400" : "text-muted-foreground"}`} title="Graduation pipeline">
+            <button onClick={() => setView("graduation")} className={`px-2 py-1 rounded-sm transition ${view === "graduation" ? "bg-[var(--accent)] text-amber-400" : "text-muted-foreground"}`} title="Graduation pipeline">
               <Trophy className="h-3.5 w-3.5" />
             </button>
           </div>
           {view === "table" && (
             <div className="relative">
-              <button onClick={() => setColsOpen(o => !o)} className="flex items-center gap-1 h-8 px-2 rounded-sm border border-[#1f2530] bg-[#0f1116] text-xs text-muted-foreground hover:text-foreground" title="Column visibility">
+              <button onClick={() => setColsOpen(o => !o)} className="flex items-center gap-1 h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--card)] text-xs text-muted-foreground hover:text-foreground" title="Column visibility">
                 <Columns3 className="h-3.5 w-3.5" />
               </button>
               {colsOpen && (
-                <div className="absolute right-0 top-full mt-1 z-20 w-52 border border-[#1f2530] bg-[#0f1116] rounded-sm shadow-lg p-2" onMouseLeave={() => setColsOpen(false)}>
-                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground px-1 pb-1.5 border-b border-[#1f2530]">Columns</div>
+                <div className="absolute right-0 top-full mt-1 z-20 w-52 border border-[var(--border)] bg-[var(--card)] rounded-sm shadow-lg p-2" onMouseLeave={() => setColsOpen(false)}>
+                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground px-1 pb-1.5 border-b border-[var(--border)]">Columns</div>
                   {COLUMNS.filter(c => c.key !== "student").map(c => (
-                    <label key={c.key} className="flex items-center gap-2 px-1 py-1.5 text-xs hover:bg-[#14171e] rounded-sm cursor-pointer">
+                    <label key={c.key} className="flex items-center gap-2 px-1 py-1.5 text-xs hover:bg-[var(--muted)] rounded-sm cursor-pointer">
                       <input type="checkbox" checked={visibleCols.has(c.key)} onChange={() => toggleCol(c.key)} className="accent-green-500" />
                       {c.label}
                     </label>
@@ -274,7 +274,7 @@ function StudentsLayout() {
         <button
           onClick={() => setPhaseFilter("all")}
           className={`text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-sm border transition ${
-            phaseFilter === "all" ? "text-foreground border-[#2a3140] bg-[#1a1f29]" : "text-muted-foreground border-[#1f2530]"
+            phaseFilter === "all" ? "text-foreground border-[#2a3140] bg-[var(--accent)]" : "text-muted-foreground border-[var(--border)]"
           }`}
         >
           All · {students.length}
@@ -284,7 +284,7 @@ function StudentsLayout() {
             key={p.key}
             onClick={() => setPhaseFilter(p.key)}
             className={`text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-sm border transition ${
-              phaseFilter === p.key ? p.color : "text-muted-foreground border-[#1f2530] hover:border-[#2a3140]"
+              phaseFilter === p.key ? p.color : "text-muted-foreground border-[var(--border)] hover:border-[#2a3140]"
             }`}
           >
             {p.label} · {students.filter(s => s.phase === p.key).length}
@@ -293,16 +293,16 @@ function StudentsLayout() {
         <button
           onClick={() => setPhaseFilter("at_risk")}
           className={`flex items-center gap-1 text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-sm border transition ${
-            phaseFilter === "at_risk" ? "text-red-400 border-red-500/30 bg-red-500/10" : "text-muted-foreground border-[#1f2530] hover:border-red-500/30"
+            phaseFilter === "at_risk" ? "text-red-400 border-red-500/30 bg-red-500/10" : "text-muted-foreground border-[var(--border)] hover:border-red-500/30"
           }`}
         >
           <AlertTriangle className="h-3 w-3" /> At risk · {atRiskCount}
         </button>
 
         {view === "kanban" && (
-          <div className="ml-auto flex items-center border border-[#1f2530] bg-[#0f1116] rounded-sm p-0.5">
-            <button onClick={() => setKanbanBy("phase")} className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm ${kanbanBy === "phase" ? "bg-[#1a1f29] text-foreground" : "text-muted-foreground"}`}>By phase</button>
-            <button onClick={() => setKanbanBy("coach")} className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm flex items-center gap-1 ${kanbanBy === "coach" ? "bg-[#1a1f29] text-foreground" : "text-muted-foreground"}`}>
+          <div className="ml-auto flex items-center border border-[var(--border)] bg-[var(--card)] rounded-sm p-0.5">
+            <button onClick={() => setKanbanBy("phase")} className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm ${kanbanBy === "phase" ? "bg-[var(--accent)] text-foreground" : "text-muted-foreground"}`}>By phase</button>
+            <button onClick={() => setKanbanBy("coach")} className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm flex items-center gap-1 ${kanbanBy === "coach" ? "bg-[var(--accent)] text-foreground" : "text-muted-foreground"}`}>
               <Users className="h-3 w-3" /> By coach
             </button>
           </div>
@@ -312,10 +312,10 @@ function StudentsLayout() {
       {view === "graduation" ? (
         <GraduationKanban students={filtered} />
       ) : view === "table" ? (
-        <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm overflow-x-auto">
+        <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm overflow-x-auto">
           <table className="w-full text-xs">
-            <thead className="text-[10px] uppercase tracking-widest text-muted-foreground bg-[#0f1116] sticky top-0">
-              <tr className="border-b border-[#1f2530]">
+            <thead className="text-[10px] uppercase tracking-widest text-muted-foreground bg-[var(--card)] sticky top-0">
+              <tr className="border-b border-[var(--border)]">
                 <th className="text-left px-4 py-2 font-normal">Student</th>
                 {visibleCols.has("grade") && <th className="text-left px-2 py-2 font-normal">Grade</th>}
                 {visibleCols.has("phase") && <th className="text-left px-2 py-2 font-normal">Phase</th>}
@@ -342,7 +342,7 @@ function StudentsLayout() {
                 const info = atRiskInfo(s);
                 const showReasons = phaseFilter === "at_risk";
                 return (
-                  <tr key={s.id} className="border-b border-[#1a1f29] last:border-0 hover:bg-[#14171e] transition">
+                  <tr key={s.id} className="border-b border-[var(--accent)] last:border-0 hover:bg-[var(--muted)] transition">
                     <td className="px-4 py-3 min-w-[220px]">
                       <Link to={"/students/$id" as any} params={{ id: s.id } as any} className="flex items-center gap-2 min-w-0">
                         {info.risky && <AlertTriangle className="h-3 w-3 text-red-400 shrink-0" />}
@@ -363,7 +363,7 @@ function StudentsLayout() {
                     </td>
                     {visibleCols.has("grade") && (
                       <td className="px-2 py-3">
-                        <span className={`text-[10px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded-sm border ${s.student_grade ? "border-amber-500/30 bg-amber-500/10 text-amber-400" : "border-[#1f2530] text-muted-foreground"}`}>
+                        <span className={`text-[10px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded-sm border ${s.student_grade ? "border-amber-500/30 bg-amber-500/10 text-amber-400" : "border-[var(--border)] text-muted-foreground"}`}>
                           {s.student_grade ?? "—"}
                         </span>
                       </td>
@@ -372,7 +372,7 @@ function StudentsLayout() {
                       <td className="px-2 py-3">
                         {canManage ? (
                           <select value={s.phase} onChange={e => updateStudent(s.id, { phase: e.target.value as Phase })} className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border bg-transparent ${phaseMeta(s.phase).color}`}>
-                            {PHASES.map(p => <option key={p.key} value={p.key} className="bg-[#0f1116]">{p.label}</option>)}
+                            {PHASES.map(p => <option key={p.key} value={p.key} className="bg-[var(--card)]">{p.label}</option>)}
                           </select>
                         ) : (
                           <span className={`inline-flex items-center text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border ${phaseMeta(s.phase).color}`}>{phaseMeta(s.phase).label}</span>
@@ -383,7 +383,7 @@ function StudentsLayout() {
                       <td className="px-2 py-3">
                         {canManage ? (
                           <select value={s.status} onChange={e => updateStudent(s.id, { status: e.target.value as Status })} className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border bg-transparent ${statusMeta(s.status).color}`}>
-                            {STATUSES.map(x => <option key={x.key} value={x.key} className="bg-[#0f1116]">{x.label}</option>)}
+                            {STATUSES.map(x => <option key={x.key} value={x.key} className="bg-[var(--card)]">{x.label}</option>)}
                           </select>
                         ) : (
                           <span className={`inline-flex items-center text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border ${statusMeta(s.status).color}`}>{statusMeta(s.status).label}</span>
@@ -393,9 +393,9 @@ function StudentsLayout() {
                     {visibleCols.has("coach") && (
                       <td className="px-2 py-3">
                         {canManage ? (
-                          <select value={s.coach_id ?? ""} onChange={e => updateStudent(s.id, { coach_id: e.target.value || null })} className="text-xs h-7 px-2 rounded-sm border border-[#1f2530] bg-transparent max-w-[140px]">
+                          <select value={s.coach_id ?? ""} onChange={e => updateStudent(s.id, { coach_id: e.target.value || null })} className="text-xs h-7 px-2 rounded-sm border border-[var(--border)] bg-transparent max-w-[140px]">
                             <option value="">Unassigned</option>
-                            {coaches.map(c => <option key={c.id} value={c.id} className="bg-[#0f1116]">{c.display_name ?? c.id}</option>)}
+                            {coaches.map(c => <option key={c.id} value={c.id} className="bg-[var(--card)]">{c.display_name ?? c.id}</option>)}
                           </select>
                         ) : (
                           <span className="text-xs text-muted-foreground truncate">{coachName(s.coach_id)}</span>
@@ -431,7 +431,7 @@ function StudentsLayout() {
                             defaultValue={s.next_action ?? ""}
                             onBlur={e => { if (e.target.value !== (s.next_action ?? "")) updateStudent(s.id, { next_action: e.target.value.trim() || null }); }}
                             placeholder="—"
-                            className="w-full h-7 px-2 rounded-sm border border-transparent hover:border-[#1f2530] focus:border-green-500/40 bg-transparent text-xs focus:outline-none"
+                            className="w-full h-7 px-2 rounded-sm border border-transparent hover:border-[var(--border)] focus:border-green-500/40 bg-transparent text-xs focus:outline-none"
                           />
                         ) : (
                           <span className="text-xs text-muted-foreground">{s.next_action ?? "—"}</span>
@@ -471,7 +471,7 @@ function StudentsLayout() {
               key={p.key}
               onDragOver={e => { if (canManage) e.preventDefault(); }}
               onDrop={e => { const id = e.dataTransfer.getData("text/plain"); if (id && canManage) onDropToPhase(id, p.key); }}
-              className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-2 min-h-[200px]"
+              className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-2 min-h-[200px]"
             >
               <div className={`flex items-center justify-between text-[10px] uppercase tracking-wider px-1 py-1 mb-2 rounded-sm ${p.color}`}>
                 <span>{p.label}</span>
@@ -494,7 +494,7 @@ function StudentsLayout() {
               key={cid}
               onDragOver={e => { if (canManage) e.preventDefault(); }}
               onDrop={e => { const id = e.dataTransfer.getData("text/plain"); if (id && canManage) onDropToCoach(id, cid === "__unassigned__" ? null : cid); }}
-              className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-2 min-h-[200px]"
+              className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-2 min-h-[200px]"
             >
               <div className="flex items-center justify-between text-[10px] uppercase tracking-wider px-1 py-1 mb-2 rounded-sm text-sky-400 border-sky-500/30 bg-sky-500/10 border">
                 <span className="truncate">{cid === "__unassigned__" ? "Unassigned" : coachName(cid)}</span>
@@ -536,7 +536,7 @@ function GraduationKanban({ students }: { students: Student[] }) {
       {stages.map(st => {
         const inStage = active.filter(s => st.match(s));
         return (
-          <div key={st.key} className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-2 min-h-[200px]">
+          <div key={st.key} className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-2 min-h-[200px]">
             <div className={`flex items-center justify-between text-[10px] uppercase tracking-wider px-1 py-1 mb-2 rounded-sm border ${st.color}`}>
               <span className="truncate">{st.label}</span>
               <span className="font-mono">{inStage.length}</span>
@@ -544,7 +544,7 @@ function GraduationKanban({ students }: { students: Student[] }) {
             <div className="space-y-1.5">
               {inStage.map(s => (
                 <Link key={s.id} to={"/students/$id" as any} params={{ id: s.id } as any}
-                  className="block p-2 rounded-sm bg-[#14171e] border border-[#1f2530] hover:border-[#2a3140]">
+                  className="block p-2 rounded-sm bg-[var(--muted)] border border-[var(--border)] hover:border-[#2a3140]">
                   <div className="text-xs font-medium truncate">{s.full_name}</div>
                   <div className="flex items-center gap-1 mt-1">
                     {s.first_win_at && <span title="First win" className="text-amber-400 text-[10px]">★</span>}
@@ -570,7 +570,7 @@ function StudentCard({ s, canDrag, coachName, atRisk }: { s: Student; canDrag: b
       params={{ id: s.id } as any}
       draggable={canDrag}
       onDragStart={e => e.dataTransfer.setData("text/plain", s.id)}
-      className={`block p-2 rounded-sm bg-[#14171e] border transition cursor-pointer ${atRisk ? "border-red-500/30 hover:border-red-500/60" : "border-[#1f2530] hover:border-[#2a3140]"}`}
+      className={`block p-2 rounded-sm bg-[var(--muted)] border transition cursor-pointer ${atRisk ? "border-red-500/30 hover:border-red-500/60" : "border-[var(--border)] hover:border-[#2a3140]"}`}
     >
       <div className="flex items-center gap-1.5">
         {atRisk && <AlertTriangle className="h-3 w-3 text-red-400 shrink-0" />}
@@ -786,7 +786,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto" onClick={onClose}>
-      <div className="bg-[#0f1116] border border-[#1f2530] rounded-sm max-w-2xl w-full my-8 p-5 space-y-4" onClick={e => e.stopPropagation()}>
+      <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm max-w-2xl w-full my-8 p-5 space-y-4" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-sm font-semibold">Add student</h2>
@@ -825,7 +825,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
             <button
               type="button"
               onClick={() => setPkg("one_on_one")}
-              className={`text-left p-3 rounded-sm border transition ${pkg === "one_on_one" ? "border-blue-500/50 bg-blue-500/10" : "border-[#1f2530] hover:border-[#2a3140]"}`}
+              className={`text-left p-3 rounded-sm border transition ${pkg === "one_on_one" ? "border-blue-500/50 bg-blue-500/10" : "border-[var(--border)] hover:border-[#2a3140]"}`}
             >
               <div className="text-xs font-medium">1:1 Pathway</div>
               <div className="text-[10px] text-muted-foreground mt-0.5">Up to 10 coaching calls (2/week × 5 weeks) + group access</div>
@@ -833,7 +833,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
             <button
               type="button"
               onClick={() => setPkg("group_only")}
-              className={`text-left p-3 rounded-sm border transition ${pkg === "group_only" ? "border-sky-500/50 bg-sky-500/10" : "border-[#1f2530] hover:border-[#2a3140]"}`}
+              className={`text-left p-3 rounded-sm border transition ${pkg === "group_only" ? "border-sky-500/50 bg-sky-500/10" : "border-[var(--border)] hover:border-[#2a3140]"}`}
             >
               <div className="text-xs font-medium">Group Coaching Only</div>
               <div className="text-[10px] text-muted-foreground mt-0.5">Group calls only, no 1:1s</div>
@@ -849,7 +849,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
                 key={m}
                 type="button"
                 onClick={() => setPayMode(m)}
-                className={`p-2 rounded-sm border text-xs transition ${payMode === m ? "border-green-500/50 bg-green-500/10 text-green-300" : "border-[#1f2530] text-muted-foreground hover:border-[#2a3140]"}`}
+                className={`p-2 rounded-sm border text-xs transition ${payMode === m ? "border-green-500/50 bg-green-500/10 text-green-300" : "border-[var(--border)] text-muted-foreground hover:border-[#2a3140]"}`}
               >
                 {m === "pif" ? "Paid in full" : m === "installments" ? "Installments" : "Skip for now"}
               </button>
@@ -887,12 +887,12 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
                     <button
                       type="button"
                       onClick={() => setScheduleMode("even")}
-                      className={`flex-1 p-2 rounded-sm border text-xs transition ${scheduleMode === "even" ? "border-sky-500/50 bg-sky-500/10 text-sky-300" : "border-[#1f2530] text-muted-foreground hover:border-[#2a3140]"}`}
+                      className={`flex-1 p-2 rounded-sm border text-xs transition ${scheduleMode === "even" ? "border-sky-500/50 bg-sky-500/10 text-sky-300" : "border-[var(--border)] text-muted-foreground hover:border-[#2a3140]"}`}
                     >Split evenly</button>
                     <button
                       type="button"
                       onClick={() => setScheduleMode("custom")}
-                      className={`flex-1 p-2 rounded-sm border text-xs transition ${scheduleMode === "custom" ? "border-sky-500/50 bg-sky-500/10 text-sky-300" : "border-[#1f2530] text-muted-foreground hover:border-[#2a3140]"}`}
+                      className={`flex-1 p-2 rounded-sm border text-xs transition ${scheduleMode === "custom" ? "border-sky-500/50 bg-sky-500/10 text-sky-300" : "border-[var(--border)] text-muted-foreground hover:border-[#2a3140]"}`}
                     >Custom schedule</button>
                   </div>
 
@@ -911,7 +911,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
                       <Field label="First payment due" full>
                         <input type="date" value={firstDueDate} onChange={e => setFirstDueDate(e.target.value)} className={inputCls} />
                       </Field>
-                      <div className="col-span-2 text-[11px] text-muted-foreground bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-2">
+                      <div className="col-span-2 text-[11px] text-muted-foreground bg-[var(--background)] border border-[var(--border)] rounded-sm p-2">
                         {n} × ${perInstallment.toFixed(2)} = ${(n * perInstallment).toFixed(2)} remaining
                         {dep > 0 && <> · ${dep.toFixed(2)} upfront</>}
                         <> · total ${tv.toFixed(2)}</>
@@ -952,7 +952,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
           <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} className={inputCls} />
         </Field>
 
-        <div className="flex justify-end gap-2 pt-2 border-t border-[#1f2530]">
+        <div className="flex justify-end gap-2 pt-2 border-t border-[var(--border)]">
           <button onClick={onClose} className="text-xs text-muted-foreground hover:text-foreground px-3 py-1.5">Cancel</button>
           <button onClick={submit} disabled={saving} className="text-xs bg-green-500 hover:bg-green-400 text-green-950 font-medium px-3 py-1.5 rounded-sm">
             {saving ? "Saving…" : "Add student"}
@@ -963,7 +963,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
   );
 }
 
-const inputCls = "w-full h-9 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs focus:outline-none focus:border-green-500/40";
+const inputCls = "w-full h-9 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs focus:outline-none focus:border-green-500/40";
 
 function Field({ label, children, full }: { label: string; children: React.ReactNode; full?: boolean }) {
   return (
@@ -976,7 +976,7 @@ function Field({ label, children, full }: { label: string; children: React.React
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="space-y-2 pt-3 border-t border-[#1f2530] first:border-0 first:pt-0">
+    <div className="space-y-2 pt-3 border-t border-[var(--border)] first:border-0 first:pt-0">
       <div className="text-[10px] uppercase tracking-[0.18em] text-blue-400">{title}</div>
       {children}
     </div>
