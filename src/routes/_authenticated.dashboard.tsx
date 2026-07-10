@@ -13,7 +13,7 @@ import {
   BarChart, Bar, Cell,
 } from "recharts";
 import { format, subDays, differenceInCalendarDays } from "date-fns";
-import { CashLeaderboard } from "@/components/weekly-leaderboard";
+import { money, startOfWeekMon, endOfWeekSun, isoDay, type Deal } from "@/lib/revenue";
 import { RangePicker, type DateRange, rangeFor, daysBetween } from "@/components/range-picker";
 import { StatDrilldown, type MetricKey } from "@/components/stat-drilldown";
 import { DashboardSettingsSheet } from "@/components/dashboard-settings-sheet";
