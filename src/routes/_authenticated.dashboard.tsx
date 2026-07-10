@@ -336,87 +336,45 @@ function Dashboard() {
           <UnifiedLeaderboard profiles={profiles} eods={eods} />
         )}
 
-        {/* Row 3: Top Setters + Goals + Audience */}
-        {(prefs.showTopSetters || prefs.showGoals || prefs.showTeamComp) && (
-          <div className="grid gap-3 lg:grid-cols-[1.5fr_1fr]">
-            {prefs.showTopSetters && (
+        {/* Row 3: Goals + Team Comp (top setters merged into UnifiedLeaderboard above) */}
+        {(prefs.showGoals || prefs.showTeamComp) && (
+          <div className="grid gap-3 lg:grid-cols-2">
+            {prefs.showGoals && (
               <Panel>
-                <PanelHead
-                  title="Top Performing Setters"
-                  subtitle={rangeLabel}
-                  legend={[{ color: "#22c55e", label: "Sorted by Booked" }]}
-                />
-                {topSetters.length === 0 ? (
-                  <div className="py-10 text-center text-xs text-muted-foreground">No EODs submitted in this range.</div>
-                ) : (
-                  <div className="mt-2">
-                    <div className="grid grid-cols-[24px_minmax(0,1fr)_90px_60px_60px_60px] gap-2 px-2 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border">
-                      <span>#</span>
-                      <span>Setter</span>
-                      <span className="text-right">DMs</span>
-                      <span className="text-right">Convos</span>
-                      <span className="text-right inline-flex items-center justify-end gap-0.5 text-emerald-400">Booked <ChevronDown className="h-3 w-3" /></span>
-                      <span className="text-right">Shows</span>
-                    </div>
-                    {topSetters.map((s, i) => {
-                      const name = profiles[s.user_id]?.display_name ?? "Unknown";
-                      return (
-                        <div key={s.user_id} className="grid grid-cols-[24px_minmax(0,1fr)_90px_60px_60px_60px] gap-2 px-2 py-2 text-xs tabular-nums border-b border-border/50 hover:bg-white/[0.02]">
-                          <span className="text-muted-foreground">{i + 1}</span>
-                          <span className="truncate font-medium">{name}</span>
-                          <span className="text-right text-blue-400">{s.dms.toLocaleString()}</span>
-                          <span className="text-right text-purple-400">{s.convos.toLocaleString()}</span>
-                          <span className="text-right text-emerald-400 font-semibold">{s.calls.toLocaleString()}</span>
-                          <span className="text-right text-amber-400">{s.shows.toLocaleString()}</span>
-                        </div>
-                      );
-                    })}
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="grid h-6 w-6 place-items-center rounded-sm bg-blue-500/15 border border-blue-500/40">
+                    <Target className="h-3 w-3 text-blue-400" />
                   </div>
-                )}
+                  <h3 className="text-sm font-bold">{goalsLabel}</h3>
+                </div>
+                <div className="space-y-3">
+                  <Goal label="DMs Sent"     value={totals.dms_sent}       target={GOALS.dms}     color="#3b82f6" />
+                  <Goal label="Convos"       value={totals.convos_started} target={GOALS.convos}  color="#a855f7" />
+                  <Goal label="Calls Booked" value={totals.calls_booked}   target={GOALS.calls}   color="#22c55e" />
+                  <Goal label="Shows"        value={totals.shows}          target={GOALS.shows}   color="#f59e0b" warn={totals.shows < GOALS.shows * 0.5 && days >= 30} />
+                  <Goal label="Show Rate"    value={showRate}              target={GOALS.showRate} suffix="%" color="#06b6d4" />
+                </div>
               </Panel>
             )}
 
-            {(prefs.showGoals || prefs.showTeamComp) && (
-              <div className="grid gap-3">
-                {prefs.showGoals && (
-                  <Panel>
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="grid h-6 w-6 place-items-center rounded-sm bg-blue-500/15 border border-blue-500/40">
-                        <Target className="h-3 w-3 text-blue-400" />
-                      </div>
-                      <h3 className="text-sm font-bold">{goalsLabel}</h3>
-                    </div>
-                    <div className="space-y-3">
-                      <Goal label="DMs Sent"     value={totals.dms_sent}       target={GOALS.dms}     color="#3b82f6" />
-                      <Goal label="Convos"       value={totals.convos_started} target={GOALS.convos}  color="#a855f7" />
-                      <Goal label="Calls Booked" value={totals.calls_booked}   target={GOALS.calls}   color="#22c55e" />
-                      <Goal label="Shows"        value={totals.shows}          target={GOALS.shows}   color="#f59e0b" warn={totals.shows < GOALS.shows * 0.5 && days >= 30} />
-                      <Goal label="Show Rate"    value={showRate}              target={GOALS.showRate} suffix="%" color="#06b6d4" />
-                    </div>
-                  </Panel>
-                )}
-
-                {prefs.showTeamComp && (
-                  <Panel>
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="grid h-6 w-6 place-items-center rounded-sm bg-purple-500/15 border border-purple-500/40">
-                        <Globe className="h-3 w-3 text-purple-400" />
-                      </div>
-                      <h3 className="text-sm font-bold">Team Composition</h3>
-                    </div>
-                    <div className="space-y-2">
-                      <AudienceRow label="Active this period" value={activeSetters} total={Math.max(activeSetters, 1)} color="#3b82f6" />
-                      <AudienceRow label="EODs / setter"      value={activeSetters > 0 ? Math.round(totalEods / activeSetters) : 0} total={days} color="#22c55e" suffix={` / ${days}`} />
-                      <AudienceRow label="Avg calls / setter" value={activeSetters > 0 ? Math.round(totals.calls_booked / activeSetters) : 0} total={GOALS.calls / Math.max(activeSetters, 1)} color="#f59e0b" />
-                    </div>
-                  </Panel>
-                )}
-              </div>
+            {prefs.showTeamComp && (
+              <Panel>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="grid h-6 w-6 place-items-center rounded-sm bg-purple-500/15 border border-purple-500/40">
+                    <Globe className="h-3 w-3 text-purple-400" />
+                  </div>
+                  <h3 className="text-sm font-bold">Team Composition</h3>
+                </div>
+                <div className="space-y-2">
+                  <AudienceRow label="Active this period" value={activeSetters} total={Math.max(activeSetters, 1)} color="#3b82f6" />
+                  <AudienceRow label="EODs / setter"      value={activeSetters > 0 ? Math.round(totalEods / activeSetters) : 0} total={days} color="#22c55e" suffix={` / ${days}`} />
+                  <AudienceRow label="Avg calls / setter" value={activeSetters > 0 ? Math.round(totals.calls_booked / activeSetters) : 0} total={GOALS.calls / Math.max(activeSetters, 1)} color="#f59e0b" />
+                </div>
+              </Panel>
             )}
           </div>
         )}
 
-        {prefs.showWeeklyLeaderboard && <WeeklyLeaderboard profiles={profiles} eods={eods} />}
 
 
         {/* Quick actions */}
