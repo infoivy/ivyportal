@@ -67,7 +67,10 @@ export type Database = {
           label: string
           notes: string | null
           rate: number
+          top_setter_bonus_pct: number
           updated_at: string
+          weekly_cash_bonus_pct: number
+          weekly_cash_bonus_threshold: number
         }
         Insert: {
           active?: boolean
@@ -76,7 +79,10 @@ export type Database = {
           label: string
           notes?: string | null
           rate?: number
+          top_setter_bonus_pct?: number
           updated_at?: string
+          weekly_cash_bonus_pct?: number
+          weekly_cash_bonus_threshold?: number
         }
         Update: {
           active?: boolean
@@ -85,6 +91,48 @@ export type Database = {
           label?: string
           notes?: string | null
           rate?: number
+          top_setter_bonus_pct?: number
+          updated_at?: string
+          weekly_cash_bonus_pct?: number
+          weekly_cash_bonus_threshold?: number
+        }
+        Relationships: []
+      }
+      content_hooks: {
+        Row: {
+          category: string | null
+          created_at: string
+          created_by: string
+          example: string | null
+          favorite: boolean
+          funnel_stage: string | null
+          id: string
+          text: string
+          times_used: number
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          created_by: string
+          example?: string | null
+          favorite?: boolean
+          funnel_stage?: string | null
+          id?: string
+          text: string
+          times_used?: number
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          created_by?: string
+          example?: string | null
+          favorite?: boolean
+          funnel_stage?: string | null
+          id?: string
+          text?: string
+          times_used?: number
           updated_at?: string
         }
         Relationships: []
@@ -93,26 +141,38 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string
+          explanation: string | null
+          funnel_guess: string | null
+          harvested: boolean
           id: string
           link: string | null
           promoted_item_id: string | null
           text: string
+          trigger_type: string | null
         }
         Insert: {
           created_at?: string
           created_by: string
+          explanation?: string | null
+          funnel_guess?: string | null
+          harvested?: boolean
           id?: string
           link?: string | null
           promoted_item_id?: string | null
           text: string
+          trigger_type?: string | null
         }
         Update: {
           created_at?: string
           created_by?: string
+          explanation?: string | null
+          funnel_guess?: string | null
+          harvested?: boolean
           id?: string
           link?: string | null
           promoted_item_id?: string | null
           text?: string
+          trigger_type?: string | null
         }
         Relationships: [
           {
@@ -126,53 +186,95 @@ export type Database = {
       }
       content_items: {
         Row: {
+          archived: boolean
           created_at: string
           created_by: string
+          duration_sec: number | null
+          edited_at: string | null
+          edited_reel_url: string | null
           format: string | null
           funnel_stage: string | null
           hook: string
+          hook_diagnosis: string | null
           id: string
           link_when_posted: string | null
           platform: Database["public"]["Enums"]["content_platform"]
+          platforms: string[]
+          post_avg_watch_sec: number | null
+          post_new_follows: number | null
+          post_views: number | null
           posted_at: string | null
+          raw_video_url: string | null
+          recorded_at: string | null
+          reedit_flag: boolean
           scheduled_date: string | null
           script: string | null
+          source: string | null
           status: Database["public"]["Enums"]["content_status"]
           tags: string[]
+          title: string | null
           updated_at: string
           week_start: string | null
         }
         Insert: {
+          archived?: boolean
           created_at?: string
           created_by: string
+          duration_sec?: number | null
+          edited_at?: string | null
+          edited_reel_url?: string | null
           format?: string | null
           funnel_stage?: string | null
           hook: string
+          hook_diagnosis?: string | null
           id?: string
           link_when_posted?: string | null
           platform?: Database["public"]["Enums"]["content_platform"]
+          platforms?: string[]
+          post_avg_watch_sec?: number | null
+          post_new_follows?: number | null
+          post_views?: number | null
           posted_at?: string | null
+          raw_video_url?: string | null
+          recorded_at?: string | null
+          reedit_flag?: boolean
           scheduled_date?: string | null
           script?: string | null
+          source?: string | null
           status?: Database["public"]["Enums"]["content_status"]
           tags?: string[]
+          title?: string | null
           updated_at?: string
           week_start?: string | null
         }
         Update: {
+          archived?: boolean
           created_at?: string
           created_by?: string
+          duration_sec?: number | null
+          edited_at?: string | null
+          edited_reel_url?: string | null
           format?: string | null
           funnel_stage?: string | null
           hook?: string
+          hook_diagnosis?: string | null
           id?: string
           link_when_posted?: string | null
           platform?: Database["public"]["Enums"]["content_platform"]
+          platforms?: string[]
+          post_avg_watch_sec?: number | null
+          post_new_follows?: number | null
+          post_views?: number | null
           posted_at?: string | null
+          raw_video_url?: string | null
+          recorded_at?: string | null
+          reedit_flag?: boolean
           scheduled_date?: string | null
           script?: string | null
+          source?: string | null
           status?: Database["public"]["Enums"]["content_status"]
           tags?: string[]
+          title?: string | null
           updated_at?: string
           week_start?: string | null
         }
@@ -564,6 +666,39 @@ export type Database = {
         }
         Relationships: []
       }
+      founder_settings: {
+        Row: {
+          created_at: string
+          id: string
+          recording_day_of_week: number
+          top_setter_bonus_pct: number
+          updated_at: string
+          updated_by: string | null
+          weekly_cash_bonus_pct: number
+          weekly_cash_bonus_threshold: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          recording_day_of_week?: number
+          top_setter_bonus_pct?: number
+          updated_at?: string
+          updated_by?: string | null
+          weekly_cash_bonus_pct?: number
+          weekly_cash_bonus_threshold?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          recording_day_of_week?: number
+          top_setter_bonus_pct?: number
+          updated_at?: string
+          updated_by?: string | null
+          weekly_cash_bonus_pct?: number
+          weekly_cash_bonus_threshold?: number
+        }
+        Relationships: []
+      }
       ig_connections: {
         Row: {
           access_token: string | null
@@ -644,6 +779,119 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      ig_monthly_snapshots: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          dms: number
+          followers: number
+          id: string
+          interactions: number
+          link_clicks: number
+          month: string
+          new_followers: number
+          notes: string | null
+          posts: number
+          profile_visits: number
+          reach: number
+          updated_at: string
+          views: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          dms?: number
+          followers?: number
+          id?: string
+          interactions?: number
+          link_clicks?: number
+          month: string
+          new_followers?: number
+          notes?: string | null
+          posts?: number
+          profile_visits?: number
+          reach?: number
+          updated_at?: string
+          views?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          dms?: number
+          followers?: number
+          id?: string
+          interactions?: number
+          link_clicks?: number
+          month?: string
+          new_followers?: number
+          notes?: string | null
+          posts?: number
+          profile_visits?: number
+          reach?: number
+          updated_at?: string
+          views?: number
+        }
+        Relationships: []
+      }
+      ig_top_reels: {
+        Row: {
+          avg_watch_sec: number | null
+          comments: number
+          content_item_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          month: string
+          new_follows: number | null
+          pillar: string | null
+          saves: number
+          shares: number
+          topic: string
+          updated_at: string
+          views: number
+        }
+        Insert: {
+          avg_watch_sec?: number | null
+          comments?: number
+          content_item_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          month: string
+          new_follows?: number | null
+          pillar?: string | null
+          saves?: number
+          shares?: number
+          topic: string
+          updated_at?: string
+          views?: number
+        }
+        Update: {
+          avg_watch_sec?: number | null
+          comments?: number
+          content_item_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          month?: string
+          new_follows?: number | null
+          pillar?: string | null
+          saves?: number
+          shares?: number
+          topic?: string
+          updated_at?: string
+          views?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ig_top_reels_content_item_id_fkey"
+            columns: ["content_item_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       installment_payments: {
         Row: {
