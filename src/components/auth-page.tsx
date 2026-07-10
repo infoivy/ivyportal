@@ -145,7 +145,7 @@ export function AuthPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full text-[12px] font-semibold px-3 py-2 rounded-sm bg-primary text-black hover:bg-primary disabled:opacity-40"
+                className="w-full text-[12px] font-semibold px-3 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.99] motion-safe:transition-[background-color,transform] disabled:opacity-40"
               >{loading ? "Signing in…" : "Sign in →"}</button>
             </form>
           ) : (
@@ -165,7 +165,7 @@ export function AuthPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full text-[12px] font-semibold px-3 py-2 rounded-sm bg-primary text-black hover:bg-primary disabled:opacity-40"
+                className="w-full text-[12px] font-semibold px-3 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.99] motion-safe:transition-[background-color,transform] disabled:opacity-40"
               >{loading ? "Creating…" : "Create account →"}</button>
             </form>
           )}

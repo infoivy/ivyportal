@@ -146,7 +146,7 @@ function AuthedLayout() {
                 {/* Search */}
                 <button
                   onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true, bubbles: true }))}
-                  className="hidden sm:inline-flex items-center gap-1.5 text-[12px] px-2.5 py-1.5 rounded-md bg-muted text-muted-foreground hover:text-foreground motion-safe:transition-colors"
+                  className="inline-flex items-center gap-1.5 text-[12px] px-2.5 py-1.5 rounded-md bg-muted text-muted-foreground hover:text-foreground motion-safe:transition-colors"
                   title="Search (⌘K)"
                 >
                   <Search className="h-3.5 w-3.5" />

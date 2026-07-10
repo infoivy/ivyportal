@@ -179,7 +179,7 @@ function Dashboard() {
   useEffect(() => {
     if (!roles.includes("founder") && !roles.includes("admin")) return;
     const thisMonth = new Date().toISOString().slice(0, 7); // "YYYY-MM"
-    supabase.from("ig_monthly_snapshots").select("id", { count: "exact", head: true }).eq("month", thisMonth).then(({ count }) => {
+    supabase.from("ig_monthly_snapshots").select("id", { count: "exact", head: true }).eq("month", `${thisMonth}-01`).then(({ count }) => {
       setIgLoggedThisMonth((count ?? 0) > 0);
     });
   }, [roles]);

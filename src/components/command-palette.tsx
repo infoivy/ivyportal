@@ -16,6 +16,15 @@ type TestimonialItem = { kind: "testimonial"; id: string; title: string };
 type ContentItem = { kind: "content"; id: string; title: string; platform: string };
 type Item = PageItem | StudentItem | PersonItem | DocItem | TestimonialItem | ContentItem;
 
+let paletteCache: {
+  at: number;
+  students: StudentItem[];
+  people: PersonItem[];
+  docs: DocItem[];
+  testimonials: TestimonialItem[];
+  content: ContentItem[];
+} | null = null;
+
 const PAGES: PageItem[] = [
   { kind: "page", title: "Dashboard", to: "/dashboard", icon: LayoutDashboard, roles: ["admin", "founder", "closer", "setter", "coach"] },
   { kind: "page", title: "EOD Reports", to: "/eods", icon: FileText },
@@ -67,6 +76,16 @@ export function CommandPalette() {
 
   useEffect(() => {
     if (!open) return;
+    // Session cache: the palette opens dozens of times; the underlying data
+    // changes rarely. Refresh at most once a minute.
+    if (paletteCache && Date.now() - paletteCache.at < 60_000) {
+      setStudents(paletteCache.students);
+      setPeople(paletteCache.people);
+      setDocs(paletteCache.docs);
+      setTestimonialsList(paletteCache.testimonials);
+      setContentList(paletteCache.content);
+      return;
+    }
     let alive = true;
     (async () => {
       const [sRes, pRes, rRes, dRes, tRes, cRes] = await Promise.all([
@@ -78,18 +97,24 @@ export function CommandPalette() {
         supabase.from("content_items").select("id, hook, platform").limit(200),
       ]);
       if (!alive) return;
-      setStudents(((sRes.data ?? []) as any[]).map(s => ({ kind: "student", id: s.id, name: s.full_name, email: s.email })));
       const roleMap = new Map<string, string[]>();
       ((rRes.data ?? []) as any[]).forEach(r => {
         const arr = roleMap.get(r.user_id) ?? []; arr.push(r.role); roleMap.set(r.user_id, arr);
       });
-      setPeople(((pRes.data ?? []) as any[]).map(p => ({
-        kind: "person", id: p.id, name: p.display_name ?? "Unnamed",
+      const students2 = ((sRes.data ?? []) as any[]).map(s => ({ kind: "student" as const, id: s.id, name: s.full_name, email: s.email }));
+      const people2 = ((pRes.data ?? []) as any[]).map(p => ({
+        kind: "person" as const, id: p.id, name: p.display_name ?? "Unnamed",
         role: (roleMap.get(p.id) ?? [])[0],
-      })));
-      setDocs(((dRes.data ?? []) as any[]).map(d => ({ kind: "doc", slug: d.slug, title: d.title, category: d.category })));
-      setTestimonialsList(((tRes.data ?? []) as any[]).map(t => ({ kind: "testimonial", id: t.id, title: t.title ?? "Untitled" })));
-      setContentList(((cRes.data ?? []) as any[]).map(c => ({ kind: "content", id: c.id, title: c.hook ?? "Untitled", platform: c.platform ?? "" })));
+      }));
+      const docs2 = ((dRes.data ?? []) as any[]).map(d => ({ kind: "doc" as const, slug: d.slug, title: d.title, category: d.category }));
+      const testimonials2 = ((tRes.data ?? []) as any[]).map(t => ({ kind: "testimonial" as const, id: t.id, title: t.title ?? "Untitled" }));
+      const content2 = ((cRes.data ?? []) as any[]).map(c => ({ kind: "content" as const, id: c.id, title: c.hook ?? "Untitled", platform: c.platform ?? "" }));
+      setStudents(students2);
+      setPeople(people2);
+      setDocs(docs2);
+      setTestimonialsList(testimonials2);
+      setContentList(content2);
+      paletteCache = { at: Date.now(), students: students2, people: people2, docs: docs2, testimonials: testimonials2, content: content2 };
     })();
     return () => { alive = false; };
   }, [open]);

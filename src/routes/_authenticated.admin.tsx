@@ -97,7 +97,7 @@ function AdminConsole() {
       const [plRes, ccRes, igRes, demoEodRes, demoStudentRes] = await Promise.all([
         sb.from("payment_links").select("id", { count: "exact", head: true }),
         sb.from("calendar_connections").select("id", { count: "exact", head: true }),
-        sb.from("ig_monthly_snapshots").select("id").eq("year", now.getFullYear()).eq("month", now.getMonth() + 1).maybeSingle(),
+        sb.from("ig_monthly_snapshots").select("id").eq("month", `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`).limit(1).maybeSingle(),
         sb.from("eods").select("id", { count: "exact", head: true }).eq("is_demo", true),
         sb.from("students").select("id", { count: "exact", head: true }).eq("is_demo", true),
       ]);

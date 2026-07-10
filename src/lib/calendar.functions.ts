@@ -106,9 +106,10 @@ export const getTeamCalendarEvents = createServerFn({ method: "POST" })
     const pmap = new Map((profs ?? []).map((p) => [p.id, p.display_name ?? "Unknown"]));
 
     const now = Date.now();
-    const events: TeamEvent[] = [];
 
-    for (const c of conns) {
+    // One Google round-trip per member, all in parallel — the page used to
+    // wait for each member's calendar sequentially.
+    const perUser = await Promise.all(conns.map(async (c): Promise<TeamEvent[]> => {
       try {
         let accessToken = c.access_token as string | null;
         const exp = c.access_token_expires_at ? new Date(c.access_token_expires_at).getTime() : 0;
@@ -122,12 +123,13 @@ export const getTeamCalendarEvents = createServerFn({ method: "POST" })
             .eq("id", c.id);
         }
         const items = await listCalendarEvents(accessToken!, c.calendar_id, data.timeMin, data.timeMax);
+        const out: TeamEvent[] = [];
         for (const it of items) {
           const startStr = it.start?.dateTime ?? it.start?.date;
           const endStr = it.end?.dateTime ?? it.end?.date;
           if (!startStr || !endStr) continue;
           if (it.status === "cancelled") continue;
-          events.push({
+          out.push({
             id: `${c.user_id}:${it.id}`,
             user_id: c.user_id,
             color: c.color_hex,
@@ -141,10 +143,13 @@ export const getTeamCalendarEvents = createServerFn({ method: "POST" })
             meet_link: it.hangoutLink ?? null,
           } satisfies TeamEvent);
         }
+        return out;
       } catch (err) {
         console.error(`[calendar] user ${c.user_id} fetch failed:`, err);
+        return [];
       }
-    }
+    }));
+    const events = perUser.flat();
     events.sort((a, b) => a.start.localeCompare(b.start));
     return events;
   });
