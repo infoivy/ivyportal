@@ -65,7 +65,7 @@ export function OnboardingPanel({ compact }: { compact?: boolean }) {
             <GraduationCap className="h-4 w-4 text-primary" />
           </div>
           <div className="min-w-0">
-            <h3 className="text-sm font-bold truncate">{template.title}</h3>
+            <h3 className="text-sm font-semibold truncate">{template.title}</h3>
             {template.description && !compact && <p className="text-[11px] text-muted-foreground truncate">{template.description}</p>}
           </div>
         </div>

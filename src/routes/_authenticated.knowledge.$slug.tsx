@@ -123,7 +123,7 @@ function KnowledgeDoc() {
           <div className="text-[11px] text-muted-foreground/70 mb-1">
             {CATEGORY_LABEL[doc.category]}
           </div>
-          <h1 className="text-3xl font-bold tracking-tight mb-2">{doc.title}</h1>
+          <h1 className="text-3xl font-semibold tracking-tight mb-2">{doc.title}</h1>
           <div className="text-xs text-muted-foreground mb-6">
             Last updated {new Date(doc.updated_at).toLocaleDateString()}
             {updatedByName ? ` by ${updatedByName}` : ""}

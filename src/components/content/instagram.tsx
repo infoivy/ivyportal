@@ -161,11 +161,11 @@ export function InstagramInner() {
       {/* Header */}
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-[18px] font-bold text-foreground shrink-0">
+          <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-[18px] font-semibold text-foreground shrink-0">
             {(connection?.display_name ?? "?").slice(0, 1)}
           </div>
           <div>
-            <h1 className="text-[32px] font-bold tracking-[-0.02em] text-foreground leading-none">
+            <h1 className="text-[32px] font-medium tracking-[-0.02em] text-foreground leading-none">
               {connection?.display_name || "Instagram"}
             </h1>
             <div className="text-[13px] text-muted-foreground mt-0.5">{connection?.subtitle || "Log a month to start tracking"}</div>

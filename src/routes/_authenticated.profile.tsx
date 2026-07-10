@@ -93,7 +93,7 @@ function ProfilePage() {
 
       <div className="card-surface p-5 space-y-4">
         <div className="flex items-center gap-4">
-          <div className="h-20 w-20 rounded-md border border-[var(--border)] bg-[var(--accent)] overflow-hidden flex items-center justify-center text-2xl font-bold text-muted-foreground shrink-0">
+          <div className="h-20 w-20 rounded-md border border-[var(--border)] bg-[var(--accent)] overflow-hidden flex items-center justify-center text-2xl font-semibold text-muted-foreground shrink-0">
             {avatarSignedUrl ? <img src={avatarSignedUrl} alt="" className="h-full w-full object-cover" /> : (displayName ?? "?").slice(0, 1).toUpperCase()}
           </div>
           <div className="flex-1 space-y-2">

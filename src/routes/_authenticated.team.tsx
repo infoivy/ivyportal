@@ -351,7 +351,7 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
         </div>
         <div className="flex items-center gap-3">
-          <div className="h-16 w-16 rounded-md bg-[var(--accent)] border border-[var(--border)] overflow-hidden flex items-center justify-center text-lg font-bold text-muted-foreground shrink-0">
+          <div className="h-16 w-16 rounded-md bg-[var(--accent)] border border-[var(--border)] overflow-hidden flex items-center justify-center text-lg font-semibold text-muted-foreground shrink-0">
             {avatarPreview ? <img src={avatarPreview} alt="" className="h-full w-full object-cover" /> : (displayName ?? "?").slice(0, 1).toUpperCase()}
           </div>
           <div className="flex-1 space-y-1.5">

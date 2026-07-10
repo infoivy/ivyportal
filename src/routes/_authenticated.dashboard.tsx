@@ -267,7 +267,7 @@ function Dashboard() {
           <div className="card-surface px-6 py-5 flex items-end justify-between">
             <div>
               <div className="text-[12px] text-muted-foreground mb-3">Cash collected this month</div>
-              <div className="text-[44px] font-bold tabular-nums text-foreground tracking-[-0.04em] leading-none">
+              <div className="text-[44px] font-medium tabular-nums text-foreground tracking-[-0.03em] leading-none">
                 {cashMtd > 0 ? money(cashMtd) : "—"}
               </div>
             </div>
@@ -379,7 +379,7 @@ function Dashboard() {
                   <div className="grid h-6 w-6 place-items-center rounded-sm bg-success-bg border border-success/25">
                     <Zap className="h-3 w-3 text-success-fg" />
                   </div>
-                  <h3 className="text-sm font-bold">Period Deltas</h3>
+                  <h3 className="text-sm font-semibold">Period Deltas</h3>
                   <span className="ml-auto text-[10px] text-muted-foreground">vs previous {days}d</span>
                 </div>
                 <div className="space-y-2.5">
@@ -407,7 +407,7 @@ function Dashboard() {
                   <div className="grid h-6 w-6 place-items-center rounded-[6px] bg-primary/10">
                     <Target className="h-3 w-3 text-primary" />
                   </div>
-                  <h3 className="text-sm font-bold">{goalsLabel}</h3>
+                  <h3 className="text-sm font-semibold">{goalsLabel}</h3>
                 </div>
                 <div className="space-y-3">
                   <Goal label="DMs Sent"     value={totals.dms_sent}       target={GOALS.dms}     color="var(--color-primary)" />
@@ -425,7 +425,7 @@ function Dashboard() {
                   <div className="grid h-6 w-6 place-items-center rounded-[6px] bg-primary/10">
                     <Globe className="h-3 w-3 text-primary" />
                   </div>
-                  <h3 className="text-sm font-bold">Team Composition</h3>
+                  <h3 className="text-sm font-semibold">Team Composition</h3>
                 </div>
                 <div className="space-y-2">
                   <AudienceRow label="Active this period" value={activeSetters} total={Math.max(activeSetters, 1)} color="var(--color-primary)" />
@@ -552,7 +552,7 @@ function Kpi({ label, value, suffix, onClick, delta }: {
     >
       <div className="text-[12px] text-muted-foreground mb-3">{label}</div>
       <div className="flex items-baseline gap-2.5 flex-wrap">
-        <div className="text-[32px] font-bold tabular-nums text-foreground tracking-[-0.03em] leading-none">
+        <div className="text-[32px] font-medium tabular-nums text-foreground tracking-[-0.025em] leading-none">
           {value >= 1000 ? `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}K` : value.toLocaleString()}{suffix}
         </div>
         {delta != null && (
@@ -604,7 +604,7 @@ function Transform({ label, prev, curr, suffix }: { label: string; prev: number;
       <div className="flex items-center gap-1.5 tabular-nums">
         <span className="text-muted-foreground text-[11px]">{prev.toLocaleString()}{suffix}</span>
         <span className="text-muted-foreground">→</span>
-        <span className="font-bold text-success-fg">{curr.toLocaleString()}{suffix}</span>
+        <span className="font-medium text-success-fg">{curr.toLocaleString()}{suffix}</span>
       </div>
     </div>
   );
@@ -619,7 +619,7 @@ function Goal({ label, value, target, suffix, color, warn }: { label: string; va
           {warn ? <AlertTriangle className="h-3 w-3 text-danger-fg" /> : pct >= 100 ? <CheckCircle2 className="h-3 w-3 text-success-fg" /> : null}
         </span>
         <span className="tabular-nums text-[11px] text-muted-foreground">
-          <span className="font-bold text-foreground">{value.toLocaleString()}{suffix}</span> / {target.toLocaleString()}{suffix}
+          <span className="font-medium text-foreground">{value.toLocaleString()}{suffix}</span> / {target.toLocaleString()}{suffix}
         </span>
       </div>
       <div className="h-1 rounded-full bg-white/5 overflow-hidden">
@@ -953,7 +953,7 @@ function UnifiedLeaderboard({ profiles, eods }: { profiles: Record<string, Profi
       <div className="px-3 py-2 border-b border-border flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2 min-w-0">
           <Star className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-          <span className="text-sm font-bold">Weekly leaderboard</span>
+          <span className="text-sm font-semibold">Weekly leaderboard</span>
           <span className="text-[10px] text-muted-foreground truncate">
             {startISO} → {endISO} · resets Monday
           </span>

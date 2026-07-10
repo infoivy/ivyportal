@@ -85,7 +85,7 @@ function CoachesPage() {
           <div key={coach.id} className="border border-[var(--border)] bg-[var(--card)] rounded-md p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 min-w-0">
-                <div className="h-9 w-9 rounded-md bg-muted border border-border flex items-center justify-center text-muted-foreground font-bold text-sm shrink-0">
+                <div className="h-9 w-9 rounded-md bg-muted border border-border flex items-center justify-center text-muted-foreground font-semibold text-sm shrink-0">
                   {(coach.display_name ?? "?").slice(0, 1).toUpperCase()}
                 </div>
                 <div className="min-w-0">

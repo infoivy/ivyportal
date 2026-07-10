@@ -234,7 +234,7 @@ function StudentDetail() {
       {/* Header */}
       <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-5">
         <div className="flex items-start gap-4 flex-wrap">
-          <div className="h-14 w-14 rounded-md bg-muted border border-border flex items-center justify-center text-muted-foreground text-lg font-bold shrink-0">
+          <div className="h-14 w-14 rounded-md bg-muted border border-border flex items-center justify-center text-muted-foreground text-lg font-semibold shrink-0">
             {student.full_name.slice(0, 2).toUpperCase()}
           </div>
           <div className="flex-1 min-w-[240px]">

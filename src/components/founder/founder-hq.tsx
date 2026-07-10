@@ -108,7 +108,7 @@ export function FounderHQInner() {
           {/* Quadrant 1: Cash */}
           <Quadrant title="Cash" icon={<DollarSign className="h-4 w-4 text-primary" />} to="/revenue">
             <div className="flex items-baseline gap-2 flex-wrap">
-              <div className="text-[28px] font-bold tabular-nums text-foreground">{money(mtdCash)}</div>
+              <div className="text-[28px] font-medium tabular-nums text-foreground">{money(mtdCash)}</div>
               {prevMtdCash > 0 && <DeltaChip value={mtdCash - prevMtdCash} format="money" />}
             </div>
             <div className="text-xs text-muted-foreground">MTD cash · vs last month same day</div>
@@ -168,7 +168,7 @@ export function FounderHQInner() {
           {/* Quadrant 4: Team compliance */}
           <Quadrant title="Team compliance" icon={<Users className="h-4 w-4 text-muted-foreground" />} to="/sales">
             <div className="flex items-baseline gap-2 mt-1">
-              <div className={`text-[28px] font-bold tabular-nums ${compliance >= 90 ? "text-success-fg" : compliance >= 70 ? "text-warning-fg" : "text-danger-fg"}`}>{compliance}%</div>
+              <div className={`text-[28px] font-medium tabular-nums ${compliance >= 90 ? "text-success-fg" : compliance >= 70 ? "text-warning-fg" : "text-danger-fg"}`}>{compliance}%</div>
               <div className="text-[13px] text-muted-foreground">EOD rate this week</div>
             </div>
             <div className="mt-3">

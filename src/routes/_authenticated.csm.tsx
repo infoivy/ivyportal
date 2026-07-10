@@ -287,7 +287,7 @@ function CsmPage() {
                   className={`w-full text-left p-4 transition ${M.color} ${M.ring} focus:outline-none focus:ring-2`}
                 >
                   <Icon className="h-4 w-4" />
-                  <div className="text-3xl font-bold tabular-nums mt-2">{count}</div>
+                  <div className="text-3xl font-medium tabular-nums mt-2">{count}</div>
                   <div className="mt-1 text-sm font-medium">{M.label}</div>
                   <div className="text-[10px] opacity-80 mt-0.5">Tap +1 · today</div>
                 </button>

@@ -259,7 +259,7 @@ function PayoutsInner() {
         <div className="flex items-center justify-between gap-4">
           <div>
             <div className="text-[10px] text-muted-foreground mb-1">Admin</div>
-            <h1 className="text-xl font-bold">Payout Ledger</h1>
+            <h1 className="text-xl font-semibold">Payout Ledger</h1>
             <p className="text-xs text-muted-foreground mt-0.5">Commission owed per period</p>
           </div>
           <div className="flex items-center gap-1">
@@ -312,14 +312,14 @@ function PayoutsInner() {
                       <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{money(r.cash)}</td>
                       <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{r.installmentCash > 0 ? money(r.installmentCash) : "—"}</td>
                       <td className="px-3 py-3 text-right tabular-nums">{r.weekBonus ? `${((rates.setter_base + 0.01) * 100).toFixed(1)}%` : `${(rates.setter_base * 100).toFixed(1)}%`}</td>
-                      <td className="px-4 py-3 text-right tabular-nums font-bold text-primary">{money(r.total)}</td>
+                      <td className="px-4 py-3 text-right tabular-nums font-semibold text-primary">{money(r.total)}</td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
                   <tr className="border-t border-border bg-accent/30">
                     <td className="px-4 py-2.5 text-[10px] text-muted-foreground" colSpan={5}>Total setter payouts</td>
-                    <td className="px-4 py-2.5 text-right font-bold text-primary">{money(setterRows.reduce((s, r) => s + r.total, 0))}</td>
+                    <td className="px-4 py-2.5 text-right font-semibold text-primary">{money(setterRows.reduce((s, r) => s + r.total, 0))}</td>
                   </tr>
                 </tfoot>
               </table>
@@ -353,14 +353,14 @@ function PayoutsInner() {
                       <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{money(r.cash)}</td>
                       <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{r.installmentCash > 0 ? money(r.installmentCash) : "—"}</td>
                       <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{money(r.commission)}</td>
-                      <td className="px-4 py-3 text-right tabular-nums font-bold text-primary">{money(r.total)}</td>
+                      <td className="px-4 py-3 text-right tabular-nums font-semibold text-primary">{money(r.total)}</td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
                   <tr className="border-t border-border bg-accent/30">
                     <td className="px-4 py-2.5 text-[10px] text-muted-foreground" colSpan={5}>Total closer payouts</td>
-                    <td className="px-4 py-2.5 text-right font-bold text-primary">{money(closerRows.reduce((s, r) => s + r.total, 0))}</td>
+                    <td className="px-4 py-2.5 text-right font-semibold text-primary">{money(closerRows.reduce((s, r) => s + r.total, 0))}</td>
                   </tr>
                 </tfoot>
               </table>
@@ -382,7 +382,7 @@ function PayoutsInner() {
 function SummaryChip({ label, value, accent }: { label: string; value: string | number; accent?: "green" }) {
   return (
     <div className="border border-border bg-card rounded-sm p-3 text-center">
-      <div className={`text-lg font-bold ${accent === "green" ? "text-success-fg" : "text-foreground"}`}>{value}</div>
+      <div className={`text-lg font-semibold ${accent === "green" ? "text-success-fg" : "text-foreground"}`}>{value}</div>
       <div className="text-[10px] text-muted-foreground mt-0.5">{label}</div>
     </div>
   );

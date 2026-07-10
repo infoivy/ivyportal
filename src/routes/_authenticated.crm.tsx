@@ -143,7 +143,7 @@ function Crm() {
       <div className="max-w-[1400px] mx-auto p-3 sm:p-4 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="min-w-0">
-            <h1 className="text-base font-bold leading-tight">CRM Pipeline</h1>
+            <h1 className="text-base font-semibold leading-tight">CRM Pipeline</h1>
             <p className="text-[10px] text-muted-foreground mt-0.5">
               {connected === null ? "Loading…" : connected ? `Close CRM · ${leads.length} leads` : "Close CRM sync · not connected"}
             </p>
@@ -230,7 +230,7 @@ function Crm() {
         {connected && pipeline.length > 0 && (
           <div className="rounded-md border border-border bg-card p-3">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-xs font-bold text-muted-foreground">Deal Pipeline</h3>
+              <h3 className="text-xs font-semibold text-muted-foreground">Deal Pipeline</h3>
               <span className="text-[10px] text-muted-foreground tabular-nums">{currency(totalValue)} total</span>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-1.5">
@@ -247,7 +247,7 @@ function Crm() {
                     <span className="h-1.5 w-1.5 rounded-full" style={{ background: p.color }} />
                     <span className="text-[9px] text-muted-foreground truncate">{p.stage}</span>
                   </div>
-                  <div className="text-xl font-bold tabular-nums leading-none" style={{ color: p.color }}>{p.count}</div>
+                  <div className="text-xl font-medium tabular-nums leading-none" style={{ color: p.color }}>{p.count}</div>
                   <div className="text-[10px] text-muted-foreground mt-1 tabular-nums">{currency(p.value)}</div>
                 </button>
               ))}
@@ -258,7 +258,7 @@ function Crm() {
         {/* Leads table */}
         <div className="rounded-md border border-border bg-card overflow-hidden">
           <div className="px-3 py-2 border-b border-border flex items-center justify-between">
-            <h3 className="text-xs font-bold text-muted-foreground">
+            <h3 className="text-xs font-semibold text-muted-foreground">
               {q ? `Results for "${q}"` : "Recent activity"}
             </h3>
             <span className="text-[10px] text-muted-foreground tabular-nums">{filtered.length} shown</span>
@@ -305,7 +305,7 @@ function Crm() {
                       <StickyNote className="h-3 w-3" />
                       {nc}
                     </span>
-                    <span className="text-xs font-bold tabular-nums text-success-fg">{l.value > 0 ? currency(l.value) : "—"}</span>
+                    <span className="text-xs font-medium tabular-nums text-success-fg">{l.value > 0 ? currency(l.value) : "—"}</span>
                     <span className="text-[10px] text-muted-foreground tabular-nums whitespace-nowrap">{relTime(l.updated_at)}</span>
                   </button>
                 );
@@ -450,7 +450,7 @@ function StatCard({
         <Icon className="h-2.5 w-2.5" style={{ color }} />
         {label}
       </div>
-      <div className="text-lg font-bold tabular-nums mt-0.5 leading-tight" style={{ color }}>{value}</div>
+      <div className="text-lg font-medium tabular-nums mt-0.5 leading-tight" style={{ color }}>{value}</div>
     </div>
   );
 }
@@ -541,7 +541,7 @@ function LeadDetailDrawer({
       <aside className="w-full max-w-[520px] bg-[#0b0d12] border-l border-border h-full overflow-y-auto flex flex-col">
         <div className="px-4 py-3 border-b border-border flex items-start justify-between gap-3 sticky top-0 bg-[#0b0d12] z-10">
           <div className="min-w-0">
-            <div className="text-sm font-bold truncate">{lead.name}</div>
+            <div className="text-sm font-semibold truncate">{lead.name}</div>
             <div className="flex items-center gap-2 mt-0.5">
               <span className="text-[10px]" style={{ color: c }}>{lead.status}</span>
               <span className="text-[10px] text-muted-foreground">·</span>

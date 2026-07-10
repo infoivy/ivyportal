@@ -127,7 +127,7 @@ function NotesPage() {
             <div className="grid h-6 w-6 place-items-center rounded-sm bg-primary/15 border border-primary/25">
               <Plus className="h-3 w-3 text-primary" />
             </div>
-            <h3 className="text-sm font-bold">New note</h3>
+            <h3 className="text-sm font-semibold">New note</h3>
             <span className="ml-auto text-[10px] text-muted-foreground">⌘ + Enter to save</span>
           </div>
           <textarea

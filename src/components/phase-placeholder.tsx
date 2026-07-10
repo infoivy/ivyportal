@@ -4,7 +4,7 @@ import { Sparkles } from "lucide-react";
 export function PhasePlaceholder({ title, phase, description, features }: { title: string; phase: string; description: string; features: string[] }) {
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      <h1 className="text-3xl font-bold">{title}</h1>
+      <h1 className="text-3xl font-semibold">{title}</h1>
       <p className="text-muted-foreground mt-1">{description}</p>
       <Card className="mt-6 border-dashed">
         <CardContent className="p-8 text-center space-y-4">

@@ -14,12 +14,12 @@
   /* ── Type scale — the only sizes ───────────────────────────────────── */
   --text-display: 2rem;                       /* page titles */
   --text-display--line-height: 2.375rem;
-  --text-display--font-weight: 600;
+  --text-display--font-weight: 560;
   --text-display--letter-spacing: -0.021em;
 
   --text-metric: 1.75rem;                     /* stat values */
   --text-metric--line-height: 2.125rem;
-  --text-metric--font-weight: 600;
+  --text-metric--font-weight: 500;
   --text-metric--letter-spacing: -0.019em;
 
   --text-title: 1.0625rem;                    /* card/section titles */

@@ -113,7 +113,7 @@ function Toolbar({ dark, setDark, onNotes, counter, setCounter, onReset, onHelp 
       {COUNTER_FIELDS.map(({ key, label, full }) => (
         <div key={key} className="flex items-center h-8 shrink-0 rounded-full bg-muted/60 pl-1.5 pr-1 gap-1" title={full}>
           <span className="text-[10px] text-muted-foreground font-semibold">{label}</span>
-          <button onClick={() => bump(key, -1)} className="w-5 h-5 rounded-full bg-background hover:bg-foreground hover:text-background flex items-center justify-center text-xs font-bold" title={`-1 ${full}`}>−</button>
+          <button onClick={() => bump(key, -1)} className="w-5 h-5 rounded-full bg-background hover:bg-foreground hover:text-background flex items-center justify-center text-xs font-semibold" title={`-1 ${full}`}>−</button>
           <input
             type="text"
             inputMode="numeric"
@@ -124,10 +124,10 @@ function Toolbar({ dark, setDark, onNotes, counter, setCounter, onReset, onHelp 
               const n = parseInt(e.target.value.replace(/\D/g, ""), 10);
               setCounter({ ...counter, [key]: Number.isFinite(n) ? Math.max(0, n) : 0 });
             }}
-            className="w-8 text-sm font-bold tabular-nums text-foreground text-center bg-transparent border-0 focus:outline-none focus:ring-1 focus:ring-ring rounded"
+            className="w-8 text-sm font-medium tabular-nums text-foreground text-center bg-transparent border-0 focus:outline-none focus:ring-1 focus:ring-ring rounded"
             aria-label={full}
           />
-          <button onClick={() => bump(key, 1)} className="w-5 h-5 rounded-full bg-background hover:bg-foreground hover:text-background flex items-center justify-center text-xs font-bold" title={`+1 ${full}`}>+</button>
+          <button onClick={() => bump(key, 1)} className="w-5 h-5 rounded-full bg-background hover:bg-foreground hover:text-background flex items-center justify-center text-xs font-semibold" title={`+1 ${full}`}>+</button>
         </div>
       ))}
       <button
@@ -146,7 +146,7 @@ function Toolbar({ dark, setDark, onNotes, counter, setCounter, onReset, onHelp 
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>
         Print
       </a>
-      <button onClick={onHelp} className="w-8 h-8 shrink-0 rounded-full hover:bg-muted flex items-center justify-center text-xs font-bold" title="Keyboard shortcuts (?)">?</button>
+      <button onClick={onHelp} className="w-8 h-8 shrink-0 rounded-full hover:bg-muted flex items-center justify-center text-xs font-semibold" title="Keyboard shortcuts (?)">?</button>
       <button onClick={() => setDark(!dark)} className="w-8 h-8 shrink-0 rounded-full hover:bg-muted flex items-center justify-center" title={dark ? "Light mode" : "Dark mode"}>
         {dark ? (
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/></svg>
@@ -165,7 +165,7 @@ function Header({ onJump, query, setQuery, innerRef }: { onJump: (id: TabId) => 
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <img src={logoAsset.url} alt="Ivy Sales Academy" className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 object-contain" loading="eager" />
           <div className="min-w-0">
-            <h1 className="text-base sm:text-lg font-bold text-foreground leading-tight truncate">Ivy Sales Academy</h1>
+            <h1 className="text-base sm:text-lg font-semibold text-foreground leading-tight truncate">Ivy Sales Academy</h1>
             <p className="hidden sm:block text-xs text-muted-foreground mt-0.5 truncate">Complete system: conversation flows, scripts, objection handling, psychology, engagement & operations</p>
           </div>
         </div>
@@ -187,7 +187,7 @@ function Header({ onJump, query, setQuery, innerRef }: { onJump: (id: TabId) => 
           <button
             key={t.id}
             onClick={() => onJump(t.id)}
-            className="text-[10px] sm:text-[11px] font-bold text-white px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full whitespace-nowrap hover:opacity-90 transition-opacity shrink-0"
+            className="text-[10px] sm:text-[11px] font-semibold text-white px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full whitespace-nowrap hover:opacity-90 transition-opacity shrink-0"
             style={{ backgroundColor: t.color }}
           >{t.label}</button>
         ))}
@@ -243,7 +243,7 @@ function SectionHeading({ id, color, text }: { id: TabId; color: string; text: s
   return (
     <div id={`sec-${id}`} data-section={id} className="col-span-full flex items-center gap-2 mt-6 mb-2">
       <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
-      <h2 className="text-[11px] font-bold text-foreground/80">{text}</h2>
+      <h2 className="text-[11px] font-semibold text-foreground/80">{text}</h2>
     </div>
   );
 }
@@ -342,14 +342,14 @@ const Card = React.memo(function Card({ cardId, color, title, subtitle, children
       <div className="p-4 flex-1 relative">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <h3 className="text-[14px] font-bold text-foreground leading-tight">{title}</h3>
+            <h3 className="text-[14px] font-semibold text-foreground leading-tight">{title}</h3>
             {subtitle && <p className="text-[11px] text-muted-foreground mt-0.5">{subtitle}</p>}
           </div>
           <div className="flex flex-col gap-1 shrink-0">
-            <button onClick={copyAll} className="text-[9px] font-bold text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded border border-border/70 bg-background/60" title="Copy all scripts in this card">
+            <button onClick={copyAll} className="text-[9px] font-semibold text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded border border-border/70 bg-background/60" title="Copy all scripts in this card">
               Copy all
             </button>
-            <button onClick={copyLink} className="text-[9px] font-bold text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded border border-border/70 bg-background/60" title="Copy shareable link to this card">
+            <button onClick={copyLink} className="text-[9px] font-semibold text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded border border-border/70 bg-background/60" title="Copy shareable link to this card">
               {linkCopied ? "Copied" : "Link"}
             </button>
           </div>
@@ -400,7 +400,7 @@ function HelpOverlay({ open, onClose }: { open: boolean; onClose: () => void }) 
     <div className="isa-modal fixed inset-0 z-[70] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose} data-no-canvas-scroll>
       <div className="isa-modal bg-card border border-border rounded-lg shadow-2xl w-full max-w-sm" onClick={e => e.stopPropagation()} data-no-canvas-scroll>
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-          <h3 className="text-sm font-bold">Keyboard shortcuts</h3>
+          <h3 className="text-sm font-semibold">Keyboard shortcuts</h3>
           <button onClick={onClose} className="w-7 h-7 rounded hover:bg-muted flex items-center justify-center text-muted-foreground" title="Close">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
           </button>
@@ -584,7 +584,7 @@ const MobileView = React.memo(function MobileView({ matched, query, headerH }: {
             >
               <div className="flex items-center gap-2 mb-3 sticky z-10 bg-background/95 backdrop-blur-sm py-2 -mx-3 px-3 border-b border-border" style={{ top: headerH }}>
                 <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: section.color }} />
-                <h2 className="text-[12px] font-bold text-foreground truncate">{section.heading}</h2>
+                <h2 className="text-[12px] font-semibold text-foreground truncate">{section.heading}</h2>
               </div>
               <div className="flex flex-col gap-3">
                 {section.cards.map((c, i) => (
@@ -616,7 +616,7 @@ function MobileToolbar({ dark, setDark, onNotes, counter, setCounter, onHelp }: 
       {COUNTER_FIELDS.map(({ key, label, full }) => (
         <div key={key} className="flex items-center h-8 shrink-0 rounded-full bg-muted/60 pl-1.5 pr-1 gap-1" title={full}>
           <span className="text-[10px] text-muted-foreground font-semibold">{label}</span>
-          <button onClick={() => bump(key, -1)} className="w-5 h-5 rounded-full bg-background flex items-center justify-center text-xs font-bold">−</button>
+          <button onClick={() => bump(key, -1)} className="w-5 h-5 rounded-full bg-background flex items-center justify-center text-xs font-semibold">−</button>
           <input
             type="text"
             inputMode="numeric"
@@ -627,10 +627,10 @@ function MobileToolbar({ dark, setDark, onNotes, counter, setCounter, onHelp }: 
               const n = parseInt(e.target.value.replace(/\D/g, ""), 10);
               setCounter({ ...counter, [key]: Number.isFinite(n) ? Math.max(0, n) : 0 });
             }}
-            className="w-8 text-sm font-bold tabular-nums text-foreground text-center bg-transparent border-0 focus:outline-none focus:ring-1 focus:ring-ring rounded"
+            className="w-8 text-sm font-medium tabular-nums text-foreground text-center bg-transparent border-0 focus:outline-none focus:ring-1 focus:ring-ring rounded"
             aria-label={full}
           />
-          <button onClick={() => bump(key, 1)} className="w-5 h-5 rounded-full bg-background flex items-center justify-center text-xs font-bold">+</button>
+          <button onClick={() => bump(key, 1)} className="w-5 h-5 rounded-full bg-background flex items-center justify-center text-xs font-semibold">+</button>
         </div>
       ))}
       <button
@@ -645,7 +645,7 @@ function MobileToolbar({ dark, setDark, onNotes, counter, setCounter, onHelp }: 
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 3h9a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8l5-5z"/><path d="M9 3v5H4"/></svg>
         Notes
       </button>
-      <button onClick={onHelp} className="w-8 h-8 shrink-0 rounded-full hover:bg-muted flex items-center justify-center text-xs font-bold" title="Help">?</button>
+      <button onClick={onHelp} className="w-8 h-8 shrink-0 rounded-full hover:bg-muted flex items-center justify-center text-xs font-semibold" title="Help">?</button>
       <button onClick={() => setDark(!dark)} className="w-8 h-8 shrink-0 rounded-full hover:bg-muted flex items-center justify-center" title={dark ? "Light mode" : "Dark mode"}>
         {dark ? (
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/></svg>

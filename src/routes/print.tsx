@@ -28,7 +28,7 @@ function Print() {
       `}</style>
       <div className="no-print sticky top-0 z-10 bg-white border-b border-neutral-200 px-6 py-3 flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-bold">ISA Setter One-Pager</h1>
+          <h1 className="text-lg font-semibold">ISA Setter One-Pager</h1>
           <p className="text-xs text-neutral-500">Optimized for print / PDF. Hit ⌘/Ctrl+P.</p>
         </div>
         <div className="flex gap-2">
@@ -43,12 +43,12 @@ function Print() {
         </header>
         {SECTIONS.map(section => (
           <section key={section.id} className="space-y-4">
-            <h2 className="text-lg font-bold uppercase tracking-wide border-l-4 pl-3" style={{ borderColor: section.color }}>{section.heading}</h2>
+            <h2 className="text-lg font-semibold uppercase tracking-wide border-l-4 pl-3" style={{ borderColor: section.color }}>{section.heading}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {section.cards.map((c, i) => (
                 <article key={i} className="avoid-break border border-neutral-300 rounded p-4">
                   <div className="border-b border-neutral-200 pb-2 mb-2">
-                    <h3 className="text-sm font-bold">{c.title}</h3>
+                    <h3 className="text-sm font-semibold">{c.title}</h3>
                     {c.subtitle && <p className="text-[11px] text-neutral-500 mt-0.5">{c.subtitle}</p>}
                   </div>
                   <div className="text-[12px] leading-relaxed">{c.body}</div>

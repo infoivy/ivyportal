@@ -310,7 +310,7 @@ function WeekBlock({
       <div className="grid xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-4">
         <section>
           <div className="flex items-center justify-between mb-1.5">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Reel schedule</h2>
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Reel schedule</h2>
             <span className="text-[10px] text-muted-foreground">7 reels · 4 TOF · 3 MOF</span>
           </div>
           <div className="space-y-1.5">
@@ -325,8 +325,8 @@ function WeekBlock({
                 <div key={day} className={`border rounded-sm ${stageColor} ${isToday ? "ring-1 ring-ring" : ""}`}>
                   <div className="flex items-center gap-2 px-2.5 py-1.5 border-b border-border">
                     <span className="text-[10px] w-14 text-muted-foreground">{day} {format(addDays(monday, idx), "d")}</span>
-                    <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-sm border ${stageBadge}`}>{meta.stage} · {meta.position}</span>
-                    {isToday && <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold">Today</span>}
+                    <span className={`text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-sm border ${stageBadge}`}>{meta.stage} · {meta.position}</span>
+                    {isToday && <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">Today</span>}
                   </div>
                   <div className="p-2 space-y-1">
                     {daySlots.length === 0 ? (
@@ -357,7 +357,7 @@ function WeekBlock({
 
         <section>
           <div className="flex items-center justify-between mb-1.5">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Ideation pad · 10 ideas</h2>
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Ideation pad · 10 ideas</h2>
             <span className="text-[10px] text-muted-foreground">1–5 MOF · 6–10 TOF</span>
           </div>
           <div className="space-y-1.5">
@@ -382,7 +382,7 @@ function IdeaGroup({
 }) {
   return (
     <div className={`border ${stageColor} bg-[var(--card)] rounded-sm`}>
-      <div className="px-2.5 py-1.5 border-b border-border text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{title}</div>
+      <div className="px-2.5 py-1.5 border-b border-border text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{title}</div>
       <div className="divide-y divide-white/5">
         {ideas.map((idea) => (
           <IdeaRow key={idea.id} idea={idea} slots={slots} onChange={onChange} onPromote={onPromote} />

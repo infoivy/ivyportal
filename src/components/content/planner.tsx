@@ -332,7 +332,7 @@ function CalendarView({ items, monthCursor, setMonthCursor, onOpen }: {
             <div key={idx} className={`min-h-[96px] p-1.5 border-r border-b border-[var(--border)] last:border-r-0 ${isToday ? "bg-primary/5" : ""}`}>
               {day && (
                 <>
-                  <div className={`text-[11px] ${isToday ? "text-primary font-bold" : "text-muted-foreground"} mb-1`}>{format(day, "d")}</div>
+                  <div className={`text-[11px] ${isToday ? "text-primary font-semibold" : "text-muted-foreground"} mb-1`}>{format(day, "d")}</div>
                   <div className="space-y-0.5">
                     {dayItems.slice(0, 3).map(i => (
                       <button
@@ -604,7 +604,7 @@ function IdeaInbox({ ideas, userId, onChange, onPromote }: {
             </div>
             <div className="p-4 text-xs">
               <div className="border border-[var(--border)] bg-[var(--background)] rounded-sm p-2.5">
-                <span className="text-2xl font-bold text-muted-foreground">{ideas.filter(i => !i.promoted_item_id && !i.harvested).length}</span>
+                <span className="text-2xl font-semibold text-muted-foreground">{ideas.filter(i => !i.promoted_item_id && !i.harvested).length}</span>
                 <span className="text-muted-foreground text-[11px]"> ideas will be archived</span>
               </div>
             </div>
