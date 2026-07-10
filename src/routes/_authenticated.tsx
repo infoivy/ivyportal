@@ -4,10 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { LogOut, AlertCircle, Search } from "lucide-react";
+import { LogOut, Search } from "lucide-react";
 import { Toaster } from "sonner";
 import { AuthContext, type AuthState } from "@/lib/auth-context";
 import { installSessionOnlyCleanup } from "@/components/auth-page";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { CommandPalette } from "@/components/command-palette";
 import { StudentBottomNav } from "@/components/student-bottom-nav";
@@ -111,52 +112,65 @@ function AuthedLayout() {
   return (
     <AuthContext.Provider value={state}>
       <SidebarProvider>
-        <div className="dashboard-dark min-h-screen flex w-full">
+        <div className="min-h-screen flex w-full bg-background">
           <AppSidebar roles={state.roles} />
           <div className="flex-1 flex flex-col min-w-0">
-            <header className="h-12 flex items-center justify-between border-b border-[var(--border)] px-3 bg-[var(--background)]/95 backdrop-blur sticky top-0 z-30">
+            {/* Frosted top bar */}
+            <header className="h-[52px] flex items-center justify-between border-b border-border px-3 frosted sticky top-0 z-30">
               <div className="flex items-center gap-2 min-w-0">
-                <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
-                <div className="h-5 w-px bg-[var(--border)] mx-1" />
-                <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">ISA / Team</span>
+                <SidebarTrigger className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md motion-safe:transition-colors" />
+                <div className="h-4 w-px bg-border mx-1" />
+                <span className="text-[13px] font-semibold text-foreground">ISA</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
+                {/* Search */}
                 <button
                   onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true, bubbles: true }))}
-                  className="hidden sm:inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-1 rounded-sm border border-[var(--border)] bg-[var(--card)] text-muted-foreground hover:text-foreground transition"
+                  className="hidden sm:inline-flex items-center gap-1.5 text-[12px] px-2.5 py-1.5 rounded-md bg-muted text-muted-foreground hover:text-foreground motion-safe:transition-colors"
                   title="Search (⌘K)"
                 >
-                  <Search className="h-3 w-3" /> Search
+                  <Search className="h-3.5 w-3.5" />
+                  <span className="hidden md:inline">Search</span>
+                  <kbd className="hidden md:inline text-[10px] opacity-50">⌘K</kbd>
                 </button>
-                <div className="hidden sm:flex items-center gap-1.5 text-[10px] font-medium px-2 py-1 rounded-sm border border-[var(--border)] bg-[var(--card)] text-muted-foreground">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  Live
-                </div>
+
+                {/* EOD due — subtle banner trigger (only shows when outstanding) */}
                 {eodSubmitted === false && !studentOnly && (
                   <Link
                     to="/eods"
-                    className="hidden sm:flex items-center gap-1.5 text-[10px] font-medium px-2 py-1 rounded-sm border border-amber-500/30 bg-amber-500/5 text-amber-400 hover:bg-amber-500/10 transition"
+                    className="hidden sm:inline-flex items-center gap-1 text-[12px] px-2.5 py-1.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/15 motion-safe:transition-colors"
                   >
-                    <AlertCircle className="h-3 w-3" />
                     EOD due
                   </Link>
                 )}
+
+                <ThemeToggle />
                 <NotificationsBell />
-                <div className="text-[11px] text-muted-foreground hidden md:flex flex-col items-end leading-tight">
-                  <span className="text-foreground font-medium">{state.displayName}</span>
-                  <span className="uppercase tracking-wider text-[9px]">{state.roles.join(" · ") || "member"}</span>
-                </div>
-                <Button variant="ghost" size="sm" onClick={signOut} className="text-muted-foreground hover:text-foreground h-8">
-                  <LogOut className="h-3.5 w-3.5 mr-1" /> Sign out
-                </Button>
+
+                {/* Avatar */}
+                <button
+                  onClick={signOut}
+                  className="h-7 w-7 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[11px] font-semibold shrink-0 hover:opacity-80 motion-safe:transition-opacity"
+                  title={`${state.displayName} — click to sign out`}
+                >
+                  {(state.displayName ?? "U").charAt(0).toUpperCase()}
+                </button>
               </div>
             </header>
-            <main className={`flex-1 min-w-0 overflow-auto relative bg-[var(--background)] ${studentOnly ? "pb-16 sm:pb-0" : ""}`}>
-              <Outlet />
+
+            <main className={`flex-1 min-w-0 overflow-auto relative ${studentOnly ? "pb-16 sm:pb-0" : ""}`}>
+              <div className="page-enter">
+                <Outlet />
+              </div>
             </main>
           </div>
         </div>
-        <Toaster theme="dark" toastOptions={{ style: { background: "var(--card)", border: "1px solid var(--border)", color: "#e5e7eb" } }} />
+        <Toaster
+          theme="system"
+          toastOptions={{
+            style: { background: "var(--color-card)", border: "1px solid var(--color-border)", color: "var(--color-foreground)" }
+          }}
+        />
         <CommandPalette />
         {studentOnly && <StudentBottomNavBridge />}
       </SidebarProvider>
