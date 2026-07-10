@@ -388,6 +388,9 @@ function StudentPortal() {
           </div>
         </div>
 
+        {/* This week — 7 day-dots build streak pressure at a glance */}
+        <WeekDots eodDates={eods.map(e => e.report_date)} today={today} hasToday={!!existingId} />
+
         {/* Journey stepper */}
         <div className="mt-5 pt-5 border-t border-[var(--border)]">
           <JourneyStepper current={student.phase} />
@@ -942,6 +945,37 @@ function TargetBar({ label, value, target }: { label: string; value: number; tar
       <div className="h-1.5 rounded-full bg-muted overflow-hidden">
         <div className={`h-full rounded-full ${hit ? "bg-success" : "bg-warning"}`} style={{ width: `${pct}%` }} />
       </div>
+    </div>
+  );
+}
+
+function WeekDots({ eodDates, today, hasToday }: { eodDates: string[]; today: string; hasToday: boolean }) {
+  const logged = new Set(eodDates);
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(Date.now() - (6 - i) * 86400000);
+    return { key: d.toISOString().slice(0, 10), letter: "SMTWTFS"[d.getDay()] };
+  });
+  const count = days.filter(d => logged.has(d.key) || (d.key === today && hasToday)).length;
+  return (
+    <div className="mt-4 flex items-center gap-3 flex-wrap">
+      <span className="text-[11px] text-muted-foreground">This week</span>
+      <div className="flex items-center gap-1.5">
+        {days.map(d => {
+          const isToday = d.key === today;
+          const done = logged.has(d.key) || (isToday && hasToday);
+          return (
+            <div key={d.key} className="flex flex-col items-center gap-1" title={`${d.key}${done ? " — logged" : isToday ? " — pending" : " — missed"}`}>
+              <span
+                className={`h-2.5 w-2.5 rounded-full ${
+                  done ? "bg-success" : isToday ? "bg-warning" : "bg-danger/50"
+                } ${isToday ? "ring-2 ring-warning/30" : ""} ${isToday && done ? "ring-success/30" : ""}`}
+              />
+              <span className={`text-[9px] leading-none ${isToday ? "text-foreground font-semibold" : "text-muted-foreground/60"}`}>{d.letter}</span>
+            </div>
+          );
+        })}
+      </div>
+      <span className={`text-[11px] tabular-nums ${count >= 7 ? "text-success-fg font-semibold" : "text-muted-foreground"}`}>{count}/7 logged</span>
     </div>
   );
 }
