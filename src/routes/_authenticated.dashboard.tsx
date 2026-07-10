@@ -76,6 +76,8 @@ function Dashboard() {
   const [ops, setOps] = useState<OpsCounts | null>(null);
   const [loading, setLoading] = useState(true);
   const { prefs, save: savePrefs } = useDashboardPrefs(user?.id);
+  const [igReminderDismissed, setIgReminderDismissed] = useState(false);
+  const [igLoggedThisMonth, setIgLoggedThisMonth] = useState(true);
 
   const days = daysBetween(dateRange);
 
@@ -142,6 +144,15 @@ function Dashboard() {
       setLoading(false);
     })();
   }, [dateRange.from.getTime(), dateRange.to.getTime(), compare]);
+
+  // E20: Check if IG snapshot logged this month (only for founder/admin)
+  useEffect(() => {
+    if (!roles.includes("founder") && !roles.includes("admin")) return;
+    const thisMonth = new Date().toISOString().slice(0, 7); // "YYYY-MM"
+    supabase.from("ig_monthly_snapshots").select("id", { count: "exact", head: true }).eq("month", thisMonth).then(({ count }) => {
+      setIgLoggedThisMonth((count ?? 0) > 0);
+    });
+  }, [roles]);
 
   const totals = useMemo(() => sumRows(eods), [eods]);
   const prevTotals = useMemo(() => sumRows(prevEods), [prevEods]);
@@ -224,6 +235,17 @@ function Dashboard() {
         </div>
 
         {!isFounder && !(roles.includes("admin") && roles.length === 1) && <OnboardingPanel compact />}
+
+        {/* E20: IG monthly log reminder */}
+        {(roles.includes("founder") || roles.includes("admin")) && !igLoggedThisMonth && !igReminderDismissed && (
+          <div className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-sm border border-blue-500/30 bg-blue-500/5 text-xs text-blue-300">
+            <span>No IG analytics logged this month — keep your growth data up to date.</span>
+            <div className="flex items-center gap-2 shrink-0">
+              <a href="/instagram" className="font-medium underline hover:text-blue-200">Log now →</a>
+              <button onClick={() => setIgReminderDismissed(true)} className="text-muted-foreground hover:text-foreground">✕</button>
+            </div>
+          </div>
+        )}
 
         {/* KPI Row */}
         {prefs.showKpis && (

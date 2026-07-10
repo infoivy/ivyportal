@@ -169,6 +169,9 @@ function FounderPage() {
         </div>
       </header>
 
+      {/* E19: Content pipeline health strip */}
+      <ContentHealthStrip items={items} />
+
       {/* View switcher */}
       <div className="flex items-center gap-1 border-b border-[var(--border)] overflow-x-auto">
         <ViewTab active={view === "weekly"}    onClick={() => setView("weekly")}    icon={LayoutGrid}   label="Weekly plan" />
@@ -243,6 +246,66 @@ function FounderPage() {
 }
 
 // -- View tabs --
+function ContentHealthStrip({ items }: { items: ContentItem[] }) {
+  // Current 2-week cycle: find the most recent Mon that is ≤ today
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0, 10);
+
+  const dayOfWeek = today.getDay(); // 0=Sun
+  const daysToMon = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  const cycleStart = new Date(today);
+  cycleStart.setDate(today.getDate() - daysToMon);
+  // Align to 2-week batches from a fixed epoch (2024-01-01 is a Monday)
+  const epochMon = new Date("2024-01-01");
+  const diffDays = Math.floor((cycleStart.getTime() - epochMon.getTime()) / 86400000);
+  const batchOffset = diffDays % 14;
+  cycleStart.setDate(cycleStart.getDate() - batchOffset);
+  const cycleEnd = new Date(cycleStart);
+  cycleEnd.setDate(cycleStart.getDate() + 13);
+  const cycleStartStr = cycleStart.toISOString().slice(0, 10);
+  const cycleEndStr = cycleEnd.toISOString().slice(0, 10);
+
+  // Next Thursday
+  const nextThursday = new Date(today);
+  const daysUntilThu = (4 - today.getDay() + 7) % 7 || 7;
+  nextThursday.setDate(today.getDate() + daysUntilThu);
+  const thuStr = nextThursday.toISOString().slice(0, 8) + nextThursday.getDate();
+
+  const cycleItems = items.filter(i =>
+    i.scheduled_date && i.scheduled_date >= cycleStartStr && i.scheduled_date <= cycleEndStr
+  );
+  const counts = {
+    total: cycleItems.length,
+    scripted: cycleItems.filter(i => ["scripted", "approved", "recorded", "filmed", "edited", "scheduled", "posted"].includes(i.status)).length,
+    recorded: cycleItems.filter(i => ["recorded", "filmed", "edited", "scheduled", "posted"].includes(i.status)).length,
+    posted: cycleItems.filter(i => i.status === "posted").length,
+  };
+
+  const chips: { label: string; val: number | string; ok: boolean }[] = [
+    { label: "scripted", val: `${counts.scripted}/${counts.total}`, ok: counts.scripted >= counts.total && counts.total > 0 },
+    { label: "recorded", val: counts.recorded, ok: counts.recorded >= counts.total && counts.total > 0 },
+    { label: "posted", val: counts.posted, ok: counts.posted >= counts.total && counts.total > 0 },
+    { label: "Recording day", val: `Thu ${nextThursday.toLocaleDateString("en", { month: "short", day: "numeric" })}`, ok: true },
+  ];
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 px-3 py-2 rounded-sm border border-blue-500/20 bg-blue-500/5 text-xs text-blue-300">
+      <span className="text-[10px] uppercase tracking-wider text-muted-foreground shrink-0">This cycle</span>
+      {counts.total === 0 ? (
+        <span className="text-muted-foreground">No content scheduled for this 2-week window ({cycleStartStr} – {cycleEndStr}).</span>
+      ) : (
+        chips.map(c => (
+          <span key={c.label} className={`flex items-center gap-1 px-2 py-0.5 rounded-sm border text-[11px] ${
+            c.ok ? "border-green-500/30 bg-green-500/10 text-green-400" : "border-blue-500/30 bg-blue-500/10 text-blue-300"
+          }`}>
+            <span className="font-semibold">{c.val}</span> {c.label}
+          </span>
+        ))
+      )}
+    </div>
+  );
+}
+
 function ViewTab({ active, onClick, icon: Icon, label }: { active: boolean; onClick: () => void; icon: typeof CalendarIcon; label: string }) {
   return (
     <button

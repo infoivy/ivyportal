@@ -602,6 +602,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
   const [joinDate, setJoinDate] = useState(new Date().toISOString().slice(0, 10));
   const [coachId, setCoachId] = useState("");
   const [notes, setNotes] = useState("");
+  const [source, setSource] = useState("");
 
   // Package
   const [pkg, setPkg] = useState<"one_on_one" | "group_only">("one_on_one");
@@ -694,7 +695,8 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
         whatsapp: whatsapp.trim() || null,
         notes: notes.trim() || null,
         payment_state: paymentState,
-      }).select("id").single();
+        source: source || null,
+      } as any).select("id").single();
       if (stuErr) throw new Error("Student: " + stuErr.message);
       const studentId = newStu.id;
 
@@ -713,6 +715,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
           payment_type: paymentType as any,
           deal_date: dealDate,
           created_by: user?.id ?? null,
+          source: source || null,
         } as any);
         if (dealErr) throw new Error("Deal: " + dealErr.message);
       }
@@ -814,6 +817,16 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
               <select value={coachId} onChange={e => setCoachId(e.target.value)} className={inputCls}>
                 <option value="">Unassigned</option>
                 {coaches.map(c => <option key={c.id} value={c.id}>{c.display_name ?? c.id}</option>)}
+              </select>
+            </Field>
+            <Field label="Lead source (optional)">
+              <select value={source} onChange={e => setSource(e.target.value)} className={inputCls}>
+                <option value="">Unknown</option>
+                <option value="Reel">Reel</option>
+                <option value="DM Outreach">DM Outreach</option>
+                <option value="Referral">Referral</option>
+                <option value="Cold Outreach">Cold Outreach</option>
+                <option value="Other">Other</option>
               </select>
             </Field>
           </div>
