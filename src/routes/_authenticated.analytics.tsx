@@ -130,26 +130,34 @@ function Analytics() {
           <FunnelCard label="Show Rate"       pct={`${showRate}`} detail={`${totals.shows.toLocaleString()} shows`} color="#f59e0b" />
         </div>
 
-        <div className="grid gap-3 lg:grid-cols-2">
-          <div className="rounded-md border border-border bg-card p-3.5">
-            <h3 className="text-sm font-bold mb-2">Volume Trend</h3>
-            <div className="h-64">
-              {loading ? <div className="h-full w-full bg-white/5 rounded animate-pulse" /> : (
-                <ResponsiveContainer>
-                  <LineChart data={trend} margin={{ top: 5, right: 10, left: -18, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.06)" vertical={false} />
-                    <XAxis dataKey="label" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
-                    <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
-                    <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 4, fontSize: 11 }} />
-                    <Line type="monotone" dataKey="dms"    stroke="#3b82f6" strokeWidth={1.5} dot={false} />
-                    <Line type="monotone" dataKey="convos" stroke="#a855f7" strokeWidth={1.5} dot={false} />
-                    <Line type="monotone" dataKey="booked" stroke="#22c55e" strokeWidth={2}   dot={false} />
-                    <Line type="monotone" dataKey="shows"  stroke="#f59e0b" strokeWidth={1.5} dot={false} />
-                  </LineChart>
-                </ResponsiveContainer>
-              )}
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="rounded-xl border border-white/[0.07] bg-card p-5">
+            <div className="mb-2">
+              <div className="text-[15px] font-semibold text-foreground">Volume trend</div>
+              <div className="text-xs text-muted-foreground mt-0.5">DMs, convos, booked &amp; shows</div>
             </div>
+            {loading ? <div className="h-60 w-full bg-white/5 rounded animate-pulse" /> : (
+              <>
+                <VolumeAreaChart
+                  data={trend}
+                  height={240}
+                  series={[
+                    { key: "dms",    label: "DMs",    color: "#9CA3AF" },
+                    { key: "convos", label: "Convos", color: "#3B82F6" },
+                    { key: "booked", label: "Booked", color: "#22C55E", strokeWidth: 2 },
+                    { key: "shows",  label: "Shows",  color: "#F59E0B" },
+                  ]}
+                />
+                <VolumeLegend series={[
+                  { key: "dms",    label: "DMs",    color: "#9CA3AF" },
+                  { key: "convos", label: "Convos", color: "#3B82F6" },
+                  { key: "booked", label: "Booked", color: "#22C55E" },
+                  { key: "shows",  label: "Shows",  color: "#F59E0B" },
+                ]} />
+              </>
+            )}
           </div>
+
 
           <div className="rounded-md border border-border bg-card p-3.5">
             <h3 className="text-sm font-bold mb-2">Daily Booked Calls</h3>
