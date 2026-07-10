@@ -59,7 +59,7 @@ type ColKey = "student" | "grade" | "phase" | "status" | "coach" | "payment" | "
 type ColDef = { key: ColKey; label: string; default: boolean };
 const COLUMNS: ColDef[] = [
   { key: "student",         label: "Student",         default: true },
-  { key: "grade",           label: "Grade",           default: true },
+  { key: "grade",           label: "Grade",           default: false },
   { key: "phase",           label: "Phase",           default: true },
   { key: "status",          label: "Status",          default: true },
   { key: "coach",           label: "Coach",           default: true },
