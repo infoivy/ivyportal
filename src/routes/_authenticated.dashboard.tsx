@@ -20,6 +20,7 @@ import { DashboardSettingsSheet } from "@/components/dashboard-settings-sheet";
 import { useDashboardPrefs } from "@/lib/dashboard-prefs";
 import { VolumeAreaChart, VolumeLegend } from "@/components/ui/volume-area-chart";
 import { OnboardingPanel } from "@/components/onboarding-panel";
+import { DeltaChip } from "@/components/ui/delta-chip";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — ISA Team" }] }),
@@ -78,6 +79,9 @@ function Dashboard() {
   const { prefs, save: savePrefs } = useDashboardPrefs(user?.id);
   const [igReminderDismissed, setIgReminderDismissed] = useState(false);
   const [igLoggedThisMonth, setIgLoggedThisMonth] = useState(true);
+  const [eodsTodayCount, setEodsTodayCount] = useState(0);
+  const [cashMtd, setCashMtd] = useState(0);
+  const [nextDue, setNextDue] = useState<{ date: string; amount: number; currency: string; studentName: string } | null>(null);
 
   const days = daysBetween(dateRange);
 
@@ -122,6 +126,7 @@ function Dashboard() {
       const activeStudents = (students.data as { id: string; status: string }[] | null) ?? [];
       const atRisk = activeStudents.filter(s => !eodByStudent.has(s.id) || !callByStudent.has(s.id)).length;
 
+      setEodsTodayCount((todayEods.data as any[])?.length ?? 0);
       const filedToday = new Set(((todayEods.data as { user_id: string }[] | null) ?? []).map(r => r.user_id));
       const recentFilers = new Set(((cur.data as EodRow[]) ?? []).map(r => r.user_id));
       const eodsMissingToday = Array.from(recentFilers).filter(u => !filedToday.has(u)).length;
@@ -144,6 +149,23 @@ function Dashboard() {
       setLoading(false);
     })();
   }, [dateRange.from.getTime(), dateRange.to.getTime(), compare]);
+
+  useEffect(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, "0");
+    const monthStart = `${y}-${m}-01`;
+    const today = now.toISOString().slice(0, 10);
+    Promise.all([
+      supabase.from("deals").select("cash_collected_upfront").gte("deal_date", monthStart).lte("deal_date", today),
+      supabase.from("installment_payments").select("amount, currency, due_date, installments!inner(students(full_name))").eq("status", "upcoming").gte("due_date", today).order("due_date", { ascending: true }).limit(1),
+    ]).then(([dealsRes, instRes]) => {
+      const total = ((dealsRes.data ?? []) as any[]).reduce((s, d) => s + (Number(d.cash_collected_upfront) || 0), 0);
+      setCashMtd(total);
+      const first = (instRes.data ?? [])[0] as any;
+      if (first) setNextDue({ date: first.due_date, amount: first.amount, currency: first.currency, studentName: first.installments?.students?.full_name ?? "Unknown" });
+    });
+  }, []);
 
   // E20: Check if IG snapshot logged this month (only for founder/admin)
   useEffect(() => {
@@ -192,7 +214,7 @@ function Dashboard() {
 
   return (
     <div className="dashboard-dark min-h-full">
-      <div className="max-w-[1400px] mx-auto p-4 sm:p-5 space-y-4">
+      <div className="max-w-[1400px] mx-auto p-4 sm:p-5"><div className="grid lg:grid-cols-[minmax(0,1fr)_220px] gap-6 items-start"><div className="space-y-4">
         {/* Header */}
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:items-center sm:justify-between">
           <div className="flex min-w-0 items-center gap-3">
@@ -252,13 +274,13 @@ function Dashboard() {
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-9 gap-2">
             <Kpi icon={Users}         label="Active Setters" value={activeSetters} highlight />
             <Kpi icon={UserPlus}      label="EODs Filed"     value={totalEods} onClick={() => navigate({ to: "/eods" })} title={`${totalEods} EOD reports filed by the team in ${rangeLabel.toLowerCase()}. Click to open EOD reports.`} />
-            <Kpi icon={Eye}            label="DMs Sent"       value={totals.dms_sent} color="#3b82f6" onClick={() => setDrilldown("dms_sent")} delta={compare ? pctDelta(prevTotals.dms_sent, totals.dms_sent) : null} />
-            <Kpi icon={Zap}            label="Convos"         value={totals.convos_started} color="#a855f7" onClick={() => setDrilldown("convos_started")} delta={compare ? pctDelta(prevTotals.convos_started, totals.convos_started) : null} />
-            <Kpi icon={Users}          label="Booked"         value={totals.calls_booked} color="#22c55e" onClick={() => setDrilldown("calls_booked")} delta={compare ? pctDelta(prevTotals.calls_booked, totals.calls_booked) : null} />
-            <Kpi icon={Heart}          label="Shows"          value={totals.shows} color="#f59e0b" onClick={() => setDrilldown("shows")} delta={compare ? pctDelta(prevTotals.shows, totals.shows) : null} />
-            <Kpi icon={MessagesSquare} label="No-Shows"       value={totals.no_shows} color="#ef4444" onClick={() => setDrilldown("no_shows")} delta={compare ? pctDelta(prevTotals.no_shows, totals.no_shows) : null} />
-            <Kpi icon={Link2}          label="Show Rate"      value={showRate} suffix="%" color="#06b6d4" delta={compare ? pctDelta(prevShowRateOf(prevTotals), showRate) : null} />
-            <Kpi icon={FileText}       label="Scheduled"      value={totals.calls_scheduled} color="#ec4899" onClick={() => setDrilldown("calls_scheduled")} delta={compare ? pctDelta(prevTotals.calls_scheduled, totals.calls_scheduled) : null} />
+            <Kpi icon={Eye}            label="DMs Sent"       value={totals.dms_sent} color="#3b82f6" onClick={() => setDrilldown("dms_sent")} delta={compare ? { value: totals.dms_sent - prevTotals.dms_sent, format: "count" } : null} />
+            <Kpi icon={Zap}            label="Convos"         value={totals.convos_started} color="#a855f7" onClick={() => setDrilldown("convos_started")} delta={compare ? { value: totals.convos_started - prevTotals.convos_started, format: "count" } : null} />
+            <Kpi icon={Users}          label="Booked"         value={totals.calls_booked} color="#22c55e" onClick={() => setDrilldown("calls_booked")} delta={compare ? { value: totals.calls_booked - prevTotals.calls_booked, format: "count" } : null} />
+            <Kpi icon={Heart}          label="Shows"          value={totals.shows} color="#f59e0b" onClick={() => setDrilldown("shows")} delta={compare ? { value: totals.shows - prevTotals.shows, format: "count" } : null} />
+            <Kpi icon={MessagesSquare} label="No-Shows"       value={totals.no_shows} color="#ef4444" onClick={() => setDrilldown("no_shows")} delta={compare ? { value: totals.no_shows - prevTotals.no_shows, format: "count", positiveIsGood: false } : null} />
+            <Kpi icon={Link2}          label="Show Rate"      value={showRate} suffix="%" color="#06b6d4" delta={compare ? { value: showRate - prevShowRateOf(prevTotals), format: "pct" } : null} />
+            <Kpi icon={FileText}       label="Scheduled"      value={totals.calls_scheduled} color="#ec4899" onClick={() => setDrilldown("calls_scheduled")} delta={compare ? { value: totals.calls_scheduled - prevTotals.calls_scheduled, format: "count" } : null} />
           </div>
         )}
 
@@ -412,6 +434,20 @@ function Dashboard() {
           </div>
         )}
       </div>
+      <aside className="hidden lg:flex lg:flex-col gap-2 pt-0">
+        <RightRailTile label="Cash MTD" value={cashMtd > 0 ? money(cashMtd) : "—"} to="/revenue" />
+        <RightRailTile label="EODs today" value={String(eodsTodayCount)} to="/eods" />
+        {nextDue && (
+          <RightRailTile
+            label="Next installment"
+            value={`${nextDue.currency} ${Number(nextDue.amount).toLocaleString()}`}
+            to="/installments"
+            hint={nextDue.studentName}
+          />
+        )}
+        <RightRailTile label="At-risk students" value={String(ops?.atRisk ?? "—")} to="/students" />
+      </aside>
+    </div></div>
 
       <StatDrilldown
         open={drilldown !== null}
@@ -502,7 +538,7 @@ function Kpi({ icon: Icon, label, value, suffix, color, highlight, onClick, delt
   icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
   label: string; value: number; suffix?: string; color?: string; highlight?: boolean;
   onClick?: () => void;
-  delta?: number | null;
+  delta?: { value: number; format?: "money" | "count" | "pct"; positiveIsGood?: boolean } | null;
   title?: string;
 }) {
   const c = color ?? "#94a3b8";
@@ -514,20 +550,18 @@ function Kpi({ icon: Icon, label, value, suffix, color, highlight, onClick, delt
       role={clickable ? "button" : undefined}
       tabIndex={clickable ? 0 : undefined}
       onKeyDown={clickable ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick!(); } } : undefined}
-      className={`rounded-md border p-2.5 bg-card ${highlight ? "border-blue-500/60 " : "border-border"} ${clickable ? "cursor-pointer hover:bg-white/[0.03] transition" : ""}`}
+      className={`rounded-md border p-2.5 bg-card transition ${highlight ? "border-blue-500/60 " : "border-border"} ${clickable ? "cursor-pointer hover:bg-white/[0.03] motion-safe:hover:-translate-y-px" : ""}`}
     >
       <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
         <Icon className="h-3 w-3" style={{ color: c }} />
         <span className="truncate">{label}</span>
       </div>
-      <div className="flex items-baseline gap-2">
+      <div className="flex items-baseline gap-2 flex-wrap">
         <div className="text-xl font-bold tabular-nums mt-1" style={{ color: c }}>
           {value >= 1000 ? `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}K` : value.toLocaleString()}{suffix}
         </div>
-        {delta != null && Number.isFinite(delta) && (
-          <span className={`text-[10px] font-semibold tabular-nums ${delta > 0 ? "text-green-400" : delta < 0 ? "text-red-400" : "text-muted-foreground"}`}>
-            {delta > 0 ? "+" : ""}{delta.toFixed(0)}%
-          </span>
+        {delta != null && (
+          <DeltaChip value={delta.value} format={delta.format ?? "count"} positiveIsGood={delta.positiveIsGood ?? true} />
         )}
       </div>
     </div>
@@ -554,7 +588,7 @@ function OpsCard({
     <Link
       to={to as any}
       search={search as any}
-      className={`rounded-xl border p-4 transition block ${t.bg || "border-white/[0.07] bg-card hover:bg-white/[0.02]"}`}
+      className={`rounded-xl border p-4 transition motion-safe:hover:-translate-y-px block ${t.bg || "border-white/[0.07] bg-card hover:bg-white/[0.02]"}`}
     >
       <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
         <span className={`inline-block h-1.5 w-1.5 rounded-full ${t.dot}`} />
@@ -820,6 +854,16 @@ function MyDayBlock({ roles }: { roles: string[] }) {
         })}
       </div>
     </div>
+  );
+}
+
+function RightRailTile({ label, value, to, hint }: { label: string; value: string; to: string; hint?: string }) {
+  return (
+    <Link to={to as any} className="block rounded-lg border border-white/[0.07] bg-card p-3 hover:bg-white/[0.02] transition motion-safe:hover:-translate-y-px">
+      <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</div>
+      <div className="text-xl font-light tabular-nums mt-1 text-foreground truncate">{value}</div>
+      {hint && <div className="text-[10px] text-muted-foreground mt-0.5 truncate">{hint}</div>}
+    </Link>
   );
 }
 
