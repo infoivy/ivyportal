@@ -932,9 +932,9 @@ function SubmissionsChart({ data }: { data: { label: string; submitted: number; 
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-        <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#8a91a0" }} />
-        <YAxis tick={{ fontSize: 10, fill: "#8a91a0" }} allowDecimals={false} />
+        <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.06)" vertical={false} />
+        <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#8A919C" }} />
+        <YAxis tick={{ fontSize: 10, fill: "#8A919C" }} allowDecimals={false} />
         <ReTooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", fontSize: 11 }} />
         <Legend wrapperStyle={{ fontSize: 10 }} />
         <Bar dataKey="expected" fill="var(--border)" name="Expected" />
@@ -948,9 +948,9 @@ function FunnelChart({ data }: { data: { label: string; dms: number; convos: num
   return (
     <ResponsiveContainer width="100%" height="100%">
       <LineChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-        <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#8a91a0" }} />
-        <YAxis tick={{ fontSize: 10, fill: "#8a91a0" }} allowDecimals={false} />
+        <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.06)" vertical={false} />
+        <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#8A919C" }} />
+        <YAxis tick={{ fontSize: 10, fill: "#8A919C" }} allowDecimals={false} />
         <ReTooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", fontSize: 11 }} />
         <Legend wrapperStyle={{ fontSize: 10 }} />
         <Line type="monotone" dataKey="dms" stroke="#3b82f6" strokeWidth={1.5} dot={false} name="DMs" />
