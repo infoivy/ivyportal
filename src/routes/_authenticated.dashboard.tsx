@@ -281,9 +281,10 @@ function Dashboard() {
                         <XAxis dataKey="label" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
                         <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
                         <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 4, fontSize: 11 }} />
-                        <Line type="monotone" dataKey="dms"    stroke="#3b82f6" strokeWidth={1.5} dot={{ r: 2 }} />
-                        <Line type="monotone" dataKey="convos" stroke="#f59e0b" strokeWidth={1.5} dot={{ r: 2 }} />
-                        <Line type="monotone" dataKey="booked" stroke="#22c55e" strokeWidth={2}   dot={{ r: 2.5 }} />
+                        <Line type="monotone" dataKey="dms"    stroke="#9CA3AF" strokeWidth={1.5} dot={false} />
+                        <Line type="monotone" dataKey="convos" stroke="#3B82F6" strokeWidth={1.5} dot={false} />
+                        <Line type="monotone" dataKey="booked" stroke="#22C55E" strokeWidth={2}   dot={false} />
+
                       </LineChart>
                     </ResponsiveContainer>
                   )}
