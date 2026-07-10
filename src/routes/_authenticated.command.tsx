@@ -39,7 +39,7 @@ function CommandPage() {
   const activeTab: Tab = tab === "weekly" ? "weekly" : "overview";
 
   return (
-    <div className="p-4 sm:p-6 max-w-[1400px] mx-auto space-y-4">
+    <div className="p-4 sm:p-6 max-w-[1400px] mx-auto space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-display text-foreground">Gathering Hub</h1>

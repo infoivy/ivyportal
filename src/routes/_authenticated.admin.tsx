@@ -612,14 +612,14 @@ function CommissionRatesCard({
   );
 }
 
-const CHECKLIST_ITEMS: { key: string; label: string; hint: string }[] = [
-  { key: "paymentLinks", label: "Payment links seeded", hint: "Add links in Admin → Settings → Payment Links" },
-  { key: "commissionConfirmed", label: "Commission rates confirmed", hint: "new_close + set_close rates active in DB" },
-  { key: "cashGoalSet", label: "Monthly cash goal set", hint: "Set in Admin → Settings → Monthly Goal" },
-  { key: "setterTypesSet", label: "All setters have a type (phone/DM)", hint: "Set inline in Sales HQ or via Admin → Team" },
-  { key: "teamInvited", label: "Co-founders / team invited (≥2 admins)", hint: "Invite via Admin → Team" },
-  { key: "calendarConnected", label: "At least one calendar connected", hint: "Connect in Calendar → Connect Google Calendar" },
-  { key: "igLogged", label: "IG snapshot logged this month", hint: "Log in IG Analytics" },
+const CHECKLIST_ITEMS: { key: string; label: string; hint: string; to?: string }[] = [
+  { key: "paymentLinks", label: "Payment links seeded", hint: "Add links in Closer Resources → Manage", to: "/closer-resources" },
+  { key: "commissionConfirmed", label: "Commission rates confirmed", hint: "new_close + set_close rates active in Revenue → Commissions", to: "/revenue" },
+  { key: "cashGoalSet", label: "Monthly cash goal set", hint: "Set below in Portal settings" },
+  { key: "setterTypesSet", label: "All setters have a type (phone/DM)", hint: "Set inline on the Sales page", to: "/sales" },
+  { key: "teamInvited", label: "Co-founders / team invited (≥2 admins)", hint: "Invite via Team", to: "/team" },
+  { key: "calendarConnected", label: "At least one calendar connected", hint: "Connect in Calendar", to: "/calendar" },
+  { key: "igLogged", label: "IG snapshot logged this month", hint: "Log in Content → Instagram", to: "/content" },
   { key: "demoRemoved", label: "Demo data removed", hint: "Run npm run demo:remove" },
 ];
 
@@ -638,17 +638,26 @@ function GoLiveChecklist({ checklist }: { checklist: Record<string, boolean> }) 
       <div className="space-y-1.5">
         {CHECKLIST_ITEMS.map(item => {
           const checked = !!checklist[item.key];
-          return (
-            <div key={item.key} className="flex items-start gap-2">
+          const inner = (
+            <>
               {checked
                 ? <CheckCircle2 className="h-3.5 w-3.5 text-success-fg mt-0.5 shrink-0" />
                 : <Circle className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
               }
               <div>
                 <span className={`text-xs ${checked ? "line-through text-muted-foreground" : "text-foreground"}`}>{item.label}</span>
-                {!checked && <div className="text-[10px] text-muted-foreground mt-0.5">{item.hint}</div>}
+                {!checked && <div className="text-[10px] text-muted-foreground mt-0.5">{item.hint} →</div>}
               </div>
-            </div>
+            </>
+          );
+          // Rows check themselves off from real data — clicking takes you to
+          // where the task gets done.
+          return item.to && !checked ? (
+            <Link key={item.key} to={item.to} className="flex items-start gap-2 rounded-md -mx-1 px-1 py-0.5 hover:bg-muted/50 motion-safe:transition-colors">
+              {inner}
+            </Link>
+          ) : (
+            <div key={item.key} className="flex items-start gap-2 py-0.5">{inner}</div>
           );
         })}
       </div>

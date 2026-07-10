@@ -77,7 +77,7 @@ function Training() {
 
   return (
     <div className="min-h-full">
-      <div className="max-w-[1400px] mx-auto p-4 sm:p-5 space-y-4">
+      <div className="p-4 sm:p-6 max-w-[1400px] mx-auto space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-display text-foreground">Training</h1>

@@ -43,3 +43,25 @@ Completed and pushed (b640e78..6d306c5, 9 commits). Notes:
   into /sales (coach/csm keep equivalent charts in EODs Graphs).
 - Found and fixed two latent bugs: unmapped shadcn color utilities (popovers
   were transparent by accident) and the sign-in role landing that never fired.
+
+## Feedback round 2 (same day)
+
+Implemented the founder's follow-up list: team-assignable action items (migration:
+nullable student_id) with Students/Team sections; one chart language (EODs funnel on
+VolumeAreaChart, tooltip rows in series colors, funnel gains Booked→Closed + conversion
+percentages); editable quarterly goals in Admin (founder_settings.quarterly_goals),
+goals panel admin/founder-only; CSM nav slimmed (no Dashboard/Sales/Revenue/Training),
+cash leaderboard + next-due gated; Sales page single view (Pipeline removed, Trends
+inline); Command → Gathering Hub; DocShell (CRM-Hygiene style) for knowledge docs +
+closer resources; Start Here checklists per business role incl. admins; role changes
+refresh the session live (verified end-to-end); admin Go-Live checklist rows navigate;
+"Log a set" creates Google Calendar events with 3d/1d/3h reminders (scope now
+calendar.events — existing connections prompt to reconnect); seeded "After You Make a
+Set" SOP doc.
+
+Bugs found and fixed: SOP canvas rendered blank (route wrapper's enter animation
+retained a transform → zero-height containing block; content was never lost — word-for-
+word intact in src/data/sections.tsx); the "role doesn't stick" report was two UI gaps,
+not a data bug; @tailwindcss/typography was referenced but never installed, so all
+markdown docs rendered unstyled since day one; revenue's per-tier "Team bonus $" figures
+were not a real commission rule — removed (Payouts owns the per-person ledger).
