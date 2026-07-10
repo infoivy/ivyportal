@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { CheckCircle2, Clock, TrendingUp, Users, Phone, Target, AlertTriangle, ChevronRight, Trash2, HeartHandshake, Flame } from "lucide-react";
 import { computeStreak } from "@/lib/streak";
 import confetti from "canvas-confetti";
+import { ResponsiveContainer, BarChart, Bar, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip as ReTooltip, Legend } from "recharts";
 
 export const Route = createFileRoute("/_authenticated/eods")({
   head: () => ({ meta: [{ title: "EOD Reports — ISA Team" }] }),
@@ -80,22 +81,28 @@ function EODsPage() {
     }
   };
 
+  const [teamRoster, setTeamRoster] = useState<{ user_id: string; display_name: string; primary_role: string }[]>([]);
+
   const loadTeam = async () => {
-    const { data } = await supabase.from("eods").select("*").order("report_date", { ascending: false }).limit(50);
+    // Wider window for compliance / graphs (up to 30 days × ~15 people)
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 45);
+    const { data } = await supabase.from("eods").select("*").gte("report_date", cutoff.toISOString().slice(0, 10)).order("report_date", { ascending: false });
     const eods = (data ?? []) as EOD[];
-    const userIds = Array.from(new Set(eods.map(e => e.user_id)));
-    const [profRes, rolesRes] = await Promise.all([
+    // Load the full team roster (anyone with a reporting role), so people
+    // with zero submissions still appear as red ✗ rows in the matrix.
+    const { data: rolesData } = await supabase.from("user_roles").select("user_id, role").in("role", ["setter", "closer", "coach", "csm"]);
+    const userIds = Array.from(new Set([...(rolesData ?? []).map(r => r.user_id), ...eods.map(e => e.user_id)]));
+    const [profRes] = await Promise.all([
       supabase.from("profiles").select("id, display_name").in("id", userIds),
-      supabase.from("user_roles").select("user_id, role").in("user_id", userIds),
     ]);
     const nameMap = new Map(profRes.data?.map(p => [p.id, p.display_name]) ?? []);
     const roleMap = new Map<string, string[]>();
-    (rolesRes.data ?? []).forEach(r => {
+    (rolesData ?? []).forEach(r => {
       const arr = roleMap.get(r.user_id) ?? [];
       arr.push(r.role);
       roleMap.set(r.user_id, arr);
     });
-    // Priority: csm > closer > coach > setter > admin (for cell metric selection)
+    // Priority: csm > closer > coach > setter (for grouping)
     const priority = ["csm", "closer", "coach", "setter", "admin"];
     const primaryRole = (uid: string): string => {
       const rs = roleMap.get(uid) ?? [];
@@ -107,6 +114,9 @@ function EODsPage() {
       display_name: nameMap.get(e.user_id) ?? "Unknown",
       primary_role: primaryRole(e.user_id),
     })));
+    setTeamRoster(userIds
+      .filter(uid => (roleMap.get(uid) ?? []).some(r => ["setter", "closer", "coach", "csm"].includes(r)))
+      .map(uid => ({ user_id: uid, display_name: nameMap.get(uid) ?? "Unknown", primary_role: primaryRole(uid) })));
   };
 
   const syncCsmTally = async () => {
@@ -265,10 +275,11 @@ function EODsPage() {
 
       <Tabs defaultValue={isFounder ? "grid" : "submit"} className="space-y-4">
         <TabsList className="bg-[#0f1116] border border-[#1f2530] rounded-sm h-9 p-0.5">
-          {!isFounder && <TabsTrigger value="submit" className="text-xs h-8 rounded-sm data-[state=active]:bg-[#1a1f29]">Today's EOD</TabsTrigger>}
+          {!isFounder && <TabsTrigger value="submit" className="text-xs h-8 rounded-sm data-[state=active]:bg-[#1a1f29]">My EOD</TabsTrigger>}
           {!isFounder && <TabsTrigger value="mine" className="text-xs h-8 rounded-sm data-[state=active]:bg-[#1a1f29]">My history</TabsTrigger>}
-          {canViewTeam && <TabsTrigger value="grid" className="text-xs h-8 rounded-sm data-[state=active]:bg-[#1a1f29]">Grid</TabsTrigger>}
-          {canViewTeam && <TabsTrigger value="team" className="text-xs h-8 rounded-sm data-[state=active]:bg-[#1a1f29]">Team feed</TabsTrigger>}
+          {canViewTeam && <TabsTrigger value="grid" className="text-xs h-8 rounded-sm data-[state=active]:bg-[#1a1f29]">Team Compliance</TabsTrigger>}
+          {canViewTeam && <TabsTrigger value="graphs" className="text-xs h-8 rounded-sm data-[state=active]:bg-[#1a1f29]">Graphs</TabsTrigger>}
+          {canViewTeam && <TabsTrigger value="team" className="text-xs h-8 rounded-sm data-[state=active]:bg-[#1a1f29]">Team Feed</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="submit" className="space-y-4">
@@ -412,7 +423,13 @@ function EODsPage() {
 
         {canViewTeam && (
           <TabsContent value="grid">
-            <EodGrid eods={teamEods} days={14} />
+            <ComplianceMatrix eods={teamEods} roster={teamRoster} />
+          </TabsContent>
+        )}
+
+        {canViewTeam && (
+          <TabsContent value="graphs">
+            <ComplianceGraphs eods={teamEods} roster={teamRoster} />
           </TabsContent>
         )}
 
@@ -430,146 +447,272 @@ function EODsPage() {
 }
 
 type GridEod = EOD & { display_name?: string; primary_role?: string };
-type RoleFilt = "all" | "setter" | "closer" | "csm";
+type RosterEntry = { user_id: string; display_name: string; primary_role: string };
 
-function EodGrid({ eods, days }: { eods: GridEod[]; days: number }) {
-  const [roleFilt, setRoleFilt] = useState<RoleFilt>("all");
+const WEEKDAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MONTH = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+function fmtDayHeader(d: Date) {
+  return `${WEEKDAY[d.getDay()]} ${d.getDate()}`;
+}
+function fmtLongDate(iso: string) {
+  const d = new Date(iso + "T00:00:00");
+  return `${WEEKDAY[d.getDay()]}, ${MONTH[d.getMonth()]} ${d.getDate()}`;
+}
+
+const ROLE_GROUPS: { key: string; label: string; roles: string[] }[] = [
+  { key: "setters", label: "Setters", roles: ["setter"] },
+  { key: "closers", label: "Closers", roles: ["closer"] },
+  { key: "csm", label: "CSM", roles: ["csm"] },
+  { key: "coaches", label: "Coaches", roles: ["coach"] },
+];
+
+function buildDayList(days: number): string[] {
+  const list: string[] = [];
   const today = new Date();
-  const dayList: string[] = [];
   for (let i = 0; i < days; i++) {
     const d = new Date(today);
     d.setDate(d.getDate() - i);
-    dayList.push(d.toISOString().slice(0, 10));
+    list.push(d.toISOString().slice(0, 10));
   }
+  return list.reverse(); // oldest → newest for reading L→R
+}
 
-  const matchesFilt = (role: string | undefined) => {
-    if (roleFilt === "all") return true;
-    if (roleFilt === "closer") return role === "closer" || role === "coach";
-    return role === roleFilt;
+function ComplianceMatrix({ eods, roster }: { eods: GridEod[]; roster: RosterEntry[] }) {
+  const [days, setDays] = useState<7 | 14 | 30>(14);
+  const dayList = useMemo(() => buildDayList(days), [days]);
+  const submittedSet = useMemo(() => {
+    const s = new Set<string>();
+    eods.forEach(e => s.add(`${e.user_id}::${e.report_date}`));
+    return s;
+  }, [eods]);
+
+  const rowStats = (uid: string) => {
+    // walk newest→oldest, skip Sundays, count consecutive submitted for streak
+    let streak = 0;
+    let stopped = false;
+    let required = 0;
+    let submitted = 0;
+    const sorted = [...dayList].reverse();
+    sorted.forEach((d, idx) => {
+      const dt = new Date(d + "T00:00:00");
+      if (dt.getDay() === 0) return; // Sunday not required
+      required++;
+      const hit = submittedSet.has(`${uid}::${d}`);
+      if (hit) submitted++;
+      if (!stopped) {
+        // For streak: allow today missing (grace period) — start counting from most recent required day
+        if (hit) streak++;
+        else if (idx === 0) { /* today missing, don't break streak yet */ }
+        else stopped = true;
+      }
+    });
+    const pct = required ? Math.round((submitted / required) * 100) : 0;
+    return { streak, submitted, required, pct };
   };
-
-  const users = new Map<string, { name: string; role: string }>();
-  eods.forEach(e => {
-    if (!matchesFilt(e.primary_role)) return;
-    if (!users.has(e.user_id)) users.set(e.user_id, { name: e.display_name ?? "Unknown", role: e.primary_role ?? "member" });
-  });
-  const key = (uid: string, date: string) => `${uid}::${date}`;
-  const map = new Map<string, GridEod>();
-  eods.forEach(e => { if (matchesFilt(e.primary_role)) map.set(key(e.user_id, e.report_date), e); });
-
-  const roleTiles: { key: RoleFilt; label: string }[] = [
-    { key: "all", label: "All roles" },
-    { key: "setter", label: "Setters" },
-    { key: "closer", label: "Closers / Coaches" },
-    { key: "csm", label: "CSMs" },
-  ];
-
-  const renderCell = (e: GridEod, name: string, d: string, role: string) => {
-    // Choose metrics per role
-    if (role === "csm") {
-      const primary = (e.student_checkins ?? 0) + (e.escalations_resolved ?? 0);
-      const secondary = (e.looms_reviewed ?? 0) + (e.roleplays_reviewed ?? 0);
-      const tone = primary >= 3 ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
-        : primary >= 1 ? "bg-amber-500/15 border-amber-500/40 text-amber-300"
-        : "bg-[#14171e] border-[#1f2530] text-muted-foreground";
-      return (
-        <div title={`${name} · ${d}\nCheck-ins+Escalations: ${primary}\nLooms+Roleplays: ${secondary}`}
-             className={`inline-flex flex-col leading-none px-1 py-1 rounded-sm border font-mono text-[10px] ${tone}`}>
-          <span className="font-semibold">{primary}</span>
-          <span className="text-[8px] opacity-70">{secondary}</span>
-        </div>
-      );
-    }
-    if (role === "closer" || role === "coach") {
-      const closes = e.closes ?? 0;
-      const taken = e.calls_taken ?? 0;
-      const tone = closes >= 1 ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
-        : taken >= 1 ? "bg-amber-500/15 border-amber-500/40 text-amber-300"
-        : "bg-[#14171e] border-[#1f2530] text-muted-foreground";
-      return (
-        <div title={`${name} · ${d}\nCalls taken: ${taken}\nCloses: ${closes}`}
-             className={`inline-flex flex-col leading-none px-1 py-1 rounded-sm border font-mono text-[10px] ${tone}`}>
-          <span className="font-semibold">{closes}</span>
-          <span className="text-[8px] opacity-70">{taken}</span>
-        </div>
-      );
-    }
-    // Setter / default
-    const booked = e.calls_booked ?? 0;
-    const dms = e.dms_sent ?? 0;
-    const shows = e.shows ?? 0;
-    const tone = booked >= 3 ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
-      : booked >= 1 ? "bg-amber-500/15 border-amber-500/40 text-amber-300"
-      : "bg-[#14171e] border-[#1f2530] text-muted-foreground";
-    return (
-      <div title={`${name} · ${d}\nDMs: ${dms}\nBooked: ${booked}\nShows: ${shows}`}
-           className={`inline-flex flex-col leading-none px-1 py-1 rounded-sm border font-mono text-[10px] ${tone}`}>
-        <span className="font-semibold">{booked}</span>
-        <span className="text-[8px] opacity-70">{dms}</span>
-      </div>
-    );
-  };
-
-  const legend = roleFilt === "csm"
-    ? <>Cell: <b className="text-foreground">check-ins+escalations</b> / <span className="opacity-70">looms+roleplays</span></>
-    : roleFilt === "closer"
-    ? <>Cell: <b className="text-foreground">closes</b> / <span className="opacity-70">calls taken</span></>
-    : roleFilt === "setter"
-    ? <>Cell: <b className="text-foreground">booked</b> / <span className="opacity-70">dms</span></>
-    : <>Setter cells show <b className="text-foreground">booked</b>/<span className="opacity-70">dms</span>, closer cells show <b className="text-foreground">closes</b>/<span className="opacity-70">taken</span>, CSM cells show <b className="text-foreground">check-ins+esc</b>/<span className="opacity-70">looms+rp</span></>;
 
   return (
-    <div className="space-y-2">
-      <div className="flex flex-wrap gap-1.5">
-        {roleTiles.map(t => (
-          <button
-            key={t.key}
-            onClick={() => setRoleFilt(t.key)}
-            className={`text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-sm border transition ${
-              roleFilt === t.key
-                ? "text-foreground border-[#2a3140] bg-[#1a1f29]"
-                : "text-muted-foreground border-[#1f2530] hover:border-[#2a3140]"
-            }`}
-          >{t.label}</button>
-        ))}
-      </div>
-      {users.size === 0 ? <EmptyState text="No EODs in this filter." /> : (
-        <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b border-[#1f2530] text-[10px] uppercase tracking-wider text-muted-foreground">
-                <th className="text-left px-3 py-2 sticky left-0 bg-[#0f1116] z-10">Person</th>
-                {dayList.map(d => {
-                  const dd = new Date(d);
-                  return <th key={d} className="px-1.5 py-2 text-center font-normal">{dd.getMonth() + 1}/{dd.getDate()}</th>;
-                })}
-              </tr>
-            </thead>
-            <tbody>
-              {Array.from(users.entries()).map(([uid, u]) => (
-                <tr key={uid} className="border-b border-[#1a1f29] last:border-0">
-                  <td className="px-3 py-2 sticky left-0 bg-[#0f1116] font-medium truncate max-w-[180px]">
-                    <div>{u.name}</div>
-                    <div className="text-[9px] uppercase tracking-wider text-muted-foreground">{u.role}</div>
-                  </td>
-                  {dayList.map(d => {
-                    const e = map.get(key(uid, d));
-                    if (!e) return <td key={d} className="px-1 py-1 text-center"><span className="inline-block h-6 w-6 rounded-sm bg-[#1a1f29]/40 border border-dashed border-[#2a3140]" title="Missing" /></td>;
-                    return <td key={d} className="px-1 py-1 text-center">{renderCell(e, u.name, d, u.role)}</td>;
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div className="px-3 py-2 border-t border-[#1f2530] text-[10px] text-muted-foreground flex items-center gap-3 flex-wrap">
-            <span>{legend}</span>
-            <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-emerald-500/40" /> strong</span>
-            <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-amber-500/40" /> partial</span>
-            <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-sm border border-dashed border-[#2a3140]" /> missing</span>
-          </div>
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <div className="inline-flex rounded-sm border border-border bg-card p-0.5">
+          {[7, 14, 30].map(n => (
+            <button
+              key={n}
+              onClick={() => setDays(n as 7 | 14 | 30)}
+              className={`text-[11px] font-semibold px-2.5 py-1 rounded-[2px] transition ${
+                days === n ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >{n}D</button>
+          ))}
         </div>
-      )}
+        <div className="text-[11px] text-muted-foreground">
+          Green ✓ submitted · Red ✗ missed · Gray — not required (Sundays)
+        </div>
+      </div>
+
+      <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="border-b border-[#1f2530] text-[10px] uppercase tracking-wider text-muted-foreground">
+              <th className="text-left px-3 py-2 sticky left-0 bg-[#0f1116] z-10">Person</th>
+              {dayList.map(d => {
+                const dt = new Date(d + "T00:00:00");
+                const isSun = dt.getDay() === 0;
+                return (
+                  <th key={d} className={`px-1.5 py-2 text-center font-normal whitespace-nowrap ${isSun ? "text-[#4a5060]" : ""}`}>
+                    {fmtDayHeader(dt)}
+                  </th>
+                );
+              })}
+              <th className="px-3 py-2 text-right font-normal">Streak</th>
+              <th className="px-3 py-2 text-right font-normal">Compliance</th>
+            </tr>
+          </thead>
+          <tbody>
+            {ROLE_GROUPS.map(group => {
+              const members = roster.filter(r => group.roles.includes(r.primary_role));
+              if (!members.length) return null;
+              return (
+                <React.Fragment key={group.key}>
+                  <tr className="bg-[#0a0b0f]">
+                    <td colSpan={dayList.length + 3} className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+                      {group.label} · {members.length}
+                    </td>
+                  </tr>
+                  {members.map(m => {
+                    const s = rowStats(m.user_id);
+                    return (
+                      <tr key={m.user_id} className="border-b border-[#1a1f29] last:border-0">
+                        <td className="px-3 py-2 sticky left-0 bg-[#0f1116] font-medium truncate max-w-[180px]">
+                          <div className="text-xs">{m.display_name}</div>
+                          <div className="text-[9px] uppercase tracking-wider text-muted-foreground">{m.primary_role}</div>
+                        </td>
+                        {dayList.map(d => {
+                          const dt = new Date(d + "T00:00:00");
+                          const isSun = dt.getDay() === 0;
+                          const hit = submittedSet.has(`${m.user_id}::${d}`);
+                          if (isSun) {
+                            return <td key={d} className="px-1 py-1 text-center"><span className="text-[#3a3f4a] text-[11px]">—</span></td>;
+                          }
+                          return (
+                            <td key={d} className="px-1 py-1 text-center">
+                              {hit ? (
+                                <span title={`${m.display_name} · ${fmtLongDate(d)} · Submitted`} className="inline-flex items-center justify-center h-5 w-5 rounded-sm bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px]">✓</span>
+                              ) : (
+                                <span title={`${m.display_name} · ${fmtLongDate(d)} · Missed`} className="inline-flex items-center justify-center h-5 w-5 rounded-sm bg-rose-500/15 border border-rose-500/30 text-rose-400 text-[11px]">✗</span>
+                              )}
+                            </td>
+                          );
+                        })}
+                        <td className="px-3 py-2 text-right font-mono text-xs">
+                          <span className={s.streak >= 3 ? "text-amber-400" : "text-foreground"}>{s.streak}</span>
+                          <span className="text-muted-foreground text-[10px] ml-1">d</span>
+                        </td>
+                        <td className="px-3 py-2 text-right font-mono text-xs">
+                          <span className={s.pct >= 90 ? "text-emerald-400" : s.pct >= 70 ? "text-amber-400" : "text-rose-400"}>{s.pct}%</span>
+                          <span className="text-muted-foreground text-[10px] ml-1">({s.submitted}/{s.required})</span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </React.Fragment>
+              );
+            })}
+            {roster.length === 0 && (
+              <tr><td colSpan={dayList.length + 3} className="p-8 text-center text-xs text-muted-foreground">No team members with a reporting role yet.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
+  );
+}
+
+function ComplianceGraphs({ eods, roster }: { eods: GridEod[]; roster: RosterEntry[] }) {
+  const [days, setDays] = useState<7 | 30 | 90>(30);
+  const dayList = useMemo(() => buildDayList(days), [days]);
+
+  const expectedPerDay = roster.length; // Mon–Sat all roles required
+  const submissionsData = useMemo(() => {
+    return dayList.map(d => {
+      const dt = new Date(d + "T00:00:00");
+      const isSun = dt.getDay() === 0;
+      const submitted = eods.filter(e => e.report_date === d).length;
+      return {
+        date: d,
+        label: fmtDayHeader(dt),
+        submitted,
+        expected: isSun ? 0 : expectedPerDay,
+      };
+    });
+  }, [dayList, eods, expectedPerDay]);
+
+  const funnelData = useMemo(() => {
+    return dayList.map(d => {
+      const dayEods = eods.filter(e => e.report_date === d);
+      return {
+        date: d,
+        label: fmtDayHeader(new Date(d + "T00:00:00")),
+        dms: dayEods.reduce((a, e) => a + (e.dms_sent ?? 0), 0),
+        convos: dayEods.reduce((a, e) => a + (e.convos_started ?? 0), 0),
+        booked: dayEods.reduce((a, e) => a + (e.calls_booked ?? 0), 0),
+        shows: dayEods.reduce((a, e) => a + (e.shows ?? 0), 0),
+      };
+    });
+  }, [dayList, eods]);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <div className="inline-flex rounded-sm border border-border bg-card p-0.5">
+          {[7, 30, 90].map(n => (
+            <button
+              key={n}
+              onClick={() => setDays(n as 7 | 30 | 90)}
+              className={`text-[11px] font-semibold px-2.5 py-1 rounded-[2px] transition ${
+                days === n ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >{n}D</button>
+          ))}
+        </div>
+      </div>
+
+      <GraphCard title="Reports submitted vs expected" subtitle="Sundays excluded from expected count">
+        <SubmissionsChart data={submissionsData} />
+      </GraphCard>
+
+      <GraphCard title="Funnel volume — team total per day" subtitle="DMs · convos · booked · shows">
+        <FunnelChart data={funnelData} />
+      </GraphCard>
+    </div>
+  );
+}
+
+function GraphCard({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
+  return (
+    <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-4">
+      <div className="mb-3">
+        <div className="text-xs font-semibold text-foreground">{title}</div>
+        {subtitle && <div className="text-[10px] text-muted-foreground mt-0.5">{subtitle}</div>}
+      </div>
+      <div className="h-64">{children}</div>
+    </div>
+  );
+}
+
+function SubmissionsChart({ data }: { data: { label: string; submitted: number; expected: number }[] }) {
+  
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart data={data}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#1f2530" />
+        <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#8a91a0" }} />
+        <YAxis tick={{ fontSize: 10, fill: "#8a91a0" }} allowDecimals={false} />
+        <ReTooltip contentStyle={{ background: "#0f1116", border: "1px solid #1f2530", fontSize: 11 }} />
+        <Legend wrapperStyle={{ fontSize: 10 }} />
+        <Bar dataKey="expected" fill="#1f2530" name="Expected" />
+        <Bar dataKey="submitted" fill="#10b981" name="Submitted" />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+function FunnelChart({ data }: { data: { label: string; dms: number; convos: number; booked: number; shows: number }[] }) {
+  
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <LineChart data={data}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#1f2530" />
+        <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#8a91a0" }} />
+        <YAxis tick={{ fontSize: 10, fill: "#8a91a0" }} allowDecimals={false} />
+        <ReTooltip contentStyle={{ background: "#0f1116", border: "1px solid #1f2530", fontSize: 11 }} />
+        <Legend wrapperStyle={{ fontSize: 10 }} />
+        <Line type="monotone" dataKey="dms" stroke="#3b82f6" strokeWidth={1.5} dot={false} name="DMs" />
+        <Line type="monotone" dataKey="convos" stroke="#a855f7" strokeWidth={1.5} dot={false} name="Convos" />
+        <Line type="monotone" dataKey="booked" stroke="#10b981" strokeWidth={2} dot={false} name="Booked" />
+        <Line type="monotone" dataKey="shows" stroke="#f59e0b" strokeWidth={1.5} dot={false} name="Shows" />
+      </LineChart>
+    </ResponsiveContainer>
   );
 }
 
@@ -652,7 +795,7 @@ function EODRow({ eod, author, onDelete }: { eod: EOD; author?: string; onDelete
       <div className="w-full flex items-center gap-3 p-3 text-left hover:bg-[#14171e] transition">
         <button onClick={() => setOpen(o => !o)} className="flex items-center gap-3 flex-1 min-w-0 text-left">
           <ChevronRight className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${open ? "rotate-90" : ""}`} />
-          <div className="text-xs font-mono text-muted-foreground w-24">{eod.report_date}</div>
+          <div className="text-xs text-muted-foreground w-28">{fmtLongDate(eod.report_date)}</div>
           {author && <div className="text-xs text-foreground w-32 truncate">{author}</div>}
           <div className="flex-1 grid grid-cols-3 md:grid-cols-6 gap-2 text-[11px]">
             <RowStat label="DMs" value={eod.dms_sent} />
