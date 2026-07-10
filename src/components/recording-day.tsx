@@ -58,7 +58,10 @@ export function RecordingDay({ onOpenItem }: { onOpenItem: (id: string) => void 
 
   const setDay = async (n: number) => {
     setRecordingDay(n);
-    const { error } = await supabase.from("founder_settings").upsert({ id: 1, recording_day_of_week: n }, { onConflict: "id" });
+    const { data: existing } = await supabase.from("founder_settings").select("id").limit(1).maybeSingle();
+    const { error } = existing
+      ? await supabase.from("founder_settings").update({ recording_day_of_week: n }).eq("id", existing.id)
+      : await supabase.from("founder_settings").insert({ recording_day_of_week: n });
     if (error) toast.error(error.message);
   };
 
