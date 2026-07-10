@@ -65,7 +65,18 @@ type Idea = {
   link: string | null;
   promoted_item_id: string | null;
   created_at: string;
+  trigger_type: string | null;
+  explanation: string | null;
+  funnel_guess: string | null;
+  harvested: boolean;
 };
+
+export const TRIGGERS: { value: string; label: string; hint: string }[] = [
+  { value: "student_win",   label: "Student win",     hint: "A student result / breakthrough" },
+  { value: "client_call",   label: "Client call",     hint: "Something said on a call today" },
+  { value: "objection",     label: "Objection",       hint: "A repeated pushback / doubt" },
+  { value: "market_signal", label: "Market signal",   hint: "Something happening in the niche" },
+];
 
 const PLATFORMS: { value: Platform; label: string; color: string }[] = [
   { value: "instagram", label: "IG",       color: "bg-pink-500/10 text-pink-300 border-pink-500/30" },
