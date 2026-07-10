@@ -70,3 +70,54 @@ export const listTeamMembers = createServerFn({ method: "GET" })
       .map((p) => ({ id: p.id, name: p.display_name ?? "Unnamed" }))
       .sort((a, b) => a.name.localeCompare(b.name));
   });
+
+/**
+ * Approve a pending signup as a student: grants the student role and ensures
+ * a linked students record exists (created from their profile + auth email),
+ * so they appear on the Students page ready for payment/package details.
+ */
+export const approveAsStudent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { userId: string }) => data)
+  .handler(async ({ context, data }) => {
+    const { data: myRoles } = await context.supabase
+      .from("user_roles").select("role").eq("user_id", context.userId);
+    if (!(myRoles ?? []).some((r) => r.role === "admin")) throw new Error("admin only");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: au } = await supabaseAdmin.auth.admin.getUserById(data.userId);
+    const email = au?.user?.email ?? null;
+    const { data: prof } = await supabaseAdmin
+      .from("profiles").select("display_name").eq("id", data.userId).maybeSingle();
+
+    await supabaseAdmin.from("user_roles")
+      .upsert({ user_id: data.userId, role: "student" }, { onConflict: "user_id,role" });
+
+    // Reuse an existing student record (matched by email) or create one
+    let studentId: string | null = null;
+    if (email) {
+      const { data: existing } = await supabaseAdmin
+        .from("students").select("id").eq("email", email).maybeSingle();
+      if (existing) {
+        studentId = existing.id;
+        await supabaseAdmin.from("students").update({ user_id: data.userId }).eq("id", existing.id);
+      }
+    }
+    if (!studentId) {
+      const { data: created, error } = await supabaseAdmin
+        .from("students")
+        .insert({
+          full_name: prof?.display_name ?? email ?? "New student",
+          email,
+          user_id: data.userId,
+          phase: "onboarding",
+          status: "active",
+          join_date: new Date().toISOString().slice(0, 10),
+        } as never)
+        .select("id")
+        .single();
+      if (error) throw new Error(error.message);
+      studentId = created.id;
+    }
+    return { ok: true, studentId };
+  });

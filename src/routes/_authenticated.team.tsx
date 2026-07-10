@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,7 +9,7 @@ import {
   Upload, Trash2, PowerOff, Power, UserPlus, Copy, Check,
 } from "lucide-react";
 import { signAvatars, uploadAvatar } from "@/lib/avatars";
-import { deleteTeamMember, setMemberActive } from "@/lib/team-admin.functions";
+import { deleteTeamMember, setMemberActive, approveAsStudent } from "@/lib/team-admin.functions";
 import { fetchAllTemplates, progressPercent, type OnboardingTemplate } from "@/lib/onboarding";
 
 export const Route = createFileRoute("/_authenticated/team")({
@@ -42,6 +42,8 @@ function TeamPage() {
   const { roles, user } = useAuth();
   const isAdmin = roles.includes("admin");
   const [members, setMembers] = useState<Member[]>([]);
+  const approveStudentFn = useServerFn(approveAsStudent);
+  const navigate = useNavigate();
   const [avatarUrls, setAvatarUrls] = useState<Record<string, string>>({});
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState<Member | null>(null);
@@ -72,7 +74,7 @@ function TeamPage() {
       roles: rolesByUser.get(p.id) ?? [],
       setter_type: (p.setter_type ?? null) as SetterType,
     }));
-    setMembers(list);
+    setMembers(list.filter(m => !(m.roles.length === 1 && m.roles[0] === "student")));
     setAvatarUrls(await signAvatars(list.map(m => m.avatar_path)));
     const [tpls, { data: progressRows }] = await Promise.all([
       fetchAllTemplates(),
@@ -197,7 +199,14 @@ function TeamPage() {
                 </div>
                 <div className="flex gap-2 shrink-0">
                   <button
-                    onClick={() => toggleRole(m.id, "student", false)}
+                    onClick={async () => {
+                      try {
+                        const r = await approveStudentFn({ data: { userId: m.id } });
+                        toast.success("Approved — now fill in their payment and package.");
+                        load();
+                        if (r.studentId) navigate({ to: "/students/$id", params: { id: r.studentId } });
+                      } catch (e) { toast.error(String((e as Error).message ?? e)); }
+                    }}
                     className="text-caption font-medium px-3 py-1.5 rounded-md bg-muted text-foreground hover:bg-accent motion-safe:transition-colors"
                   >
                     Approve as student
