@@ -286,11 +286,9 @@ function CsmPage() {
                   onClick={() => addTally(k)}
                   className={`w-full text-left p-4 transition ${M.color} ${M.ring} focus:outline-none focus:ring-2`}
                 >
-                  <div className="flex items-center justify-between">
-                    <Icon className="h-4 w-4" />
-                    <span className="text-2xl font-bold tabular-nums">{count}</span>
-                  </div>
-                  <div className="mt-2 text-sm font-medium">{M.label}</div>
+                  <Icon className="h-4 w-4" />
+                  <div className="text-3xl font-bold tabular-nums mt-2">{count}</div>
+                  <div className="mt-1 text-sm font-medium">{M.label}</div>
                   <div className="text-[10px] opacity-80 mt-0.5">Tap +1 · today</div>
                 </button>
                 <div className="absolute top-1 right-1 flex gap-0.5">

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
+import { todayBiz } from "@/lib/dates";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   CheckCircle2, XCircle, AlertTriangle, Copy, Check, ChevronDown, ChevronRight,
@@ -65,7 +66,7 @@ function SalesHQ() {
 }
 
 function SalesHQInner() {
-  const today = isoDate(new Date());
+  const today = todayBiz();
   const yesterday = isoDate(new Date(Date.now() - 86400000));
   const thirtyDaysAgo = isoDate(new Date(Date.now() - 30 * 86400000));
 
@@ -81,6 +82,8 @@ function SalesHQInner() {
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [expandedScorecard, setExpandedScorecard] = useState<string | null>(null);
+  const { roles } = useAuth();
+  const canEditSetterType = roles.includes("admin");
 
   const load = async () => {
     setLoading(true);
@@ -156,6 +159,13 @@ function SalesHQInner() {
     [setters, yesterdayByUser]
   );
 
+  const updateSetterType = async (id: string, type: "phone" | "dm") => {
+    const { error } = await (supabase as any).from("profiles").update({ setter_type: type }).eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    setSetters(prev => prev.map(s => s.id === id ? { ...s, setter_type: type } : s));
+    toast.success("Setter type updated");
+  };
+
   const copyNudge = (setter: SetterProfile) => {
     const msg = `Hey ${setter.display_name.split(" ")[0]}, no EOD logged yesterday. Please submit today's report before EOD. 🙏`;
     navigator.clipboard.writeText(msg).then(() => {
@@ -221,9 +231,24 @@ function SalesHQInner() {
                           </div>
                           <div>
                             <div className="text-sm font-medium">{s.display_name}</div>
-                            <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
-                              {s.setter_type ? (s.setter_type === "phone" ? "Phone · 100 dials" : "DM · 125 leads") : "Type not set"}
-                            </div>
+                            {s.setter_type ? (
+                              <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                                {s.setter_type === "phone" ? "Phone · 100 dials" : "DM · 125 leads"}
+                              </div>
+                            ) : canEditSetterType ? (
+                              <select
+                                defaultValue=""
+                                onChange={e => { if (e.target.value) updateSetterType(s.id, e.target.value as "phone" | "dm"); }}
+                                onClick={e => e.stopPropagation()}
+                                className="text-[10px] h-5 px-1 rounded-sm border border-amber-500/40 bg-amber-500/10 text-amber-400 cursor-pointer"
+                              >
+                                <option value="" disabled>Set type…</option>
+                                <option value="phone">Phone</option>
+                                <option value="dm">DM</option>
+                              </select>
+                            ) : (
+                              <div className="text-[10px] text-amber-400 uppercase tracking-wider">Type not set</div>
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">

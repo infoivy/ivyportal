@@ -186,7 +186,7 @@ function ActionItemsHub() {
 
   return (
     <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-5">
-      <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--border)] pb-4">
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] pb-4 mb-1">
         <div>
           <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-blue-400 mb-1">
             <ListChecks className="h-3 w-3" /> Action Items Hub

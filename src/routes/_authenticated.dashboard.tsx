@@ -534,11 +534,11 @@ function Kpi({ icon: Icon, label, value, suffix, color, highlight, onClick, delt
   );
 }
 
-const OPS_TONE: Record<string, { dot: string; value: string }> = {
-  rose:   { dot: "bg-red-500",    value: "text-red-400" },
-  amber:  { dot: "bg-amber-500",  value: "text-amber-400" },
-  sky:    { dot: "bg-blue-500",   value: "text-foreground" },
-  muted:  { dot: "bg-white/30",   value: "text-foreground" },
+const OPS_TONE: Record<string, { dot: string; value: string; bg: string }> = {
+  rose:   { dot: "bg-red-500",    value: "text-red-400",    bg: "bg-red-500/5 border-red-500/20" },
+  amber:  { dot: "bg-amber-500",  value: "text-amber-400",  bg: "bg-amber-500/5 border-amber-500/20" },
+  sky:    { dot: "bg-blue-500",   value: "text-foreground", bg: "" },
+  muted:  { dot: "bg-white/30",   value: "text-foreground", bg: "" },
 };
 
 function OpsCard({
@@ -554,7 +554,7 @@ function OpsCard({
     <Link
       to={to as any}
       search={search as any}
-      className="rounded-xl border border-white/[0.07] bg-card p-4 hover:bg-white/[0.02] transition block"
+      className={`rounded-xl border p-4 transition block ${t.bg || "border-white/[0.07] bg-card hover:bg-white/[0.02]"}`}
     >
       <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
         <span className={`inline-block h-1.5 w-1.5 rounded-full ${t.dot}`} />
