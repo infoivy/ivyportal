@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "roles:grant": "node --env-file=.env scripts/grant-role.mjs"
+    "roles:grant": "node --env-file=.env scripts/grant-role.mjs",
+    "supabase:verify": "node --env-file=.env scripts/verify-supabase.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
