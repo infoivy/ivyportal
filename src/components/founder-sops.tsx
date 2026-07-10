@@ -199,7 +199,9 @@ export function FounderSops() {
               {selected.content?.trim() ? (
                 <MarkdownView content={selected.content} />
               ) : (
-                <p className="text-sm text-muted-foreground italic">Empty — click Edit to start writing.</p>
+                <div className="rounded-sm border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-200">
+                  <strong className="font-semibold">Content missing</strong> — the original body did not survive migration. Click <span className="text-fuchsia-300">Edit</span> to paste it in.
+                </div>
               )}
             </div>
           </div>
