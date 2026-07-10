@@ -236,10 +236,11 @@ function Dashboard() {
                   ? "bg-primary/10 text-primary"
                   : "bg-muted text-muted-foreground hover:text-foreground"
               }`}
-              title="Toggle previous-period comparison"
+              title={`Compare against the previous ${days} days`}
             >
               <ArrowRightLeft className="h-3.5 w-3.5" /> Compare
             </button>
+            {compare && <span className="text-caption text-muted-foreground">vs previous {days}d</span>}
             <button
               onClick={() => setSettingsOpen(true)}
               className="p-2 rounded-md bg-muted text-muted-foreground hover:text-foreground motion-safe:transition-colors"
