@@ -31,9 +31,15 @@ type WeekSlot = {
   link_when_posted: string | null;
 };
 
+// Kept in sync with the "Content Brainstorm Session" SOP → Step 3 video formats.
 const CREATIVE_TYPES = [
-  "talking head", "split-screen", "listicle", "story", "POV",
-  "tutorial", "case study", "tweet-style", "screen record", "meme",
+  "Talking head",
+  "Pick up the phone angle",
+  "Side angle",
+  "Miro board walkthrough",
+  "Ceiling angle",
+  "Prestigious background",
+  "Vlog style",
 ];
 
 // Monday-start local YYYY-MM-DD. Do NOT use toISOString — it shifts by the
