@@ -129,7 +129,7 @@ export function AppSidebar({ roles }: { roles: string[] }) {
                         : "text-muted-foreground hover:text-foreground hover:bg-muted")
                     }
                   >
-                    <Link to={item.url} className="flex items-center gap-2.5">
+                    <Link to={item.url} preload="intent" className="flex items-center gap-2.5">
                       {/* Apple Settings-style icon container */}
                       <span
                         className="h-[26px] w-[26px] shrink-0 rounded-[7px] flex items-center justify-center"
