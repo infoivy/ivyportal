@@ -503,6 +503,7 @@ export type Database = {
           deal_date: string
           fathom_url: string | null
           id: string
+          is_demo: boolean
           notes: string | null
           payment_type: Database["public"]["Enums"]["deal_payment_type"]
           program_type: string
@@ -522,6 +523,7 @@ export type Database = {
           deal_date?: string
           fathom_url?: string | null
           id?: string
+          is_demo?: boolean
           notes?: string | null
           payment_type?: Database["public"]["Enums"]["deal_payment_type"]
           program_type?: string
@@ -541,6 +543,7 @@ export type Database = {
           deal_date?: string
           fathom_url?: string | null
           id?: string
+          is_demo?: boolean
           notes?: string | null
           payment_type?: Database["public"]["Enums"]["deal_payment_type"]
           program_type?: string
@@ -629,6 +632,7 @@ export type Database = {
           escalations_resolved: number
           follow_ups_done: number
           id: string
+          is_demo: boolean
           leads_contacted: number
           looms_reviewed: number
           no_shows: number
@@ -658,6 +662,7 @@ export type Database = {
           escalations_resolved?: number
           follow_ups_done?: number
           id?: string
+          is_demo?: boolean
           leads_contacted?: number
           looms_reviewed?: number
           no_shows?: number
@@ -687,6 +692,7 @@ export type Database = {
           escalations_resolved?: number
           follow_ups_done?: number
           id?: string
+          is_demo?: boolean
           leads_contacted?: number
           looms_reviewed?: number
           no_shows?: number
@@ -708,6 +714,7 @@ export type Database = {
           crm_enabled: boolean
           id: string
           monthly_cash_goal: number | null
+          quarterly_goals: Json | null
           recording_day_of_week: number
           top_setter_bonus_pct: number
           updated_at: string
@@ -720,6 +727,7 @@ export type Database = {
           crm_enabled?: boolean
           id?: string
           monthly_cash_goal?: number | null
+          quarterly_goals?: Json | null
           recording_day_of_week?: number
           top_setter_bonus_pct?: number
           updated_at?: string
@@ -732,6 +740,7 @@ export type Database = {
           crm_enabled?: boolean
           id?: string
           monthly_cash_goal?: number | null
+          quarterly_goals?: Json | null
           recording_day_of_week?: number
           top_setter_bonus_pct?: number
           updated_at?: string
@@ -830,6 +839,7 @@ export type Database = {
           followers: number
           id: string
           interactions: number
+          is_demo: boolean
           link_clicks: number
           month: string
           new_followers: number
@@ -847,6 +857,7 @@ export type Database = {
           followers?: number
           id?: string
           interactions?: number
+          is_demo?: boolean
           link_clicks?: number
           month: string
           new_followers?: number
@@ -864,6 +875,7 @@ export type Database = {
           followers?: number
           id?: string
           interactions?: number
+          is_demo?: boolean
           link_clicks?: number
           month?: string
           new_followers?: number
@@ -1287,9 +1299,10 @@ export type Database = {
           done_at: string | null
           due_date: string | null
           id: string
+          is_demo: boolean
           notes: string | null
           source_call_id: string | null
-          student_id: string
+          student_id: string | null
           text: string
           updated_at: string
         }
@@ -1301,9 +1314,10 @@ export type Database = {
           done_at?: string | null
           due_date?: string | null
           id?: string
+          is_demo?: boolean
           notes?: string | null
           source_call_id?: string | null
-          student_id: string
+          student_id?: string | null
           text: string
           updated_at?: string
         }
@@ -1315,9 +1329,10 @@ export type Database = {
           done_at?: string | null
           due_date?: string | null
           id?: string
+          is_demo?: boolean
           notes?: string | null
           source_call_id?: string | null
-          student_id?: string
+          student_id?: string | null
           text?: string
           updated_at?: string
         }
@@ -1530,6 +1545,7 @@ export type Database = {
           full_name: string
           general_notes: string | null
           id: string
+          is_demo: boolean
           join_date: string
           next_action: string | null
           notes: string | null
@@ -1557,6 +1573,7 @@ export type Database = {
           full_name: string
           general_notes?: string | null
           id?: string
+          is_demo?: boolean
           join_date?: string
           next_action?: string | null
           notes?: string | null
@@ -1584,6 +1601,7 @@ export type Database = {
           full_name?: string
           general_notes?: string | null
           id?: string
+          is_demo?: boolean
           join_date?: string
           next_action?: string | null
           notes?: string | null
@@ -1987,3 +2005,4 @@ export const Constants = {
     },
   },
 } as const
+
