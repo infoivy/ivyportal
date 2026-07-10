@@ -13,7 +13,7 @@ import {
   BarChart, Bar, Cell,
 } from "recharts";
 import { format, subDays, differenceInCalendarDays } from "date-fns";
-import { CashLeaderboard } from "@/components/weekly-leaderboard";
+import { money, startOfWeekMon, endOfWeekSun, isoDay, type Deal } from "@/lib/revenue";
 import { RangePicker, type DateRange, rangeFor, daysBetween } from "@/components/range-picker";
 import { StatDrilldown, type MetricKey } from "@/components/stat-drilldown";
 import { DashboardSettingsSheet } from "@/components/dashboard-settings-sheet";
@@ -222,7 +222,7 @@ function Dashboard() {
           </div>
         </div>
 
-        <OnboardingPanel compact />
+        {!isFounder && !(roles.includes("admin") && roles.length === 1) && <OnboardingPanel compact />}
 
         {/* KPI Row */}
         {prefs.showKpis && (
@@ -332,91 +332,49 @@ function Dashboard() {
           </div>
         )}
 
-        {prefs.showCashLeaderboard && (roles.includes("admin") || roles.includes("closer") || roles.includes("coach")) && (
-          <CashLeaderboard compact />
+        {(prefs.showCashLeaderboard || prefs.showTopSetters || prefs.showWeeklyLeaderboard) && (
+          <UnifiedLeaderboard profiles={profiles} eods={eods} />
         )}
 
-        {/* Row 3: Top Setters + Goals + Audience */}
-        {(prefs.showTopSetters || prefs.showGoals || prefs.showTeamComp) && (
-          <div className="grid gap-3 lg:grid-cols-[1.5fr_1fr]">
-            {prefs.showTopSetters && (
+        {/* Row 3: Goals + Team Comp (top setters merged into UnifiedLeaderboard above) */}
+        {(prefs.showGoals || prefs.showTeamComp) && (
+          <div className="grid gap-3 lg:grid-cols-2">
+            {prefs.showGoals && (
               <Panel>
-                <PanelHead
-                  title="Top Performing Setters"
-                  subtitle={rangeLabel}
-                  legend={[{ color: "#22c55e", label: "Sorted by Booked" }]}
-                />
-                {topSetters.length === 0 ? (
-                  <div className="py-10 text-center text-xs text-muted-foreground">No EODs submitted in this range.</div>
-                ) : (
-                  <div className="mt-2">
-                    <div className="grid grid-cols-[24px_minmax(0,1fr)_90px_60px_60px_60px] gap-2 px-2 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border">
-                      <span>#</span>
-                      <span>Setter</span>
-                      <span className="text-right">DMs</span>
-                      <span className="text-right">Convos</span>
-                      <span className="text-right inline-flex items-center justify-end gap-0.5 text-emerald-400">Booked <ChevronDown className="h-3 w-3" /></span>
-                      <span className="text-right">Shows</span>
-                    </div>
-                    {topSetters.map((s, i) => {
-                      const name = profiles[s.user_id]?.display_name ?? "Unknown";
-                      return (
-                        <div key={s.user_id} className="grid grid-cols-[24px_minmax(0,1fr)_90px_60px_60px_60px] gap-2 px-2 py-2 text-xs tabular-nums border-b border-border/50 hover:bg-white/[0.02]">
-                          <span className="text-muted-foreground">{i + 1}</span>
-                          <span className="truncate font-medium">{name}</span>
-                          <span className="text-right text-blue-400">{s.dms.toLocaleString()}</span>
-                          <span className="text-right text-purple-400">{s.convos.toLocaleString()}</span>
-                          <span className="text-right text-emerald-400 font-semibold">{s.calls.toLocaleString()}</span>
-                          <span className="text-right text-amber-400">{s.shows.toLocaleString()}</span>
-                        </div>
-                      );
-                    })}
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="grid h-6 w-6 place-items-center rounded-sm bg-blue-500/15 border border-blue-500/40">
+                    <Target className="h-3 w-3 text-blue-400" />
                   </div>
-                )}
+                  <h3 className="text-sm font-bold">{goalsLabel}</h3>
+                </div>
+                <div className="space-y-3">
+                  <Goal label="DMs Sent"     value={totals.dms_sent}       target={GOALS.dms}     color="#3b82f6" />
+                  <Goal label="Convos"       value={totals.convos_started} target={GOALS.convos}  color="#a855f7" />
+                  <Goal label="Calls Booked" value={totals.calls_booked}   target={GOALS.calls}   color="#22c55e" />
+                  <Goal label="Shows"        value={totals.shows}          target={GOALS.shows}   color="#f59e0b" warn={totals.shows < GOALS.shows * 0.5 && days >= 30} />
+                  <Goal label="Show Rate"    value={showRate}              target={GOALS.showRate} suffix="%" color="#06b6d4" />
+                </div>
               </Panel>
             )}
 
-            {(prefs.showGoals || prefs.showTeamComp) && (
-              <div className="grid gap-3">
-                {prefs.showGoals && (
-                  <Panel>
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="grid h-6 w-6 place-items-center rounded-sm bg-blue-500/15 border border-blue-500/40">
-                        <Target className="h-3 w-3 text-blue-400" />
-                      </div>
-                      <h3 className="text-sm font-bold">{goalsLabel}</h3>
-                    </div>
-                    <div className="space-y-3">
-                      <Goal label="DMs Sent"     value={totals.dms_sent}       target={GOALS.dms}     color="#3b82f6" />
-                      <Goal label="Convos"       value={totals.convos_started} target={GOALS.convos}  color="#a855f7" />
-                      <Goal label="Calls Booked" value={totals.calls_booked}   target={GOALS.calls}   color="#22c55e" />
-                      <Goal label="Shows"        value={totals.shows}          target={GOALS.shows}   color="#f59e0b" warn={totals.shows < GOALS.shows * 0.5 && days >= 30} />
-                      <Goal label="Show Rate"    value={showRate}              target={GOALS.showRate} suffix="%" color="#06b6d4" />
-                    </div>
-                  </Panel>
-                )}
-
-                {prefs.showTeamComp && (
-                  <Panel>
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="grid h-6 w-6 place-items-center rounded-sm bg-purple-500/15 border border-purple-500/40">
-                        <Globe className="h-3 w-3 text-purple-400" />
-                      </div>
-                      <h3 className="text-sm font-bold">Team Composition</h3>
-                    </div>
-                    <div className="space-y-2">
-                      <AudienceRow label="Active this period" value={activeSetters} total={Math.max(activeSetters, 1)} color="#3b82f6" />
-                      <AudienceRow label="EODs / setter"      value={activeSetters > 0 ? Math.round(totalEods / activeSetters) : 0} total={days} color="#22c55e" suffix={` / ${days}`} />
-                      <AudienceRow label="Avg calls / setter" value={activeSetters > 0 ? Math.round(totals.calls_booked / activeSetters) : 0} total={GOALS.calls / Math.max(activeSetters, 1)} color="#f59e0b" />
-                    </div>
-                  </Panel>
-                )}
-              </div>
+            {prefs.showTeamComp && (
+              <Panel>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="grid h-6 w-6 place-items-center rounded-sm bg-purple-500/15 border border-purple-500/40">
+                    <Globe className="h-3 w-3 text-purple-400" />
+                  </div>
+                  <h3 className="text-sm font-bold">Team Composition</h3>
+                </div>
+                <div className="space-y-2">
+                  <AudienceRow label="Active this period" value={activeSetters} total={Math.max(activeSetters, 1)} color="#3b82f6" />
+                  <AudienceRow label="EODs / setter"      value={activeSetters > 0 ? Math.round(totalEods / activeSetters) : 0} total={days} color="#22c55e" suffix={` / ${days}`} />
+                  <AudienceRow label="Avg calls / setter" value={activeSetters > 0 ? Math.round(totals.calls_booked / activeSetters) : 0} total={GOALS.calls / Math.max(activeSetters, 1)} color="#f59e0b" />
+                </div>
+              </Panel>
             )}
           </div>
         )}
 
-        {prefs.showWeeklyLeaderboard && <WeeklyLeaderboard profiles={profiles} eods={eods} />}
 
 
         {/* Quick actions */}
@@ -766,9 +724,9 @@ function MyDayBlock({ roles }: { roles: string[] }) {
     (async () => {
       const parts: { label: string; value: string; tone: string; to?: string }[] = [];
 
-      if (roles.includes("admin")) {
-        // Admins: brief snapshot — Ops row is right below.
-        setState({ loading: false, parts: [{ label: "Admin view", value: "Ops row below", tone: "sky" }] });
+      if (roles.includes("admin") && !roles.includes("coach") && !roles.includes("csm") && !roles.includes("setter") && !roles.includes("closer")) {
+        // Founders/admins: skip the My Day block entirely
+        setState({ loading: false, parts: [] });
         return;
       }
 
@@ -841,64 +799,121 @@ function MyDayBlock({ roles }: { roles: string[] }) {
   );
 }
 
-/* ---------------- Weekly leaderboard ---------------- */
-function WeeklyLeaderboard({ profiles, eods }: { profiles: Record<string, Profile>; eods: EodRow[] }) {
-  const today = new Date();
-  const monday = new Date(today);
-  monday.setHours(0, 0, 0, 0);
-  const day = monday.getDay();
-  monday.setDate(monday.getDate() - ((day + 6) % 7)); // Mon
-  const lastMonday = new Date(monday); lastMonday.setDate(lastMonday.getDate() - 7);
-  const lastSunday = new Date(monday); lastSunday.setDate(lastSunday.getDate() - 1);
+/* ---------------- Unified leaderboard (Cash / Booked toggle) ---------------- */
+function UnifiedLeaderboard({ profiles, eods }: { profiles: Record<string, Profile>; eods: EodRow[] }) {
+  const [mode, setMode] = useState<"cash" | "booked">("booked");
+  const [cashRows, setCashRows] = useState<{ uid: string; name: string; value: number; sub: string }[]>([]);
+  const [cashLoading, setCashLoading] = useState(false);
 
-  const inRange = (d: string, a: Date, b: Date) => {
-    const t = new Date(d).getTime();
-    return t >= a.getTime() && t <= b.getTime();
-  };
+  const start = startOfWeekMon(new Date());
+  const end = endOfWeekSun(new Date());
+  const startISO = isoDay(start);
+  const endISO = isoDay(end);
 
-  const acc = (rows: EodRow[]) => {
-    const m: Record<string, { dms: number; booked: number; shows: number; calls: number }> = {};
-    for (const r of rows) {
-      const b = m[r.user_id] ?? (m[r.user_id] = { dms: 0, booked: 0, shows: 0, calls: 0 });
-      b.dms += r.dms_sent; b.booked += r.calls_booked; b.shows += r.shows;
+  useEffect(() => {
+    if (mode !== "cash") return;
+    let alive = true;
+    setCashLoading(true);
+    (async () => {
+      try {
+        const [dealsRes, eodsRes] = await Promise.all([
+          supabase.from("deals").select("closer_id, cash_collected_upfront, deal_date")
+            .gte("deal_date", startISO).lte("deal_date", endISO),
+          supabase.from("eods").select("user_id, cash_collected, report_date")
+            .gte("report_date", startISO).lte("report_date", endISO),
+        ]);
+        const totals = new Map<string, { cash: number; closes: number }>();
+        for (const d of (dealsRes.data ?? []) as Pick<Deal, "closer_id" | "cash_collected_upfront">[]) {
+          const c = totals.get(d.closer_id) ?? { cash: 0, closes: 0 };
+          c.cash += Number(d.cash_collected_upfront) || 0;
+          c.closes += 1;
+          totals.set(d.closer_id, c);
+        }
+        for (const e of (eodsRes.data ?? []) as { user_id: string; cash_collected: number | null }[]) {
+          const c = totals.get(e.user_id) ?? { cash: 0, closes: 0 };
+          c.cash += Number(e.cash_collected) || 0;
+          totals.set(e.user_id, c);
+        }
+        const out = Array.from(totals.entries())
+          .map(([uid, v]) => ({ uid, name: profiles[uid]?.display_name ?? "Unknown", value: v.cash, sub: `${v.closes} close${v.closes === 1 ? "" : "s"}` }))
+          .sort((a, b) => b.value - a.value);
+        if (alive) setCashRows(out);
+      } catch (e) {
+        console.error("UnifiedLeaderboard cash load failed", e);
+        if (alive) setCashRows([]);
+      } finally {
+        if (alive) setCashLoading(false);
+      }
+    })();
+    return () => { alive = false; };
+  }, [mode, startISO, endISO, profiles]);
+
+  const bookedRows = useMemo(() => {
+    const inWeek = eods.filter((r) => r.report_date >= startISO && r.report_date <= endISO);
+    const m: Record<string, { booked: number; dms: number; shows: number }> = {};
+    for (const r of inWeek) {
+      const b = m[r.user_id] ?? (m[r.user_id] = { booked: 0, dms: 0, shows: 0 });
+      b.booked += r.calls_booked; b.dms += r.dms_sent; b.shows += r.shows;
     }
-    return m;
-  };
+    return Object.entries(m)
+      .map(([uid, v]) => ({ uid, name: profiles[uid]?.display_name ?? "Unknown", value: v.booked, sub: `${v.dms.toLocaleString()} DMs · ${v.shows} shows` }))
+      .sort((a, b) => b.value - a.value);
+  }, [eods, profiles, startISO, endISO]);
 
-  const thisWeek = acc(eods.filter(r => inRange(r.report_date, monday, today)));
-  const lastWeek = acc(eods.filter(r => inRange(r.report_date, lastMonday, lastSunday)));
-
-  const users = Array.from(new Set([...Object.keys(thisWeek), ...Object.keys(lastWeek)]));
-  const rows = users.map(uid => {
-    const t = thisWeek[uid] ?? { dms: 0, booked: 0, shows: 0, calls: 0 };
-    const l = lastWeek[uid] ?? { dms: 0, booked: 0, shows: 0, calls: 0 };
-    return { uid, name: profiles[uid]?.display_name ?? "Unknown", t, l };
-  }).sort((a, b) => b.t.booked - a.t.booked).slice(0, 10);
+  const rows = mode === "cash" ? cashRows : bookedRows;
+  const isLoading = mode === "cash" && cashLoading;
 
   return (
     <div className="rounded-md border border-border bg-card">
-      <div className="px-3 py-2 border-b border-border flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="px-3 py-2 border-b border-border flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2 min-w-0">
+          <Star className="h-3.5 w-3.5 text-amber-400 shrink-0" />
           <span className="text-sm font-bold">Weekly leaderboard</span>
-          <span className="text-[10px] text-muted-foreground">this week vs last · resets Monday</span>
+          <span className="text-[10px] text-muted-foreground truncate">
+            {startISO} → {endISO} · resets Monday
+          </span>
+        </div>
+        <div className="flex gap-1">
+          {(["booked", "cash"] as const).map((m) => (
+            <button
+              key={m}
+              onClick={() => setMode(m)}
+              className={
+                "text-[10px] uppercase tracking-wider px-2 py-1 rounded border " +
+                (mode === m
+                  ? "border-primary/60 bg-primary/10 text-primary"
+                  : "border-border text-muted-foreground hover:text-foreground")
+              }
+            >
+              {m === "booked" ? "Booked (setters)" : "Cash (closers)"}
+            </button>
+          ))}
         </div>
       </div>
-      {rows.length === 0 ? (
-        <div className="p-6 text-center text-xs text-muted-foreground">Nothing submitted yet this week.</div>
+      {isLoading ? (
+        <div className="p-6 text-center text-xs text-muted-foreground">Loading…</div>
+      ) : rows.length === 0 ? (
+        <div className="p-6 text-center text-xs text-muted-foreground">
+          {mode === "cash" ? "No cash collected this week yet." : "Nothing submitted yet this week."}
+        </div>
       ) : (
-        <div className="overflow-x-auto">
-          <div className="grid grid-cols-[minmax(0,1.5fr)_repeat(3,minmax(70px,1fr))] gap-2 px-3 py-1.5 text-[10px] uppercase tracking-widest text-muted-foreground border-b border-border">
-            <span>Member</span>
-            <span className="text-right">DMs</span>
-            <span className="text-right">Booked</span>
-            <span className="text-right">Shows</span>
-          </div>
-          {rows.map(r => (
-            <div key={r.uid} className="grid grid-cols-[minmax(0,1.5fr)_repeat(3,minmax(70px,1fr))] gap-2 px-3 py-2 border-b border-border/50 last:border-0 text-xs">
-              <span className="truncate font-medium">{r.name}</span>
-              <MoveCell curr={r.t.dms} prev={r.l.dms} />
-              <MoveCell curr={r.t.booked} prev={r.l.booked} highlight />
-              <MoveCell curr={r.t.shows} prev={r.l.shows} />
+        <div>
+          {rows.slice(0, 10).map((r, i) => (
+            <div
+              key={r.uid}
+              className={
+                "flex items-center gap-3 px-3 py-2 border-b border-border/50 last:border-0 " +
+                (i === 0 ? "bg-amber-500/5" : "")
+              }
+            >
+              <span className={"text-[11px] font-mono w-5 " + (i === 0 ? "text-amber-400" : "text-muted-foreground")}>{i + 1}</span>
+              <div className="min-w-0 flex-1">
+                <div className="text-xs font-medium truncate">{r.name}</div>
+                <div className="text-[10px] text-muted-foreground truncate">{r.sub}</div>
+              </div>
+              <div className="text-sm font-mono tabular-nums text-emerald-400">
+                {mode === "cash" ? money(r.value) : r.value.toLocaleString()}
+              </div>
             </div>
           ))}
         </div>
@@ -907,18 +922,4 @@ function WeeklyLeaderboard({ profiles, eods }: { profiles: Record<string, Profil
   );
 }
 
-function MoveCell({ curr, prev, highlight }: { curr: number; prev: number; highlight?: boolean }) {
-  const diff = curr - prev;
-  const Icon = diff > 0 ? TrendingUp : diff < 0 ? TrendingDown : Minus;
-  const color = diff > 0 ? "text-emerald-400" : diff < 0 ? "text-rose-400" : "text-muted-foreground";
-  return (
-    <span className="text-right tabular-nums inline-flex items-center justify-end gap-1">
-      <span className={highlight ? "font-semibold text-emerald-400" : ""}>{curr}</span>
-      <span className={`inline-flex items-center gap-0.5 text-[10px] ${color}`}>
-        <Icon className="h-2.5 w-2.5" />
-        {diff > 0 ? `+${diff}` : diff}
-      </span>
-    </span>
-  );
-}
 
