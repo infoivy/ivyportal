@@ -553,8 +553,8 @@ function ComplianceMatrix({ eods, roster }: { eods: GridEod[]; roster: RosterEnt
               const members = roster.filter(r => group.roles.includes(r.primary_role));
               if (!members.length) return null;
               return (
-                <>
-                  <tr key={group.key + "-h"} className="bg-[#0a0b0f]">
+                <React.Fragment key={group.key}>
+                  <tr className="bg-[#0a0b0f]">
                     <td colSpan={dayList.length + 3} className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
                       {group.label} · {members.length}
                     </td>
@@ -595,7 +595,7 @@ function ComplianceMatrix({ eods, roster }: { eods: GridEod[]; roster: RosterEnt
                       </tr>
                     );
                   })}
-                </>
+                </React.Fragment>
               );
             })}
             {roster.length === 0 && (
