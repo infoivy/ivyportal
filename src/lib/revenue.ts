@@ -20,36 +20,44 @@ export type Deal = {
 };
 
 export type CommissionRates = {
+  /** Close-only closer rate (default 10%) */
   new_close: number;
-  pif_under_30d: number;
-  payment_plan: number;
+  /** Set+close closer rate (default 15%) */
+  set_close: number;
+  /** Setter base rate (default 7.5%) */
   setter_base: number;
 };
 
 export const DEFAULT_RATES: CommissionRates = {
   new_close: 0.10,
-  pif_under_30d: 0.12,
-  payment_plan: 0.05,
+  set_close: 0.15,
   setter_base: 0.075,
 };
 
-function isPifWithin30d(d: Deal, asOf: Date): boolean {
-  const dealDate = new Date(d.deal_date + "T00:00:00");
-  const daysSince = Math.floor((asOf.getTime() - dealDate.getTime()) / 86_400_000);
-  const isPIF = d.payment_type === "pif" && d.cash_collected_upfront >= d.total_value;
-  return isPIF && daysSince <= 30;
-}
-
 /**
  * Closer commission:
- * - PIF within 30d: pif_under_30d × total_value
- * - split/deposit: payment_plan × total_value
- * - fallback: new_close × total_value
+ * - 15% (set_close) if a setter was involved (setter_id present)
+ * - 10% (new_close) if closer worked the deal alone
+ * - Per-user cap applied if commission_cap_pct is set on the closer's profile
+ * Applied to cash_collected_upfront.
  */
-export function commissionForDeal(d: Deal, rates: CommissionRates, asOf: Date = new Date()): number {
-  if (isPifWithin30d(d, asOf)) return d.total_value * rates.pif_under_30d;
-  if (d.payment_type === "split" || d.payment_type === "deposit") return d.total_value * rates.payment_plan;
-  return d.total_value * rates.new_close;
+export function commissionForDeal(
+  d: Deal,
+  rates: CommissionRates,
+  closerCapPct?: number | null,
+): number {
+  const baseRate = d.setter_id ? rates.set_close : rates.new_close;
+  const rate = closerCapPct != null ? Math.min(baseRate, closerCapPct) : baseRate;
+  return d.cash_collected_upfront * rate;
+}
+
+/** Label explaining why a given closer rate applied to a deal (for UI display). */
+export function closerRateLabel(d: Deal, rates: CommissionRates, closerCapPct?: number | null): string {
+  const baseRate = d.setter_id ? rates.set_close : rates.new_close;
+  const rate = closerCapPct != null ? Math.min(baseRate, closerCapPct) : baseRate;
+  const pct = `${(rate * 100).toFixed(0)}%`;
+  if (closerCapPct != null && baseRate > closerCapPct) return `${pct} (capped)`;
+  return d.setter_id ? `${pct} set+close` : `${pct} close-only`;
 }
 
 /**

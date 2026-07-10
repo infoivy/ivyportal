@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_log: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          new_value: Json | null
+          old_value: Json | null
+          record_id: string | null
+          table_name: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          record_id?: string | null
+          table_name: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          record_id?: string | null
+          table_name?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       calendar_connections: {
         Row: {
           access_token: string | null
@@ -474,6 +507,7 @@ export type Database = {
           payment_type: Database["public"]["Enums"]["deal_payment_type"]
           program_type: string
           setter_id: string | null
+          source: string | null
           student_id: string | null
           student_name: string
           total_value: number
@@ -492,6 +526,7 @@ export type Database = {
           payment_type?: Database["public"]["Enums"]["deal_payment_type"]
           program_type?: string
           setter_id?: string | null
+          source?: string | null
           student_id?: string | null
           student_name: string
           total_value?: number
@@ -510,6 +545,7 @@ export type Database = {
           payment_type?: Database["public"]["Enums"]["deal_payment_type"]
           program_type?: string
           setter_id?: string | null
+          source?: string | null
           student_id?: string | null
           student_name?: string
           total_value?: number
@@ -669,7 +705,9 @@ export type Database = {
       founder_settings: {
         Row: {
           created_at: string
+          crm_enabled: boolean
           id: string
+          monthly_cash_goal: number | null
           recording_day_of_week: number
           top_setter_bonus_pct: number
           updated_at: string
@@ -679,7 +717,9 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          crm_enabled?: boolean
           id?: string
+          monthly_cash_goal?: number | null
           recording_day_of_week?: number
           top_setter_bonus_pct?: number
           updated_at?: string
@@ -689,7 +729,9 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          crm_enabled?: boolean
           id?: string
+          monthly_cash_goal?: number | null
           recording_day_of_week?: number
           top_setter_bonus_pct?: number
           updated_at?: string
@@ -1005,6 +1047,42 @@ export type Database = {
           },
         ]
       }
+      invitations: {
+        Row: {
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string | null
+          roles: string[]
+          setter_type: string | null
+          token: string
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          roles?: string[]
+          setter_type?: string | null
+          token?: string
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          roles?: string[]
+          setter_type?: string | null
+          token?: string
+          used_at?: string | null
+        }
+        Relationships: []
+      }
       notes: {
         Row: {
           content: string
@@ -1133,6 +1211,7 @@ export type Database = {
           active: boolean
           avatar_path: string | null
           avatar_url: string | null
+          commission_cap_pct: number | null
           created_at: string
           dashboard_prefs: Json
           display_name: string | null
@@ -1145,6 +1224,7 @@ export type Database = {
           active?: boolean
           avatar_path?: string | null
           avatar_url?: string | null
+          commission_cap_pct?: number | null
           created_at?: string
           dashboard_prefs?: Json
           display_name?: string | null
@@ -1157,6 +1237,7 @@ export type Database = {
           active?: boolean
           avatar_path?: string | null
           avatar_url?: string | null
+          commission_cap_pct?: number | null
           created_at?: string
           dashboard_prefs?: Json
           display_name?: string | null
@@ -1378,6 +1459,66 @@ export type Database = {
           },
         ]
       }
+      student_milestone_progress: {
+        Row: {
+          achieved_at: string
+          achieved_by: string | null
+          milestone_id: string
+          student_id: string
+        }
+        Insert: {
+          achieved_at?: string
+          achieved_by?: string | null
+          milestone_id: string
+          student_id: string
+        }
+        Update: {
+          achieved_at?: string
+          achieved_by?: string | null
+          milestone_id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_milestone_progress_milestone_id_fkey"
+            columns: ["milestone_id"]
+            isOneToOne: false
+            referencedRelation: "student_milestones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_milestone_progress_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_milestones: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          id?: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       students: {
         Row: {
           calls_allotted: number
@@ -1396,6 +1537,7 @@ export type Database = {
           offers_landed_count: number
           payment_state: Database["public"]["Enums"]["payment_state"] | null
           phase: Database["public"]["Enums"]["student_phase"]
+          source: string | null
           status: Database["public"]["Enums"]["student_status"]
           student_grade: string | null
           testimonial_collected: boolean
@@ -1422,6 +1564,7 @@ export type Database = {
           offers_landed_count?: number
           payment_state?: Database["public"]["Enums"]["payment_state"] | null
           phase?: Database["public"]["Enums"]["student_phase"]
+          source?: string | null
           status?: Database["public"]["Enums"]["student_status"]
           student_grade?: string | null
           testimonial_collected?: boolean
@@ -1448,6 +1591,7 @@ export type Database = {
           offers_landed_count?: number
           payment_state?: Database["public"]["Enums"]["payment_state"] | null
           phase?: Database["public"]["Enums"]["student_phase"]
+          source?: string | null
           status?: Database["public"]["Enums"]["student_status"]
           student_grade?: string | null
           testimonial_collected?: boolean
@@ -1515,6 +1659,45 @@ export type Database = {
           },
         ]
       }
+      training_videos: {
+        Row: {
+          active: boolean
+          category: string
+          created_at: string
+          description: string
+          id: string
+          sort_order: number
+          thumbnail_color: string
+          title: string
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          active?: boolean
+          category?: string
+          created_at?: string
+          description?: string
+          id?: string
+          sort_order?: number
+          thumbnail_color?: string
+          title: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          active?: boolean
+          category?: string
+          created_at?: string
+          description?: string
+          id?: string
+          sort_order?: number
+          thumbnail_color?: string
+          title?: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -1551,6 +1734,14 @@ export type Database = {
       student_toggle_action_item: {
         Args: { _call_id: string; _done: boolean; _index: number }
         Returns: Json
+      }
+      verify_security_schema: {
+        Args: never
+        Returns: {
+          policy_count: number
+          rls_enabled: boolean
+          table_name: string
+        }[]
       }
     }
     Enums: {

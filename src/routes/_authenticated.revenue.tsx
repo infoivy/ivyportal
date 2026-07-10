@@ -7,6 +7,7 @@ import {
   CommissionRates,
   DEFAULT_RATES,
   commissionForDeal,
+  closerRateLabel,
   setterCommissionForDeal,
   setterWeekBonusIds,
   money,
@@ -26,6 +27,7 @@ import {
   Plus, DollarSign, TrendingUp, Trophy, ClipboardList, Pencil, Trash2,
   Save, Percent,
 } from "lucide-react";
+import { RevenueTabBar } from "@/components/revenue-tab-bar";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 
 export const Route = createFileRoute("/_authenticated/revenue")({
@@ -33,7 +35,7 @@ export const Route = createFileRoute("/_authenticated/revenue")({
   component: RevenuePage,
 });
 
-type Profile = { id: string; display_name: string | null };
+type Profile = { id: string; display_name: string | null; commission_cap_pct?: number | null };
 type Student = { id: string; full_name: string };
 type PaymentType = Deal["payment_type"];
 
@@ -82,7 +84,7 @@ function RevenuePage() {
     );
     const allIds = Array.from(new Set([...closerIds, ...setterIds]));
     if (allIds.length > 0) {
-      const { data: profs } = await supabase.from("profiles").select("id, display_name").in("id", allIds);
+      const { data: profs } = await supabase.from("profiles").select("id, display_name, commission_cap_pct").in("id", allIds);
       const profMap = new Map(((profs ?? []) as Profile[]).map((p) => [p.id, p]));
       setClosers(closerIds.map((id) => profMap.get(id)).filter(Boolean) as Profile[]);
       setSetters(setterIds.map((id) => profMap.get(id)).filter(Boolean) as Profile[]);
@@ -104,14 +106,16 @@ function RevenuePage() {
 
   // Per-closer breakdown (MTD)
   const perCloser = useMemo(() => {
-    const map = new Map<string, { cash: number; booked: number; deals: number; pif: number; commission: number }>();
+    const closerMap = new Map(closers.map((c) => [c.id, c]));
+    const map = new Map<string, { cash: number; booked: number; deals: number; setCloseDeals: number; commission: number }>();
     for (const d of monthDeals) {
-      const c = map.get(d.closer_id) ?? { cash: 0, booked: 0, deals: 0, pif: 0, commission: 0 };
+      const closer = closerMap.get(d.closer_id);
+      const c = map.get(d.closer_id) ?? { cash: 0, booked: 0, deals: 0, setCloseDeals: 0, commission: 0 };
       c.cash += Number(d.cash_collected_upfront);
       c.booked += Number(d.total_value);
       c.deals += 1;
-      if (d.payment_type === "pif") c.pif += 1;
-      c.commission += commissionForDeal(d, rates);
+      if (d.setter_id) c.setCloseDeals += 1;
+      c.commission += commissionForDeal(d, rates, closer?.commission_cap_pct);
       map.set(d.closer_id, c);
     }
     const nameMap = new Map(closers.map((c) => [c.id, c.display_name || "Unknown"]));
@@ -231,6 +235,8 @@ function RevenuePage() {
         )}
       </header>
 
+      <RevenueTabBar />
+
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <KpiCard label="Cash collected MTD" value={money(stats.cash)} icon={<DollarSign className="h-4 w-4" />} accent />
@@ -329,7 +335,7 @@ function RevenuePage() {
       <Card className="overflow-hidden">
         <div className="p-4 border-b border-[var(--border)] flex items-center justify-between">
           <h3 className="text-sm font-semibold">Per-closer breakdown (MTD)</h3>
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Commission via active rates</span>
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{(rates.new_close * 100).toFixed(0)}% close-only · {(rates.set_close * 100).toFixed(0)}% set+close</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[480px] text-sm">
@@ -337,8 +343,7 @@ function RevenuePage() {
               <tr>
                 <th className="text-left px-4 py-2.5">Closer</th>
                 <th className="text-right px-4 py-2.5">Deals</th>
-                <th className="text-right px-4 py-2.5">PIF</th>
-                <th className="text-right px-4 py-2.5">Booked</th>
+                <th className="text-right px-4 py-2.5">Set+close</th>
                 <th className="text-right px-4 py-2.5">Cash</th>
                 <th className="text-right px-4 py-2.5">Commission</th>
               </tr>
@@ -346,15 +351,14 @@ function RevenuePage() {
             <tbody>
               {perCloser.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center text-muted-foreground py-8">No deals this month.</td>
+                  <td colSpan={5} className="text-center text-muted-foreground py-8">No deals this month.</td>
                 </tr>
               ) : (
                 perCloser.map((r) => (
                   <tr key={r.closer_id} className="border-t border-[var(--border)]">
                     <td className="px-4 py-3 font-medium">{r.name}</td>
                     <td className="px-4 py-3 text-right tabular-nums">{r.deals}</td>
-                    <td className="px-4 py-3 text-right tabular-nums">{r.pif}</td>
-                    <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">{money(r.booked)}</td>
+                    <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">{r.setCloseDeals}/{r.deals}</td>
                     <td className="px-4 py-3 text-right tabular-nums">{money(r.cash)}</td>
                     <td className="px-4 py-3 text-right tabular-nums font-semibold text-emerald-400">{money(r.commission)}</td>
                   </tr>
@@ -429,10 +433,12 @@ function RevenuePage() {
             <tbody>
               {deals.slice(0, 25).map((d) => {
                 const canEdit = isAdmin || d.created_by === user?.id;
-                const closerName = closers.find((c) => c.id === d.closer_id)?.display_name || "—";
+                const closer = closers.find((c) => c.id === d.closer_id);
+                const closerName = closer?.display_name || "—";
                 const setterName = d.setter_id
                   ? setters.find((s) => s.id === d.setter_id)?.display_name || "—"
                   : "—";
+                const rateLabel = closerRateLabel(d, rates, closer?.commission_cap_pct);
                 return (
                   <tr key={d.id} className="border-t border-[var(--border)]">
                     <td className="px-4 py-3 text-muted-foreground tabular-nums">{d.deal_date}</td>
@@ -441,7 +447,7 @@ function RevenuePage() {
                     <td className="px-4 py-3 text-muted-foreground">{setterName}</td>
                     <td className="px-4 py-3">
                       <span className="text-[10px] uppercase tracking-wider border border-[var(--border)] rounded-full px-2 py-0.5">
-                        {d.payment_type}
+                        {rateLabel}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">{money(Number(d.total_value))}</td>

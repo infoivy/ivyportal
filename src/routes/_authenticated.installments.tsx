@@ -7,6 +7,7 @@ import {
   DollarSign, Plus, Trash2, X, AlertTriangle, Bell, CheckCircle2,
   Calendar as CalendarIcon, Edit3, Search,
 } from "lucide-react";
+import { RevenueTabBar } from "@/components/revenue-tab-bar";
 
 export const Route = createFileRoute("/_authenticated/installments")({
   head: () => ({ meta: [{ title: "Installments — ISA" }] }),
@@ -157,6 +158,8 @@ function InstallmentsPage() {
           <Plus className="h-4 w-4" /> New installment plan
         </button>
       </div>
+
+      <RevenueTabBar />
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

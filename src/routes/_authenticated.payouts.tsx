@@ -3,7 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
-import { money, type Deal, setterWeekBonusIds, DEFAULT_RATES } from "@/lib/revenue";
+import { money, type Deal, type CommissionRates, commissionForDeal, setterWeekBonusIds, DEFAULT_RATES } from "@/lib/revenue";
+import { RevenueTabBar } from "@/components/revenue-tab-bar";
 
 export const Route = createFileRoute("/_authenticated/payouts")({
   head: () => ({ meta: [{ title: "Payouts — ISA" }] }),
@@ -49,7 +50,7 @@ function getPeriod(offset = 0) {
   };
 }
 
-type Profile = { id: string; display_name: string };
+type Profile = { id: string; display_name: string; commission_cap_pct?: number | null };
 
 type InstallmentPayment = {
   id: string;
@@ -107,20 +108,22 @@ function PayoutsInner() {
   const period = useMemo(() => getPeriod(periodOffset), [periodOffset]);
 
   const [deals, setDeals] = useState<Deal[]>([]);
-  const [profiles, setProfiles] = useState<Map<string, string>>(new Map());
+  const [profileMap, setProfileMap] = useState<Map<string, Profile>>(new Map());
+  const [rates, setRates] = useState<CommissionRates>(DEFAULT_RATES);
   const [installmentPayments, setInstallmentPayments] = useState<InstallmentPayment[]>([]);
   const [installments, setInstallments] = useState<Installment[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
     setLoading(true);
-    const [dealsRes, profilesRes, ipRes, instRes] = await Promise.all([
+    const [dealsRes, profilesRes, ratesRes, ipRes, instRes] = await Promise.all([
       supabase
         .from("deals")
         .select("id, closer_id, setter_id, total_value, cash_collected_upfront, deal_date, payment_type")
         .gte("deal_date", period.start)
         .lt("deal_date", period.end),
-      supabase.from("profiles").select("id, display_name"),
+      supabase.from("profiles").select("id, display_name, commission_cap_pct"),
+      supabase.from("commission_rates").select("key, rate").eq("active", true),
       supabase
         .from("installment_payments")
         .select("id, amount, paid_at, installment_id")
@@ -130,9 +133,15 @@ function PayoutsInner() {
       supabase.from("installments").select("id, setter_id, closer_id, student_name"),
     ]);
     setDeals((dealsRes.data ?? []) as Deal[]);
-    const pm = new Map<string, string>();
-    for (const p of (profilesRes.data ?? []) as Profile[]) pm.set(p.id, p.display_name);
-    setProfiles(pm);
+    const pm = new Map<string, Profile>();
+    for (const p of (profilesRes.data ?? []) as Profile[]) pm.set(p.id, p);
+    setProfileMap(pm);
+    const r: CommissionRates = { ...DEFAULT_RATES };
+    for (const row of (ratesRes.data ?? [])) {
+      const k = row.key as keyof CommissionRates;
+      if (k in r) (r as Record<string, number>)[k] = Number(row.rate);
+    }
+    setRates(r);
     setInstallmentPayments((ipRes.data ?? []) as InstallmentPayment[]);
     setInstallments((instRes.data ?? []) as Installment[]);
     setLoading(false);
@@ -172,13 +181,13 @@ function PayoutsInner() {
     return Array.from(allSetterIds).map(sid => {
       const entry = map.get(sid);
       const dealsCash = entry?.deals.reduce((s, d) => s + (d.cash_collected_upfront ?? 0), 0) ?? 0;
-      const baseRate = DEFAULT_RATES.setter_base + (entry?.weekBonus ? 0.01 : 0);
+      const baseRate = rates.setter_base + (entry?.weekBonus ? 0.01 : 0);
       const dealCommission = dealsCash * baseRate;
       const iCash = instCash.get(sid) ?? 0;
       const iCommission = iCash * baseRate;
       return {
         id: sid,
-        name: profiles.get(sid) ?? sid.slice(0, 8),
+        name: profileMap.get(sid)?.display_name ?? sid.slice(0, 8),
         deals: entry?.deals.length ?? 0,
         cash: dealsCash,
         commission: dealCommission,
@@ -188,7 +197,7 @@ function PayoutsInner() {
         total: dealCommission + iCommission,
       };
     }).sort((a, b) => b.total - a.total);
-  }, [deals, installmentPayments, installmentMap, profiles]);
+  }, [deals, installmentPayments, installmentMap, profileMap]);
 
   // Closer rows
   const closerRows = useMemo((): CloserRow[] => {
@@ -211,19 +220,18 @@ function PayoutsInner() {
 
     const allCloserIds = new Set([...map.keys(), ...instCash.keys()]);
     return Array.from(allCloserIds).map(cid => {
+      const profile = profileMap.get(cid);
       const cDeals = map.get(cid) ?? [];
       const dealsCash = cDeals.reduce((s, d) => s + (d.cash_collected_upfront ?? 0), 0);
-      // Per-deal rate: 15% if setter present, 10% if not
-      const dealCommission = cDeals.reduce((s, d) => {
-        const rate = d.setter_id ? 0.15 : 0.10;
-        return s + (d.cash_collected_upfront ?? 0) * rate;
-      }, 0);
+      const dealCommission = cDeals.reduce((s, d) => s + commissionForDeal(d, rates, profile?.commission_cap_pct), 0);
       const iCash = instCash.get(cid) ?? 0;
-      const iRate = instSetSet.get(cid) ? 0.15 : 0.10;
+      // Use set_close for installments where a setter was involved, cap applies
+      const iBaseRate = instSetSet.get(cid) ? rates.set_close : rates.new_close;
+      const iRate = profile?.commission_cap_pct != null ? Math.min(iBaseRate, profile.commission_cap_pct) : iBaseRate;
       const iCommission = iCash * iRate;
       return {
         id: cid,
-        name: profiles.get(cid) ?? cid.slice(0, 8),
+        name: profileMap.get(cid)?.display_name ?? cid.slice(0, 8),
         deals: cDeals.length,
         cash: dealsCash,
         commission: dealCommission,
@@ -232,7 +240,7 @@ function PayoutsInner() {
         total: dealCommission + iCommission,
       };
     }).sort((a, b) => b.total - a.total);
-  }, [deals, installmentPayments, installmentMap, profiles]);
+  }, [deals, installmentPayments, installmentMap, profileMap]);
 
   const totalPayouts = setterRows.reduce((s, r) => s + r.total, 0) + closerRows.reduce((s, r) => s + r.total, 0);
 
@@ -265,6 +273,8 @@ function PayoutsInner() {
           </div>
         </div>
 
+        <RevenueTabBar />
+
         {/* Summary */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <SummaryChip label="Total payouts" value={money(totalPayouts)} accent="green" />
@@ -275,7 +285,7 @@ function PayoutsInner() {
 
         {/* Setters table */}
         <section className="space-y-2">
-          <h2 className="text-[11px] uppercase tracking-widest text-muted-foreground font-semibold">Setters — 7.5% base (+ 1% if $5k week)</h2>
+          <h2 className="text-[11px] uppercase tracking-widest text-muted-foreground font-semibold">Setters — {(rates.setter_base * 100).toFixed(1)}% base (+ 1% if $5k week)</h2>
           <div className="border border-border bg-card rounded-sm overflow-x-auto">
             {setterRows.length === 0 ? (
               <div className="p-8 text-center text-xs text-muted-foreground">No setter-attributed activity this period.</div>
@@ -301,7 +311,7 @@ function PayoutsInner() {
                       <td className="px-3 py-3 text-right tabular-nums">{r.deals}</td>
                       <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{money(r.cash)}</td>
                       <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{r.installmentCash > 0 ? money(r.installmentCash) : "—"}</td>
-                      <td className="px-3 py-3 text-right tabular-nums">{r.weekBonus ? "8.5%" : "7.5%"}</td>
+                      <td className="px-3 py-3 text-right tabular-nums">{r.weekBonus ? `${((rates.setter_base + 0.01) * 100).toFixed(1)}%` : `${(rates.setter_base * 100).toFixed(1)}%`}</td>
                       <td className="px-4 py-3 text-right tabular-nums font-bold text-emerald-400">{money(r.total)}</td>
                     </tr>
                   ))}
@@ -319,7 +329,7 @@ function PayoutsInner() {
 
         {/* Closers table */}
         <section className="space-y-2">
-          <h2 className="text-[11px] uppercase tracking-widest text-muted-foreground font-semibold">Closers — 10% close-only · 15% set+close</h2>
+          <h2 className="text-[11px] uppercase tracking-widest text-muted-foreground font-semibold">Closers — {(rates.new_close * 100).toFixed(0)}% close-only · {(rates.set_close * 100).toFixed(0)}% set+close</h2>
           <div className="border border-border bg-card rounded-sm overflow-x-auto">
             {closerRows.length === 0 ? (
               <div className="p-8 text-center text-xs text-muted-foreground">No closer-attributed activity this period.</div>
