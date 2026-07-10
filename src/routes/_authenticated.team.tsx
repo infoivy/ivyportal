@@ -18,6 +18,7 @@ export const Route = createFileRoute("/_authenticated/team")({
 });
 
 type AppRole = "admin" | "closer" | "setter" | "coach" | "csm";
+type SetterType = "phone" | "dm" | null;
 type Member = {
   id: string;
   display_name: string | null;
@@ -25,6 +26,7 @@ type Member = {
   phone: string | null;
   active: boolean;
   roles: string[];
+  setter_type: SetterType;
 };
 const ROLES: { key: AppRole; icon: React.ComponentType<{ className?: string }>; color: string }[] = [
   { key: "admin", icon: Shield, color: "text-rose-400 border-rose-500/30 bg-rose-500/5" },
@@ -50,7 +52,7 @@ function TeamPage() {
   const load = async () => {
     const { data: profs } = await supabase
       .from("profiles")
-      .select("id, display_name, avatar_path, active, phone" as any);
+      .select("id, display_name, avatar_path, active, phone, setter_type" as any);
     const { data: rolesData } = await supabase.from("user_roles").select("user_id, role");
     const rolesByUser = new Map<string, string[]>();
     (rolesData ?? []).forEach(r => {
@@ -65,6 +67,7 @@ function TeamPage() {
       phone: p.phone ?? null,
       active: p.active ?? true,
       roles: rolesByUser.get(p.id) ?? [],
+      setter_type: (p.setter_type ?? null) as SetterType,
     }));
     setMembers(list);
     setAvatarUrls(await signAvatars(list.map(m => m.avatar_path)));
@@ -191,8 +194,15 @@ function TeamPage() {
                   {!m.active && <span className="text-[9px] uppercase tracking-wider text-rose-400 border border-rose-500/30 bg-rose-500/10 px-1.5 py-0.5 rounded-sm">Inactive</span>}
                   <button onClick={() => setEditing(m)} className="text-muted-foreground hover:text-foreground"><Pencil className="h-3 w-3" /></button>
                 </div>
-                <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-mono">
-                  <span>{m.id === user?.id ? "You" : m.id.slice(0, 8)}</span>
+                <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                  {m.roles.includes("setter") && m.setter_type && (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm border border-emerald-500/30 bg-emerald-500/5 text-emerald-400 uppercase tracking-wider">
+                      {m.setter_type === "phone" ? "Phone setter" : "DM setter"}
+                    </span>
+                  )}
+                  {m.roles.length === 0 && (
+                    <span className="italic">No roles assigned</span>
+                  )}
                   {(() => {
                     const pct = memberOnboardingPct(m);
                     if (pct === null) return null;
@@ -209,22 +219,26 @@ function TeamPage() {
               </div>
             </div>
             <div className="flex gap-1.5 flex-wrap justify-end">
-              {ROLES.map(r => {
-                const has = m.roles.includes(r.key);
+              {ROLES.filter(r => m.roles.includes(r.key)).map(r => {
                 const Icon = r.icon;
                 return (
-                  <button
+                  <span
                     key={r.key}
-                    onClick={() => toggleRole(m.id, r.key, has)}
-                    className={`flex items-center gap-1 text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border transition ${
-                      has ? r.color : "text-muted-foreground border-[#1f2530] bg-transparent hover:border-[#2a3140]"
-                    }`}
+                    className={`inline-flex items-center gap-1 text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border ${r.color}`}
                   >
                     <Icon className="h-3 w-3" />
                     {r.key}
-                  </button>
+                  </span>
                 );
               })}
+              {m.roles.length === 0 && (
+                <button
+                  onClick={() => setEditing(m)}
+                  className="text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border border-dashed border-[#2a3140] text-muted-foreground hover:text-foreground"
+                >
+                  Assign roles
+                </button>
+              )}
             </div>
             <div className="flex items-center gap-1">
               {m.id !== user?.id && (
@@ -254,6 +268,7 @@ function TeamPage() {
         <EditProfileModal
           member={editing}
           initialUrl={editing.avatar_path ? avatarUrls[editing.avatar_path] ?? null : null}
+          onToggleRole={toggleRole}
           onClose={() => setEditing(null)}
           onSaved={() => { setEditing(null); load(); }}
         />
@@ -262,14 +277,28 @@ function TeamPage() {
   );
 }
 
-function EditProfileModal({ member, initialUrl, onClose, onSaved }: { member: Member; initialUrl: string | null; onClose: () => void; onSaved: () => void }) {
+function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }: {
+  member: Member;
+  initialUrl: string | null;
+  onToggleRole: (userId: string, role: AppRole, has: boolean) => Promise<any>;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
   const [displayName, setDisplayName] = useState(member.display_name ?? "");
   const [phone, setPhone] = useState(member.phone ?? "");
+  const [setterType, setSetterType] = useState<SetterType>(member.setter_type);
   const [avatarPath, setAvatarPath] = useState<string | null>(member.avatar_path);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(initialUrl);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [localRoles, setLocalRoles] = useState<string[]>(member.roles);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const toggle = async (role: AppRole) => {
+    const has = localRoles.includes(role);
+    setLocalRoles(has ? localRoles.filter(r => r !== role) : [...localRoles, role]);
+    await onToggleRole(member.id, role, has);
+  };
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -291,12 +320,15 @@ function EditProfileModal({ member, initialUrl, onClose, onSaved }: { member: Me
       display_name: displayName.trim() || null,
       avatar_path: avatarPath,
       phone: phone.trim() || null,
+      setter_type: setterType,
     } as any).eq("id", member.id);
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success("Profile updated");
     onSaved();
   };
+
+  const showSetterType = localRoles.includes("setter");
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
@@ -328,6 +360,51 @@ function EditProfileModal({ member, initialUrl, onClose, onSaved }: { member: Me
           <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="+1 555 123 4567" inputMode="tel"
                  className="w-full h-9 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-sm" />
         </div>
+        <div className="space-y-1.5">
+          <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Roles</label>
+          <div className="flex flex-wrap gap-1.5">
+            {ROLES.map(r => {
+              const has = localRoles.includes(r.key);
+              const Icon = r.icon;
+              return (
+                <button
+                  key={r.key}
+                  onClick={() => toggle(r.key)}
+                  className={`flex items-center gap-1 text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border transition ${
+                    has ? r.color : "text-muted-foreground border-[#1f2530] bg-transparent hover:border-[#2a3140]"
+                  }`}
+                >
+                  <Icon className="h-3 w-3" /> {r.key}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        {showSetterType && (
+          <div className="space-y-1">
+            <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Setter type</label>
+            <div className="flex gap-1.5">
+              {([
+                { key: null, label: "Not set" },
+                { key: "phone" as const, label: "Phone setter (100 dials + 3 sets/day)" },
+                { key: "dm" as const, label: "DM setter (125 contacted + 3 sets/day)" },
+              ]).map(opt => (
+                <button
+                  key={String(opt.key)}
+                  onClick={() => setSetterType(opt.key as SetterType)}
+                  className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border transition ${
+                    setterType === opt.key
+                      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400"
+                      : "border-[#1f2530] text-muted-foreground hover:border-[#2a3140]"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        <div className="text-[10px] text-muted-foreground font-mono pt-1 border-t border-[#1f2530]">ID: {member.id}</div>
         <div className="flex justify-end gap-2 pt-2 border-t border-[#1f2530]">
           <button onClick={onClose} className="text-xs text-muted-foreground hover:text-foreground px-3 py-1.5">Cancel</button>
           <button onClick={save} disabled={saving} className="text-xs bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-medium px-3 py-1.5 rounded-sm">
