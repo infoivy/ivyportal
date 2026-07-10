@@ -902,7 +902,7 @@ function SubmissionsGrid({ dayList, roster, eods }: { dayList: string[]; roster:
                 {dayList.map(d => {
                   const beforeJoin = r.joined_at && d < r.joined_at;
                   const eod = byUserDate.get(`${r.user_id}::${d}`);
-                  const bg = beforeJoin ? "bg-[#141821]" : !eod ? "bg-red-500/40" : st ? (didHitKpi(eod, st) ? "bg-green-500/70" : "bg-amber-500/60") : "bg-green-500/70";
+                  const bg = beforeJoin ? "bg-white/[0.04]" : !eod ? "bg-red-500/25" : st ? (didHitKpi(eod, st) ? "bg-green-500/35" : "bg-amber-500/30") : "bg-green-500/35";
                   return <div key={d} className={`h-3 w-3 rounded-[2px] ${bg}`} title={`${r.display_name} · ${fmtLong(d)} · ${!eod ? "missed" : "submitted"}`} />;
                 })}
               </div>
