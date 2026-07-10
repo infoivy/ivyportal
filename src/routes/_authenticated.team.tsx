@@ -18,6 +18,7 @@ export const Route = createFileRoute("/_authenticated/team")({
 });
 
 type AppRole = "admin" | "closer" | "setter" | "coach" | "csm";
+type SetterType = "phone" | "dm" | null;
 type Member = {
   id: string;
   display_name: string | null;
@@ -25,6 +26,7 @@ type Member = {
   phone: string | null;
   active: boolean;
   roles: string[];
+  setter_type: SetterType;
 };
 const ROLES: { key: AppRole; icon: React.ComponentType<{ className?: string }>; color: string }[] = [
   { key: "admin", icon: Shield, color: "text-rose-400 border-rose-500/30 bg-rose-500/5" },
