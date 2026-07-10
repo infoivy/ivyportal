@@ -5,23 +5,24 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-medium cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium cursor-pointer motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:pointer-events-none disabled:opacity-40 disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "bg-white text-neutral-900 hover:bg-white/90",
-        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        outline:
-          "border border-white/10 bg-transparent text-foreground hover:bg-white/[0.04]",
-        secondary: "bg-white/[0.04] text-foreground border border-white/10 hover:bg-white/[0.08]",
-        ghost: "hover:bg-white/[0.04] hover:text-foreground",
+        // Apple-style filled primary — pill shape, emerald
+        default: "bg-primary text-primary-foreground hover:bg-primary/90 rounded-full",
+        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-md",
+        // Apple gray button — filled muted, no border
+        outline: "bg-muted text-foreground hover:bg-muted/70 rounded-md",
+        secondary: "bg-muted text-foreground hover:bg-muted/70 rounded-md",
+        ghost: "text-foreground hover:bg-muted rounded-md",
         link: "text-primary underline-offset-4 hover:underline rounded-md",
       },
       size: {
         default: "h-9 px-4 py-2",
-        sm: "h-8 px-3 text-xs",
-        lg: "h-10 px-6",
-        icon: "h-9 w-9",
+        sm: "h-8 px-3 text-[13px]",
+        lg: "h-10 px-6 text-[15px]",
+        icon: "h-9 w-9 rounded-md",
       },
     },
     defaultVariants: {

@@ -6,14 +6,15 @@ export type VolumeSeries = {
   color: string;
   strokeWidth?: number;
   strokeOpacity?: number;
-  ghost?: boolean; // true = low fill + no gradient entry needed
+  ghost?: boolean;
 };
 
-/**
- * Canonical portal chart. Smooth monotone area lines with a soft gradient
- * fill fading to transparent, dotted horizontal-only gridlines, muted labels,
- * no axis lines, and a small legend row underneath.
- */
+/** CSS variable reader — falls back gracefully on SSR */
+function cssVar(name: string, fallback: string) {
+  if (typeof window === "undefined") return fallback;
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+}
+
 export function VolumeAreaChart({
   data, xKey = "label", series, height = 240, yTickCount = 5,
 }: {
@@ -23,6 +24,9 @@ export function VolumeAreaChart({
   height?: number;
   yTickCount?: number;
 }) {
+  const gridColor = "var(--color-border)";
+  const tickColor = "var(--color-muted-foreground)";
+
   return (
     <div className="w-full" style={{ height }}>
       <ResponsiveContainer>
@@ -30,19 +34,37 @@ export function VolumeAreaChart({
           <defs>
             {series.map(s => (
               <linearGradient key={s.key} id={`grad-${s.key}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={s.color} stopOpacity={0.14} />
-                <stop offset="100%" stopColor={s.color} stopOpacity={0} />
+                <stop offset="0%" stopColor={s.color} stopOpacity={0.16} />
+                <stop offset="85%" stopColor={s.color} stopOpacity={0} />
               </linearGradient>
             ))}
           </defs>
-          <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.06)" vertical={false} />
-          <XAxis dataKey={xKey} tick={{ fontSize: 11, fill: "#8A919C" }} tickLine={false} axisLine={false} tickMargin={8} />
-          <YAxis tick={{ fontSize: 11, fill: "#8A919C" }} tickLine={false} axisLine={false} tickCount={yTickCount} width={38} />
+          <CartesianGrid strokeDasharray="2 4" stroke={gridColor} vertical={false} />
+          <XAxis
+            dataKey={xKey}
+            tick={{ fontSize: 11, fill: tickColor }}
+            tickLine={false}
+            axisLine={false}
+            tickMargin={8}
+          />
+          <YAxis
+            tick={{ fontSize: 11, fill: tickColor }}
+            tickLine={false}
+            axisLine={false}
+            tickCount={yTickCount}
+            width={38}
+          />
           <Tooltip
-            contentStyle={{ background: "#1A1E24", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, fontSize: 12 }}
-            labelStyle={{ color: "#E3E5E8", fontWeight: 500 }}
-            itemStyle={{ color: "#8A919C" }}
-            cursor={{ stroke: "rgba(255,255,255,0.08)", strokeWidth: 1 }}
+            contentStyle={{
+              background: "var(--color-card)",
+              border: "1px solid var(--color-border)",
+              borderRadius: 10,
+              fontSize: 12,
+              boxShadow: "var(--shadow-overlay)",
+            }}
+            labelStyle={{ color: "var(--color-foreground)", fontWeight: 500, marginBottom: 4 }}
+            itemStyle={{ color: "var(--color-muted-foreground)" }}
+            cursor={{ stroke: "var(--color-border)", strokeWidth: 1 }}
           />
           {series.map(s => (
             <Area
@@ -52,10 +74,11 @@ export function VolumeAreaChart({
               stroke={s.color}
               strokeWidth={s.strokeWidth ?? 1.75}
               strokeOpacity={s.strokeOpacity ?? 1}
+              strokeLinecap="round"
               fill={s.ghost ? "none" : `url(#grad-${s.key})`}
               fillOpacity={s.ghost ? 0 : 1}
               dot={false}
-              activeDot={s.ghost ? false : { r: 3, strokeWidth: 0 }}
+              activeDot={s.ghost ? false : { r: 3, strokeWidth: 0, fill: s.color }}
               isAnimationActive={false}
             />
           ))}
@@ -68,7 +91,7 @@ export function VolumeAreaChart({
 /** Small legend row with a circular color marker per series. */
 export function VolumeLegend({ series }: { series: VolumeSeries[] }) {
   return (
-    <div className="flex items-center justify-center gap-5 text-xs text-muted-foreground mt-2">
+    <div className="flex items-center justify-center gap-5 text-[13px] text-muted-foreground mt-2">
       {series.map(s => (
         <span key={s.key} className="inline-flex items-center gap-1.5">
           <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: s.color }} />
