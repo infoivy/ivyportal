@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { Loader2, DollarSign, TrendingUp, BarChart3, Users, CheckCircle2, AlertTriangle } from "lucide-react";
 import { money, type Deal, startOfWeekMon, isoDay } from "@/lib/revenue";
+import { DeltaChip } from "@/components/ui/delta-chip";
+import { BreakdownBar } from "@/components/ui/breakdown-bar";
 
 export const Route = createFileRoute("/_authenticated/founder-hq")({
   head: () => ({ meta: [{ title: "Founder HQ — ISA Portal" }] }),
@@ -59,6 +61,7 @@ function FounderHQInner() {
   const [setterRoster, setSetterRoster] = useState<string[]>([]);
   const [contentItems, setContentItems] = useState<{ scheduled_date: string | null; status: string }[]>([]);
   const [monthlyGoal, setMonthlyGoal] = useState<number | null>(null);
+  const [prevMtdCash, setPrevMtdCash] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
@@ -75,6 +78,15 @@ function FounderHQInner() {
     setSetterRoster(Array.from(new Set(((roleRes.data ?? []) as any[]).map((r: any) => r.user_id))));
     setContentItems((contentRes.data ?? []) as any[]);
     setMonthlyGoal((settingsRes.data as any)?.monthly_cash_goal ?? null);
+
+    // Last month same-day cash for delta
+    const todayObj = new Date(today);
+    const lastMonthStart = new Date(todayObj.getFullYear(), todayObj.getMonth() - 1, 1).toISOString().slice(0, 10);
+    const lastMonthSameDay = new Date(todayObj.getFullYear(), todayObj.getMonth() - 1, todayObj.getDate()).toISOString().slice(0, 10);
+    supabase.from("deals").select("cash_collected_upfront").gte("deal_date", lastMonthStart).lte("deal_date", lastMonthSameDay).then(({ data }) => {
+      setPrevMtdCash(((data ?? []) as any[]).reduce((s, d) => s + (Number(d.cash_collected_upfront) || 0), 0));
+    });
+
     setLoading(false);
   };
 
@@ -123,8 +135,11 @@ function FounderHQInner() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Quadrant 1: Cash */}
           <Quadrant title="Cash" icon={<DollarSign className="h-4 w-4 text-green-400" />} to="/revenue">
-            <div className="text-3xl font-bold text-green-400">{money(mtdCash)}</div>
-            <div className="text-xs text-muted-foreground">MTD cash collected</div>
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <div className="text-3xl font-bold text-green-400">{money(mtdCash)}</div>
+              {prevMtdCash > 0 && <DeltaChip value={mtdCash - prevMtdCash} format="money" />}
+            </div>
+            <div className="text-xs text-muted-foreground">MTD cash · vs last month same day</div>
             {monthlyGoal && (
               <div className="mt-3 space-y-1">
                 <div className="flex justify-between text-xs">
@@ -180,18 +195,21 @@ function FounderHQInner() {
 
           {/* Quadrant 4: Team compliance */}
           <Quadrant title="Team compliance" icon={<Users className="h-4 w-4 text-amber-400" />} to="/sales-hq">
-            <div className="flex items-end gap-2 mt-1">
+            <div className="flex items-baseline gap-2 mt-1">
               <div className={`text-3xl font-bold ${compliance >= 90 ? "text-green-400" : compliance >= 70 ? "text-amber-400" : "text-red-400"}`}>{compliance}%</div>
-              <div className="text-xs text-muted-foreground mb-1">EOD submission rate this week</div>
+              <div className="text-xs text-muted-foreground">EOD rate this week</div>
             </div>
-            <div className="h-2 rounded-full bg-muted overflow-hidden mt-2">
-              <div
-                className={`h-full rounded-full transition-all ${compliance >= 90 ? "bg-green-500" : compliance >= 70 ? "bg-amber-400" : "bg-red-500"}`}
-                style={{ width: `${compliance}%` }}
+            <div className="mt-3">
+              <BreakdownBar
+                segments={[
+                  { label: "Filed", value: eods.length, color: "#22c55e" },
+                  { label: "Missing", value: Math.max(0, expectedEods - eods.length), color: "#ef4444" },
+                ]}
+                total={Math.max(expectedEods, 1)}
               />
             </div>
             <div className="text-xs text-muted-foreground mt-2">
-              {eods.length} EODs filed / {expectedEods} expected · {setterRoster.length} setter{setterRoster.length !== 1 ? "s" : ""} on roster
+              {eods.length} / {expectedEods} expected · {setterRoster.length} setter{setterRoster.length !== 1 ? "s" : ""} on roster
             </div>
             {compliance < 90 && (
               <div className="flex items-center gap-1.5 mt-2 text-xs text-amber-400">
