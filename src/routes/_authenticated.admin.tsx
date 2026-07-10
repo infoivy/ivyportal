@@ -49,6 +49,7 @@ function AdminConsole() {
   const [crmEnabled, setCrmEnabled] = useState(false);
   const [monthlyGoal, setMonthlyGoal] = useState<string>("");
   const [founderSettingsId, setFounderSettingsId] = useState<string | null>(null);
+  const [qGoals, setQGoals] = useState<Record<string, string>>({ dms: "", convos: "", calls: "", shows: "", showRate: "", viral: "" });
   const [savingSettings, setSavingSettings] = useState(false);
   const [auditLog, setAuditLog] = useState<{ id: string; action: string; table_name: string; record_id: string | null; created_at: string; user_id: string | null }[]>([]);
   const [checklist, setChecklist] = useState<Record<string, boolean>>({});
@@ -67,7 +68,7 @@ function AdminConsole() {
         supabase.from("students").select("id, full_name, email, coach_id, status, first_win_at, testimonial_collected, trustpilot_collected"),
         supabase.from("student_calls").select("id, student_id, call_date, coach_id, progress_rating").eq("status", "completed").is("progress_rating", null).order("call_date", { ascending: false }).limit(50),
         supabase.from("commission_rates").select("*").eq("active", true),
-        supabase.from("founder_settings").select("id, crm_enabled, monthly_cash_goal").maybeSingle(),
+        supabase.from("founder_settings").select("id, crm_enabled, monthly_cash_goal, quarterly_goals").maybeSingle(),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (supabase as any).from("audit_log").select("id, action, table_name, record_id, created_at, user_id").order("created_at", { ascending: false }).limit(100),
       ]);
@@ -85,6 +86,8 @@ function AdminConsole() {
         setFounderSettingsId(fs.id);
         setCrmEnabled(!!fs.crm_enabled);
         setMonthlyGoal(fs.monthly_cash_goal ? String(fs.monthly_cash_goal) : "");
+        const qg = (fs as { quarterly_goals?: Record<string, number> }).quarterly_goals;
+        if (qg) setQGoals(Object.fromEntries(Object.entries(qg).map(([k, v]) => [k, String(v)])));
       }
       setAuditLog((auditRes.data ?? []) as any[]);
 
@@ -302,6 +305,45 @@ function AdminConsole() {
               </Button>
             </div>
             <p className="text-[10px] text-muted-foreground">Shown on the Founder HQ command view progress bar.</p>
+          </div>
+
+          {/* Quarterly team goals */}
+          <div className="space-y-2 py-3 border-t border-border">
+            <Label className="text-xs">Quarterly team goals</Label>
+            <p className="text-[10px] text-muted-foreground">Drives the goals panel on the dashboard (admin/founder only see it).</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {([
+                ["dms", "DMs sent"], ["convos", "Convos"], ["calls", "Calls booked"],
+                ["shows", "Shows"], ["showRate", "Show rate %"], ["viral", "Viral posts"],
+              ] as const).map(([key, label]) => (
+                <div key={key} className="space-y-1">
+                  <div className="text-[10px] text-muted-foreground">{label}</div>
+                  <Input
+                    type="number"
+                    value={qGoals[key] ?? ""}
+                    onChange={e => setQGoals(g => ({ ...g, [key]: e.target.value }))}
+                    className="h-8 text-xs"
+                  />
+                </div>
+              ))}
+            </div>
+            <Button
+              size="sm"
+              disabled={savingSettings}
+              onClick={async () => {
+                if (!founderSettingsId) return;
+                setSavingSettings(true);
+                const payload = Object.fromEntries(
+                  Object.entries(qGoals).filter(([, v]) => v !== "").map(([k, v]) => [k, Number(v)])
+                );
+                const { error } = await supabase.from("founder_settings")
+                  .update({ quarterly_goals: payload } as never).eq("id", founderSettingsId);
+                if (error) toast.error(error.message); else toast.success("Quarterly goals saved");
+                setSavingSettings(false);
+              }}
+            >
+              <Save className="h-3.5 w-3.5 mr-1" /> Save goals
+            </Button>
           </div>
 
           {/* CRM toggle */}

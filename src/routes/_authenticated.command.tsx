@@ -9,7 +9,7 @@ export const Route = createFileRoute("/_authenticated/command")({
   validateSearch: (s: Record<string, unknown>) => ({
     tab: (s.tab as string) ?? "overview",
   }),
-  head: () => ({ meta: [{ title: "Command — ISA Portal" }] }),
+  head: () => ({ meta: [{ title: "Gathering Hub — ISA Portal" }] }),
   component: CommandPage,
 });
 
@@ -30,7 +30,7 @@ function CommandPage() {
     return (
       <div className="p-8 max-w-md mx-auto text-center space-y-2">
         <Sparkles className="h-8 w-8 mx-auto text-muted-foreground" />
-        <div className="text-title">Command</div>
+        <div className="text-title">Gathering Hub</div>
         <p className="text-caption text-muted-foreground">Founder or admin access required.</p>
       </div>
     );
@@ -42,7 +42,7 @@ function CommandPage() {
     <div className="p-4 sm:p-6 max-w-[1400px] mx-auto space-y-4">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-display text-foreground">Command</h1>
+          <h1 className="text-display text-foreground">Gathering Hub</h1>
           <p className="text-body text-muted-foreground mt-0.5">The business at a glance.</p>
         </div>
         <SegmentedControl

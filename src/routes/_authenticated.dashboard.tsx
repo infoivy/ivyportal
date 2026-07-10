@@ -51,7 +51,8 @@ const RANGES = [
 ] as const;
 type RangeKey = typeof RANGES[number]["key"];
 
-const GOALS = { dms: 20000, convos: 3000, calls: 500, shows: 350, showRate: 75, viral: 3 };
+const DEFAULT_GOALS = { dms: 20000, convos: 3000, calls: 500, shows: 350, showRate: 75, viral: 3 };
+type QuarterGoals = typeof DEFAULT_GOALS;
 
 type OpsCounts = {
   atRisk: number;
@@ -82,6 +83,13 @@ function Dashboard() {
   const [eodsTodayCount, setEodsTodayCount] = useState(0);
   const [cashMtd, setCashMtd] = useState(0);
   const [nextDue, setNextDue] = useState<{ date: string; amount: number; currency: string; studentName: string } | null>(null);
+  const [goals, setGoals] = useState<QuarterGoals>(DEFAULT_GOALS);
+  useEffect(() => {
+    supabase.from("founder_settings").select("quarterly_goals").maybeSingle().then(({ data }) => {
+      const g = (data as { quarterly_goals?: Partial<QuarterGoals> } | null)?.quarterly_goals;
+      if (g) setGoals({ ...DEFAULT_GOALS, ...g });
+    });
+  }, []);
 
   const days = daysBetween(dateRange);
 
@@ -270,7 +278,7 @@ function Dashboard() {
           <div className="card-surface px-6 py-5 flex items-end justify-between">
             <div>
               <div className="text-[12px] text-muted-foreground mb-3">Cash collected this month</div>
-              <div className="text-[44px] font-medium tabular-nums text-foreground tracking-[-0.03em] leading-none">
+              <div className="text-[36px] font-medium tabular-nums text-foreground tracking-[-0.025em] leading-none">
                 {cashMtd > 0 ? money(cashMtd) : "—"}
               </div>
             </div>
@@ -309,7 +317,7 @@ function Dashboard() {
             {!isFounder && <OpsChip to="/eods" warn={!!ops && ops.eodsMissingToday > 0} count={ops?.eodsMissingToday} label="EODs missing" />}
             <OpsChip to="/students" warn={!!ops && ops.testimonialsPending > 0} count={ops?.testimonialsPending} label="testimonials" />
             <OpsChip to="/action-items" warn={!!ops && ops.openActionItems > 0} count={ops?.openActionItems} label="actions open" />
-            {nextDue && (
+            {nextDue && (roles.includes("admin") || roles.includes("closer")) && (
               <>
                 <span className="hidden sm:block h-3.5 w-px bg-border shrink-0" />
                 <Link to="/installments" className="text-[12px] text-muted-foreground hover:text-foreground ml-auto">
@@ -419,13 +427,13 @@ function Dashboard() {
         )}
 
         {(prefs.showCashLeaderboard || prefs.showTopSetters || prefs.showWeeklyLeaderboard) && (
-          <UnifiedLeaderboard profiles={profiles} eods={eods} />
+          <UnifiedLeaderboard profiles={profiles} eods={eods} canSeeCash={roles.includes("admin") || roles.includes("founder") || roles.includes("closer")} />
         )}
 
         {/* Row 3: Goals + Team Comp (top setters merged into UnifiedLeaderboard above) */}
-        {(prefs.showGoals || prefs.showTeamComp) && (
+        {((prefs.showGoals && (roles.includes("admin") || roles.includes("founder"))) || prefs.showTeamComp) && (
           <div className="grid gap-3 lg:grid-cols-2">
-            {prefs.showGoals && (
+            {prefs.showGoals && (roles.includes("admin") || roles.includes("founder")) && (
               <Panel>
                 <div className="flex items-center gap-2 mb-3">
                   <div className="grid h-6 w-6 place-items-center rounded-[6px] bg-primary/10">
@@ -434,11 +442,11 @@ function Dashboard() {
                   <h3 className="text-sm font-semibold">{goalsLabel}</h3>
                 </div>
                 <div className="space-y-3">
-                  <Goal label="DMs Sent"     value={totals.dms_sent}       target={GOALS.dms}     color="var(--color-primary)" />
-                  <Goal label="Convos"       value={totals.convos_started} target={GOALS.convos}  color="var(--color-primary)" />
-                  <Goal label="Calls Booked" value={totals.calls_booked}   target={GOALS.calls}   color="var(--color-primary)" />
-                  <Goal label="Shows"        value={totals.shows}          target={GOALS.shows}   color="var(--color-primary)" warn={totals.shows < GOALS.shows * 0.5 && days >= 30} />
-                  <Goal label="Show Rate"    value={showRate}              target={GOALS.showRate} suffix="%" color="var(--color-primary)" />
+                  <Goal label="DMs Sent"     value={totals.dms_sent}       target={goals.dms}     color="var(--color-primary)" />
+                  <Goal label="Convos"       value={totals.convos_started} target={goals.convos}  color="var(--color-primary)" />
+                  <Goal label="Calls Booked" value={totals.calls_booked}   target={goals.calls}   color="var(--color-primary)" />
+                  <Goal label="Shows"        value={totals.shows}          target={goals.shows}   color="var(--color-primary)" warn={totals.shows < goals.shows * 0.5 && days >= 30} />
+                  <Goal label="Show Rate"    value={showRate}              target={goals.showRate} suffix="%" color="var(--color-primary)" />
                 </div>
               </Panel>
             )}
@@ -454,7 +462,7 @@ function Dashboard() {
                 <div className="space-y-2">
                   <AudienceRow label="Active this period" value={activeSetters} total={Math.max(activeSetters, 1)} color="var(--color-primary)" />
                   <AudienceRow label="EODs / setter"      value={activeSetters > 0 ? Math.round(totalEods / activeSetters) : 0} total={days} color="var(--color-primary)" suffix={` / ${days}`} />
-                  <AudienceRow label="Avg calls / setter" value={activeSetters > 0 ? Math.round(totals.calls_booked / activeSetters) : 0} total={GOALS.calls / Math.max(activeSetters, 1)} color="var(--color-primary)" />
+                  <AudienceRow label="Avg calls / setter" value={activeSetters > 0 ? Math.round(totals.calls_booked / activeSetters) : 0} total={goals.calls / Math.max(activeSetters, 1)} color="var(--color-primary)" />
                 </div>
               </Panel>
             )}
@@ -838,7 +846,7 @@ function MyDayBlock({ roles }: { roles: string[] }) {
         const eodRow = await supabase.from("eods").select("dms_sent, convos_started, calls_booked, shows").eq("user_id", user.id).eq("report_date", today).maybeSingle();
         parts.push({ label: "Today EOD", value: eodRow.data ? "Submitted" : "Pending", tone: eodRow.data ? "emerald" : "amber", to: "/eods" });
         const booked = (eodRow.data as any)?.calls_booked ?? 0;
-        const goal = Math.round(GOALS.calls / 90);
+        const goal = Math.round(DEFAULT_GOALS.calls / 90);
         parts.push({ label: "Booked today", value: `${booked}/${goal}`, tone: booked >= goal ? "emerald" : "amber" });
       }
 
@@ -910,7 +918,7 @@ function OpsChip({ to, search, danger, warn, count, label }: {
 }
 
 /* ---------------- Unified leaderboard (Cash / Booked toggle) ---------------- */
-function UnifiedLeaderboard({ profiles, eods }: { profiles: Record<string, Profile>; eods: EodRow[] }) {
+function UnifiedLeaderboard({ profiles, eods, canSeeCash }: { profiles: Record<string, Profile>; eods: EodRow[]; canSeeCash: boolean }) {
   const [mode, setMode] = useState<"cash" | "booked">("booked");
   const [cashRows, setCashRows] = useState<{ uid: string; name: string; value: number; sub: string }[]>([]);
   const [cashLoading, setCashLoading] = useState(false);
@@ -984,7 +992,7 @@ function UnifiedLeaderboard({ profiles, eods }: { profiles: Record<string, Profi
           </span>
         </div>
         <div className="flex gap-1">
-          {(["booked", "cash"] as const).map((m) => (
+          {(canSeeCash ? (["booked", "cash"] as const) : (["booked"] as const)).map((m) => (
             <button
               key={m}
               onClick={() => setMode(m)}

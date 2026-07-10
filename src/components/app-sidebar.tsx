@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   LayoutDashboard, FileText, BookOpen, Calendar, GraduationCap,
-  Database, Users, StickyNote, Shield, UserCircle, School, HeartHandshake, Phone, DollarSign,
+  Database, Users, StickyNote, Shield, UserCircle, School, HeartHandshake, Phone, DollarSign, Armchair,
   ListChecks, TrendingUp, Quote, Building2, HeartPulse, Sparkles, Clapperboard,
 } from "lucide-react";
 
@@ -22,16 +22,16 @@ type Item = {
 };
 
 const todayItems: Item[] = [
-  { title: "Dashboard",    url: "/dashboard",    icon: LayoutDashboard },
+  { title: "Dashboard",    url: "/dashboard",    icon: LayoutDashboard, roles: ["admin", "founder", "closer", "setter", "coach"] },
   { title: "EOD Reports",  url: "/eods",         icon: FileText },
   { title: "Action Items", url: "/action-items", icon: ListChecks },
 ];
 
 const salesItems: Item[] = [
   { title: "Sales",            url: "/sales",            icon: Building2,     roles: ["admin", "closer", "setter"] },
-  { title: "Revenue",          url: "/revenue",          icon: TrendingUp,    roles: ["admin", "closer", "setter", "coach", "csm"] },
+  { title: "Revenue",          url: "/revenue",          icon: TrendingUp,    roles: ["admin", "closer", "setter", "coach"] },
   { title: "Closer Resources", url: "/closer-resources", icon: DollarSign,    roles: ["admin", "closer"] },
-  { title: "Training",         url: "/training",         icon: GraduationCap },
+  { title: "Training",         url: "/training",         icon: GraduationCap, roles: ["admin", "founder", "closer", "setter", "coach"] },
   { title: "Calendar",         url: "/calendar",         icon: Calendar },
   { title: "CRM",              url: "/crm",              icon: Database,      roles: ["admin"] },
 ];
@@ -50,7 +50,7 @@ const libraryItems: Item[] = [
 ];
 
 const founderItems: Item[] = [
-  { title: "Command", url: "/command", icon: Sparkles,     roles: ["founder", "admin"] },
+  { title: "Gathering Hub", url: "/command", icon: Armchair, roles: ["founder", "admin"] },
   { title: "Content", url: "/content", icon: Clapperboard, roles: ["founder", "admin"] },
 ];
 

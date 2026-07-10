@@ -17,13 +17,13 @@ type ContentItem = { kind: "content"; id: string; title: string; platform: strin
 type Item = PageItem | StudentItem | PersonItem | DocItem | TestimonialItem | ContentItem;
 
 const PAGES: PageItem[] = [
-  { kind: "page", title: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
+  { kind: "page", title: "Dashboard", to: "/dashboard", icon: LayoutDashboard, roles: ["admin", "founder", "closer", "setter", "coach"] },
   { kind: "page", title: "EOD Reports", to: "/eods", icon: FileText },
   { kind: "page", title: "Action Items", to: "/action-items", icon: ListChecks },
   { kind: "page", title: "Notes", to: "/notes", icon: FileText },
   { kind: "page", title: "Sales", to: "/sales", icon: BarChart3, roles: ["admin", "closer", "setter"] },
   { kind: "page", title: "Sales Trends", to: "/sales?tab=trends", icon: BarChart3, roles: ["admin", "closer", "setter"] },
-  { kind: "page", title: "Revenue", to: "/revenue", icon: DollarSign, roles: ["admin", "closer", "setter", "coach", "csm"] },
+  { kind: "page", title: "Revenue", to: "/revenue", icon: DollarSign, roles: ["admin", "closer", "setter", "coach"] },
   { kind: "page", title: "Installments", to: "/installments", icon: DollarSign, roles: ["admin", "closer", "coach"] },
   { kind: "page", title: "Payouts", to: "/payouts", icon: DollarSign, roles: ["admin"] },
   { kind: "page", title: "Students", to: "/students", icon: School },
@@ -33,9 +33,9 @@ const PAGES: PageItem[] = [
   { kind: "page", title: "CSM", to: "/csm", icon: HeartHandshake, roles: ["admin", "csm"] },
   { kind: "page", title: "Testimonials", to: "/testimonials", icon: Star, roles: ["admin", "coach", "closer", "setter", "csm"] },
   { kind: "page", title: "Calendar", to: "/calendar", icon: Calendar },
-  { kind: "page", title: "Training", to: "/training", icon: GraduationCap },
+  { kind: "page", title: "Training", to: "/training", icon: GraduationCap, roles: ["admin", "founder", "closer", "setter", "coach"] },
   { kind: "page", title: "Knowledge", to: "/knowledge", icon: BookOpen },
-  { kind: "page", title: "Command", to: "/command", icon: Sparkles, roles: ["founder", "admin"] },
+  { kind: "page", title: "Gathering Hub", to: "/command", icon: Sparkles, roles: ["founder", "admin"] },
   { kind: "page", title: "Content", to: "/content", icon: Sparkles, roles: ["founder", "admin"] },
   { kind: "page", title: "Team", to: "/team", icon: Users, roles: ["admin"] },
   { kind: "page", title: "Admin", to: "/admin", icon: Shield, roles: ["admin"] },

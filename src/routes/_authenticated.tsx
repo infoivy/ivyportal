@@ -89,6 +89,11 @@ function AuthedLayout() {
         if (isStudent && !isTeam && (path === "/dashboard" || path === "/" || path === "/auth")) {
           navigate({ to: "/student-portal", replace: true });
         }
+        // CSMs without another dashboard-holding role land on their own board
+        const canDashboard = rolesArr.some(r => ["admin", "founder", "closer", "setter", "coach"].includes(r));
+        if (!canDashboard && rolesArr.includes("csm") && path === "/dashboard") {
+          navigate({ to: "/csm", replace: true });
+        }
       }
     };
     supabase.auth.getSession().then(({ data }) => load(data.session?.user.id ?? null, false));
@@ -213,7 +218,7 @@ const PAGE_LABELS: Array<[string, string]> = [
   ["/calendar", "Calendar"], ["/crm", "CRM"], ["/students", "Students"], ["/calls", "1-on-1 Calls"],
   ["/coaches", "Coaches"], ["/student-success", "Student Success"], ["/csm", "CSM"],
   ["/testimonials", "Testimonials"], ["/knowledge", "Knowledge"], ["/policies", "Knowledge"],
-  ["/sops", "Knowledge"], ["/command", "Command"], ["/content", "Content"], ["/admin", "Admin"],
+  ["/sops", "Knowledge"], ["/command", "Gathering Hub"], ["/content", "Content"], ["/admin", "Admin"],
   ["/team", "Team"], ["/profile", "Profile"], ["/student-portal", "My Portal"],
 ];
 
