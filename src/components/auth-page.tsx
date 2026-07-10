@@ -1,9 +1,9 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
+import isaLogo from "@/assets/isa-logo.png.asset.json";
 
 const SESSION_ONLY_KEY = "isaportal_session_only";
 
