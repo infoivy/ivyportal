@@ -6,11 +6,13 @@ import { toast } from "sonner";
 import {
   Sparkles, Calendar as CalendarIcon, Columns3, List as ListIcon, Lightbulb,
   Plus, ExternalLink, Trash2, X, ArrowRight, Loader2, Instagram, LayoutGrid,
-  BookOpen,
+  BookOpen, Video, Zap,
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, parseISO } from "date-fns";
 import { WeeklyPlan } from "@/components/weekly-plan";
 import { FounderSops } from "@/components/founder-sops";
+import { RecordingDay } from "@/components/recording-day";
+import { HookLibrary } from "@/components/hook-library";
 
 export const Route = createFileRoute("/_authenticated/founder")({
   head: () => ({ meta: [{ title: "Founder Hub — ISA Portal" }] }),
