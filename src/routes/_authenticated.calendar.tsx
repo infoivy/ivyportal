@@ -38,10 +38,39 @@ const HOUR_END = 22;    // 10pm
 const HOUR_ROWS = HOUR_END - HOUR_START;
 const ROW_PX = 44;
 
+const TZ_OPTIONS = [
+  { value: "", label: "Device time" },
+  { value: "Asia/Dubai", label: "Dubai (GMT+4)" },
+  { value: "Europe/Amsterdam", label: "Amsterdam" },
+  { value: "Europe/London", label: "London" },
+  { value: "America/New_York", label: "New York" },
+  { value: "America/Los_Angeles", label: "Los Angeles" },
+];
+
+/** Date whose local fields equal the wall-clock time in tz (display only). */
+function shiftToTz(iso: string | Date, tz: string): Date {
+  const d = typeof iso === "string" ? new Date(iso) : iso;
+  if (!tz) return d;
+  return new Date(d.toLocaleString("en-US", { timeZone: tz }));
+}
+
 function CalendarPage() {
   const { user } = useAuth();
+  const [tz, setTz] = useState<string>(() => {
+    try { return localStorage.getItem("isa-cal-tz") ?? ""; } catch { return ""; }
+  });
+  const changeTz = (next: string) => {
+    setTz(next);
+    try { localStorage.setItem("isa-cal-tz", next); } catch { /* ignore */ }
+    setWeekStart(startOfWeek(shiftToTz(new Date(), next), { weekStartsOn: 1 }));
+  };
+  const toLocal = (iso: string | Date) => shiftToTz(iso, tz);
   const search = useSearch({ from: "/_authenticated/calendar" });
-  const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
+  const [weekStart, setWeekStart] = useState(() => {
+    let saved = "";
+    try { saved = localStorage.getItem("isa-cal-tz") ?? ""; } catch { /* ignore */ }
+    return startOfWeek(shiftToTz(new Date(), saved), { weekStartsOn: 1 });
+  });
   const [hiddenUsers, setHiddenUsers] = useState<Set<string>>(new Set());
   const [selectedEvent, setSelectedEvent] = useState<TeamEvent | null>(null);
   const qc = useQueryClient();
@@ -214,6 +243,14 @@ function CalendarPage() {
               </div>
             </div>
             <div className="flex items-center gap-1">
+              <select
+                value={tz}
+                onChange={(e) => changeTz(e.target.value)}
+                title="Times shown in this timezone"
+                className="text-caption h-7 px-1.5 rounded-md border border-border bg-card text-muted-foreground mr-1"
+              >
+                {TZ_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
               <Button size="icon" variant="ghost" onClick={() => setWeekStart((w) => subWeeks(w, 1))}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -236,7 +273,7 @@ function CalendarPage() {
             {/* header row */}
             <div className="border-b border-border/60 bg-muted/30" />
             {days.map((d) => {
-              const today = isSameDay(d, new Date());
+              const today = isSameDay(d, toLocal(new Date()));
               return (
                 <div key={d.toISOString()} className="border-b border-l border-border/60 bg-muted/30 px-2 py-2 text-center">
                   <div className="text-[10px] uppercase text-muted-foreground tracking-wide">{format(d, "EEE")}</div>
@@ -263,6 +300,7 @@ function CalendarPage() {
                 day={d}
                 events={visibleEvents}
                 onSelect={setSelectedEvent}
+                toLocal={toLocal}
               />
             ))}
           </div>
@@ -302,6 +340,7 @@ function CalendarPage() {
           </div>
           <UpcomingSetsList
             sets={upcomingSets.data ?? []}
+            toLocal={toLocal}
             onClaim={async (id) => {
               try {
                 const r = await claimSetFn({ data: { id } });
@@ -327,6 +366,7 @@ function CalendarPage() {
         {selectedEvent && (
           <EventModal
             e={selectedEvent}
+            toLocal={toLocal}
             onClose={() => setSelectedEvent(null)}
             canClaim={!!myConn.data}
             onClaim={async (ev) => {
@@ -380,9 +420,9 @@ function formatHour(h: number) {
   return `${hh}${suffix}`;
 }
 
-function DayColumn({ day, events, onSelect }: { day: Date; events: TeamEvent[]; onSelect: (e: TeamEvent) => void }) {
-  const dayEvents = events.filter((e) => isSameDay(new Date(e.start), day) && !e.all_day);
-  const allDay = events.filter((e) => isSameDay(new Date(e.start), day) && e.all_day);
+function DayColumn({ day, events, onSelect, toLocal }: { day: Date; events: TeamEvent[]; onSelect: (e: TeamEvent) => void; toLocal: (iso: string | Date) => Date }) {
+  const dayEvents = events.filter((e) => isSameDay(toLocal(e.start), day) && !e.all_day);
+  const allDay = events.filter((e) => isSameDay(toLocal(e.start), day) && e.all_day);
 
   return (
     <div className="relative border-l border-border/60" style={{ height: HOUR_ROWS * ROW_PX }}>
@@ -420,8 +460,8 @@ function DayColumn({ day, events, onSelect }: { day: Date; events: TeamEvent[]; 
         });
         // events overlapping in time share the max lane count of their cluster
         return placed.map(({ e, lane }) => {
-          const s = new Date(e.start);
-          const en = new Date(e.end);
+          const s = toLocal(e.start);
+          const en = toLocal(e.end);
           const overlapping = placed.filter(({ e: o }) =>
             new Date(o.start).getTime() < en.getTime() && new Date(o.end).getTime() > s.getTime());
           const cols = Math.max(1, ...overlapping.map((o) => o.lane + 1));
@@ -472,12 +512,13 @@ function DayColumn({ day, events, onSelect }: { day: Date; events: TeamEvent[]; 
   );
 }
 
-function EventModal({ e, onClose, canClaim, onClaim }: {
+function EventModal({ e, onClose, canClaim, onClaim, toLocal }: {
   e: TeamEvent; onClose: () => void;
   canClaim: boolean; onClaim: (e: TeamEvent) => Promise<void>;
+  toLocal: (iso: string | Date) => Date;
 }) {
-  const s = new Date(e.start);
-  const en = new Date(e.end);
+  const s = toLocal(e.start);
+  const en = toLocal(e.end);
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
       <Card className="max-w-md w-full p-5 border-border/60" onClick={(evt) => evt.stopPropagation()}>
@@ -595,12 +636,13 @@ function SetReminderDialog({ onClose, onCreate }: {
   );
 }
 
-function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim }: {
+function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, toLocal }: {
   sets: UpcomingSet[];
   loading: boolean;
   filter: "all" | "mine";
   onDelete: (id: string) => void;
   onClaim: (id: string) => void;
+  toLocal: (iso: string | Date) => Date;
 }) {
   const { user, roles } = useAuth();
   const isAdmin = roles.includes("admin");
@@ -626,7 +668,7 @@ function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim }: {
   return (
     <div className="divide-y divide-border/60">
       {visible.map((s) => {
-        const start = new Date(s.event_start);
+        const start = toLocal(s.event_start);
         const mine = s.owner_id === user?.id;
         return (
           <div key={s.id} className="flex items-center gap-3 py-2.5">
