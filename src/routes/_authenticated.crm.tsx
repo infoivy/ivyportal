@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export const Route = createFileRoute("/_authenticated/crm")({
   head: () => ({ meta: [{ title: "CRM — ISA Team" }] }),
@@ -566,7 +567,7 @@ function LeadDetailDrawer({
           />
           <div className="flex items-center justify-between gap-2">
             <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
-              <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} className="accent-blue-500" />
+              <Checkbox checked={pinned} onCheckedChange={(v) => setPinned(v === true)} className="h-3.5 w-3.5" />
               <Pin className="h-3 w-3" /> Pin to top
             </label>
             <Button size="sm" onClick={submit} disabled={saving || !body.trim()}>

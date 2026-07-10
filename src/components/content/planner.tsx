@@ -15,6 +15,7 @@ import { RecordingDay } from "@/components/recording-day";
 import { HookLibrary } from "@/components/hook-library";
 import { DateField } from "@/components/ui/date-field";
 import { SelectField } from "@/components/ui/select-field";
+import { Checkbox } from "@/components/ui/checkbox";
 
 
 type Platform = "instagram" | "tiktok" | "youtube" | "twitter" | "linkedin" | "threads" | "other";
@@ -775,7 +776,7 @@ function ItemDialog({ initial, userId, onClose, onSaved, promotingIdea: pIdea }:
           </div>
 
           <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
-            <input type="checkbox" checked={reedit} onChange={e => setReedit(e.target.checked)} className="accent-blue-500" />
+            <Checkbox checked={reedit} onCheckedChange={v => setReedit(v === true)} />
             Needs re-edit (send back to editor)
           </label>
         </div>

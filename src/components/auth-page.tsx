@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import isaLogo from "@/assets/isa-logo.png.asset.json";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const SESSION_ONLY_KEY = "isaportal_session_only";
 
@@ -134,11 +135,10 @@ export function AuthPage() {
               <Field id="email" label="Email" type="email" value={email} onChange={setEmail} />
               <Field id="password" label="Password" type="password" value={password} onChange={setPassword} />
               <label className="flex items-center gap-2 text-[11px] text-muted-foreground select-none">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="h-3.5 w-3.5 accent-emerald-500"
+                  onCheckedChange={(v) => setRememberMe(v === true)}
+                  className="h-3.5 w-3.5"
                 />
                 Remember me on this device
               </label>
@@ -154,11 +154,10 @@ export function AuthPage() {
               <Field id="email2" label="Email" type="email" value={email} onChange={setEmail} />
               <Field id="password2" label="Password" type="password" value={password} onChange={setPassword} minLength={6} />
               <label className="flex items-center gap-2 text-[11px] text-muted-foreground select-none">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="h-3.5 w-3.5 accent-emerald-500"
+                  onCheckedChange={(v) => setRememberMe(v === true)}
+                  className="h-3.5 w-3.5"
                 />
                 Remember me on this device
               </label>

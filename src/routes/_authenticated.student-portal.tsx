@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { computeStreak } from "@/lib/streak";
 import { setStudentPortalTab, onStudentPortalTab, getStudentPortalTab } from "@/lib/student-portal-bus";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export const Route = createFileRoute("/_authenticated/student-portal")({
   head: () => ({ meta: [{ title: "Student Portal — ISA" }] }),
@@ -802,11 +803,10 @@ function ActionRow({ a, today, onToggle }: { a: { kind?: "call" | "adhoc"; callI
   const isAdhoc = a.kind === "adhoc";
   return (
     <label className="flex items-start gap-3 p-3 cursor-pointer hover:bg-muted/50 motion-safe:transition-colors">
-      <input
-        type="checkbox"
+      <Checkbox
         checked={!!a.item.done}
-        onChange={e => onToggle(a.callId, a.index, e.target.checked)}
-        className="mt-0.5 h-4 w-4 accent-[var(--primary)]"
+        onCheckedChange={(v) => onToggle(a.callId, a.index, v === true)}
+        className="mt-0.5"
       />
       <div className="flex-1 min-w-0">
         <div className={`text-xs ${a.item.done ? "line-through text-muted-foreground" : isOverdue ? "text-danger-fg" : "text-foreground"}`}>

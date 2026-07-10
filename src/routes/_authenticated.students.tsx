@@ -13,6 +13,7 @@ import {
 import { exportToCsv } from "@/lib/csv";
 import { DateField } from "@/components/ui/date-field";
 import { SelectField } from "@/components/ui/select-field";
+import { Checkbox } from "@/components/ui/checkbox";
 
 
 
@@ -249,7 +250,7 @@ function StudentsLayout() {
                   <div className="text-[12px] text-muted-foreground px-1 pb-1.5 border-b border-[var(--border)]">Columns</div>
                   {COLUMNS.filter(c => c.key !== "student").map(c => (
                     <label key={c.key} className="flex items-center gap-2 px-1 py-1.5 text-xs hover:bg-[var(--muted)] rounded-sm cursor-pointer">
-                      <input type="checkbox" checked={visibleCols.has(c.key)} onChange={() => toggleCol(c.key)} className="accent-green-500" />
+                      <Checkbox checked={visibleCols.has(c.key)} onCheckedChange={() => toggleCol(c.key)} />
                       {c.label}
                     </label>
                   ))}
