@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import {
-  Users, Shield, Phone, UserCircle2, GraduationCap, Pencil, X, HeartHandshake,
+  Users, Shield, Phone, UserCircle2, GraduationCap, Pencil, X, HeartHandshake, Sparkles, School,
   Upload, Trash2, PowerOff, Power,
 } from "lucide-react";
 import { signAvatars, uploadAvatar } from "@/lib/avatars";
@@ -17,7 +17,7 @@ export const Route = createFileRoute("/_authenticated/team")({
   component: TeamPage,
 });
 
-type AppRole = "admin" | "closer" | "setter" | "coach" | "csm";
+type AppRole = "admin" | "closer" | "setter" | "coach" | "csm" | "founder" | "student";
 type SetterType = "phone" | "dm" | null;
 type Member = {
   id: string;
@@ -34,6 +34,8 @@ const ROLES: { key: AppRole; icon: React.ComponentType<{ className?: string }>; 
   { key: "setter", icon: UserCircle2, color: "text-green-400 border-green-500/30 bg-green-500/5" },
   { key: "coach", icon: GraduationCap, color: "text-blue-400 border-blue-500/30 bg-blue-500/5" },
   { key: "csm", icon: HeartHandshake, color: "text-amber-400 border-amber-500/30 bg-amber-500/5" },
+  { key: "founder", icon: Sparkles, color: "text-fuchsia-400 border-fuchsia-500/30 bg-fuchsia-500/5" },
+  { key: "student", icon: School, color: "text-violet-400 border-violet-500/30 bg-violet-500/5" },
 ];
 
 function TeamPage() {
