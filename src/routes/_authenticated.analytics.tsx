@@ -4,8 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, subDays } from "date-fns";
 import { Download, TrendingUp, Users, Target } from "lucide-react";
 import {
-  ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar,
+  ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar,
 } from "recharts";
+import { VolumeAreaChart, VolumeLegend } from "@/components/ui/volume-area-chart";
 
 export const Route = createFileRoute("/_authenticated/analytics")({
   head: () => ({ meta: [{ title: "Analytics — ISA Team" }] }),
