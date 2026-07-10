@@ -36,20 +36,20 @@ type Coach = { id: string; display_name: string | null };
 const PHASES: { key: Phase; label: string; color: string }[] = [
   { key: "uncategorized", label: "Uncategorized", color: "text-slate-400 border-slate-500/30 bg-slate-500/5" },
   { key: "onboarding", label: "Onboarding", color: "text-sky-400 border-sky-500/30 bg-sky-500/10" },
-  { key: "coaching_1on1", label: "1:1 Coaching", color: "text-fuchsia-400 border-fuchsia-500/30 bg-fuchsia-500/10" },
-  { key: "training", label: "Training", color: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10" },
+  { key: "coaching_1on1", label: "1:1 Coaching", color: "text-blue-400 border-blue-500/30 bg-blue-500/10" },
+  { key: "training", label: "Training", color: "text-green-400 border-green-500/30 bg-green-500/10" },
   { key: "graduated", label: "Graduated", color: "text-amber-400 border-amber-500/30 bg-amber-500/10" },
   { key: "paused", label: "Paused", color: "text-zinc-400 border-zinc-500/30 bg-zinc-500/5" },
 ];
 const STATUSES: { key: Status; label: string; color: string }[] = [
-  { key: "active", label: "Active", color: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10" },
+  { key: "active", label: "Active", color: "text-green-400 border-green-500/30 bg-green-500/10" },
   { key: "inactive", label: "Inactive", color: "text-zinc-400 border-zinc-500/30 bg-zinc-500/5" },
-  { key: "ghosting", label: "Ghosting", color: "text-rose-400 border-rose-500/30 bg-rose-500/10" },
+  { key: "ghosting", label: "Ghosting", color: "text-red-400 border-red-500/30 bg-red-500/10" },
 ];
 const PAYMENT_META: Record<PaymentState, { label: string; color: string }> = {
-  paid_in_full: { label: "Paid", color: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10" },
+  paid_in_full: { label: "Paid", color: "text-green-400 border-green-500/30 bg-green-500/10" },
   installments: { label: "Installments", color: "text-sky-400 border-sky-500/30 bg-sky-500/10" },
-  behind: { label: "Behind", color: "text-rose-400 border-rose-500/30 bg-rose-500/10" },
+  behind: { label: "Behind", color: "text-red-400 border-red-500/30 bg-red-500/10" },
 };
 
 const phaseMeta = (p: Phase) => PHASES.find(x => x.key === p)!;
@@ -210,7 +210,7 @@ function StudentsLayout() {
     <div className="p-4 sm:p-6 max-w-[1500px] mx-auto space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[#1f2530] pb-4">
         <div>
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-fuchsia-400 mb-1">
+          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-blue-400 mb-1">
             <School className="h-3 w-3" /> Student Tracker
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">Students</h1>
@@ -225,7 +225,7 @@ function StudentsLayout() {
               value={qRaw}
               onChange={e => setQ(e.target.value)}
               placeholder="Search name or email…"
-              className="h-8 pl-7 pr-3 rounded-sm border border-[#1f2530] bg-[#0f1116] text-xs w-56 focus:outline-none focus:border-emerald-500/40"
+              className="h-8 pl-7 pr-3 rounded-sm border border-[#1f2530] bg-[#0f1116] text-xs w-56 focus:outline-none focus:border-green-500/40"
             />
           </div>
           <div className="flex items-center border border-[#1f2530] bg-[#0f1116] rounded-sm p-0.5">
@@ -249,7 +249,7 @@ function StudentsLayout() {
                   <div className="text-[10px] uppercase tracking-widest text-muted-foreground px-1 pb-1.5 border-b border-[#1f2530]">Columns</div>
                   {COLUMNS.filter(c => c.key !== "student").map(c => (
                     <label key={c.key} className="flex items-center gap-2 px-1 py-1.5 text-xs hover:bg-[#14171e] rounded-sm cursor-pointer">
-                      <input type="checkbox" checked={visibleCols.has(c.key)} onChange={() => toggleCol(c.key)} className="accent-emerald-500" />
+                      <input type="checkbox" checked={visibleCols.has(c.key)} onChange={() => toggleCol(c.key)} className="accent-green-500" />
                       {c.label}
                     </label>
                   ))}
@@ -261,7 +261,7 @@ function StudentsLayout() {
           {canManage && (
             <button
               onClick={() => setAddOpen(true)}
-              className="flex items-center gap-1.5 h-8 px-3 rounded-sm bg-emerald-500 hover:bg-emerald-400 text-emerald-950 text-xs font-medium"
+              className="flex items-center gap-1.5 h-8 px-3 rounded-sm bg-green-500 hover:bg-green-400 text-green-950 text-xs font-medium"
             >
               <Plus className="h-3.5 w-3.5" /> Add student
             </button>
@@ -293,7 +293,7 @@ function StudentsLayout() {
         <button
           onClick={() => setPhaseFilter("at_risk")}
           className={`flex items-center gap-1 text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-sm border transition ${
-            phaseFilter === "at_risk" ? "text-rose-400 border-rose-500/30 bg-rose-500/10" : "text-muted-foreground border-[#1f2530] hover:border-rose-500/30"
+            phaseFilter === "at_risk" ? "text-red-400 border-red-500/30 bg-red-500/10" : "text-muted-foreground border-[#1f2530] hover:border-red-500/30"
           }`}
         >
           <AlertTriangle className="h-3 w-3" /> At risk · {atRiskCount}
@@ -345,7 +345,7 @@ function StudentsLayout() {
                   <tr key={s.id} className="border-b border-[#1a1f29] last:border-0 hover:bg-[#14171e] transition">
                     <td className="px-4 py-3 min-w-[220px]">
                       <Link to={"/students/$id" as any} params={{ id: s.id } as any} className="flex items-center gap-2 min-w-0">
-                        {info.risky && <AlertTriangle className="h-3 w-3 text-rose-400 shrink-0" />}
+                        {info.risky && <AlertTriangle className="h-3 w-3 text-red-400 shrink-0" />}
                         <div className="min-w-0">
                           <div className="text-sm font-medium truncate">{s.full_name}</div>
                           <div className={`text-[10px] truncate flex items-center gap-1 ${s.email ? "text-muted-foreground" : "text-amber-400"}`}>
@@ -354,7 +354,7 @@ function StudentsLayout() {
                           {showReasons && info.reasons.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-1">
                               {info.reasons.map(r => (
-                                <span key={r} className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm border border-rose-500/30 bg-rose-500/10 text-rose-400">{r}</span>
+                                <span key={r} className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm border border-red-500/30 bg-red-500/10 text-red-400">{r}</span>
                               ))}
                             </div>
                           )}
@@ -410,17 +410,17 @@ function StudentsLayout() {
                       </td>
                     )}
                     {visibleCols.has("calls_remaining") && (
-                      <td className={`px-2 py-3 text-right font-mono text-xs ${remaining === 0 ? "text-rose-400" : "text-foreground"}`}>
+                      <td className={`px-2 py-3 text-right font-mono text-xs ${remaining === 0 ? "text-red-400" : "text-foreground"}`}>
                         {remaining}<span className="text-muted-foreground">/{s.calls_allotted}</span>
                       </td>
                     )}
                     {visibleCols.has("last_call") && (
-                      <td className={`px-2 py-3 text-right text-[10px] font-mono ${last && daysSince(last) > 14 ? "text-rose-400" : "text-muted-foreground"}`}>
+                      <td className={`px-2 py-3 text-right text-[10px] font-mono ${last && daysSince(last) > 14 ? "text-red-400" : "text-muted-foreground"}`}>
                         {last ? `${daysSince(last)}d` : "—"}
                       </td>
                     )}
                     {visibleCols.has("last_eod") && (
-                      <td className={`px-2 py-3 text-right text-[10px] font-mono ${lastEod && daysSince(lastEod) >= 5 ? "text-rose-400" : "text-muted-foreground"}`}>
+                      <td className={`px-2 py-3 text-right text-[10px] font-mono ${lastEod && daysSince(lastEod) >= 5 ? "text-red-400" : "text-muted-foreground"}`}>
                         {lastEod ? `${daysSince(lastEod)}d` : "—"}
                       </td>
                     )}
@@ -431,7 +431,7 @@ function StudentsLayout() {
                             defaultValue={s.next_action ?? ""}
                             onBlur={e => { if (e.target.value !== (s.next_action ?? "")) updateStudent(s.id, { next_action: e.target.value.trim() || null }); }}
                             placeholder="—"
-                            className="w-full h-7 px-2 rounded-sm border border-transparent hover:border-[#1f2530] focus:border-emerald-500/40 bg-transparent text-xs focus:outline-none"
+                            className="w-full h-7 px-2 rounded-sm border border-transparent hover:border-[#1f2530] focus:border-green-500/40 bg-transparent text-xs focus:outline-none"
                           />
                         ) : (
                           <span className="text-xs text-muted-foreground">{s.next_action ?? "—"}</span>
@@ -442,7 +442,7 @@ function StudentsLayout() {
                       <td className="px-2 py-3">
                         <div className="flex gap-1">
                           <span title="Testimonial" className={s.testimonial_collected ? "text-amber-400" : "text-[#2a3140]"}><Award className="h-3.5 w-3.5" /></span>
-                          <span title="Trustpilot" className={s.trustpilot_collected ? "text-emerald-400" : "text-[#2a3140]"}><MessageSquare className="h-3.5 w-3.5" /></span>
+                          <span title="Trustpilot" className={s.trustpilot_collected ? "text-green-400" : "text-[#2a3140]"}><MessageSquare className="h-3.5 w-3.5" /></span>
                         </div>
                       </td>
                     )}
@@ -452,7 +452,7 @@ function StudentsLayout() {
                           <ChevronRight className="h-3.5 w-3.5" />
                         </Link>
                         {canManage && roles.includes("admin") && (
-                          <button onClick={() => deleteStudent(s.id)} className="p-1 rounded hover:bg-rose-500/10 text-muted-foreground hover:text-rose-400" title="Delete student">
+                          <button onClick={() => deleteStudent(s.id)} className="p-1 rounded hover:bg-red-500/10 text-muted-foreground hover:text-red-400" title="Delete student">
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         )}
@@ -523,11 +523,11 @@ function GraduationKanban({ students }: { students: Student[] }) {
       match: (s: Student) => !s.first_win_at },
     { key: "offer", label: "2. Offer landing", color: "text-sky-400 border-sky-500/30 bg-sky-500/10",
       match: (s: Student) => !!s.first_win_at && !s.offer_landed_at },
-    { key: "testimonial", label: "3. Testimonial pending", color: "text-fuchsia-400 border-fuchsia-500/30 bg-fuchsia-500/10",
+    { key: "testimonial", label: "3. Testimonial pending", color: "text-blue-400 border-blue-500/30 bg-blue-500/10",
       match: (s: Student) => !!s.offer_landed_at && !s.testimonial_collected },
     { key: "trustpilot", label: "4. Trustpilot pending", color: "text-amber-400 border-amber-500/30 bg-amber-500/10",
       match: (s: Student) => !!s.testimonial_collected && !s.trustpilot_collected },
-    { key: "complete", label: "🏆 Complete", color: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10",
+    { key: "complete", label: "🏆 Complete", color: "text-green-400 border-green-500/30 bg-green-500/10",
       match: (s: Student) => !!s.testimonial_collected && !!s.trustpilot_collected },
   ];
   const active = students.filter(s => s.status === "active" || (!!s.testimonial_collected && !!s.trustpilot_collected));
@@ -549,8 +549,8 @@ function GraduationKanban({ students }: { students: Student[] }) {
                   <div className="flex items-center gap-1 mt-1">
                     {s.first_win_at && <span title="First win" className="text-amber-400 text-[10px]">★</span>}
                     {s.offer_landed_at && <span title="Offer landed" className="text-sky-400"><Trophy className="h-3 w-3" /></span>}
-                    {s.testimonial_collected && <span title="Testimonial"><Award className="h-3 w-3 text-fuchsia-400" /></span>}
-                    {s.trustpilot_collected && <span title="Trustpilot"><MessageSquare className="h-3 w-3 text-emerald-400" /></span>}
+                    {s.testimonial_collected && <span title="Testimonial"><Award className="h-3 w-3 text-blue-400" /></span>}
+                    {s.trustpilot_collected && <span title="Trustpilot"><MessageSquare className="h-3 w-3 text-green-400" /></span>}
                   </div>
                 </Link>
               ))}
@@ -570,10 +570,10 @@ function StudentCard({ s, canDrag, coachName, atRisk }: { s: Student; canDrag: b
       params={{ id: s.id } as any}
       draggable={canDrag}
       onDragStart={e => e.dataTransfer.setData("text/plain", s.id)}
-      className={`block p-2 rounded-sm bg-[#14171e] border transition cursor-pointer ${atRisk ? "border-rose-500/30 hover:border-rose-500/60" : "border-[#1f2530] hover:border-[#2a3140]"}`}
+      className={`block p-2 rounded-sm bg-[#14171e] border transition cursor-pointer ${atRisk ? "border-red-500/30 hover:border-red-500/60" : "border-[#1f2530] hover:border-[#2a3140]"}`}
     >
       <div className="flex items-center gap-1.5">
-        {atRisk && <AlertTriangle className="h-3 w-3 text-rose-400 shrink-0" />}
+        {atRisk && <AlertTriangle className="h-3 w-3 text-red-400 shrink-0" />}
         <div className="text-xs font-medium truncate flex-1">{s.full_name}</div>
       </div>
       <div className="flex items-center justify-between mt-1">
@@ -825,7 +825,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
             <button
               type="button"
               onClick={() => setPkg("one_on_one")}
-              className={`text-left p-3 rounded-sm border transition ${pkg === "one_on_one" ? "border-fuchsia-500/50 bg-fuchsia-500/10" : "border-[#1f2530] hover:border-[#2a3140]"}`}
+              className={`text-left p-3 rounded-sm border transition ${pkg === "one_on_one" ? "border-blue-500/50 bg-blue-500/10" : "border-[#1f2530] hover:border-[#2a3140]"}`}
             >
               <div className="text-xs font-medium">1:1 Pathway</div>
               <div className="text-[10px] text-muted-foreground mt-0.5">Up to 10 coaching calls (2/week × 5 weeks) + group access</div>
@@ -849,7 +849,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
                 key={m}
                 type="button"
                 onClick={() => setPayMode(m)}
-                className={`p-2 rounded-sm border text-xs transition ${payMode === m ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-300" : "border-[#1f2530] text-muted-foreground hover:border-[#2a3140]"}`}
+                className={`p-2 rounded-sm border text-xs transition ${payMode === m ? "border-green-500/50 bg-green-500/10 text-green-300" : "border-[#1f2530] text-muted-foreground hover:border-[#2a3140]"}`}
               >
                 {m === "pif" ? "Paid in full" : m === "installments" ? "Installments" : "Skip for now"}
               </button>
@@ -923,7 +923,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
                     <div className="col-span-2 space-y-2">
                       <div className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center justify-between">
                         <span>Scheduled payments</span>
-                        <button type="button" onClick={addCustomRow} className="text-[10px] text-emerald-400 hover:text-emerald-300">+ Add payment</button>
+                        <button type="button" onClick={addCustomRow} className="text-[10px] text-green-400 hover:text-green-300">+ Add payment</button>
                       </div>
                       {customRows.map((r, i) => (
                         <div key={r.id} className="grid grid-cols-[24px_1fr_1.1fr_1fr_28px] gap-2 items-center">
@@ -931,10 +931,10 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
                           <input type="number" min="0" step="0.01" value={r.amount} onChange={e => updateCustomRow(r.id, { amount: e.target.value })} placeholder="Amount" className={inputCls} />
                           <input type="date" value={r.due_date} onChange={e => updateCustomRow(r.id, { due_date: e.target.value })} className={inputCls} />
                           <input value={r.payment_method} onChange={e => updateCustomRow(r.id, { payment_method: e.target.value })} placeholder="Method (optional)" className={inputCls} />
-                          <button type="button" onClick={() => removeCustomRow(r.id)} disabled={customRows.length === 1} className="text-muted-foreground hover:text-rose-400 disabled:opacity-30"><X className="h-3.5 w-3.5" /></button>
+                          <button type="button" onClick={() => removeCustomRow(r.id)} disabled={customRows.length === 1} className="text-muted-foreground hover:text-red-400 disabled:opacity-30"><X className="h-3.5 w-3.5" /></button>
                         </div>
                       ))}
-                      <div className={`text-[11px] rounded-sm p-2 border ${Math.abs(customDelta) < 0.01 ? "text-emerald-300 border-emerald-500/30 bg-emerald-500/5" : "text-amber-300 border-amber-500/30 bg-amber-500/5"}`}>
+                      <div className={`text-[11px] rounded-sm p-2 border ${Math.abs(customDelta) < 0.01 ? "text-green-300 border-green-500/30 bg-green-500/5" : "text-amber-300 border-amber-500/30 bg-amber-500/5"}`}>
                         Scheduled ${customTotal.toFixed(2)}{dep > 0 ? ` + $${dep.toFixed(2)} upfront` : ""} = ${(customTotal + dep).toFixed(2)} of ${tv.toFixed(2)}
                         {Math.abs(customDelta) >= 0.01 && (
                           <span className="ml-1">· {customDelta > 0 ? `$${customDelta.toFixed(2)} unallocated` : `$${Math.abs(customDelta).toFixed(2)} over total`}</span>
@@ -954,7 +954,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
 
         <div className="flex justify-end gap-2 pt-2 border-t border-[#1f2530]">
           <button onClick={onClose} className="text-xs text-muted-foreground hover:text-foreground px-3 py-1.5">Cancel</button>
-          <button onClick={submit} disabled={saving} className="text-xs bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-medium px-3 py-1.5 rounded-sm">
+          <button onClick={submit} disabled={saving} className="text-xs bg-green-500 hover:bg-green-400 text-green-950 font-medium px-3 py-1.5 rounded-sm">
             {saving ? "Saving…" : "Add student"}
           </button>
         </div>
@@ -963,7 +963,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
   );
 }
 
-const inputCls = "w-full h-9 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs focus:outline-none focus:border-emerald-500/40";
+const inputCls = "w-full h-9 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs focus:outline-none focus:border-green-500/40";
 
 function Field({ label, children, full }: { label: string; children: React.ReactNode; full?: boolean }) {
   return (
@@ -977,7 +977,7 @@ function Field({ label, children, full }: { label: string; children: React.React
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="space-y-2 pt-3 border-t border-[#1f2530] first:border-0 first:pt-0">
-      <div className="text-[10px] uppercase tracking-[0.18em] text-fuchsia-400">{title}</div>
+      <div className="text-[10px] uppercase tracking-[0.18em] text-blue-400">{title}</div>
       {children}
     </div>
   );

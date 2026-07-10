@@ -203,11 +203,11 @@ function Analytics() {
                       <td className="px-3 py-2 font-medium">{profiles[s.user_id]?.display_name ?? "Unknown"}</td>
                       <td className="px-3 py-2 text-right text-muted-foreground">{s.days}</td>
                       <td className="px-3 py-2 text-right text-blue-400">{s.dms.toLocaleString()}</td>
-                      <td className="px-3 py-2 text-right text-purple-400">{s.convos.toLocaleString()}</td>
-                      <td className="px-3 py-2 text-right text-emerald-400 font-semibold">{s.booked.toLocaleString()}</td>
+                      <td className="px-3 py-2 text-right text-blue-400">{s.convos.toLocaleString()}</td>
+                      <td className="px-3 py-2 text-right text-green-400 font-semibold">{s.booked.toLocaleString()}</td>
                       <td className="px-3 py-2 text-right text-amber-400">{s.shows.toLocaleString()}</td>
                       <td className="px-3 py-2 text-right">{showPct}%</td>
-                      <td className="px-3 py-2 text-right text-cyan-400">{dmBookPct}%</td>
+                      <td className="px-3 py-2 text-right text-blue-400">{dmBookPct}%</td>
                     </tr>
                   );
                 })}

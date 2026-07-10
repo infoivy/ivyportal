@@ -49,9 +49,9 @@ const PHASES: Phase[] = ["uncategorized", "onboarding", "coaching_1on1", "traini
 const STATUSES: Status[] = ["active", "inactive", "ghosting"];
 const GRADES = ["A", "B", "C", "D", "At Risk"];
 const PAYMENT_STATES: { key: PaymentState; label: string; color: string }[] = [
-  { key: "paid_in_full", label: "Paid in full", color: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10" },
+  { key: "paid_in_full", label: "Paid in full", color: "text-green-400 border-green-500/30 bg-green-500/10" },
   { key: "installments", label: "Installments", color: "text-sky-400 border-sky-500/30 bg-sky-500/10" },
-  { key: "behind", label: "Behind", color: "text-rose-400 border-rose-500/30 bg-rose-500/10" },
+  { key: "behind", label: "Behind", color: "text-red-400 border-red-500/30 bg-red-500/10" },
 ];
 
 type Tab = "timeline" | "calls" | "eods" | "csm" | "installments" | "notes";
@@ -203,14 +203,14 @@ function StudentDetail() {
       {/* Header */}
       <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-5">
         <div className="flex items-start gap-4 flex-wrap">
-          <div className="h-14 w-14 rounded-md bg-fuchsia-500/10 border border-fuchsia-500/30 flex items-center justify-center text-fuchsia-400 text-lg font-bold shrink-0">
+          <div className="h-14 w-14 rounded-md bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 text-lg font-bold shrink-0">
             {student.full_name.slice(0, 2).toUpperCase()}
           </div>
           <div className="flex-1 min-w-[240px]">
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl font-semibold">{student.full_name}</h1>
               {student.user_id ? (
-                <span className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-emerald-400 border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 rounded-sm">
+                <span className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-green-400 border border-green-500/30 bg-green-500/10 px-1.5 py-0.5 rounded-sm">
                   <Link2 className="h-2.5 w-2.5" /> Portal linked
                 </span>
               ) : (
@@ -221,7 +221,7 @@ function StudentDetail() {
             </div>
             <div className="text-xs text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1">
               <span>{student.email ?? "no email"}</span>
-              {student.whatsapp && <span className="flex items-center gap-1"><MessageCircle className="h-3 w-3 text-emerald-400" /> {student.whatsapp}</span>}
+              {student.whatsapp && <span className="flex items-center gap-1"><MessageCircle className="h-3 w-3 text-green-400" /> {student.whatsapp}</span>}
               <span>joined {student.join_date}</span>
             </div>
 
@@ -264,7 +264,7 @@ function StudentDetail() {
                 defaultValue={student.next_action ?? ""}
                 onBlur={e => { if (e.target.value !== (student.next_action ?? "")) saveNextAction(e.target.value); }}
                 placeholder="e.g. Follow up on portfolio review by Friday"
-                className="flex-1 h-8 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs focus:outline-none focus:border-emerald-500/40 disabled:opacity-60"
+                className="flex-1 h-8 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs focus:outline-none focus:border-green-500/40 disabled:opacity-60"
               />
             </div>
           </div>
@@ -378,7 +378,7 @@ function StudentDetail() {
           <div className="flex items-center justify-between px-4 py-3 border-b border-[#1f2530]">
             <div className="text-xs font-semibold flex items-center gap-1.5"><Phone className="h-3.5 w-3.5 text-sky-400" /> 1-on-1 calls · {calls.length}</div>
             {canManage && (
-              <button onClick={() => setCallFormOpen(!callFormOpen)} className="text-[11px] flex items-center gap-1 px-2 py-1 rounded-sm bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-medium">
+              <button onClick={() => setCallFormOpen(!callFormOpen)} className="text-[11px] flex items-center gap-1 px-2 py-1 rounded-sm bg-green-500 hover:bg-green-400 text-green-950 font-medium">
                 <Plus className="h-3 w-3" /> Log call
               </button>
             )}
@@ -404,12 +404,12 @@ function StudentDetail() {
                   </div>
                   <div className="flex items-center gap-2">
                     {c.fathom_url && (
-                      <a href={c.fathom_url} target="_blank" rel="noopener" className="flex items-center gap-1 text-emerald-400 hover:text-emerald-300 text-[11px]">
+                      <a href={c.fathom_url} target="_blank" rel="noopener" className="flex items-center gap-1 text-green-400 hover:text-green-300 text-[11px]">
                         <Video className="h-3 w-3" /> Fathom <ExternalLink className="h-2.5 w-2.5" />
                       </a>
                     )}
                     {canManage && (
-                      <button onClick={() => deleteCall(c.id)} className="p-0.5 text-muted-foreground hover:text-rose-400"><Trash2 className="h-3 w-3" /></button>
+                      <button onClick={() => deleteCall(c.id)} className="p-0.5 text-muted-foreground hover:text-red-400"><Trash2 className="h-3 w-3" /></button>
                     )}
                   </div>
                 </div>
@@ -424,7 +424,7 @@ function StudentDetail() {
       {tab === "eods" && (
         <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm">
           <div className="flex items-center justify-between px-4 py-3 border-b border-[#1f2530]">
-            <div className="text-xs font-semibold flex items-center gap-1.5"><User className="h-3.5 w-3.5 text-emerald-400" /> Student EODs · {eods.length}</div>
+            <div className="text-xs font-semibold flex items-center gap-1.5"><User className="h-3.5 w-3.5 text-green-400" /> Student EODs · {eods.length}</div>
             {!student.user_id && <span className="text-[10px] text-muted-foreground">Student hasn't signed in yet</span>}
           </div>
           <div className="overflow-x-auto">
@@ -445,7 +445,7 @@ function StudentDetail() {
                 {eods.map(e => (
                   <tr key={e.id} className="border-b border-[#1a1f29]">
                     <td className="p-2 font-mono text-muted-foreground">{e.report_date}</td>
-                    <td className="p-2 text-right font-mono text-emerald-400">{e.applications_submitted}</td>
+                    <td className="p-2 text-right font-mono text-green-400">{e.applications_submitted}</td>
                     <td className="p-2 text-right font-mono">{e.outreach_sent}</td>
                     <td className="p-2 text-right font-mono">{e.replies}</td>
                     <td className="p-2 text-right font-mono">{e.interviews}</td>
@@ -469,17 +469,17 @@ function StudentDetail() {
             <div className="text-center py-6 text-xs text-muted-foreground">
               No installment plan for this student.
               <div className="mt-2">
-                <Link to="/installments" className="text-emerald-400 hover:text-emerald-300 text-[11px]">Manage on Installments page →</Link>
+                <Link to="/installments" className="text-green-400 hover:text-green-300 text-[11px]">Manage on Installments page →</Link>
               </div>
             </div>
           ) : (
             <>
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-sm font-semibold flex items-center gap-1.5"><DollarSign className="h-3.5 w-3.5 text-emerald-400" /> {installment.currency} {installment.total_amount.toLocaleString()}</div>
+                  <div className="text-sm font-semibold flex items-center gap-1.5"><DollarSign className="h-3.5 w-3.5 text-green-400" /> {installment.currency} {installment.total_amount.toLocaleString()}</div>
                   {installment.notes && <div className="text-[11px] text-muted-foreground mt-0.5">{installment.notes}</div>}
                 </div>
-                <Link to="/installments" className="text-[11px] text-emerald-400 hover:text-emerald-300">Edit plan →</Link>
+                <Link to="/installments" className="text-[11px] text-green-400 hover:text-green-300">Edit plan →</Link>
               </div>
               <table className="w-full text-xs">
                 <thead className="text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -491,9 +491,9 @@ function StudentDetail() {
                     return (
                       <tr key={p.id} className="border-b border-[#1a1f29]">
                         <td className="p-2 font-mono text-muted-foreground">{p.sequence}</td>
-                        <td className={`p-2 font-mono ${overdue ? "text-rose-400" : "text-muted-foreground"}`}>{p.due_date}</td>
+                        <td className={`p-2 font-mono ${overdue ? "text-red-400" : "text-muted-foreground"}`}>{p.due_date}</td>
                         <td className="p-2 text-right font-mono">{p.currency} {Number(p.amount).toLocaleString()}</td>
-                        <td className={`p-2 uppercase tracking-wider text-[10px] ${p.status === "paid" ? "text-emerald-400" : overdue ? "text-rose-400" : "text-muted-foreground"}`}>{overdue ? "overdue" : p.status}</td>
+                        <td className={`p-2 uppercase tracking-wider text-[10px] ${p.status === "paid" ? "text-green-400" : overdue ? "text-red-400" : "text-muted-foreground"}`}>{overdue ? "overdue" : p.status}</td>
                       </tr>
                     );
                   })}
@@ -509,7 +509,7 @@ function StudentDetail() {
           <div className="flex items-center justify-between mb-2">
             <div className="text-[10px] uppercase tracking-widest text-muted-foreground flex items-center gap-1"><FileText className="h-3 w-3" /> General notes</div>
             {canManage && (
-              <button onClick={saveGeneralNotes} className="text-[10px] text-emerald-400 hover:text-emerald-300 flex items-center gap-1"><Save className="h-3 w-3" /> Save</button>
+              <button onClick={saveGeneralNotes} className="text-[10px] text-green-400 hover:text-green-300 flex items-center gap-1"><Save className="h-3 w-3" /> Save</button>
             )}
           </div>
           <textarea
@@ -518,7 +518,7 @@ function StudentDetail() {
             onChange={e => setStudent({ ...student, general_notes: e.target.value })}
             rows={8}
             placeholder="Anything worth remembering: personality, background, wins, ongoing themes…"
-            className="w-full bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-2 text-xs resize-none focus:outline-none focus:border-emerald-500/40"
+            className="w-full bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-2 text-xs resize-none focus:outline-none focus:border-green-500/40"
           />
           <div className="mt-3 text-[10px] uppercase tracking-widest text-muted-foreground mb-1">Legacy coach notes</div>
           <textarea
@@ -528,7 +528,7 @@ function StudentDetail() {
             onBlur={async () => { await supabase.from("students").update({ notes: student.notes }).eq("id", student.id); }}
             rows={3}
             placeholder="Original coach notes field (kept for history)"
-            className="w-full bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-2 text-xs resize-none focus:outline-none focus:border-emerald-500/40"
+            className="w-full bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-2 text-xs resize-none focus:outline-none focus:border-green-500/40"
           />
         </div>
       )}
@@ -549,12 +549,12 @@ function CsmNotesPanel({ notes, authors, onAdd }: { notes: CsmNote[]; authors: R
           onChange={e => setDraft(e.target.value)}
           rows={2}
           placeholder="Loom reviewed, roleplay feedback, check-in outcome…"
-          className="flex-1 bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-2 text-xs resize-none focus:outline-none focus:border-emerald-500/40"
+          className="flex-1 bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-2 text-xs resize-none focus:outline-none focus:border-green-500/40"
         />
         <button
           onClick={() => { onAdd(draft); setDraft(""); }}
           disabled={!draft.trim()}
-          className="text-xs bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 disabled:hover:bg-emerald-500 text-emerald-950 font-medium px-3 rounded-sm"
+          className="text-xs bg-green-500 hover:bg-green-400 disabled:opacity-40 disabled:hover:bg-green-500 text-green-950 font-medium px-3 rounded-sm"
         >Add</button>
       </div>
       <div className="space-y-2">
@@ -578,7 +578,7 @@ function TabBtn({ children, active, onClick, icon }: { children: React.ReactNode
     <button
       onClick={onClick}
       className={`flex items-center gap-1.5 px-3 py-2 text-xs border-b-2 -mb-px transition whitespace-nowrap ${
-        active ? "border-emerald-500 text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
+        active ? "border-green-500 text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
       }`}
     >
       {icon}{children}
@@ -591,7 +591,7 @@ function StatCard({ label, value, sub, accent, icon, sparkline }: {
   icon: React.ReactNode; sparkline?: number[];
 }) {
   const colors: Record<string, string> = {
-    emerald: "text-emerald-400", sky: "text-sky-400", rose: "text-rose-400", amber: "text-amber-400", fuchsia: "text-fuchsia-400",
+    emerald: "text-green-400", sky: "text-sky-400", rose: "text-red-400", amber: "text-amber-400", fuchsia: "text-blue-400",
   };
   return (
     <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-3">
@@ -623,10 +623,10 @@ function SelectChip({ value, onChange, options, color, prefix }: {
   color: "emerald" | "rose" | "zinc" | "fuchsia" | "sky" | "amber"; prefix?: string;
 }) {
   const map = {
-    emerald: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10",
-    rose: "text-rose-400 border-rose-500/30 bg-rose-500/10",
+    emerald: "text-green-400 border-green-500/30 bg-green-500/10",
+    rose: "text-red-400 border-red-500/30 bg-red-500/10",
     zinc: "text-zinc-400 border-zinc-500/30 bg-zinc-500/5",
-    fuchsia: "text-fuchsia-400 border-fuchsia-500/30 bg-fuchsia-500/10",
+    fuchsia: "text-blue-400 border-blue-500/30 bg-blue-500/10",
     sky: "text-sky-400 border-sky-500/30 bg-sky-500/10",
     amber: "text-amber-400 border-amber-500/30 bg-amber-500/10",
   } as const;
@@ -642,10 +642,10 @@ function SelectChip({ value, onChange, options, color, prefix }: {
 
 function Chip({ label, color }: { label: string; color: "emerald" | "rose" | "zinc" | "fuchsia" | "sky" | "amber" }) {
   const map = {
-    emerald: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10",
-    rose: "text-rose-400 border-rose-500/30 bg-rose-500/10",
+    emerald: "text-green-400 border-green-500/30 bg-green-500/10",
+    rose: "text-red-400 border-red-500/30 bg-red-500/10",
     zinc: "text-zinc-400 border-zinc-500/30 bg-zinc-500/5",
-    fuchsia: "text-fuchsia-400 border-fuchsia-500/30 bg-fuchsia-500/10",
+    fuchsia: "text-blue-400 border-blue-500/30 bg-blue-500/10",
     sky: "text-sky-400 border-sky-500/30 bg-sky-500/10",
     amber: "text-amber-400 border-amber-500/30 bg-amber-500/10",
   } as const;
@@ -707,7 +707,7 @@ function CallForm({ studentId, onCancel, onDone }: { studentId: string; onCancel
       <textarea placeholder="Coach notes…" value={form.coach_notes} onChange={e => setForm(f => ({ ...f, coach_notes: e.target.value }))} rows={2} className="w-full p-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs resize-none" />
       <div className="flex justify-end gap-2">
         <button onClick={onCancel} className="text-xs text-muted-foreground px-2 py-1">Cancel</button>
-        <button onClick={submit} disabled={saving} className="text-xs bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-medium px-3 py-1 rounded-sm">
+        <button onClick={submit} disabled={saving} className="text-xs bg-green-500 hover:bg-green-400 text-green-950 font-medium px-3 py-1 rounded-sm">
           {saving ? "Saving…" : "Save call"}
         </button>
       </div>
@@ -768,16 +768,16 @@ function TimelineFeed({ student, calls, eods, csmNotes, csmAuthors, coachName, p
 
   const tones: Record<TimelineEvent["kind"], { icon: any; color: string }> = {
     call:      { icon: Phone,      color: "text-sky-400 border-sky-500/40 bg-sky-500/5" },
-    eod:       { icon: FileText,   color: "text-emerald-400 border-emerald-500/40 bg-emerald-500/5" },
+    eod:       { icon: FileText,   color: "text-green-400 border-green-500/40 bg-green-500/5" },
     csm:       { icon: HeartHandshake, color: "text-amber-400 border-amber-500/40 bg-amber-500/5" },
-    payment:   { icon: DollarSign, color: "text-emerald-400 border-emerald-500/40 bg-emerald-500/5" },
+    payment:   { icon: DollarSign, color: "text-green-400 border-green-500/40 bg-green-500/5" },
     milestone: { icon: Trophy,     color: "text-amber-400 border-amber-500/40 bg-amber-500/5" },
   };
 
   return (
     <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm">
       <div className="px-4 py-3 border-b border-[#1f2530] text-xs font-semibold flex items-center gap-2">
-        <Activity className="h-3.5 w-3.5 text-fuchsia-400" /> Activity · {events.length}
+        <Activity className="h-3.5 w-3.5 text-blue-400" /> Activity · {events.length}
       </div>
       {events.length === 0 ? (
         <div className="p-6 text-center text-xs text-muted-foreground">No activity yet.</div>

@@ -237,7 +237,7 @@ function EODsPage() {
         </div>
         <div className="flex items-center gap-2">
           {!isFounder && (
-            <div className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-sm border ${existingId ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-400" : "border-amber-500/30 bg-amber-500/5 text-amber-400"}`}>
+            <div className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-sm border ${existingId ? "border-green-500/30 bg-green-500/5 text-green-400" : "border-amber-500/30 bg-amber-500/5 text-amber-400"}`}>
               {existingId ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Clock className="h-3.5 w-3.5" />}
               {existingId ? "Today submitted" : "Today pending"}
             </div>
@@ -397,7 +397,7 @@ function EODsPage() {
               </div>
 
               <div className="flex items-center justify-end pt-2 border-t border-[#1f2530]">
-                <Button onClick={submit} disabled={saving || !form.wins.trim()} className="bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-medium h-8 rounded-sm text-xs">
+                <Button onClick={submit} disabled={saving || !form.wins.trim()} className="bg-green-500 hover:bg-green-400 text-green-950 font-medium h-8 rounded-sm text-xs">
                   {saving ? "Saving…" : existingId ? "Update EOD" : "Submit EOD"}
                 </Button>
               </div>
@@ -410,7 +410,7 @@ function EODsPage() {
                 <MyLast7Panel myEods={myEods} today={today} setterType={mySetterType} />
               )}
               <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-4 text-[11px] text-muted-foreground leading-relaxed">
-                <div className="text-[10px] uppercase tracking-widest text-emerald-400 mb-2">Pro tip</div>
+                <div className="text-[10px] uppercase tracking-widest text-green-400 mb-2">Pro tip</div>
                 Submit before <span className="text-foreground font-mono">23:59</span>. Missed days hurt the team's rolling average.
               </div>
             </aside>
@@ -519,8 +519,8 @@ function TeamOverview({ roster, eods, today }: { roster: RosterEntry[]; eods: Gr
       <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-4">
         <div className="text-sm">
           <span className="font-semibold">{fmtLong(today)}</span> —{" "}
-          <span className="text-emerald-400">{submittedCount} of {cards.length} submitted</span> ·{" "}
-          <span className="text-emerald-400">{kpiHitCount} hit KPI</span> ·{" "}
+          <span className="text-green-400">{submittedCount} of {cards.length} submitted</span> ·{" "}
+          <span className="text-green-400">{kpiHitCount} hit KPI</span> ·{" "}
           <span className="text-amber-400">{pendingCount} pending</span>
         </div>
       </div>
@@ -538,7 +538,7 @@ function OverviewCard({ card }: { card: {
   weeklyLabel: string; weeklyValue: string | number; todayEod: EOD | undefined;
 } }) {
   const [open, setOpen] = useState(false);
-  const dotColor = card.status === "green" ? "bg-emerald-500" : card.status === "amber" ? "bg-amber-500" : "bg-rose-500";
+  const dotColor = card.status === "green" ? "bg-green-500" : card.status === "amber" ? "bg-amber-500" : "bg-red-500";
   const setterTypeLabel = card.r.setter_type === "phone" ? "Phone Setter" : card.r.setter_type === "dm" ? "DM Setter" : ROLE_LABEL[card.r.primary_role] ?? card.r.primary_role;
   return (
     <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-4 space-y-3">
@@ -560,7 +560,7 @@ function OverviewCard({ card }: { card: {
         <div className="flex gap-1.5">
           {card.week.map(w => {
             const dt = new Date(w.d + "T00:00:00");
-            const bg = w.status === "green" ? "bg-emerald-500/25 border-emerald-500/50" : w.status === "amber" ? "bg-amber-500/25 border-amber-500/50" : "bg-rose-500/15 border-rose-500/40";
+            const bg = w.status === "green" ? "bg-green-500/25 border-green-500/50" : w.status === "amber" ? "bg-amber-500/25 border-amber-500/50" : "bg-red-500/15 border-red-500/40";
             return (
               <div key={w.d} className={`flex-1 border rounded-sm px-1 py-1 text-center ${bg}`} title={fmtLong(w.d)}>
                 <div className="text-[9px] text-muted-foreground">{WEEKDAY[dt.getDay()]}</div>
@@ -577,7 +577,7 @@ function OverviewCard({ card }: { card: {
         <div className="border-t border-[#1f2530] pt-3 space-y-2 text-xs">
           {card.week.map(w => (
             <div key={w.d} className="flex items-start gap-2">
-              <span className={`mt-1 h-2 w-2 rounded-full shrink-0 ${w.status === "green" ? "bg-emerald-500" : w.status === "amber" ? "bg-amber-500" : "bg-rose-500"}`} />
+              <span className={`mt-1 h-2 w-2 rounded-full shrink-0 ${w.status === "green" ? "bg-green-500" : w.status === "amber" ? "bg-amber-500" : "bg-red-500"}`} />
               <div className="flex-1">
                 <div className="text-muted-foreground">{fmtLong(w.d)}</div>
                 {w.e ? (
@@ -592,10 +592,10 @@ function OverviewCard({ card }: { card: {
                       <span>{w.e.student_checkins} check-ins, {w.e.looms_reviewed} looms</span>
                     )}
                     {w.status === "amber" && <span className="text-amber-400"> — missed KPI</span>}
-                    {w.e.wins && <div className="text-muted-foreground mt-0.5"><span className="text-emerald-400">Wins:</span> {w.e.wins}</div>}
+                    {w.e.wins && <div className="text-muted-foreground mt-0.5"><span className="text-green-400">Wins:</span> {w.e.wins}</div>}
                     {w.e.blockers && <div className="text-muted-foreground"><span className="text-amber-400">Blockers:</span> {w.e.blockers}</div>}
                   </div>
-                ) : <div className="text-rose-400">No EOD</div>}
+                ) : <div className="text-red-400">No EOD</div>}
               </div>
             </div>
           ))}
@@ -647,7 +647,7 @@ function MyHistory({ myEods, setterType, isSetter, isCloser, onDelete }: { myEod
                 {isSetter && (setterType === "dm" ? <span>{leads} leads</span> : <span>{dials} dials</span>)}
                 {isSetter && <span>{sets} sets</span>}
                 {isCloser && <span>${Math.round(cash).toLocaleString()} cash</span>}
-                {setterType && <span className={kpiDays >= 5 ? "text-emerald-400" : "text-amber-400"}>KPI {kpiDays} of {submitted}</span>}
+                {setterType && <span className={kpiDays >= 5 ? "text-green-400" : "text-amber-400"}>KPI {kpiDays} of {submitted}</span>}
               </div>
             </button>
             {isOpen && (
@@ -667,7 +667,7 @@ function MyHistory({ myEods, setterType, isSetter, isCloser, onDelete }: { myEod
 function HistoryDayRow({ eod, setterType, isSetter, isCloser, onDelete }: { eod: EOD; setterType: SetterType; isSetter: boolean; isCloser: boolean; onDelete: (id: string) => void }) {
   const [open, setOpen] = useState(false);
   const kpi = setterType ? didHitKpi(eod, setterType) : null;
-  const dotClass = kpi === null ? "bg-muted" : kpi ? "bg-emerald-500" : "bg-amber-500";
+  const dotClass = kpi === null ? "bg-muted" : kpi ? "bg-green-500" : "bg-amber-500";
   const rawConv = eod.convos_started > 0 ? (eod.calls_booked / eod.convos_started) * 100 : 0;
   const dataError = eod.calls_booked > eod.convos_started && eod.convos_started > 0;
   const convDisplay = Math.min(100, Math.round(rawConv));
@@ -703,12 +703,12 @@ function HistoryDayRow({ eod, setterType, isSetter, isCloser, onDelete }: { eod:
             <RowStat label="Shows" value={eod.shows} />
             <RowStat label="No-shows" value={eod.no_shows} />
           </div>
-          {eod.wins && <p><span className="text-emerald-400">Wins:</span> {eod.wins}</p>}
+          {eod.wins && <p><span className="text-green-400">Wins:</span> {eod.wins}</p>}
           {eod.blockers && <p><span className="text-amber-400">Blockers:</span> {eod.blockers}</p>}
           {(eod.summary || eod.tomorrow_focus) && <p className="text-muted-foreground italic">{eod.summary || eod.tomorrow_focus}</p>}
           <div className="flex justify-end gap-2 pt-1">
             {canDelete && (
-              <button onClick={() => { if (confirm("Delete this EOD?")) onDelete(eod.id); }} className="text-[11px] text-muted-foreground hover:text-rose-400 flex items-center gap-1">
+              <button onClick={() => { if (confirm("Delete this EOD?")) onDelete(eod.id); }} className="text-[11px] text-muted-foreground hover:text-red-400 flex items-center gap-1">
                 <Trash2 className="h-3 w-3" /> Delete
               </button>
             )}
@@ -804,7 +804,7 @@ function ComplianceMatrix({ eods, roster }: { eods: GridEod[]; roster: RosterEnt
                           const eod = byUserDate.get(`${m.user_id}::${d}`);
                           if (beforeJoin) return <td key={d} className="px-1 py-1 text-center"><span className="text-[#3a3f4a] text-[11px]">—</span></td>;
                           const status = dayStatus(eod, st);
-                          const cls = status === "green" ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300" : status === "amber" ? "bg-amber-500/20 border-amber-500/40 text-amber-300" : "bg-rose-500/15 border-rose-500/30 text-rose-400";
+                          const cls = status === "green" ? "bg-green-500/20 border-green-500/40 text-green-300" : status === "amber" ? "bg-amber-500/20 border-amber-500/40 text-amber-300" : "bg-red-500/15 border-red-500/30 text-red-400";
                           const glyph = status === "red" ? "✗" : status === "amber" ? "!" : "✓";
                           return (<td key={d} className="px-1 py-1 text-center"><span title={`${m.display_name} · ${fmtLong(d)} · ${status}`} className={`inline-flex items-center justify-center h-5 w-5 rounded-sm border text-[11px] ${cls}`}>{glyph}</span></td>);
                         })}
@@ -813,7 +813,7 @@ function ComplianceMatrix({ eods, roster }: { eods: GridEod[]; roster: RosterEnt
                           <span className="text-muted-foreground text-[10px] ml-1">d</span>
                         </td>
                         <td className="px-3 py-2 text-right font-mono text-xs">
-                          <span className={s.pct >= 90 ? "text-emerald-400" : s.pct >= 70 ? "text-amber-400" : "text-rose-400"}>{s.pct}%</span>
+                          <span className={s.pct >= 90 ? "text-green-400" : s.pct >= 70 ? "text-amber-400" : "text-red-400"}>{s.pct}%</span>
                           <span className="text-muted-foreground text-[10px] ml-1">({s.submitted}/{s.required})</span>
                         </td>
                       </tr>
@@ -902,7 +902,7 @@ function SubmissionsGrid({ dayList, roster, eods }: { dayList: string[]; roster:
                 {dayList.map(d => {
                   const beforeJoin = r.joined_at && d < r.joined_at;
                   const eod = byUserDate.get(`${r.user_id}::${d}`);
-                  const bg = beforeJoin ? "bg-[#141821]" : !eod ? "bg-rose-500/40" : st ? (didHitKpi(eod, st) ? "bg-emerald-500/70" : "bg-amber-500/60") : "bg-emerald-500/70";
+                  const bg = beforeJoin ? "bg-[#141821]" : !eod ? "bg-red-500/40" : st ? (didHitKpi(eod, st) ? "bg-green-500/70" : "bg-amber-500/60") : "bg-green-500/70";
                   return <div key={d} className={`h-3 w-3 rounded-[2px] ${bg}`} title={`${r.display_name} · ${fmtLong(d)} · ${!eod ? "missed" : "submitted"}`} />;
                 })}
               </div>
@@ -1041,9 +1041,9 @@ function FeedCard({ e, isAdmin, onDelete }: { e: GridEod; isAdmin: boolean; onDe
           <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{st ? `${st} setter` : e.primary_role}</div>
         </div>
         <div className="flex items-center gap-2">
-          {kpi !== null && <span className={`text-[10px] px-1.5 py-0.5 rounded-sm ${kpi ? "bg-emerald-500/15 text-emerald-400" : "bg-amber-500/15 text-amber-400"}`}>KPI {kpi ? "✓" : "✗"}</span>}
+          {kpi !== null && <span className={`text-[10px] px-1.5 py-0.5 rounded-sm ${kpi ? "bg-green-500/15 text-green-400" : "bg-amber-500/15 text-amber-400"}`}>KPI {kpi ? "✓" : "✗"}</span>}
           {isAdmin && (
-            <button onClick={() => { if (confirm("Delete this EOD?")) onDelete(e.id); }} className="text-muted-foreground hover:text-rose-400" title="Delete">
+            <button onClick={() => { if (confirm("Delete this EOD?")) onDelete(e.id); }} className="text-muted-foreground hover:text-red-400" title="Delete">
               <Trash2 className="h-3 w-3" />
             </button>
           )}
@@ -1056,7 +1056,7 @@ function FeedCard({ e, isAdmin, onDelete }: { e: GridEod; isAdmin: boolean; onDe
           </span>
         ))}
       </div>
-      {e.wins && <p className="text-[11px]"><span className="text-emerald-400">Wins:</span> {e.wins}</p>}
+      {e.wins && <p className="text-[11px]"><span className="text-green-400">Wins:</span> {e.wins}</p>}
       {e.blockers && <p className="text-[11px]"><span className="text-amber-400">Blockers:</span> {e.blockers}</p>}
     </div>
   );
@@ -1073,7 +1073,7 @@ function SubmittedTodayPanel({ roster, eods, today }: { roster: RosterEntry[]; e
         {roster.map(r => (
           <div key={r.user_id} className="flex items-center justify-between">
             <span className="truncate">{r.display_name}</span>
-            {submittedIds.has(r.user_id) ? <span className="text-emerald-400 text-[11px]">✓</span> : <span className="text-amber-400 text-[11px]">pending</span>}
+            {submittedIds.has(r.user_id) ? <span className="text-green-400 text-[11px]">✓</span> : <span className="text-amber-400 text-[11px]">pending</span>}
           </div>
         ))}
         {roster.length === 0 && <div className="text-muted-foreground">No team yet.</div>}
@@ -1093,7 +1093,7 @@ function MyLast7Panel({ myEods, today, setterType }: { myEods: EOD[]; today: str
           const e = byDate.get(d);
           const status = dayStatus(e, setterType);
           const glyph = !e ? "✗" : status === "amber" ? "!" : "✓";
-          const cls = !e ? "text-rose-400" : status === "amber" ? "text-amber-400" : "text-emerald-400";
+          const cls = !e ? "text-red-400" : status === "amber" ? "text-amber-400" : "text-green-400";
           return (<div key={d} className="flex items-center justify-between"><span className="text-muted-foreground">{fmtLong(d)}</span><span className={`text-[11px] ${cls}`}>{glyph}</span></div>);
         })}
       </div>
@@ -1108,7 +1108,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 function MiniChip({ label, value, tone, icon }: { label: string; value: number | string; tone?: "green" | "amber" | "default"; icon?: React.ReactNode }) {
-  const cls = tone === "green" ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-400" : tone === "amber" ? "border-amber-500/30 bg-amber-500/5 text-amber-400" : "border-[#1f2530] bg-[#0a0b0f] text-foreground";
+  const cls = tone === "green" ? "border-green-500/30 bg-green-500/5 text-green-400" : tone === "amber" ? "border-amber-500/30 bg-amber-500/5 text-amber-400" : "border-[#1f2530] bg-[#0a0b0f] text-foreground";
   return (
     <div className={`border rounded-sm p-2 ${cls}`}>
       <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-muted-foreground mb-0.5">{icon}{label}</div>
@@ -1124,10 +1124,10 @@ function KpiBar({ label, value, target }: { label: string; value: number; target
     <div>
       <div className="flex items-baseline justify-between mb-1">
         <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</span>
-        <span className={`text-[11px] font-mono ${hit ? "text-emerald-400 font-semibold" : "text-foreground"}`}>{value} / {target}</span>
+        <span className={`text-[11px] font-mono ${hit ? "text-green-400 font-semibold" : "text-foreground"}`}>{value} / {target}</span>
       </div>
       <div className="h-1.5 bg-[#1a1f29] rounded-sm overflow-hidden">
-        <div className={`h-full ${hit ? "bg-emerald-500" : "bg-amber-500"}`} style={{ width: `${pct}%` }} />
+        <div className={`h-full ${hit ? "bg-green-500" : "bg-amber-500"}`} style={{ width: `${pct}%` }} />
       </div>
     </div>
   );
@@ -1164,7 +1164,7 @@ function RowStat({ label, value, accent }: { label: string; value: number | stri
   return (
     <div className="flex items-baseline gap-1.5">
       <span className="text-[9px] uppercase tracking-wider text-muted-foreground">{label}</span>
-      <span className={`font-mono ${accent ? "text-emerald-400 font-semibold" : "text-foreground"}`}>{value}</span>
+      <span className={`font-mono ${accent ? "text-green-400 font-semibold" : "text-foreground"}`}>{value}</span>
     </div>
   );
 }

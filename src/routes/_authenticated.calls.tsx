@@ -31,9 +31,9 @@ type Coach = { id: string; display_name: string | null; avatar_path: string | nu
 
 const STATUS_META: Record<CallStatus, { label: string; color: string }> = {
   scheduled:  { label: "Scheduled",  color: "text-sky-400 border-sky-500/30 bg-sky-500/10" },
-  completed:  { label: "Completed",  color: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10" },
+  completed:  { label: "Completed",  color: "text-green-400 border-green-500/30 bg-green-500/10" },
   follow_up:  { label: "Follow-up",  color: "text-amber-400 border-amber-500/30 bg-amber-500/10" },
-  no_show:    { label: "No-show",    color: "text-rose-400 border-rose-500/30 bg-rose-500/10" },
+  no_show:    { label: "No-show",    color: "text-red-400 border-red-500/30 bg-red-500/10" },
   cancelled:  { label: "Cancelled",  color: "text-zinc-400 border-zinc-500/30 bg-zinc-500/5" },
 };
 const KANBAN_COLS: CallStatus[] = ["scheduled", "completed", "follow_up", "no_show", "cancelled"];
@@ -111,7 +111,7 @@ function CallsPage() {
     <div className="p-4 sm:p-6 max-w-[1500px] mx-auto space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[#1f2530] pb-4">
         <div>
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-fuchsia-400 mb-1">
+          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-blue-400 mb-1">
             <Phone className="h-3 w-3" /> 1-on-1 tracker
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">1-on-1 Calls</h1>
@@ -126,7 +126,7 @@ function CallsPage() {
               value={q}
               onChange={e => setQ(e.target.value)}
               placeholder="Search student or notes…"
-              className="h-8 pl-7 pr-3 rounded-sm border border-[#1f2530] bg-[#0f1116] text-xs w-56 focus:outline-none focus:border-emerald-500/40"
+              className="h-8 pl-7 pr-3 rounded-sm border border-[#1f2530] bg-[#0f1116] text-xs w-56 focus:outline-none focus:border-green-500/40"
             />
           </div>
           <div className="flex items-center border border-[#1f2530] bg-[#0f1116] rounded-sm p-0.5">
@@ -134,7 +134,7 @@ function CallsPage() {
             <button onClick={() => setView("kanban")} className={`px-2 py-1 rounded-sm ${view === "kanban" ? "bg-[#1a1f29]" : "text-muted-foreground"}`}><LayoutGrid className="h-3.5 w-3.5" /></button>
           </div>
           {canManage && (
-            <button onClick={() => setAddOpen(true)} className="flex items-center gap-1.5 h-8 px-3 rounded-sm bg-emerald-500 hover:bg-emerald-400 text-emerald-950 text-xs font-medium">
+            <button onClick={() => setAddOpen(true)} className="flex items-center gap-1.5 h-8 px-3 rounded-sm bg-green-500 hover:bg-green-400 text-green-950 text-xs font-medium">
               <Plus className="h-3.5 w-3.5" /> Log call
             </button>
           )}
@@ -149,7 +149,7 @@ function CallsPage() {
         >All coaches · {calls.length}</button>
         <button
           onClick={() => setCoachFilter("mine")}
-          className={`text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-sm border ${coachFilter === "mine" ? "text-fuchsia-400 border-fuchsia-500/30 bg-fuchsia-500/10" : "text-muted-foreground border-[#1f2530]"}`}
+          className={`text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-sm border ${coachFilter === "mine" ? "text-blue-400 border-blue-500/30 bg-blue-500/10" : "text-muted-foreground border-[#1f2530]"}`}
         >My calls · {calls.filter(c => c.coach_id === user?.id).length}</button>
         {coaches.map(c => (
           <button
@@ -179,7 +179,7 @@ function CallsPage() {
             return (
               <div key={c.id} className="grid grid-cols-[0.7fr_1.3fr_1fr_0.9fr_0.9fr_0.7fr_auto] items-center gap-2 px-4 py-3 border-b border-[#1a1f29] last:border-0 hover:bg-[#14171e]">
                 <span className="text-xs font-mono text-muted-foreground">{c.call_date}</span>
-                <Link to={"/students/$id" as any} params={{ id: c.student_id } as any} className="text-sm truncate hover:text-emerald-400">
+                <Link to={"/students/$id" as any} params={{ id: c.student_id } as any} className="text-sm truncate hover:text-green-400">
                   {studentName(c.student_id)}
                 </Link>
                 <span className="text-xs text-muted-foreground truncate">{coachName(c.coach_id)}</span>
@@ -193,7 +193,7 @@ function CallsPage() {
                 </span>
                 <span>
                   {c.fathom_url ? (
-                    <a href={c.fathom_url} target="_blank" rel="noopener" className="flex items-center gap-1 text-emerald-400 hover:text-emerald-300 text-[11px]">
+                    <a href={c.fathom_url} target="_blank" rel="noopener" className="flex items-center gap-1 text-green-400 hover:text-green-300 text-[11px]">
                       <Video className="h-3 w-3" /> Open <ExternalLink className="h-2.5 w-2.5" />
                     </a>
                   ) : <span className="text-muted-foreground text-xs">—</span>}
@@ -233,7 +233,7 @@ function CallsPage() {
                         <div className="flex items-center gap-2 mt-1 text-[10px]">
                           {c.progress_rating && <span className="text-amber-400 flex items-center gap-0.5"><Star className="h-2.5 w-2.5 fill-amber-400" />{c.progress_rating}</span>}
                           {openA > 0 && <span className="text-amber-400">{openA} open</span>}
-                          {c.fathom_url && <Video className="h-2.5 w-2.5 text-emerald-400" />}
+                          {c.fathom_url && <Video className="h-2.5 w-2.5 text-green-400" />}
                         </div>
                       </button>
                     );
@@ -343,7 +343,7 @@ function CallModal({ call, onClose, onSaved, students, coaches, defaultCoachId }
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto" onClick={onClose}>
       <div className="bg-[#0f1116] border border-[#1f2530] rounded-sm max-w-2xl w-full my-8 p-5 space-y-4" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-[#1f2530] pb-3">
-          <h2 className="text-sm font-semibold flex items-center gap-2"><Phone className="h-4 w-4 text-fuchsia-400" /> {call ? "Edit call" : "Log 1-on-1 call"}</h2>
+          <h2 className="text-sm font-semibold flex items-center gap-2"><Phone className="h-4 w-4 text-blue-400" /> {call ? "Edit call" : "Log 1-on-1 call"}</h2>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
         </div>
 
@@ -402,7 +402,7 @@ function CallModal({ call, onClose, onSaved, students, coaches, defaultCoachId }
             <div className="space-y-1.5">
               {form.items.map(item => (
                 <div key={item.id} className="flex items-center gap-2 bg-[#0a0b0f] border border-[#1f2530] rounded-sm px-2 py-1.5">
-                  <button type="button" onClick={() => updateItem(item.id, { done: !item.done })} className={item.done ? "text-emerald-400" : "text-muted-foreground"}>
+                  <button type="button" onClick={() => updateItem(item.id, { done: !item.done })} className={item.done ? "text-green-400" : "text-muted-foreground"}>
                     {item.done ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
                   </button>
                   <input
@@ -417,7 +417,7 @@ function CallModal({ call, onClose, onSaved, students, coaches, defaultCoachId }
                     onChange={e => updateItem(item.id, { due: e.target.value || null })}
                     className="text-[10px] bg-transparent border border-[#1f2530] rounded-sm px-1 py-0.5 text-muted-foreground focus:outline-none"
                   />
-                  <button type="button" onClick={() => removeItem(item.id)} className="text-muted-foreground hover:text-rose-400"><X className="h-3 w-3" /></button>
+                  <button type="button" onClick={() => removeItem(item.id)} className="text-muted-foreground hover:text-red-400"><X className="h-3 w-3" /></button>
                 </div>
               ))}
               <button type="button" onClick={addItem} className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground">
@@ -437,12 +437,12 @@ function CallModal({ call, onClose, onSaved, students, coaches, defaultCoachId }
         <div className="flex justify-between gap-2 pt-3 border-t border-[#1f2530]">
           <div>
             {call && (
-              <button onClick={del} className="text-xs text-rose-400 hover:text-rose-300 px-2 py-1.5">Delete call</button>
+              <button onClick={del} className="text-xs text-red-400 hover:text-red-300 px-2 py-1.5">Delete call</button>
             )}
           </div>
           <div className="flex gap-2">
             <button onClick={onClose} className="text-xs text-muted-foreground hover:text-foreground px-3 py-1.5">Cancel</button>
-            <button onClick={save} disabled={saving} className="text-xs bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-medium px-3 py-1.5 rounded-sm">
+            <button onClick={save} disabled={saving} className="text-xs bg-green-500 hover:bg-green-400 text-green-950 font-medium px-3 py-1.5 rounded-sm">
               {saving ? "Saving…" : (call ? "Save changes" : "Log call")}
             </button>
           </div>
@@ -452,7 +452,7 @@ function CallModal({ call, onClose, onSaved, students, coaches, defaultCoachId }
   );
 }
 
-const inputCls = "w-full h-9 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs focus:outline-none focus:border-emerald-500/40";
+const inputCls = "w-full h-9 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs focus:outline-none focus:border-green-500/40";
 
 function Field({ label, children, full }: { label: string; children: React.ReactNode; full?: boolean }) {
   return (

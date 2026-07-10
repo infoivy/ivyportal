@@ -84,9 +84,9 @@ function AdminConsole() {
   if (!isAdmin) {
     return (
       <div className="p-6 max-w-3xl mx-auto">
-        <div className="border border-rose-500/30 bg-rose-500/5 rounded-sm p-8 text-center">
-          <Shield className="h-8 w-8 text-rose-400 mx-auto mb-3" />
-          <div className="text-sm text-rose-400 font-medium">Admin access required</div>
+        <div className="border border-red-500/30 bg-red-500/5 rounded-sm p-8 text-center">
+          <Shield className="h-8 w-8 text-red-400 mx-auto mb-3" />
+          <div className="text-sm text-red-400 font-medium">Admin access required</div>
           <p className="text-xs text-muted-foreground mt-1">You need the admin role to view this page.</p>
         </div>
       </div>
@@ -97,7 +97,7 @@ function AdminConsole() {
     <div className="p-4 sm:p-6 max-w-[1400px] mx-auto space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[#1f2530] pb-4">
         <div>
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-rose-400 mb-1">
+          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-red-400 mb-1">
             <Shield className="h-3 w-3" /> Admin console
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">Team health & administration</h1>
@@ -109,7 +109,7 @@ function AdminConsole() {
               key={r.key}
               onClick={() => setRange(r.key)}
               className={`px-3 py-1 text-[11px] font-medium rounded-sm transition ${
-                range === r.key ? "bg-emerald-500/15 text-emerald-400" : "text-muted-foreground hover:text-foreground"
+                range === r.key ? "bg-green-500/15 text-green-400" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {r.label}
@@ -149,7 +149,7 @@ function AdminConsole() {
         <Panel
           title="EOD compliance"
           subtitle={`Reports submitted in last ${days} days`}
-          icon={<CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />}
+          icon={<CheckCircle2 className="h-3.5 w-3.5 text-green-400" />}
         >
           <div className="divide-y divide-[#1a1f29]">
             {compliance.length === 0 && !loading && <Empty text="No team members yet." />}
@@ -165,11 +165,11 @@ function AdminConsole() {
                 <div className="flex items-center gap-2">
                   <div className="w-24 h-1.5 rounded-full bg-[#1a1f29] overflow-hidden">
                     <div
-                      className={`h-full ${c.rate >= 80 ? "bg-emerald-500" : c.rate >= 50 ? "bg-amber-500" : "bg-rose-500"}`}
+                      className={`h-full ${c.rate >= 80 ? "bg-green-500" : c.rate >= 50 ? "bg-amber-500" : "bg-red-500"}`}
                       style={{ width: `${c.rate}%` }}
                     />
                   </div>
-                  <div className={`text-xs font-mono w-14 text-right ${c.rate >= 80 ? "text-emerald-400" : c.rate >= 50 ? "text-amber-400" : "text-rose-400"}`}>
+                  <div className={`text-xs font-mono w-14 text-right ${c.rate >= 80 ? "text-green-400" : c.rate >= 50 ? "text-amber-400" : "text-red-400"}`}>
                     {c.submitted}/{days}
                   </div>
                 </div>
@@ -235,7 +235,7 @@ function AdminConsole() {
         <Panel
           title="Students without coach"
           subtitle="Assign a coach so 1:1s and check-ins can happen"
-          icon={<UserX className="h-3.5 w-3.5 text-rose-400" />}
+          icon={<UserX className="h-3.5 w-3.5 text-red-400" />}
         >
           {studentsWithoutCoach.length === 0
             ? <Empty text="Every active student has a coach assigned." />
@@ -249,7 +249,7 @@ function AdminConsole() {
                     className="flex items-center justify-between py-2 text-xs hover:bg-white/[0.02]"
                   >
                     <span className="truncate">{s.full_name}</span>
-                    <span className="text-rose-400 text-[10px] font-mono">unassigned</span>
+                    <span className="text-red-400 text-[10px] font-mono">unassigned</span>
                   </Link>
                 ))}
               </div>
@@ -295,7 +295,7 @@ function buildCompliance(rows: EodRow[], userRoles: UserRole[], profiles: Record
 function Tile({ label, value, icon, tone = "muted" }: { label: string; value: number; icon: React.ReactNode; tone?: "muted" | "amber" | "rose" }) {
   const c =
     tone === "amber" ? { border: "border-amber-500/40", bg: "bg-amber-500/5", text: "text-amber-400" } :
-    tone === "rose"  ? { border: "border-rose-500/40",  bg: "bg-rose-500/5",  text: "text-rose-400" } :
+    tone === "rose"  ? { border: "border-red-500/40",  bg: "bg-red-500/5",  text: "text-red-400" } :
                        { border: "border-[#1f2530]",    bg: "bg-[#0f1116]",   text: "text-foreground" };
   return (
     <div className={`border rounded-sm p-2.5 ${c.border} ${c.bg}`}>

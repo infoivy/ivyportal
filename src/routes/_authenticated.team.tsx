@@ -29,10 +29,10 @@ type Member = {
   setter_type: SetterType;
 };
 const ROLES: { key: AppRole; icon: React.ComponentType<{ className?: string }>; color: string }[] = [
-  { key: "admin", icon: Shield, color: "text-rose-400 border-rose-500/30 bg-rose-500/5" },
+  { key: "admin", icon: Shield, color: "text-red-400 border-red-500/30 bg-red-500/5" },
   { key: "closer", icon: Phone, color: "text-sky-400 border-sky-500/30 bg-sky-500/5" },
-  { key: "setter", icon: UserCircle2, color: "text-emerald-400 border-emerald-500/30 bg-emerald-500/5" },
-  { key: "coach", icon: GraduationCap, color: "text-fuchsia-400 border-fuchsia-500/30 bg-fuchsia-500/5" },
+  { key: "setter", icon: UserCircle2, color: "text-green-400 border-green-500/30 bg-green-500/5" },
+  { key: "coach", icon: GraduationCap, color: "text-blue-400 border-blue-500/30 bg-blue-500/5" },
   { key: "csm", icon: HeartHandshake, color: "text-amber-400 border-amber-500/30 bg-amber-500/5" },
 ];
 
@@ -160,7 +160,7 @@ function TeamPage() {
           value={q}
           onChange={e => setQ(e.target.value)}
           placeholder="Search members…"
-          className="h-8 px-3 rounded-sm border border-[#1f2530] bg-[#0f1116] text-xs w-56 focus:outline-none focus:border-emerald-500/40"
+          className="h-8 px-3 rounded-sm border border-[#1f2530] bg-[#0f1116] text-xs w-56 focus:outline-none focus:border-green-500/40"
         />
       </header>
 
@@ -191,12 +191,12 @@ function TeamPage() {
               <div className="min-w-0">
                 <div className="text-sm font-medium truncate flex items-center gap-2">
                   {m.display_name ?? "Unnamed"}
-                  {!m.active && <span className="text-[9px] uppercase tracking-wider text-rose-400 border border-rose-500/30 bg-rose-500/10 px-1.5 py-0.5 rounded-sm">Inactive</span>}
+                  {!m.active && <span className="text-[9px] uppercase tracking-wider text-red-400 border border-red-500/30 bg-red-500/10 px-1.5 py-0.5 rounded-sm">Inactive</span>}
                   <button onClick={() => setEditing(m)} className="text-muted-foreground hover:text-foreground"><Pencil className="h-3 w-3" /></button>
                 </div>
                 <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                   {m.roles.includes("setter") && m.setter_type && (
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm border border-emerald-500/30 bg-emerald-500/5 text-emerald-400 uppercase tracking-wider">
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm border border-green-500/30 bg-green-500/5 text-green-400 uppercase tracking-wider">
                       {m.setter_type === "phone" ? "Phone setter" : "DM setter"}
                     </span>
                   )}
@@ -206,9 +206,9 @@ function TeamPage() {
                   {(() => {
                     const pct = memberOnboardingPct(m);
                     if (pct === null) return null;
-                    const color = pct === 100 ? "text-emerald-400 border-emerald-500/30 bg-emerald-500/5"
+                    const color = pct === 100 ? "text-green-400 border-green-500/30 bg-green-500/5"
                       : pct >= 50 ? "text-amber-400 border-amber-500/30 bg-amber-500/5"
-                      : "text-rose-400 border-rose-500/30 bg-rose-500/5";
+                      : "text-red-400 border-red-500/30 bg-red-500/5";
                     return (
                       <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm border ${color}`} title="Onboarding progress">
                         <GraduationCap className="h-2.5 w-2.5" /> {pct}%
@@ -246,14 +246,14 @@ function TeamPage() {
                   <button
                     onClick={() => toggleActive(m)}
                     title={m.active ? "Deactivate (block login)" : "Reactivate"}
-                    className={`p-1.5 rounded-sm border ${m.active ? "border-[#1f2530] text-muted-foreground hover:text-amber-400 hover:border-amber-500/30" : "border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"}`}
+                    className={`p-1.5 rounded-sm border ${m.active ? "border-[#1f2530] text-muted-foreground hover:text-amber-400 hover:border-amber-500/30" : "border-green-500/30 text-green-400 hover:bg-green-500/10"}`}
                   >
                     {m.active ? <PowerOff className="h-3.5 w-3.5" /> : <Power className="h-3.5 w-3.5" />}
                   </button>
                   <button
                     onClick={() => deleteMember(m)}
                     title="Permanently delete"
-                    className="p-1.5 rounded-sm border border-[#1f2530] text-muted-foreground hover:text-rose-400 hover:border-rose-500/30"
+                    className="p-1.5 rounded-sm border border-[#1f2530] text-muted-foreground hover:text-red-400 hover:border-red-500/30"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -394,7 +394,7 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
                   onClick={() => setSetterType(opt.key as SetterType)}
                   className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border transition ${
                     setterType === opt.key
-                      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400"
+                      ? "border-green-500/40 bg-green-500/10 text-green-400"
                       : "border-[#1f2530] text-muted-foreground hover:border-[#2a3140]"
                   }`}
                 >
@@ -407,7 +407,7 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
         <div className="text-[10px] text-muted-foreground font-mono pt-1 border-t border-[#1f2530]">ID: {member.id}</div>
         <div className="flex justify-end gap-2 pt-2 border-t border-[#1f2530]">
           <button onClick={onClose} className="text-xs text-muted-foreground hover:text-foreground px-3 py-1.5">Cancel</button>
-          <button onClick={save} disabled={saving} className="text-xs bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-medium px-3 py-1.5 rounded-sm">
+          <button onClick={save} disabled={saving} className="text-xs bg-green-500 hover:bg-green-400 text-green-950 font-medium px-3 py-1.5 rounded-sm">
             {saving ? "Saving…" : "Save"}
           </button>
         </div>
@@ -418,11 +418,11 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
 
 function StatTile({ label, value, icon, accent }: { label: string; value: number; icon: React.ReactNode; accent?: "emerald" | "sky" | "rose" | "fuchsia" | "amber" }) {
   const color =
-    accent === "emerald" ? "text-emerald-400" :
+    accent === "emerald" ? "text-green-400" :
     accent === "sky" ? "text-sky-400" :
-    accent === "rose" ? "text-rose-400" :
+    accent === "rose" ? "text-red-400" :
     accent === "amber" ? "text-amber-400" :
-    accent === "fuchsia" ? "text-fuchsia-400" : "text-foreground";
+    accent === "fuchsia" ? "text-blue-400" : "text-foreground";
   return (
     <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-3">
       <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-muted-foreground mb-1">{icon}{label}</div>

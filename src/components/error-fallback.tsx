@@ -6,13 +6,13 @@ export function DefaultErrorFallback({ error, reset }: { error: Error; reset: ()
   const router = useRouter();
   return (
     <div className="min-h-[60vh] flex items-center justify-center p-6">
-      <div className="max-w-md w-full border border-rose-500/30 bg-rose-500/5 rounded-sm p-6 text-center">
+      <div className="max-w-md w-full border border-red-500/30 bg-red-500/5 rounded-sm p-6 text-center">
         <div className="flex justify-center mb-3">
-          <div className="h-10 w-10 rounded-full bg-rose-500/15 text-rose-400 flex items-center justify-center">
+          <div className="h-10 w-10 rounded-full bg-red-500/15 text-red-400 flex items-center justify-center">
             <AlertTriangle className="h-5 w-5" />
           </div>
         </div>
-        <div className="text-sm font-semibold text-rose-300">Something went wrong on this page</div>
+        <div className="text-sm font-semibold text-red-300">Something went wrong on this page</div>
         <p className="text-[11px] text-muted-foreground mt-2 font-mono break-words">
           {error?.message ?? "Unknown error"}
         </p>
