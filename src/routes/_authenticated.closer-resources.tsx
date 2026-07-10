@@ -118,58 +118,69 @@ function CloserResources() {
       ) : editing && isAdmin ? (
         <EditTable rows={rows} reload={load} />
       ) : (
-        <Card className="overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-[#0f1116] text-xs uppercase tracking-wider text-muted-foreground/70">
-                <tr>
-                  <th className="text-left px-4 py-2.5">Label</th>
-                  <th className="text-left px-4 py-2.5">Method</th>
-                  <th className="text-right px-4 py-2.5">Amount</th>
-                  <th className="text-left px-4 py-2.5 hidden md:table-cell">Notes</th>
-                  <th className="text-right px-4 py-2.5">Copy</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.filter((r) => r.active || isAdmin).length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="text-center text-muted-foreground py-8">
-                      No payment links yet.
-                    </td>
-                  </tr>
-                ) : (
-                  rows
-                    .filter((r) => r.active || isAdmin)
-                    .map((r) => (
-                      <tr key={r.id} className={"border-t border-[#1f2530] " + (!r.active ? "opacity-50" : "")}>
-                        <td className="px-4 py-3 font-medium">{r.label}</td>
-                        <td className="px-4 py-3">
-                          <span className="text-[10px] uppercase tracking-wider border border-[#1f2530] rounded-full px-2 py-0.5">
-                            {r.method}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-right tabular-nums">
-                          {r.amount != null ? `${r.currency} ${Number(r.amount).toLocaleString()}` : "—"}
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground hidden md:table-cell truncate max-w-[280px]">
-                          {r.notes ?? "—"}
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <Button size="sm" variant="outline" onClick={() => copy(r.id, r.url)}>
-                            {copied === r.id ? (
-                              <><Check className="h-3.5 w-3.5 mr-1" /> Copied</>
-                            ) : (
-                              <><Copy className="h-3.5 w-3.5 mr-1" /> Copy</>
+        <div className="space-y-6">
+          {CATEGORY_ORDER.map((cat) => {
+            const catRows = rows.filter((r) => (r.active || isAdmin) && categorize(r) === cat);
+            if (!catRows.length) return null;
+            return (
+              <section key={cat}>
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-2">{cat}</h2>
+                <div className="grid gap-2">
+                  {catRows.map((r) => {
+                    const hasLink = !!r.url;
+                    const hasDetails = !!r.notes && r.method !== "whop";
+                    const isPlaceholder = r.method === "bank" && !r.url;
+                    return (
+                      <Card key={r.id} className={"p-3 sm:p-4 " + (!r.active ? "opacity-50" : "")}>
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="font-medium text-sm flex items-center gap-2 flex-wrap">
+                              <span>{r.label}</span>
+                              {r.amount != null && (
+                                <span className="text-xs text-muted-foreground tabular-nums">· {r.currency} {Number(r.amount).toLocaleString()}</span>
+                              )}
+                            </div>
+                            {hasLink && (
+                              <div className="text-[11px] text-muted-foreground font-mono truncate mt-0.5 max-w-full">{r.url}</div>
                             )}
-                          </Button>
-                        </td>
-                      </tr>
-                    ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </Card>
+                            {hasDetails && (
+                              <pre className="mt-2 text-[11px] whitespace-pre-wrap font-mono text-muted-foreground bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-2">{r.notes}</pre>
+                            )}
+                            {isPlaceholder && (
+                              <div className="text-[11px] text-muted-foreground italic mt-1">{r.notes ?? "Details coming soon."}</div>
+                            )}
+                          </div>
+                          <div className="flex gap-1.5 shrink-0">
+                            {hasLink && (
+                              <Button size="sm" variant="outline" onClick={() => copy(r.id, r.url!, "Link copied")}>
+                                {copied === r.id ? <><Check className="h-3.5 w-3.5 mr-1" /> Copied</> : <><Copy className="h-3.5 w-3.5 mr-1" /> Copy link</>}
+                              </Button>
+                            )}
+                            {r.method === "whop" && r.amount != null && hasLink && (
+                              <Button size="sm" onClick={() => copy(r.id + "-msg", whopMessage(r), "Message copied")}>
+                                {copied === r.id + "-msg" ? <><Check className="h-3.5 w-3.5 mr-1" /> Copied</> : <><Copy className="h-3.5 w-3.5 mr-1" /> Copy message</>}
+                              </Button>
+                            )}
+                            {hasDetails && (
+                              <Button size="sm" variant="outline" onClick={() => copy(r.id + "-det", r.notes!, "Details copied")}>
+                                {copied === r.id + "-det" ? <><Check className="h-3.5 w-3.5 mr-1" /> Copied</> : <><Copy className="h-3.5 w-3.5 mr-1" /> Copy all</>}
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </section>
+            );
+          })}
+          {rows.filter((r) => r.active || isAdmin).length === 0 && (
+            <Card className="p-8 text-center text-sm text-muted-foreground">
+              No payment links yet. Ask an admin to seed them.
+            </Card>
+          )}
+        </div>
       )}
     </div>
   );
