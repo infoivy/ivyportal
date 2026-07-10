@@ -78,24 +78,31 @@ export function WeeklyPlan({ onOpenItem }: { onOpenItem: (id: string) => void })
   const generateFn = useServerFn(generateWeekIdeas);
   const promoteFn = useServerFn(promoteIdeaToSlot);
 
+  // Compute both weeks the plan covers
+  const nextWeekStart = useMemo(() => ymd(addDays(parseISO(weekStart), 7)), [weekStart]);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      await ensureFn({ data: { weekStart } });
+      // Provision both weeks so the recording day → 2-week horizon works.
+      await Promise.all([
+        ensureFn({ data: { weekStart } }),
+        ensureFn({ data: { weekStart: nextWeekStart } }),
+      ]);
     } catch (e: any) {
-      toast.error(e?.message ?? "Failed to prepare week");
+      toast.error(e?.message ?? "Failed to prepare weeks");
     }
     const [{ data: is }, { data: it }] = await Promise.all([
-      supabase.from("content_week_ideas").select("*").eq("week_start", weekStart).order("position"),
+      supabase.from("content_week_ideas").select("*").in("week_start", [weekStart, nextWeekStart]).order("position"),
       supabase.from("content_items")
-        .select("id, scheduled_date, funnel_stage, hook, status, format, link_when_posted")
-        .eq("week_start", weekStart)
+        .select("id, scheduled_date, funnel_stage, hook, status, format, link_when_posted, week_start")
+        .in("week_start", [weekStart, nextWeekStart])
         .order("scheduled_date", { ascending: true }),
     ]);
     setIdeas((is ?? []) as WeekIdea[]);
     setSlots((it ?? []) as WeekSlot[]);
     setLoading(false);
-  }, [weekStart, ensureFn]);
+  }, [weekStart, nextWeekStart, ensureFn]);
 
   useEffect(() => { load(); }, [load]);
 
