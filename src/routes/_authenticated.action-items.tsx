@@ -16,7 +16,7 @@ type CallRow = {
   action_items_json: CallItem[] | null;
 };
 type AdHocRow = {
-  id: string; student_id: string; created_by: string; assignee_id: string | null;
+  id: string; student_id: string | null; created_by: string; assignee_id: string | null;
   text: string; due_date: string | null; done: boolean; done_at: string | null;
   created_at: string;
 };
@@ -25,7 +25,7 @@ type Row = {
   source: "call" | "adhoc";
   callId?: string; index?: number; adhocId?: string;
   text: string; done: boolean; due: string | null;
-  studentId: string; studentName: string;
+  studentId: string | null; studentName: string;
   ownerId: string | null; ownerName: string; ownerLabel: string;
   refDate: string;
   canDelete: boolean;
@@ -42,13 +42,14 @@ function ActionItemsHub() {
   const [adhoc, setAdhoc] = useState<AdHocRow[]>([]);
   const [students, setStudents] = useState<Record<string, string>>({});
   const [profiles, setProfiles] = useState<Record<string, string>>({});
+  const [teamIds, setTeamIds] = useState<string[]>([]);
   const [filt, setFilt] = useState<Filt>("open");
   const [ownerFilter, setOwnerFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
 
   // Create form
   const [addOpen, setAddOpen] = useState(false);
-  const [newStudent, setNewStudent] = useState("");
+  const [newTarget, setNewTarget] = useState(""); // "s:<studentId>" | "t:<userId>"
   const [newText, setNewText] = useState("");
   const [newDue, setNewDue] = useState("");
   const [saving, setSaving] = useState(false);
@@ -57,12 +58,14 @@ function ActionItemsHub() {
 
   const load = async () => {
     setLoading(true);
-    const [cRes, aRes, sRes, pRes] = await Promise.all([
+    const [cRes, aRes, sRes, pRes, rRes] = await Promise.all([
       supabase.from("student_calls").select("id, student_id, coach_id, call_date, action_items_json").order("call_date", { ascending: false }).limit(2000),
       supabase.from("student_action_items").select("*").order("created_at", { ascending: false }).limit(2000),
       supabase.from("students").select("id, full_name"),
       supabase.from("profiles").select("id, display_name"),
+      supabase.from("user_roles").select("user_id, role").in("role", ["admin", "closer", "setter", "coach", "csm"]),
     ]);
+    setTeamIds(Array.from(new Set((rRes.data ?? []).map((r: { user_id: string }) => r.user_id))));
     setCalls((cRes.data ?? []) as CallRow[]);
     setAdhoc((aRes.data ?? []) as AdHocRow[]);
     const sm: Record<string, string> = {}; (sRes.data ?? []).forEach((s: { id: string; full_name: string }) => { sm[s.id] = s.full_name; }); setStudents(sm);
@@ -74,6 +77,10 @@ function ActionItemsHub() {
   const studentList = useMemo(
     () => Object.entries(students).map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name)),
     [students],
+  );
+  const teamList = useMemo(
+    () => teamIds.map(id => ({ id, name: profiles[id] ?? "Unknown" })).sort((a, b) => a.name.localeCompare(b.name)),
+    [teamIds, profiles],
   );
 
   const rows: Row[] = useMemo(() => {
@@ -99,6 +106,7 @@ function ActionItemsHub() {
       });
     }
     for (const a of adhoc) {
+      const ownerId = a.assignee_id ?? a.created_by;
       out.push({
         key: `adhoc-${a.id}`,
         source: "adhoc",
@@ -107,10 +115,10 @@ function ActionItemsHub() {
         done: a.done,
         due: a.due_date,
         studentId: a.student_id,
-        studentName: students[a.student_id] ?? "Unknown",
-        ownerId: a.created_by,
-        ownerName: profiles[a.created_by] ?? "—",
-        ownerLabel: "Assigned by",
+        studentName: a.student_id ? (students[a.student_id] ?? "Unknown") : (profiles[a.assignee_id ?? ""] ?? "Team"),
+        ownerId,
+        ownerName: profiles[ownerId] ?? "—",
+        ownerLabel: a.assignee_id ? "Assignee" : "Assigned by",
         refDate: a.created_at.slice(0, 10),
         canDelete: a.created_by === user?.id || roles.includes("admin"),
       });
@@ -150,17 +158,19 @@ function ActionItemsHub() {
   }), [rows, user, today]);
 
   const submitAdhoc = async () => {
-    if (!user || !newStudent || !newText.trim()) return;
+    if (!user || !newTarget || !newText.trim()) return;
+    const [kind, targetId] = [newTarget.slice(0, 1), newTarget.slice(2)];
     setSaving(true);
     const { error } = await supabase.from("student_action_items").insert({
-      student_id: newStudent,
+      student_id: kind === "s" ? targetId : null,
+      assignee_id: kind === "t" ? targetId : null,
       created_by: user.id,
       text: newText.trim(),
       due_date: newDue || null,
-    });
+    } as never);
     setSaving(false);
     if (error) return toast.error(error.message);
-    toast.success("Action item added → Action Items");
+    toast.success("Action item added");
     setNewText(""); setNewDue(""); setAddOpen(false);
     load();
   };
@@ -240,20 +250,26 @@ function ActionItemsHub() {
         </div>
       </div>
 
-      <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm overflow-hidden">
+      {loading && <div className="card-surface p-8 text-center text-xs text-muted-foreground">Loading…</div>}
+      {!loading && filtered.length === 0 && (
+        <div className="card-surface p-8 text-center text-xs text-muted-foreground">Nothing here. Nice.</div>
+      )}
+      {!loading && ([
+        { label: "Students", items: filtered.filter(r => r.studentId) },
+        { label: "Team", items: filtered.filter(r => !r.studentId) },
+      ] as const).filter(sec => sec.items.length > 0).map(sec => (
+      <section key={sec.label} className="space-y-2">
+        <h2 className="text-micro font-medium uppercase tracking-[0.08em] text-muted-foreground/70 px-1">{sec.label} · {sec.items.length}</h2>
+        <div className="border border-[var(--border)] bg-[var(--card)] rounded-lg overflow-hidden">
         <div className="grid grid-cols-[24px_minmax(0,1fr)_140px_120px_90px_28px] gap-2 px-3 py-2 border-b border-[var(--border)] text-[10px] text-muted-foreground">
           <span />
           <span>Item</span>
-          <span>Student</span>
+          <span>{sec.label === "Team" ? "Assignee" : "Student"}</span>
           <span>Owner</span>
           <span className="text-right">Due</span>
           <span />
         </div>
-        {loading && <div className="p-8 text-center text-xs text-muted-foreground">Loading…</div>}
-        {!loading && filtered.length === 0 && (
-          <div className="p-8 text-center text-xs text-muted-foreground">Nothing here. Nice.</div>
-        )}
-        {filtered.map(r => {
+        {sec.items.map(r => {
           const overdue = isOverdue(r);
           return (
             <div
@@ -267,7 +283,7 @@ function ActionItemsHub() {
                 onChange={() => r.source === "adhoc" && toggleAdhoc(r)}
                 disabled={r.source === "call"}
                 aria-label={r.done ? "Done" : "Open"}
-                className={`h-4 w-4 accent-green-500 ${r.source === "call" ? "opacity-70 cursor-not-allowed" : "cursor-pointer"}`}
+                className={`h-4 w-4 accent-[var(--primary)] ${r.source === "call" ? "opacity-70 cursor-not-allowed" : "cursor-pointer"}`}
               />
               <div className="min-w-0">
                 <div className={`text-xs flex items-center gap-1.5 ${r.done ? "line-through text-muted-foreground" : ""}`}>
@@ -279,9 +295,15 @@ function ActionItemsHub() {
                   {r.done ? " · ticked" : ""}
                 </div>
               </div>
-              <Link to="/students/$id" params={{ id: r.studentId }} className="text-xs truncate hover:text-success-fg flex items-center gap-1">
-                <User className="h-3 w-3 text-muted-foreground" /> {r.studentName}
-              </Link>
+              {r.studentId ? (
+                <Link to="/students/$id" params={{ id: r.studentId }} className="text-xs truncate hover:text-success-fg flex items-center gap-1">
+                  <User className="h-3 w-3 text-muted-foreground" /> {r.studentName}
+                </Link>
+              ) : (
+                <span className="text-xs truncate flex items-center gap-1 text-foreground">
+                  <User className="h-3 w-3 text-muted-foreground" /> {r.studentName}
+                </span>
+              )}
               <span className="text-xs text-muted-foreground truncate" title={r.ownerLabel}>{r.ownerName}</span>
               <span className={`text-[11px] text-right ${overdue ? "text-danger-fg" : r.due ? "text-muted-foreground" : "text-[#2a3140]"}`}>
                 {r.due ? (overdue ? <span className="inline-flex items-center gap-1"><AlertTriangle className="h-3 w-3" />{r.due}</span> : r.due) : "—"}
@@ -300,7 +322,9 @@ function ActionItemsHub() {
             </div>
           );
         })}
-      </div>
+        </div>
+      </section>
+      ))}
 
       {/* Add ad-hoc modal */}
       {addOpen && (
@@ -308,14 +332,19 @@ function ActionItemsHub() {
           <div className="w-full max-w-md bg-[var(--card)] border border-[var(--border)] rounded-sm p-4 space-y-3" onClick={e => e.stopPropagation()}>
             <div className="text-sm font-semibold">Add ad-hoc action item</div>
             <div className="space-y-1">
-              <label className="text-[10px] text-muted-foreground">Student</label>
+              <label className="text-[10px] text-muted-foreground">For</label>
               <select
-                value={newStudent}
-                onChange={e => setNewStudent(e.target.value)}
+                value={newTarget}
+                onChange={e => setNewTarget(e.target.value)}
                 className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border"
               >
-                <option value="">— Select student —</option>
-                {studentList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                <option value="">— Select student or team member —</option>
+                <optgroup label="Students">
+                  {studentList.map(s => <option key={s.id} value={`s:${s.id}`}>{s.name}</option>)}
+                </optgroup>
+                <optgroup label="Team members">
+                  {teamList.map(m => <option key={m.id} value={`t:${m.id}`}>{m.name}</option>)}
+                </optgroup>
               </select>
             </div>
             <div className="space-y-1">
@@ -341,7 +370,7 @@ function ActionItemsHub() {
               <button onClick={() => setAddOpen(false)} className="h-8 px-3 rounded-sm border border-[var(--border)] text-xs">Cancel</button>
               <button
                 onClick={submitAdhoc}
-                disabled={saving || !newStudent || !newText.trim()}
+                disabled={saving || !newTarget || !newText.trim()}
                 className="h-8 px-3 rounded-sm bg-muted hover:opacity-80 text-muted-foreground text-xs font-medium disabled:opacity-40"
               >
                 {saving ? "Saving…" : "Add item"}
