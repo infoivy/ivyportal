@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
@@ -18,7 +18,18 @@ export const Route = createFileRoute("/_authenticated/founder")({
 });
 
 type Platform = "instagram" | "tiktok" | "youtube" | "twitter" | "linkedin" | "threads" | "other";
-type Status = "idea" | "scripted" | "filmed" | "edited" | "posted";
+type Status = "idea" | "scripted" | "approved" | "recorded" | "edited" | "scheduled" | "posted";
+
+// Shared creative-type vocabulary. Must stay in sync with src/components/weekly-plan.tsx.
+export const CREATIVE_TYPES = [
+  "Talking head",
+  "Pick up the phone angle",
+  "Side angle",
+  "Miro board walkthrough",
+  "Ceiling angle",
+  "Prestigious background",
+  "Vlog style",
+];
 
 type ContentItem = {
   id: string;
@@ -27,11 +38,20 @@ type ContentItem = {
   platform: Platform;
   format: string | null;
   hook: string;
+  title: string | null;
   script: string | null;
   status: Status;
   link_when_posted: string | null;
   tags: string[];
   posted_at: string | null;
+  recorded_at: string | null;
+  edited_at: string | null;
+  raw_video_url: string | null;
+  edited_reel_url: string | null;
+  source: string | null;
+  duration_sec: number | null;
+  platforms: string[];
+  reedit_flag: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -57,13 +77,21 @@ const PLATFORMS: { value: Platform; label: string; color: string }[] = [
 const PLATFORM_META = Object.fromEntries(PLATFORMS.map(p => [p.value, p])) as Record<Platform, typeof PLATFORMS[number]>;
 
 const STATUSES: { value: Status; label: string; color: string }[] = [
-  { value: "idea",     label: "Idea",     color: "bg-neutral-500/10 text-neutral-300 border-neutral-500/30" },
-  { value: "scripted", label: "Scripted", color: "bg-amber-500/10 text-amber-300 border-amber-500/30" },
-  { value: "filmed",   label: "Filmed",   color: "bg-blue-500/10 text-blue-300 border-blue-500/30" },
-  { value: "edited",   label: "Edited",   color: "bg-purple-500/10 text-purple-300 border-purple-500/30" },
-  { value: "posted",   label: "Posted",   color: "bg-emerald-500/10 text-emerald-300 border-emerald-500/30" },
+  { value: "idea",      label: "Idea",      color: "bg-neutral-500/10 text-neutral-300 border-neutral-500/30" },
+  { value: "scripted",  label: "Scripted",  color: "bg-amber-500/10 text-amber-300 border-amber-500/30" },
+  { value: "approved",  label: "Approved",  color: "bg-yellow-500/10 text-yellow-300 border-yellow-500/30" },
+  { value: "recorded",  label: "Recorded",  color: "bg-blue-500/10 text-blue-300 border-blue-500/30" },
+  { value: "edited",    label: "Edited",    color: "bg-purple-500/10 text-purple-300 border-purple-500/30" },
+  { value: "scheduled", label: "Scheduled", color: "bg-cyan-500/10 text-cyan-300 border-cyan-500/30" },
+  { value: "posted",    label: "Posted",    color: "bg-emerald-500/10 text-emerald-300 border-emerald-500/30" },
 ];
 const STATUS_META = Object.fromEntries(STATUSES.map(s => [s.value, s])) as Record<Status, typeof STATUSES[number]>;
+
+const MULTI_PLATFORMS: { value: string; label: string }[] = [
+  { value: "instagram", label: "Instagram" },
+  { value: "tiktok",    label: "TikTok" },
+  { value: "youtube",   label: "YouTube" },
+];
 
 function FounderPage() {
   const { user, roles } = useAuth();
