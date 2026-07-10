@@ -157,7 +157,7 @@ export const generateWeekIdeas = createServerFn({ method: "POST" })
     const systemPrompt = `You are a content strategist generating a week's short-form video ideation pad.
 Return exactly 10 ideas as a JSON array. Ideas 1-5 are Middle of Funnel (MOF): social proof, breakdowns, results, deeper value, CTAs — for warm followers who already know the creator.
 Ideas 6-10 are Top of Funnel (TOF): hooks, entertainment, relatable moments, value drops, identity content — for strangers scrolling.
-Each idea object has: {"stage":"mof"|"tof","text":"the hook/idea, one sentence","creative_type":"one of: talking head, split-screen, listicle, story, POV, tutorial, case study, tweet-style, screen record, meme"}
+Each idea object has: {"stage":"mof"|"tof","text":"the hook/idea, one sentence","creative_type":"one of: Talking head, Pick up the phone angle, Side angle, Miro board walkthrough, Ceiling angle, Prestigious background, Vlog style"}
 Return ONLY the JSON array, no markdown fences, no prose.`;
 
     const userPrompt = `Brand / niche context:\n${data.brandContext || "(no context provided — assume a business coach / info-product creator)"}\n\nGenerate 10 ideas for the week starting ${data.weekStart}.`;
