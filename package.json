@@ -11,7 +11,9 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "roles:grant": "node --env-file=.env scripts/grant-role.mjs",
-    "supabase:verify": "node --env-file=.env scripts/verify-supabase.mjs"
+    "supabase:verify": "node --env-file=.env scripts/verify-supabase.mjs",
+    "demo:seed": "node --env-file=.env scripts/seed-demo.mjs",
+    "demo:remove": "node --env-file=.env scripts/remove-demo.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
