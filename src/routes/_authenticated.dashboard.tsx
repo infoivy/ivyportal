@@ -259,8 +259,8 @@ function Dashboard() {
           </div>
         </div>
 
-        {/* Onboarding — hidden for admin and founder */}
-        {!roles.includes("founder") && !roles.includes("admin") && <OnboardingPanel compact />}
+        {/* Start Here — one checklist per business role held */}
+        <OnboardingPanel compact />
 
         {/* IG monthly log reminder */}
         {(roles.includes("founder") || roles.includes("admin")) && !igLoggedThisMonth && !igReminderDismissed && (

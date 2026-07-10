@@ -101,6 +101,9 @@ function TeamPage() {
   useEffect(() => { load(); }, []);
 
   const toggleRole = async (userId: string, role: AppRole, has: boolean) => {
+    if (has && role === "admin" && userId === user?.id) {
+      if (!confirm("Remove the admin role from YOURSELF? You will lose access to this page.")) return;
+    }
     if (has) {
       const { error } = await supabase.from("user_roles").delete().eq("user_id", userId).eq("role", role);
       if (error) return toast.error(error.message);
@@ -110,6 +113,8 @@ function TeamPage() {
     }
     toast.success("Role updated");
     load();
+    // Your own sidebar/dashboard reflect the change without a full reload
+    if (userId === user?.id) window.dispatchEvent(new CustomEvent("isa:roles-changed"));
   };
 
   const toggleActive = async (m: Member) => {

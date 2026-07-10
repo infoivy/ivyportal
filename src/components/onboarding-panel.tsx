@@ -11,12 +11,9 @@ import {
   toggleStep,
 } from "@/lib/onboarding";
 
-const ROLE_ORDER = ["setter", "closer", "coach", "csm", "admin", "student"];
-
-function pickRole(roles: string[]): string | null {
-  for (const r of ROLE_ORDER) if (roles.includes(r)) return r;
-  return roles[0] ?? null;
-}
+// One Start Here checklist per business role held — an admin who is also a
+// closer still gets the closer checklist.
+const BUSINESS_ROLES = ["setter", "closer", "coach", "csm"];
 
 const KIND_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
   doc: FileText,
@@ -26,14 +23,26 @@ const KIND_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
 };
 
 export function OnboardingPanel({ compact }: { compact?: boolean }) {
-  const { user, roles } = useAuth();
+  const { roles } = useAuth();
+  const held = BUSINESS_ROLES.filter(r => roles.includes(r));
+  if (held.length === 0) return null;
+  return (
+    <>
+      {held.map(r => (
+        <RoleChecklist key={r} role={r} compact={compact} />
+      ))}
+    </>
+  );
+}
+
+function RoleChecklist({ role, compact }: { role: string; compact?: boolean }) {
+  const { user } = useAuth();
   const [template, setTemplate] = useState<OnboardingTemplate | null>(null);
   const [done, setDone] = useState<Set<string>>(new Set());
   const [dismissed, setDismissed] = useState(false);
-  const role = pickRole(roles);
 
   useEffect(() => {
-    if (!user || !role) return;
+    if (!user) return;
     let alive = true;
     (async () => {
       const [t, d] = await Promise.all([fetchTemplateForRole(role), fetchProgress(user.id, role)]);
@@ -44,7 +53,7 @@ export function OnboardingPanel({ compact }: { compact?: boolean }) {
     return () => { alive = false; };
   }, [user, role]);
 
-  if (!user || !role || !template) return null;
+  if (!user || !template) return null;
   const pct = progressPercent(template.steps, done, role);
   if (pct === 100 && (compact || dismissed)) return null;
 

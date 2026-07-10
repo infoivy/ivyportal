@@ -97,6 +97,10 @@ function AuthedLayout() {
       }
     };
     supabase.auth.getSession().then(({ data }) => load(data.session?.user.id ?? null, false));
+    const onRolesChanged = () => {
+      supabase.auth.getSession().then(({ data }) => load(data.session?.user.id ?? null, false));
+    };
+    window.addEventListener("isa:roles-changed", onRolesChanged);
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT") {
         setState({ user: null, roles: [], displayName: null, loading: false });
@@ -105,7 +109,7 @@ function AuthedLayout() {
         load(session?.user.id ?? null, true);
       }
     });
-    return () => { alive = false; sub.subscription.unsubscribe(); cleanupSessionOnly(); };
+    return () => { alive = false; sub.subscription.unsubscribe(); cleanupSessionOnly(); window.removeEventListener("isa:roles-changed", onRolesChanged); };
   }, [navigate]);
 
   const signOut = async () => {
