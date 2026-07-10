@@ -486,10 +486,12 @@ export type Database = {
           created_at: string
           deferred_cash: number
           deposits: number
+          dials: number
           dms_sent: number
           escalations_resolved: number
           follow_ups_done: number
           id: string
+          leads_contacted: number
           looms_reviewed: number
           no_shows: number
           report_date: string
@@ -513,10 +515,12 @@ export type Database = {
           created_at?: string
           deferred_cash?: number
           deposits?: number
+          dials?: number
           dms_sent?: number
           escalations_resolved?: number
           follow_ups_done?: number
           id?: string
+          leads_contacted?: number
           looms_reviewed?: number
           no_shows?: number
           report_date?: string
@@ -540,10 +544,12 @@ export type Database = {
           created_at?: string
           deferred_cash?: number
           deposits?: number
+          dials?: number
           dms_sent?: number
           escalations_resolved?: number
           follow_ups_done?: number
           id?: string
+          leads_contacted?: number
           looms_reviewed?: number
           no_shows?: number
           report_date?: string
@@ -884,6 +890,7 @@ export type Database = {
           display_name: string | null
           id: string
           phone: string | null
+          setter_type: string | null
           updated_at: string
         }
         Insert: {
@@ -895,6 +902,7 @@ export type Database = {
           display_name?: string | null
           id: string
           phone?: string | null
+          setter_type?: string | null
           updated_at?: string
         }
         Update: {
@@ -906,6 +914,7 @@ export type Database = {
           display_name?: string | null
           id?: string
           phone?: string | null
+          setter_type?: string | null
           updated_at?: string
         }
         Relationships: []
