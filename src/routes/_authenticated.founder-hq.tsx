@@ -128,7 +128,7 @@ function FounderHQInner() {
       <div className="max-w-[1400px] mx-auto p-4 sm:p-5 space-y-4">
         <div>
           <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-1">Abdulrahman</div>
-          <h1 className="text-lg font-bold">Founder HQ</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Founder HQ</h1>
           <p className="text-xs text-muted-foreground mt-0.5">Command view — cash, funnel, content, team.</p>
         </div>
 

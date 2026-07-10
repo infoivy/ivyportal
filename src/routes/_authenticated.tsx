@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { LogOut, AlertCircle } from "lucide-react";
+import { LogOut, AlertCircle, Search } from "lucide-react";
 import { Toaster } from "sonner";
 import { AuthContext, type AuthState } from "@/lib/auth-context";
 import { installSessionOnlyCleanup } from "@/components/auth-page";
@@ -121,6 +121,13 @@ function AuthedLayout() {
                 <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">ISA / Team</span>
               </div>
               <div className="flex items-center gap-2">
+                <button
+                  onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true, bubbles: true }))}
+                  className="hidden sm:inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-1 rounded-sm border border-[var(--border)] bg-[var(--card)] text-muted-foreground hover:text-foreground transition"
+                  title="Search (⌘K)"
+                >
+                  <Search className="h-3 w-3" /> Search
+                </button>
                 <div className="hidden sm:flex items-center gap-1.5 text-[10px] font-medium px-2 py-1 rounded-sm border border-[var(--border)] bg-[var(--card)] text-muted-foreground">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   Live

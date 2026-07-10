@@ -155,7 +155,7 @@ function Analytics() {
       <div className="max-w-[1400px] mx-auto p-4 sm:p-5 space-y-4">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:justify-between">
           <div className="min-w-0">
-            <h1 className="text-lg font-bold truncate">Analytics</h1>
+            <h1 className="text-2xl font-semibold tracking-tight truncate">Analytics</h1>
             <p className="text-xs text-muted-foreground mt-0.5">Full-funnel breakdown from DMs to closes</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap shrink-0">
