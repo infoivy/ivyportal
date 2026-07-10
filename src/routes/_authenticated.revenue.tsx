@@ -239,12 +239,30 @@ function RevenuePage() {
       <div className="grid lg:grid-cols-3 gap-4">
         <div className="lg:col-span-1">
           <Card className="p-5">
-            <h3 className="text-sm font-semibold mb-3">Monthly trend</h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold">Sales trend</h3>
+              <div className="flex gap-1">
+                {(["monthly", "weekly", "daily"] as const).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setTrendMode(m)}
+                    className={
+                      "text-[10px] uppercase tracking-wider px-2 py-1 rounded border " +
+                      (trendMode === m
+                        ? "border-primary/60 bg-primary/10 text-primary"
+                        : "border-[#1f2530] text-muted-foreground hover:text-foreground")
+                    }
+                  >
+                    {m === "monthly" ? "6mo" : m === "weekly" ? "8wk" : "30d"}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={trend}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#1f2530" />
-                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#9ca3af" }} />
+                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#9ca3af" }} interval="preserveStartEnd" />
                   <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} />
                   <Tooltip
                     contentStyle={{ background: "#0f1116", border: "1px solid #1f2530", borderRadius: 6, fontSize: 12 }}
@@ -260,6 +278,49 @@ function RevenuePage() {
         <CashLeaderboard />
         <SetterLeaderboard />
       </div>
+
+      {/* Commission milestone bonuses */}
+      <Card className="p-5">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Trophy className="h-4 w-4 text-amber-400" />
+            <h3 className="text-sm font-semibold">Team cash milestones (MTD)</h3>
+          </div>
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+            Cash collected: <span className="font-mono text-emerald-400">{money(stats.cash)}</span>
+          </span>
+        </div>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {milestones.map((m) => (
+            <div
+              key={m.threshold}
+              className={
+                "rounded-md border p-3 " +
+                (m.hit
+                  ? "border-emerald-500/40 bg-emerald-500/5"
+                  : "border-[#1f2530] bg-[#0f1116]")
+              }
+            >
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs font-medium">{money(m.threshold)}</span>
+                <span className={"text-[10px] font-mono " + (m.hit ? "text-emerald-400" : "text-muted-foreground")}>
+                  {m.hit ? "UNLOCKED" : `${Math.floor(m.progress * 100)}%`}
+                </span>
+              </div>
+              <div className="h-1.5 rounded-full bg-[#1f2530] overflow-hidden mb-2">
+                <div
+                  className={"h-full " + (m.hit ? "bg-emerald-500" : "bg-primary/60")}
+                  style={{ width: `${m.progress * 100}%` }}
+                />
+              </div>
+              <div className="text-[11px] text-muted-foreground">
+                Team bonus <span className="font-mono text-amber-400">{money(m.bonus)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+
 
       {/* Per-closer breakdown */}
       <Card className="overflow-hidden">
