@@ -100,9 +100,9 @@ function Dashboard() {
 
     (async () => {
       const [cur, prev, profs, students, callsThisWeek, callsRecent, eodsRecent, todayEods, installmentsDue, installmentsLate, testimonials, actionCalls] = await Promise.all([
-        supabase.from("eods").select("*").gte("report_date", from).lte("report_date", to).order("report_date", { ascending: true }),
+        supabase.from("eods").select("id, user_id, report_date, dms_sent, convos_started, calls_booked, calls_scheduled, shows, no_shows").gte("report_date", from).lte("report_date", to).order("report_date", { ascending: true }),
         compare
-          ? supabase.from("eods").select("*").gte("report_date", prevFrom).lte("report_date", prevTo)
+          ? supabase.from("eods").select("id, user_id, report_date, dms_sent, convos_started, calls_booked, calls_scheduled, shows, no_shows").gte("report_date", prevFrom).lte("report_date", prevTo)
           : Promise.resolve({ data: [] as EodRow[] }),
         supabase.from("profiles").select("id, display_name"),
         supabase.from("students").select("id, status").eq("status", "active"),

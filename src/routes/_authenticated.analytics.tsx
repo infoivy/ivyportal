@@ -44,9 +44,9 @@ function Analytics() {
 
     (async () => {
       const [r, prev, p] = await Promise.all([
-        supabase.from("eods").select("*").gte("report_date", fromISO).lte("report_date", toISO).order("report_date"),
+        supabase.from("eods").select("id, user_id, report_date, dms_sent, convos_started, calls_booked, calls_scheduled, shows, no_shows").gte("report_date", fromISO).lte("report_date", toISO).order("report_date"),
         compare
-          ? supabase.from("eods").select("*").gte("report_date", pf).lte("report_date", pt).order("report_date")
+          ? supabase.from("eods").select("id, user_id, report_date, dms_sent, convos_started, calls_booked, calls_scheduled, shows, no_shows").gte("report_date", pf).lte("report_date", pt).order("report_date")
           : Promise.resolve({ data: [] as Row[] }),
         supabase.from("profiles").select("id, display_name"),
       ]);
