@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import { Search, Star, Trash2, Plus, Upload, Loader2, Copy } from "lucide-react";
+import { SelectField } from "@/components/ui/select-field";
 
 type Hook = {
   id: string;
@@ -109,10 +110,7 @@ export function HookLibrary() {
 
       {/* Quick add */}
       <div className="flex flex-wrap gap-2 border border-[var(--border)] bg-[var(--card)] rounded-sm p-3">
-        <select value={newStage} onChange={e => setNewStage(e.target.value as "tof" | "mof")} className="h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs">
-          <option value="tof">TOF</option>
-          <option value="mof">MOF</option>
-        </select>
+        <SelectField value={newStage} onChange={(v) => setNewStage(v as "tof" | "mof")} options={[{ value: "tof", label: "TOF" }, { value: "mof", label: "MOF" }]} />
         <input
           value={newText} onChange={e => setNewText(e.target.value)}
           onKeyDown={e => { if (e.key === "Enter") add(); }}
@@ -128,10 +126,7 @@ export function HookLibrary() {
         <div className="border border-border bg-muted rounded-sm p-3 space-y-2">
           <div className="flex items-center gap-2">
             <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Paste one hook per line</span>
-            <select value={importStage} onChange={e => setImportStage(e.target.value as "tof" | "mof")} className="h-6 px-1.5 rounded-sm border border-[var(--border)] bg-[var(--background)] text-[10px] ml-auto">
-              <option value="tof">TOF</option>
-              <option value="mof">MOF</option>
-            </select>
+            <SelectField value={importStage} onChange={(v) => setImportStage(v as "tof" | "mof")} options={[{ value: "tof", label: "TOF" }, { value: "mof", label: "MOF" }]} />
           </div>
           <textarea
             value={importText} onChange={e => setImportText(e.target.value)}

@@ -10,6 +10,7 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { todayBiz } from "@/lib/dates";
 import { DateField } from "@/components/ui/date-field";
+import { SelectField } from "@/components/ui/select-field";
 
 export const Route = createFileRoute("/_authenticated/csm")({
   head: () => ({ meta: [{ title: "CSM — ISA Portal" }] }),
@@ -518,10 +519,7 @@ function CsmPage() {
             </div>
             <div>
               <label className="text-[10px] text-muted-foreground">Student (optional)</label>
-              <select value={quickStudent} onChange={e => setQuickStudent(e.target.value)} className="mt-1 w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-ring">
-                <option value="">— none —</option>
-                {students.map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
-              </select>
+              <SelectField value={quickStudent} onChange={(v) => setQuickStudent(v)} options={students.map((s) => ({ value: s.id, label: s.full_name }))} allowEmpty emptyLabel="— none —" placeholder="— none —" />
             </div>
             <div>
               <label className="text-[10px] text-muted-foreground">Note (optional)</label>

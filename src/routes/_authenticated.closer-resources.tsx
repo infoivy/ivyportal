@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, Copy, Check, Plus, Trash2, DollarSign, Save, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
+import { SelectField } from "@/components/ui/select-field";
 
 type PaymentMethod = Database["public"]["Enums"]["payment_method"];
 type PL = {
@@ -250,15 +251,12 @@ function EditTable({ rows, reload }: { rows: PL[]; reload: () => Promise<void> }
             </div>
             <div>
               <Label className="text-xs">Method</Label>
-              <select
+              <SelectField
                 value={r.method}
-                onChange={(e) => update(r.id, { method: e.target.value as PaymentMethod })}
-                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
-              >
-                {METHODS.map((m) => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
+                onChange={(v) => update(r.id, { method: v as PaymentMethod })}
+                options={METHODS.map((m) => ({ value: m, label: m }))}
+                className="h-9 text-sm"
+              />
             </div>
           </div>
           <div>

@@ -10,6 +10,7 @@ import {
   Calendar as CalendarIcon,
 } from "lucide-react";
 import { format, parseISO, addDays, startOfWeek, isSameDay } from "date-fns";
+import { SelectField } from "@/components/ui/select-field";
 
 type Stage = "mof" | "tof";
 type WeekIdea = {
@@ -420,14 +421,7 @@ function IdeaRow({
             className="w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-1.5 text-xs resize-none focus:outline-none focus:border-border"
           />
           <div className="flex flex-wrap items-center gap-1.5">
-            <select
-              value={ct}
-              onChange={(e) => { setCt(e.target.value); onChange(idea.id, { matched_creative_type: e.target.value || null }); }}
-              className="h-6 px-1.5 rounded-sm border border-[var(--border)] bg-[var(--background)] text-[10px] outline-none focus:border-border"
-            >
-              <option value="">Creative type…</option>
-              {CREATIVE_TYPES.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
+            <SelectField value={ct} onChange={(v) => { setCt(v); onChange(idea.id, { matched_creative_type: v || null }); }} options={CREATIVE_TYPES.map((c) => ({ value: c, label: c }))} allowEmpty emptyLabel="Creative type…" placeholder="Creative type…" />
             {promoted ? (
               <span className="text-[10px] text-muted-foreground inline-flex items-center gap-0.5">
                 <CheckCircle2 className="h-2.5 w-2.5" /> Promoted

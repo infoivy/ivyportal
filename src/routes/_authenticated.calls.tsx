@@ -11,6 +11,7 @@ import {
 import { signAvatars } from "@/lib/avatars";
 import { CALL_NOTE_TEMPLATES } from "@/components/call-note-templates";
 import { DateField } from "@/components/ui/date-field";
+import { SelectField } from "@/components/ui/select-field";
 
 export const Route = createFileRoute("/_authenticated/calls")({
   head: () => ({ meta: [{ title: "1-on-1s — ISA" }] }),
@@ -352,16 +353,10 @@ function CallModal({ call, onClose, onSaved, students, coaches, defaultCoachId }
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="Student" full>
-            <select value={form.student_id} onChange={e => setForm(f => ({ ...f, student_id: e.target.value }))} className={inputCls}>
-              <option value="">Select student…</option>
-              {students.map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
-            </select>
+            <SelectField value={form.student_id} onChange={(v) => setForm(f => ({ ...f, student_id: v }))} options={students.map((s) => ({ value: s.id, label: s.full_name }))} placeholder="Select student…" />
           </Field>
           <Field label="Coach">
-            <select value={form.coach_id} onChange={e => setForm(f => ({ ...f, coach_id: e.target.value }))} className={inputCls} disabled={!isAdmin && call !== undefined}>
-              <option value="">Me</option>
-              {coaches.map(c => <option key={c.id} value={c.id}>{c.display_name ?? c.id}</option>)}
-            </select>
+            <SelectField value={form.coach_id} onChange={(v) => setForm(f => ({ ...f, coach_id: v }))} options={coaches.map((c) => ({ value: c.id, label: c.display_name ?? c.id }))} allowEmpty emptyLabel="Me" placeholder="Me" disabled={!isAdmin && call !== undefined} />
           </Field>
           <Field label="Call date">
             <DateField value={form.call_date} onChange={v => setForm(f => ({ ...f, call_date: v }))} clearable={false} />

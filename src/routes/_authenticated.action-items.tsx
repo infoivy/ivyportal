@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { SelectField } from "@/components/ui/select-field";
 
 export const Route = createFileRoute("/_authenticated/action-items")({
   head: () => ({ meta: [{ title: "Action Items — ISA Team" }] }),
@@ -260,15 +261,7 @@ function ActionItemsHub() {
         ))}
         <div className="ml-auto flex items-center gap-2">
           <Filter className="h-3 w-3 text-muted-foreground" />
-          <select
-            value={ownerFilter}
-            onChange={e => setOwnerFilter(e.target.value)}
-            className="text-[11px] h-7 px-2 rounded-sm border border-[var(--border)] bg-[var(--card)]"
-          >
-            <option value="all">All owners</option>
-            <option value="mine">My items</option>
-            {uniqueOwners.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
-          </select>
+          <SelectField value={ownerFilter} onChange={(v) => setOwnerFilter(v)} options={[{ value: "all", label: "All owners" }, { value: "mine", label: "My items" }]} />
         </div>
       </div>
 

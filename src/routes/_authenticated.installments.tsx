@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { RevenueTabBar } from "@/components/revenue-tab-bar";
 import { DateField } from "@/components/ui/date-field";
+import { SelectField } from "@/components/ui/select-field";
 
 export const Route = createFileRoute("/_authenticated/installments")({
   head: () => ({ meta: [{ title: "Installments — ISA" }] }),
@@ -259,13 +260,12 @@ function InstallmentsPage() {
                           </span>
                         )}
                       </span>
-                      <select
+                      <SelectField
                         value={p.status}
-                        onChange={e => setStatus(p.id, e.target.value as PayStatus)}
-                        className={`text-xs px-2 py-1 rounded border ${STATUS_META[p.status].cls}`}
-                      >
-                        {(Object.keys(STATUS_META) as PayStatus[]).map(s => <option key={s} value={s}>{STATUS_META[s].label}</option>)}
-                      </select>
+                        onChange={v => setStatus(p.id, v as PayStatus)}
+                        options={(Object.keys(STATUS_META) as PayStatus[]).map(s => ({ value: s, label: STATUS_META[s].label }))}
+                        className={`w-auto text-xs ${STATUS_META[p.status].cls}`}
+                      />
                       {p.payment_method && <span className="text-xs text-muted-foreground">{p.payment_method}</span>}
                       {p.notes && <span className="text-xs text-muted-foreground italic truncate max-w-[240px]">"{p.notes}"</span>}
                       <div className="ml-auto flex items-center gap-2">
@@ -435,33 +435,22 @@ function PlanEditor({
         <div className="p-4 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <Field label="Existing student">
-              <select value={studentId} onChange={e => setStudentId(e.target.value)} className="w-full px-2 py-1.5 rounded border border-border bg-background text-sm">
-                <option value="">— None (enter name manually) —</option>
-                {students.map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
-              </select>
+              <SelectField value={studentId} onChange={(v) => setStudentId(v)} options={students.map((s) => ({ value: s.id, label: s.full_name }))} allowEmpty emptyLabel="— None (enter name manually) —" placeholder="— None (enter name manually) —" />
             </Field>
             <Field label="Student name">
               <input value={studentName} onChange={e => setStudentName(e.target.value)} placeholder="e.g. Jane Doe" className="w-full px-2 py-1.5 rounded border border-border bg-background text-sm" />
             </Field>
             <Field label="Closer">
-              <select value={closerId} onChange={e => setCloserId(e.target.value)} className="w-full px-2 py-1.5 rounded border border-border bg-background text-sm">
-                <option value="">Unassigned</option>
-                {team.map(t => <option key={t.id} value={t.id}>{t.display_name ?? t.id.slice(0,8)}</option>)}
-              </select>
+              <SelectField value={closerId} onChange={(v) => setCloserId(v)} options={team.map((t) => ({ value: t.id, label: t.display_name ?? t.id.slice(0,8) }))} allowEmpty emptyLabel="Unassigned" placeholder="Unassigned" />
             </Field>
             <Field label="Coach">
-              <select value={coachId} onChange={e => setCoachId(e.target.value)} className="w-full px-2 py-1.5 rounded border border-border bg-background text-sm">
-                <option value="">Unassigned</option>
-                {team.map(t => <option key={t.id} value={t.id}>{t.display_name ?? t.id.slice(0,8)}</option>)}
-              </select>
+              <SelectField value={coachId} onChange={(v) => setCoachId(v)} options={team.map((t) => ({ value: t.id, label: t.display_name ?? t.id.slice(0,8) }))} allowEmpty emptyLabel="Unassigned" placeholder="Unassigned" />
             </Field>
             <Field label="Total deal value">
               <input value={total} onChange={e => setTotal(e.target.value)} type="number" min="0" step="0.01" className="w-full px-2 py-1.5 rounded border border-border bg-background text-sm" />
             </Field>
             <Field label="Currency">
-              <select value={currency} onChange={e => setCurrency(e.target.value)} className="w-full px-2 py-1.5 rounded border border-border bg-background text-sm">
-                {["USD","EUR","GBP","CAD","AUD","AED"].map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
+              <SelectField value={currency} onChange={setCurrency} options={["USD","EUR","GBP","CAD","AUD","AED"].map(c => ({ value: c, label: c }))} className="h-9 text-sm" />
             </Field>
           </div>
           <Field label="Deal notes (optional)">
@@ -480,9 +469,7 @@ function PlanEditor({
                   <span className="col-span-1 text-xs text-muted-foreground">#{i+1}</span>
                   <input type="number" min="0" step="0.01" value={d.amount} onChange={e => setDrafts(list => list.map((r,idx) => idx === i ? { ...r, amount: e.target.value } : r))} placeholder="Amount" className="col-span-3 px-2 py-1.5 rounded border border-border bg-background text-sm" />
                   <DateField value={d.due_date} onChange={v => setDrafts(list => list.map((r,idx) => idx === i ? { ...r, due_date: v } : r))} clearable={false} className="col-span-3 h-9 text-sm" />
-                  <select value={d.status} onChange={e => setDrafts(list => list.map((r,idx) => idx === i ? { ...r, status: e.target.value as PayStatus } : r))} className="col-span-2 px-2 py-1.5 rounded border border-border bg-background text-sm">
-                    {(Object.keys(STATUS_META) as PayStatus[]).map(s => <option key={s} value={s}>{STATUS_META[s].label}</option>)}
-                  </select>
+                  <SelectField value={d.status} onChange={v => setDrafts(list => list.map((r,idx) => idx === i ? { ...r, status: v as PayStatus } : r))} options={(Object.keys(STATUS_META) as PayStatus[]).map(s => ({ value: s, label: STATUS_META[s].label }))} className="col-span-2 h-9 text-sm" />
                   <input value={d.payment_method} onChange={e => setDrafts(list => list.map((r,idx) => idx === i ? { ...r, payment_method: e.target.value } : r))} placeholder="Method" className="col-span-2 px-2 py-1.5 rounded border border-border bg-background text-sm" />
                   <button onClick={() => removeDraft(i)} className="col-span-1 p-1 rounded hover:bg-accent text-danger-fg justify-self-end"><Trash2 className="h-3.5 w-3.5" /></button>
                 </div>

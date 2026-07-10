@@ -34,6 +34,7 @@ import { BreakdownBar } from "@/components/ui/breakdown-bar";
 import { FilterToolbar } from "@/components/ui/filter-toolbar";
 import { type DateRange, rangeFor, daysBetween } from "@/components/range-picker";
 import { DateField } from "@/components/ui/date-field";
+import { SelectField } from "@/components/ui/select-field";
 
 export const Route = createFileRoute("/_authenticated/revenue")({
   head: () => ({ meta: [{ title: "Revenue — ISA Team" }] }),
@@ -789,17 +790,14 @@ function LogDealDialog({
               </Button>
             </div>
             {studentMode === "existing" ? (
-              <select
+              <SelectField
                 value={studentId}
-                onChange={(e) => setStudentId(e.target.value)}
-                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                onChange={setStudentId}
+                options={students.map((s) => ({ value: s.id, label: s.full_name }))}
+                placeholder="— Select student —"
+                className="h-9 text-sm"
                 disabled={!!editing}
-              >
-                <option value="">— Select student —</option>
-                {students.map((s) => (
-                  <option key={s.id} value={s.id}>{s.full_name}</option>
-                ))}
-              </select>
+              />
             ) : (
               <Input
                 value={studentName}
@@ -812,31 +810,25 @@ function LogDealDialog({
           <div className="grid sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Closer</Label>
-              <select
+              <SelectField
                 value={closerId}
-                onChange={(e) => setCloserId(e.target.value)}
+                onChange={setCloserId}
+                options={closers.map((c) => ({ value: c.id, label: c.display_name || c.id.slice(0, 8) }))}
+                className="h-9 text-sm"
                 disabled={!isAdmin && !!currentUserId}
-                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
-              >
-                <option value="">— Select —</option>
-                {closers.map((c) => (
-                  <option key={c.id} value={c.id}>{c.display_name || c.id.slice(0, 8)}</option>
-                ))}
-              </select>
+              />
               {!isAdmin && <p className="text-[10px] text-muted-foreground">Only admins can assign to another closer.</p>}
             </div>
             <div className="space-y-1.5">
               <Label>Setter (optional)</Label>
-              <select
+              <SelectField
                 value={setterId}
-                onChange={(e) => setSetterId(e.target.value)}
-                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
-              >
-                <option value="">— None —</option>
-                {setters.map((s) => (
-                  <option key={s.id} value={s.id}>{s.display_name || s.id.slice(0, 8)}</option>
-                ))}
-              </select>
+                onChange={setSetterId}
+                options={setters.map((s) => ({ value: s.id, label: s.display_name || s.id.slice(0, 8) }))}
+                allowEmpty
+                placeholder="— None —"
+                className="h-9 text-sm"
+              />
               <p className="text-[10px] text-muted-foreground">Attribute to a setter for base + PIF-bonus commission.</p>
             </div>
           </div>
@@ -857,15 +849,16 @@ function LogDealDialog({
             </div>
             <div className="space-y-1.5">
               <Label>Payment type</Label>
-              <select
+              <SelectField
                 value={paymentType}
-                onChange={(e) => setPaymentType(e.target.value as PaymentType)}
-                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
-              >
-                <option value="pif">PIF (paid in full)</option>
-                <option value="deposit">Deposit</option>
-                <option value="split">Split / installments</option>
-              </select>
+                onChange={(v) => setPaymentType(v as PaymentType)}
+                options={[
+                  { value: "pif", label: "PIF (paid in full)" },
+                  { value: "deposit", label: "Deposit" },
+                  { value: "split", label: "Split / installments" },
+                ]}
+                className="h-9 text-sm"
+              />
             </div>
           </div>
 

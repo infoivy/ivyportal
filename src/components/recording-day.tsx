@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format, parseISO, addDays, startOfWeek } from "date-fns";
 import { Video, CheckCircle2, Circle, Play, X, ChevronRight, Loader2 } from "lucide-react";
+import { SelectField } from "@/components/ui/select-field";
 
 type Slot = {
   id: string;
@@ -98,9 +99,7 @@ export function RecordingDay({ onOpenItem }: { onOpenItem: (id: string) => void 
           </div>
           <div className="flex items-center gap-1">
             <span className="text-[10px] uppercase tracking-wider text-muted-foreground mr-1">Shoot day</span>
-            <select value={recordingDay} onChange={e => setDay(parseInt(e.target.value, 10))} className="h-7 px-1.5 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs">
-              {[1,2,3,4,5,6,0].map(n => <option key={n} value={n}>{dayNames[n]}</option>)}
-            </select>
+            <SelectField value={String(recordingDay)} onChange={v => setDay(parseInt(v, 10))} options={[1,2,3,4,5,6,0].map(n => ({ value: String(n), label: dayNames[n] }))} className="h-7 w-auto" />
           </div>
           <button
             onClick={() => setFocusIdx(0)}

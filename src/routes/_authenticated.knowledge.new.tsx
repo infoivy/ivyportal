@@ -17,6 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, Plus, X, Save } from "lucide-react";
 import { toast } from "sonner";
+import { SelectField } from "@/components/ui/select-field";
 
 export const Route = createFileRoute("/_authenticated/knowledge/new")({
   head: () => ({ meta: [{ title: "New doc — Knowledge Hub" }] }),
@@ -146,15 +147,12 @@ export function DocForm(props: {
         <div className="grid sm:grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label>Category</Label>
-            <select
+            <SelectField
               value={category}
-              onChange={(e) => setCategory(e.target.value as DocCategory)}
-              className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              {DOC_CATEGORIES.map((c) => (
-                <option key={c.value} value={c.value}>{c.label}</option>
-              ))}
-            </select>
+              onChange={(v) => setCategory(v as DocCategory)}
+              options={DOC_CATEGORIES.map((c) => ({ value: c.value, label: c.label }))}
+              className="h-9 text-sm"
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Visibility</Label>

@@ -15,6 +15,7 @@ import { exportToCsv } from "@/lib/csv";
 import confetti from "canvas-confetti";
 import { VolumeAreaChart, VolumeLegend } from "@/components/ui/volume-area-chart";
 import { ResponsiveContainer, BarChart, Bar, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip as ReTooltip, Legend } from "recharts";
+import { SelectField } from "@/components/ui/select-field";
 
 export const Route = createFileRoute("/_authenticated/eods")({
   head: () => ({ meta: [{ title: "EOD Reports — ISA Team" }] }),
@@ -906,10 +907,7 @@ function ComplianceGraphs({ eods, roster }: { eods: GridEod[]; roster: RosterEnt
             <button key={n} onClick={() => setDays(n as 7 | 30 | 90)} className={`text-[13px] font-medium px-3 py-1.5 rounded-[8px] leading-none motion-safe:transition-colors ${days === n ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>{n}D</button>
           ))}
         </div>
-        <select value={personFilter} onChange={e => setPersonFilter(e.target.value)} className="text-[11px] bg-[var(--background)] border border-[var(--border)] rounded-sm h-7 px-2">
-          <option value="all">All team</option>
-          {roster.map(r => <option key={r.user_id} value={r.user_id}>{r.display_name}</option>)}
-        </select>
+        <SelectField value={personFilter} onChange={(v) => setPersonFilter(v)} options={[{ value: "all", label: "All team" }, ...roster.map((r) => ({ value: r.user_id, label: r.display_name }))]} />
         <button
           onClick={() => setCompare(c => !c)}
           className={`inline-flex items-center gap-1.5 text-[13px] font-medium px-3 py-1.5 rounded-md motion-safe:transition-colors ${compare ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground hover:text-foreground"}`}
@@ -1042,14 +1040,8 @@ function TeamFeed({ eods, isAdmin, onDelete }: { eods: GridEod[]; isAdmin: boole
             <button key={n} onClick={() => setDays(n as 7 | 14 | 30)} className={`text-[11px] font-semibold px-2.5 py-1 rounded-[2px] transition ${days === n ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"}`}>{n}D</button>
           ))}
         </div>
-        <select value={role} onChange={e => setRole(e.target.value)} className="text-[11px] bg-[var(--background)] border border-[var(--border)] rounded-sm h-7 px-2">
-          <option value="all">All roles</option>
-          {["setter","closer","coach","csm"].map(r => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
-        </select>
-        <select value={person} onChange={e => setPerson(e.target.value)} className="text-[11px] bg-[var(--background)] border border-[var(--border)] rounded-sm h-7 px-2">
-          <option value="all">Everyone</option>
-          {people.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
-        </select>
+        <SelectField value={role} onChange={(v) => setRole(v)} options={[{ value: "all", label: "All roles" }]} />
+        <SelectField value={person} onChange={(v) => setPerson(v)} options={[{ value: "all", label: "Everyone" }]} />
         <button
           onClick={() => exportToCsv(`eods-${days}d.csv`, filtered.map(e => ({
             date: e.report_date, name: e.display_name, role: e.primary_role,

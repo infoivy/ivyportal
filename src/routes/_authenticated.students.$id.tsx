@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import { DateField } from "@/components/ui/date-field";
+import { SelectField } from "@/components/ui/select-field";
 import {
   ArrowLeft, Video, Trash2, Plus, Save, Calendar as CalIcon,
   Phone, FileText, User, Pencil, ExternalLink, CheckCircle2, Circle,
@@ -698,9 +699,7 @@ function SelectChip({ value, onChange, options, color, prefix }: {
   return (
     <div className={`inline-flex items-center gap-1 text-[10px] uppercase tracking-wider pl-2 pr-1 py-0.5 rounded-sm border ${map[color]}`}>
       {prefix && <span>{prefix}</span>}
-      <select value={value} onChange={e => onChange(e.target.value)} className="bg-transparent text-inherit outline-none pr-1">
-        {options.map(o => <option key={o.v} value={o.v} className="bg-[var(--card)] text-foreground normal-case">{o.l}</option>)}
-      </select>
+      <SelectField value={value} onChange={onChange} options={options.map(o => ({ value: o.v, label: o.l }))} className="h-7 w-auto border-0 bg-transparent shadow-none" />
     </div>
   );
 }
@@ -752,13 +751,7 @@ function CallForm({ studentId, onCancel, onDone }: { studentId: string; onCancel
     <div className="p-3 border-b border-[var(--border)] bg-[var(--muted)] space-y-2">
       <div className="grid md:grid-cols-3 gap-2">
         <DateField value={form.call_date} onChange={v => setForm(f => ({ ...f, call_date: v }))} clearable={false} />
-        <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs">
-          <option value="scheduled">Scheduled</option>
-          <option value="completed">Completed</option>
-          <option value="follow_up">Follow-up</option>
-          <option value="no_show">No-show</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
+        <SelectField value={form.status} onChange={(v) => setForm(f => ({ ...f, status: v }))} options={[{ value: "scheduled", label: "Scheduled" }, { value: "completed", label: "Completed" }, { value: "follow_up", label: "Follow-up" }, { value: "no_show", label: "No-show" }, { value: "cancelled", label: "Cancelled" }]} />
         <div className="flex items-center gap-1">
           {[1, 2, 3, 4, 5].map(n => (
             <button key={n} type="button" onClick={() => setForm(f => ({ ...f, progress_rating: n }))} className="p-0.5">

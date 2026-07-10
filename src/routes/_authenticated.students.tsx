@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { exportToCsv } from "@/lib/csv";
 import { DateField } from "@/components/ui/date-field";
+import { SelectField } from "@/components/ui/select-field";
 
 
 
@@ -381,9 +382,7 @@ function StudentsLayout() {
                     {visibleCols.has("phase") && (
                       <td className="px-2 py-3">
                         {canManage ? (
-                          <select value={s.phase} onChange={e => updateStudent(s.id, { phase: e.target.value as Phase })} className={`text-[12px] px-2 py-1 rounded-md border bg-transparent ${phaseMeta(s.phase).color}`}>
-                            {PHASES.map(p => <option key={p.key} value={p.key} className="bg-[var(--card)]">{p.label}</option>)}
-                          </select>
+                          <SelectField value={s.phase} onChange={v => updateStudent(s.id, { phase: v as Phase })} options={PHASES.map(p => ({ value: p.key, label: p.label }))} className={`w-auto text-[12px] ${phaseMeta(s.phase).color}`} />
                         ) : (
                           <span className={`inline-flex items-center text-[12px] px-2 py-0.5 rounded-md border ${phaseMeta(s.phase).color}`}>{phaseMeta(s.phase).label}</span>
                         )}
@@ -392,9 +391,7 @@ function StudentsLayout() {
                     {visibleCols.has("status") && (
                       <td className="px-2 py-3">
                         {canManage ? (
-                          <select value={s.status} onChange={e => updateStudent(s.id, { status: e.target.value as Status })} className={`text-[12px] px-2 py-1 rounded-md border bg-transparent ${statusMeta(s.status).color}`}>
-                            {STATUSES.map(x => <option key={x.key} value={x.key} className="bg-[var(--card)]">{x.label}</option>)}
-                          </select>
+                          <SelectField value={s.status} onChange={v => updateStudent(s.id, { status: v as Status })} options={STATUSES.map(x => ({ value: x.key, label: x.label }))} className={`w-auto text-[12px] ${statusMeta(s.status).color}`} />
                         ) : (
                           <span className={`inline-flex items-center text-[12px] px-2 py-0.5 rounded-md border ${statusMeta(s.status).color}`}>{statusMeta(s.status).label}</span>
                         )}
@@ -403,10 +400,7 @@ function StudentsLayout() {
                     {visibleCols.has("coach") && (
                       <td className="px-2 py-3">
                         {canManage ? (
-                          <select value={s.coach_id ?? ""} onChange={e => updateStudent(s.id, { coach_id: e.target.value || null })} className="text-xs h-7 px-2 rounded-sm border border-[var(--border)] bg-transparent max-w-[140px]">
-                            <option value="">Unassigned</option>
-                            {coaches.map(c => <option key={c.id} value={c.id} className="bg-[var(--card)]">{c.display_name ?? c.id}</option>)}
-                          </select>
+                          <SelectField value={s.coach_id ?? ""} onChange={v => updateStudent(s.id, { coach_id: v || null })} options={coaches.map(c => ({ value: c.id, label: c.display_name ?? c.id }))} allowEmpty emptyLabel="Unassigned" placeholder="Unassigned" className="h-7 max-w-[140px]" />
                         ) : (
                           <span className="text-xs text-muted-foreground truncate">{coachName(s.coach_id)}</span>
                         )}
@@ -824,20 +818,10 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
               <DateField value={joinDate} onChange={setJoinDate} clearable={false} />
             </Field>
             <Field label="Assigned coach">
-              <select value={coachId} onChange={e => setCoachId(e.target.value)} className={inputCls}>
-                <option value="">Unassigned</option>
-                {coaches.map(c => <option key={c.id} value={c.id}>{c.display_name ?? c.id}</option>)}
-              </select>
+              <SelectField value={coachId} onChange={(v) => setCoachId(v)} options={coaches.map((c) => ({ value: c.id, label: c.display_name ?? c.id }))} allowEmpty emptyLabel="Unassigned" placeholder="Unassigned" />
             </Field>
             <Field label="Lead source (optional)">
-              <select value={source} onChange={e => setSource(e.target.value)} className={inputCls}>
-                <option value="">Unknown</option>
-                <option value="Reel">Reel</option>
-                <option value="DM Outreach">DM Outreach</option>
-                <option value="Referral">Referral</option>
-                <option value="Cold Outreach">Cold Outreach</option>
-                <option value="Other">Other</option>
-              </select>
+              <SelectField value={source} onChange={(v) => setSource(v)} options={[{ value: "Reel", label: "Reel" }, { value: "DM Outreach", label: "DM Outreach" }, { value: "Referral", label: "Referral" }, { value: "Cold Outreach", label: "Cold Outreach" }, { value: "Other", label: "Other" }]} allowEmpty emptyLabel="Unknown" placeholder="Unknown" />
             </Field>
           </div>
         </Section>
@@ -888,16 +872,10 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
                 <DateField value={dealDate} onChange={setDealDate} clearable={false} />
               </Field>
               <Field label="Closer (who sold this)">
-                <select value={closerId} onChange={e => setCloserId(e.target.value)} className={inputCls}>
-                  <option value="">— Select closer —</option>
-                  {closers.map(c => <option key={c.id} value={c.id}>{c.display_name ?? c.id.slice(0, 8)}</option>)}
-                </select>
+                <SelectField value={closerId} onChange={(v) => setCloserId(v)} options={closers.map((c) => ({ value: c.id, label: c.display_name ?? c.id.slice(0, 8) }))} placeholder="— Select closer —" />
               </Field>
               <Field label="Setter (who booked the call)">
-                <select value={setterId} onChange={e => setSetterId(e.target.value)} className={inputCls}>
-                  <option value="">— None / unknown —</option>
-                  {setters.map(s => <option key={s.id} value={s.id}>{s.display_name ?? s.id.slice(0, 8)}</option>)}
-                </select>
+                <SelectField value={setterId} onChange={(v) => setSetterId(v)} options={setters.map((s) => ({ value: s.id, label: s.display_name ?? s.id.slice(0, 8) }))} allowEmpty emptyLabel="— None / unknown —" placeholder="— None / unknown —" />
               </Field>
 
               {payMode === "installments" && (
@@ -925,11 +903,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
                         <input type="number" min="1" max="24" value={numInstallments} onChange={e => setNumInstallments(e.target.value)} className={inputCls} />
                       </Field>
                       <Field label="Frequency">
-                        <select value={frequency} onChange={e => setFrequency(e.target.value as any)} className={inputCls}>
-                          <option value="monthly">Monthly</option>
-                          <option value="biweekly">Every 2 weeks</option>
-                          <option value="weekly">Weekly</option>
-                        </select>
+                        <SelectField value={frequency} onChange={(v) => setFrequency(v as any)} options={[{ value: "monthly", label: "Monthly" }, { value: "biweekly", label: "Every 2 weeks" }, { value: "weekly", label: "Weekly" }]} />
                       </Field>
                       <Field label="First payment due" full>
                         <DateField value={firstDueDate} onChange={setFirstDueDate} clearable={false} />

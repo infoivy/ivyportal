@@ -14,6 +14,7 @@ import { FounderSops } from "@/components/founder-sops";
 import { RecordingDay } from "@/components/recording-day";
 import { HookLibrary } from "@/components/hook-library";
 import { DateField } from "@/components/ui/date-field";
+import { SelectField } from "@/components/ui/select-field";
 
 
 type Platform = "instagram" | "tiktok" | "youtube" | "twitter" | "linkedin" | "threads" | "other";
@@ -529,11 +530,7 @@ function IdeaInbox({ ideas, userId, onChange, onPromote }: {
           className="w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-xs resize-none focus:outline-none focus:border-border"
         />
         <div className="flex gap-2">
-          <select value={funnelGuess} onChange={e => setFunnelGuess(e.target.value)} className="h-7 px-1.5 rounded-sm border border-[var(--border)] bg-[var(--background)] text-[10px]">
-            <option value="">Funnel?</option>
-            <option value="tof">TOF</option>
-            <option value="mof">MOF</option>
-          </select>
+          <SelectField value={funnelGuess} onChange={(v) => setFunnelGuess(v)} options={[{ value: "tof", label: "TOF" }, { value: "mof", label: "MOF" }]} allowEmpty emptyLabel="Funnel?" placeholder="Funnel?" />
           <input
             value={link} onChange={e => setLink(e.target.value)} placeholder="Optional link"
             className="flex-1 h-7 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border"
@@ -715,18 +712,13 @@ function ItemDialog({ initial, userId, onClose, onSaved, promotingIdea: pIdea }:
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <Field label="Status">
-              <select value={status} onChange={e => setStatus(e.target.value as Status)} className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border">
-                {STATUSES.filter(s => s.value !== "filmed").map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-              </select>
+              <SelectField value={status} onChange={v => setStatus(v as Status)} options={STATUSES.filter(s => s.value !== "filmed").map(s => ({ value: s.value, label: s.label }))} />
             </Field>
             <Field label="Scheduled date">
               <DateField value={scheduled} onChange={setScheduled} placeholder="Not scheduled" />
             </Field>
             <Field label="Format / creative type">
-              <select value={format} onChange={e => setFormat(e.target.value)} className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border">
-                <option value="">—</option>
-                {CREATIVE_TYPES.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
+              <SelectField value={format} onChange={(v) => setFormat(v)} options={CREATIVE_TYPES.map((c) => ({ value: c, label: c }))} allowEmpty emptyLabel="—" placeholder="—" />
             </Field>
             <Field label="Duration (sec)">
               <input type="number" min={0} value={duration} onChange={e => setDuration(e.target.value)} placeholder="e.g., 45" className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border" />
@@ -769,9 +761,7 @@ function ItemDialog({ initial, userId, onClose, onSaved, promotingIdea: pIdea }:
               <input value={source} onChange={e => setSource(e.target.value)} placeholder="e.g., client call, Notion note, viral reel" className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border" />
             </Field>
             <Field label="Primary platform (for icon color)">
-              <select value={platform} onChange={e => setPlatform(e.target.value as Platform)} className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border">
-                {PLATFORMS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
-              </select>
+              <SelectField value={platform} onChange={(v) => setPlatform(v as Platform)} options={PLATFORMS.map((p) => ({ value: p.value, label: p.label }))} />
             </Field>
           </div>
 
