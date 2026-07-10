@@ -83,7 +83,7 @@ export function WeeklyReviewInner() {
 
         {/* Big numbers */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <BigStat label="Cash collected" value={money(weekCash)} color="text-green-400" />
+          <BigStat label="Cash collected" value={money(weekCash)} color="text-success-fg" />
           <BigStat label="Sets" value={weekSets} />
           <BigStat label="Shows" value={weekShows} />
           <BigStat label="Closes" value={weekCloses} />
@@ -100,7 +100,7 @@ export function WeeklyReviewInner() {
 
         {/* Team & wins */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <BigStat label="EODs filed" value={`${eodCount}/${expectedEods}`} color={complianceRate >= 90 ? "text-green-400" : "text-amber-400"} />
+          <BigStat label="EODs filed" value={`${eodCount}/${expectedEods}`} color={complianceRate >= 90 ? "text-success-fg" : "text-warning-fg"} />
           <BigStat label="Student wins" value={milestonesThisWeek} />
           <BigStat label="Testimonials" value={testimonials} />
           <BigStat label="Content posted" value={contentPosted} />
@@ -138,8 +138,8 @@ function BigStat({ label, value, color = "text-foreground" }: { label: string; v
 
 function RateStat({ label, value, suffix, good }: { label: string; value: number; suffix: string; good: boolean }) {
   return (
-    <div className={`rounded-sm border p-4 text-center ${good ? "border-green-500/30 bg-green-500/5" : "border-amber-500/30 bg-amber-500/5"}`}>
-      <div className={`text-[28px] font-bold tabular-nums ${good ? "text-green-400" : "text-amber-400"}`}>{value}{suffix}</div>
+    <div className={`rounded-sm border p-4 text-center ${good ? "border-success/25 bg-success-bg" : "border-warning/25 bg-warning-bg"}`}>
+      <div className={`text-[28px] font-bold tabular-nums ${good ? "text-success-fg" : "text-warning-fg"}`}>{value}{suffix}</div>
       <div className="text-[12px] text-muted-foreground mt-1">{label}</div>
     </div>
   );

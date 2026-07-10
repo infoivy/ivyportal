@@ -75,25 +75,25 @@ export const TRIGGERS: { value: string; label: string; hint: string }[] = [
 ];
 
 const PLATFORMS: { value: Platform; label: string; color: string }[] = [
-  { value: "instagram", label: "IG",       color: "bg-blue-500/10 text-blue-300 border-blue-500/30" },
-  { value: "tiktok",    label: "TikTok",   color: "bg-blue-500/10 text-blue-300 border-blue-500/30" },
-  { value: "youtube",   label: "YT",       color: "bg-red-500/10 text-red-300 border-red-500/30" },
-  { value: "twitter",   label: "X",        color: "bg-slate-500/10 text-slate-300 border-slate-500/30" },
-  { value: "linkedin",  label: "LinkedIn", color: "bg-blue-500/10 text-blue-300 border-blue-500/30" },
-  { value: "threads",   label: "Threads",  color: "bg-blue-500/10 text-blue-300 border-blue-500/30" },
+  { value: "instagram", label: "IG",       color: "bg-muted text-muted-foreground border-border" },
+  { value: "tiktok",    label: "TikTok",   color: "bg-muted text-muted-foreground border-border" },
+  { value: "youtube",   label: "YT",       color: "bg-danger-bg text-danger-fg border-danger/25" },
+  { value: "twitter",   label: "X",        color: "bg-slate-500/10 text-muted-foreground border-border" },
+  { value: "linkedin",  label: "LinkedIn", color: "bg-muted text-muted-foreground border-border" },
+  { value: "threads",   label: "Threads",  color: "bg-muted text-muted-foreground border-border" },
   { value: "other",     label: "Other",    color: "bg-neutral-500/10 text-neutral-300 border-neutral-500/30" },
 ];
 const PLATFORM_META = Object.fromEntries(PLATFORMS.map(p => [p.value, p])) as Record<Platform, typeof PLATFORMS[number]>;
 
 const STATUSES: { value: Status; label: string; color: string }[] = [
   { value: "idea",      label: "Idea",      color: "bg-neutral-500/10 text-neutral-300 border-neutral-500/30" },
-  { value: "scripted",  label: "Scripted",  color: "bg-amber-500/10 text-amber-300 border-amber-500/30" },
-  { value: "approved",  label: "Approved",  color: "bg-amber-500/10 text-amber-300 border-amber-500/30" },
-  { value: "recorded",  label: "Recorded",  color: "bg-blue-500/10 text-blue-300 border-blue-500/30" },
-  { value: "filmed",    label: "Filmed",    color: "bg-blue-500/10 text-blue-300 border-blue-500/30" }, // legacy alias
-  { value: "edited",    label: "Edited",    color: "bg-blue-500/10 text-blue-300 border-blue-500/30" },
-  { value: "scheduled", label: "Scheduled", color: "bg-blue-500/10 text-blue-300 border-blue-500/30" },
-  { value: "posted",    label: "Posted",    color: "bg-green-500/10 text-green-300 border-green-500/30" },
+  { value: "scripted",  label: "Scripted",  color: "bg-warning-bg text-warning-fg border-warning/25" },
+  { value: "approved",  label: "Approved",  color: "bg-warning-bg text-warning-fg border-warning/25" },
+  { value: "recorded",  label: "Recorded",  color: "bg-muted text-muted-foreground border-border" },
+  { value: "filmed",    label: "Filmed",    color: "bg-muted text-muted-foreground border-border" }, // legacy alias
+  { value: "edited",    label: "Edited",    color: "bg-muted text-muted-foreground border-border" },
+  { value: "scheduled", label: "Scheduled", color: "bg-muted text-muted-foreground border-border" },
+  { value: "posted",    label: "Posted",    color: "bg-success-bg text-success-fg border-success/25" },
 ];
 const STATUS_META = Object.fromEntries(STATUSES.map(s => [s.value, s])) as Record<Status, typeof STATUSES[number]>;
 
@@ -277,7 +277,7 @@ function ContentHealthStrip({ items }: { items: ContentItem[] }) {
       ) : (
         chips.map(c => (
           <span key={c.label} className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[12px] ${
-            c.ok ? "bg-green-500/10 text-green-400" : "bg-muted text-muted-foreground"
+            c.ok ? "bg-success-bg text-success-fg" : "bg-muted text-muted-foreground"
           }`}>
             <span className="font-medium">{c.val}</span> {c.label}
           </span>
@@ -377,7 +377,7 @@ function KanbanView({ items, onOpen, onUpdate }: { items: ContentItem[]; onOpen:
             </div>
             <div className="p-1.5 flex-1 space-y-1.5 overflow-auto">
               {col.map(i => (
-                <div key={i.id} className="border border-[var(--border)] bg-[var(--background)] rounded-sm p-2 hover:border-blue-500/40 group">
+                <div key={i.id} className="border border-[var(--border)] bg-[var(--background)] rounded-sm p-2 hover:border-border group">
                   <button onClick={() => onOpen(i)} className="w-full text-left space-y-1.5">
                     <div className="flex items-center justify-between gap-1">
                       <span className={`text-[9px] px-1.5 py-0.5 rounded-sm border ${PLATFORM_META[i.platform].color}`}>{PLATFORM_META[i.platform].label}</span>
@@ -390,7 +390,7 @@ function KanbanView({ items, onOpen, onUpdate }: { items: ContentItem[]; onOpen:
                       <button
                         key={target.value}
                         onClick={() => setStatus(i.id, target.value)}
-                        className="text-[9px] px-1 py-0.5 rounded-sm border border-[var(--border)] hover:border-blue-500/40 text-muted-foreground hover:text-foreground"
+                        className="text-[9px] px-1 py-0.5 rounded-sm border border-[var(--border)] hover:border-border text-muted-foreground hover:text-foreground"
                         title={`Move to ${target.label}`}
                       >
                         {target.label[0]}
@@ -432,7 +432,7 @@ function ListView({ items, onOpen }: { items: ContentItem[]; onOpen: (i: Content
               <td className="p-2 max-w-md truncate">{i.hook}</td>
               <td className="p-2 text-muted-foreground">{i.format ?? "—"}</td>
               <td className="p-2"><span className={`text-[10px] px-1.5 py-0.5 rounded-sm border ${STATUS_META[i.status].color}`}>{STATUS_META[i.status].label}</span></td>
-              <td className="p-2">{i.link_when_posted ? <a href={i.link_when_posted} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="text-blue-400 hover:text-blue-300"><ExternalLink className="h-3 w-3 inline" /></a> : <span className="text-muted-foreground">—</span>}</td>
+              <td className="p-2">{i.link_when_posted ? <a href={i.link_when_posted} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="text-muted-foreground hover:text-muted-foreground"><ExternalLink className="h-3 w-3 inline" /></a> : <span className="text-muted-foreground">—</span>}</td>
             </tr>
           ))}
         </tbody>
@@ -497,10 +497,10 @@ function IdeaInbox({ ideas, userId, onChange, onPromote }: {
   return (
     <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm">
       <div className="p-3 border-b border-[var(--border)] flex items-center gap-2">
-        <Lightbulb className="h-3.5 w-3.5 text-amber-400" />
+        <Lightbulb className="h-3.5 w-3.5 text-warning-fg" />
         <div className="text-sm font-semibold">Idea inbox</div>
         <span className="ml-auto text-[10px] text-muted-foreground">{activeCount} active</span>
-        <button onClick={() => setShowReset(true)} className="text-[10px] text-muted-foreground hover:text-blue-300 underline decoration-dotted">Monthly reset</button>
+        <button onClick={() => setShowReset(true)} className="text-[10px] text-muted-foreground hover:text-muted-foreground underline decoration-dotted">Monthly reset</button>
       </div>
       <div className="p-3 space-y-2 border-b border-[var(--border)]">
         <div className="flex flex-wrap gap-1">
@@ -509,7 +509,7 @@ function IdeaInbox({ ideas, userId, onChange, onPromote }: {
               key={t.value}
               onClick={() => setTriggerType(triggerType === t.value ? "" : t.value)}
               title={t.hint}
-              className={`h-6 px-2 rounded-sm text-[10px] border ${triggerType === t.value ? "bg-blue-500/15 border-blue-500/50 text-blue-200" : "border-[var(--border)] text-muted-foreground hover:border-blue-500/30"}`}
+              className={`h-6 px-2 rounded-sm text-[10px] border ${triggerType === t.value ? "bg-muted border-border text-muted-foreground" : "border-[var(--border)] text-muted-foreground hover:border-border"}`}
             >
               {t.label}
             </button>
@@ -519,13 +519,13 @@ function IdeaInbox({ ideas, userId, onChange, onPromote }: {
           value={text} onChange={e => setText(e.target.value)}
           placeholder="What triggered this? Raw idea, hook, angle…"
           rows={2}
-          className="w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-xs resize-none focus:outline-none focus:border-blue-500/40"
+          className="w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-xs resize-none focus:outline-none focus:border-border"
         />
         <textarea
           value={explanation} onChange={e => setExplanation(e.target.value)}
           placeholder="How I'd explain it to a friend (voice memo in text)…"
           rows={2}
-          className="w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-xs resize-none focus:outline-none focus:border-blue-500/40"
+          className="w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-xs resize-none focus:outline-none focus:border-border"
         />
         <div className="flex gap-2">
           <select value={funnelGuess} onChange={e => setFunnelGuess(e.target.value)} className="h-7 px-1.5 rounded-sm border border-[var(--border)] bg-[var(--background)] text-[10px]">
@@ -535,9 +535,9 @@ function IdeaInbox({ ideas, userId, onChange, onPromote }: {
           </select>
           <input
             value={link} onChange={e => setLink(e.target.value)} placeholder="Optional link"
-            className="flex-1 h-7 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-blue-500/40"
+            className="flex-1 h-7 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border"
           />
-          <button onClick={add} disabled={saving || !text.trim()} className="h-7 px-3 rounded-sm bg-blue-500 hover:bg-blue-400 text-blue-950 text-xs font-medium disabled:opacity-40">
+          <button onClick={add} disabled={saving || !text.trim()} className="h-7 px-3 rounded-sm bg-muted hover:bg-muted text-muted-foreground text-xs font-medium disabled:opacity-40">
             <Plus className="h-3 w-3 inline" /> Add
           </button>
         </div>
@@ -545,9 +545,9 @@ function IdeaInbox({ ideas, userId, onChange, onPromote }: {
 
       {/* Filter chips */}
       <div className="p-2 border-b border-[var(--border)] flex flex-wrap gap-1">
-        <button onClick={() => setFilter("all")} className={`h-6 px-2 rounded-sm text-[10px] border ${filter === "all" ? "bg-blue-500/15 border-blue-500/50 text-blue-200" : "border-[var(--border)] text-muted-foreground"}`}>All</button>
+        <button onClick={() => setFilter("all")} className={`h-6 px-2 rounded-sm text-[10px] border ${filter === "all" ? "bg-muted border-border text-muted-foreground" : "border-[var(--border)] text-muted-foreground"}`}>All</button>
         {TRIGGERS.map(t => (
-          <button key={t.value} onClick={() => setFilter(t.value)} className={`h-6 px-2 rounded-sm text-[10px] border ${filter === t.value ? "bg-blue-500/15 border-blue-500/50 text-blue-200" : "border-[var(--border)] text-muted-foreground"}`}>{t.label}</button>
+          <button key={t.value} onClick={() => setFilter(t.value)} className={`h-6 px-2 rounded-sm text-[10px] border ${filter === t.value ? "bg-muted border-border text-muted-foreground" : "border-[var(--border)] text-muted-foreground"}`}>{t.label}</button>
         ))}
         <button onClick={() => setFilter("archived")} className={`h-6 px-2 rounded-sm text-[10px] border ${filter === "archived" ? "bg-neutral-500/15 border-neutral-500/50 text-neutral-200" : "border-[var(--border)] text-muted-foreground"}`}>Archived</button>
       </div>
@@ -559,8 +559,8 @@ function IdeaInbox({ ideas, userId, onChange, onPromote }: {
           return (
             <div key={i.id} className={`p-2.5 group ${i.promoted_item_id || i.harvested ? "opacity-60" : ""}`}>
               <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                {trig && <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm border border-blue-500/30 text-blue-300">{trig.label}</span>}
-                {i.funnel_guess && <span className={`text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm border ${i.funnel_guess === "tof" ? "border-blue-500/30 text-blue-300" : "border-green-500/30 text-green-300"}`}>{i.funnel_guess}</span>}
+                {trig && <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm border border-border text-muted-foreground">{trig.label}</span>}
+                {i.funnel_guess && <span className={`text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm border ${i.funnel_guess === "tof" ? "border-border text-muted-foreground" : "border-success/25 text-success-fg"}`}>{i.funnel_guess}</span>}
                 {i.harvested && <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm border border-neutral-500/30 text-neutral-400">Archived</span>}
               </div>
               <p className="text-xs leading-relaxed whitespace-pre-wrap break-words">{i.text}</p>
@@ -568,22 +568,22 @@ function IdeaInbox({ ideas, userId, onChange, onPromote }: {
                 <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground italic whitespace-pre-wrap break-words">{i.explanation}</p>
               )}
               {i.link && (
-                <a href={i.link} target="_blank" rel="noreferrer" className="mt-1 text-[10px] text-blue-400 hover:text-blue-300 inline-flex items-center gap-1 truncate max-w-full">
+                <a href={i.link} target="_blank" rel="noreferrer" className="mt-1 text-[10px] text-muted-foreground hover:text-muted-foreground inline-flex items-center gap-1 truncate max-w-full">
                   <ExternalLink className="h-2.5 w-2.5" /> {i.link}
                 </a>
               )}
               <div className="mt-1.5 flex items-center gap-2 text-[10px] text-muted-foreground">
                 {i.promoted_item_id ? (
-                  <span className="text-blue-400">→ promoted</span>
+                  <span className="text-muted-foreground">→ promoted</span>
                 ) : i.harvested ? (
                   <span className="text-neutral-500">archived</span>
                 ) : (
-                  <button onClick={() => onPromote(i)} className="text-blue-400 hover:text-blue-300 inline-flex items-center gap-0.5">
+                  <button onClick={() => onPromote(i)} className="text-muted-foreground hover:text-muted-foreground inline-flex items-center gap-0.5">
                     Harvest → content <ArrowRight className="h-2.5 w-2.5" />
                   </button>
                 )}
                 <span className="ml-auto">{format(parseISO(i.created_at), "MMM d")}</span>
-                <button onClick={() => del(i.id)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-400">
+                <button onClick={() => del(i.id)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-danger-fg">
                   <Trash2 className="h-3 w-3" />
                 </button>
               </div>
@@ -594,7 +594,7 @@ function IdeaInbox({ ideas, userId, onChange, onPromote }: {
 
       {showReset && (
         <div className="fixed inset-0 z-50 bg-black/70 grid place-items-center p-4" onClick={() => setShowReset(false)}>
-          <div className="w-full max-w-md bg-[var(--card)] border border-blue-500/30 rounded-sm" onClick={e => e.stopPropagation()}>
+          <div className="w-full max-w-md bg-[var(--card)] border border-border rounded-sm" onClick={e => e.stopPropagation()}>
             <div className="p-4 border-b border-[var(--border)]">
               <div className="text-sm font-semibold">Monthly reset</div>
               <div className="text-[11px] text-muted-foreground mt-1">
@@ -604,13 +604,13 @@ function IdeaInbox({ ideas, userId, onChange, onPromote }: {
             </div>
             <div className="p-4 text-xs">
               <div className="border border-[var(--border)] bg-[var(--background)] rounded-sm p-2.5">
-                <span className="text-2xl font-bold text-blue-300">{ideas.filter(i => !i.promoted_item_id && !i.harvested).length}</span>
+                <span className="text-2xl font-bold text-muted-foreground">{ideas.filter(i => !i.promoted_item_id && !i.harvested).length}</span>
                 <span className="text-muted-foreground text-[11px]"> ideas will be archived</span>
               </div>
             </div>
             <div className="p-3 border-t border-[var(--border)] flex justify-end gap-2">
               <button onClick={() => setShowReset(false)} className="h-8 px-3 rounded-sm border border-[var(--border)] text-xs">Cancel</button>
-              <button onClick={monthlyReset} className="h-8 px-3 rounded-sm bg-blue-500 hover:bg-blue-400 text-blue-950 text-xs font-medium">Archive</button>
+              <button onClick={monthlyReset} className="h-8 px-3 rounded-sm bg-muted hover:bg-muted text-muted-foreground text-xs font-medium">Archive</button>
             </div>
           </div>
         </div>
@@ -700,35 +700,35 @@ function ItemDialog({ initial, userId, onClose, onSaved, promotingIdea: pIdea }:
         <div className="p-4 border-b border-[var(--border)] flex items-center justify-between">
           <div>
             <div className="text-sm font-semibold">{isNew ? "New content" : "Edit content"}</div>
-            {pIdea && <div className="text-[10px] text-blue-400">Promoting from idea inbox</div>}
+            {pIdea && <div className="text-[10px] text-muted-foreground">Promoting from idea inbox</div>}
           </div>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
         </div>
         <div className="p-4 space-y-3">
           <Field label="Title (short label — for the record)">
-            <input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g., How I hire closers" className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-sm outline-none focus:border-blue-500/40" />
+            <input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g., How I hire closers" className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-sm outline-none focus:border-border" />
           </Field>
           <Field label="Hook / opening line *">
-            <textarea value={hook} onChange={e => setHook(e.target.value)} rows={2} className="w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-sm resize-none focus:outline-none focus:border-blue-500/40" placeholder="First 3 seconds. Pattern break, promise, identity claim…" />
+            <textarea value={hook} onChange={e => setHook(e.target.value)} rows={2} className="w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-sm resize-none focus:outline-none focus:border-border" placeholder="First 3 seconds. Pattern break, promise, identity claim…" />
           </Field>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <Field label="Status">
-              <select value={status} onChange={e => setStatus(e.target.value as Status)} className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-blue-500/40">
+              <select value={status} onChange={e => setStatus(e.target.value as Status)} className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border">
                 {STATUSES.filter(s => s.value !== "filmed").map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
               </select>
             </Field>
             <Field label="Scheduled date">
-              <input type="date" value={scheduled} onChange={e => setScheduled(e.target.value)} className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-blue-500/40" />
+              <input type="date" value={scheduled} onChange={e => setScheduled(e.target.value)} className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border" />
             </Field>
             <Field label="Format / creative type">
-              <select value={format} onChange={e => setFormat(e.target.value)} className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-blue-500/40">
+              <select value={format} onChange={e => setFormat(e.target.value)} className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border">
                 <option value="">—</option>
                 {CREATIVE_TYPES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </Field>
             <Field label="Duration (sec)">
-              <input type="number" min={0} value={duration} onChange={e => setDuration(e.target.value)} placeholder="e.g., 45" className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-blue-500/40" />
+              <input type="number" min={0} value={duration} onChange={e => setDuration(e.target.value)} placeholder="e.g., 45" className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border" />
             </Field>
           </div>
 
@@ -741,7 +741,7 @@ function ItemDialog({ initial, userId, onClose, onSaved, promotingIdea: pIdea }:
                     type="button"
                     key={p.value}
                     onClick={() => togglePlatform(p.value)}
-                    className={`h-7 px-2.5 rounded-sm text-[11px] border transition ${on ? "bg-blue-500/15 border-blue-500/50 text-blue-200" : "bg-[var(--background)] border-[var(--border)] text-muted-foreground hover:border-blue-500/30"}`}
+                    className={`h-7 px-2.5 rounded-sm text-[11px] border transition ${on ? "bg-muted border-border text-muted-foreground" : "bg-[var(--background)] border-[var(--border)] text-muted-foreground hover:border-border"}`}
                   >
                     {p.label}
                   </button>
@@ -751,24 +751,24 @@ function ItemDialog({ initial, userId, onClose, onSaved, promotingIdea: pIdea }:
           </Field>
 
           <Field label="Script (markdown supported)">
-            <textarea value={script} onChange={e => setScript(e.target.value)} rows={10} className="w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-sm resize-y focus:outline-none focus:border-blue-500/40" placeholder={"Write the reel here.\n\n- Hook line\n- Body / points\n- CTA / close"} />
+            <textarea value={script} onChange={e => setScript(e.target.value)} rows={10} className="w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-sm resize-y focus:outline-none focus:border-border" placeholder={"Write the reel here.\n\n- Hook line\n- Body / points\n- CTA / close"} />
           </Field>
 
           <div className="grid grid-cols-2 gap-2">
             <Field label="Raw video URL">
-              <input value={rawVideo} onChange={e => setRawVideo(e.target.value)} placeholder="Drive / Frame.io link" className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-blue-500/40" />
+              <input value={rawVideo} onChange={e => setRawVideo(e.target.value)} placeholder="Drive / Frame.io link" className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border" />
             </Field>
             <Field label="Edited reel URL">
-              <input value={editedReel} onChange={e => setEditedReel(e.target.value)} placeholder="Editor delivery link" className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-blue-500/40" />
+              <input value={editedReel} onChange={e => setEditedReel(e.target.value)} placeholder="Editor delivery link" className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border" />
             </Field>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
             <Field label="Source (where the idea came from)">
-              <input value={source} onChange={e => setSource(e.target.value)} placeholder="e.g., client call, Notion note, viral reel" className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-blue-500/40" />
+              <input value={source} onChange={e => setSource(e.target.value)} placeholder="e.g., client call, Notion note, viral reel" className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border" />
             </Field>
             <Field label="Primary platform (for icon color)">
-              <select value={platform} onChange={e => setPlatform(e.target.value as Platform)} className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-blue-500/40">
+              <select value={platform} onChange={e => setPlatform(e.target.value as Platform)} className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border">
                 {PLATFORMS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
               </select>
             </Field>
@@ -776,10 +776,10 @@ function ItemDialog({ initial, userId, onClose, onSaved, promotingIdea: pIdea }:
 
           <div className="grid grid-cols-2 gap-2">
             <Field label="Link when posted">
-              <input value={link} onChange={e => setLink(e.target.value)} placeholder="https://…" className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-blue-500/40" />
+              <input value={link} onChange={e => setLink(e.target.value)} placeholder="https://…" className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border" />
             </Field>
             <Field label="Tags (comma separated)">
-              <input value={tagsStr} onChange={e => setTagsStr(e.target.value)} className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-blue-500/40" />
+              <input value={tagsStr} onChange={e => setTagsStr(e.target.value)} className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border" />
             </Field>
           </div>
 
@@ -791,14 +791,14 @@ function ItemDialog({ initial, userId, onClose, onSaved, promotingIdea: pIdea }:
         <div className="p-4 border-t border-[var(--border)] flex items-center justify-between">
           <div>
             {!isNew && (
-              <button onClick={del} className="h-8 px-3 rounded-sm border border-red-500/30 text-red-400 hover:bg-red-500/10 text-xs">
+              <button onClick={del} className="h-8 px-3 rounded-sm border border-danger/25 text-danger-fg hover:bg-danger-bg text-xs">
                 <Trash2 className="h-3 w-3 inline mr-1" /> Delete
               </button>
             )}
           </div>
           <div className="flex gap-2">
             <button onClick={onClose} className="h-8 px-3 rounded-sm border border-[var(--border)] text-xs">Cancel</button>
-            <button onClick={save} disabled={busy || !hook.trim()} className="h-8 px-3 rounded-sm bg-blue-500 hover:bg-blue-400 text-blue-950 text-xs font-medium disabled:opacity-40">
+            <button onClick={save} disabled={busy || !hook.trim()} className="h-8 px-3 rounded-sm bg-muted hover:bg-muted text-muted-foreground text-xs font-medium disabled:opacity-40">
               {busy ? "Saving…" : (isNew ? "Create" : "Save")}
             </button>
           </div>

@@ -65,19 +65,19 @@ const DEFAULT_SETTINGS: DashboardSettings = {
     { label: "Viral Reels (100K+)", current: 0, target: 3 },
   ],
   pillars: [
-    { name: "Identity",      pct: 20, color: "#3b82f6" },
-    { name: "Psychology",    pct: 20, color: "#8b5cf6" },
+    { name: "Identity",      pct: 20, color: "var(--chart-1)" },
+    { name: "Psychology",    pct: 20, color: "var(--chart-4)" },
     { name: "Philosophy",    pct: 20, color: "#10b981" },
-    { name: "Manifestation", pct: 20, color: "#ef4444" },
-    { name: "Other",         pct: 20, color: "#f59e0b" },
+    { name: "Manifestation", pct: 20, color: "var(--chart-5)" },
+    { name: "Other",         pct: 20, color: "var(--chart-3)" },
   ],
   audience: [],
   formats: [],
 };
 
 const PILLAR_COLORS: Record<string, string> = {
-  Identity: "#10b981", Psychology: "#ef4444", Philosophy: "#a78bfa",
-  Manifestation: "#f59e0b", Subconscious: "#3b82f6", Other: "#f59e0b",
+  Identity: "#10b981", Psychology: "var(--chart-5)", Philosophy: "#a78bfa",
+  Manifestation: "var(--chart-3)", Subconscious: "var(--chart-1)", Other: "var(--chart-3)",
 };
 
 const fmt = (n: number) => {
@@ -161,7 +161,7 @@ export function InstagramInner() {
       {/* Header */}
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary/40 to-primary/10 flex items-center justify-center text-[18px] font-bold text-foreground shrink-0">
+          <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-[18px] font-bold text-foreground shrink-0">
             {(connection?.display_name ?? "?").slice(0, 1)}
           </div>
           <div>
@@ -210,13 +210,13 @@ export function InstagramInner() {
       </header>
 
       {empty && (
-        <div className="border border-green-500/30 bg-green-500/5 rounded-md p-6 text-center">
-          <Instagram className="h-8 w-8 mx-auto text-green-400 mb-2" />
+        <div className="border border-success/25 bg-success-bg rounded-md p-6 text-center">
+          <Instagram className="h-8 w-8 mx-auto text-success-fg mb-2" />
           <div className="text-sm font-semibold mb-1">No snapshots yet</div>
           <p className="text-xs text-muted-foreground mb-3">Log the first month to populate this dashboard. Numbers come from your IG insights.</p>
           <button
             onClick={() => setLogOpen(true)}
-            className="inline-flex items-center gap-1.5 h-8 px-4 rounded-md bg-green-500 hover:bg-green-400 text-green-950 text-xs font-medium"
+            className="inline-flex items-center gap-1.5 h-8 px-4 rounded-md bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium"
           >
             <Plus className="h-3.5 w-3.5" /> Log this month
           </button>
@@ -244,8 +244,8 @@ export function InstagramInner() {
               <PanelHeader title="Growth Trend" subtitle={`Last ${growthPoints.length} month${growthPoints.length === 1 ? "" : "s"}`}>
                 <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
                   <LegendDot color="#10b981" label="Followers" />
-                  <LegendDot color="#3b82f6" label="Views" />
-                  <LegendDot color="#f59e0b" label="Reach" />
+                  <LegendDot color="var(--chart-1)" label="Views" />
+                  <LegendDot color="var(--chart-3)" label="Reach" />
                 </div>
               </PanelHeader>
               {growthPoints.length >= 2 ? (
@@ -335,7 +335,7 @@ function StatCard({ icon, label, value, delta }: { icon: React.ReactNode; label:
       </div>
       <div className="text-lg font-semibold tabular-nums text-foreground">{value}</div>
       {delta != null && delta !== 0 && (
-        <div className={`text-[11px] flex items-center gap-0.5 mt-0.5 ${up ? "text-green-400" : "text-red-400"}`}>
+        <div className={`text-[11px] flex items-center gap-0.5 mt-0.5 ${up ? "text-success-fg" : "text-danger-fg"}`}>
           {up ? <TrendingUp className="h-2.5 w-2.5" /> : <TrendingDown className="h-2.5 w-2.5" />}
           {up ? "+" : ""}{fmt(delta)}
         </div>
@@ -383,13 +383,13 @@ function GrowthChart({ points }: { points: Snapshot[] }) {
           </text>
         </g>
       ))}
-      <path d={path("views")}    fill="none" stroke="#3b82f6" strokeWidth="2" />
-      <path d={path("reach")}    fill="none" stroke="#f59e0b" strokeWidth="2" />
+      <path d={path("views")}    fill="none" stroke="var(--chart-1)" strokeWidth="2" />
+      <path d={path("reach")}    fill="none" stroke="var(--chart-3)" strokeWidth="2" />
       <path d={path("followers")} fill="none" stroke="#10b981" strokeWidth="2" />
       {points.map((p, i) => (
         <g key={i}>
-          <circle cx={x(i)} cy={y(p.views)}     r="3" fill="#3b82f6" />
-          <circle cx={x(i)} cy={y(p.reach)}     r="3" fill="#f59e0b" />
+          <circle cx={x(i)} cy={y(p.views)}     r="3" fill="var(--chart-1)" />
+          <circle cx={x(i)} cy={y(p.reach)}     r="3" fill="var(--chart-3)" />
           <circle cx={x(i)} cy={y(p.followers)} r="3" fill="#10b981" />
           <text x={x(i)} y={h - 6} textAnchor="middle" style={{ fill: "var(--color-muted-foreground)" }} fontSize="10">{format(parseISO(p.month), "MMM")}</text>
         </g>
@@ -455,12 +455,12 @@ function GoalBar({ goal }: { goal: GoalRow }) {
       <div className="flex items-center justify-between mb-1 text-xs">
         <div className="flex items-center gap-1.5">
           <span className="text-foreground">{goal.label}</span>
-          {done ? <CheckCircle2 className="h-3 w-3 text-green-400" /> : risky ? <AlertTriangle className="h-3 w-3 text-amber-400" /> : <CheckCircle2 className="h-3 w-3 text-muted-foreground/60" />}
+          {done ? <CheckCircle2 className="h-3 w-3 text-success-fg" /> : risky ? <AlertTriangle className="h-3 w-3 text-warning-fg" /> : <CheckCircle2 className="h-3 w-3 text-muted-foreground/60" />}
         </div>
         <div className="text-[11px] text-muted-foreground"><span className="text-foreground">{disp(goal.current)}</span> / {disp(goal.target)}</div>
       </div>
       <div className="h-1.5 rounded-full bg-[var(--background)] overflow-hidden">
-        <div className={`h-full rounded-full ${done ? "bg-green-500" : risky ? "bg-amber-500" : "bg-green-400"}`} style={{ width: `${pct}%` }} />
+        <div className={`h-full rounded-full ${done ? "bg-success" : risky ? "bg-warning" : "bg-success"}`} style={{ width: `${pct}%` }} />
       </div>
     </div>
   );
@@ -610,7 +610,7 @@ function LogMonthDialog({ userId, month, existing, existingReels, onClose, onSav
           <div>
             <div className="flex items-center justify-between mb-2">
               <div className="text-xs font-semibold">Top reels this month</div>
-              <button onClick={addReel} className="h-7 px-2 rounded-sm border border-[var(--border)] hover:border-green-500/40 text-[11px] inline-flex items-center gap-1">
+              <button onClick={addReel} className="h-7 px-2 rounded-sm border border-[var(--border)] hover:border-success/25 text-[11px] inline-flex items-center gap-1">
                 <Plus className="h-3 w-3" /> Add reel
               </button>
             </div>
@@ -619,12 +619,12 @@ function LogMonthDialog({ userId, month, existing, existingReels, onClose, onSav
               {reels.map((r, i) => (
                 <div key={i} className="border border-[var(--border)] bg-[var(--background)] rounded-sm p-2 space-y-1.5">
                   <div className="flex gap-1.5">
-                    <input value={r.topic ?? ""} onChange={e => updReel(i, { topic: e.target.value })} placeholder="Topic / hook" className="flex-1 h-7 px-2 rounded-sm border border-[var(--border)] bg-[var(--card)] text-xs outline-none focus:border-green-500/40" />
+                    <input value={r.topic ?? ""} onChange={e => updReel(i, { topic: e.target.value })} placeholder="Topic / hook" className="flex-1 h-7 px-2 rounded-sm border border-[var(--border)] bg-[var(--card)] text-xs outline-none focus:border-ring" />
                     <select value={r.pillar ?? ""} onChange={e => updReel(i, { pillar: e.target.value || null })} className="h-7 px-1.5 rounded-sm border border-[var(--border)] bg-[var(--card)] text-[11px]">
                       <option value="">Pillar…</option>
                       {Object.keys(PILLAR_COLORS).map(p => <option key={p} value={p}>{p}</option>)}
                     </select>
-                    <button onClick={() => rmReel(i)} className="h-7 w-7 grid place-items-center rounded-sm border border-[var(--border)] text-muted-foreground hover:text-red-400 hover:border-red-500/40">
+                    <button onClick={() => rmReel(i)} className="h-7 w-7 grid place-items-center rounded-sm border border-[var(--border)] text-muted-foreground hover:text-danger-fg hover:border-danger/25">
                       <Trash2 className="h-3 w-3" />
                     </button>
                   </div>
@@ -669,7 +669,7 @@ function FieldNum({ label, value, onChange, compact, type, raw }: {
           const v = raw ? e.target.value : (e.target.value === "" ? 0 : Number(e.target.value));
           onChange(v as never);
         }}
-        className={`w-full ${compact ? "h-7 text-[11px]" : "h-8 text-xs"} px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] outline-none focus:border-green-500/40`}
+        className={`w-full ${compact ? "h-7 text-[11px]" : "h-8 text-xs"} px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] outline-none focus:border-ring`}
       />
     </div>
   );
@@ -780,7 +780,7 @@ function TextField({ label, value, onChange, placeholder }: { label: string; val
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full h-9 bg-[var(--background)] border border-[var(--border)] rounded-sm px-2 text-sm focus:outline-none focus:border-green-500/40"
+        className="w-full h-9 bg-[var(--background)] border border-[var(--border)] rounded-sm px-2 text-sm focus:outline-none focus:border-ring"
       />
     </div>
   );

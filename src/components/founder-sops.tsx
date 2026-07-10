@@ -127,7 +127,7 @@ export function FounderSops() {
           <button
             onClick={createDoc}
             disabled={creating}
-            className="h-6 w-6 grid place-items-center rounded-sm border border-[var(--border)] hover:border-blue-500/40"
+            className="h-6 w-6 grid place-items-center rounded-sm border border-[var(--border)] hover:border-border"
             title="New SOP"
           >
             {creating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
@@ -139,7 +139,7 @@ export function FounderSops() {
           </div>
         ) : docs.length === 0 ? (
           <div className="p-4 text-xs text-muted-foreground">
-            No SOPs yet. Click <span className="text-blue-400">+</span> to create one.
+            No SOPs yet. Click <span className="text-muted-foreground">+</span> to create one.
           </div>
         ) : (
           <ul className="divide-y divide-[var(--accent)]">
@@ -150,13 +150,13 @@ export function FounderSops() {
                 <li key={d.id}>
                   <button
                     onClick={() => { setSelectedId(d.id); setMode("view"); }}
-                    className={`w-full text-left px-3 py-2 hover:bg-[var(--muted)] ${active ? "bg-blue-500/5 border-l-2 border-blue-500" : ""}`}
+                    className={`w-full text-left px-3 py-2 hover:bg-[var(--muted)] ${active ? "bg-muted border-l-2 border-border" : ""}`}
                   >
                     <div className="text-xs font-medium line-clamp-2">{d.title}</div>
                     <div className="flex items-center gap-1 mt-1 text-[10px] text-muted-foreground">
                       <CalendarClock className="h-2.5 w-2.5" />
-                      <span className={rev.stale ? "text-amber-400" : ""}>{rev.label}</span>
-                      {rev.stale && <span className="text-amber-400">· stale</span>}
+                      <span className={rev.stale ? "text-warning-fg" : ""}>{rev.label}</span>
+                      {rev.stale && <span className="text-warning-fg">· stale</span>}
                     </div>
                   </button>
                 </li>
@@ -183,13 +183,13 @@ export function FounderSops() {
               <div className="flex gap-2">
                 <button
                   onClick={markReviewed}
-                  className="h-8 px-3 rounded-sm border border-[var(--border)] hover:border-green-500/40 text-xs text-green-300"
+                  className="h-8 px-3 rounded-sm border border-[var(--border)] hover:border-success/25 text-xs text-success-fg"
                 >
                   Mark reviewed
                 </button>
                 <button
                   onClick={startEdit}
-                  className="h-8 px-3 rounded-sm bg-blue-500 hover:bg-blue-400 text-blue-950 text-xs font-medium inline-flex items-center gap-1"
+                  className="h-8 px-3 rounded-sm bg-muted hover:bg-muted text-muted-foreground text-xs font-medium inline-flex items-center gap-1"
                 >
                   <Pencil className="h-3 w-3" /> Edit
                 </button>
@@ -199,8 +199,8 @@ export function FounderSops() {
               {selected.content?.trim() ? (
                 <MarkdownView content={selected.content} />
               ) : (
-                <div className="rounded-sm border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-200">
-                  <strong className="font-semibold">Content missing</strong> — the original body did not survive migration. Click <span className="text-blue-300">Edit</span> to paste it in.
+                <div className="rounded-sm border border-warning/25 bg-warning-bg px-4 py-3 text-sm text-warning-fg">
+                  <strong className="font-semibold">Content missing</strong> — the original body did not survive migration. Click <span className="text-muted-foreground">Edit</span> to paste it in.
                 </div>
               )}
             </div>
@@ -216,14 +216,14 @@ export function FounderSops() {
               <div className="flex gap-2">
                 <button
                   onClick={cancelEdit}
-                  className="h-8 px-3 rounded-sm border border-[var(--border)] hover:border-red-500/40 text-xs inline-flex items-center gap-1"
+                  className="h-8 px-3 rounded-sm border border-[var(--border)] hover:border-danger/25 text-xs inline-flex items-center gap-1"
                 >
                   <X className="h-3 w-3" /> Cancel
                 </button>
                 <button
                   onClick={save}
                   disabled={saving}
-                  className="h-8 px-3 rounded-sm bg-green-500 hover:bg-green-400 text-green-950 text-xs font-medium inline-flex items-center gap-1 disabled:opacity-50"
+                  className="h-8 px-3 rounded-sm bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium inline-flex items-center gap-1 disabled:opacity-50"
                 >
                   {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />} Save
                 </button>

@@ -116,11 +116,11 @@ export function FounderHQInner() {
               <div className="mt-3 space-y-1">
                 <div className="flex justify-between text-xs">
                   <span>Goal: {money(monthlyGoal)}</span>
-                  <span className={goalPct! >= 100 ? "text-green-400" : "text-muted-foreground"}>{goalPct}%</span>
+                  <span className={goalPct! >= 100 ? "text-success-fg" : "text-muted-foreground"}>{goalPct}%</span>
                 </div>
                 <div className="h-2 rounded-full bg-muted overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all ${goalPct! >= 100 ? "bg-green-500" : goalPct! >= 60 ? "bg-amber-400" : "bg-red-500"}`}
+                    className={`h-full rounded-full transition-all ${goalPct! >= 100 ? "bg-success" : goalPct! >= 60 ? "bg-warning" : "bg-danger"}`}
                     style={{ width: `${Math.min(100, goalPct!)}%` }}
                   />
                 </div>
@@ -140,13 +140,13 @@ export function FounderHQInner() {
               <FunnelStat label="Sets" value={weekSets} />
               <FunnelStat label="Shows" value={weekShows} />
               <FunnelStat label="Closes" value={weekCloses} />
-              <FunnelStat label="Show %" value={showRate} suffix="%" color={showRate >= 70 ? "text-green-400" : showRate >= 50 ? "text-amber-400" : "text-red-400"} />
+              <FunnelStat label="Show %" value={showRate} suffix="%" color={showRate >= 70 ? "text-success-fg" : showRate >= 50 ? "text-warning-fg" : "text-danger-fg"} />
             </div>
             <div className="mt-3 flex items-center gap-3 text-[13px]">
               <span className="text-muted-foreground">Show rate:</span>
-              <span className={showRate >= 70 ? "text-green-400 font-semibold" : showRate >= 50 ? "text-amber-400 font-semibold" : "text-red-400 font-semibold"}>{showRate}%</span>
+              <span className={showRate >= 70 ? "text-success-fg font-semibold" : showRate >= 50 ? "text-warning-fg font-semibold" : "text-danger-fg font-semibold"}>{showRate}%</span>
               <span className="text-muted-foreground">Close rate:</span>
-              <span className={closeRate >= 30 ? "text-green-400 font-semibold" : closeRate >= 15 ? "text-amber-400 font-semibold" : "text-red-400 font-semibold"}>{closeRate}%</span>
+              <span className={closeRate >= 30 ? "text-success-fg font-semibold" : closeRate >= 15 ? "text-warning-fg font-semibold" : "text-danger-fg font-semibold"}>{closeRate}%</span>
             </div>
           </Quadrant>
 
@@ -157,9 +157,9 @@ export function FounderHQInner() {
             ) : (
               <div className="grid grid-cols-4 gap-2 mt-1">
                 <FunnelStat label="Total" value={contentTotal} />
-                <FunnelStat label="Scripted" value={contentScripted} color={contentScripted >= contentTotal ? "text-green-400" : "text-amber-400"} />
-                <FunnelStat label="Recorded" value={contentRecorded} color={contentRecorded >= contentTotal ? "text-green-400" : "text-amber-400"} />
-                <FunnelStat label="Posted" value={contentPosted} color={contentPosted >= contentTotal ? "text-green-400" : "text-amber-400"} />
+                <FunnelStat label="Scripted" value={contentScripted} color={contentScripted >= contentTotal ? "text-success-fg" : "text-warning-fg"} />
+                <FunnelStat label="Recorded" value={contentRecorded} color={contentRecorded >= contentTotal ? "text-success-fg" : "text-warning-fg"} />
+                <FunnelStat label="Posted" value={contentPosted} color={contentPosted >= contentTotal ? "text-success-fg" : "text-warning-fg"} />
               </div>
             )}
             <div className="text-[12px] text-muted-foreground mt-2">Cycle: {cycleStartStr} → {cycleEndStr}</div>
@@ -168,14 +168,14 @@ export function FounderHQInner() {
           {/* Quadrant 4: Team compliance */}
           <Quadrant title="Team compliance" icon={<Users className="h-4 w-4 text-muted-foreground" />} to="/sales">
             <div className="flex items-baseline gap-2 mt-1">
-              <div className={`text-[28px] font-bold tabular-nums ${compliance >= 90 ? "text-green-400" : compliance >= 70 ? "text-amber-400" : "text-red-400"}`}>{compliance}%</div>
+              <div className={`text-[28px] font-bold tabular-nums ${compliance >= 90 ? "text-success-fg" : compliance >= 70 ? "text-warning-fg" : "text-danger-fg"}`}>{compliance}%</div>
               <div className="text-[13px] text-muted-foreground">EOD rate this week</div>
             </div>
             <div className="mt-3">
               <BreakdownBar
                 segments={[
-                  { label: "Filed", value: eods.length, color: "#22c55e" },
-                  { label: "Missing", value: Math.max(0, expectedEods - eods.length), color: "#ef4444" },
+                  { label: "Filed", value: eods.length, color: "var(--chart-2)" },
+                  { label: "Missing", value: Math.max(0, expectedEods - eods.length), color: "var(--chart-5)" },
                 ]}
                 total={Math.max(expectedEods, 1)}
               />
@@ -184,13 +184,13 @@ export function FounderHQInner() {
               {eods.length} / {expectedEods} expected · {setterRoster.length} setter{setterRoster.length !== 1 ? "s" : ""} on roster
             </div>
             {compliance < 90 && (
-              <div className="flex items-center gap-1.5 mt-2 text-[13px] text-amber-400">
+              <div className="flex items-center gap-1.5 mt-2 text-[13px] text-warning-fg">
                 <AlertTriangle className="h-3.5 w-3.5" />
-                <Link to="/sales" search={{ tab: "operations" }} className="underline hover:text-amber-300">Send nudges →</Link>
+                <Link to="/sales" search={{ tab: "operations" }} className="underline hover:text-warning-fg">Send nudges →</Link>
               </div>
             )}
             {compliance >= 90 && (
-              <div className="flex items-center gap-1.5 mt-2 text-xs text-green-400">
+              <div className="flex items-center gap-1.5 mt-2 text-xs text-success-fg">
                 <CheckCircle2 className="h-3.5 w-3.5" /> On track
               </div>
             )}
