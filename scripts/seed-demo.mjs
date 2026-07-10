@@ -97,10 +97,17 @@ const eodDefaults = {
 
 const eodRows = [];
 
+// Per-setter compliance rates (realistic variance)
+const setterCompliance = [0.93, 0.88, 0.97, 0.72]; // Dana is the unreliable one
+
 for (let day = 0; day < 30; day++) {
   const date = isoDay(day);
 
-  for (const setter of setters) {
+  for (let si = 0; si < setters.length; si++) {
+    const setter = setters[si];
+    // Skip this day based on setter's compliance rate
+    if (Math.random() > setterCompliance[si]) continue;
+
     if (setter.type === "phone") {
       const sets = rand(2, 5);
       const shows = rand(Math.max(0, sets - 2), sets);
@@ -139,7 +146,8 @@ for (let day = 0; day < 30; day++) {
     }
   }
 
-  if (closerId) {
+  // Closer files ~90% of days
+  if (closerId && Math.random() > 0.10) {
     const closes = rand(1, 3);
     const cashPerClose = [2500, 5000, 7500, 10000][rand(0, 3)];
     eodRows.push({
@@ -157,7 +165,8 @@ for (let day = 0; day < 30; day++) {
     });
   }
 
-  if (csmId) {
+  // CSM files ~85% of days
+  if (csmId && Math.random() > 0.15) {
     eodRows.push({
       ...eodDefaults,
       user_id: csmId,
