@@ -139,26 +139,69 @@ function RevenuePage() {
       .sort((a, b) => b.commission - a.commission);
   }, [monthDeals, setters, rates]);
 
-  // Monthly trend (last 6 months)
+  // Monthly / weekly / daily trend
+  const [trendMode, setTrendMode] = useState<"monthly" | "weekly" | "daily">("monthly");
   const trend = useMemo(() => {
     const now = new Date();
-    const months: { label: string; cash: number; booked: number; deals: number }[] = [];
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const label = d.toLocaleString("en-US", { month: "short" });
-      const inMonth = deals.filter((x) => {
-        const dd = new Date(x.deal_date + "T00:00:00");
-        return dd.getFullYear() === d.getFullYear() && dd.getMonth() === d.getMonth();
-      });
-      months.push({
-        label,
-        cash: inMonth.reduce((a, x) => a + Number(x.cash_collected_upfront), 0),
-        booked: inMonth.reduce((a, x) => a + Number(x.total_value), 0),
-        deals: inMonth.length,
-      });
+    const buckets: { label: string; cash: number; booked: number; deals: number }[] = [];
+    if (trendMode === "monthly") {
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const inRange = deals.filter((x) => {
+          const dd = new Date(x.deal_date + "T00:00:00");
+          return dd.getFullYear() === d.getFullYear() && dd.getMonth() === d.getMonth();
+        });
+        buckets.push({
+          label: d.toLocaleString("en-US", { month: "short" }),
+          cash: inRange.reduce((a, x) => a + Number(x.cash_collected_upfront), 0),
+          booked: inRange.reduce((a, x) => a + Number(x.total_value), 0),
+          deals: inRange.length,
+        });
+      }
+    } else if (trendMode === "weekly") {
+      for (let i = 7; i >= 0; i--) {
+        const anchor = new Date(now); anchor.setDate(anchor.getDate() - i * 7);
+        const start = new Date(anchor); const day = start.getDay();
+        start.setDate(start.getDate() - ((day + 6) % 7)); start.setHours(0,0,0,0);
+        const end = new Date(start); end.setDate(start.getDate() + 6); end.setHours(23,59,59,999);
+        const inRange = deals.filter((x) => {
+          const dd = new Date(x.deal_date + "T00:00:00");
+          return dd >= start && dd <= end;
+        });
+        buckets.push({
+          label: `${start.toLocaleString("en-US", { month: "short", day: "numeric" })}`,
+          cash: inRange.reduce((a, x) => a + Number(x.cash_collected_upfront), 0),
+          booked: inRange.reduce((a, x) => a + Number(x.total_value), 0),
+          deals: inRange.length,
+        });
+      }
+    } else {
+      for (let i = 29; i >= 0; i--) {
+        const d = new Date(now); d.setDate(d.getDate() - i); d.setHours(0,0,0,0);
+        const iso = d.toISOString().slice(0, 10);
+        const inRange = deals.filter((x) => x.deal_date === iso);
+        buckets.push({
+          label: d.toLocaleString("en-US", { month: "short", day: "numeric" }),
+          cash: inRange.reduce((a, x) => a + Number(x.cash_collected_upfront), 0),
+          booked: inRange.reduce((a, x) => a + Number(x.total_value), 0),
+          deals: inRange.length,
+        });
+      }
     }
-    return months;
-  }, [deals]);
+    return buckets;
+  }, [deals, trendMode]);
+
+  // Commission milestone bonuses (team cash MTD)
+  const milestones = useMemo(() => {
+    const tiers = [
+      { threshold: 10_000, bonus: 500 },
+      { threshold: 25_000, bonus: 1_500 },
+      { threshold: 50_000, bonus: 4_000 },
+      { threshold: 100_000, bonus: 10_000 },
+    ];
+    const cash = stats.cash;
+    return tiers.map((t) => ({ ...t, hit: cash >= t.threshold, progress: Math.min(1, cash / t.threshold) }));
+  }, [stats.cash]);
 
   const deleteDeal = async (id: string) => {
     if (!confirm("Delete this deal? This does NOT delete the linked student.")) return;
