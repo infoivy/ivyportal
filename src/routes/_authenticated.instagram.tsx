@@ -165,19 +165,21 @@ function IgPage() {
       {/* Header */}
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center text-lg font-bold text-green-950">
+          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary/40 to-primary/10 flex items-center justify-center text-[18px] font-bold text-foreground shrink-0">
             {(connection?.display_name ?? "?").slice(0, 1)}
           </div>
           <div>
-            <div className="text-lg font-semibold leading-tight">{connection?.display_name || "Instagram Analytics"}</div>
-            <div className="text-xs text-muted-foreground">{connection?.subtitle || "Log a month to start tracking"}</div>
+            <h1 className="text-[32px] font-bold tracking-[-0.02em] text-foreground leading-none">
+              {connection?.display_name || "Instagram"}
+            </h1>
+            <div className="text-[13px] text-muted-foreground mt-0.5">{connection?.subtitle || "Log a month to start tracking"}</div>
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <select
             value={selectedMonth}
             onChange={e => setSelectedMonth(e.target.value)}
-            className="h-9 px-3 rounded-md border border-[var(--border)] bg-[var(--card)] text-xs"
+            className="h-9 px-3 rounded-lg border border-[var(--border)] bg-card text-[13px]"
           >
             {snapshots.length === 0 && <option value={selectedMonth}>{monthLabel}</option>}
             {snapshots.map(s => (
@@ -185,26 +187,26 @@ function IgPage() {
             ))}
           </select>
           {selected && (
-            <div className="inline-flex items-center gap-1.5 h-9 px-2.5 rounded-md border border-[var(--border)] bg-[var(--card)] text-[10px] text-muted-foreground" title={`Last updated ${format(parseISO(selected.updated_at), "MMM d, yyyy")}`}>
+            <div className="inline-flex items-center gap-1.5 h-9 px-2.5 rounded-lg border border-[var(--border)] bg-card text-[12px] text-muted-foreground" title={`Last updated ${format(parseISO(selected.updated_at), "MMM d, yyyy")}`}>
               <Clock className="h-3 w-3" /> {format(parseISO(selected.updated_at), "MMM d")}
             </div>
           )}
           <button
             onClick={() => setLogOpen(true)}
-            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-green-500 hover:bg-green-400 text-green-950 text-xs font-medium"
+            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground text-[13px] font-medium motion-safe:transition-colors"
           >
             <Plus className="h-3.5 w-3.5" /> {selected ? "Update month" : "Log this month"}
           </button>
           <button
             onClick={() => setConnectOpen(true)}
-            className="inline-flex items-center gap-2 h-9 px-3 rounded-md border border-[var(--border)] bg-[var(--card)] hover:border-blue-500/40 text-xs"
+            className="inline-flex items-center gap-2 h-9 px-3 rounded-lg border border-[var(--border)] bg-card hover:bg-muted text-[13px] motion-safe:transition-colors"
           >
-            <Instagram className="h-3.5 w-3.5 text-blue-400" />
+            <Instagram className="h-3.5 w-3.5 text-muted-foreground" />
             {connection?.username ? `@${connection.username}` : "Profile"}
           </button>
           <button
             onClick={() => setSettingsOpen(true)}
-            className="inline-flex items-center justify-center h-9 w-9 rounded-md border border-[var(--border)] bg-[var(--card)] hover:border-green-500/40"
+            className="inline-flex items-center justify-center h-9 w-9 rounded-lg border border-[var(--border)] bg-card hover:bg-muted motion-safe:transition-colors"
           >
             <Settings className="h-3.5 w-3.5" />
           </button>
@@ -259,8 +261,8 @@ function IgPage() {
 
             <Panel>
               <div className="flex items-center gap-2 mb-3">
-                <Target className="h-4 w-4 text-green-400" />
-                <div className="text-sm font-semibold">Goals</div>
+                <Target className="h-4 w-4 text-primary" />
+                <div className="text-[15px] font-semibold">Goals</div>
               </div>
               <div className="space-y-3">
                 {settings.goals.map((g, i) => <GoalBar key={i} goal={g} />)}
@@ -282,7 +284,7 @@ function IgPage() {
             </Panel>
 
             <Panel>
-              <div className="text-sm font-semibold mb-3">Content Pillars</div>
+              <div className="text-[15px] font-semibold mb-3">Content Pillars</div>
               <PillarsDonut pillars={settings.pillars} />
             </Panel>
           </div>
@@ -290,8 +292,8 @@ function IgPage() {
           {settings.audience.length > 0 && (
             <Panel>
               <div className="flex items-center gap-2 mb-3">
-                <Globe className="h-4 w-4 text-sky-400" />
-                <div className="text-sm font-semibold">Audience</div>
+                <Globe className="h-4 w-4 text-muted-foreground" />
+                <div className="text-[15px] font-semibold">Audience</div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
                 {settings.audience.map((a, i) => <AudienceCard key={i} row={a} />)}
@@ -301,9 +303,9 @@ function IgPage() {
         </>
       )}
 
-      <div className="text-[10px] text-muted-foreground pt-2 flex items-center gap-1.5">
+      <div className="text-[12px] text-muted-foreground pt-2 flex items-center gap-1.5">
         <Sparkles className="h-3 w-3" />
-        <Link to="/founder" className="hover:text-foreground">← Back to Founder Hub</Link>
+        <Link to="/founder" className="hover:text-foreground motion-safe:transition-colors">← Back to Founder Hub</Link>
       </div>
 
       {connectOpen && user && (
@@ -328,19 +330,16 @@ function IgPage() {
 
 // ============= Sub-components =============
 
-function StatCard({ icon, label, value, accent, active, delta }: { icon: React.ReactNode; label: string; value: string; accent?: "blue" | "cyan"; active?: boolean; delta?: number | null }) {
-  const border = active ? "border-blue-500/50" : "border-[var(--border)]";
-  const valColor = accent === "cyan" ? "text-blue-300" : accent === "blue" ? "text-blue-400" : "text-foreground";
+function StatCard({ icon, label, value, delta }: { icon: React.ReactNode; label: string; value: string; accent?: "blue" | "cyan"; active?: boolean; delta?: number | null }) {
   const up = delta != null && delta > 0;
-  const down = delta != null && delta < 0;
   return (
-    <div className={`border ${border} bg-[var(--card)] rounded-md p-3`}>
-      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground uppercase tracking-wider mb-1">
+    <div className="card-surface p-3">
+      <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground mb-1">
         {icon}<span>{label}</span>
       </div>
-      <div className={`text-lg font-semibold ${valColor}`}>{value}</div>
+      <div className="text-lg font-semibold tabular-nums text-foreground">{value}</div>
       {delta != null && delta !== 0 && (
-        <div className={`text-[10px] flex items-center gap-0.5 mt-0.5 ${up ? "text-green-400" : "text-red-400"}`}>
+        <div className={`text-[11px] flex items-center gap-0.5 mt-0.5 ${up ? "text-green-400" : "text-red-400"}`}>
           {up ? <TrendingUp className="h-2.5 w-2.5" /> : <TrendingDown className="h-2.5 w-2.5" />}
           {up ? "+" : ""}{fmt(delta)}
         </div>
@@ -350,15 +349,15 @@ function StatCard({ icon, label, value, accent, active, delta }: { icon: React.R
 }
 
 function Panel({ children }: { children: React.ReactNode }) {
-  return <div className="border border-[var(--border)] bg-[var(--card)] rounded-md p-4">{children}</div>;
+  return <div className="card-surface p-4">{children}</div>;
 }
 
 function PanelHeader({ title, subtitle, children }: { title: string; subtitle?: string; children?: React.ReactNode }) {
   return (
     <div className="flex items-start justify-between mb-3">
       <div>
-        <div className="text-sm font-semibold">{title}</div>
-        {subtitle && <div className="text-[11px] text-muted-foreground">{subtitle}</div>}
+        <div className="text-[15px] font-semibold">{title}</div>
+        {subtitle && <div className="text-[13px] text-muted-foreground">{subtitle}</div>}
       </div>
       {children}
     </div>
@@ -383,7 +382,7 @@ function GrowthChart({ points }: { points: Snapshot[] }) {
       {gridYs.map((g, i) => (
         <g key={i}>
           <line x1={padL} x2={w - padR} y1={padT + ih * g} y2={padT + ih * g} stroke="var(--border)" strokeDasharray="2 4" />
-          <text x={4} y={padT + ih * g + 4} fill="#6b7280" fontSize="9" fontFamily="ui-monospace,monospace">
+          <text x={4} y={padT + ih * g + 4} style={{ fill: "var(--color-muted-foreground)" }} fontSize="9" fontFamily="ui-monospace,monospace">
             {fmt(Math.round(max * (1 - g)))}
           </text>
         </g>
@@ -396,7 +395,7 @@ function GrowthChart({ points }: { points: Snapshot[] }) {
           <circle cx={x(i)} cy={y(p.views)}     r="3" fill="#3b82f6" />
           <circle cx={x(i)} cy={y(p.reach)}     r="3" fill="#f59e0b" />
           <circle cx={x(i)} cy={y(p.followers)} r="3" fill="#10b981" />
-          <text x={x(i)} y={h - 6} textAnchor="middle" fill="#9ca3af" fontSize="10">{format(parseISO(p.month), "MMM")}</text>
+          <text x={x(i)} y={h - 6} textAnchor="middle" style={{ fill: "var(--color-muted-foreground)" }} fontSize="10">{format(parseISO(p.month), "MMM")}</text>
         </g>
       ))}
     </svg>
@@ -408,7 +407,7 @@ function ReelsTable({ reels }: { reels: TopReel[] }) {
     <div className="overflow-x-auto">
       <table className="w-full text-xs">
         <thead>
-          <tr className="text-[10px] uppercase tracking-wider text-muted-foreground border-b border-[var(--border)]">
+          <tr className="text-[11px] text-muted-foreground border-b border-[var(--border)]">
             <th className="text-left font-normal py-2 w-6">#</th>
             <th className="text-left font-normal py-2">Topic</th>
             <th className="text-left font-normal py-2 w-28">Pillar</th>
@@ -423,22 +422,22 @@ function ReelsTable({ reels }: { reels: TopReel[] }) {
           {reels.map((r, i) => {
             const color = r.pillar ? (PILLAR_COLORS[r.pillar] ?? "#6b7280") : "#6b7280";
             return (
-              <tr key={r.id} className="border-b border-[#141821] last:border-0 hover:bg-[#141821]">
+              <tr key={r.id} className="border-b border-[var(--border)] last:border-0 hover:bg-muted/30 motion-safe:transition-colors">
                 <td className="py-2 text-muted-foreground">{i + 1}</td>
                 <td className="py-2 truncate max-w-[380px]" title={r.topic}>{r.topic}</td>
                 <td className="py-2">
                   {r.pillar && (
                     <span
-                      className="inline-block px-2 py-0.5 rounded-full text-[10px] border font-medium"
-                      style={{ background: `${color}22`, color, borderColor: `${color}55` }}
+                      className="inline-block px-2 py-0.5 rounded-md text-[11px] font-medium"
+                      style={{ background: `${color}20`, color }}
                     >{r.pillar}</span>
                   )}
                 </td>
-                <td className="py-2 text-right text-blue-400 font-semibold">{fmt(r.views)}</td>
-                <td className="py-2 text-right">{fmt(r.saves)}</td>
-                <td className="py-2 text-right">{fmt(r.shares)}</td>
-                <td className="py-2 text-right">{fmt(r.comments)}</td>
-                <td className="py-2 text-right text-green-400">{r.new_follows != null ? fmt(r.new_follows) : "—"}</td>
+                <td className="py-2 text-right tabular-nums font-semibold text-foreground">{fmt(r.views)}</td>
+                <td className="py-2 text-right tabular-nums">{fmt(r.saves)}</td>
+                <td className="py-2 text-right tabular-nums">{fmt(r.shares)}</td>
+                <td className="py-2 text-right tabular-nums">{fmt(r.comments)}</td>
+                <td className="py-2 text-right tabular-nums">{r.new_follows != null ? fmt(r.new_follows) : "—"}</td>
               </tr>
             );
           })}
@@ -510,18 +509,18 @@ function PillarsDonut({ pillars }: { pillars: Pillar[] }) {
 
 function AudienceCard({ row }: { row: AudienceRow }) {
   return (
-    <div className="border border-[var(--border)] rounded-md p-3 bg-[var(--background)]">
+    <div className="card-surface p-3">
       <div className="flex items-start justify-between mb-1">
         <div>
-          <div className="text-xs font-medium">{row.country}</div>
-          <div className="text-[10px] text-muted-foreground">{row.timezone}</div>
+          <div className="text-[13px] font-medium">{row.country}</div>
+          <div className="text-[12px] text-muted-foreground">{row.timezone}</div>
         </div>
-        <div className="text-[10px] text-green-400">{row.engagement}%</div>
+        <div className="text-[12px] text-primary font-medium">{row.engagement}%</div>
       </div>
-      <div className="mt-2 h-1 rounded-full bg-[var(--background)] border border-[#141821] overflow-hidden">
-        <div className="h-full rounded-full bg-blue-500" style={{ width: `${row.pct * 2}%`, maxWidth: "100%" }} />
+      <div className="mt-2 h-1 rounded-full bg-muted overflow-hidden">
+        <div className="h-full rounded-full bg-primary" style={{ width: `${row.pct * 2}%`, maxWidth: "100%" }} />
       </div>
-      <div className="text-right text-[10px] text-muted-foreground mt-1">{row.pct}%</div>
+      <div className="text-right text-[11px] text-muted-foreground mt-1">{row.pct}%</div>
     </div>
   );
 }
@@ -585,13 +584,13 @@ function LogMonthDialog({ userId, month, existing, existingReels, onClose, onSav
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 flex items-start justify-center p-4 overflow-auto" onClick={onClose}>
-      <div className="w-full max-w-4xl my-8 bg-[var(--card)] border border-[var(--border)] rounded-md" onClick={e => e.stopPropagation()}>
+      <div className="w-full max-w-4xl my-8 bg-card border border-[var(--border)] rounded-xl" onClick={e => e.stopPropagation()}>
         <div className="p-4 border-b border-[var(--border)] flex items-center justify-between">
           <div>
-            <div className="text-sm font-semibold">{existing ? "Update month" : "Log this month"}</div>
-            <div className="text-[11px] text-muted-foreground">Copy from your IG Insights → Overview</div>
+            <div className="text-[15px] font-semibold">{existing ? "Update month" : "Log this month"}</div>
+            <div className="text-[13px] text-muted-foreground">Copy from your IG Insights → Overview</div>
           </div>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground motion-safe:transition-colors"><X className="h-4 w-4" /></button>
         </div>
         <div className="p-4 space-y-4">
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
@@ -608,8 +607,8 @@ function LogMonthDialog({ userId, month, existing, existingReels, onClose, onSav
           </div>
 
           <div>
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Notes (optional)</div>
-            <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} className="w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-xs resize-y focus:outline-none focus:border-green-500/40" placeholder="What worked / what didn't this month?" />
+            <div className="text-[12px] text-muted-foreground mb-1">Notes (optional)</div>
+            <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} className="w-full bg-[var(--background)] border border-[var(--border)] rounded-lg p-2 text-[13px] resize-y focus:outline-none focus:border-primary/40" placeholder="What worked / what didn't this month?" />
           </div>
 
           <div>
@@ -646,8 +645,8 @@ function LogMonthDialog({ userId, month, existing, existingReels, onClose, onSav
           </div>
         </div>
         <div className="p-4 border-t border-[var(--border)] flex justify-end gap-2">
-          <button onClick={onClose} className="h-8 px-3 rounded-sm border border-[var(--border)] text-xs">Cancel</button>
-          <button onClick={save} disabled={saving} className="h-8 px-4 rounded-sm bg-green-500 hover:bg-green-400 text-green-950 text-xs font-medium">
+          <button onClick={onClose} className="h-8 px-3 rounded-lg border border-[var(--border)] text-[13px]">Cancel</button>
+          <button onClick={save} disabled={saving} className="h-8 px-4 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground text-[13px] font-medium motion-safe:transition-colors">
             {saving ? "Saving…" : "Save month"}
           </button>
         </div>
@@ -666,7 +665,7 @@ function FieldNum({ label, value, onChange, compact, type, raw }: {
 }) {
   return (
     <div className="space-y-0.5">
-      <div className="text-[9px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="text-[11px] text-muted-foreground">{label}</div>
       <input
         type={type ?? "number"}
         value={value}
@@ -709,17 +708,17 @@ function ConnectDialog({ userId, existing, onClose, onSaved }: {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="w-full max-w-md bg-[var(--card)] border border-[var(--border)] rounded-md p-5 space-y-3" onClick={e => e.stopPropagation()}>
+      <div className="w-full max-w-md bg-card border border-[var(--border)] rounded-xl p-5 space-y-3" onClick={e => e.stopPropagation()}>
         <div className="flex items-center gap-2">
-          <Instagram className="h-4 w-4 text-blue-400" />
-          <div className="text-sm font-semibold">Instagram profile</div>
+          <Instagram className="h-4 w-4 text-muted-foreground" />
+          <div className="text-[15px] font-semibold">Instagram profile</div>
         </div>
         <TextField label="Instagram username" value={username} onChange={setUsername} placeholder="handle" />
         <TextField label="Display name" value={displayName} onChange={setDisplayName} placeholder="Your name" />
         <TextField label="Subtitle" value={subtitle} onChange={setSubtitle} placeholder="Bio / one-liner" />
         <div className="flex justify-end gap-2 pt-2">
-          <button onClick={onClose} className="h-8 px-3 rounded-sm border border-[var(--border)] text-xs">Cancel</button>
-          <button onClick={save} disabled={saving} className="h-8 px-3 rounded-sm bg-blue-500 hover:bg-blue-400 text-white text-xs font-medium">
+          <button onClick={onClose} className="h-8 px-3 rounded-lg border border-[var(--border)] text-[13px]">Cancel</button>
+          <button onClick={save} disabled={saving} className="h-8 px-3 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground text-[13px] font-medium motion-safe:transition-colors">
             {saving ? "Saving…" : "Save"}
           </button>
         </div>
@@ -751,24 +750,24 @@ function SettingsDialog({ userId, settings, onClose, onSaved }: {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="w-full max-w-3xl bg-[var(--card)] border border-[var(--border)] rounded-md p-5 space-y-3 max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+      <div className="w-full max-w-3xl bg-card border border-[var(--border)] rounded-xl p-5 space-y-3 max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
         <div className="flex items-center gap-2">
-          <Pencil className="h-4 w-4 text-green-400" />
-          <div className="text-sm font-semibold">Goals · Pillars · Audience</div>
+          <Pencil className="h-4 w-4 text-primary" />
+          <div className="text-[15px] font-semibold">Goals · Pillars · Audience</div>
         </div>
         <div className="space-y-1 flex-1 flex flex-col min-h-0">
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Data (JSON)</div>
+          <div className="text-[12px] text-muted-foreground">Data (JSON)</div>
           <textarea
             value={text}
             onChange={e => setText(e.target.value)}
-            className="flex-1 min-h-[300px] bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-[11px] resize-none focus:outline-none focus:border-green-500/40"
+            className="flex-1 min-h-[300px] bg-[var(--background)] border border-[var(--border)] rounded-lg p-2 text-[11px] resize-none focus:outline-none focus:border-primary/40"
             spellCheck={false}
           />
-          <p className="text-[10px] text-muted-foreground">Fields: goals, pillars, audience, formats.</p>
+          <p className="text-[11px] text-muted-foreground">Fields: goals, pillars, audience, formats.</p>
         </div>
         <div className="flex justify-end gap-2 pt-1">
-          <button onClick={onClose} className="h-8 px-3 rounded-sm border border-[var(--border)] text-xs">Cancel</button>
-          <button onClick={save} disabled={saving} className="h-8 px-3 rounded-sm bg-green-500 hover:bg-green-400 text-green-950 text-xs font-medium">
+          <button onClick={onClose} className="h-8 px-3 rounded-lg border border-[var(--border)] text-[13px]">Cancel</button>
+          <button onClick={save} disabled={saving} className="h-8 px-3 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground text-[13px] font-medium motion-safe:transition-colors">
             {saving ? "Saving…" : "Save"}
           </button>
         </div>
@@ -780,7 +779,7 @@ function SettingsDialog({ userId, settings, onClose, onSaved }: {
 function TextField({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
   return (
     <div className="space-y-1">
-      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="text-[12px] text-muted-foreground">{label}</div>
       <input
         value={value}
         onChange={e => onChange(e.target.value)}
