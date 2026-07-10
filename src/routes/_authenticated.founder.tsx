@@ -13,7 +13,7 @@ import { WeeklyPlan } from "@/components/weekly-plan";
 import { FounderSops } from "@/components/founder-sops";
 
 export const Route = createFileRoute("/_authenticated/founder")({
-  head: () => ({ meta: [{ title: "Founder Space — ISA Portal" }] }),
+  head: () => ({ meta: [{ title: "Founder Hub — ISA Portal" }] }),
   component: FounderPage,
 });
 
@@ -95,7 +95,7 @@ function FounderPage() {
     return (
       <div className="p-8 max-w-md mx-auto text-center space-y-2">
         <Sparkles className="h-8 w-8 mx-auto text-muted-foreground" />
-        <div className="text-lg font-semibold">Founder Space</div>
+        <div className="text-lg font-semibold">Founder Hub</div>
         <p className="text-sm text-muted-foreground">This area is not accessible with your account.</p>
       </div>
     );
@@ -106,7 +106,7 @@ function FounderPage() {
       <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[#1f2530] pb-4">
         <div>
           <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-fuchsia-400 mb-1">
-            <Sparkles className="h-3 w-3" /> Founder space
+            <Sparkles className="h-3 w-3" /> Founder Hub
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">Content & Strategy</h1>
           <p className="text-xs text-muted-foreground mt-0.5">Weekly reel plan, ideation, calendar — with an autonomous ideation engine.</p>
