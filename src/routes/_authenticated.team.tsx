@@ -277,14 +277,28 @@ function TeamPage() {
   );
 }
 
-function EditProfileModal({ member, initialUrl, onClose, onSaved }: { member: Member; initialUrl: string | null; onClose: () => void; onSaved: () => void }) {
+function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }: {
+  member: Member;
+  initialUrl: string | null;
+  onToggleRole: (userId: string, role: AppRole, has: boolean) => Promise<any>;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
   const [displayName, setDisplayName] = useState(member.display_name ?? "");
   const [phone, setPhone] = useState(member.phone ?? "");
+  const [setterType, setSetterType] = useState<SetterType>(member.setter_type);
   const [avatarPath, setAvatarPath] = useState<string | null>(member.avatar_path);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(initialUrl);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [localRoles, setLocalRoles] = useState<string[]>(member.roles);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const toggle = async (role: AppRole) => {
+    const has = localRoles.includes(role);
+    setLocalRoles(has ? localRoles.filter(r => r !== role) : [...localRoles, role]);
+    await onToggleRole(member.id, role, has);
+  };
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
