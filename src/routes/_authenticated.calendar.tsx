@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/lib/auth-context";
 import {
   disconnectMyCalendar, getMyCalendarConnection, getTeamCalendarEvents, createSetReminder,
-  listUpcomingSets, deleteSetReminder, type UpcomingSet,
+  listUpcomingSets, deleteSetReminder, syncCalendlySets, claimSet, type UpcomingSet,
   getTeamCalendarStatus, startGoogleCalendarAuth, type TeamEvent,
 } from "@/lib/calendar.functions";
 
@@ -61,7 +61,16 @@ function CalendarPage() {
   const deleteSetFn = useServerFn(deleteSetReminder);
   const [setOpen, setSetOpen] = useState(false);
   const [setsFilter, setSetsFilter] = useState<"all" | "mine">("all");
+  const syncCalendlyFn = useServerFn(syncCalendlySets);
+  const claimSetFn = useServerFn(claimSet);
   const upcomingSets = useQuery({ queryKey: ["cal", "sets"], queryFn: () => listSetsFn(), staleTime: 30_000 });
+  // pull fresh Calendly bookings once per visit, then refresh the list
+  useEffect(() => {
+    syncCalendlyFn().then((r) => {
+      if (r && "imported" in r && (r.imported ?? 0) > 0) qc.invalidateQueries({ queryKey: ["cal", "sets"] });
+    }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const myConn = useQuery({ queryKey: ["cal", "me"], queryFn: () => myConnFn() });
   const team = useQuery({ queryKey: ["cal", "team"], queryFn: () => teamStatusFn() });
@@ -271,6 +280,15 @@ function CalendarPage() {
           </div>
           <UpcomingSetsList
             sets={upcomingSets.data ?? []}
+            onClaim={async (id) => {
+              try {
+                const r = await claimSetFn({ data: { id } });
+                qc.invalidateQueries({ queryKey: ["cal", "sets"] });
+                toast.success(r.calendar
+                  ? "Claimed — it's on your calendar with reminders 2d · 1d · 3h · 1h before."
+                  : "Claimed. Connect your Google Calendar to get the reminders.");
+              } catch (err) { toast.error(String((err as Error).message ?? err)); }
+            }}
             loading={upcomingSets.isLoading}
             filter={setsFilter}
             onDelete={async (id) => {
@@ -522,11 +540,12 @@ function SetReminderDialog({ onClose, onCreate }: {
   );
 }
 
-function UpcomingSetsList({ sets, loading, filter, onDelete }: {
+function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim }: {
   sets: UpcomingSet[];
   loading: boolean;
   filter: "all" | "mine";
   onDelete: (id: string) => void;
+  onClaim: (id: string) => void;
 }) {
   const { user, roles } = useAuth();
   const isAdmin = roles.includes("admin");
@@ -559,12 +578,21 @@ function UpcomingSetsList({ sets, loading, filter, onDelete }: {
             <div className="min-w-0 flex-1">
               <div className="text-body font-medium text-foreground truncate">
                 {s.prospect}
+                {s.source === "calendly" && <span className="ml-2 text-micro text-muted-foreground">calendly</span>}
                 {s.source === "claimed" && <span className="ml-2 text-micro text-muted-foreground">claimed</span>}
               </div>
-              <div className="text-caption text-muted-foreground truncate">
-                {format(start, "EEE, MMM d · h:mm a")} · {s.owner_name}{mine ? " (you)" : ""}
+              <div className="text-caption truncate">
+                <span className="text-muted-foreground">{format(start, "EEE, MMM d · h:mm a")} · </span>
+                {s.owner_id
+                  ? <span className="text-muted-foreground">{s.owner_name}{mine ? " (you)" : ""}</span>
+                  : <span className="text-warning-fg">Unclaimed — needs a setter</span>}
               </div>
             </div>
+            {!s.owner_id && (
+              <Button size="sm" variant="outline" className="h-7 px-2.5 text-caption shrink-0" onClick={() => onClaim(s.id)}>
+                Claim
+              </Button>
+            )}
             <span className="text-caption text-muted-foreground tabular-nums shrink-0">{untilLabel(s.event_start)}</span>
             <span className="hidden sm:inline-flex text-micro text-muted-foreground bg-muted rounded-full px-2 py-0.5 shrink-0" title="Reminder schedule">2d · 1d · 3h · 1h</span>
             {s.gcal_html_link && (

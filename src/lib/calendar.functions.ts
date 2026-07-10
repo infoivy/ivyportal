@@ -220,7 +220,7 @@ export const createSetReminder = createServerFn({ method: "POST" })
 
 export type UpcomingSet = {
   id: string;
-  owner_id: string;
+  owner_id: string | null;
   owner_name: string;
   prospect: string;
   event_start: string;
@@ -249,7 +249,7 @@ export const listUpcomingSets = createServerFn({ method: "GET" })
     const pmap = new Map((profs ?? []).map((p) => [p.id, p.display_name ?? "Unknown"]));
     return ((rows ?? []) as Omit<UpcomingSet, "owner_name">[]).map((r) => ({
       ...r,
-      owner_name: pmap.get(r.owner_id) ?? "Unknown",
+      owner_name: r.owner_id ? (pmap.get(r.owner_id) ?? "Unknown") : "Unclaimed",
     })) as UpcomingSet[];
   });
 
@@ -262,4 +262,128 @@ export const deleteSetReminder = createServerFn({ method: "POST" })
     const { error } = await (context.supabase as any).from("set_reminders").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+// ── Calendly ────────────────────────────────────────────────────────────────
+
+/**
+ * Pull upcoming Calendly bookings into set_reminders as UNCLAIMED sets.
+ * No-ops quietly when CALENDLY_API_KEY is absent. Dedupes on the event URI.
+ */
+export const syncCalendlySets = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => {
+    const key = process.env.CALENDLY_API_KEY;
+    if (!key) return { ok: true, imported: 0, reason: "no-key" };
+    const H = { Authorization: `Bearer ${key}` };
+
+    const meRes = await fetch("https://api.calendly.com/users/me", { headers: H });
+    if (!meRes.ok) return { ok: false, imported: 0, reason: `calendly-auth-${meRes.status}` };
+    const me = (await meRes.json()) as { resource: { uri: string; current_organization: string } };
+
+    const params = new URLSearchParams({
+      organization: me.resource.current_organization,
+      status: "active",
+      min_start_time: new Date().toISOString(),
+      count: "50",
+      sort: "start_time:asc",
+    });
+    const evRes = await fetch(`https://api.calendly.com/scheduled_events?${params}`, { headers: H });
+    if (!evRes.ok) return { ok: false, imported: 0, reason: `calendly-events-${evRes.status}` };
+    const evJson = (await evRes.json()) as {
+      collection: { uri: string; name: string; start_time: string; end_time: string }[];
+    };
+
+    // Invitee names, one call per event, in parallel
+    const events = await Promise.all(evJson.collection.map(async (ev) => {
+      let invitee = "";
+      try {
+        const invRes = await fetch(`${ev.uri}/invitees?count=1`, { headers: H });
+        if (invRes.ok) {
+          const inv = (await invRes.json()) as { collection: { name?: string; email?: string }[] };
+          invitee = inv.collection[0]?.name ?? inv.collection[0]?.email ?? "";
+        }
+      } catch { /* keep event name */ }
+      return { ...ev, invitee };
+    }));
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    let imported = 0;
+    for (const ev of events) {
+      const durationMin = Math.max(15, Math.round((new Date(ev.end_time).getTime() - new Date(ev.start_time).getTime()) / 60000));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error, data } = await (supabaseAdmin as any)
+        .from("set_reminders")
+        .upsert({
+          calendly_event_uri: ev.uri,
+          prospect: ev.invitee || ev.name,
+          event_start: ev.start_time,
+          duration_min: durationMin,
+          notes: ev.name,
+          source: "calendly",
+        }, { onConflict: "calendly_event_uri", ignoreDuplicates: true })
+        .select("id");
+      if (!error && data?.length) imported += 1;
+    }
+    return { ok: true, imported };
+  });
+
+/**
+ * Claim an unclaimed (Calendly) set: takes ownership and puts the call on the
+ * claimer's Google Calendar with the standard reminder cadence.
+ */
+export const claimSet = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { id: string }) => data)
+  .handler(async ({ context, data }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sr = context.supabase as any;
+    const { data: row, error } = await sr.from("set_reminders").select("*").eq("id", data.id).maybeSingle();
+    if (error || !row) throw new Error("set not found");
+    if (row.owner_id) throw new Error("already claimed");
+
+    // RLS "claim unclaimed" policy enforces the caller may take it
+    const { error: upErr } = await sr
+      .from("set_reminders")
+      .update({ owner_id: context.userId })
+      .eq("id", data.id)
+      .is("owner_id", null);
+    if (upErr) throw new Error(upErr.message);
+
+    // Best effort: put it on the claimer's calendar with reminders
+    const { data: conn } = await context.supabase
+      .from("calendar_connections").select("*").eq("user_id", context.userId).maybeSingle();
+    if (!conn) return { ok: true, calendar: false };
+    try {
+      let accessToken = conn.access_token as string | null;
+      const exp = conn.access_token_expires_at ? new Date(conn.access_token_expires_at).getTime() : 0;
+      if (!accessToken || exp - 60_000 < Date.now()) {
+        const r = await refreshAccessToken(conn.refresh_token);
+        accessToken = r.access_token;
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        await supabaseAdmin.from("calendar_connections")
+          .update({ access_token: accessToken, access_token_expires_at: new Date(Date.now() + r.expires_in * 1000).toISOString() })
+          .eq("id", conn.id);
+      }
+      const start = new Date(row.event_start);
+      const end = new Date(start.getTime() + row.duration_min * 60_000);
+      const event = await insertCalendarEvent(accessToken!, conn.calendar_id, {
+        summary: `Set: ${row.prospect}`,
+        description: [row.notes, "Reminders: 2 days · 1 day · 3 hours · 1 hour before. Confirm, remind, call, follow up."].filter(Boolean).join("\n\n"),
+        startISO: start.toISOString(),
+        endISO: end.toISOString(),
+        reminderMinutes: SET_REMINDER_MINUTES,
+      });
+      {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabaseAdmin as any).from("set_reminders")
+          .update({ gcal_event_id: event.id, gcal_html_link: event.htmlLink ?? null })
+          .eq("id", data.id);
+      }
+      return { ok: true, calendar: true, htmlLink: event.htmlLink ?? null };
+    } catch (err) {
+      console.error("[claimSet] calendar event failed:", err);
+      return { ok: true, calendar: false };
+    }
   });
