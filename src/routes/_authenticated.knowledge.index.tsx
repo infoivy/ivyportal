@@ -110,31 +110,6 @@ function KnowledgeIndex() {
         />
       </div>
 
-      {recent.length > 0 && !q && (
-        <div>
-          <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-2 flex items-center gap-1.5">
-            <Clock className="h-3 w-3" /> Recently updated
-          </div>
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {recent.map((d) => (
-              <Link
-                key={d.id}
-                to={"/knowledge/$slug" as string}
-                params={{ slug: d.slug } as never}
-                className="shrink-0 border border-[#1f2530] hover:border-primary/60 rounded-md px-3 py-2 bg-[#0f1116] text-sm min-w-[180px]"
-              >
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground/70">
-                  {CATEGORY_LABEL[d.category]}
-                </div>
-                <div className="font-medium truncate">{d.title}</div>
-                <div className="text-[10px] text-muted-foreground mt-0.5">
-                  {new Date(d.updated_at).toLocaleDateString()}
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
 
       {loading ? (
         <div className="text-sm text-muted-foreground">Loading…</div>
