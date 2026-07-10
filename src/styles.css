@@ -347,3 +347,12 @@
   background: color-mix(in srgb, var(--primary) 30%, transparent);
   color: var(--foreground);
 }
+
+/* Route transition progress bar */
+@keyframes route-progress {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(400%); }
+}
+.animate-route-progress {
+  animation: route-progress 0.9s ease-in-out infinite;
+}

@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { Bell, DollarSign } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,12 +24,10 @@ function bucketLabel(days: number) {
 
 export function NotificationsBell() {
   const { user, roles } = useAuth();
-  const [items, setItems] = useState<Reminder[]>([]);
   const isAdmin = roles.includes("admin");
   const isCoach = roles.includes("coach");
 
-  const load = async () => {
-    if (!user || (!isAdmin && !isCoach)) return;
+  const fetchReminders = async (): Promise<Reminder[]> => {
     const today = new Date();
     const in3 = new Date(today);
     in3.setDate(in3.getDate() + 3);
@@ -43,7 +41,7 @@ export function NotificationsBell() {
       .order("due_date", { ascending: true })
       .limit(50);
 
-    if (!isAdmin && isCoach) {
+    if (!isAdmin && isCoach && user) {
       q = q.eq("installments.coach_id", user.id);
     }
 
@@ -63,15 +61,17 @@ export function NotificationsBell() {
         days,
       };
     });
-    setItems(mapped);
+    return mapped;
   };
 
-  useEffect(() => {
-    load();
-    const t = setInterval(load, 5 * 60 * 1000);
-    return () => clearInterval(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, isAdmin, isCoach]);
+  const q = useQuery({
+    queryKey: ["notifications", "installments", user?.id, isAdmin, isCoach],
+    queryFn: fetchReminders,
+    enabled: !!user && (isAdmin || isCoach),
+    refetchInterval: 5 * 60_000,
+    staleTime: 60_000,
+  });
+  const items = q.data ?? [];
 
   if (!isAdmin && !isCoach) return null;
 

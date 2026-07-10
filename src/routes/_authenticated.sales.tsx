@@ -433,7 +433,7 @@ function TrendsTab() {
         <StatCard label="DMs → Convos" value={`${dmToConvo.toFixed(1)}%`} icon={<TrendingUp className="h-3.5 w-3.5" />} hint={`${totals.convos.toLocaleString()} / ${totals.dms.toLocaleString()}`} delta={compare ? { value: dmToConvo - prevDmToConvo, format: "pct" } : undefined} noData={rows.length === 0} />
         <StatCard label="Convos → Booked" value={`${convoToBook.toFixed(1)}%`} icon={<TrendingUp className="h-3.5 w-3.5" />} hint={`${totals.booked.toLocaleString()} / ${totals.convos.toLocaleString()}`} delta={compare ? { value: convoToBook - prevConvoToBook, format: "pct" } : undefined} noData={rows.length === 0} />
         <StatCard label="Booked → Shows" value={`${bookToShow.toFixed(1)}%`} icon={<TrendingUp className="h-3.5 w-3.5" />} hint={`${totals.shows.toLocaleString()} / ${totals.booked.toLocaleString()}`} delta={compare ? { value: bookToShow - prevBookToShow, format: "pct" } : undefined} noData={rows.length === 0} />
-        <StatCard label="Closed Rate" value={`${closedRate.toFixed(1)}%`} icon={<TrendingUp className="h-3.5 w-3.5" />} hint={`${totals.closes.toLocaleString()} / ${totals.shows.toLocaleString()} shows`} delta={compare ? { value: closedRate - prevClosedRate, format: "pct" } : undefined} noData={rows.length === 0} />
+        <StatCard label="Closed Rate" value={`${closedRate.toFixed(1)}%`} icon={<TrendingUp className="h-3.5 w-3.5" />} hint={`${totals.closes.toLocaleString()} closes / ${totals.shows.toLocaleString()} shows`} delta={compare ? { value: closedRate - prevClosedRate, format: "pct" } : undefined} noData={rows.length === 0} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">

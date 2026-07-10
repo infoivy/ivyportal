@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import {
@@ -84,17 +85,18 @@ function Dashboard() {
   const [cashMtd, setCashMtd] = useState(0);
   const [nextDue, setNextDue] = useState<{ date: string; amount: number; currency: string; studentName: string } | null>(null);
   const [goals, setGoals] = useState<QuarterGoals>(DEFAULT_GOALS);
+  const goalsQ = useQuery({
+    queryKey: ["page", "dashboard", "goals"],
+    queryFn: async () => (await supabase.from("founder_settings").select("quarterly_goals").maybeSingle()).data,
+  });
   useEffect(() => {
-    supabase.from("founder_settings").select("quarterly_goals").maybeSingle().then(({ data }) => {
-      const g = (data as { quarterly_goals?: Partial<QuarterGoals> } | null)?.quarterly_goals;
-      if (g) setGoals({ ...DEFAULT_GOALS, ...g });
-    });
-  }, []);
+    const g = (goalsQ.data as { quarterly_goals?: Partial<QuarterGoals> } | null)?.quarterly_goals;
+    if (g) setGoals({ ...DEFAULT_GOALS, ...g });
+  }, [goalsQ.data]);
 
   const days = daysBetween(dateRange);
 
-  useEffect(() => {
-    setLoading(true);
+  const fetchDashboard = async () => {
     const now = new Date();
     const today = format(now, "yyyy-MM-dd");
     const from = format(dateRange.from, "yyyy-MM-dd");
@@ -106,7 +108,7 @@ function Dashboard() {
     const eodRisk = format(subDays(now, 5), "yyyy-MM-dd");
     const callRisk = format(subDays(now, 14), "yyyy-MM-dd");
 
-    (async () => {
+    {
       const [cur, prev, profs, students, callsThisWeek, callsRecent, eodsRecent, todayEods, installmentsDue, installmentsLate, testimonials, actionCalls] = await Promise.all([
         supabase.from("eods").select("id, user_id, report_date, dms_sent, convos_started, calls_booked, calls_scheduled, shows, no_shows, closes").gte("report_date", from).lte("report_date", to).order("report_date", { ascending: true }),
         compare
@@ -123,11 +125,10 @@ function Dashboard() {
         supabase.from("students").select("id", { count: "exact", head: true }).eq("status", "active").eq("testimonial_collected", false).not("first_win_at", "is", null),
         supabase.from("student_calls").select("action_items_json").not("action_items_json", "is", null).limit(2000),
       ]);
-      setEods((cur.data as EodRow[]) ?? []);
-      setPrevEods((prev.data as EodRow[]) ?? []);
+      const eodRows = (cur.data as EodRow[]) ?? [];
+      const prevRows = (prev.data as EodRow[]) ?? [];
       const pmap: Record<string, Profile> = {};
       (profs.data as Profile[] | null)?.forEach((p) => { pmap[p.id] = p; });
-      setProfiles(pmap);
 
       const eodByStudent = new Set((eodsRecent.data as { student_id: string }[] | null ?? []).map(r => r.student_id));
       const callByStudent = new Set((callsRecent.data as { student_id: string }[] | null ?? []).map(r => r.student_id));
@@ -138,9 +139,9 @@ function Dashboard() {
         (!eodByStudent.has(s.id) || (s.phase === "coaching_1on1" && !callByStudent.has(s.id)))
       ).length;
 
-      setEodsTodayCount((todayEods.data as any[])?.length ?? 0);
+      const eodsToday = (todayEods.data as any[])?.length ?? 0;
       const filedToday = new Set(((todayEods.data as { user_id: string }[] | null) ?? []).map(r => r.user_id));
-      const recentFilers = new Set(((cur.data as EodRow[]) ?? []).map(r => r.user_id));
+      const recentFilers = new Set(eodRows.map(r => r.user_id));
       const eodsMissingToday = Array.from(recentFilers).filter(u => !filedToday.has(u)).length;
 
       let openActionItems = 0;
@@ -149,7 +150,7 @@ function Dashboard() {
         openActionItems += items.filter((it: any) => !it?.done).length;
       });
 
-      setOps({
+      const ops: OpsCounts = {
         atRisk,
         installmentsDueSoon: installmentsDue.count ?? 0,
         installmentsOverdue: installmentsLate.count ?? 0,
@@ -157,36 +158,60 @@ function Dashboard() {
         eodsMissingToday,
         testimonialsPending: testimonials.count ?? 0,
         openActionItems,
-      });
-      setLoading(false);
-    })();
-  }, [dateRange.from.getTime(), dateRange.to.getTime(), compare]);
+      };
+      return { eodRows, prevRows, pmap, ops, eodsToday };
+    }
+  };
 
+  const mainQ = useQuery({
+    queryKey: ["page", "dashboard", format(dateRange.from, "yyyy-MM-dd"), format(dateRange.to, "yyyy-MM-dd"), compare],
+    queryFn: fetchDashboard,
+    placeholderData: (prev) => prev, // keep last data visible while a new range loads
+  });
   useEffect(() => {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, "0");
-    const monthStart = `${y}-${m}-01`;
-    const today = now.toISOString().slice(0, 10);
-    Promise.all([
-      supabase.from("deals").select("cash_collected_upfront").gte("deal_date", monthStart).lte("deal_date", today),
-      supabase.from("installment_payments").select("amount, currency, due_date, installments!inner(students(full_name))").eq("status", "upcoming").gte("due_date", today).order("due_date", { ascending: true }).limit(1),
-    ]).then(([dealsRes, instRes]) => {
-      const total = ((dealsRes.data ?? []) as any[]).reduce((s, d) => s + (Number(d.cash_collected_upfront) || 0), 0);
-      setCashMtd(total);
-      const first = (instRes.data ?? [])[0] as any;
-      if (first) setNextDue({ date: first.due_date, amount: first.amount, currency: first.currency, studentName: first.installments?.students?.full_name ?? "Unknown" });
-    });
-  }, []);
+    if (!mainQ.data) return;
+    setEods(mainQ.data.eodRows);
+    setPrevEods(mainQ.data.prevRows);
+    setProfiles(mainQ.data.pmap);
+    setOps(mainQ.data.ops);
+    setEodsTodayCount(mainQ.data.eodsToday);
+    setLoading(false);
+  }, [mainQ.data]);
+
+  const cashQ = useQuery({
+    queryKey: ["page", "dashboard", "cash-mtd"],
+    queryFn: async () => {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, "0");
+      const monthStart = `${y}-${m}-01`;
+      const today = now.toISOString().slice(0, 10);
+      const [dealsRes, instRes] = await Promise.all([
+        supabase.from("deals").select("cash_collected_upfront").gte("deal_date", monthStart).lte("deal_date", today),
+        supabase.from("installment_payments").select("amount, currency, due_date, installments!inner(students(full_name))").eq("status", "upcoming").gte("due_date", today).order("due_date", { ascending: true }).limit(1),
+      ]);
+      return { deals: dealsRes.data ?? [], firstDue: (instRes.data ?? [])[0] as any };
+    },
+  });
+  useEffect(() => {
+    if (!cashQ.data) return;
+    const total = (cashQ.data.deals as any[]).reduce((s, d) => s + (Number(d.cash_collected_upfront) || 0), 0);
+    setCashMtd(total);
+    const first = cashQ.data.firstDue;
+    if (first) setNextDue({ date: first.due_date, amount: first.amount, currency: first.currency, studentName: first.installments?.students?.full_name ?? "Unknown" });
+  }, [cashQ.data]);
 
   // E20: Check if IG snapshot logged this month (only for founder/admin)
-  useEffect(() => {
-    if (!roles.includes("founder") && !roles.includes("admin")) return;
-    const thisMonth = new Date().toISOString().slice(0, 7); // "YYYY-MM"
-    supabase.from("ig_monthly_snapshots").select("id", { count: "exact", head: true }).eq("month", `${thisMonth}-01`).then(({ count }) => {
-      setIgLoggedThisMonth((count ?? 0) > 0);
-    });
-  }, [roles]);
+  const igQ = useQuery({
+    queryKey: ["page", "dashboard", "ig-logged", new Date().toISOString().slice(0, 7)],
+    enabled: roles.includes("founder") || roles.includes("admin"),
+    queryFn: async () => {
+      const thisMonth = new Date().toISOString().slice(0, 7);
+      const { count } = await supabase.from("ig_monthly_snapshots").select("id", { count: "exact", head: true }).eq("month", `${thisMonth}-01`);
+      return (count ?? 0) > 0;
+    },
+  });
+  useEffect(() => { if (igQ.data != null) setIgLoggedThisMonth(igQ.data); }, [igQ.data]);
 
   const totals = useMemo(() => sumRows(eods), [eods]);
   const prevTotals = useMemo(() => sumRows(prevEods), [prevEods]);

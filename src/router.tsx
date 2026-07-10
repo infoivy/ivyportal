@@ -19,6 +19,7 @@ export const getRouter = () => {
     routeTree,
     context: { queryClient },
     scrollRestoration: true,
+    defaultPreload: "intent", // hover/touchstart preloads route code
     defaultPreloadStaleTime: 0,
     defaultErrorComponent: DefaultErrorFallback,
   });

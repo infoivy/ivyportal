@@ -137,6 +137,7 @@ function AuthedLayout() {
   return (
     <AuthContext.Provider value={state}>
       <SidebarProvider>
+        <RouteProgress />
         <div className="min-h-screen flex w-full bg-background">
           <AppSidebar roles={state.roles} />
           <div className="flex-1 flex flex-col min-w-0">
@@ -272,3 +273,14 @@ function StudentBottomNavBridge() {
   return <StudentBottomNav activeTab={tab} onTabChange={setStudentPortalTab} />;
 }
 
+
+/** 2px indeterminate bar under the header while a route transition is pending. */
+function RouteProgress() {
+  const isPending = useRouterState({ select: (s) => s.status === "pending" });
+  if (!isPending) return null;
+  return (
+    <div className="fixed top-0 left-0 right-0 z-50 h-0.5 overflow-hidden bg-transparent" aria-hidden>
+      <div className="h-full w-1/3 bg-primary rounded-full animate-route-progress" />
+    </div>
+  );
+}
