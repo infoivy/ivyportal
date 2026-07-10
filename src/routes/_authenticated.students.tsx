@@ -363,7 +363,7 @@ function StudentsLayout() {
                     </td>
                     {visibleCols.has("grade") && (
                       <td className="px-2 py-3">
-                        <span className={`text-[10px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded-sm border ${s.student_grade ? "border-amber-500/30 bg-amber-500/10 text-amber-400" : "border-[var(--border)] text-muted-foreground"}`}>
+                        <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm border ${s.student_grade ? "border-amber-500/30 bg-amber-500/10 text-amber-400" : "border-[var(--border)] text-muted-foreground"}`}>
                           {s.student_grade ?? "—"}
                         </span>
                       </td>
@@ -410,17 +410,17 @@ function StudentsLayout() {
                       </td>
                     )}
                     {visibleCols.has("calls_remaining") && (
-                      <td className={`px-2 py-3 text-right font-mono text-xs ${remaining === 0 ? "text-red-400" : "text-foreground"}`}>
+                      <td className={`px-2 py-3 text-right text-xs ${remaining === 0 ? "text-red-400" : "text-foreground"}`}>
                         {remaining}<span className="text-muted-foreground">/{s.calls_allotted}</span>
                       </td>
                     )}
                     {visibleCols.has("last_call") && (
-                      <td className={`px-2 py-3 text-right text-[10px] font-mono ${last && daysSince(last) > 14 ? "text-red-400" : "text-muted-foreground"}`}>
+                      <td className={`px-2 py-3 text-right text-[10px] ${last && daysSince(last) > 14 ? "text-red-400" : "text-muted-foreground"}`}>
                         {last ? `${daysSince(last)}d` : "—"}
                       </td>
                     )}
                     {visibleCols.has("last_eod") && (
-                      <td className={`px-2 py-3 text-right text-[10px] font-mono ${lastEod && daysSince(lastEod) >= 5 ? "text-red-400" : "text-muted-foreground"}`}>
+                      <td className={`px-2 py-3 text-right text-[10px] ${lastEod && daysSince(lastEod) >= 5 ? "text-red-400" : "text-muted-foreground"}`}>
                         {lastEod ? `${daysSince(lastEod)}d` : "—"}
                       </td>
                     )}
@@ -475,7 +475,7 @@ function StudentsLayout() {
             >
               <div className={`flex items-center justify-between text-[10px] uppercase tracking-wider px-1 py-1 mb-2 rounded-sm ${p.color}`}>
                 <span>{p.label}</span>
-                <span className="font-mono">{byPhase.get(p.key)!.length}</span>
+                <span className="">{byPhase.get(p.key)!.length}</span>
               </div>
               <div className="space-y-1.5">
                 {byPhase.get(p.key)!.map(s => (
@@ -498,7 +498,7 @@ function StudentsLayout() {
             >
               <div className="flex items-center justify-between text-[10px] uppercase tracking-wider px-1 py-1 mb-2 rounded-sm text-sky-400 border-sky-500/30 bg-sky-500/10 border">
                 <span className="truncate">{cid === "__unassigned__" ? "Unassigned" : coachName(cid)}</span>
-                <span className="font-mono">{byCoach.get(cid)?.length ?? 0}</span>
+                <span className="">{byCoach.get(cid)?.length ?? 0}</span>
               </div>
               <div className="space-y-1.5">
                 {(byCoach.get(cid) ?? []).map(s => (
@@ -539,7 +539,7 @@ function GraduationKanban({ students }: { students: Student[] }) {
           <div key={st.key} className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-2 min-h-[200px]">
             <div className={`flex items-center justify-between text-[10px] uppercase tracking-wider px-1 py-1 mb-2 rounded-sm border ${st.color}`}>
               <span className="truncate">{st.label}</span>
-              <span className="font-mono">{inStage.length}</span>
+              <span className="">{inStage.length}</span>
             </div>
             <div className="space-y-1.5">
               {inStage.map(s => (
@@ -927,7 +927,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
                       </div>
                       {customRows.map((r, i) => (
                         <div key={r.id} className="grid grid-cols-[24px_1fr_1.1fr_1fr_28px] gap-2 items-center">
-                          <span className="text-[10px] text-muted-foreground font-mono">#{i + 1}</span>
+                          <span className="text-[10px] text-muted-foreground">#{i + 1}</span>
                           <input type="number" min="0" step="0.01" value={r.amount} onChange={e => updateCustomRow(r.id, { amount: e.target.value })} placeholder="Amount" className={inputCls} />
                           <input type="date" value={r.due_date} onChange={e => updateCustomRow(r.id, { due_date: e.target.value })} className={inputCls} />
                           <input value={r.payment_method} onChange={e => updateCustomRow(r.id, { payment_method: e.target.value })} placeholder="Method (optional)" className={inputCls} />

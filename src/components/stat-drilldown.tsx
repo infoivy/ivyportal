@@ -103,7 +103,7 @@ export function StatDrilldown({
         <div className="space-y-4">
           <div className="text-[11px] text-muted-foreground flex items-center justify-between">
             <span>{rangeLabel}</span>
-            <span className="font-mono tabular-nums">Total: <span className="text-foreground font-semibold">{grandTotal.toLocaleString()}</span></span>
+            <span className="tabular-nums">Total: <span className="text-foreground font-semibold">{grandTotal.toLocaleString()}</span></span>
           </div>
 
           <div className="h-52 border border-border rounded-sm bg-card p-2">
@@ -137,7 +137,7 @@ export function StatDrilldown({
                   <details key={s.user_id} className="border-b border-border/50 last:border-0">
                     <summary className="grid grid-cols-[minmax(0,1fr)_80px_80px] px-3 py-2 text-xs cursor-pointer hover:bg-white/[0.02] tabular-nums">
                       <span className="font-medium truncate">{s.name}</span>
-                      <span className="text-right font-mono" style={{ color }}>{s.total.toLocaleString()}</span>
+                      <span className="text-right" style={{ color }}>{s.total.toLocaleString()}</span>
                       <span className="text-right text-muted-foreground">{s.entries.length}</span>
                     </summary>
                     <div className="px-6 py-2 space-y-1 bg-black/20">
@@ -147,7 +147,7 @@ export function StatDrilldown({
                           to="/eods"
                           className="flex items-center justify-between text-[11px] py-1 hover:text-emerald-400"
                         >
-                          <span className="font-mono text-muted-foreground">{e.report_date}</span>
+                          <span className="text-muted-foreground">{e.report_date}</span>
                           <span className="tabular-nums">{Number(e[metric!]).toLocaleString()}</span>
                         </Link>
                       ))}

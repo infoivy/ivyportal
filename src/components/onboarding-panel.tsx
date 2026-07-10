@@ -70,7 +70,7 @@ export function OnboardingPanel({ compact }: { compact?: boolean }) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <div className="text-[10px] font-mono text-emerald-400">{pct}%</div>
+          <div className="text-[10px] text-emerald-400">{pct}%</div>
           {pct === 100 && !compact && (
             <button onClick={() => setDismissed(true)} className="text-[10px] text-muted-foreground hover:text-foreground">dismiss</button>
           )}

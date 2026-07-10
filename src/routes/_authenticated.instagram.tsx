@@ -338,9 +338,9 @@ function StatCard({ icon, label, value, accent, active, delta }: { icon: React.R
       <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground uppercase tracking-wider mb-1">
         {icon}<span>{label}</span>
       </div>
-      <div className={`text-lg font-semibold font-mono ${valColor}`}>{value}</div>
+      <div className={`text-lg font-semibold ${valColor}`}>{value}</div>
       {delta != null && delta !== 0 && (
-        <div className={`text-[10px] font-mono flex items-center gap-0.5 mt-0.5 ${up ? "text-green-400" : "text-red-400"}`}>
+        <div className={`text-[10px] flex items-center gap-0.5 mt-0.5 ${up ? "text-green-400" : "text-red-400"}`}>
           {up ? <TrendingUp className="h-2.5 w-2.5" /> : <TrendingDown className="h-2.5 w-2.5" />}
           {up ? "+" : ""}{fmt(delta)}
         </div>
@@ -424,7 +424,7 @@ function ReelsTable({ reels }: { reels: TopReel[] }) {
             const color = r.pillar ? (PILLAR_COLORS[r.pillar] ?? "#6b7280") : "#6b7280";
             return (
               <tr key={r.id} className="border-b border-[#141821] last:border-0 hover:bg-[#141821]">
-                <td className="py-2 text-muted-foreground font-mono">{i + 1}</td>
+                <td className="py-2 text-muted-foreground">{i + 1}</td>
                 <td className="py-2 truncate max-w-[380px]" title={r.topic}>{r.topic}</td>
                 <td className="py-2">
                   {r.pillar && (
@@ -434,11 +434,11 @@ function ReelsTable({ reels }: { reels: TopReel[] }) {
                     >{r.pillar}</span>
                   )}
                 </td>
-                <td className="py-2 text-right font-mono text-blue-400 font-semibold">{fmt(r.views)}</td>
-                <td className="py-2 text-right font-mono">{fmt(r.saves)}</td>
-                <td className="py-2 text-right font-mono">{fmt(r.shares)}</td>
-                <td className="py-2 text-right font-mono">{fmt(r.comments)}</td>
-                <td className="py-2 text-right font-mono text-green-400">{r.new_follows != null ? fmt(r.new_follows) : "—"}</td>
+                <td className="py-2 text-right text-blue-400 font-semibold">{fmt(r.views)}</td>
+                <td className="py-2 text-right">{fmt(r.saves)}</td>
+                <td className="py-2 text-right">{fmt(r.shares)}</td>
+                <td className="py-2 text-right">{fmt(r.comments)}</td>
+                <td className="py-2 text-right text-green-400">{r.new_follows != null ? fmt(r.new_follows) : "—"}</td>
               </tr>
             );
           })}
@@ -462,7 +462,7 @@ function GoalBar({ goal }: { goal: GoalRow }) {
           <span className="text-foreground">{goal.label}</span>
           {done ? <CheckCircle2 className="h-3 w-3 text-green-400" /> : risky ? <AlertTriangle className="h-3 w-3 text-amber-400" /> : <CheckCircle2 className="h-3 w-3 text-muted-foreground/60" />}
         </div>
-        <div className="font-mono text-[11px] text-muted-foreground"><span className="text-foreground">{disp(goal.current)}</span> / {disp(goal.target)}</div>
+        <div className="text-[11px] text-muted-foreground"><span className="text-foreground">{disp(goal.current)}</span> / {disp(goal.target)}</div>
       </div>
       <div className="h-1.5 rounded-full bg-[var(--background)] overflow-hidden">
         <div className={`h-full rounded-full ${done ? "bg-green-500" : risky ? "bg-amber-500" : "bg-green-400"}`} style={{ width: `${pct}%` }} />
@@ -500,7 +500,7 @@ function PillarsDonut({ pillars }: { pillars: Pillar[] }) {
           <div key={i} className="flex items-center gap-1.5">
             <span className="h-2 w-2 rounded-sm" style={{ background: p.color }} />
             <span className="text-muted-foreground">{p.name}</span>
-            <span className="ml-auto font-mono">{p.pct}%</span>
+            <span className="ml-auto">{p.pct}%</span>
           </div>
         ))}
       </div>
@@ -516,12 +516,12 @@ function AudienceCard({ row }: { row: AudienceRow }) {
           <div className="text-xs font-medium">{row.country}</div>
           <div className="text-[10px] text-muted-foreground">{row.timezone}</div>
         </div>
-        <div className="text-[10px] font-mono text-green-400">{row.engagement}%</div>
+        <div className="text-[10px] text-green-400">{row.engagement}%</div>
       </div>
       <div className="mt-2 h-1 rounded-full bg-[var(--background)] border border-[#141821] overflow-hidden">
         <div className="h-full rounded-full bg-blue-500" style={{ width: `${row.pct * 2}%`, maxWidth: "100%" }} />
       </div>
-      <div className="text-right text-[10px] text-muted-foreground font-mono mt-1">{row.pct}%</div>
+      <div className="text-right text-[10px] text-muted-foreground mt-1">{row.pct}%</div>
     </div>
   );
 }
@@ -674,7 +674,7 @@ function FieldNum({ label, value, onChange, compact, type, raw }: {
           const v = raw ? e.target.value : (e.target.value === "" ? 0 : Number(e.target.value));
           onChange(v as never);
         }}
-        className={`w-full ${compact ? "h-7 text-[11px]" : "h-8 text-xs"} px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] outline-none focus:border-green-500/40 font-mono`}
+        className={`w-full ${compact ? "h-7 text-[11px]" : "h-8 text-xs"} px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] outline-none focus:border-green-500/40`}
       />
     </div>
   );
@@ -761,7 +761,7 @@ function SettingsDialog({ userId, settings, onClose, onSaved }: {
           <textarea
             value={text}
             onChange={e => setText(e.target.value)}
-            className="flex-1 min-h-[300px] bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 font-mono text-[11px] resize-none focus:outline-none focus:border-green-500/40"
+            className="flex-1 min-h-[300px] bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-[11px] resize-none focus:outline-none focus:border-green-500/40"
             spellCheck={false}
           />
           <p className="text-[10px] text-muted-foreground">Fields: goals, pillars, audience, formats.</p>

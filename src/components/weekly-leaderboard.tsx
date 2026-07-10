@@ -90,14 +90,14 @@ export function CashLeaderboard({ compact = false }: { compact?: boolean }) {
                   : "border-[var(--border)] bg-[var(--card)]")
               }
             >
-              <div className={"text-xs font-mono w-5 " + (i === 0 ? "text-amber-400" : "text-muted-foreground")}>
+              <div className={"text-xs w-5 " + (i === 0 ? "text-amber-400" : "text-muted-foreground")}>
                 {i + 1}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium truncate">{r.name}</div>
                 <div className="text-[10px] text-muted-foreground">{r.closes} close{r.closes === 1 ? "" : "s"}</div>
               </div>
-              <div className="text-sm font-mono tabular-nums">{money(r.cash)}</div>
+              <div className="text-sm tabular-nums">{money(r.cash)}</div>
               {i === 0 && (
                 <span
                   title="Top closer this week — eligible for double bookings next week per the Double Bookings SOP"

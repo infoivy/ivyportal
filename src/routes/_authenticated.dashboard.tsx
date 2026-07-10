@@ -907,12 +907,12 @@ function UnifiedLeaderboard({ profiles, eods }: { profiles: Record<string, Profi
                 (i === 0 ? "bg-amber-500/5" : "")
               }
             >
-              <span className={"text-[11px] font-mono w-5 " + (i === 0 ? "text-amber-400" : "text-muted-foreground")}>{i + 1}</span>
+              <span className={"text-[11px] w-5 " + (i === 0 ? "text-amber-400" : "text-muted-foreground")}>{i + 1}</span>
               <div className="min-w-0 flex-1">
                 <div className="text-xs font-medium truncate">{r.name}</div>
                 <div className="text-[10px] text-muted-foreground truncate">{r.sub}</div>
               </div>
-              <div className="text-sm font-mono tabular-nums text-green-400">
+              <div className="text-sm tabular-nums text-green-400">
                 {mode === "cash" ? money(r.value) : r.value.toLocaleString()}
               </div>
             </div>

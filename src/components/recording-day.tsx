@@ -93,7 +93,7 @@ export function RecordingDay({ onOpenItem }: { onOpenItem: (id: string) => void 
         </div>
         <div className="ml-auto flex items-center gap-3">
           <div className="text-xs">
-            <span className="font-mono text-lg font-bold text-blue-300">{readyCount}</span>
+            <span className="text-lg font-bold text-blue-300">{readyCount}</span>
             <span className="text-muted-foreground"> / {ordered.length} ready</span>
           </div>
           <div className="flex items-center gap-1">
@@ -130,7 +130,7 @@ export function RecordingDay({ onOpenItem }: { onOpenItem: (id: string) => void 
               <div className="flex-1 min-w-0 space-y-0.5">
                 <button onClick={() => onOpenItem(s.id)} className="text-left w-full">
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-mono text-muted-foreground">{s.scheduled_date ? format(parseISO(s.scheduled_date), "EEE MMM d") : "—"}</span>
+                    <span className="text-[10px] text-muted-foreground">{s.scheduled_date ? format(parseISO(s.scheduled_date), "EEE MMM d") : "—"}</span>
                     {s.funnel_stage && <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-sm border ${stageColor}`}>{s.funnel_stage}</span>}
                     <span className="text-[9px] uppercase tracking-wider text-muted-foreground">{s.status}</span>
                     {s.format && <span className="text-[9px] text-muted-foreground">· {s.format}</span>}

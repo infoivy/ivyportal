@@ -102,7 +102,7 @@ function Training() {
                 <div className={`grid h-12 w-12 place-items-center rounded-full ${v.locked ? "bg-white/10" : "bg-white/90 group-hover:scale-110"} transition`}>
                   {v.locked ? <Lock className="h-4 w-4 text-white" /> : <Play className="h-5 w-5 text-black fill-black ml-0.5" />}
                 </div>
-                <div className="absolute bottom-2 right-2 text-[10px] font-mono px-1.5 py-0.5 rounded-sm bg-black/70 text-white inline-flex items-center gap-1">
+                <div className="absolute bottom-2 right-2 text-[10px] px-1.5 py-0.5 rounded-sm bg-black/70 text-white inline-flex items-center gap-1">
                   <Clock className="h-2.5 w-2.5" />
                   {v.duration}
                 </div>

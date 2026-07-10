@@ -197,7 +197,7 @@ function ActionItemsHub() {
           </p>
         </div>
         <div className="flex gap-2 items-center">
-          <div className="text-[11px] font-mono text-muted-foreground">
+          <div className="text-[11px] text-muted-foreground">
             {counts.open} open <span className="mx-1">·</span> <span className="text-red-400">{counts.overdue} overdue</span>
           </div>
           {isStaff && (
@@ -274,7 +274,7 @@ function ActionItemsHub() {
                   {r.source === "adhoc" && <Sparkles className="h-3 w-3 text-blue-400 shrink-0" />}
                   <span className="truncate">{r.text || <span className="italic text-muted-foreground">(no text)</span>}</span>
                 </div>
-                <div className="text-[10px] font-mono text-muted-foreground">
+                <div className="text-[10px] text-muted-foreground">
                   {r.source === "call" ? `from call ${r.refDate}` : `ad-hoc · ${r.refDate}`}
                   {r.done ? " · ticked" : ""}
                 </div>
@@ -283,7 +283,7 @@ function ActionItemsHub() {
                 <User className="h-3 w-3 text-muted-foreground" /> {r.studentName}
               </Link>
               <span className="text-xs text-muted-foreground truncate" title={r.ownerLabel}>{r.ownerName}</span>
-              <span className={`text-[11px] font-mono text-right ${overdue ? "text-red-400" : r.due ? "text-muted-foreground" : "text-[#2a3140]"}`}>
+              <span className={`text-[11px] text-right ${overdue ? "text-red-400" : r.due ? "text-muted-foreground" : "text-[#2a3140]"}`}>
                 {r.due ? (overdue ? <span className="inline-flex items-center gap-1"><AlertTriangle className="h-3 w-3" />{r.due}</span> : r.due) : "—"}
               </span>
               <span className="flex justify-end">
