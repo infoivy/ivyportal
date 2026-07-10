@@ -1,12 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { CATEGORY_LABEL, type DocCategory } from "@/lib/knowledge";
 import { MarkdownView, useToc } from "@/components/markdown-view";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Pencil, Trash2, ExternalLink as ExtIcon, ListTree } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ArrowLeft, Pencil, Trash2, ExternalLink as ExtIcon, ListTree, Search as SearchIcon, FileText } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/knowledge/$slug")({
@@ -59,7 +60,18 @@ function KnowledgeDoc() {
     })();
   }, [slug]);
 
-  const toc = useToc(doc?.content ?? "");
+  const [findQ, setFindQ] = useState("");
+  const filteredContent = useMemo(() => {
+    if (!doc) return "";
+    if (!findQ.trim()) return doc.content;
+    const term = findQ.trim().toLowerCase();
+    // Keep paragraphs (blank-line-separated blocks) whose text contains the term.
+    const blocks = doc.content.split(/\n{2,}/);
+    const kept = blocks.filter((b) => b.toLowerCase().includes(term));
+    return kept.length ? kept.join("\n\n") : "";
+  }, [doc, findQ]);
+
+  const toc = useToc(filteredContent);
 
   const handleDelete = async () => {
     if (!doc) return;
@@ -117,10 +129,33 @@ function KnowledgeDoc() {
             {updatedByName ? ` by ${updatedByName}` : ""}
           </div>
 
+          <div className="relative mb-6">
+            <SearchIcon className="h-3.5 w-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={findQ}
+              onChange={(e) => setFindQ(e.target.value)}
+              placeholder="Search inside this doc…"
+              className="pl-9 h-9 text-sm bg-[#0f1116]"
+            />
+          </div>
+
+          {!doc.content || doc.content.trim().length < 20 ? (
+            <Card className="p-6 text-center bg-[#0f1116]">
+              <FileText className="h-6 w-6 mx-auto text-muted-foreground/50 mb-2" />
+              <p className="text-sm text-muted-foreground">
+                Content missing — {isAdmin ? "click Edit to paste it in." : "ask an admin to fill this in."}
+              </p>
+            </Card>
+          ) : filteredContent ? (
+            <MarkdownView content={filteredContent} />
+          ) : (
+            <p className="text-sm text-muted-foreground">No sections match “{findQ}”.</p>
+          )}
+
           {doc.external_links && doc.external_links.length > 0 && (
-            <Card className="p-4 mb-6 bg-[#0f1116]">
+            <div className="mt-10 pt-4 border-t border-[#1f2530]">
               <div className="text-[11px] uppercase tracking-widest text-muted-foreground/70 mb-2">
-                Links
+                Original source
               </div>
               <div className="flex flex-wrap gap-2">
                 {doc.external_links.map((l, i) => (
@@ -129,18 +164,16 @@ function KnowledgeDoc() {
                     href={l.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs border border-[#1f2530] rounded-md px-2.5 py-1.5 hover:border-primary hover:text-primary transition"
+                    className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition"
                   >
                     <ExtIcon className="h-3 w-3" /> {l.label}
                   </a>
                 ))}
               </div>
-            </Card>
+            </div>
           )}
 
-          <MarkdownView content={doc.content} />
-
-          <div className="mt-12 pt-4 border-t border-[#1f2530] text-xs text-muted-foreground">
+          <div className="mt-8 pt-4 border-t border-[#1f2530] text-xs text-muted-foreground">
             Last updated {new Date(doc.updated_at).toLocaleString()}
             {updatedByName ? ` by ${updatedByName}` : ""}
           </div>
