@@ -5,33 +5,86 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --radius-sm:   0.375rem;   /* 6px  — inputs, badges */
+  /* ── Radii — the only four ─────────────────────────────────────────── */
+  --radius-sm:   0.375rem;   /* 6px  — badges, small chips */
   --radius-md:   0.625rem;   /* 10px — buttons, inputs */
   --radius-lg:   0.75rem;    /* 12px — cards, panels */
   --radius-xl:   1rem;       /* 16px — modals, sheets */
 
+  /* ── Type scale — the only sizes ───────────────────────────────────── */
+  --text-display: 2rem;                       /* page titles */
+  --text-display--line-height: 2.375rem;
+  --text-display--font-weight: 600;
+  --text-display--letter-spacing: -0.021em;
+
+  --text-metric: 1.75rem;                     /* stat values */
+  --text-metric--line-height: 2.125rem;
+  --text-metric--font-weight: 600;
+  --text-metric--letter-spacing: -0.019em;
+
+  --text-title: 1.0625rem;                    /* card/section titles */
+  --text-title--line-height: 1.5rem;
+  --text-title--font-weight: 600;
+  --text-title--letter-spacing: -0.012em;
+
+  --text-body: 0.875rem;                      /* the one UI size */
+  --text-body--line-height: 1.25rem;
+
+  --text-caption: 0.75rem;                    /* labels, hints, table headers */
+  --text-caption--line-height: 1rem;
+
+  --text-micro: 0.6875rem;                    /* timestamps, kbd, badges */
+  --text-micro--line-height: 0.875rem;
+
+  /* ── Color mappings ────────────────────────────────────────────────── */
   --color-background:      var(--background);
   --color-foreground:      var(--foreground);
   --color-card:            var(--card);
   --color-card-foreground: var(--card-foreground);
+  --color-popover:         var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
   --color-muted:           var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-border:          var(--border);
+  --color-input:           var(--input);
+  --color-ring:            var(--ring);
   --color-primary:         var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-secondary:       var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent:          var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
   --color-destructive:     var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
 
-  --color-tab-stages:   var(--tab-stages);
-  --color-tab-inbound:  var(--tab-inbound);
-  --color-tab-outbound: var(--tab-outbound);
-  --color-tab-story:    var(--tab-story);
-  --color-tab-conv:     var(--tab-conv);
-  --color-tab-dmclose:  var(--tab-dmclose);
-  --color-tab-followup: var(--tab-followup);
-  --color-tab-psych:    var(--tab-psych);
-  --color-tab-engage:   var(--tab-engage);
-  --color-tab-pacing:   var(--tab-pacing);
+  /* Status — the only non-neutral chrome colors; used only when it means something */
+  --color-success:     var(--success);
+  --color-success-fg:  var(--success-fg);
+  --color-success-bg:  var(--success-bg);
+  --color-warning:     var(--warning);
+  --color-warning-fg:  var(--warning-fg);
+  --color-warning-bg:  var(--warning-bg);
+  --color-danger:      var(--danger);
+  --color-danger-fg:   var(--danger-fg);
+  --color-danger-bg:   var(--danger-bg);
+
+  /* Charts — data is allowed to be colorful */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+
+  /* Sidebar */
+  --color-sidebar:            var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary:    var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent:     var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border:     var(--sidebar-border);
+  --color-sidebar-ring:       var(--sidebar-ring);
 
   --font-sans: "Geist", -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, ui-sans-serif, system-ui, sans-serif;
 }
@@ -39,22 +92,21 @@
 /* ── Light theme (default) ───────────────────────────────────────────────── */
 :root {
   /* Surfaces */
-  --background:        #F5F5F7;   /* Apple's near-white canvas */
-  --foreground:        #1C1C1E;   /* Apple systemLabel */
+  --background:        #F5F5F7;   /* Apple near-white canvas */
+  --foreground:        #1C1C1E;
   --card:              #FFFFFF;
   --card-foreground:   #1C1C1E;
   --popover:           #FFFFFF;
   --popover-foreground: #1C1C1E;
-  --muted:             #F2F2F7;   /* Apple secondarySystemBackground */
-  --muted-foreground:  #8E8E93;   /* Apple secondaryLabel */
+  --muted:             #F2F2F7;
+  --muted-foreground:  #86868B;
   --border:            rgba(0, 0, 0, 0.08);
   --input:             rgba(0, 0, 0, 0.06);
 
-  /* Accent */
-  --primary:           #16A34A;   /* Emerald — slightly deeper for light bg */
+  /* The one accent — primary button, active nav, focus, links, selection */
+  --primary:           #16A34A;
   --primary-foreground: #FFFFFF;
 
-  /* Semantic */
   --secondary:         #F2F2F7;
   --secondary-foreground: #1C1C1E;
   --accent:            #F2F2F7;
@@ -63,8 +115,27 @@
   --destructive-foreground: #FFFFFF;
   --ring:              rgba(22, 163, 74, 0.35);
 
-  /* Elevation — light uses shadows, dark uses surface lift */
-  --shadow-card:    0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  /* Status — reserved for meaning: KPI hit/miss, paid/due/overdue, at-risk */
+  --success:     #16A34A;
+  --success-fg:  #15803D;
+  --success-bg:  color-mix(in srgb, #16A34A 9%, transparent);
+  --warning:     #D97706;
+  --warning-fg:  #B45309;
+  --warning-bg:  color-mix(in srgb, #D97706 10%, transparent);
+  --danger:      #DC2626;
+  --danger-fg:   #B91C1C;
+  --danger-bg:   color-mix(in srgb, #DC2626 8%, transparent);
+
+  /* Charts */
+  --chart-1: #2563EB;
+  --chart-2: #16A34A;
+  --chart-3: #D97706;
+  --chart-4: #7C3AED;
+  --chart-5: #DB2777;
+  --chart-6: #0891B2;
+
+  /* Elevation — light lifts with shadow */
+  --shadow-card:    0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
   --shadow-raised:  0 4px 12px rgba(0,0,0,0.10), 0 2px 4px rgba(0,0,0,0.05);
   --shadow-overlay: 0 20px 60px rgba(0,0,0,0.14), 0 8px 20px rgba(0,0,0,0.08);
 
@@ -78,34 +149,37 @@
   --sidebar-border:       rgba(0, 0, 0, 0.06);
   --sidebar-ring:         rgba(22, 163, 74, 0.35);
 
-  /* Canvas helpers */
-  --canvas-bg:     #F5F5F7;
-  --canvas-dot:    rgba(0, 0, 0, 0.06);
+  /* Reading surfaces */
   --script-bg:     rgba(0, 0, 0, 0.03);
   --script-border: rgba(0, 0, 0, 0.12);
 
-  /* Training content tab palette (unchanged semantics) */
-  --tab-stages:   #16A34A;
-  --tab-inbound:  #2563EB;
-  --tab-outbound: #D97706;
-  --tab-story:    #2563EB;
-  --tab-conv:     #D97706;
-  --tab-dmclose:  #16A34A;
-  --tab-followup: #2563EB;
-  --tab-psych:    #D97706;
-  --tab-engage:   #16A34A;
-  --tab-pacing:   #2563EB;
+  /* Functional highlight (search matches) */
+  --highlight: rgba(250, 204, 21, 0.45);
+
+  /* DEPRECATED — legacy training tab palette, aliased to neutral until
+     sections.tsx / sops references are removed. Do not use in new code. */
+  --tab-stages:   var(--muted-foreground);
+  --tab-inbound:  var(--muted-foreground);
+  --tab-outbound: var(--muted-foreground);
+  --tab-story:    var(--muted-foreground);
+  --tab-conv:     var(--muted-foreground);
+  --tab-dmclose:  var(--muted-foreground);
+  --tab-followup: var(--muted-foreground);
+  --tab-psych:    var(--muted-foreground);
+  --tab-engage:   var(--muted-foreground);
+  --tab-pacing:   var(--muted-foreground);
 
   /* Motion */
   --duration-fast: 150ms;
   --duration-base: 200ms;
   --duration-slow: 400ms;
-  --ease-out: cubic-bezier(0.0, 0.0, 0.2, 1);
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
 }
 
 /* ── Dark theme ──────────────────────────────────────────────────────────── */
 .dark {
-  /* Surfaces — deep cool near-black, Whop-inspired */
+  /* Surfaces — deep cool near-black */
   --background:        #08090D;
   --foreground:        #EDEDF0;
   --card:              #0E0F14;
@@ -113,15 +187,13 @@
   --popover:           #131419;
   --popover-foreground: #EDEDF0;
   --muted:             #111318;
-  --muted-foreground:  #6B7280;
+  --muted-foreground:  #70727B;
   --border:            rgba(255, 255, 255, 0.07);
   --input:             rgba(255, 255, 255, 0.06);
 
-  /* Accent */
   --primary:           #22C55E;
   --primary-foreground: #071810;
 
-  /* Semantic */
   --secondary:         #14161D;
   --secondary-foreground: #EDEDF0;
   --accent:            #14161D;
@@ -130,7 +202,26 @@
   --destructive-foreground: #EDEDF0;
   --ring:              rgba(34, 197, 94, 0.45);
 
-  /* Elevation */
+  /* Status */
+  --success:     #22C55E;
+  --success-fg:  #4ADE80;
+  --success-bg:  color-mix(in srgb, #22C55E 12%, transparent);
+  --warning:     #F59E0B;
+  --warning-fg:  #FBBF24;
+  --warning-bg:  color-mix(in srgb, #F59E0B 12%, transparent);
+  --danger:      #EF4444;
+  --danger-fg:   #F87171;
+  --danger-bg:   color-mix(in srgb, #EF4444 12%, transparent);
+
+  /* Charts — brighter against dark */
+  --chart-1: #60A5FA;
+  --chart-2: #4ADE80;
+  --chart-3: #FBBF24;
+  --chart-4: #A78BFA;
+  --chart-5: #F472B6;
+  --chart-6: #22D3EE;
+
+  /* Elevation — dark lifts with hairline + inset highlight, not shadow */
   --shadow-card:    none;
   --shadow-raised:  0 0 0 1px rgba(255,255,255,0.07), 0 8px 32px rgba(0,0,0,0.5);
   --shadow-overlay: 0 20px 60px rgba(0,0,0,0.85);
@@ -145,23 +236,10 @@
   --sidebar-border:       rgba(255, 255, 255, 0.05);
   --sidebar-ring:         rgba(34, 197, 94, 0.45);
 
-  /* Canvas helpers */
-  --canvas-bg:     #08090D;
-  --canvas-dot:    rgba(255, 255, 255, 0.04);
   --script-bg:     rgba(255, 255, 255, 0.02);
   --script-border: rgba(255, 255, 255, 0.10);
 
-  /* Training content tab palette */
-  --tab-stages:   #22C55E;
-  --tab-inbound:  #3B82F6;
-  --tab-outbound: #F59E0B;
-  --tab-story:    #3B82F6;
-  --tab-conv:     #F59E0B;
-  --tab-dmclose:  #22C55E;
-  --tab-followup: #3B82F6;
-  --tab-psych:    #F59E0B;
-  --tab-engage:   #22C55E;
-  --tab-pacing:   #3B82F6;
+  --highlight: rgba(250, 204, 21, 0.35);
 }
 
 /* ── Base layer ──────────────────────────────────────────────────────────── */
@@ -177,74 +255,68 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    /* Theme crossfade — only on specific properties, never `all` */
+    /* Theme crossfade — specific properties only, never `all` */
     transition:
       background-color var(--duration-base) var(--ease-out),
       color var(--duration-fast) var(--ease-out);
   }
 
-  /* Tabular nums on anything numeric */
-  .num, [data-num], .tabular {
+  /* Numbers align in columns everywhere they're compared */
+  .num, [data-num], .tabular, table td {
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum";
   }
 }
 
-/* ── Utility ─────────────────────────────────────────────────────────────── */
+/* ── Utilities ───────────────────────────────────────────────────────────── */
 
-/* Card elevation helper — use instead of manual shadow/border */
+/* Card elevation — the ONLY card treatment. Light: shadow. Dark: hairline. */
 .card-surface {
   background: var(--color-card);
   box-shadow: var(--shadow-card);
   border-radius: var(--radius-lg);
 }
-/* Dark: hairline border + inner top highlight for depth */
 .dark .card-surface {
   border: 1px solid rgba(255,255,255,0.07);
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.09);
 }
 
-/* Frosted surfaces (top bar, sidebar) */
+/* Frosted chrome (top bar, sheets) */
 .frosted {
   background: color-mix(in srgb, var(--background) 80%, transparent);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
 }
 
-/* Canvas backgrounds */
-.canvas-bg {
-  background-color: var(--canvas-bg);
-  background-image: radial-gradient(circle, var(--canvas-dot) 1px, transparent 1px);
-  background-size: 22px 22px;
+/* Pressable — instant feedback on anything clickable that commits an action */
+.pressable {
+  transition: transform 100ms var(--ease-out);
+}
+.pressable:active {
+  transform: scale(0.97);
+}
+@media (prefers-reduced-motion: reduce) {
+  .pressable:active { transform: none; }
 }
 
-.grid-bg {
-  background-image:
-    linear-gradient(var(--canvas-dot) 1px, transparent 1px),
-    linear-gradient(90deg, var(--canvas-dot) 1px, transparent 1px);
-  background-size: 32px 32px;
-}
-
-/* Script blocks (training content) */
+/* Reading surfaces (training scripts, SOPs) */
 .script-block {
   background-color: var(--script-bg);
   border-left-color: var(--script-border);
 }
 
-/* Search highlight */
+/* Search highlight — functional yellow, not decoration */
 .hl-match {
-  background-color: rgba(250, 204, 21, 0.45);
+  background-color: var(--highlight);
   border-radius: 2px;
   padding: 0 1px;
 }
-.dark .hl-match {
-  background-color: rgba(250, 204, 21, 0.35);
-  color: #111;
-}
+.dark .hl-match { color: #111; }
 
-/* Card search match ring */
 .card-matched {
   box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.7), 0 4px 12px rgba(0,0,0,0.06);
 }
@@ -260,7 +332,7 @@
   border-radius: var(--radius-lg);
 }
 
-/* Page entry animation — applied to route outlet wrapper */
+/* Page entry — subtle, fast, disabled for reduced motion */
 @keyframes page-enter {
   from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -276,7 +348,6 @@
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { scrollbar-width: none; }
 
-/* Selection color */
 ::selection {
   background: color-mix(in srgb, var(--primary) 30%, transparent);
   color: var(--foreground);
