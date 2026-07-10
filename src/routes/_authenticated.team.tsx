@@ -52,7 +52,7 @@ function TeamPage() {
   const load = async () => {
     const { data: profs } = await supabase
       .from("profiles")
-      .select("id, display_name, avatar_path, active, phone" as any);
+      .select("id, display_name, avatar_path, active, phone, setter_type" as any);
     const { data: rolesData } = await supabase.from("user_roles").select("user_id, role");
     const rolesByUser = new Map<string, string[]>();
     (rolesData ?? []).forEach(r => {
@@ -67,6 +67,7 @@ function TeamPage() {
       phone: p.phone ?? null,
       active: p.active ?? true,
       roles: rolesByUser.get(p.id) ?? [],
+      setter_type: (p.setter_type ?? null) as SetterType,
     }));
     setMembers(list);
     setAvatarUrls(await signAvatars(list.map(m => m.avatar_path)));
