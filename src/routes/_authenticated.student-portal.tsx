@@ -338,6 +338,33 @@ function StudentPortal() {
           </div>
         </div>
 
+        {/* To do — urgent items sit directly under the salaam */}
+        {openItems.length > 0 && (
+          <div className="mt-4 rounded-lg border border-warning/25 bg-warning-bg/50 p-3 space-y-1">
+            <div className="flex items-center justify-between gap-3 px-1">
+              <div className="flex items-center gap-2 text-[12px] font-semibold text-foreground">
+                <ListChecks className="h-3.5 w-3.5 text-warning-fg" /> To do
+                {overdue.length > 0 && (
+                  <span className="text-micro px-2 py-0.5 rounded-full bg-danger-bg text-danger-fg">{overdue.length} overdue</span>
+                )}
+                {dueToday.length > 0 && (
+                  <span className="text-micro px-2 py-0.5 rounded-full bg-warning-bg text-warning-fg">{dueToday.length} due today</span>
+                )}
+              </div>
+              {openItems.length > 4 && (
+                <button onClick={() => setTab("actions")} className="text-caption text-primary hover:underline shrink-0">
+                  View all {openItems.length} →
+                </button>
+              )}
+            </div>
+            <div className="divide-y divide-border/40 rounded-md bg-card">
+              {[...overdue, ...dueToday, ...upcoming].slice(0, 4).map(a => (
+                <ActionRow key={`todo-${a.callId}-${a.index}`} a={a} today={today} onToggle={toggleItem} />
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-5">
           {/* Coach card */}
           <div className="border border-[var(--border)] rounded-sm bg-[var(--background)] p-3 flex items-center gap-3">
@@ -396,33 +423,6 @@ function StudentPortal() {
           <JourneyStepper current={student.phase} />
         </div>
       </section>
-
-      {/* To do — open action items live right under the hero, tick off inline */}
-      {openItems.length > 0 && (
-        <section className="card-surface p-4 space-y-2">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-body font-semibold text-foreground">
-              <ListChecks className="h-4 w-4 text-muted-foreground" /> To do
-              {overdue.length > 0 && (
-                <span className="text-micro px-2 py-0.5 rounded-full bg-danger-bg text-danger-fg">{overdue.length} overdue</span>
-              )}
-              {dueToday.length > 0 && (
-                <span className="text-micro px-2 py-0.5 rounded-full bg-warning-bg text-warning-fg">{dueToday.length} due today</span>
-              )}
-            </div>
-            {openItems.length > 5 && (
-              <button onClick={() => setTab("actions")} className="text-caption text-primary hover:underline shrink-0">
-                View all {openItems.length} →
-              </button>
-            )}
-          </div>
-          <div className="divide-y divide-border/60">
-            {[...overdue, ...dueToday, ...upcoming].slice(0, 5).map(a => (
-              <ActionRow key={`todo-${a.callId}-${a.index}`} a={a} today={today} onToggle={toggleItem} />
-            ))}
-          </div>
-        </section>
-      )}
 
       {/* TABS */}
       <nav className="flex flex-wrap gap-1 border-b border-[var(--border)] -mb-px">
