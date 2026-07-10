@@ -114,25 +114,8 @@ export function WeeklyPlan({ onOpenItem }: { onOpenItem: (id: string) => void })
   const monday = useMemo(() => parseISO(weekStart), [weekStart]);
   const isThisWeek = mondayOf(new Date()) === weekStart;
   const weekEnd = addDays(monday, 6);
+  const nextEnd = addDays(parseISO(nextWeekStart), 6);
 
-  const slotsByDay = useMemo(() => {
-    const map = new Map<string, WeekSlot[]>();
-    for (let i = 0; i < 7; i++) {
-      map.set(ymd(addDays(monday, i)), []);
-    }
-    for (const s of slots) {
-      if (!s.scheduled_date) continue;
-      const arr = map.get(s.scheduled_date);
-      if (arr) arr.push(s);
-    }
-    return map;
-  }, [slots, monday]);
-
-  const mofIdeas = ideas.filter(i => i.stage === "mof").sort((a, b) => a.position - b.position);
-  const tofIdeas = ideas.filter(i => i.stage === "tof").sort((a, b) => a.position - b.position);
-
-  const availableSlotsFor = (stage: Stage) =>
-    slots.filter(s => s.funnel_stage === stage);
 
   const saveIdeaField = async (id: string, patch: Partial<WeekIdea>) => {
     setIdeas(prev => prev.map(i => i.id === id ? { ...i, ...patch } : i));
