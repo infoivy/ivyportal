@@ -160,15 +160,27 @@ function FounderPage() {
 
       {/* View switcher */}
       <div className="flex items-center gap-1 border-b border-[#1f2530] overflow-x-auto">
-        <ViewTab active={view === "weekly"}   onClick={() => setView("weekly")}   icon={LayoutGrid}   label="Weekly plan" />
-        <ViewTab active={view === "calendar"} onClick={() => setView("calendar")} icon={CalendarIcon} label="Calendar" />
-        <ViewTab active={view === "kanban"}   onClick={() => setView("kanban")}   icon={Columns3}     label="Kanban" />
-        <ViewTab active={view === "list"}     onClick={() => setView("list")}     icon={ListIcon}     label="List" />
-        <ViewTab active={view === "sops"}     onClick={() => setView("sops")}     icon={BookOpen}     label="SOPs & Playbooks" />
+        <ViewTab active={view === "weekly"}    onClick={() => setView("weekly")}    icon={LayoutGrid}   label="Weekly plan" />
+        <ViewTab active={view === "recording"} onClick={() => setView("recording")} icon={Video}        label="Recording day" />
+        <ViewTab active={view === "hooks"}     onClick={() => setView("hooks")}     icon={Zap}          label="Hook library" />
+        <ViewTab active={view === "calendar"}  onClick={() => setView("calendar")}  icon={CalendarIcon} label="Calendar" />
+        <ViewTab active={view === "kanban"}    onClick={() => setView("kanban")}    icon={Columns3}     label="Kanban" />
+        <ViewTab active={view === "list"}      onClick={() => setView("list")}      icon={ListIcon}     label="List" />
+        <ViewTab active={view === "sops"}      onClick={() => setView("sops")}      icon={BookOpen}     label="SOPs & Playbooks" />
       </div>
 
       {view === "sops" ? (
         <FounderSops />
+      ) : view === "hooks" ? (
+        <HookLibrary />
+      ) : view === "recording" ? (
+        <RecordingDay
+          onOpenItem={(id) => {
+            const it = items.find(i => i.id === id);
+            if (it) setEditing(it);
+            else supabase.from("content_items").select("*").eq("id", id).maybeSingle().then(({ data }) => { if (data) setEditing(data as ContentItem); });
+          }}
+        />
       ) : view === "weekly" ? (
         <WeeklyPlan
           onOpenItem={(id) => {
