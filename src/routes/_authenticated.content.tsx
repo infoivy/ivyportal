@@ -1,49 +1,49 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth-context";
 import { SegmentedControl } from "@/components/ui/segmented-control";
-import { FounderHQInner } from "@/components/founder/founder-hq";
-import { WeeklyReviewInner } from "@/components/founder/weekly-review";
+import { FounderPageContent } from "@/components/content/planner";
+import { InstagramInner } from "@/components/content/instagram";
 import { Sparkles } from "lucide-react";
 
-export const Route = createFileRoute("/_authenticated/command")({
+export const Route = createFileRoute("/_authenticated/content")({
   validateSearch: (s: Record<string, unknown>) => ({
-    tab: (s.tab as string) ?? "overview",
+    tab: (s.tab as string) ?? "plan",
   }),
-  head: () => ({ meta: [{ title: "Command — ISA Portal" }] }),
-  component: CommandPage,
+  head: () => ({ meta: [{ title: "Content — ISA Portal" }] }),
+  component: ContentPage,
 });
 
 const TABS = [
-  { label: "Overview", value: "overview" },
-  { label: "Weekly Review", value: "weekly" },
+  { label: "Content", value: "plan" },
+  { label: "Instagram", value: "instagram" },
 ] as const;
 
 type Tab = (typeof TABS)[number]["value"];
 
-function CommandPage() {
+function ContentPage() {
   const { roles } = useAuth();
   const canView = roles.includes("admin") || roles.includes("founder");
   const { tab } = Route.useSearch();
-  const navigate = useNavigate({ from: "/command" });
+  const navigate = useNavigate({ from: "/content" });
 
   if (!canView) {
     return (
       <div className="p-8 max-w-md mx-auto text-center space-y-2">
         <Sparkles className="h-8 w-8 mx-auto text-muted-foreground" />
-        <div className="text-title">Command</div>
+        <div className="text-title">Content</div>
         <p className="text-caption text-muted-foreground">Founder or admin access required.</p>
       </div>
     );
   }
 
-  const activeTab: Tab = tab === "weekly" ? "weekly" : "overview";
+  const activeTab: Tab = tab === "instagram" ? "instagram" : "plan";
 
   return (
     <div className="p-4 sm:p-6 max-w-[1400px] mx-auto space-y-4">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-display text-foreground">Command</h1>
-          <p className="text-body text-muted-foreground mt-0.5">The business at a glance.</p>
+          <h1 className="text-display text-foreground">Content</h1>
+          <p className="text-body text-muted-foreground mt-0.5">Planning, recording, and Instagram performance.</p>
         </div>
         <SegmentedControl
           segments={TABS}
@@ -52,7 +52,7 @@ function CommandPage() {
         />
       </header>
 
-      {activeTab === "overview" ? <FounderHQInner /> : <WeeklyReviewInner />}
+      {activeTab === "plan" ? <FounderPageContent /> : <InstagramInner />}
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { studentsQuery, coachesQuery } from "@/lib/queries";
 import { Users, Phone, Star, AlertTriangle, Trophy } from "lucide-react";
+import { CoachingTabBar } from "@/components/coaching-tab-bar";
 
 export const Route = createFileRoute("/_authenticated/coaches")({
   head: () => ({ meta: [{ title: "Coach Capacity — ISA" }] }),
@@ -65,6 +66,7 @@ function CoachesPage() {
 
   return (
     <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-5">
+      <CoachingTabBar />
       <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--border)] pb-4">
         <div>
           <div className="flex items-center gap-2 text-[10px] text-sky-400 mb-1">

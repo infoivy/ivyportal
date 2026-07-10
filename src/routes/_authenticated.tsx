@@ -1,4 +1,4 @@
-import { createFileRoute, Link, Outlet, redirect, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, redirect, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppSidebar } from "@/components/app-sidebar";
@@ -7,6 +7,10 @@ import { Button } from "@/components/ui/button";
 import { LogOut, Search } from "lucide-react";
 import { Toaster } from "sonner";
 import { AuthContext, type AuthState } from "@/lib/auth-context";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { installSessionOnlyCleanup } from "@/components/auth-page";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NotificationsBell } from "@/components/notifications-bell";
@@ -69,7 +73,7 @@ function AuthedLayout() {
           navigate({ to: "/student-portal", replace: true });
         } else if (!rolesArr.includes("admin") && !rolesArr.includes("founder")) {
           if (rolesArr.includes("setter")) navigate({ to: "/eods", replace: true });
-          else if (rolesArr.includes("closer")) navigate({ to: "/sales-hq", replace: true });
+          else if (rolesArr.includes("closer")) navigate({ to: "/sales", search: { tab: "operations" }, replace: true });
           else if (rolesArr.includes("csm")) navigate({ to: "/csm", replace: true });
           else if (rolesArr.includes("coach")) navigate({ to: "/calls", replace: true });
         }
@@ -120,7 +124,7 @@ function AuthedLayout() {
               <div className="flex items-center gap-2 min-w-0">
                 <SidebarTrigger className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md motion-safe:transition-colors" />
                 <div className="h-4 w-px bg-border mx-1" />
-                <span className="text-[13px] font-semibold text-foreground">ISA</span>
+                <PageContextLabel />
               </div>
               <div className="flex items-center gap-1.5">
                 {/* Search */}
@@ -134,11 +138,11 @@ function AuthedLayout() {
                   <kbd className="hidden md:inline text-[10px] opacity-50">⌘K</kbd>
                 </button>
 
-                {/* EOD due — subtle banner trigger (only shows when outstanding) */}
+                {/* EOD due — status color reserved for meaning */}
                 {eodSubmitted === false && !studentOnly && (
                   <Link
                     to="/eods"
-                    className="hidden sm:inline-flex items-center gap-1 text-[12px] px-2.5 py-1.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/15 motion-safe:transition-colors"
+                    className="hidden sm:inline-flex items-center gap-1 text-caption px-2.5 py-1.5 rounded-md bg-warning-bg text-warning-fg hover:opacity-80 motion-safe:transition-opacity"
                   >
                     EOD due
                   </Link>
@@ -147,14 +151,29 @@ function AuthedLayout() {
                 <ThemeToggle />
                 <NotificationsBell />
 
-                {/* Avatar */}
-                <button
-                  onClick={signOut}
-                  className="h-7 w-7 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[11px] font-semibold shrink-0 hover:opacity-80 motion-safe:transition-opacity"
-                  title={`${state.displayName} — click to sign out`}
-                >
-                  {(state.displayName ?? "U").charAt(0).toUpperCase()}
-                </button>
+                {/* Account menu */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      className="h-7 w-7 rounded-full bg-muted text-foreground flex items-center justify-center text-micro font-semibold shrink-0 hover:bg-accent motion-safe:transition-colors"
+                      title={state.displayName ?? "Account"}
+                    >
+                      {(state.displayName ?? "U").charAt(0).toUpperCase()}
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="min-w-44">
+                    <DropdownMenuLabel className="text-caption text-muted-foreground font-normal truncate">
+                      {state.displayName}
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link to="/profile">Profile</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={signOut}>
+                      <LogOut className="h-3.5 w-3.5" /> Sign out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </header>
 
@@ -176,6 +195,23 @@ function AuthedLayout() {
       </SidebarProvider>
     </AuthContext.Provider>
   );
+}
+
+const PAGE_LABELS: Array<[string, string]> = [
+  ["/dashboard", "Dashboard"], ["/eods", "EOD Reports"], ["/action-items", "Action Items"],
+  ["/notes", "Notes"], ["/sales", "Sales"], ["/revenue", "Revenue"], ["/installments", "Revenue"],
+  ["/payouts", "Revenue"], ["/closer-resources", "Closer Resources"], ["/training", "Training"],
+  ["/calendar", "Calendar"], ["/crm", "CRM"], ["/students", "Students"], ["/calls", "1-on-1 Calls"],
+  ["/coaches", "Coaches"], ["/student-success", "Student Success"], ["/csm", "CSM"],
+  ["/testimonials", "Testimonials"], ["/knowledge", "Knowledge"], ["/policies", "Knowledge"],
+  ["/sops", "Knowledge"], ["/command", "Command"], ["/content", "Content"], ["/admin", "Admin"],
+  ["/team", "Team"], ["/profile", "Profile"], ["/student-portal", "My Portal"],
+];
+
+function PageContextLabel() {
+  const path = useRouterState({ select: (s) => s.location.pathname });
+  const label = PAGE_LABELS.find(([p]) => path.startsWith(p))?.[1] ?? "Ivy Portal";
+  return <span className="text-body font-semibold text-foreground truncate">{label}</span>;
 }
 
 function StudentBottomNavBridge() {

@@ -20,17 +20,26 @@ const PAGES: PageItem[] = [
   { kind: "page", title: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
   { kind: "page", title: "EOD Reports", to: "/eods", icon: FileText },
   { kind: "page", title: "Action Items", to: "/action-items", icon: ListChecks },
+  { kind: "page", title: "Notes", to: "/notes", icon: FileText },
+  { kind: "page", title: "Sales", to: "/sales", icon: BarChart3, roles: ["admin", "closer", "setter"] },
+  { kind: "page", title: "Sales Trends", to: "/sales?tab=trends", icon: BarChart3, roles: ["admin", "closer", "setter"] },
+  { kind: "page", title: "Revenue", to: "/revenue", icon: DollarSign, roles: ["admin", "closer", "setter", "coach", "csm"] },
+  { kind: "page", title: "Installments", to: "/installments", icon: DollarSign, roles: ["admin", "closer", "coach"] },
+  { kind: "page", title: "Payouts", to: "/payouts", icon: DollarSign, roles: ["admin"] },
   { kind: "page", title: "Students", to: "/students", icon: School },
-  { kind: "page", title: "1-on-1 Calls", to: "/calls", icon: Phone, roles: ["admin", "coach"] },
-  { kind: "page", title: "Installments", to: "/installments", icon: DollarSign },
-  { kind: "page", title: "Analytics", to: "/analytics", icon: BarChart3 },
-  { kind: "page", title: "Coach Capacity", to: "/coaches", icon: Trophy, roles: ["admin", "coach", "csm"] },
+  { kind: "page", title: "1-on-1 Calls", to: "/calls", icon: Phone, roles: ["admin", "coach", "csm"] },
+  { kind: "page", title: "Coaches", to: "/coaches", icon: Trophy, roles: ["admin", "coach", "csm"] },
+  { kind: "page", title: "Student Success", to: "/student-success", icon: HeartHandshake, roles: ["admin", "csm", "coach", "founder"] },
   { kind: "page", title: "CSM", to: "/csm", icon: HeartHandshake, roles: ["admin", "csm"] },
+  { kind: "page", title: "Testimonials", to: "/testimonials", icon: Star, roles: ["admin", "coach", "closer", "setter", "csm"] },
   { kind: "page", title: "Calendar", to: "/calendar", icon: Calendar },
+  { kind: "page", title: "Training", to: "/training", icon: GraduationCap },
+  { kind: "page", title: "Knowledge", to: "/knowledge", icon: BookOpen },
+  { kind: "page", title: "Command", to: "/command", icon: Sparkles, roles: ["founder", "admin"] },
+  { kind: "page", title: "Content", to: "/content", icon: Sparkles, roles: ["founder", "admin"] },
   { kind: "page", title: "Team", to: "/team", icon: Users, roles: ["admin"] },
   { kind: "page", title: "Admin", to: "/admin", icon: Shield, roles: ["admin"] },
-  { kind: "page", title: "Notes", to: "/notes", icon: FileText },
-  { kind: "page", title: "Training", to: "/training", icon: GraduationCap },
+  { kind: "page", title: "Profile", to: "/profile", icon: Users },
 ];
 
 export function CommandPalette() {
@@ -111,11 +120,15 @@ export function CommandPalette() {
 
   const go = (it: Item) => {
     setOpen(false); setQ("");
-    if (it.kind === "page") nav({ to: it.to as any });
+    if (it.kind === "page") {
+      const [path, qs] = it.to.split("?");
+      const search = qs ? Object.fromEntries(new URLSearchParams(qs)) : undefined;
+      nav({ to: path as any, search: search as any });
+    }
     else if (it.kind === "student") nav({ to: "/students/$id", params: { id: it.id } });
     else if (it.kind === "doc") nav({ to: "/knowledge/$slug", params: { slug: it.slug } });
     else if (it.kind === "testimonial") nav({ to: "/testimonials" });
-    else if (it.kind === "content") nav({ to: "/founder" });
+    else if (it.kind === "content") nav({ to: "/content", search: { tab: "plan" } as any });
     else nav({ to: "/team" });
   };
 
@@ -157,7 +170,7 @@ export function CommandPalette() {
             if (it.kind === "student") {
               return (
                 <div key={`s-${it.id}`} className={base} onMouseEnter={() => setActive(i)} onClick={() => go(it)}>
-                  <School className="h-3.5 w-3.5 text-blue-400" />
+                  <School className="h-3.5 w-3.5 text-muted-foreground" />
                   <div className="flex-1 min-w-0">
                     <div className="truncate">{it.name}</div>
                     {it.email && <div className="text-[10px] text-muted-foreground truncate">{it.email}</div>}
@@ -169,7 +182,7 @@ export function CommandPalette() {
             if (it.kind === "person") {
               return (
                 <div key={`u-${it.id}`} className={base} onMouseEnter={() => setActive(i)} onClick={() => go(it)}>
-                  <Users className="h-3.5 w-3.5 text-sky-400" />
+                  <Users className="h-3.5 w-3.5 text-muted-foreground" />
                   <span className="flex-1 truncate">{it.name}</span>
                   <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{it.role ?? "Team"}</span>
                 </div>
@@ -178,7 +191,7 @@ export function CommandPalette() {
             if (it.kind === "doc") {
               return (
                 <div key={`d-${it.slug}`} className={base} onMouseEnter={() => setActive(i)} onClick={() => go(it)}>
-                  <BookOpen className="h-3.5 w-3.5 text-green-400" />
+                  <BookOpen className="h-3.5 w-3.5 text-muted-foreground" />
                   <div className="flex-1 min-w-0">
                     <div className="truncate">{it.title}</div>
                     {it.category && <div className="text-[10px] text-muted-foreground truncate">{it.category}</div>}
@@ -190,7 +203,7 @@ export function CommandPalette() {
             if (it.kind === "testimonial") {
               return (
                 <div key={`t-${it.id}`} className={base} onMouseEnter={() => setActive(i)} onClick={() => go(it)}>
-                  <Star className="h-3.5 w-3.5 text-amber-400" />
+                  <Star className="h-3.5 w-3.5 text-muted-foreground" />
                   <span className="flex-1 truncate">{it.title}</span>
                   <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Testimonial</span>
                 </div>
@@ -198,7 +211,7 @@ export function CommandPalette() {
             }
             return (
               <div key={`c-${it.id}`} className={base} onMouseEnter={() => setActive(i)} onClick={() => go(it)}>
-                <Sparkles className="h-3.5 w-3.5 text-blue-400" />
+                <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />
                 <div className="flex-1 min-w-0">
                   <div className="truncate">{it.title}</div>
                   {it.platform && <div className="text-[10px] text-muted-foreground truncate">{it.platform}</div>}

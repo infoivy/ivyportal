@@ -37,6 +37,7 @@ import { Route as AuthenticatedEodsRouteImport } from './routes/_authenticated.e
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
 import { Route as AuthenticatedCsmRouteImport } from './routes/_authenticated.csm'
 import { Route as AuthenticatedCrmRouteImport } from './routes/_authenticated.crm'
+import { Route as AuthenticatedContentRouteImport } from './routes/_authenticated.content'
 import { Route as AuthenticatedCommandRouteImport } from './routes/_authenticated.command'
 import { Route as AuthenticatedCoachesRouteImport } from './routes/_authenticated.coaches'
 import { Route as AuthenticatedCloserResourcesRouteImport } from './routes/_authenticated.closer-resources'
@@ -199,6 +200,11 @@ const AuthenticatedCrmRoute = AuthenticatedCrmRouteImport.update({
   path: '/crm',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedContentRoute = AuthenticatedContentRouteImport.update({
+  id: '/content',
+  path: '/content',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedCommandRoute = AuthenticatedCommandRouteImport.update({
   id: '/command',
   path: '/command',
@@ -307,6 +313,7 @@ export interface FileRoutesByFullPath {
   '/closer-resources': typeof AuthenticatedCloserResourcesRoute
   '/coaches': typeof AuthenticatedCoachesRoute
   '/command': typeof AuthenticatedCommandRoute
+  '/content': typeof AuthenticatedContentRoute
   '/crm': typeof AuthenticatedCrmRoute
   '/csm': typeof AuthenticatedCsmRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -353,6 +360,7 @@ export interface FileRoutesByTo {
   '/closer-resources': typeof AuthenticatedCloserResourcesRoute
   '/coaches': typeof AuthenticatedCoachesRoute
   '/command': typeof AuthenticatedCommandRoute
+  '/content': typeof AuthenticatedContentRoute
   '/crm': typeof AuthenticatedCrmRoute
   '/csm': typeof AuthenticatedCsmRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -399,6 +407,7 @@ export interface FileRoutesById {
   '/_authenticated/closer-resources': typeof AuthenticatedCloserResourcesRoute
   '/_authenticated/coaches': typeof AuthenticatedCoachesRoute
   '/_authenticated/command': typeof AuthenticatedCommandRoute
+  '/_authenticated/content': typeof AuthenticatedContentRoute
   '/_authenticated/crm': typeof AuthenticatedCrmRoute
   '/_authenticated/csm': typeof AuthenticatedCsmRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -447,6 +456,7 @@ export interface FileRouteTypes {
     | '/closer-resources'
     | '/coaches'
     | '/command'
+    | '/content'
     | '/crm'
     | '/csm'
     | '/dashboard'
@@ -493,6 +503,7 @@ export interface FileRouteTypes {
     | '/closer-resources'
     | '/coaches'
     | '/command'
+    | '/content'
     | '/crm'
     | '/csm'
     | '/dashboard'
@@ -538,6 +549,7 @@ export interface FileRouteTypes {
     | '/_authenticated/closer-resources'
     | '/_authenticated/coaches'
     | '/_authenticated/command'
+    | '/_authenticated/content'
     | '/_authenticated/crm'
     | '/_authenticated/csm'
     | '/_authenticated/dashboard'
@@ -779,6 +791,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCrmRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/content': {
+      id: '/_authenticated/content'
+      path: '/content'
+      fullPath: '/content'
+      preLoaderRoute: typeof AuthenticatedContentRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/command': {
       id: '/_authenticated/command'
       path: '/command'
@@ -983,6 +1002,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedCloserResourcesRoute: typeof AuthenticatedCloserResourcesRoute
   AuthenticatedCoachesRoute: typeof AuthenticatedCoachesRoute
   AuthenticatedCommandRoute: typeof AuthenticatedCommandRoute
+  AuthenticatedContentRoute: typeof AuthenticatedContentRoute
   AuthenticatedCrmRoute: typeof AuthenticatedCrmRoute
   AuthenticatedCsmRoute: typeof AuthenticatedCsmRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
@@ -1018,6 +1038,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedCloserResourcesRoute: AuthenticatedCloserResourcesRoute,
   AuthenticatedCoachesRoute: AuthenticatedCoachesRoute,
   AuthenticatedCommandRoute: AuthenticatedCommandRoute,
+  AuthenticatedContentRoute: AuthenticatedContentRoute,
   AuthenticatedCrmRoute: AuthenticatedCrmRoute,
   AuthenticatedCsmRoute: AuthenticatedCsmRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
