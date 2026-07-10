@@ -28,3 +28,18 @@ Phased commits, each gated on `npx tsc --noEmit` + `npm run build`: tokens → I
 - Consider promoting the Revenue/Installments/Payouts URL-tab bar into a shared component with the Calls/Coaches one.
 - `npm run demo:remove` before real use; screenshots in /tmp/ivy-*.png.
 - Inkdrop was unreachable (fetch failed) — this file is the fallback log.
+
+## Outcome
+
+Completed and pushed (b640e78..6d306c5, 9 commits). Notes:
+
+- All four demo personas verified end-to-end in headless Chrome: correct role
+  landing, both themes, 375px mobile. All old-URL redirects land on the right
+  page and tab.
+- Demo data left seeded so populated screens can be judged; run
+  `npm run demo:remove` before real use.
+- Deviations from plan: Revenue/Installments/Payouts kept as URL-tabs (the
+  pattern already existed) instead of physical page merges; /analytics folds
+  into /sales (coach/csm keep equivalent charts in EODs Graphs).
+- Found and fixed two latent bugs: unmapped shadcn color utilities (popovers
+  were transparent by accident) and the sign-in role landing that never fired.
