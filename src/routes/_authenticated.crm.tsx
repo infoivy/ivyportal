@@ -264,8 +264,19 @@ function Crm() {
             <span className="text-[10px] text-muted-foreground tabular-nums">{filtered.length} shown</span>
           </div>
           {filtered.length === 0 ? (
-            <div className="px-3 py-8 text-center text-xs text-muted-foreground">
-              {connected ? (loading ? "Loading…" : "No leads match.") : "Connect Close to see live data."}
+            <div className="px-3 py-10 text-center text-xs text-muted-foreground space-y-1">
+              {!connected ? (
+                <>Connect Close to see live data.</>
+              ) : loading && leads.length === 0 ? (
+                <>Loading leads…</>
+              ) : leads.length === 0 ? (
+                <>
+                  <div className="text-sm text-foreground">No leads yet</div>
+                  <div>Add your first lead in Close and it'll show up here.</div>
+                </>
+              ) : (
+                <>No leads match {q ? `"${q}"` : "the current filters"}.</>
+              )}
             </div>
           ) : (
             <div className="max-h-[520px] overflow-auto">
