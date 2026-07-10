@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import { StatCard } from "@/components/ui/stat-card";
 import { BreakdownBar } from "@/components/ui/breakdown-bar";
-import { SegmentedControl } from "@/components/ui/segmented-control";
 import { VolumeAreaChart, VolumeLegend } from "@/components/ui/volume-area-chart";
 import { FilterToolbar } from "@/components/ui/filter-toolbar";
 import { type DateRange, rangeFor, daysBetween } from "@/components/range-picker";
@@ -27,8 +26,6 @@ export const Route = createFileRoute("/_authenticated/sales")({
 
 type SetterProfile = { id: string; display_name: string; setter_type: "phone" | "dm" | null };
 type EODRow = { id: string; user_id: string; report_date: string; dials: number; leads_contacted: number; calls_booked: number };
-type InviteRow = { id: string; email: string; roles: string[]; used_at: string | null; created_at: string };
-type OnboardingRow = { user_id: string; role: string; step_id: string };
 type TrendsRow = {
   id: string; user_id: string; report_date: string;
   dms_sent: number; convos_started: number; calls_booked: number;
@@ -58,31 +55,17 @@ function Sales() {
   return <SalesInner />;
 }
 
-const TABS = [
-  { label: "Operations", value: "operations" },
-  { label: "Trends", value: "trends" },
-] as const;
-type TabValue = typeof TABS[number]["value"];
-
 function SalesInner() {
-  const navigate = useNavigate();
-  const { tab } = Route.useSearch();
-  const activeTab = (tab === "trends" ? "trends" : "operations") as TabValue;
-
-  const setTab = (t: TabValue) => navigate({ to: "/sales", search: { tab: t }, replace: true });
-
   return (
     <div className="max-w-[1400px] mx-auto p-4 sm:p-5 space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-display text-foreground">Sales</h1>
-          <p className="text-body text-muted-foreground mt-1">Team compliance, pipeline, and full-funnel trends</p>
+          <p className="text-body text-muted-foreground mt-1">Today's compliance, full-funnel trends, and scorecards — one view.</p>
         </div>
-        <SegmentedControl segments={TABS} value={activeTab} onChange={setTab} />
       </div>
 
-      {activeTab === "operations" && <OperationsTab />}
-      {activeTab === "trends" && <TrendsTab />}
+      <OperationsTab />
     </div>
   );
 }
@@ -99,29 +82,20 @@ function OperationsTab() {
   const [todayEods, setTodayEods] = useState<EODRow[]>([]);
   const [yesterdayEods, setYesterdayEods] = useState<EODRow[]>([]);
   const [recentEods, setRecentEods] = useState<EODRow[]>([]);
-  const [invitations, setInvitations] = useState<InviteRow[]>([]);
-  const [onboardingProgress, setOnboardingProgress] = useState<OnboardingRow[]>([]);
-  const [firstEodByUser, setFirstEodByUser] = useState<Set<string>>(new Set());
-  const [firstSetByUser, setFirstSetByUser] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [expandedScorecard, setExpandedScorecard] = useState<string | null>(null);
-  const [opsTab, setOpsTab] = useState<"today" | "pipeline" | "scorecards">("today");
   const { roles } = useAuth();
   const canEditSetterType = roles.includes("admin");
 
   const load = async () => {
     setLoading(true);
-    const [profsRes, rolesRes, todayRes, yestRes, recentRes, invRes, progRes, firstEodRes, dealsRes] = await Promise.all([
+    const [profsRes, rolesRes, todayRes, yestRes, recentRes] = await Promise.all([
       supabase.from("profiles").select("id, display_name, setter_type, active" as any),
       supabase.from("user_roles").select("user_id, role"),
       supabase.from("eods").select("id, user_id, report_date, dials, leads_contacted, calls_booked").eq("report_date", today),
       supabase.from("eods").select("id, user_id, report_date, dials, leads_contacted, calls_booked").eq("report_date", yesterday),
       supabase.from("eods").select("id, user_id, report_date, dials, leads_contacted, calls_booked").gte("report_date", thirtyDaysAgo).order("report_date", { ascending: false }),
-      (supabase as any).from("invitations").select("id, email, roles, used_at, created_at"),
-      supabase.from("onboarding_progress").select("user_id, role, step_id"),
-      supabase.from("eods").select("user_id").order("report_date", { ascending: true }),
-      supabase.from("deals").select("setter_id"),
     ]);
 
     const profs: any[] = profsRes.data ?? [];
@@ -139,20 +113,6 @@ function OperationsTab() {
     setTodayEods((todayRes.data ?? []) as EODRow[]);
     setYesterdayEods((yestRes.data ?? []) as EODRow[]);
     setRecentEods((recentRes.data ?? []) as EODRow[]);
-    setInvitations((invRes.data ?? []) as InviteRow[]);
-    setOnboardingProgress((progRes.data ?? []) as OnboardingRow[]);
-
-    const seen = new Set<string>();
-    const firstEods = new Set<string>();
-    for (const r of (firstEodRes.data ?? []) as any[]) {
-      if (!seen.has(r.user_id)) { seen.add(r.user_id); firstEods.add(r.user_id); }
-    }
-    setFirstEodByUser(firstEods);
-
-    const setterDealIds = new Set<string>(
-      ((dealsRes.data ?? []) as any[]).filter(d => d.setter_id).map((d: any) => d.setter_id)
-    );
-    setFirstSetByUser(setterDealIds);
     setLoading(false);
   };
 
@@ -194,12 +154,6 @@ function OperationsTab() {
     });
   })();
 
-  const OPS_TABS = [
-    { label: "Today", value: "today" as const },
-    { label: "Pipeline", value: "pipeline" as const },
-    { label: "Scorecards", value: "scorecards" as const },
-  ];
-
   return (
     <div className="space-y-4">
       {/* Summary */}
@@ -218,13 +172,10 @@ function OperationsTab() {
         ]} title="Today's compliance" />
       </div>
 
-      {/* Sub-tabs */}
-      <SegmentedControl segments={OPS_TABS} value={opsTab} onChange={setOpsTab} className="w-full sm:w-auto" />
-
       {/* Today */}
-      {opsTab === "today" && (
+      <section className="space-y-3">
+        <h2 className="text-title text-foreground">Today's submission status</h2>
         <div className="space-y-4">
-          <div className="text-[13px] text-muted-foreground">Today's submission status</div>
           {setters.length === 0 ? (
             <EmptySales msg="No active setters yet." />
           ) : (
@@ -318,26 +269,18 @@ function OperationsTab() {
             </div>
           )}
         </div>
-      )}
+      </section>
 
-      {/* Pipeline */}
-      {opsTab === "pipeline" && (
-        <div className="space-y-3">
-          <div className="text-[13px] text-muted-foreground">Setter onboarding pipeline</div>
-          <PipelineTab
-            setters={setters}
-            invitations={invitations}
-            onboardingProgress={onboardingProgress}
-            firstEodByUser={firstEodByUser}
-            firstSetByUser={firstSetByUser}
-          />
-        </div>
-      )}
+      {/* Trends — inline so the funnel is seen without a click */}
+      <section className="space-y-3 pt-2 border-t border-border">
+        <h2 className="text-title text-foreground">Trends</h2>
+        <TrendsTab />
+      </section>
 
       {/* Scorecards */}
-      {opsTab === "scorecards" && (
+      <section className="space-y-3 pt-2 border-t border-border">
+        <h2 className="text-title text-foreground">Scorecards — last 30 days</h2>
         <div className="space-y-3">
-          <div className="text-[13px] text-muted-foreground">Setter scorecards — last 30 days</div>
           {setters.length === 0 ? (
             <EmptySales msg="No active setters." />
           ) : (
@@ -354,7 +297,7 @@ function OperationsTab() {
             </div>
           )}
         </div>
-      )}
+      </section>
     </div>
   );
 }
@@ -582,56 +525,6 @@ function TrendsTab() {
 // ─── PIPELINE ───────────────────────────────────────────────────────────────
 
 const STAGES = ["Invited", "Signed up", "SOPs read", "First EOD", "First set", "Ramped"] as const;
-type Stage = typeof STAGES[number];
-
-function getStage(setter: SetterProfile, invitations: InviteRow[], onboardingProgress: OnboardingRow[], firstEodByUser: Set<string>, firstSetByUser: Set<string>): Stage {
-  const setterSteps = onboardingProgress.filter(p => p.user_id === setter.id && p.role === "setter");
-  const pct = setterSteps.length;
-  if (firstSetByUser.has(setter.id) && pct >= 3) return "Ramped";
-  if (firstSetByUser.has(setter.id)) return "First set";
-  if (firstEodByUser.has(setter.id)) return "First EOD";
-  if (pct > 0) return "SOPs read";
-  return "Signed up";
-}
-
-function PipelineTab({ setters, invitations, onboardingProgress, firstEodByUser, firstSetByUser }: {
-  setters: SetterProfile[]; invitations: InviteRow[]; onboardingProgress: OnboardingRow[];
-  firstEodByUser: Set<string>; firstSetByUser: Set<string>;
-}) {
-  const pendingInvites = invitations.filter(inv => inv.roles.includes("setter") && !inv.used_at);
-  const byStage: Record<Stage, (SetterProfile | InviteRow)[]> = { "Invited": pendingInvites, "Signed up": [], "SOPs read": [], "First EOD": [], "First set": [], "Ramped": [] };
-  for (const s of setters) { const stage = getStage(s, invitations, onboardingProgress, firstEodByUser, firstSetByUser); byStage[stage].push(s); }
-
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-      {STAGES.map((stage, i) => {
-        const items = byStage[stage];
-        const isLast = i === STAGES.length - 1;
-        return (
-          <div key={stage} className={`card-surface p-3 space-y-2 ${isLast ? "ring-1 ring-primary/30" : ""}`}>
-            <div className={`text-[13px] font-medium ${isLast ? "text-primary" : "text-muted-foreground"}`}>
-              {stage} <span className="text-foreground">{items.length}</span>
-            </div>
-            {items.length === 0 ? (
-              <div className="text-[12px] text-muted-foreground/50 italic">—</div>
-            ) : (
-              items.map((item) => {
-                const isProfile = "setter_type" in item;
-                const name = isProfile ? (item as SetterProfile).display_name : (item as InviteRow).email;
-                return (
-                  <div key={isProfile ? (item as SetterProfile).id : (item as InviteRow).id}
-                    className="text-[12px] px-2 py-1.5 rounded-md bg-muted truncate" title={name}>
-                    {name}
-                  </div>
-                );
-              })
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 // ─── SCORECARD ──────────────────────────────────────────────────────────────
 
