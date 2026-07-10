@@ -795,7 +795,7 @@ function EODRow({ eod, author, onDelete }: { eod: EOD; author?: string; onDelete
       <div className="w-full flex items-center gap-3 p-3 text-left hover:bg-[#14171e] transition">
         <button onClick={() => setOpen(o => !o)} className="flex items-center gap-3 flex-1 min-w-0 text-left">
           <ChevronRight className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${open ? "rotate-90" : ""}`} />
-          <div className="text-xs font-mono text-muted-foreground w-24">{eod.report_date}</div>
+          <div className="text-xs text-muted-foreground w-28">{fmtLongDate(eod.report_date)}</div>
           {author && <div className="text-xs text-foreground w-32 truncate">{author}</div>}
           <div className="flex-1 grid grid-cols-3 md:grid-cols-6 gap-2 text-[11px]">
             <RowStat label="DMs" value={eod.dms_sent} />
