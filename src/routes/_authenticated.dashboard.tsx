@@ -512,11 +512,11 @@ function Kpi({ icon: Icon, label, value, suffix, color, highlight, onClick, delt
   );
 }
 
-const OPS_TONE: Record<string, { border: string; bg: string; text: string; iconBg: string }> = {
-  rose:   { border: "border-red-500/40",    bg: "bg-red-500/5",    text: "text-red-400",    iconBg: "bg-red-500/15" },
-  amber:  { border: "border-amber-500/40",   bg: "bg-amber-500/5",   text: "text-amber-400",   iconBg: "bg-amber-500/15" },
-  sky:    { border: "border-sky-500/40",     bg: "bg-sky-500/5",     text: "text-sky-400",     iconBg: "bg-sky-500/15" },
-  muted:  { border: "border-border",         bg: "bg-card",          text: "text-foreground",  iconBg: "bg-white/5" },
+const OPS_TONE: Record<string, { dot: string; value: string }> = {
+  rose:   { dot: "bg-red-500",    value: "text-red-400" },
+  amber:  { dot: "bg-amber-500",  value: "text-amber-400" },
+  sky:    { dot: "bg-blue-500",   value: "text-foreground" },
+  muted:  { dot: "bg-white/30",   value: "text-foreground" },
 };
 
 function OpsCard({
@@ -532,15 +532,14 @@ function OpsCard({
     <Link
       to={to as any}
       search={search as any}
-      className={`rounded-md border ${t.border} ${t.bg} p-2.5 hover:brightness-110 transition block`}
+      className="rounded-xl border border-white/[0.07] bg-card p-4 hover:bg-white/[0.02] transition block"
     >
-      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
-        <span className={`grid h-4 w-4 place-items-center rounded-sm ${t.iconBg}`}>
-          <Icon className={`h-2.5 w-2.5 ${t.text}`} />
-        </span>
+      <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
+        <span className={`inline-block h-1.5 w-1.5 rounded-full ${t.dot}`} />
+        <Icon className="h-3 w-3 text-muted-foreground" />
         <span className="truncate">{label}</span>
       </div>
-      <div className={`text-xl font-bold tabular-nums mt-1 ${t.text}`}>
+      <div className={`text-2xl font-light tabular-nums mt-2 tracking-tight ${t.value}`}>
         {value == null ? <span className="text-muted-foreground text-sm">—</span> : value.toLocaleString()}
       </div>
     </Link>
