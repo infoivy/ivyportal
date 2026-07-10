@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { DocShell } from "@/components/doc-shell";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -87,32 +88,23 @@ function CloserResources() {
     "Other",
   ];
 
-  return (
-    <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-primary/15 text-primary flex items-center justify-center">
-            <DollarSign className="h-5 w-5" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Closer Resources</h1>
-            <p className="text-sm text-muted-foreground">Payment links, ready to copy on a call.</p>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <Link to={"/knowledge" as string}>
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-1" /> Knowledge Hub
-            </Button>
-          </Link>
-          {isAdmin && (
-            <Button size="sm" variant={editing ? "default" : "outline"} onClick={() => setEditing((v) => !v)}>
-              <Pencil className="h-4 w-4 mr-1" /> {editing ? "Done" : "Manage"}
-            </Button>
-          )}
-        </div>
-      </div>
+  const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  const visibleCats = CATEGORY_ORDER.filter(cat => rows.some(r => (r.active || isAdmin) && categorize(r) === cat));
 
+  return (
+    <DocShell
+      breadcrumb={{ to: "/knowledge", label: "Knowledge Hub", current: "Closer Resources" }}
+      icon={DollarSign}
+      title="Closer Resources"
+      description="Payment links, ready to copy on a call."
+      badges={["Closers", "Admin-managed"]}
+      sections={visibleCats.map(cat => ({ id: slugify(cat), label: cat }))}
+      actions={isAdmin ? (
+        <Button size="sm" variant={editing ? "default" : "outline"} onClick={() => setEditing((v) => !v)}>
+          <Pencil className="h-4 w-4 mr-1" /> {editing ? "Done" : "Manage"}
+        </Button>
+      ) : undefined}
+    >
       {loading ? (
         <div className="text-sm text-muted-foreground">Loading…</div>
       ) : editing && isAdmin ? (
@@ -123,7 +115,7 @@ function CloserResources() {
             const catRows = rows.filter((r) => (r.active || isAdmin) && categorize(r) === cat);
             if (!catRows.length) return null;
             return (
-              <section key={cat}>
+              <section key={cat} id={slugify(cat)} className="scroll-mt-6">
                 <h2 className="text-sm font-semibold text-muted-foreground mb-2">{cat}</h2>
                 <div className="grid gap-2">
                   {catRows.map((r) => {
@@ -182,7 +174,7 @@ function CloserResources() {
           )}
         </div>
       )}
-    </div>
+    </DocShell>
   );
 }
 

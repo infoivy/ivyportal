@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { CATEGORY_LABEL, type DocCategory } from "@/lib/knowledge";
 import { MarkdownView, useToc } from "@/components/markdown-view";
+import { DocShell } from "@/components/doc-shell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -97,110 +98,69 @@ function KnowledgeDoc() {
   }
 
   return (
-    <div className="p-4 sm:p-6 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-4">
-        <Link to={"/knowledge" as string}>
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-1" /> Knowledge Hub
-          </Button>
-        </Link>
-        {isAdmin && (
-          <div className="flex gap-2">
-            <Link to={"/knowledge/$slug/edit" as string} params={{ slug: doc.slug } as never}>
-              <Button variant="outline" size="sm">
-                <Pencil className="h-4 w-4 mr-1" /> Edit
-              </Button>
-            </Link>
-            <Button variant="outline" size="sm" onClick={handleDelete} className="text-destructive">
-              <Trash2 className="h-4 w-4" />
+    <DocShell
+      breadcrumb={{ to: "/knowledge", label: "Knowledge Hub", current: doc.title }}
+      icon={FileText}
+      title={doc.title}
+      description={
+        <>Last updated {new Date(doc.updated_at).toLocaleDateString()}{updatedByName ? ` by ${updatedByName}` : ""}</>
+      }
+      badges={[CATEGORY_LABEL[doc.category], ...(doc.pinned ? ["Pinned"] : [])]}
+      sections={toc.filter(t => t.level <= 2).map(t => ({ id: t.id, label: t.text }))}
+      actions={isAdmin ? (
+        <div className="flex gap-2">
+          <Link to={"/knowledge/$slug/edit" as string} params={{ slug: doc.slug } as never}>
+            <Button variant="outline" size="sm">
+              <Pencil className="h-4 w-4 mr-1" /> Edit
             </Button>
-          </div>
-        )}
+          </Link>
+          <Button variant="outline" size="sm" onClick={handleDelete} className="text-destructive">
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      ) : undefined}
+    >
+      <div className="relative mb-2">
+        <SearchIcon className="h-3.5 w-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={findQ}
+          onChange={(e) => setFindQ(e.target.value)}
+          placeholder="Search inside this doc…"
+          className="pl-9 h-9 text-sm bg-[var(--card)]"
+        />
       </div>
 
-      <div className="grid lg:grid-cols-[1fr_240px] gap-6">
-        <article className="min-w-0">
-          <div className="text-[11px] text-muted-foreground/70 mb-1">
-            {CATEGORY_LABEL[doc.category]}
+      {!doc.content || doc.content.trim().length < 20 ? (
+        <Card className="p-6 text-center bg-[var(--card)]">
+          <FileText className="h-6 w-6 mx-auto text-muted-foreground/50 mb-2" />
+          <p className="text-sm text-muted-foreground">
+            Content missing — {isAdmin ? "click Edit to paste it in." : "ask an admin to fill this in."}
+          </p>
+        </Card>
+      ) : filteredContent ? (
+        <MarkdownView content={filteredContent} />
+      ) : (
+        <p className="text-sm text-muted-foreground">No sections match “{findQ}”.</p>
+      )}
+
+      {doc.external_links && doc.external_links.length > 0 && (
+        <div className="mt-10 pt-4 border-t border-[var(--border)]">
+          <div className="text-[11px] text-muted-foreground/70 mb-2">Original source</div>
+          <div className="flex flex-wrap gap-2">
+            {doc.external_links.map((l, i) => (
+              <a
+                key={i}
+                href={l.url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition"
+              >
+                <ExtIcon className="h-3 w-3" /> {l.label}
+              </a>
+            ))}
           </div>
-          <h1 className="text-3xl font-semibold tracking-tight mb-2">{doc.title}</h1>
-          <div className="text-xs text-muted-foreground mb-6">
-            Last updated {new Date(doc.updated_at).toLocaleDateString()}
-            {updatedByName ? ` by ${updatedByName}` : ""}
-          </div>
-
-          <div className="relative mb-6">
-            <SearchIcon className="h-3.5 w-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={findQ}
-              onChange={(e) => setFindQ(e.target.value)}
-              placeholder="Search inside this doc…"
-              className="pl-9 h-9 text-sm bg-[var(--card)]"
-            />
-          </div>
-
-          {!doc.content || doc.content.trim().length < 20 ? (
-            <Card className="p-6 text-center bg-[var(--card)]">
-              <FileText className="h-6 w-6 mx-auto text-muted-foreground/50 mb-2" />
-              <p className="text-sm text-muted-foreground">
-                Content missing — {isAdmin ? "click Edit to paste it in." : "ask an admin to fill this in."}
-              </p>
-            </Card>
-          ) : filteredContent ? (
-            <MarkdownView content={filteredContent} />
-          ) : (
-            <p className="text-sm text-muted-foreground">No sections match “{findQ}”.</p>
-          )}
-
-          {doc.external_links && doc.external_links.length > 0 && (
-            <div className="mt-10 pt-4 border-t border-[var(--border)]">
-              <div className="text-[11px] text-muted-foreground/70 mb-2">
-                Original source
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {doc.external_links.map((l, i) => (
-                  <a
-                    key={i}
-                    href={l.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition"
-                  >
-                    <ExtIcon className="h-3 w-3" /> {l.label}
-                  </a>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="mt-8 pt-4 border-t border-[var(--border)] text-xs text-muted-foreground">
-            Last updated {new Date(doc.updated_at).toLocaleString()}
-            {updatedByName ? ` by ${updatedByName}` : ""}
-          </div>
-        </article>
-
-        {toc.length > 2 && (
-          <aside className="hidden lg:block">
-            <div className="sticky top-16">
-              <div className="text-[11px] text-muted-foreground/70 mb-2 flex items-center gap-1.5">
-                <ListTree className="h-3 w-3" /> Contents
-              </div>
-              <nav className="space-y-1 text-sm">
-                {toc.map((t) => (
-                  <a
-                    key={t.id}
-                    href={`#${t.id}`}
-                    className="block text-muted-foreground hover:text-primary transition truncate"
-                    style={{ paddingLeft: (t.level - 1) * 12 }}
-                  >
-                    {t.text}
-                  </a>
-                ))}
-              </nav>
-            </div>
-          </aside>
-        )}
-      </div>
-    </div>
+        </div>
+      )}
+    </DocShell>
   );
 }
