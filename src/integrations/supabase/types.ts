@@ -844,7 +844,7 @@ export type Database = {
           notes: string | null
           sort_order: number
           updated_at: string
-          url: string
+          url: string | null
         }
         Insert: {
           active?: boolean
@@ -857,7 +857,7 @@ export type Database = {
           notes?: string | null
           sort_order?: number
           updated_at?: string
-          url: string
+          url?: string | null
         }
         Update: {
           active?: boolean
@@ -870,7 +870,7 @@ export type Database = {
           notes?: string | null
           sort_order?: number
           updated_at?: string
-          url?: string
+          url?: string | null
         }
         Relationships: []
       }
