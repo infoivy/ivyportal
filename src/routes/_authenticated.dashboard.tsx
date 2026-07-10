@@ -724,9 +724,9 @@ function MyDayBlock({ roles }: { roles: string[] }) {
     (async () => {
       const parts: { label: string; value: string; tone: string; to?: string }[] = [];
 
-      if (roles.includes("admin")) {
-        // Admins: brief snapshot — Ops row is right below.
-        setState({ loading: false, parts: [{ label: "Admin view", value: "Ops row below", tone: "sky" }] });
+      if (roles.includes("admin") && !roles.includes("coach") && !roles.includes("csm") && !roles.includes("setter") && !roles.includes("closer")) {
+        // Founders/admins: skip the My Day block entirely
+        setState({ loading: false, parts: [] });
         return;
       }
 
