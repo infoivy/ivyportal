@@ -237,9 +237,8 @@ function PendingApproval({ email, onSignOut }: { email: string; onSignOut: () =>
         <div>
           <h1 className="text-title text-foreground">Waiting for approval</h1>
           <p className="text-body text-muted-foreground mt-1.5">
-            Your account <span className="text-foreground">{email}</span> is created. An admin
-            will set you up as a student or team member — this page updates automatically once
-            that happens.
+            Your account <span className="text-foreground">{email}</span> is created and waiting
+            to be approved. This page updates automatically once that happens.
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={onSignOut}>
