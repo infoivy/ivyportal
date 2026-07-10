@@ -8,9 +8,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { CheckCircle2, Clock, AlertTriangle, ChevronRight, ChevronDown, Trash2, Pencil, Flame } from "lucide-react";
+import { CheckCircle2, Clock, AlertTriangle, ChevronRight, ChevronDown, Trash2, Pencil, Flame, Download } from "lucide-react";
 import { computeStreak } from "@/lib/streak";
 import { todayBiz } from "@/lib/dates";
+import { exportToCsv } from "@/lib/csv";
 import confetti from "canvas-confetti";
 import { ResponsiveContainer, BarChart, Bar, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip as ReTooltip, Legend } from "recharts";
 
@@ -1005,6 +1006,16 @@ function TeamFeed({ eods, isAdmin, onDelete }: { eods: GridEod[]; isAdmin: boole
           <option value="all">Everyone</option>
           {people.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
         </select>
+        <button
+          onClick={() => exportToCsv(`eods-${days}d.csv`, filtered.map(e => ({
+            date: e.report_date, name: e.display_name, role: e.primary_role,
+            dials: e.dials, leads: e.leads_contacted, sets: e.calls_booked,
+            shows: e.shows, no_shows: e.no_shows,
+          })))}
+          className="ml-auto h-7 px-2.5 flex items-center gap-1.5 rounded-sm border border-[var(--border)] text-[11px] text-muted-foreground hover:text-foreground hover:border-foreground/30 transition"
+        >
+          <Download className="h-3 w-3" /> Export CSV
+        </button>
       </div>
 
       {grouped.length === 0 && <EmptyState text="No EODs in this range." />}

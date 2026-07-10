@@ -25,9 +25,10 @@ import { SetterLeaderboard } from "@/components/setter-leaderboard";
 import { toast } from "sonner";
 import {
   Plus, DollarSign, TrendingUp, Trophy, ClipboardList, Pencil, Trash2,
-  Save, Percent,
+  Save, Percent, Download,
 } from "lucide-react";
 import { RevenueTabBar } from "@/components/revenue-tab-bar";
+import { exportToCsv } from "@/lib/csv";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 
 export const Route = createFileRoute("/_authenticated/revenue")({
@@ -413,8 +414,18 @@ function RevenuePage() {
 
       {/* Recent deals */}
       <Card className="overflow-hidden">
-        <div className="p-4 border-b border-[var(--border)]">
+        <div className="p-4 border-b border-[var(--border)] flex items-center justify-between">
           <h3 className="text-sm font-semibold">Recent deals</h3>
+          <button
+            onClick={() => exportToCsv("deals.csv", deals.map(d => ({
+              date: d.deal_date, student: d.student_name,
+              total_value: d.total_value, cash_upfront: d.cash_collected_upfront,
+              payment_type: d.payment_type, program: d.program_type,
+            })))}
+            className="h-7 px-2.5 flex items-center gap-1.5 rounded-sm border border-[var(--border)] text-[11px] text-muted-foreground hover:text-foreground transition"
+          >
+            <Download className="h-3 w-3" /> Export CSV
+          </button>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] text-sm">

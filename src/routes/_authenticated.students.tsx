@@ -8,8 +8,9 @@ import { studentsQuery, coachesQuery, studentCallsAggQuery, studentEodsAggQuery 
 import { toast } from "sonner";
 import {
   School, Search, Plus, LayoutGrid, Table as TableIcon, Trash2, X,
-  ChevronRight, Users, AlertTriangle, Columns3, Award, MessageSquare, Trophy,
+  ChevronRight, Users, AlertTriangle, Columns3, Award, MessageSquare, Trophy, Download,
 } from "lucide-react";
+import { exportToCsv } from "@/lib/csv";
 
 
 
@@ -257,6 +258,17 @@ function StudentsLayout() {
               )}
             </div>
           )}
+
+          <button
+            onClick={() => exportToCsv("students.csv", filtered.map(s => ({
+              name: s.full_name, email: s.email ?? "", status: s.status, phase: s.phase,
+              join_date: s.join_date ?? "", coach: s.coach_id ?? "",
+              testimonial: s.testimonial_collected ? "yes" : "no",
+            })))}
+            className="flex items-center gap-1.5 h-8 px-2.5 rounded-sm border border-[var(--border)] text-xs text-muted-foreground hover:text-foreground transition"
+          >
+            <Download className="h-3.5 w-3.5" /> Export
+          </button>
 
           {canManage && (
             <button
