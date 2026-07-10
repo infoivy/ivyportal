@@ -69,10 +69,6 @@ function KnowledgeIndex() {
     return map;
   }, [filtered]);
 
-  const recent = useMemo(
-    () => [...docs].sort((a, b) => b.updated_at.localeCompare(a.updated_at)).slice(0, 5),
-    [docs],
-  );
 
   return (
     <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-6">
