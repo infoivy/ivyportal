@@ -129,6 +129,11 @@ function AuthedLayout() {
   const isTeam = state.roles.some(r => ["admin", "coach", "closer", "setter", "csm"].includes(r));
   const studentOnly = isStudent && !isTeam;
 
+  // New signups have no role until an admin approves them — no team shell.
+  if (state.user && state.roles.length === 0) {
+    return <PendingApproval email={state.user.email ?? ""} onSignOut={signOut} />;
+  }
+
   return (
     <AuthContext.Provider value={state}>
       <SidebarProvider>
@@ -212,6 +217,36 @@ function AuthedLayout() {
         {studentOnly && <StudentBottomNavBridge />}
       </SidebarProvider>
     </AuthContext.Provider>
+  );
+}
+
+function PendingApproval({ email, onSignOut }: { email: string; onSignOut: () => void }) {
+  // Re-check roles when approval might have happened
+  useEffect(() => {
+    const recheck = () => window.dispatchEvent(new CustomEvent("isa:roles-changed"));
+    const t = setInterval(recheck, 30_000);
+    window.addEventListener("focus", recheck);
+    return () => { clearInterval(t); window.removeEventListener("focus", recheck); };
+  }, []);
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background p-6">
+      <div className="card-surface max-w-sm w-full p-8 text-center space-y-4">
+        <div className="mx-auto h-12 w-12 rounded-full bg-warning-bg flex items-center justify-center">
+          <span className="text-xl">⏳</span>
+        </div>
+        <div>
+          <h1 className="text-title text-foreground">Waiting for approval</h1>
+          <p className="text-body text-muted-foreground mt-1.5">
+            Your account <span className="text-foreground">{email}</span> is created. An admin
+            will set you up as a student or team member — this page updates automatically once
+            that happens.
+          </p>
+        </div>
+        <Button variant="outline" size="sm" onClick={onSignOut}>
+          <LogOut className="h-3.5 w-3.5 mr-1.5" /> Sign out
+        </Button>
+      </div>
+    </div>
   );
 }
 

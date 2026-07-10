@@ -179,6 +179,42 @@ function TeamPage() {
         </div>
       </header>
 
+      {/* Approval queue — signups stay locked out until you place them */}
+      {members.some(m => m.roles.length === 0 && m.active) && (
+        <div className="rounded-lg border border-warning/25 bg-warning-bg p-4 space-y-3">
+          <div className="text-body font-semibold text-warning-fg">
+            Pending approval · {members.filter(m => m.roles.length === 0 && m.active).length}
+          </div>
+          <div className="space-y-2">
+            {members.filter(m => m.roles.length === 0 && m.active).map(m => (
+              <div key={m.id} className="flex flex-wrap items-center gap-3 rounded-md bg-card border border-border px-3 py-2.5">
+                <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center text-micro font-semibold shrink-0">
+                  {(m.display_name ?? "?").charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-body font-medium text-foreground truncate">{m.display_name ?? "Unnamed"}</div>
+                  <div className="text-caption text-muted-foreground">Signed up — waiting to be placed</div>
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  <button
+                    onClick={() => toggleRole(m.id, "student", false)}
+                    className="text-caption font-medium px-3 py-1.5 rounded-md bg-muted text-foreground hover:bg-accent motion-safe:transition-colors"
+                  >
+                    Approve as student
+                  </button>
+                  <button
+                    onClick={() => setEditing(m)}
+                    className="text-caption font-medium px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 motion-safe:transition-colors"
+                  >
+                    Set up as team member…
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
         <StatTile label="Members" value={counts.total} icon={<Users className="h-3 w-3" />} />
         <StatTile label="Admins" value={counts.admins} icon={<Shield className="h-3 w-3" />} accent="rose" />
