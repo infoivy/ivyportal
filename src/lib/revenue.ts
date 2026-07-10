@@ -35,9 +35,19 @@ export const DEFAULT_RATES: CommissionRates = {
 };
 
 /**
+ * A deal is "set + close" ONLY when the same person did both — the closer
+ * sourced and set the lead themselves (setter_id === closer_id). A deal set
+ * by a different setter pays the setter their base and the closer close-only.
+ */
+export function isSelfSet(d: Deal): boolean {
+  return !!d.setter_id && d.setter_id === d.closer_id;
+}
+
+/**
  * Closer commission:
- * - 15% (set_close) if a setter was involved (setter_id present)
- * - 10% (new_close) if closer worked the deal alone
+ * - 15% (set_close) ONLY when the closer set the deal themselves
+ *   (setter_id === closer_id) — instead of 7.5% + 10% separately
+ * - 10% (new_close) otherwise (including when a different setter set it)
  * - Per-user cap applied if commission_cap_pct is set on the closer's profile
  * Applied to cash_collected_upfront.
  */
@@ -46,28 +56,29 @@ export function commissionForDeal(
   rates: CommissionRates,
   closerCapPct?: number | null,
 ): number {
-  const baseRate = d.setter_id ? rates.set_close : rates.new_close;
+  const baseRate = isSelfSet(d) ? rates.set_close : rates.new_close;
   const rate = closerCapPct != null ? Math.min(baseRate, closerCapPct) : baseRate;
   return d.cash_collected_upfront * rate;
 }
 
 /** Label explaining why a given closer rate applied to a deal (for UI display). */
 export function closerRateLabel(d: Deal, rates: CommissionRates, closerCapPct?: number | null): string {
-  const baseRate = d.setter_id ? rates.set_close : rates.new_close;
+  const baseRate = isSelfSet(d) ? rates.set_close : rates.new_close;
   const rate = closerCapPct != null ? Math.min(baseRate, closerCapPct) : baseRate;
   const pct = `${(rate * 100).toFixed(0)}%`;
   if (closerCapPct != null && baseRate > closerCapPct) return `${pct} (capped)`;
-  return d.setter_id ? `${pct} set+close` : `${pct} close-only`;
+  return isSelfSet(d) ? `${pct} set+close` : `${pct} close-only`;
 }
 
 /**
  * Setter commission (base only):
- * - setter_base × cash_collected_upfront when a setter is attributed
- * - 0 when no setter attributed
+ * - setter_base × cash_collected_upfront when a DIFFERENT setter is attributed
+ * - 0 when no setter, or when the closer set it themselves (their 15%
+ *   set+close rate already covers both halves)
  * Weekly $5k bonus is calculated separately via setterWeekBonus().
  */
 export function setterCommissionForDeal(d: Deal, rates: CommissionRates): number {
-  if (!d.setter_id) return 0;
+  if (!d.setter_id || isSelfSet(d)) return 0;
   return d.cash_collected_upfront * rates.setter_base;
 }
 
@@ -78,7 +89,7 @@ export function setterCommissionForDeal(d: Deal, rates: CommissionRates): number
 export function setterWeekBonusIds(deals: Deal[]): Set<string> {
   const weekMap = new Map<string, number>(); // key: "setterId::weekStart"
   for (const d of deals) {
-    if (!d.setter_id) continue;
+    if (!d.setter_id || isSelfSet(d)) continue;
     const weekStart = isoDay(startOfWeekMon(new Date(d.deal_date + "T00:00:00")));
     const key = `${d.setter_id}::${weekStart}`;
     weekMap.set(key, (weekMap.get(key) ?? 0) + d.cash_collected_upfront);

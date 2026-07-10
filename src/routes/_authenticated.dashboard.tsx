@@ -186,7 +186,17 @@ function Dashboard() {
 
   const totals = useMemo(() => sumRows(eods), [eods]);
   const prevTotals = useMemo(() => sumRows(prevEods), [prevEods]);
-  const trend = useMemo(() => buildTrend(eods, days), [eods, days]);
+  const trend = useMemo(() => {
+    const curr = buildTrend(eods, days);
+    if (!compare || prevEods.length === 0) return curr;
+    const prev = buildTrend(prevEods, days, days); // same shape, shifted one window back
+    return curr.map((row, i) => ({
+      ...row,
+      prev_dms: prev[i]?.dms ?? 0,
+      prev_convos: prev[i]?.convos ?? 0,
+      prev_booked: prev[i]?.booked ?? 0,
+    }));
+  }, [eods, prevEods, compare, days]);
   const hasPrev = compare && prevEods.length > 0;
 
   const showRate = totals.shows + totals.no_shows > 0
@@ -348,16 +358,24 @@ function Dashboard() {
                     <VolumeAreaChart
                       data={trend}
                       series={[
+                        ...(hasPrev ? [
+                          { key: "prev_dms",    label: "DMs (prev)",    color: "var(--color-muted-foreground)", strokeWidth: 1, strokeOpacity: 0.35, ghost: true },
+                          { key: "prev_convos", label: "Convos (prev)", color: "var(--chart-1)", strokeWidth: 1, strokeOpacity: 0.35, ghost: true },
+                          { key: "prev_booked", label: "Booked (prev)", color: "var(--chart-2)", strokeWidth: 1, strokeOpacity: 0.35, ghost: true },
+                        ] : []),
                         { key: "dms",    label: "DMs",    color: "var(--color-muted-foreground)" },
                         { key: "convos", label: "Convos", color: "var(--chart-1)" },
                         { key: "booked", label: "Booked", color: "var(--chart-2)", strokeWidth: 2 },
                       ]}
                     />
-                    <VolumeLegend series={[
-                      { key: "dms",    label: "DMs",    color: "var(--color-muted-foreground)" },
-                      { key: "convos", label: "Convos", color: "var(--chart-1)" },
-                      { key: "booked", label: "Booked", color: "var(--chart-2)" },
-                    ]} />
+                    <div className="flex items-center justify-between">
+                      <VolumeLegend series={[
+                        { key: "dms",    label: "DMs",    color: "var(--color-muted-foreground)" },
+                        { key: "convos", label: "Convos", color: "var(--chart-1)" },
+                        { key: "booked", label: "Booked", color: "var(--chart-2)" },
+                      ]} />
+                      {hasPrev && <span className="text-micro text-muted-foreground">faded = previous {days}d</span>}
+                    </div>
                   </>
                 )}
               </Panel>
@@ -490,6 +508,8 @@ function Dashboard() {
         eods={eods}
         profiles={profiles}
         rangeLabel={rangeLabel}
+        prevEods={compare ? prevEods : []}
+        prevLabel={`previous ${days}d`}
       />
       <DashboardSettingsSheet
         open={settingsOpen}
@@ -520,13 +540,13 @@ function pctDelta(prev: number, curr: number): number | null {
 function prevShowRateOf(t: ReturnType<typeof sumRows>) {
   return t.shows + t.no_shows > 0 ? Math.round((t.shows / (t.shows + t.no_shows)) * 100) : 0;
 }
-function buildTrend(rows: EodRow[], days: number) {
+function buildTrend(rows: EodRow[], days: number, shiftBack = 0) {
   const map: Record<string, { dms: number; convos: number; booked: number }> = {};
   const out: { key: string; label: string; dms: number; convos: number; booked: number }[] = [];
   const today = new Date();
   const step = days <= 7 ? 1 : days <= 30 ? 1 : 3;
   for (let i = days - 1; i >= 0; i -= step) {
-    const d = subDays(today, i);
+    const d = subDays(today, i + shiftBack);
     const key = format(d, "yyyy-MM-dd");
     map[key] = { dms: 0, convos: 0, booked: 0 };
     out.push({ key, label: format(d, days <= 7 ? "EEE" : "MMM d"), dms: 0, convos: 0, booked: 0 });

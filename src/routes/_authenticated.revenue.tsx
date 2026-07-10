@@ -11,7 +11,7 @@ import {
   setterCommissionForDeal,
   setterWeekBonusIds,
   money,
-} from "@/lib/revenue";
+  isSelfSet, } from "@/lib/revenue";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -164,7 +164,7 @@ function RevenuePage() {
       c.cash += Number(d.cash_collected_upfront);
       c.booked += Number(d.total_value);
       c.deals += 1;
-      if (d.setter_id) c.setCloseDeals += 1;
+      if (isSelfSet(d)) c.setCloseDeals += 1;
       c.commission += commissionForDeal(d, rates, closer?.commission_cap_pct);
       map.set(d.closer_id, c);
     }
@@ -179,7 +179,7 @@ function RevenuePage() {
     const weekBonusIds = setterWeekBonusIds(rangeDeals);
     const map = new Map<string, { cash: number; deals: number; weekBonus: boolean; commission: number }>();
     for (const d of rangeDeals) {
-      if (!d.setter_id) continue;
+      if (!d.setter_id || isSelfSet(d)) continue; // self-set = closer's 15%, no setter credit
       const c = map.get(d.setter_id) ?? { cash: 0, deals: 0, weekBonus: false, commission: 0 };
       c.cash += Number(d.cash_collected_upfront);
       c.deals += 1;

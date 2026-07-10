@@ -68,6 +68,7 @@ export function VolumeAreaChart({
           {series.map(s => (
             <Area
               key={s.key}
+              name={s.label || s.key}
               type="monotone"
               dataKey={s.key}
               stroke={s.color}

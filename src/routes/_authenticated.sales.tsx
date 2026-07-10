@@ -561,7 +561,7 @@ function ScorecardRow({ setter, eods, expanded, onToggle }: { setter: SetterProf
         <div className="flex items-center gap-4">
           <RatePill label={setter.setter_type === "phone" ? "Dials hit" : "Leads hit"} pct={primaryRate} />
           <RatePill label="Sets hit" pct={setsRate} />
-          <span className="text-[12px] text-muted-foreground hidden sm:block">avg {avgSets} sets/day · {avgPrimary} {setter.setter_type === "phone" ? "dials" : "leads"}/day</span>
+          <span className="text-[12px] text-muted-foreground hidden sm:block w-52 text-right tabular-nums shrink-0">avg {avgSets} sets/day · {avgPrimary} {setter.setter_type === "phone" ? "dials" : "leads"}/day</span>
           {expanded ? <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" /> : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />}
         </div>
       </button>
@@ -595,7 +595,7 @@ function ScorecardRow({ setter, eods, expanded, onToggle }: { setter: SetterProf
 function RatePill({ label, pct }: { label: string; pct: number }) {
   const color = pct >= 80 ? "bg-primary/10 text-primary" : pct >= 50 ? "bg-warning-bg text-warning-fg" : "bg-danger-bg text-danger-fg dark:text-danger-fg";
   return (
-    <div className={`hidden sm:flex flex-col items-center text-[12px] rounded-lg px-2.5 py-1 ${color}`}>
+    <div className={`hidden sm:flex w-[74px] shrink-0 flex-col items-center text-[12px] rounded-lg px-2 py-1 ${color}`}>
       <span className="font-semibold tabular-nums">{pct}%</span>
       <span className="text-[11px] opacity-80">{label}</span>
     </div>

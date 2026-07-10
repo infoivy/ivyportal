@@ -31,6 +31,7 @@ UI checks use `const { roles } = useAuth()` and `roles.includes('role')`. Do not
 
 - EOD reporting is seven days per week: there are no off days. Phone setters target 100 dials and 3 sets daily; DM setters target 125 leads contacted and 3 sets daily.
 - Setter commission is base percentage plus +1% for top setter in each 14-day period and +1% for a $7,500 week. There is no PIF bonus for setters.
+- Closer commission: 10% close-only. The 15% "set + close" rate applies ONLY when the same person both set and closed the deal (`setter_id === closer_id`) — it replaces 7.5% + 10%. A deal set by a different setter pays that setter their base and the closer 10%; setters never close. (Founder-confirmed 2026-07-10; implemented in `src/lib/revenue.ts` `isSelfSet`.)
 - Content cadence is TOF Monday–Thursday and MOF Friday–Sunday. Record in two-week batches; Thursday is recording day.
 - Founder Hub is founder/admin-only. Payment details are closer/admin-only.
 - Historical EOD and revenue records are operational records, not content: do not alter or delete them. Add a new correction/adjustment flow if the business needs an audit trail; never silently rewrite history.

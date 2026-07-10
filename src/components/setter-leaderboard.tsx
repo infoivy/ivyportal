@@ -9,6 +9,7 @@ import {
   startOfWeekMon,
   endOfWeekSun,
   isoDay,
+  isSelfSet,
 } from "@/lib/revenue";
 import { Card } from "@/components/ui/card";
 import { Target } from "lucide-react";
@@ -44,7 +45,7 @@ export function SetterLeaderboard({ compact = false }: { compact?: boolean }) {
 
         const totals = new Map<string, { booked: number; deals: number; commission: number }>();
         for (const d of (dealsRes.data ?? []) as Deal[]) {
-          if (!d.setter_id) continue;
+          if (!d.setter_id || isSelfSet(d)) continue; // self-set = closer credit
           const cur = totals.get(d.setter_id) ?? { booked: 0, deals: 0, commission: 0 };
           cur.booked += Number(d.total_value) || 0;
           cur.deals += 1;

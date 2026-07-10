@@ -34,17 +34,17 @@ const METRIC_LABELS: Record<string, string> = {
 };
 
 const COLORS: Record<string, string> = {
-  dms_sent: "#3b82f6",
-  convos_started: "#a855f7",
-  calls_booked: "#22c55e",
-  calls_scheduled: "#ec4899",
-  shows: "#f59e0b",
-  no_shows: "#ef4444",
-  showRate: "#06b6d4",
+  dms_sent: "var(--chart-1)",
+  convos_started: "var(--chart-4)",
+  calls_booked: "var(--chart-2)",
+  calls_scheduled: "var(--chart-5)",
+  shows: "var(--chart-3)",
+  no_shows: "var(--danger)",
+  showRate: "var(--chart-6)",
 };
 
 export function StatDrilldown({
-  open, onOpenChange, metric, eods, profiles, rangeLabel,
+  open, onOpenChange, metric, eods, profiles, rangeLabel, prevEods = [], prevLabel,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -52,18 +52,28 @@ export function StatDrilldown({
   eods: StatDrilldownRow[];
   profiles: Record<string, Profile>;
   rangeLabel: string;
+  /** Previous comparison window rows — when present, the drilldown overlays them. */
+  prevEods?: StatDrilldownRow[];
+  prevLabel?: string;
 }) {
   const label = metric ? METRIC_LABELS[metric] : "";
-  const color = metric ? COLORS[metric] : "#3b82f6";
+  const color = metric ? COLORS[metric] : "var(--chart-1)";
 
   const perDay = useMemo(() => {
     if (!metric) return [];
-    const map = new Map<string, number>();
-    for (const e of eods) map.set(e.report_date, (map.get(e.report_date) ?? 0) + (Number(e[metric]) || 0));
-    return Array.from(map.entries())
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([d, v]) => ({ label: format(new Date(d + "T00:00:00"), "MMM d"), value: v, date: d }));
-  }, [eods, metric]);
+    const daily = (rows: StatDrilldownRow[]) => {
+      const map = new Map<string, number>();
+      for (const e of rows) map.set(e.report_date, (map.get(e.report_date) ?? 0) + (Number(e[metric]) || 0));
+      return Array.from(map.entries())
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([d, v]) => ({ label: format(new Date(d + "T00:00:00"), "MMM d"), value: v, date: d }));
+    };
+    const curr = daily(eods);
+    if (prevEods.length === 0) return curr;
+    const prev = daily(prevEods);
+    // align by day offset: first prev day shadows first current day
+    return curr.map((row, i) => ({ ...row, prev: prev[i]?.value ?? 0 }));
+  }, [eods, prevEods, metric]);
 
   const perSetter = useMemo(() => {
     if (!metric) return [];
@@ -85,6 +95,14 @@ export function StatDrilldown({
   }, [eods, metric, profiles]);
 
   const grandTotal = perSetter.reduce((a, b) => a + b.total, 0);
+  const prevPerSetter = useMemo(() => {
+    if (!metric || prevEods.length === 0) return new Map<string, number>();
+    const m = new Map<string, number>();
+    for (const e of prevEods) m.set(e.user_id, (m.get(e.user_id) ?? 0) + (Number(e[metric]) || 0));
+    return m;
+  }, [prevEods, metric]);
+  const prevTotal = Array.from(prevPerSetter.values()).reduce((a, b) => a + b, 0);
+  const hasPrev = prevEods.length > 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -103,7 +121,17 @@ export function StatDrilldown({
         <div className="space-y-4">
           <div className="text-[11px] text-muted-foreground flex items-center justify-between">
             <span>{rangeLabel}</span>
-            <span className="tabular-nums">Total: <span className="text-foreground font-semibold">{grandTotal.toLocaleString()}</span></span>
+            <span className="tabular-nums">
+              Total: <span className="text-foreground font-semibold">{grandTotal.toLocaleString()}</span>
+              {hasPrev && (
+                <>
+                  {" "}· {prevLabel ?? "previous period"}: <span className="text-foreground">{prevTotal.toLocaleString()}</span>
+                  {" "}<span className={grandTotal >= prevTotal ? "text-success-fg" : "text-danger-fg"}>
+                    ({grandTotal >= prevTotal ? "+" : ""}{(grandTotal - prevTotal).toLocaleString()})
+                  </span>
+                </>
+              )}
+            </span>
           </div>
 
           <div className="h-52 border border-border rounded-sm bg-card p-2">
@@ -112,11 +140,12 @@ export function StatDrilldown({
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={perDay}>
-                  <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.06)" vertical={false} />
-                  <XAxis dataKey="label" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
-                  <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 4, fontSize: 11 }} />
-                  <Bar dataKey="value" fill={color} radius={[2, 2, 0, 0]} />
+                  <CartesianGrid strokeDasharray="2 4" stroke="var(--color-border)" vertical={false} />
+                  <XAxis dataKey="label" stroke="var(--color-muted-foreground)" fontSize={10} tickLine={false} axisLine={false} />
+                  <YAxis stroke="var(--color-muted-foreground)" fontSize={10} tickLine={false} axisLine={false} />
+                  <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, fontSize: 11 }} />
+                  {hasPrev && <Bar dataKey="prev" name={prevLabel ?? "Previous"} fill={color} fillOpacity={0.25} radius={[2, 2, 0, 0]} />}
+                  <Bar dataKey="value" name={label} fill={color} radius={[2, 2, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -125,9 +154,10 @@ export function StatDrilldown({
           <div>
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">Per setter</div>
             <div className="border border-border rounded-sm overflow-hidden">
-              <div className="grid grid-cols-[minmax(0,1fr)_80px_80px] text-[10px] uppercase tracking-wider text-muted-foreground bg-muted px-3 py-2 border-b border-border">
+              <div className={`grid ${hasPrev ? "grid-cols-[minmax(0,1fr)_80px_80px_80px]" : "grid-cols-[minmax(0,1fr)_80px_80px]"} text-[10px] uppercase tracking-wider text-muted-foreground bg-muted px-3 py-2 border-b border-border`}>
                 <span>Setter</span>
                 <span className="text-right">{label}</span>
+                {hasPrev && <span className="text-right">Prev</span>}
                 <span className="text-right">EODs</span>
               </div>
               {perSetter.length === 0 ? (
@@ -135,9 +165,10 @@ export function StatDrilldown({
               ) : (
                 perSetter.map((s) => (
                   <details key={s.user_id} className="border-b border-border/50 last:border-0">
-                    <summary className="grid grid-cols-[minmax(0,1fr)_80px_80px] px-3 py-2 text-xs cursor-pointer hover:bg-muted tabular-nums">
+                    <summary className={`grid ${hasPrev ? "grid-cols-[minmax(0,1fr)_80px_80px_80px]" : "grid-cols-[minmax(0,1fr)_80px_80px]"} px-3 py-2 text-xs cursor-pointer hover:bg-muted tabular-nums`}>
                       <span className="font-medium truncate">{s.name}</span>
                       <span className="text-right" style={{ color }}>{s.total.toLocaleString()}</span>
+                      {hasPrev && <span className="text-right text-muted-foreground">{(prevPerSetter.get(s.user_id) ?? 0).toLocaleString()}</span>}
                       <span className="text-right text-muted-foreground">{s.entries.length}</span>
                     </summary>
                     <div className="px-6 py-2 space-y-1 bg-black/20">

@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
-import { money, type Deal, type CommissionRates, commissionForDeal, setterWeekBonusIds, DEFAULT_RATES } from "@/lib/revenue";
+import { money, type Deal, type CommissionRates, commissionForDeal, setterWeekBonusIds, DEFAULT_RATES, isSelfSet } from "@/lib/revenue";
 import { RevenueTabBar } from "@/components/revenue-tab-bar";
 
 export const Route = createFileRoute("/_authenticated/payouts")({
@@ -162,7 +162,7 @@ function PayoutsInner() {
 
     const map = new Map<string, { deals: Deal[]; weekBonus: boolean }>();
     for (const d of deals) {
-      if (!d.setter_id) continue;
+      if (!d.setter_id || isSelfSet(d)) continue; // self-set = closer's 15%, no setter credit
       const entry = map.get(d.setter_id) ?? { deals: [], weekBonus: false };
       entry.deals.push(d);
       if (weekBonusIds.has(d.setter_id)) entry.weekBonus = true;
@@ -173,7 +173,7 @@ function PayoutsInner() {
     const instCash = new Map<string, number>();
     for (const ip of installmentPayments) {
       const inst = installmentMap.get(ip.installment_id);
-      if (!inst?.setter_id) continue;
+      if (!inst?.setter_id || inst.setter_id === inst.closer_id) continue;
       instCash.set(inst.setter_id, (instCash.get(inst.setter_id) ?? 0) + ip.amount);
     }
 
@@ -210,12 +210,12 @@ function PayoutsInner() {
     }
 
     const instCash = new Map<string, number>();
-    const instSetSet = new Map<string, boolean>(); // closer_id → had setter on any installment payment this period
+    const instSetSet = new Map<string, boolean>(); // closer_id → self-set installment this period (set+close rate)
     for (const ip of installmentPayments) {
       const inst = installmentMap.get(ip.installment_id);
       if (!inst?.closer_id) continue;
       instCash.set(inst.closer_id, (instCash.get(inst.closer_id) ?? 0) + ip.amount);
-      if (inst.setter_id) instSetSet.set(inst.closer_id, true);
+      if (inst.setter_id && inst.setter_id === inst.closer_id) instSetSet.set(inst.closer_id, true);
     }
 
     const allCloserIds = new Set([...map.keys(), ...instCash.keys()]);
