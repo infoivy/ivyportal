@@ -31,7 +31,7 @@ function FounderHQ() {
   return <FounderHQInner />;
 }
 
-function FounderHQInner() {
+export function FounderHQInner() {
   const today = isoDate(new Date());
   const monthStart = today.slice(0, 8) + "01";
 
@@ -117,26 +117,19 @@ function FounderHQInner() {
 
   if (loading) {
     return (
-      <div className="dashboard-dark min-h-full flex items-center justify-center">
+      <div className="min-h-full flex items-center justify-center">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   return (
-    <div className="dashboard-dark min-h-full">
-      <div className="max-w-[1400px] mx-auto p-4 sm:p-5 space-y-4">
-        <div>
-          <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-1">Abdulrahman</div>
-          <h1 className="text-2xl font-semibold tracking-tight">Founder HQ</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">Command view — cash, funnel, content, team.</p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Quadrant 1: Cash */}
-          <Quadrant title="Cash" icon={<DollarSign className="h-4 w-4 text-green-400" />} to="/revenue">
+          <Quadrant title="Cash" icon={<DollarSign className="h-4 w-4 text-primary" />} to="/revenue">
             <div className="flex items-baseline gap-2 flex-wrap">
-              <div className="text-3xl font-bold text-green-400">{money(mtdCash)}</div>
+              <div className="text-[28px] font-bold tabular-nums text-foreground">{money(mtdCash)}</div>
               {prevMtdCash > 0 && <DeltaChip value={mtdCash - prevMtdCash} format="money" />}
             </div>
             <div className="text-xs text-muted-foreground">MTD cash · vs last month same day</div>
@@ -159,18 +152,18 @@ function FounderHQInner() {
                 Set a monthly goal in <Link to="/admin" className="underline hover:text-foreground">Admin settings</Link>.
               </p>
             )}
-            <div className="text-xs text-muted-foreground mt-2">{deals.length} deal{deals.length !== 1 ? "s" : ""} closed MTD</div>
+            <div className="text-[13px] text-muted-foreground mt-2">{deals.length} deal{deals.length !== 1 ? "s" : ""} closed MTD</div>
           </Quadrant>
 
           {/* Quadrant 2: Funnel */}
-          <Quadrant title="Funnel this week" icon={<TrendingUp className="h-4 w-4 text-sky-400" />} to="/eods">
+          <Quadrant title="Funnel this week" icon={<TrendingUp className="h-4 w-4 text-muted-foreground" />} to="/eods">
             <div className="grid grid-cols-4 gap-2 mt-1">
               <FunnelStat label="Sets" value={weekSets} />
               <FunnelStat label="Shows" value={weekShows} />
               <FunnelStat label="Closes" value={weekCloses} />
               <FunnelStat label="Show %" value={showRate} suffix="%" color={showRate >= 70 ? "text-green-400" : showRate >= 50 ? "text-amber-400" : "text-red-400"} />
             </div>
-            <div className="mt-3 flex items-center gap-3 text-xs">
+            <div className="mt-3 flex items-center gap-3 text-[13px]">
               <span className="text-muted-foreground">Show rate:</span>
               <span className={showRate >= 70 ? "text-green-400 font-semibold" : showRate >= 50 ? "text-amber-400 font-semibold" : "text-red-400 font-semibold"}>{showRate}%</span>
               <span className="text-muted-foreground">Close rate:</span>
@@ -179,9 +172,9 @@ function FounderHQInner() {
           </Quadrant>
 
           {/* Quadrant 3: Content */}
-          <Quadrant title="Content pipeline" icon={<BarChart3 className="h-4 w-4 text-blue-400" />} to="/founder">
+          <Quadrant title="Content pipeline" icon={<BarChart3 className="h-4 w-4 text-muted-foreground" />} to="/command" search={{ tab: "content" }}>
             {contentTotal === 0 ? (
-              <div className="text-xs text-muted-foreground mt-1">No content scheduled for this 2-week cycle ({cycleStartStr} – {cycleEndStr}).</div>
+              <div className="text-[13px] text-muted-foreground mt-1">No content scheduled for this 2-week cycle ({cycleStartStr} – {cycleEndStr}).</div>
             ) : (
               <div className="grid grid-cols-4 gap-2 mt-1">
                 <FunnelStat label="Total" value={contentTotal} />
@@ -190,14 +183,14 @@ function FounderHQInner() {
                 <FunnelStat label="Posted" value={contentPosted} color={contentPosted >= contentTotal ? "text-green-400" : "text-amber-400"} />
               </div>
             )}
-            <div className="text-[10px] text-muted-foreground mt-2">Cycle: {cycleStartStr} → {cycleEndStr}</div>
+            <div className="text-[12px] text-muted-foreground mt-2">Cycle: {cycleStartStr} → {cycleEndStr}</div>
           </Quadrant>
 
           {/* Quadrant 4: Team compliance */}
-          <Quadrant title="Team compliance" icon={<Users className="h-4 w-4 text-amber-400" />} to="/sales-hq">
+          <Quadrant title="Team compliance" icon={<Users className="h-4 w-4 text-muted-foreground" />} to="/sales">
             <div className="flex items-baseline gap-2 mt-1">
-              <div className={`text-3xl font-bold ${compliance >= 90 ? "text-green-400" : compliance >= 70 ? "text-amber-400" : "text-red-400"}`}>{compliance}%</div>
-              <div className="text-xs text-muted-foreground">EOD rate this week</div>
+              <div className={`text-[28px] font-bold tabular-nums ${compliance >= 90 ? "text-green-400" : compliance >= 70 ? "text-amber-400" : "text-red-400"}`}>{compliance}%</div>
+              <div className="text-[13px] text-muted-foreground">EOD rate this week</div>
             </div>
             <div className="mt-3">
               <BreakdownBar
@@ -212,9 +205,9 @@ function FounderHQInner() {
               {eods.length} / {expectedEods} expected · {setterRoster.length} setter{setterRoster.length !== 1 ? "s" : ""} on roster
             </div>
             {compliance < 90 && (
-              <div className="flex items-center gap-1.5 mt-2 text-xs text-amber-400">
+              <div className="flex items-center gap-1.5 mt-2 text-[13px] text-amber-400">
                 <AlertTriangle className="h-3.5 w-3.5" />
-                <Link to="/sales-hq" className="underline hover:text-amber-300">Send nudges →</Link>
+                <Link to="/sales" search={{ tab: "operations" }} className="underline hover:text-amber-300">Send nudges →</Link>
               </div>
             )}
             {compliance >= 90 && (
@@ -224,19 +217,18 @@ function FounderHQInner() {
             )}
           </Quadrant>
         </div>
-      </div>
     </div>
   );
 }
 
-function Quadrant({ title, icon, to, children }: { title: string; icon: React.ReactNode; to: string; children: React.ReactNode }) {
+function Quadrant({ title, icon, to, search, children }: { title: string; icon: React.ReactNode; to: string; search?: Record<string, string>; children: React.ReactNode }) {
   return (
-    <div className="rounded-md border border-border bg-card p-4 space-y-1 relative">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-widest text-muted-foreground font-semibold">
+    <div className="card-surface p-4 space-y-1">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2 text-[13px] font-medium text-muted-foreground">
           {icon} {title}
         </div>
-        <Link to={to} className="text-[10px] text-muted-foreground hover:text-foreground underline decoration-dotted">detail →</Link>
+        <Link to={to} search={search} className="text-[12px] text-muted-foreground hover:text-foreground motion-safe:transition-colors">detail →</Link>
       </div>
       {children}
     </div>
@@ -246,8 +238,8 @@ function Quadrant({ title, icon, to, children }: { title: string; icon: React.Re
 function FunnelStat({ label, value, suffix = "", color = "text-foreground" }: { label: string; value: number; suffix?: string; color?: string }) {
   return (
     <div className="text-center">
-      <div className={`text-xl font-bold ${color}`}>{value}{suffix}</div>
-      <div className="text-[10px] text-muted-foreground">{label}</div>
+      <div className={`text-[20px] font-semibold tabular-nums ${color}`}>{value}{suffix}</div>
+      <div className="text-[12px] text-muted-foreground">{label}</div>
     </div>
   );
 }

@@ -108,8 +108,21 @@ const MULTI_PLATFORMS: { value: string; label: string }[] = [
 ];
 
 function FounderPage() {
-  const { user, roles } = useAuth();
-  const isFounder = roles.includes("founder");
+  const { roles } = useAuth();
+  if (!roles.includes("founder") && !roles.includes("admin")) {
+    return (
+      <div className="p-8 max-w-md mx-auto text-center space-y-2">
+        <Sparkles className="h-8 w-8 mx-auto text-muted-foreground" />
+        <div className="text-[15px] font-semibold">Founder Hub</div>
+        <p className="text-[13px] text-muted-foreground">This area is not accessible with your account.</p>
+      </div>
+    );
+  }
+  return <FounderPageContent />;
+}
+
+export function FounderPageContent() {
+  const { user } = useAuth();
 
   const [items, setItems] = useState<ContentItem[]>([]);
   const [ideas, setIdeas] = useState<Idea[]>([]);
@@ -131,49 +144,36 @@ function FounderPage() {
     setLoading(false);
   };
 
-  useEffect(() => { if (isFounder) load(); }, [isFounder]);
-
-  if (!isFounder) {
-    return (
-      <div className="p-8 max-w-md mx-auto text-center space-y-2">
-        <Sparkles className="h-8 w-8 mx-auto text-muted-foreground" />
-        <div className="text-lg font-semibold">Founder Hub</div>
-        <p className="text-sm text-muted-foreground">This area is not accessible with your account.</p>
-      </div>
-    );
-  }
+  useEffect(() => { load(); }, []);
 
   return (
-    <div className="p-4 sm:p-6 max-w-[1600px] mx-auto space-y-5">
-      <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--border)] pb-4">
+    <div className="space-y-4">
+      <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-blue-400 mb-1">
-            <Sparkles className="h-3 w-3" /> Founder Hub
-          </div>
-          <h1 className="text-2xl font-semibold tracking-tight">Content & Strategy</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">Plan, script, record, post.</p>
+          <h2 className="text-[20px] font-semibold text-foreground">Content & Strategy</h2>
+          <p className="text-[13px] text-muted-foreground mt-0.5">Plan, script, record, post.</p>
         </div>
         <div className="flex gap-2">
           <Link
             to="/instagram"
-            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-sm border border-blue-500/30 bg-blue-500/5 hover:border-blue-500/60 text-blue-300 text-xs"
+            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg border border-[var(--border)] bg-card hover:bg-muted text-[13px] motion-safe:transition-colors"
           >
-            <Instagram className="h-3.5 w-3.5" /> IG Analytics
+            <Instagram className="h-3.5 w-3.5 text-muted-foreground" /> IG Analytics
           </Link>
           <button
             onClick={() => setCreating(true)}
-            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-full bg-white hover:bg-white/90 text-neutral-900 text-xs font-medium"
+            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground text-[13px] font-medium motion-safe:transition-colors"
           >
             <Plus className="h-3.5 w-3.5" /> New content
           </button>
         </div>
       </header>
 
-      {/* E19: Content pipeline health strip */}
+      {/* Content pipeline health strip */}
       <ContentHealthStrip items={items} />
 
       {/* View switcher */}
-      <div className="flex items-center gap-1 border-b border-[var(--border)] overflow-x-auto">
+      <div className="flex items-center gap-0.5 border-b border-[var(--border)] overflow-x-auto">
         <ViewTab active={view === "weekly"}    onClick={() => setView("weekly")}    icon={LayoutGrid}   label="Weekly plan" />
         <ViewTab active={view === "recording"} onClick={() => setView("recording")} icon={Video}        label="Recording day" />
         <ViewTab active={view === "hooks"}     onClick={() => setView("hooks")}     icon={Zap}          label="Hook library" />
@@ -242,7 +242,6 @@ function FounderPage() {
     </div>
   );
 
-  // Local state hoisted to top-level via closure emulation not ideal; handled inline below.
 }
 
 // -- View tabs --
@@ -289,16 +288,16 @@ function ContentHealthStrip({ items }: { items: ContentItem[] }) {
   ];
 
   return (
-    <div className="flex flex-wrap items-center gap-2 px-3 py-2 rounded-sm border border-blue-500/20 bg-blue-500/5 text-xs text-blue-300">
-      <span className="text-[10px] uppercase tracking-wider text-muted-foreground shrink-0">This cycle</span>
+    <div className="card-surface flex flex-wrap items-center gap-2 px-3 py-2.5">
+      <span className="text-[12px] text-muted-foreground shrink-0 font-medium">This cycle</span>
       {counts.total === 0 ? (
-        <span className="text-muted-foreground">No content scheduled for this 2-week window ({cycleStartStr} – {cycleEndStr}).</span>
+        <span className="text-[13px] text-muted-foreground">No content scheduled for this 2-week window ({cycleStartStr} – {cycleEndStr}).</span>
       ) : (
         chips.map(c => (
-          <span key={c.label} className={`flex items-center gap-1 px-2 py-0.5 rounded-sm border text-[11px] ${
-            c.ok ? "border-green-500/30 bg-green-500/10 text-green-400" : "border-blue-500/30 bg-blue-500/10 text-blue-300"
+          <span key={c.label} className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[12px] ${
+            c.ok ? "bg-green-500/10 text-green-400" : "bg-muted text-muted-foreground"
           }`}>
-            <span className="font-semibold">{c.val}</span> {c.label}
+            <span className="font-medium">{c.val}</span> {c.label}
           </span>
         ))
       )}
@@ -311,8 +310,8 @@ function ViewTab({ active, onClick, icon: Icon, label }: { active: boolean; onCl
     <button
       onClick={onClick}
       className={
-        "flex items-center gap-1.5 h-9 px-3 text-xs font-medium border-b-2 -mb-px transition " +
-        (active ? "border-blue-400 text-blue-300" : "border-transparent text-muted-foreground hover:text-foreground")
+        "flex items-center gap-1.5 h-9 px-3 text-[13px] font-medium border-b-2 -mb-px motion-safe:transition-colors " +
+        (active ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground")
       }
     >
       <Icon className="h-3.5 w-3.5" /> {label}
@@ -331,16 +330,16 @@ function CalendarView({ items, monthCursor, setMonthCursor, onOpen }: {
   const grid: (Date | null)[] = [...Array(leading).fill(null), ...days];
 
   return (
-    <div className="border border-[var(--border)] rounded-sm bg-[var(--card)]">
+    <div className="card-surface overflow-hidden">
       <div className="flex items-center justify-between p-3 border-b border-[var(--border)]">
         <div className="flex items-center gap-2">
-          <button onClick={() => setMonthCursor(subMonths(monthCursor, 1))} className="h-7 px-2 rounded-sm border border-[var(--border)] text-xs hover:border-blue-500/40">←</button>
-          <div className="text-sm font-semibold">{format(monthCursor, "MMMM yyyy")}</div>
-          <button onClick={() => setMonthCursor(addMonths(monthCursor, 1))} className="h-7 px-2 rounded-sm border border-[var(--border)] text-xs hover:border-blue-500/40">→</button>
+          <button onClick={() => setMonthCursor(subMonths(monthCursor, 1))} className="h-7 px-2 rounded-lg border border-[var(--border)] text-[13px] hover:bg-muted motion-safe:transition-colors">←</button>
+          <div className="text-[15px] font-semibold">{format(monthCursor, "MMMM yyyy")}</div>
+          <button onClick={() => setMonthCursor(addMonths(monthCursor, 1))} className="h-7 px-2 rounded-lg border border-[var(--border)] text-[13px] hover:bg-muted motion-safe:transition-colors">→</button>
         </div>
-        <button onClick={() => setMonthCursor(new Date())} className="h-7 px-2 rounded-sm border border-[var(--border)] text-xs hover:border-blue-500/40">Today</button>
+        <button onClick={() => setMonthCursor(new Date())} className="h-7 px-2 rounded-lg border border-[var(--border)] text-[13px] hover:bg-muted motion-safe:transition-colors">Today</button>
       </div>
-      <div className="grid grid-cols-7 border-b border-[var(--border)] text-[10px] uppercase tracking-wider text-muted-foreground">
+      <div className="grid grid-cols-7 border-b border-[var(--border)] text-[11px] text-muted-foreground">
         {["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map(d => <div key={d} className="p-2 border-r border-[var(--border)] last:border-r-0">{d}</div>)}
       </div>
       <div className="grid grid-cols-7">
@@ -348,10 +347,10 @@ function CalendarView({ items, monthCursor, setMonthCursor, onOpen }: {
           const dayItems = day ? items.filter(i => i.scheduled_date && isSameDay(parseISO(i.scheduled_date), day)) : [];
           const isToday = day && isSameDay(day, new Date());
           return (
-            <div key={idx} className={`min-h-[96px] p-1.5 border-r border-b border-[var(--border)] last:border-r-0 ${isToday ? "bg-blue-500/5" : ""}`}>
+            <div key={idx} className={`min-h-[96px] p-1.5 border-r border-b border-[var(--border)] last:border-r-0 ${isToday ? "bg-primary/5" : ""}`}>
               {day && (
                 <>
-                  <div className={`text-[10px] ${isToday ? "text-blue-300 font-bold" : "text-muted-foreground"} mb-1`}>{format(day, "d")}</div>
+                  <div className={`text-[11px] ${isToday ? "text-primary font-bold" : "text-muted-foreground"} mb-1`}>{format(day, "d")}</div>
                   <div className="space-y-0.5">
                     {dayItems.slice(0, 3).map(i => (
                       <button

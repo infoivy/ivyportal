@@ -65,8 +65,7 @@ const knowledgeItems: Item[] = [
 ];
 
 const founderItems: Item[] = [
-  { title: "Command",       url: "/founder-hq",    icon: LayoutDashboard, color: C.violet, roles: ["founder", "admin"] },
-  { title: "Founder Hub",   url: "/founder",       icon: Sparkles,        color: C.violet, roles: ["founder", "admin"] },
+  { title: "Command",       url: "/command",       icon: LayoutDashboard, color: C.violet, roles: ["founder", "admin"] },
   { title: "IG Analytics",  url: "/instagram",     icon: Instagram,       color: C.rose,   roles: ["founder", "admin"] },
   { title: "Weekly Review", url: "/weekly-review", icon: ClipboardList,   color: C.sky,    roles: ["founder", "admin"] },
 ];
