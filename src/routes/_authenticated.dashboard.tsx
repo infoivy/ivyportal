@@ -222,7 +222,7 @@ function Dashboard() {
           </div>
         </div>
 
-        <OnboardingPanel compact />
+        {!isFounder && !(roles.includes("admin") && roles.length === 1) && <OnboardingPanel compact />}
 
         {/* KPI Row */}
         {prefs.showKpis && (
