@@ -681,38 +681,38 @@ function GraphCard({ title, subtitle, children }: { title: string; subtitle?: st
 }
 
 function SubmissionsChart({ data }: { data: { label: string; submitted: number; expected: number }[] }) {
-  const RC = require("recharts");
+  
   return (
-    <RC.ResponsiveContainer width="100%" height="100%">
-      <RC.BarChart data={data}>
-        <RC.CartesianGrid strokeDasharray="3 3" stroke="#1f2530" />
-        <RC.XAxis dataKey="label" tick={{ fontSize: 10, fill: "#8a91a0" }} />
-        <RC.YAxis tick={{ fontSize: 10, fill: "#8a91a0" }} allowDecimals={false} />
-        <RC.Tooltip contentStyle={{ background: "#0f1116", border: "1px solid #1f2530", fontSize: 11 }} />
-        <RC.Legend wrapperStyle={{ fontSize: 10 }} />
-        <RC.Bar dataKey="expected" fill="#1f2530" name="Expected" />
-        <RC.Bar dataKey="submitted" fill="#10b981" name="Submitted" />
-      </RC.BarChart>
-    </RC.ResponsiveContainer>
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart data={data}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#1f2530" />
+        <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#8a91a0" }} />
+        <YAxis tick={{ fontSize: 10, fill: "#8a91a0" }} allowDecimals={false} />
+        <ReTooltip contentStyle={{ background: "#0f1116", border: "1px solid #1f2530", fontSize: 11 }} />
+        <Legend wrapperStyle={{ fontSize: 10 }} />
+        <Bar dataKey="expected" fill="#1f2530" name="Expected" />
+        <Bar dataKey="submitted" fill="#10b981" name="Submitted" />
+      </BarChart>
+    </ResponsiveContainer>
   );
 }
 
 function FunnelChart({ data }: { data: { label: string; dms: number; convos: number; booked: number; shows: number }[] }) {
-  const RC = require("recharts");
+  
   return (
-    <RC.ResponsiveContainer width="100%" height="100%">
-      <RC.LineChart data={data}>
-        <RC.CartesianGrid strokeDasharray="3 3" stroke="#1f2530" />
-        <RC.XAxis dataKey="label" tick={{ fontSize: 10, fill: "#8a91a0" }} />
-        <RC.YAxis tick={{ fontSize: 10, fill: "#8a91a0" }} allowDecimals={false} />
-        <RC.Tooltip contentStyle={{ background: "#0f1116", border: "1px solid #1f2530", fontSize: 11 }} />
-        <RC.Legend wrapperStyle={{ fontSize: 10 }} />
-        <RC.Line type="monotone" dataKey="dms" stroke="#3b82f6" strokeWidth={1.5} dot={false} name="DMs" />
-        <RC.Line type="monotone" dataKey="convos" stroke="#a855f7" strokeWidth={1.5} dot={false} name="Convos" />
-        <RC.Line type="monotone" dataKey="booked" stroke="#10b981" strokeWidth={2} dot={false} name="Booked" />
-        <RC.Line type="monotone" dataKey="shows" stroke="#f59e0b" strokeWidth={1.5} dot={false} name="Shows" />
-      </RC.LineChart>
-    </RC.ResponsiveContainer>
+    <ResponsiveContainer width="100%" height="100%">
+      <LineChart data={data}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#1f2530" />
+        <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#8a91a0" }} />
+        <YAxis tick={{ fontSize: 10, fill: "#8a91a0" }} allowDecimals={false} />
+        <ReTooltip contentStyle={{ background: "#0f1116", border: "1px solid #1f2530", fontSize: 11 }} />
+        <Legend wrapperStyle={{ fontSize: 10 }} />
+        <Line type="monotone" dataKey="dms" stroke="#3b82f6" strokeWidth={1.5} dot={false} name="DMs" />
+        <Line type="monotone" dataKey="convos" stroke="#a855f7" strokeWidth={1.5} dot={false} name="Convos" />
+        <Line type="monotone" dataKey="booked" stroke="#10b981" strokeWidth={2} dot={false} name="Booked" />
+        <Line type="monotone" dataKey="shows" stroke="#f59e0b" strokeWidth={1.5} dot={false} name="Shows" />
+      </LineChart>
+    </ResponsiveContainer>
   );
 }
 
