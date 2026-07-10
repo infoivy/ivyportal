@@ -110,8 +110,8 @@ export function AppSidebar({ roles }: { roles: string[] }) {
   const header = (label: string) => (
     <SidebarHeader className="border-b border-sidebar-border/60">
       <div className="px-2 py-2 flex items-center gap-2.5">
-        <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-emerald-600 text-primary-foreground flex items-center justify-center text-[11px] font-bold shadow-sm ring-1 ring-primary/30">
-          ISA
+        <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-emerald-600 flex items-center justify-center shadow-sm ring-1 ring-primary/30 p-1">
+          <img src={isaLogo.url} alt="ISA" className="h-full w-full object-contain" />
         </div>
         {!collapsed && (
           <div className="flex flex-col leading-tight">
