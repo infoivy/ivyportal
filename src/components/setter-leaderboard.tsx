@@ -25,53 +25,46 @@ export function SetterLeaderboard({ compact = false }: { compact?: boolean }) {
 
   useEffect(() => {
     (async () => {
-      const startISO = isoDay(startOfWeekMon(new Date()));
-      const endISO = isoDay(endOfWeekSun(new Date()));
+      setLoading(true);
+      try {
+        const startISO = isoDay(startOfWeekMon(new Date()));
+        const endISO = isoDay(endOfWeekSun(new Date()));
 
-      const [dealsRes, ratesRes] = await Promise.all([
-        supabase
-          .from("deals")
-          .select("*")
-          .not("setter_id", "is", null)
-          .gte("deal_date", startISO)
-          .lte("deal_date", endISO),
-        supabase.from("commission_rates").select("key, rate").eq("active", true),
-      ]);
+        const [dealsRes, ratesRes] = await Promise.all([
+          supabase.from("deals").select("*").not("setter_id", "is", null)
+            .gte("deal_date", startISO).lte("deal_date", endISO),
+          supabase.from("commission_rates").select("key, rate").eq("active", true),
+        ]);
 
-      const rates: CommissionRates = { ...DEFAULT_RATES };
-      for (const r of ratesRes.data ?? []) {
-        const k = r.key as keyof CommissionRates;
-        if (k in rates) (rates as Record<string, number>)[k] = Number(r.rate);
-      }
+        const rates: CommissionRates = { ...DEFAULT_RATES };
+        for (const r of ratesRes.data ?? []) {
+          const k = r.key as keyof CommissionRates;
+          if (k in rates) (rates as Record<string, number>)[k] = Number(r.rate);
+        }
 
-      const totals = new Map<string, { booked: number; deals: number; commission: number }>();
-      for (const d of (dealsRes.data ?? []) as Deal[]) {
-        if (!d.setter_id) continue;
-        const cur = totals.get(d.setter_id) ?? { booked: 0, deals: 0, commission: 0 };
-        cur.booked += Number(d.total_value) || 0;
-        cur.deals += 1;
-        cur.commission += setterCommissionForDeal(d, rates);
-        totals.set(d.setter_id, cur);
-      }
+        const totals = new Map<string, { booked: number; deals: number; commission: number }>();
+        for (const d of (dealsRes.data ?? []) as Deal[]) {
+          if (!d.setter_id) continue;
+          const cur = totals.get(d.setter_id) ?? { booked: 0, deals: 0, commission: 0 };
+          cur.booked += Number(d.total_value) || 0;
+          cur.deals += 1;
+          cur.commission += setterCommissionForDeal(d, rates);
+          totals.set(d.setter_id, cur);
+        }
 
-      const userIds = Array.from(totals.keys());
-      if (userIds.length === 0) {
-        setRows([]);
-        setLoading(false);
-        return;
-      }
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, display_name")
-        .in("id", userIds);
-      const nameMap = new Map((profiles ?? []).map((p) => [p.id, p.display_name || "Unknown"]));
-
-      setRows(
-        userIds
+        const userIds = Array.from(totals.keys());
+        if (userIds.length === 0) { setRows([]); return; }
+        const { data: profiles } = await supabase.from("profiles").select("id, display_name").in("id", userIds);
+        const nameMap = new Map((profiles ?? []).map((p) => [p.id, p.display_name || "Unknown"]));
+        setRows(userIds
           .map((id) => ({ user_id: id, name: nameMap.get(id) ?? "Unknown", ...totals.get(id)! }))
-          .sort((a, b) => b.booked - a.booked),
-      );
-      setLoading(false);
+          .sort((a, b) => b.booked - a.booked));
+      } catch (e) {
+        console.error("SetterLeaderboard load failed", e);
+        setRows([]);
+      } finally {
+        setLoading(false);
+      }
     })();
   }, []);
 
