@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 type Segment<T extends string> = { label: string; value: T };
 
 type SegmentedControlProps<T extends string> = {
-  segments: Segment<T>[];
+  segments: readonly Segment<T>[];
   value: T;
   onChange: (value: T) => void;
   className?: string;

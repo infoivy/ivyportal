@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   LayoutDashboard, FileText, BookOpen, Calendar, GraduationCap,
-  BarChart3, Database, Users, StickyNote, Shield, UserCircle, School, HeartHandshake, Phone, DollarSign,
+  Database, Users, StickyNote, Shield, UserCircle, School, HeartHandshake, Phone, DollarSign,
   ListChecks, Trophy, TrendingUp, Quote, Sparkles, Building2, HeartPulse, ClipboardList,
   Instagram,
 } from "lucide-react";
@@ -43,9 +43,8 @@ const workItems: Item[] = [
 ];
 
 const salesItems: Item[] = [
-  { title: "Sales HQ",          url: "/sales-hq",         icon: Building2,   color: C.emerald, roles: ["admin", "closer"] },
+  { title: "Sales",             url: "/sales",             icon: Building2,   color: C.emerald, roles: ["admin", "closer", "setter"] },
   { title: "Revenue",           url: "/revenue",           icon: TrendingUp,  color: C.emerald, roles: ["admin", "closer", "setter", "coach", "csm"] },
-  { title: "Analytics",         url: "/analytics",         icon: BarChart3,   color: C.blue,    roles: ["admin", "closer", "setter"] },
   { title: "Closer Resources",  url: "/closer-resources",  icon: DollarSign,  color: C.amber,   roles: ["admin", "closer"] },
   { title: "Training",          url: "/training",          icon: GraduationCap, color: C.violet },
   { title: "Calendar",          url: "/calendar",          icon: Calendar,    color: C.sky },
