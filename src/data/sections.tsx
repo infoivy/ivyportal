@@ -1427,6 +1427,31 @@ export const SECTIONS: Section[] = [
         ),
       },
       {
+        title: "Daily Non-Negotiables",
+        subtitle: "By setter type",
+        body: (
+          <table className="w-full text-[12px]">
+            <thead>
+              <tr className="text-left text-muted-foreground">
+                <th className="pb-1 pr-2">Setter type</th>
+                <th className="pb-1 pr-2">Volume target / day</th>
+                <th className="pb-1">Sets / day</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                ["Phone setter", "100 dials", "3 sets"],
+                ["DM setter", "125 people contacted", "3 sets"],
+              ].map((r, i) => (
+                <tr key={i} className="border-t border-border/70">
+                  {r.map((c, j) => <td key={j} className="py-1 pr-2">{c}</td>)}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ),
+      },
+      {
         title: "Key Performance Targets",
         subtitle: "8-week ramp",
         body: (
