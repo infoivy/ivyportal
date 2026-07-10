@@ -320,12 +320,15 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
       display_name: displayName.trim() || null,
       avatar_path: avatarPath,
       phone: phone.trim() || null,
+      setter_type: setterType,
     } as any).eq("id", member.id);
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success("Profile updated");
     onSaved();
   };
+
+  const showSetterType = localRoles.includes("setter");
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
