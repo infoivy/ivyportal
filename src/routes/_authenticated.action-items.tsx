@@ -49,7 +49,8 @@ function ActionItemsHub() {
 
   // Create form
   const [addOpen, setAddOpen] = useState(false);
-  const [newTarget, setNewTarget] = useState(""); // "s:<studentId>" | "t:<userId>"
+  const [newTargets, setNewTargets] = useState<Set<string>>(new Set()); // "s:<studentId>" | "t:<userId>"
+  const [targetQuery, setTargetQuery] = useState("");
   const [newText, setNewText] = useState("");
   const [newDue, setNewDue] = useState("");
   const [saving, setSaving] = useState(false);
@@ -158,22 +159,36 @@ function ActionItemsHub() {
   }), [rows, user, today]);
 
   const submitAdhoc = async () => {
-    if (!user || !newTarget || !newText.trim()) return;
-    const [kind, targetId] = [newTarget.slice(0, 1), newTarget.slice(2)];
+    if (!user || newTargets.size === 0 || !newText.trim()) return;
     setSaving(true);
-    const { error } = await supabase.from("student_action_items").insert({
-      student_id: kind === "s" ? targetId : null,
-      assignee_id: kind === "t" ? targetId : null,
-      created_by: user.id,
-      text: newText.trim(),
-      due_date: newDue || null,
-    } as never);
+    const rows = Array.from(newTargets).map(target => {
+      const [kind, targetId] = [target.slice(0, 1), target.slice(2)];
+      return {
+        student_id: kind === "s" ? targetId : null,
+        assignee_id: kind === "t" ? targetId : null,
+        created_by: user.id,
+        text: newText.trim(),
+        due_date: newDue || null,
+      };
+    });
+    const { error } = await supabase.from("student_action_items").insert(rows as never);
     setSaving(false);
     if (error) return toast.error(error.message);
-    toast.success("Action item added");
-    setNewText(""); setNewDue(""); setAddOpen(false);
+    toast.success(rows.length === 1 ? "Action item added" : `Action item added for ${rows.length} people`);
+    setNewText(""); setNewDue(""); setNewTargets(new Set()); setTargetQuery(""); setAddOpen(false);
     load();
   };
+
+  const toggleTarget = (key: string) => setNewTargets(prev => {
+    const n = new Set(prev);
+    if (n.has(key)) n.delete(key); else n.add(key);
+    return n;
+  });
+  const setGroup = (keys: string[], on: boolean) => setNewTargets(prev => {
+    const n = new Set(prev);
+    keys.forEach(k => on ? n.add(k) : n.delete(k));
+    return n;
+  });
 
   const toggleAdhoc = async (r: Row) => {
     if (!r.adhocId) return;
@@ -331,21 +346,52 @@ function ActionItemsHub() {
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setAddOpen(false)}>
           <div className="w-full max-w-md bg-[var(--card)] border border-[var(--border)] rounded-sm p-4 space-y-3" onClick={e => e.stopPropagation()}>
             <div className="text-sm font-semibold">Add ad-hoc action item</div>
-            <div className="space-y-1">
-              <label className="text-[10px] text-muted-foreground">For</label>
-              <select
-                value={newTarget}
-                onChange={e => setNewTarget(e.target.value)}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] text-muted-foreground">For</label>
+                <span className="text-[10px] text-muted-foreground">{newTargets.size} selected</span>
+              </div>
+              <input
+                value={targetQuery}
+                onChange={e => setTargetQuery(e.target.value)}
+                placeholder="Search students or team…"
                 className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border"
-              >
-                <option value="">— Select student or team member —</option>
-                <optgroup label="Students">
-                  {studentList.map(s => <option key={s.id} value={`s:${s.id}`}>{s.name}</option>)}
-                </optgroup>
-                <optgroup label="Team members">
-                  {teamList.map(m => <option key={m.id} value={`t:${m.id}`}>{m.name}</option>)}
-                </optgroup>
-              </select>
+              />
+              <div className="max-h-52 overflow-y-auto rounded-sm border border-[var(--border)] divide-y divide-border/60">
+                {([
+                  { label: "Students", items: studentList.map(s => ({ key: `s:${s.id}`, name: s.name })) },
+                  { label: "Team members", items: teamList.map(m => ({ key: `t:${m.id}`, name: m.name })) },
+                ] as const).map(group => {
+                  const visible = group.items.filter(i => !targetQuery.trim() || i.name.toLowerCase().includes(targetQuery.trim().toLowerCase()));
+                  if (visible.length === 0) return null;
+                  const allOn = visible.every(i => newTargets.has(i.key));
+                  return (
+                    <div key={group.label}>
+                      <div className="flex items-center justify-between px-2 py-1.5 bg-[var(--muted)] sticky top-0">
+                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{group.label}</span>
+                        <button
+                          type="button"
+                          onClick={() => setGroup(visible.map(i => i.key), !allOn)}
+                          className="text-[10px] text-primary hover:underline"
+                        >
+                          {allOn ? "Deselect all" : `All ${group.label.toLowerCase()}`}
+                        </button>
+                      </div>
+                      {visible.map(i => (
+                        <label key={i.key} className="flex items-center gap-2 px-2 py-1.5 text-xs cursor-pointer hover:bg-[var(--muted)]">
+                          <input
+                            type="checkbox"
+                            checked={newTargets.has(i.key)}
+                            onChange={() => toggleTarget(i.key)}
+                            className="h-3.5 w-3.5 accent-[var(--primary)]"
+                          />
+                          <span className="truncate">{i.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
             <div className="space-y-1">
               <label className="text-[10px] text-muted-foreground">Action item</label>
@@ -370,7 +416,7 @@ function ActionItemsHub() {
               <button onClick={() => setAddOpen(false)} className="h-8 px-3 rounded-sm border border-[var(--border)] text-xs">Cancel</button>
               <button
                 onClick={submitAdhoc}
-                disabled={saving || !newTarget || !newText.trim()}
+                disabled={saving || newTargets.size === 0 || !newText.trim()}
                 className="h-8 px-3 rounded-sm bg-muted hover:opacity-80 text-muted-foreground text-xs font-medium disabled:opacity-40"
               >
                 {saving ? "Saving…" : "Add item"}

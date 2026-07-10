@@ -7,7 +7,7 @@ import {
   addDays, addWeeks, endOfWeek, format, isSameDay, startOfWeek, subWeeks,
 } from "date-fns";
 import {
-  CalendarClock, ChevronLeft, ChevronRight, ExternalLink, Link2Off, Plus, X,
+  CalendarClock, Check, ChevronLeft, ChevronRight, ExternalLink, Link2Off, Plus, X,
   RefreshCw, Users2, Video,
 } from "lucide-react";
 
@@ -39,6 +39,7 @@ const HOUR_ROWS = HOUR_END - HOUR_START;
 const ROW_PX = 44;
 
 function CalendarPage() {
+  const { user } = useAuth();
   const search = useSearch({ from: "/_authenticated/calendar" });
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [hiddenUsers, setHiddenUsers] = useState<Set<string>>(new Set());
@@ -168,27 +169,48 @@ function CalendarPage() {
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-2 min-w-0">
               <Users2 className="h-4 w-4 text-muted-foreground shrink-0" />
-              <span className="text-sm text-muted-foreground shrink-0">Connected:</span>
+              <span className="text-sm text-muted-foreground shrink-0">Calendars:</span>
               <div className="flex items-center gap-1.5 flex-wrap">
                 {teamList.length === 0 && (
                   <span className="text-sm text-muted-foreground">No one has connected yet.</span>
                 )}
                 {teamList.map((m) => {
-                  const hidden = hiddenUsers.has(m.user_id);
+                  const shown = !hiddenUsers.has(m.user_id);
                   return (
                     <button
                       key={m.user_id}
                       onClick={() => toggleUser(m.user_id)}
-                      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition ${
-                        hidden ? "opacity-40 border-border" : "border-border/80 bg-muted/40"
+                      aria-pressed={shown}
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs motion-safe:transition ${
+                        shown ? "border-border/80 bg-muted/40 text-foreground" : "opacity-45 border-border text-muted-foreground line-through"
                       }`}
-                      title={hidden ? "Show" : "Hide"}
+                      title={shown ? "Click to hide this calendar" : "Click to show this calendar"}
                     >
-                      <span className="h-2 w-2 rounded-full" style={{ background: m.color }} />
+                      <span className="h-2 w-2 rounded-full shrink-0" style={{ background: m.color }} />
                       <span className="font-medium">{m.display_name}</span>
+                      {shown && <Check className="h-3 w-3 opacity-70" />}
                     </button>
                   );
                 })}
+                {teamList.length > 1 && (
+                  <>
+                    <span className="h-3.5 w-px bg-border mx-0.5" />
+                    <button
+                      onClick={() => setHiddenUsers(new Set())}
+                      className="text-xs text-muted-foreground hover:text-foreground px-1.5"
+                    >
+                      Show all
+                    </button>
+                    {user && teamList.some((m) => m.user_id === user.id) && (
+                      <button
+                        onClick={() => setHiddenUsers(new Set(teamList.filter((m) => m.user_id !== user.id).map((m) => m.user_id)))}
+                        className="text-xs text-muted-foreground hover:text-foreground px-1.5"
+                      >
+                        Only mine
+                      </button>
+                    )}
+                  </>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-1">
@@ -384,35 +406,68 @@ function DayColumn({ day, events, onSelect }: { day: Date; events: TeamEvent[]; 
           ))}
         </div>
       )}
-      {dayEvents.map((e) => {
-        const s = new Date(e.start);
-        const en = new Date(e.end);
-        const startMin = s.getHours() * 60 + s.getMinutes();
-        const endMin = en.getHours() * 60 + en.getMinutes();
-        const top = ((startMin - HOUR_START * 60) / 60) * ROW_PX;
-        const height = Math.max(18, ((endMin - startMin) / 60) * ROW_PX);
-        if (top + height < 0 || top > HOUR_ROWS * ROW_PX) return null;
-        return (
-          <button
-            key={e.id}
-            onClick={() => onSelect(e)}
-            className="absolute left-1 right-1 rounded-md px-1.5 py-1 text-left text-[11px] leading-tight overflow-hidden hover:shadow-md transition"
-            style={{
-              top: Math.max(0, top),
-              height,
-              background: `${e.color}22`,
-              borderLeft: `3px solid ${e.color}`,
-              color: "var(--foreground)",
-            }}
-            title={`${e.display_name}: ${e.summary}`}
-          >
-            <div className="font-semibold truncate">{e.summary}</div>
-            <div className="text-[10px] opacity-80 truncate">
-              {format(s, "h:mma").toLowerCase()} · {e.display_name}
-            </div>
-          </button>
-        );
-      })}
+      {(() => {
+        // Lane layout: overlapping events share the width instead of stacking
+        const sorted = [...dayEvents].sort((a, b) => a.start.localeCompare(b.start));
+        const lanes: { end: number }[] = [];
+        const placed = sorted.map((e) => {
+          const startMs = new Date(e.start).getTime();
+          const endMs = new Date(e.end).getTime();
+          let lane = lanes.findIndex((l) => l.end <= startMs);
+          if (lane === -1) { lanes.push({ end: endMs }); lane = lanes.length - 1; }
+          else lanes[lane] = { end: endMs };
+          return { e, lane };
+        });
+        // events overlapping in time share the max lane count of their cluster
+        return placed.map(({ e, lane }) => {
+          const s = new Date(e.start);
+          const en = new Date(e.end);
+          const overlapping = placed.filter(({ e: o }) =>
+            new Date(o.start).getTime() < en.getTime() && new Date(o.end).getTime() > s.getTime());
+          const cols = Math.max(1, ...overlapping.map((o) => o.lane + 1));
+          const startMin = s.getHours() * 60 + s.getMinutes();
+          const endMin = en.getHours() * 60 + en.getMinutes();
+          const top = ((startMin - HOUR_START * 60) / 60) * ROW_PX;
+          const height = Math.max(20, ((endMin - startMin) / 60) * ROW_PX);
+          if (top + height < 0 || top > HOUR_ROWS * ROW_PX) return null;
+          const compact = height < 36; // one line only — no clipped second line
+          const widthPct = 100 / cols;
+          return (
+            <button
+              key={e.id}
+              onClick={() => onSelect(e)}
+              className="absolute rounded px-1.5 text-left text-[11px] leading-tight overflow-hidden hover:brightness-110 motion-safe:transition-[filter]"
+              style={{
+                top: Math.max(0, top),
+                height,
+                left: `calc(${lane * widthPct}% + 3px)`,
+                width: `calc(${widthPct}% - 5px)`,
+                background: `${e.color}26`,
+                boxShadow: `inset 3px 0 0 ${e.color}`,
+                color: "var(--foreground)",
+                paddingTop: compact ? 0 : 3,
+                display: compact ? "flex" : "block",
+                alignItems: compact ? "center" : undefined,
+              }}
+              title={`${e.display_name}: ${e.summary} · ${format(s, "h:mma").toLowerCase()}–${format(en, "h:mma").toLowerCase()}`}
+            >
+              {compact ? (
+                <span className="truncate w-full">
+                  <span className="opacity-75 tabular-nums">{format(s, "h:mm")}</span>{" "}
+                  <span className="font-medium">{e.summary}</span>
+                </span>
+              ) : (
+                <>
+                  <div className="font-medium truncate">{e.summary}</div>
+                  <div className="text-[10px] opacity-75 truncate tabular-nums">
+                    {format(s, "h:mma").toLowerCase()} · {e.display_name}
+                  </div>
+                </>
+              )}
+            </button>
+          );
+        });
+      })()}
     </div>
   );
 }
