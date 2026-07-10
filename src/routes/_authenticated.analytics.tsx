@@ -108,15 +108,15 @@ function Analytics() {
             <p className="text-xs text-muted-foreground mt-0.5">Full-funnel breakdown from DMs to closes</p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <div className="inline-flex rounded-sm border border-border bg-card p-0.5">
+            <div className="inline-flex rounded-full border border-white/[0.07] bg-white/[0.02] p-0.5 gap-0.5">
               {RANGES.map(r => (
                 <button key={r.key} onClick={() => setRange(r.key)}
-                  className={`text-[11px] font-semibold px-2.5 py-1 rounded-[2px] ${range === r.key ? "bg-foreground text-background" : "text-muted-foreground"}`}>
+                  className={`text-[11px] font-medium px-3 py-1 rounded-full transition-colors ${range === r.key ? "bg-white/[0.06] text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
                   {r.label}
                 </button>
               ))}
             </div>
-            <button onClick={exportCsv} className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1.5 rounded-sm border border-border text-muted-foreground hover:text-foreground">
+            <button onClick={exportCsv} className="inline-flex items-center gap-1.5 text-[11px] font-medium px-3 py-1.5 rounded-full border border-white/[0.07] text-muted-foreground hover:text-foreground">
               <Download className="h-3 w-3" /> CSV
             </button>
           </div>
