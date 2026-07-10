@@ -244,104 +244,128 @@ export function WeeklyPlan({ onOpenItem }: { onOpenItem: (id: string) => void })
       </div>
 
       {loading ? (
-        <div className="flex items-center gap-2 text-muted-foreground p-6"><Loader2 className="h-4 w-4 animate-spin" /> Loading week…</div>
+        <div className="flex items-center gap-2 text-muted-foreground p-6"><Loader2 className="h-4 w-4 animate-spin" /> Loading weeks…</div>
       ) : (
-        <div className="grid xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-4">
-          {/* Weekly reel schedule */}
-          <section>
-            <div className="flex items-center justify-between mb-1.5">
-              <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Weekly reel schedule</h2>
-              <span className="text-[10px] text-muted-foreground">7 reels · 4 TOF · 3 MOF</span>
-            </div>
-            <div className="space-y-1.5">
-              {DAYS.map((day, idx) => {
-                const date = ymd(addDays(monday, idx));
-                const daySlots = slotsByDay.get(date) ?? [];
-                const meta = SLOT_LABELS[idx];
-                const isToday = isSameDay(addDays(monday, idx), new Date());
-                const stageColor = meta.stage === "tof"
-                  ? "border-blue-500/30 bg-blue-500/5"
-                  : "border-emerald-500/30 bg-emerald-500/5";
-                const stageBadge = meta.stage === "tof"
-                  ? "bg-blue-500/15 text-blue-300 border-blue-500/30"
-                  : "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
-
-                return (
-                  <div key={day} className={`border rounded-sm ${stageColor} ${isToday ? "ring-1 ring-fuchsia-500/40" : ""}`}>
-                    <div className="flex items-center gap-2 px-2.5 py-1.5 border-b border-white/5">
-                      <span className="text-[10px] font-mono w-14 text-muted-foreground">
-                        {day} {format(addDays(monday, idx), "d")}
-                      </span>
-                      <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-sm border ${stageBadge}`}>
-                        {meta.stage} · {meta.position}
-                      </span>
-                      {isToday && <span className="text-[9px] uppercase tracking-wider text-fuchsia-400 font-bold">Today</span>}
-                    </div>
-                    <div className="p-2 space-y-1">
-                      {daySlots.length === 0 ? (
-                        <button
-                          onClick={() => load()}
-                          className="text-[11px] text-fuchsia-400 hover:text-fuchsia-300 italic px-1 underline decoration-dotted"
-                        >
-                          Slot missing — click to repair
-                        </button>
-                      ) : daySlots.map(s => {
-                        const isFilled = s.hook && !/^(TOF|MOF)\s·/.test(s.hook);
-                        return (
-                          <button
-                            key={s.id}
-                            onClick={() => onOpenItem(s.id)}
-                            className="w-full text-left px-2 py-1.5 rounded-sm bg-[#0a0b0f]/60 hover:bg-[#0a0b0f] border border-transparent hover:border-fuchsia-500/40 transition"
-                          >
-                            <div className="flex items-center gap-2">
-                              {isFilled
-                                ? <CheckCircle2 className="h-3 w-3 text-emerald-400 shrink-0" />
-                                : <Sparkles className="h-3 w-3 text-muted-foreground shrink-0" />}
-                              <span className={`text-xs ${isFilled ? "" : "text-muted-foreground italic"} line-clamp-2`}>
-                                {isFilled ? s.hook : "Empty slot — click to draft"}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2 mt-1 text-[9px] font-mono text-muted-foreground">
-                              <span className="uppercase tracking-wider">{s.status}</span>
-                              {s.format && <span>· {s.format}</span>}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-
-          {/* Ideation pad */}
-          <section>
-            <div className="flex items-center justify-between mb-1.5">
-              <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Ideation pad · 10 ideas</h2>
-              <span className="text-[10px] text-muted-foreground">1–5 MOF · 6–10 TOF</span>
-            </div>
-            <div className="space-y-1.5">
-              <IdeaGroup
-                title="MOF · Ideas 1–5"
-                stageColor="border-emerald-500/30"
-                ideas={mofIdeas}
-                slots={availableSlotsFor("mof")}
-                onChange={saveIdeaField}
-                onPromote={promote}
-              />
-              <IdeaGroup
-                title="TOF · Ideas 6–10"
-                stageColor="border-blue-500/30"
-                ideas={tofIdeas}
-                slots={availableSlotsFor("tof")}
-                onChange={saveIdeaField}
-                onPromote={promote}
-              />
-            </div>
-          </section>
+        <div className="space-y-6">
+          <WeekBlock
+            label="This week"
+            weekStart={weekStart}
+            slots={slots.filter(s => s.week_start === weekStart)}
+            ideas={ideas.filter(i => i.week_start === weekStart)}
+            onOpenItem={onOpenItem}
+            onSaveIdea={saveIdeaField}
+            onPromote={promote}
+            onRepair={load}
+          />
+          <WeekBlock
+            label="Next week"
+            weekStart={nextWeekStart}
+            slots={slots.filter(s => s.week_start === nextWeekStart)}
+            ideas={ideas.filter(i => i.week_start === nextWeekStart)}
+            onOpenItem={onOpenItem}
+            onSaveIdea={saveIdeaField}
+            onPromote={promote}
+            onRepair={load}
+          />
         </div>
       )}
+    </div>
+  );
+}
+
+function WeekBlock({
+  label, weekStart, slots, ideas, onOpenItem, onSaveIdea, onPromote, onRepair,
+}: {
+  label: string;
+  weekStart: string;
+  slots: WeekSlot[];
+  ideas: WeekIdea[];
+  onOpenItem: (id: string) => void;
+  onSaveIdea: (id: string, patch: Partial<WeekIdea>) => void;
+  onPromote: (ideaId: string, contentItemId: string) => void;
+  onRepair: () => void;
+}) {
+  const monday = parseISO(weekStart);
+  const weekEnd = addDays(monday, 6);
+  const slotsByDay = useMemo(() => {
+    const map = new Map<string, WeekSlot[]>();
+    for (let i = 0; i < 7; i++) map.set(ymd(addDays(monday, i)), []);
+    for (const s of slots) {
+      if (!s.scheduled_date) continue;
+      const arr = map.get(s.scheduled_date);
+      if (arr) arr.push(s);
+    }
+    return map;
+  }, [slots, monday]);
+  const mofIdeas = ideas.filter(i => i.stage === "mof").sort((a, b) => a.position - b.position);
+  const tofIdeas = ideas.filter(i => i.stage === "tof").sort((a, b) => a.position - b.position);
+  const availableSlotsFor = (stage: Stage) => slots.filter(s => s.funnel_stage === stage);
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-baseline gap-2 border-b border-[#1f2530] pb-1.5">
+        <span className="text-[10px] uppercase tracking-[0.18em] text-fuchsia-400 font-semibold">{label}</span>
+        <span className="text-sm font-semibold">{format(monday, "MMM d")} – {format(weekEnd, "MMM d")}</span>
+      </div>
+      <div className="grid xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-4">
+        <section>
+          <div className="flex items-center justify-between mb-1.5">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Reel schedule</h2>
+            <span className="text-[10px] text-muted-foreground">7 reels · 4 TOF · 3 MOF</span>
+          </div>
+          <div className="space-y-1.5">
+            {DAYS.map((day, idx) => {
+              const date = ymd(addDays(monday, idx));
+              const daySlots = slotsByDay.get(date) ?? [];
+              const meta = SLOT_LABELS[idx];
+              const isToday = isSameDay(addDays(monday, idx), new Date());
+              const stageColor = meta.stage === "tof" ? "border-blue-500/30 bg-blue-500/5" : "border-emerald-500/30 bg-emerald-500/5";
+              const stageBadge = meta.stage === "tof" ? "bg-blue-500/15 text-blue-300 border-blue-500/30" : "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
+              return (
+                <div key={day} className={`border rounded-sm ${stageColor} ${isToday ? "ring-1 ring-fuchsia-500/40" : ""}`}>
+                  <div className="flex items-center gap-2 px-2.5 py-1.5 border-b border-white/5">
+                    <span className="text-[10px] font-mono w-14 text-muted-foreground">{day} {format(addDays(monday, idx), "d")}</span>
+                    <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-sm border ${stageBadge}`}>{meta.stage} · {meta.position}</span>
+                    {isToday && <span className="text-[9px] uppercase tracking-wider text-fuchsia-400 font-bold">Today</span>}
+                  </div>
+                  <div className="p-2 space-y-1">
+                    {daySlots.length === 0 ? (
+                      <button onClick={onRepair} className="text-[11px] text-fuchsia-400 hover:text-fuchsia-300 italic px-1 underline decoration-dotted">
+                        Slot missing — click to repair
+                      </button>
+                    ) : daySlots.map(s => {
+                      const isFilled = s.hook && !/^(TOF|MOF)\s·/.test(s.hook);
+                      return (
+                        <button key={s.id} onClick={() => onOpenItem(s.id)} className="w-full text-left px-2 py-1.5 rounded-sm bg-[#0a0b0f]/60 hover:bg-[#0a0b0f] border border-transparent hover:border-fuchsia-500/40 transition">
+                          <div className="flex items-center gap-2">
+                            {isFilled ? <CheckCircle2 className="h-3 w-3 text-emerald-400 shrink-0" /> : <Sparkles className="h-3 w-3 text-muted-foreground shrink-0" />}
+                            <span className={`text-xs ${isFilled ? "" : "text-muted-foreground italic"} line-clamp-2`}>{isFilled ? s.hook : "Empty slot — click to draft"}</span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-1 text-[9px] font-mono text-muted-foreground">
+                            <span className="uppercase tracking-wider">{s.status}</span>
+                            {s.format && <span>· {s.format}</span>}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        <section>
+          <div className="flex items-center justify-between mb-1.5">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Ideation pad · 10 ideas</h2>
+            <span className="text-[10px] text-muted-foreground">1–5 MOF · 6–10 TOF</span>
+          </div>
+          <div className="space-y-1.5">
+            <IdeaGroup title="MOF · Ideas 1–5" stageColor="border-emerald-500/30" ideas={mofIdeas} slots={availableSlotsFor("mof")} onChange={onSaveIdea} onPromote={onPromote} />
+            <IdeaGroup title="TOF · Ideas 6–10" stageColor="border-blue-500/30" ideas={tofIdeas} slots={availableSlotsFor("tof")} onChange={onSaveIdea} onPromote={onPromote} />
+          </div>
+        </section>
+      </div>
     </div>
   );
 }
