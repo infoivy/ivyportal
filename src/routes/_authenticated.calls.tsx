@@ -327,7 +327,7 @@ function CallModal({ call, onClose, onSaved, students, coaches, defaultCoachId }
       : await supabase.from("student_calls").insert(payload);
     setSaving(false);
     if (error) return toast.error(error.message);
-    toast.success(call ? "Call updated" : "Call logged");
+    toast.success(call ? "Call updated" : "Call logged → Calls");
     onSaved();
   };
 

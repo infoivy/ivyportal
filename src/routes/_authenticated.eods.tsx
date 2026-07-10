@@ -179,7 +179,7 @@ function EODsPage() {
     const { error } = await supabase.from("eods").upsert(payload, { onConflict: "user_id,report_date" });
     setSaving(false);
     if (error) return toast.error(error.message);
-    toast.success(existingId ? "EOD updated" : "EOD submitted");
+    toast.success(existingId ? "EOD updated" : "EOD submitted → Team Reports");
     if (wasNew) {
       confetti({ particleCount: 120, spread: 80, origin: { y: 0.7 }, colors: ["#10b981", "#f59e0b", "#3b82f6", "#a855f7"] });
       if (draftKey) { try { localStorage.removeItem(draftKey); } catch {} }
@@ -279,6 +279,12 @@ function EODsPage() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {isFounder && (
+        <div className="rounded-sm border border-border bg-card px-4 py-3 text-xs text-muted-foreground">
+          This account has no setter or closer role — you don't submit EODs. Use the tabs below to view team reports.
         </div>
       )}
 

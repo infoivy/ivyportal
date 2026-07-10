@@ -160,7 +160,7 @@ function ActionItemsHub() {
     });
     setSaving(false);
     if (error) return toast.error(error.message);
-    toast.success("Action item added");
+    toast.success("Action item added → Action Items");
     setNewText(""); setNewDue(""); setAddOpen(false);
     load();
   };

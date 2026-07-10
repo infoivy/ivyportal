@@ -748,7 +748,7 @@ function LogDealDialog({
     }
 
     setSaving(false);
-    toast.success(editing ? "Deal updated" : "Deal logged");
+    toast.success(editing ? "Deal updated" : "Deal logged → Revenue");
     onSaved();
   };
 

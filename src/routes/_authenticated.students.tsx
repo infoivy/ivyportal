@@ -778,7 +778,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
         }
       }
 
-      toast.success("Student added — deal & installments created.");
+      toast.success("Student added → Students · deal & installments created");
       onCreated();
     } catch (e: any) {
       toast.error(e.message ?? "Failed");

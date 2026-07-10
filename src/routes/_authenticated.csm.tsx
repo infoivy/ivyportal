@@ -207,6 +207,28 @@ function CsmPage() {
     setQuickKind(null); setQuickNote(""); setQuickStudent("");
   };
 
+  const submitCsmEod = async () => {
+    if (!user) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const payload = {
+      user_id: user.id,
+      report_date: today,
+      looms_reviewed: todayCounts.loom,
+      roleplays_reviewed: todayCounts.roleplay,
+      student_checkins: todayCounts.checkin,
+      escalations_resolved: todayCounts.escalation,
+      // zero out sales fields for CSM
+      dms_sent: 0, convos_started: 0, calls_booked: 0, calls_scheduled: 0,
+      shows: 0, no_shows: 0, calls_taken: 0, closes: 0, deposits: 0,
+      cash_collected: 0, deferred_cash: 0, follow_ups_done: 0,
+      dials: 0, leads_contacted: 0,
+      wins: `CSM day: ${todayCounts.loom} looms, ${todayCounts.roleplay} roleplays, ${todayCounts.checkin} check-ins, ${todayCounts.escalation} escalations`,
+    };
+    const { error } = await supabase.from("eods").upsert(payload, { onConflict: "user_id,report_date" });
+    if (error) return toast.error(error.message);
+    toast.success("EOD submitted → Team Reports ✓");
+  };
+
   // NOTE: Action items are owned by the coach → student flow. Coaches set them
   // during 1:1 calls in /calls; the student ticks them off in their portal via
   // the student_toggle_action_item RPC. CSMs and staff view only, never toggle.
@@ -242,16 +264,16 @@ function CsmPage() {
           <h1 className="text-2xl font-semibold tracking-tight">CSM Workspace</h1>
           <p className="text-xs text-muted-foreground mt-0.5">Tally today's work, chase accountability, log notes.</p>
         </div>
-        <Link to="/eods" className="inline-flex items-center gap-1.5 h-8 px-3 rounded-sm bg-green-500 hover:bg-green-400 text-green-950 text-xs font-medium">
-          <FileText className="h-3.5 w-3.5" /> Submit CSM EOD
-        </Link>
+        <button onClick={submitCsmEod} className="inline-flex items-center gap-1.5 h-8 px-3 rounded-sm bg-green-500 hover:bg-green-400 text-green-950 text-xs font-medium">
+          <FileText className="h-3.5 w-3.5" /> Submit to Team Reports
+        </button>
       </header>
 
       {/* Daily tally */}
       <section className="space-y-2">
         <div className="flex items-center justify-between">
           <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Today's tally</div>
-          <div className="text-[10px] text-muted-foreground">Pre-fills your CSM EOD automatically</div>
+          <div className="text-[10px] text-muted-foreground">Uses today's tally counts</div>
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
           {(Object.keys(KIND_META) as TallyKind[]).map(k => {
