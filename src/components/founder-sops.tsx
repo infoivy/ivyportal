@@ -119,15 +119,15 @@ export function FounderSops() {
 
   return (
     <div className="grid lg:grid-cols-[280px_minmax(0,1fr)] gap-4">
-      <aside className="border border-[#1f2530] bg-[#0f1116] rounded-sm">
-        <div className="flex items-center justify-between px-3 py-2 border-b border-[#1f2530]">
+      <aside className="border border-[var(--border)] bg-[var(--card)] rounded-sm">
+        <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--border)]">
           <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
             <BookOpen className="h-3 w-3" /> SOPs & Playbooks
           </div>
           <button
             onClick={createDoc}
             disabled={creating}
-            className="h-6 w-6 grid place-items-center rounded-sm border border-[#1f2530] hover:border-blue-500/40"
+            className="h-6 w-6 grid place-items-center rounded-sm border border-[var(--border)] hover:border-blue-500/40"
             title="New SOP"
           >
             {creating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
@@ -142,7 +142,7 @@ export function FounderSops() {
             No SOPs yet. Click <span className="text-blue-400">+</span> to create one.
           </div>
         ) : (
-          <ul className="divide-y divide-[#1a1f29]">
+          <ul className="divide-y divide-[var(--accent)]">
             {docs.map((d) => {
               const active = d.id === selectedId;
               const rev = reviewedStaleness(d);
@@ -150,7 +150,7 @@ export function FounderSops() {
                 <li key={d.id}>
                   <button
                     onClick={() => { setSelectedId(d.id); setMode("view"); }}
-                    className={`w-full text-left px-3 py-2 hover:bg-[#14171e] ${active ? "bg-blue-500/5 border-l-2 border-blue-500" : ""}`}
+                    className={`w-full text-left px-3 py-2 hover:bg-[var(--muted)] ${active ? "bg-blue-500/5 border-l-2 border-blue-500" : ""}`}
                   >
                     <div className="text-xs font-medium line-clamp-2">{d.title}</div>
                     <div className="flex items-center gap-1 mt-1 text-[10px] text-muted-foreground">
@@ -166,14 +166,14 @@ export function FounderSops() {
         )}
       </aside>
 
-      <section className="border border-[#1f2530] bg-[#0f1116] rounded-sm min-h-[400px]">
+      <section className="border border-[var(--border)] bg-[var(--card)] rounded-sm min-h-[400px]">
         {!selected ? (
           <div className="p-8 text-sm text-muted-foreground text-center">
             {loading ? "Loading…" : "Select an SOP from the left, or create a new one."}
           </div>
         ) : mode === "view" ? (
           <div>
-            <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-[#1f2530]">
+            <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-[var(--border)]">
               <div>
                 <h2 className="text-lg font-semibold">{selected.title}</h2>
                 <div className="text-[10px] text-muted-foreground mt-0.5">
@@ -183,7 +183,7 @@ export function FounderSops() {
               <div className="flex gap-2">
                 <button
                   onClick={markReviewed}
-                  className="h-8 px-3 rounded-sm border border-[#1f2530] hover:border-green-500/40 text-xs text-green-300"
+                  className="h-8 px-3 rounded-sm border border-[var(--border)] hover:border-green-500/40 text-xs text-green-300"
                 >
                   Mark reviewed
                 </button>
@@ -207,7 +207,7 @@ export function FounderSops() {
           </div>
         ) : (
           <div>
-            <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-[#1f2530]">
+            <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-[var(--border)]">
               <input
                 value={draftTitle}
                 onChange={(e) => setDraftTitle(e.target.value)}
@@ -216,7 +216,7 @@ export function FounderSops() {
               <div className="flex gap-2">
                 <button
                   onClick={cancelEdit}
-                  className="h-8 px-3 rounded-sm border border-[#1f2530] hover:border-red-500/40 text-xs inline-flex items-center gap-1"
+                  className="h-8 px-3 rounded-sm border border-[var(--border)] hover:border-red-500/40 text-xs inline-flex items-center gap-1"
                 >
                   <X className="h-3 w-3" /> Cancel
                 </button>

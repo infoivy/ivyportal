@@ -100,7 +100,7 @@ export function AuthPage() {
             </p>
           </div>
 
-          <div className="inline-flex w-full rounded-sm border border-border bg-[#0a0b0f] p-0.5">
+          <div className="inline-flex w-full rounded-sm border border-border bg-[var(--background)] p-0.5">
             <button
               onClick={() => setTab("signin")}
               className={`flex-1 text-[11px] font-semibold px-2.5 py-1.5 rounded-[2px] transition ${
@@ -165,7 +165,7 @@ export function AuthPage() {
 
           <button
             onClick={handleGoogle}
-            className="w-full inline-flex items-center justify-center gap-2 text-[12px] font-medium px-3 py-2 rounded-sm border border-border bg-[#0a0b0f] text-foreground hover:border-emerald-500/60"
+            className="w-full inline-flex items-center justify-center gap-2 text-[12px] font-medium px-3 py-2 rounded-sm border border-border bg-[var(--background)] text-foreground hover:border-emerald-500/60"
           >
             <GoogleIcon /> Continue with Google
           </button>
@@ -195,7 +195,7 @@ function Field({
         onChange={e => onChange(e.target.value)}
         required
         minLength={minLength}
-        className="w-full bg-[#0a0b0f] border border-border rounded-sm px-3 py-2 text-sm outline-none focus:border-emerald-500/60"
+        className="w-full bg-[var(--background)] border border-border rounded-sm px-3 py-2 text-sm outline-none focus:border-emerald-500/60"
       />
     </div>
   );

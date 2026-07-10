@@ -72,7 +72,7 @@ export function MarkdownEditor({
         )}
         {(tab === "preview" || tab === "split") && (
           <div
-            className="border border-[#1f2530] rounded-md p-4 overflow-auto bg-[#0a0b0f]"
+            className="border border-[var(--border)] rounded-md p-4 overflow-auto bg-[var(--background)]"
             style={{ minHeight }}
           >
             {value.trim() ? (

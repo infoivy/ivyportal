@@ -83,7 +83,7 @@ export function RecordingDay({ onOpenItem }: { onOpenItem: (id: string) => void 
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3 border border-[#1f2530] bg-[#0f1116] rounded-sm p-3">
+      <div className="flex flex-wrap items-center gap-3 border border-[var(--border)] bg-[var(--card)] rounded-sm p-3">
         <div className="flex items-center gap-2">
           <Video className="h-4 w-4 text-blue-400" />
           <div>
@@ -98,7 +98,7 @@ export function RecordingDay({ onOpenItem }: { onOpenItem: (id: string) => void 
           </div>
           <div className="flex items-center gap-1">
             <span className="text-[10px] uppercase tracking-wider text-muted-foreground mr-1">Shoot day</span>
-            <select value={recordingDay} onChange={e => setDay(parseInt(e.target.value, 10))} className="h-7 px-1.5 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs">
+            <select value={recordingDay} onChange={e => setDay(parseInt(e.target.value, 10))} className="h-7 px-1.5 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs">
               {[1,2,3,4,5,6,0].map(n => <option key={n} value={n}>{dayNames[n]}</option>)}
             </select>
           </div>
@@ -113,7 +113,7 @@ export function RecordingDay({ onOpenItem }: { onOpenItem: (id: string) => void 
       </div>
 
       {/* Progress bar */}
-      <div className="h-1.5 rounded-full bg-[#0a0b0f] overflow-hidden border border-[#1f2530]">
+      <div className="h-1.5 rounded-full bg-[var(--background)] overflow-hidden border border-[var(--border)]">
         <div className="h-full bg-blue-500 transition-all" style={{ width: `${ordered.length ? (readyCount / ordered.length) * 100 : 0}%` }} />
       </div>
 
@@ -125,7 +125,7 @@ export function RecordingDay({ onOpenItem }: { onOpenItem: (id: string) => void 
           const scripted = (s.script?.trim().length ?? 0) > 20;
           const stageColor = s.funnel_stage === "tof" ? "text-blue-300 border-blue-500/30 bg-blue-500/5" : "text-green-300 border-green-500/30 bg-green-500/5";
           return (
-            <div key={s.id} className="flex items-center gap-3 border border-[#1f2530] bg-[#0f1116] rounded-sm p-2.5 hover:border-blue-500/40 transition">
+            <div key={s.id} className="flex items-center gap-3 border border-[var(--border)] bg-[var(--card)] rounded-sm p-2.5 hover:border-blue-500/40 transition">
               {ready ? <CheckCircle2 className="h-4 w-4 text-green-400 shrink-0" /> : <Circle className="h-4 w-4 text-muted-foreground shrink-0" />}
               <div className="flex-1 min-w-0 space-y-0.5">
                 <button onClick={() => onOpenItem(s.id)} className="text-left w-full">
@@ -155,7 +155,7 @@ export function RecordingDay({ onOpenItem }: { onOpenItem: (id: string) => void 
               )}
               <button
                 onClick={() => setFocusIdx(i)}
-                className="h-7 px-2 rounded-sm border border-[#1f2530] hover:border-blue-500/40 text-[10px] text-muted-foreground hover:text-blue-300 shrink-0 inline-flex items-center gap-0.5"
+                className="h-7 px-2 rounded-sm border border-[var(--border)] hover:border-blue-500/40 text-[10px] text-muted-foreground hover:text-blue-300 shrink-0 inline-flex items-center gap-0.5"
               >
                 Focus <ChevronRight className="h-2.5 w-2.5" />
               </button>
@@ -163,7 +163,7 @@ export function RecordingDay({ onOpenItem }: { onOpenItem: (id: string) => void 
           );
         })}
         {ordered.length === 0 && (
-          <div className="text-xs text-muted-foreground text-center p-8 border border-[#1f2530] rounded-sm">
+          <div className="text-xs text-muted-foreground text-center p-8 border border-[var(--border)] rounded-sm">
             No slots this fortnight yet — open the Weekly plan to provision.
           </div>
         )}
@@ -172,8 +172,8 @@ export function RecordingDay({ onOpenItem }: { onOpenItem: (id: string) => void 
       {/* Focus mode */}
       {current && (
         <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4" onClick={() => setFocusIdx(null)}>
-          <div className="w-full max-w-4xl bg-[#0f1116] border border-blue-500/30 rounded-sm" onClick={e => e.stopPropagation()}>
-            <div className="p-4 border-b border-[#1f2530] flex items-center justify-between">
+          <div className="w-full max-w-4xl bg-[var(--card)] border border-blue-500/30 rounded-sm" onClick={e => e.stopPropagation()}>
+            <div className="p-4 border-b border-[var(--border)] flex items-center justify-between">
               <div className="text-[10px] uppercase tracking-wider text-blue-400">
                 {focusIdx! + 1} of {ordered.length} · {current.scheduled_date ? format(parseISO(current.scheduled_date), "EEE MMM d") : "—"}
               </div>
@@ -187,23 +187,23 @@ export function RecordingDay({ onOpenItem }: { onOpenItem: (id: string) => void 
               {current.script && (
                 <div>
                   <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Script</div>
-                  <pre className="text-sm whitespace-pre-wrap font-sans leading-relaxed bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-3">{current.script}</pre>
+                  <pre className="text-sm whitespace-pre-wrap font-sans leading-relaxed bg-[var(--background)] border border-[var(--border)] rounded-sm p-3">{current.script}</pre>
                 </div>
               )}
               <div className="flex flex-wrap gap-2 text-[11px] text-muted-foreground">
-                {current.format && <span className="px-2 py-0.5 border border-[#1f2530] rounded-sm">{current.format}</span>}
-                {current.duration_sec && <span className="px-2 py-0.5 border border-[#1f2530] rounded-sm">{current.duration_sec}s</span>}
-                {current.funnel_stage && <span className="px-2 py-0.5 border border-[#1f2530] rounded-sm uppercase">{current.funnel_stage}</span>}
+                {current.format && <span className="px-2 py-0.5 border border-[var(--border)] rounded-sm">{current.format}</span>}
+                {current.duration_sec && <span className="px-2 py-0.5 border border-[var(--border)] rounded-sm">{current.duration_sec}s</span>}
+                {current.funnel_stage && <span className="px-2 py-0.5 border border-[var(--border)] rounded-sm uppercase">{current.funnel_stage}</span>}
               </div>
             </div>
-            <div className="p-3 border-t border-[#1f2530] flex items-center justify-between">
+            <div className="p-3 border-t border-[var(--border)] flex items-center justify-between">
               <button
                 onClick={() => setFocusIdx(Math.max(0, focusIdx! - 1))}
                 disabled={focusIdx! === 0}
-                className="h-8 px-3 rounded-sm border border-[#1f2530] text-xs disabled:opacity-30"
+                className="h-8 px-3 rounded-sm border border-[var(--border)] text-xs disabled:opacity-30"
               >← Prev</button>
               <div className="flex gap-2">
-                <button onClick={() => onOpenItem(current.id)} className="h-8 px-3 rounded-sm border border-[#1f2530] text-xs">Edit</button>
+                <button onClick={() => onOpenItem(current.id)} className="h-8 px-3 rounded-sm border border-[var(--border)] text-xs">Edit</button>
                 {(current.status === "approved" || current.status === "scripted") && (
                   <button
                     onClick={async () => { await markRecorded(current.id); setFocusIdx(Math.min(ordered.length - 1, focusIdx! + 1)); }}
@@ -214,7 +214,7 @@ export function RecordingDay({ onOpenItem }: { onOpenItem: (id: string) => void 
               <button
                 onClick={() => setFocusIdx(Math.min(ordered.length - 1, focusIdx! + 1))}
                 disabled={focusIdx! === ordered.length - 1}
-                className="h-8 px-3 rounded-sm border border-[#1f2530] text-xs disabled:opacity-30"
+                className="h-8 px-3 rounded-sm border border-[var(--border)] text-xs disabled:opacity-30"
               >Next →</button>
             </div>
           </div>

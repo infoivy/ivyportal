@@ -186,7 +186,7 @@ function ActionItemsHub() {
 
   return (
     <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-5">
-      <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[#1f2530] pb-4">
+      <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--border)] pb-4">
         <div>
           <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-blue-400 mb-1">
             <ListChecks className="h-3 w-3" /> Action Items Hub
@@ -219,8 +219,8 @@ function ActionItemsHub() {
             className={`text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-sm border transition ${
               filt === k
                 ? k === "overdue" ? "text-red-400 border-red-500/30 bg-red-500/10"
-                : "text-foreground border-[#2a3140] bg-[#1a1f29]"
-                : "text-muted-foreground border-[#1f2530] hover:border-[#2a3140]"
+                : "text-foreground border-[#2a3140] bg-[var(--accent)]"
+                : "text-muted-foreground border-[var(--border)] hover:border-[#2a3140]"
             }`}
           >
             {k === "open" ? `Open · ${counts.open}` : k === "mine" ? `Mine · ${counts.mine}` : k === "overdue" ? `Overdue · ${counts.overdue}` : `All · ${counts.all}`}
@@ -231,7 +231,7 @@ function ActionItemsHub() {
           <select
             value={ownerFilter}
             onChange={e => setOwnerFilter(e.target.value)}
-            className="text-[11px] h-7 px-2 rounded-sm border border-[#1f2530] bg-[#0f1116]"
+            className="text-[11px] h-7 px-2 rounded-sm border border-[var(--border)] bg-[var(--card)]"
           >
             <option value="all">All owners</option>
             <option value="mine">My items</option>
@@ -240,8 +240,8 @@ function ActionItemsHub() {
         </div>
       </div>
 
-      <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm overflow-hidden">
-        <div className="grid grid-cols-[24px_minmax(0,1fr)_140px_120px_90px_28px] gap-2 px-3 py-2 border-b border-[#1f2530] text-[10px] uppercase tracking-widest text-muted-foreground">
+      <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm overflow-hidden">
+        <div className="grid grid-cols-[24px_minmax(0,1fr)_140px_120px_90px_28px] gap-2 px-3 py-2 border-b border-[var(--border)] text-[10px] uppercase tracking-widest text-muted-foreground">
           <span />
           <span>Item</span>
           <span>Student</span>
@@ -258,7 +258,7 @@ function ActionItemsHub() {
           return (
             <div
               key={r.key}
-              className="grid grid-cols-[24px_minmax(0,1fr)_140px_120px_90px_28px] gap-2 items-center px-3 py-2.5 border-b border-[#1a1f29] last:border-0 hover:bg-[#14171e]"
+              className="grid grid-cols-[24px_minmax(0,1fr)_140px_120px_90px_28px] gap-2 items-center px-3 py-2.5 border-b border-[var(--accent)] last:border-0 hover:bg-[var(--muted)]"
               title={r.source === "call" ? "From 1:1 call — student ticks off in portal" : "Ad-hoc — staff or student can tick off"}
             >
               <input
@@ -305,14 +305,14 @@ function ActionItemsHub() {
       {/* Add ad-hoc modal */}
       {addOpen && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setAddOpen(false)}>
-          <div className="w-full max-w-md bg-[#0f1116] border border-[#1f2530] rounded-sm p-4 space-y-3" onClick={e => e.stopPropagation()}>
+          <div className="w-full max-w-md bg-[var(--card)] border border-[var(--border)] rounded-sm p-4 space-y-3" onClick={e => e.stopPropagation()}>
             <div className="text-sm font-semibold">Add ad-hoc action item</div>
             <div className="space-y-1">
               <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Student</label>
               <select
                 value={newStudent}
                 onChange={e => setNewStudent(e.target.value)}
-                className="w-full h-8 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs outline-none focus:border-blue-500/40"
+                className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-blue-500/40"
               >
                 <option value="">— Select student —</option>
                 {studentList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -325,7 +325,7 @@ function ActionItemsHub() {
                 onChange={e => setNewText(e.target.value)}
                 rows={3}
                 placeholder="e.g. Send updated resume by Friday"
-                className="w-full bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-2 text-sm resize-none focus:outline-none focus:border-blue-500/40"
+                className="w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-sm resize-none focus:outline-none focus:border-blue-500/40"
               />
             </div>
             <div className="space-y-1">
@@ -334,11 +334,11 @@ function ActionItemsHub() {
                 type="date"
                 value={newDue}
                 onChange={e => setNewDue(e.target.value)}
-                className="w-full h-8 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs outline-none focus:border-blue-500/40"
+                className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-blue-500/40"
               />
             </div>
             <div className="flex justify-end gap-2 pt-1">
-              <button onClick={() => setAddOpen(false)} className="h-8 px-3 rounded-sm border border-[#1f2530] text-xs">Cancel</button>
+              <button onClick={() => setAddOpen(false)} className="h-8 px-3 rounded-sm border border-[var(--border)] text-xs">Cancel</button>
               <button
                 onClick={submitAdhoc}
                 disabled={saving || !newStudent || !newText.trim()}

@@ -122,8 +122,8 @@ export function CommandPalette() {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-start justify-center pt-[10vh] p-4" onClick={() => setOpen(false)}>
-      <div className="w-full max-w-xl bg-[#0f1116] border border-[#1f2530] rounded-md shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center gap-2 px-3 border-b border-[#1f2530]">
+      <div className="w-full max-w-xl bg-[var(--card)] border border-[var(--border)] rounded-md shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center gap-2 px-3 border-b border-[var(--border)]">
           <Search className="h-4 w-4 text-muted-foreground" />
           <input
             autoFocus
@@ -137,13 +137,13 @@ export function CommandPalette() {
             placeholder="Search students, team, pages…"
             className="flex-1 h-11 bg-transparent text-sm focus:outline-none placeholder:text-muted-foreground"
           />
-          <span className="text-[10px] text-muted-foreground font-mono border border-[#1f2530] rounded px-1.5 py-0.5">ESC</span>
+          <span className="text-[10px] text-muted-foreground font-mono border border-[var(--border)] rounded px-1.5 py-0.5">ESC</span>
         </div>
         <div className="max-h-[50vh] overflow-y-auto py-1">
           {results.length === 0 && <div className="p-6 text-center text-xs text-muted-foreground">No matches.</div>}
           {results.map((it, i) => {
             const isActive = i === active;
-            const base = `flex items-center gap-2.5 px-3 py-2 text-sm cursor-pointer ${isActive ? "bg-[#1a1f29]" : "hover:bg-[#14171e]"}`;
+            const base = `flex items-center gap-2.5 px-3 py-2 text-sm cursor-pointer ${isActive ? "bg-[var(--accent)]" : "hover:bg-[var(--muted)]"}`;
             if (it.kind === "page") {
               const Icon = it.icon;
               return (
@@ -208,7 +208,7 @@ export function CommandPalette() {
             );
           })}
         </div>
-        <div className="border-t border-[#1f2530] px-3 py-1.5 flex items-center justify-between text-[10px] text-muted-foreground">
+        <div className="border-t border-[var(--border)] px-3 py-1.5 flex items-center justify-between text-[10px] text-muted-foreground">
           <span>↑↓ navigate · ↵ open</span>
           <span className="font-mono">⌘K</span>
         </div>

@@ -85,8 +85,8 @@ function AuthedLayout() {
 
   if (state.loading) {
     return (
-      <div className="dashboard-dark min-h-screen bg-[#0a0b0f]">
-        <div className="h-12 border-b border-[#1f2530] bg-[#0a0b0f]/95" />
+      <div className="dashboard-dark min-h-screen bg-[var(--background)]">
+        <div className="h-12 border-b border-[var(--border)] bg-[var(--background)]/95" />
         <PageSkeleton />
       </div>
     );
@@ -102,14 +102,14 @@ function AuthedLayout() {
         <div className="dashboard-dark min-h-screen flex w-full">
           <AppSidebar roles={state.roles} />
           <div className="flex-1 flex flex-col min-w-0">
-            <header className="h-12 flex items-center justify-between border-b border-[#1f2530] px-3 bg-[#0a0b0f]/95 backdrop-blur sticky top-0 z-30">
+            <header className="h-12 flex items-center justify-between border-b border-[var(--border)] px-3 bg-[var(--background)]/95 backdrop-blur sticky top-0 z-30">
               <div className="flex items-center gap-2 min-w-0">
                 <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
-                <div className="h-5 w-px bg-[#1f2530] mx-1" />
+                <div className="h-5 w-px bg-[var(--border)] mx-1" />
                 <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">ISA / Team</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="hidden sm:flex items-center gap-1.5 text-[10px] font-medium px-2 py-1 rounded-sm border border-[#1f2530] bg-[#0f1116] text-muted-foreground">
+                <div className="hidden sm:flex items-center gap-1.5 text-[10px] font-medium px-2 py-1 rounded-sm border border-[var(--border)] bg-[var(--card)] text-muted-foreground">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   Live
                 </div>
@@ -132,12 +132,12 @@ function AuthedLayout() {
                 </Button>
               </div>
             </header>
-            <main className={`flex-1 min-w-0 overflow-auto relative bg-[#0a0b0f] ${studentOnly ? "pb-16 sm:pb-0" : ""}`}>
+            <main className={`flex-1 min-w-0 overflow-auto relative bg-[var(--background)] ${studentOnly ? "pb-16 sm:pb-0" : ""}`}>
               <Outlet />
             </main>
           </div>
         </div>
-        <Toaster theme="dark" toastOptions={{ style: { background: "#0f1116", border: "1px solid #1f2530", color: "#e5e7eb" } }} />
+        <Toaster theme="dark" toastOptions={{ style: { background: "var(--card)", border: "1px solid var(--border)", color: "#e5e7eb" } }} />
         <CommandPalette />
         {studentOnly && <StudentBottomNavBridge />}
       </SidebarProvider>

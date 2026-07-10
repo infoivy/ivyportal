@@ -166,7 +166,7 @@ export function DocForm(props: {
                     "text-xs border rounded-full px-2.5 py-1 cursor-pointer transition " +
                     (visibility.includes(r)
                       ? "border-primary bg-primary/10 text-primary"
-                      : "border-[#1f2530] text-muted-foreground hover:border-primary/50")
+                      : "border-[var(--border)] text-muted-foreground hover:border-primary/50")
                   }
                 >
                   <input

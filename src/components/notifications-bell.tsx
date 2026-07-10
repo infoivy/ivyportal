@@ -84,7 +84,7 @@ export function NotificationsBell() {
     <Popover>
       <PopoverTrigger asChild>
         <button
-          className="relative h-8 w-8 flex items-center justify-center rounded-sm border border-[#1f2530] bg-[#0f1116] text-muted-foreground hover:text-foreground transition"
+          className="relative h-8 w-8 flex items-center justify-center rounded-sm border border-[var(--border)] bg-[var(--card)] text-muted-foreground hover:text-foreground transition"
           aria-label="Notifications"
         >
           <Bell className="h-3.5 w-3.5" />
@@ -95,8 +95,8 @@ export function NotificationsBell() {
           )}
         </button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 p-0 bg-[#0f1116] border-[#1f2530]">
-        <div className="px-3 py-2 border-b border-[#1f2530] flex items-center justify-between">
+      <PopoverContent align="end" className="w-80 p-0 bg-[var(--card)] border-[var(--border)]">
+        <div className="px-3 py-2 border-b border-[var(--border)] flex items-center justify-between">
           <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Reminders</span>
           <span className="text-[10px] text-muted-foreground">
             {overdue > 0 && <span className="text-red-400">{overdue} overdue · </span>}
@@ -114,7 +114,7 @@ export function NotificationsBell() {
                   key={item.id}
                   to={item.student_id ? "/students/$id" : "/installments"}
                   params={item.student_id ? { id: item.student_id } : (undefined as any)}
-                  className="flex items-start gap-2 px-3 py-2 border-b border-[#1f2530] hover:bg-[#141821] transition"
+                  className="flex items-start gap-2 px-3 py-2 border-b border-[var(--border)] hover:bg-[#141821] transition"
                 >
                   <div className="mt-0.5 h-6 w-6 rounded-sm bg-[#141821] flex items-center justify-center">
                     <DollarSign className="h-3 w-3 text-muted-foreground" />

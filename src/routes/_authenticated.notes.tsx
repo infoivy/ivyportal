@@ -136,7 +136,7 @@ function NotesPage() {
             onKeyDown={onKey}
             rows={3}
             placeholder="Capture an objection you heard, a win, a script tweak, a coaching thought…"
-            className="w-full bg-[#0a0b0f] border border-border rounded-sm px-3 py-2 text-sm outline-none focus:border-emerald-500/60 resize-none"
+            className="w-full bg-[var(--background)] border border-border rounded-sm px-3 py-2 text-sm outline-none focus:border-emerald-500/60 resize-none"
           />
           <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] gap-2">
             <div className="relative">
@@ -146,7 +146,7 @@ function NotesPage() {
                 onChange={e => setTagsStr(e.target.value)}
                 onKeyDown={onKey}
                 placeholder="tags (comma-separated) e.g. objection, script, win"
-                className="w-full bg-[#0a0b0f] border border-border rounded-sm pl-7 pr-3 py-1.5 text-xs outline-none focus:border-emerald-500/60"
+                className="w-full bg-[var(--background)] border border-border rounded-sm pl-7 pr-3 py-1.5 text-xs outline-none focus:border-emerald-500/60"
               />
             </div>
             <button
@@ -189,7 +189,7 @@ function NotesPage() {
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder="Search notes, tags, authors…"
-              className="w-full bg-[#0a0b0f] border border-border rounded-sm pl-8 pr-3 py-1.5 text-xs outline-none focus:border-emerald-500/60"
+              className="w-full bg-[var(--background)] border border-border rounded-sm pl-8 pr-3 py-1.5 text-xs outline-none focus:border-emerald-500/60"
             />
           </div>
           {allTags.length > 0 && (

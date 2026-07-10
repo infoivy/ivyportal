@@ -19,7 +19,7 @@ export function DefaultErrorFallback({ error, reset }: { error: Error; reset: ()
         <div className="mt-4 flex justify-center gap-2">
           <button
             onClick={() => { router.invalidate(); reset(); }}
-            className="inline-flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-sm border border-[#1f2530] bg-[#0f1116] hover:bg-[#141821] text-foreground"
+            className="inline-flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-sm border border-[var(--border)] bg-[var(--card)] hover:bg-[#141821] text-foreground"
           >
             <RefreshCw className="h-3 w-3" /> Retry
           </button>

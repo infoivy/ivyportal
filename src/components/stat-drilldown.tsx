@@ -115,7 +115,7 @@ export function StatDrilldown({
                   <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.06)" vertical={false} />
                   <XAxis dataKey="label" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
                   <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
-                  <Tooltip contentStyle={{ background: "#0f1116", border: "1px solid #1f2530", borderRadius: 4, fontSize: 11 }} />
+                  <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 4, fontSize: 11 }} />
                   <Bar dataKey="value" fill={color} radius={[2, 2, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>

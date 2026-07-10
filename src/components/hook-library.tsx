@@ -85,7 +85,7 @@ export function HookLibrary() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2 border border-[#1f2530] bg-[#0f1116] rounded-sm p-3">
+      <div className="flex flex-wrap items-center gap-2 border border-[var(--border)] bg-[var(--card)] rounded-sm p-3">
         <div className="flex items-center gap-2 flex-1 min-w-[200px]">
           <Search className="h-3.5 w-3.5 text-muted-foreground" />
           <input
@@ -96,20 +96,20 @@ export function HookLibrary() {
         </div>
         <div className="flex gap-1">
           {(["all","tof","mof"] as const).map(s => (
-            <button key={s} onClick={() => setStage(s)} className={`h-7 px-2.5 rounded-sm text-[10px] uppercase tracking-wider border ${stage === s ? "bg-blue-500/15 border-blue-500/50 text-blue-200" : "border-[#1f2530] text-muted-foreground hover:border-blue-500/30"}`}>{s}</button>
+            <button key={s} onClick={() => setStage(s)} className={`h-7 px-2.5 rounded-sm text-[10px] uppercase tracking-wider border ${stage === s ? "bg-blue-500/15 border-blue-500/50 text-blue-200" : "border-[var(--border)] text-muted-foreground hover:border-blue-500/30"}`}>{s}</button>
           ))}
         </div>
-        <button onClick={() => setOnlyFav(v => !v)} className={`h-7 px-2.5 rounded-sm text-[10px] uppercase tracking-wider border inline-flex items-center gap-1 ${onlyFav ? "bg-amber-500/15 border-amber-500/50 text-amber-200" : "border-[#1f2530] text-muted-foreground hover:border-amber-500/30"}`}>
+        <button onClick={() => setOnlyFav(v => !v)} className={`h-7 px-2.5 rounded-sm text-[10px] uppercase tracking-wider border inline-flex items-center gap-1 ${onlyFav ? "bg-amber-500/15 border-amber-500/50 text-amber-200" : "border-[var(--border)] text-muted-foreground hover:border-amber-500/30"}`}>
           <Star className="h-3 w-3" /> Favs
         </button>
-        <button onClick={() => setShowImport(v => !v)} className="h-7 px-2.5 rounded-sm text-[10px] uppercase tracking-wider border border-[#1f2530] text-muted-foreground hover:border-blue-500/40 inline-flex items-center gap-1">
+        <button onClick={() => setShowImport(v => !v)} className="h-7 px-2.5 rounded-sm text-[10px] uppercase tracking-wider border border-[var(--border)] text-muted-foreground hover:border-blue-500/40 inline-flex items-center gap-1">
           <Upload className="h-3 w-3" /> Bulk import
         </button>
       </div>
 
       {/* Quick add */}
-      <div className="flex flex-wrap gap-2 border border-[#1f2530] bg-[#0f1116] rounded-sm p-3">
-        <select value={newStage} onChange={e => setNewStage(e.target.value as "tof" | "mof")} className="h-8 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs">
+      <div className="flex flex-wrap gap-2 border border-[var(--border)] bg-[var(--card)] rounded-sm p-3">
+        <select value={newStage} onChange={e => setNewStage(e.target.value as "tof" | "mof")} className="h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs">
           <option value="tof">TOF</option>
           <option value="mof">MOF</option>
         </select>
@@ -117,7 +117,7 @@ export function HookLibrary() {
           value={newText} onChange={e => setNewText(e.target.value)}
           onKeyDown={e => { if (e.key === "Enter") add(); }}
           placeholder="Add a hook… (e.g., 'Nobody talks about this, but…')"
-          className="flex-1 min-w-[240px] h-8 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs outline-none focus:border-blue-500/40"
+          className="flex-1 min-w-[240px] h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-blue-500/40"
         />
         <button onClick={add} disabled={!newText.trim()} className="h-8 px-3 rounded-sm bg-blue-500 hover:bg-blue-400 text-blue-950 text-xs font-medium disabled:opacity-40 inline-flex items-center gap-1">
           <Plus className="h-3 w-3" /> Add
@@ -128,7 +128,7 @@ export function HookLibrary() {
         <div className="border border-blue-500/30 bg-blue-500/5 rounded-sm p-3 space-y-2">
           <div className="flex items-center gap-2">
             <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Paste one hook per line</span>
-            <select value={importStage} onChange={e => setImportStage(e.target.value as "tof" | "mof")} className="h-6 px-1.5 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-[10px] ml-auto">
+            <select value={importStage} onChange={e => setImportStage(e.target.value as "tof" | "mof")} className="h-6 px-1.5 rounded-sm border border-[var(--border)] bg-[var(--background)] text-[10px] ml-auto">
               <option value="tof">TOF</option>
               <option value="mof">MOF</option>
             </select>
@@ -137,10 +137,10 @@ export function HookLibrary() {
             value={importText} onChange={e => setImportText(e.target.value)}
             rows={6}
             placeholder={"Nobody talks about this, but…\nHere's what I wish I knew at 22…\n3 mistakes killing your…"}
-            className="w-full bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-2 text-xs font-mono resize-y focus:outline-none focus:border-blue-500/40"
+            className="w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-xs font-mono resize-y focus:outline-none focus:border-blue-500/40"
           />
           <div className="flex gap-2 justify-end">
-            <button onClick={() => setShowImport(false)} className="h-7 px-3 rounded-sm border border-[#1f2530] text-[11px]">Cancel</button>
+            <button onClick={() => setShowImport(false)} className="h-7 px-3 rounded-sm border border-[var(--border)] text-[11px]">Cancel</button>
             <button onClick={bulkImport} className="h-7 px-3 rounded-sm bg-blue-500 hover:bg-blue-400 text-blue-950 text-[11px] font-medium">Import</button>
           </div>
         </div>
@@ -149,7 +149,7 @@ export function HookLibrary() {
       {loading ? (
         <div className="flex items-center gap-2 text-muted-foreground p-6"><Loader2 className="h-4 w-4 animate-spin" /> Loading…</div>
       ) : (
-        <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm divide-y divide-[#1a1f29]">
+        <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm divide-y divide-[var(--accent)]">
           {filtered.length === 0 && <div className="text-xs text-muted-foreground text-center p-8">No hooks match — add one above, or bulk import.</div>}
           {filtered.map(h => (
             <div key={h.id} className="p-3 group hover:bg-[#141821] flex items-start gap-3">
@@ -164,10 +164,10 @@ export function HookLibrary() {
                 </div>
               </div>
               <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition shrink-0">
-                <button onClick={() => copy(h)} className="h-7 w-7 grid place-items-center rounded-sm border border-[#1f2530] hover:border-blue-500/40 text-muted-foreground hover:text-blue-300" title="Copy">
+                <button onClick={() => copy(h)} className="h-7 w-7 grid place-items-center rounded-sm border border-[var(--border)] hover:border-blue-500/40 text-muted-foreground hover:text-blue-300" title="Copy">
                   <Copy className="h-3 w-3" />
                 </button>
-                <button onClick={() => del(h.id)} className="h-7 w-7 grid place-items-center rounded-sm border border-[#1f2530] hover:border-red-500/40 text-muted-foreground hover:text-red-400" title="Delete">
+                <button onClick={() => del(h.id)} className="h-7 w-7 grid place-items-center rounded-sm border border-[var(--border)] hover:border-red-500/40 text-muted-foreground hover:text-red-400" title="Delete">
                   <Trash2 className="h-3 w-3" />
                 </button>
               </div>

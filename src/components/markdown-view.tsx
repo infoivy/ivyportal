@@ -5,7 +5,7 @@ import { slugify } from "@/lib/knowledge";
 
 export function MarkdownView({ content }: { content: string }) {
   return (
-    <div className="prose prose-invert prose-sm sm:prose-base max-w-none prose-headings:scroll-mt-20 prose-headings:font-semibold prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-a:text-primary prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-pre:bg-[#0f1116] prose-pre:border prose-pre:border-[#1f2530] prose-blockquote:border-primary prose-hr:border-[#1f2530] prose-table:text-sm">
+    <div className="prose prose-invert prose-sm sm:prose-base max-w-none prose-headings:scroll-mt-20 prose-headings:font-semibold prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-a:text-primary prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-pre:bg-[var(--card)] prose-pre:border prose-pre:border-[var(--border)] prose-blockquote:border-primary prose-hr:border-[var(--border)] prose-table:text-sm">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{

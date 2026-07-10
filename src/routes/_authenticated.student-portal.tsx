@@ -302,7 +302,7 @@ function StudentPortal() {
       {confetti && <ConfettiBurst />}
 
       {/* HERO */}
-      <section className="border border-[#1f2530] rounded-sm bg-gradient-to-br from-[#141821] via-[#0f1116] to-[#0f1116] p-5">
+      <section className="border border-[var(--border)] rounded-sm bg-gradient-to-br from-[#141821] via-[var(--card)] to-[var(--card)] p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="text-[10px] uppercase tracking-[0.18em] text-blue-400 mb-1">Student portal</div>
@@ -335,11 +335,11 @@ function StudentPortal() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-5">
           {/* Coach card */}
-          <div className="border border-[#1f2530] rounded-sm bg-[#0a0b0f] p-3 flex items-center gap-3">
+          <div className="border border-[var(--border)] rounded-sm bg-[var(--background)] p-3 flex items-center gap-3">
             {coach ? (
               <>
                 {coach.avatar_url ? (
-                  <img src={coach.avatar_url} alt="" className="h-10 w-10 rounded-full object-cover border border-[#1f2530]" />
+                  <img src={coach.avatar_url} alt="" className="h-10 w-10 rounded-full object-cover border border-[var(--border)]" />
                 ) : (
                   <div className="h-10 w-10 rounded-full bg-blue-500/20 text-blue-300 flex items-center justify-center text-xs font-semibold">
                     {(coach.display_name ?? "C").slice(0, 1).toUpperCase()}
@@ -363,7 +363,7 @@ function StudentPortal() {
             )}
           </div>
           {/* Next call */}
-          <div className="border border-[#1f2530] rounded-sm bg-[#0a0b0f] p-3 flex items-center gap-3">
+          <div className="border border-[var(--border)] rounded-sm bg-[var(--background)] p-3 flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-green-500/15 text-green-300 flex items-center justify-center">
               <Calendar className="h-4 w-4" />
             </div>
@@ -384,13 +384,13 @@ function StudentPortal() {
         </div>
 
         {/* Journey stepper */}
-        <div className="mt-5 pt-5 border-t border-[#1f2530]">
+        <div className="mt-5 pt-5 border-t border-[var(--border)]">
           <JourneyStepper current={student.phase} />
         </div>
       </section>
 
       {/* TABS */}
-      <nav className="flex flex-wrap gap-1 border-b border-[#1f2530] -mb-px">
+      <nav className="flex flex-wrap gap-1 border-b border-[var(--border)] -mb-px">
         <TabButton active={tab === "eod"} onClick={() => setTab("eod")} icon={<Briefcase className="h-3.5 w-3.5" />} label="My EOD" />
         <TabButton active={tab === "actions"} onClick={() => setTab("actions")} icon={<ListChecks className="h-3.5 w-3.5" />} label="Action items" badge={openItems.length} urgent={overdue.length > 0 || dueToday.length > 0} />
         <TabButton active={tab === "coaching"} onClick={() => setTab("coaching")} icon={<Calendar className="h-3.5 w-3.5" />} label="My coaching" />
@@ -421,7 +421,7 @@ function StudentPortal() {
                 onEdit={() => setShowForm(true)}
               />
             ) : (
-              <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-5 space-y-4">
+              <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-5 space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-sm font-semibold">{existingId ? "Update today's log" : "Submit today's log"}</h2>
@@ -453,15 +453,15 @@ function StudentPortal() {
 
           {/* Resources for you */}
           {docs.length > 0 && (
-            <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm">
-              <div className="px-4 py-3 border-b border-[#1f2530] flex items-center gap-2">
+            <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm">
+              <div className="px-4 py-3 border-b border-[var(--border)] flex items-center gap-2">
                 <BookOpen className="h-3.5 w-3.5 text-blue-400" />
                 <div className="text-xs font-semibold">Resources for you</div>
               </div>
-              <div className="divide-y divide-[#1a1f29]">
+              <div className="divide-y divide-[var(--accent)]">
                 {docs.map(d => (
                   <Link key={d.slug} to="/knowledge/$slug" params={{ slug: d.slug }} className="flex items-center gap-3 p-3 hover:bg-[#141821] group">
-                    <div className="h-7 w-7 rounded-sm bg-[#0a0b0f] border border-[#1f2530] flex items-center justify-center">
+                    <div className="h-7 w-7 rounded-sm bg-[var(--background)] border border-[var(--border)] flex items-center justify-center">
                       <BookOpen className="h-3.5 w-3.5 text-muted-foreground group-hover:text-blue-400" />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -472,7 +472,7 @@ function StudentPortal() {
                   </Link>
                 ))}
                 <Link to="/training" className="flex items-center gap-3 p-3 hover:bg-[#141821] group">
-                  <div className="h-7 w-7 rounded-sm bg-[#0a0b0f] border border-[#1f2530] flex items-center justify-center">
+                  <div className="h-7 w-7 rounded-sm bg-[var(--background)] border border-[var(--border)] flex items-center justify-center">
                     <PlayCircle className="h-3.5 w-3.5 text-muted-foreground group-hover:text-blue-400" />
                   </div>
                   <div className="flex-1 text-xs font-medium">Training videos</div>
@@ -483,9 +483,9 @@ function StudentPortal() {
           )}
 
           {/* Past EODs */}
-          <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm">
-            <div className="px-4 py-3 border-b border-[#1f2530] text-xs font-semibold">Past EODs</div>
-            <div className="divide-y divide-[#1a1f29]">
+          <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm">
+            <div className="px-4 py-3 border-b border-[var(--border)] text-xs font-semibold">Past EODs</div>
+            <div className="divide-y divide-[var(--accent)]">
               {eods.length === 0 && <div className="p-6 text-center text-xs text-muted-foreground">No EODs yet. Your first log starts your streak. 🔥</div>}
               {eods.map(e => (
                 <div key={e.id} className="grid grid-cols-[80px_1fr_auto] items-center gap-3 p-3 text-xs">
@@ -535,12 +535,12 @@ function StudentPortal() {
       {tab === "coaching" && (
         <div className="space-y-5">
           {/* Calls bar */}
-          <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-5">
+          <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-5">
             <div className="flex items-center justify-between mb-2">
               <div className="text-xs font-semibold">Coaching calls</div>
               <div className="text-[11px] font-mono text-muted-foreground">{callsUsed}/{callsAllotted} used</div>
             </div>
-            <div className="h-2 rounded-sm bg-[#1a1f29] overflow-hidden">
+            <div className="h-2 rounded-sm bg-[var(--accent)] overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-green-500 to-blue-500"
                 style={{ width: `${callsAllotted ? Math.min(100, (callsUsed / callsAllotted) * 100) : 0}%` }}
@@ -553,7 +553,7 @@ function StudentPortal() {
           </div>
 
           {/* Trend */}
-          <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-5">
+          <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-5">
             <div className="flex items-center justify-between mb-3">
               <div className="text-xs font-semibold">Progress rating trend</div>
               <div className="text-[11px] font-mono text-muted-foreground">Latest {ratings.at(-1)?.rating ?? "—"}/5</div>
@@ -567,12 +567,12 @@ function StudentPortal() {
 
           {/* Last call action items */}
           {lastCallItems && lastCallItems.items.length > 0 && (
-            <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm">
-              <div className="px-4 py-3 border-b border-[#1f2530] flex items-center justify-between">
+            <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm">
+              <div className="px-4 py-3 border-b border-[var(--border)] flex items-center justify-between">
                 <div className="text-xs font-semibold">Last call action items</div>
                 <div className="text-[10px] font-mono text-muted-foreground">{lastCallItems.date}</div>
               </div>
-              <div className="divide-y divide-[#1a1f29]">
+              <div className="divide-y divide-[var(--accent)]">
                 {lastCallItems.items.map((it, i) => (
                   <div key={i} className="flex items-start gap-3 p-3 text-xs">
                     {it.done ? <CheckCircle2 className="h-3.5 w-3.5 text-green-400 mt-0.5" /> : <Clock className="h-3.5 w-3.5 text-muted-foreground mt-0.5" />}
@@ -584,9 +584,9 @@ function StudentPortal() {
           )}
 
           {/* History */}
-          <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm">
-            <div className="px-4 py-3 border-b border-[#1f2530] text-xs font-semibold">Your 1:1 history</div>
-            <div className="divide-y divide-[#1a1f29]">
+          <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm">
+            <div className="px-4 py-3 border-b border-[var(--border)] text-xs font-semibold">Your 1:1 history</div>
+            <div className="divide-y divide-[var(--accent)]">
               {completedCalls.length === 0 && <div className="p-6 text-center text-xs text-muted-foreground">No completed calls yet.</div>}
               {completedCalls.map(c => (
                 <div key={c.id} className="grid grid-cols-[100px_1fr_auto] items-center gap-3 p-3 text-xs">
@@ -622,7 +622,7 @@ function TabButton({ active, onClick, icon, label, badge, urgent }: { active: bo
     <button onClick={onClick} className={`flex items-center gap-1.5 px-3 py-2 text-xs border-b-2 -mb-px ${active ? "border-blue-400 text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
       {icon}{label}
       {badge != null && badge > 0 && (
-        <span className={`ml-1 text-[10px] font-mono px-1.5 py-0.5 rounded-full ${urgent ? "bg-red-500/20 text-red-400" : "bg-[#1a1f29] text-muted-foreground"}`}>{badge}</span>
+        <span className={`ml-1 text-[10px] font-mono px-1.5 py-0.5 rounded-full ${urgent ? "bg-red-500/20 text-red-400" : "bg-[var(--accent)] text-muted-foreground"}`}>{badge}</span>
       )}
     </button>
   );
@@ -637,7 +637,7 @@ function JourneyStepper({ current }: { current: string }) {
         const active = i === currentIndex;
         return (
           <div key={p.key} className="flex items-center gap-2 flex-shrink-0">
-            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-sm border text-[11px] ${active ? "border-blue-500/40 bg-blue-500/10 text-blue-300" : done ? "border-green-500/30 bg-green-500/5 text-green-400" : "border-[#1f2530] text-muted-foreground"}`}>
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-sm border text-[11px] ${active ? "border-blue-500/40 bg-blue-500/10 text-blue-300" : done ? "border-green-500/30 bg-green-500/5 text-green-400" : "border-[var(--border)] text-muted-foreground"}`}>
               <div className={`h-4 w-4 rounded-full flex items-center justify-center text-[9px] font-mono ${active ? "bg-blue-500 text-blue-950" : done ? "bg-green-500 text-green-950" : "border border-[#2b3240]"}`}>
                 {done ? <CheckCircle2 className="h-2.5 w-2.5" /> : i + 1}
               </div>
@@ -655,7 +655,7 @@ function StatCard({ label, value, prev, series, accent, brandNew, icon }: { labe
   const delta = prev === 0 ? (value > 0 ? 100 : 0) : Math.round(((value - prev) / prev) * 100);
   const up = delta > 0;
   return (
-    <div className={`border border-[#1f2530] rounded-sm p-3 ${accent ? "bg-green-500/5" : "bg-[#0f1116]"}`}>
+    <div className={`border border-[var(--border)] rounded-sm p-3 ${accent ? "bg-green-500/5" : "bg-[var(--card)]"}`}>
       <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-muted-foreground mb-1">{icon}{label}</div>
       {brandNew ? (
         <div className="text-[10px] text-muted-foreground py-1 italic">Your first log starts here.</div>
@@ -740,11 +740,11 @@ function SubmittedRecap({ form, streak, onEdit }: { form: typeof empty; streak: 
 
 function ActionSection({ title, icon, children, tone }: { title: string; icon: React.ReactNode; children: React.ReactNode; tone?: "rose" }) {
   return (
-    <div className={`border rounded-sm ${tone === "rose" ? "border-red-500/30 bg-red-500/5" : "border-[#1f2530] bg-[#0f1116]"}`}>
-      <div className={`px-4 py-2.5 border-b flex items-center gap-2 ${tone === "rose" ? "border-red-500/20" : "border-[#1f2530]"}`}>
+    <div className={`border rounded-sm ${tone === "rose" ? "border-red-500/30 bg-red-500/5" : "border-[var(--border)] bg-[var(--card)]"}`}>
+      <div className={`px-4 py-2.5 border-b flex items-center gap-2 ${tone === "rose" ? "border-red-500/20" : "border-[var(--border)]"}`}>
         {icon}<div className="text-xs font-semibold">{title}</div>
       </div>
-      <div className="divide-y divide-[#1a1f29]">{children}</div>
+      <div className="divide-y divide-[var(--accent)]">{children}</div>
     </div>
   );
 }
@@ -786,7 +786,7 @@ function ActionRow({ a, today, onToggle }: { a: { kind?: "call" | "adhoc"; callI
 function MiniStat({ label, value, tone }: { label: string; value: number; tone: "amber" | "rose" | "neutral" }) {
   const cls = tone === "amber" ? "border-amber-500/30 bg-amber-500/5 text-amber-400"
     : tone === "rose" ? "border-red-500/30 bg-red-500/5 text-red-400"
-    : "border-[#1f2530] bg-[#0f1116] text-foreground";
+    : "border-[var(--border)] bg-[var(--card)] text-foreground";
   return (
     <div className={`border rounded-sm p-3 ${cls}`}>
       <div className="text-[9px] uppercase tracking-wider opacity-80 mb-1">{label}</div>
@@ -797,9 +797,9 @@ function MiniStat({ label, value, tone }: { label: string; value: number; tone: 
 
 function MilestoneCard({ done, label, detail }: { done: boolean; label: string; detail?: string }) {
   return (
-    <div className={`relative overflow-hidden border rounded-sm p-5 ${done ? "border-green-500/40 bg-gradient-to-br from-green-500/15 via-green-500/5 to-transparent" : "border-[#1f2530] bg-[#0a0b0f]"}`}>
+    <div className={`relative overflow-hidden border rounded-sm p-5 ${done ? "border-green-500/40 bg-gradient-to-br from-green-500/15 via-green-500/5 to-transparent" : "border-[var(--border)] bg-[var(--background)]"}`}>
       {done && <PartyPopper className="absolute -right-2 -top-2 h-16 w-16 text-green-500/10" />}
-      <div className={`h-10 w-10 rounded-full flex items-center justify-center mb-3 ${done ? "bg-green-500 text-green-950" : "border border-[#1f2530] text-muted-foreground"}`}>
+      <div className={`h-10 w-10 rounded-full flex items-center justify-center mb-3 ${done ? "bg-green-500 text-green-950" : "border border-[var(--border)] text-muted-foreground"}`}>
         {done ? <Trophy className="h-5 w-5" /> : <Lock className="h-4 w-4" />}
       </div>
       <div className={`text-sm font-semibold ${done ? "text-green-300" : "text-foreground"}`}>{label}</div>
@@ -817,7 +817,7 @@ function RatingChart({ data }: { data: { date: string; rating: number }[] }) {
     <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-32">
       {[1, 2, 3, 4, 5].map(r => {
         const y = h - pad - ((r - 1) / 4) * (h - pad * 2);
-        return <line key={r} x1={pad} y1={y} x2={w - pad} y2={y} stroke="#1f2530" strokeWidth="1" />;
+        return <line key={r} x1={pad} y1={y} x2={w - pad} y2={y} stroke="var(--border)" strokeWidth="1" />;
       })}
       <path d={path} fill="none" stroke="#d946ef" strokeWidth="2" />
       {xs.map((x, i) => <circle key={i} cx={x} cy={ys[i]} r="3" fill="#d946ef" />)}
@@ -831,12 +831,12 @@ function RatingChart({ data }: { data: { date: string; rating: number }[] }) {
 
 function Counter({ label, value, onBump }: { label: string; value: number; onBump: (d: number) => void }) {
   return (
-    <div className="border border-[#1f2530] rounded-sm bg-[#0a0b0f] p-2">
+    <div className="border border-[var(--border)] rounded-sm bg-[var(--background)] p-2">
       <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">{label}</div>
       <div className="flex items-center gap-1">
-        <button onClick={() => onBump(-1)} className="h-8 w-8 rounded-sm border border-[#1f2530] hover:bg-[#1a1f29] text-lg leading-none">−</button>
+        <button onClick={() => onBump(-1)} className="h-8 w-8 rounded-sm border border-[var(--border)] hover:bg-[var(--accent)] text-lg leading-none">−</button>
         <div className="flex-1 text-center text-lg font-mono font-semibold">{value}</div>
-        <button onClick={() => onBump(1)} className="h-8 w-8 rounded-sm border border-[#1f2530] hover:bg-[#1a1f29] text-lg leading-none">+</button>
+        <button onClick={() => onBump(1)} className="h-8 w-8 rounded-sm border border-[var(--border)] hover:bg-[var(--accent)] text-lg leading-none">+</button>
       </div>
     </div>
   );
@@ -847,7 +847,7 @@ function TextField({ label, value, onChange, rows = 2 }: { label: string; value:
     <div className="space-y-1">
       <label className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</label>
       <textarea value={value} onChange={e => onChange(e.target.value)} rows={rows}
-        className="w-full bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-2 text-xs resize-none focus:outline-none focus:border-green-500/40" />
+        className="w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-xs resize-none focus:outline-none focus:border-green-500/40" />
     </div>
   );
 }

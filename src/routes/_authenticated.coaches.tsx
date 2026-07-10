@@ -65,7 +65,7 @@ function CoachesPage() {
 
   return (
     <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-5">
-      <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[#1f2530] pb-4">
+      <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--border)] pb-4">
         <div>
           <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-sky-400 mb-1">
             <Users className="h-3 w-3" /> Coach capacity
@@ -80,7 +80,7 @@ function CoachesPage() {
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {rows.map(({ coach, roster, active, totalAllotted, completed, remaining, avgRating, ratings, stale }) => (
-          <div key={coach.id} className="border border-[#1f2530] bg-[#0f1116] rounded-md p-4 space-y-3">
+          <div key={coach.id} className="border border-[var(--border)] bg-[var(--card)] rounded-md p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 min-w-0">
                 <div className="h-9 w-9 rounded-md bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400 font-bold text-sm shrink-0">
@@ -105,7 +105,7 @@ function CoachesPage() {
             </div>
 
             {stale.length > 0 && (
-              <div className="border-t border-[#1f2530] pt-2">
+              <div className="border-t border-[var(--border)] pt-2">
                 <div className="text-[10px] uppercase tracking-wider text-red-400 mb-1">&gt;14 days since 1:1</div>
                 <div className="flex flex-wrap gap-1">
                   {stale.slice(0, 6).map(s => (
@@ -120,7 +120,7 @@ function CoachesPage() {
           </div>
         ))}
         {coaches.length === 0 && (
-          <div className="border border-dashed border-[#1f2530] rounded-md p-8 text-center text-xs text-muted-foreground md:col-span-2 xl:col-span-3">
+          <div className="border border-dashed border-[var(--border)] rounded-md p-8 text-center text-xs text-muted-foreground md:col-span-2 xl:col-span-3">
             No coaches yet. Grant the coach role from /team.
           </div>
         )}
@@ -132,7 +132,7 @@ function CoachesPage() {
 function Stat({ label, value, sub, icon, tone }: { label: string; value: number | string; sub?: string; icon: React.ReactNode; tone: "emerald" | "amber" | "rose" | "sky" }) {
   const colors = { emerald: "text-green-400", amber: "text-amber-400", rose: "text-red-400", sky: "text-sky-400" }[tone];
   return (
-    <div className="border border-[#1f2530] bg-[#0a0b0f] rounded-sm p-2">
+    <div className="border border-[var(--border)] bg-[var(--background)] rounded-sm p-2">
       <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-muted-foreground mb-0.5">{icon}{label}</div>
       <div className={`text-lg font-mono font-semibold ${colors}`}>{value}</div>
       {sub && <div className="text-[9px] text-muted-foreground">{sub}</div>}

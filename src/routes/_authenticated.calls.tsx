@@ -109,7 +109,7 @@ function CallsPage() {
 
   return (
     <div className="p-4 sm:p-6 max-w-[1500px] mx-auto space-y-5">
-      <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[#1f2530] pb-4">
+      <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--border)] pb-4">
         <div>
           <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-blue-400 mb-1">
             <Phone className="h-3 w-3" /> 1-on-1 tracker
@@ -126,12 +126,12 @@ function CallsPage() {
               value={q}
               onChange={e => setQ(e.target.value)}
               placeholder="Search student or notes…"
-              className="h-8 pl-7 pr-3 rounded-sm border border-[#1f2530] bg-[#0f1116] text-xs w-56 focus:outline-none focus:border-green-500/40"
+              className="h-8 pl-7 pr-3 rounded-sm border border-[var(--border)] bg-[var(--card)] text-xs w-56 focus:outline-none focus:border-green-500/40"
             />
           </div>
-          <div className="flex items-center border border-[#1f2530] bg-[#0f1116] rounded-sm p-0.5">
-            <button onClick={() => setView("table")} className={`px-2 py-1 rounded-sm ${view === "table" ? "bg-[#1a1f29]" : "text-muted-foreground"}`}><TableIcon className="h-3.5 w-3.5" /></button>
-            <button onClick={() => setView("kanban")} className={`px-2 py-1 rounded-sm ${view === "kanban" ? "bg-[#1a1f29]" : "text-muted-foreground"}`}><LayoutGrid className="h-3.5 w-3.5" /></button>
+          <div className="flex items-center border border-[var(--border)] bg-[var(--card)] rounded-sm p-0.5">
+            <button onClick={() => setView("table")} className={`px-2 py-1 rounded-sm ${view === "table" ? "bg-[var(--accent)]" : "text-muted-foreground"}`}><TableIcon className="h-3.5 w-3.5" /></button>
+            <button onClick={() => setView("kanban")} className={`px-2 py-1 rounded-sm ${view === "kanban" ? "bg-[var(--accent)]" : "text-muted-foreground"}`}><LayoutGrid className="h-3.5 w-3.5" /></button>
           </div>
           {canManage && (
             <button onClick={() => setAddOpen(true)} className="flex items-center gap-1.5 h-8 px-3 rounded-sm bg-green-500 hover:bg-green-400 text-green-950 text-xs font-medium">
@@ -145,19 +145,19 @@ function CallsPage() {
       <div className="flex flex-wrap gap-1.5 items-center">
         <button
           onClick={() => setCoachFilter("all")}
-          className={`text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-sm border ${coachFilter === "all" ? "text-foreground border-[#2a3140] bg-[#1a1f29]" : "text-muted-foreground border-[#1f2530]"}`}
+          className={`text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-sm border ${coachFilter === "all" ? "text-foreground border-[#2a3140] bg-[var(--accent)]" : "text-muted-foreground border-[var(--border)]"}`}
         >All coaches · {calls.length}</button>
         <button
           onClick={() => setCoachFilter("mine")}
-          className={`text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-sm border ${coachFilter === "mine" ? "text-blue-400 border-blue-500/30 bg-blue-500/10" : "text-muted-foreground border-[#1f2530]"}`}
+          className={`text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-sm border ${coachFilter === "mine" ? "text-blue-400 border-blue-500/30 bg-blue-500/10" : "text-muted-foreground border-[var(--border)]"}`}
         >My calls · {calls.filter(c => c.coach_id === user?.id).length}</button>
         {coaches.map(c => (
           <button
             key={c.id}
             onClick={() => setCoachFilter(c.id)}
-            className={`flex items-center gap-1.5 text-[10px] uppercase tracking-wider pl-1 pr-2.5 py-0.5 rounded-sm border ${coachFilter === c.id ? "text-sky-400 border-sky-500/30 bg-sky-500/10" : "text-muted-foreground border-[#1f2530]"}`}
+            className={`flex items-center gap-1.5 text-[10px] uppercase tracking-wider pl-1 pr-2.5 py-0.5 rounded-sm border ${coachFilter === c.id ? "text-sky-400 border-sky-500/30 bg-sky-500/10" : "text-muted-foreground border-[var(--border)]"}`}
           >
-            <div className="h-5 w-5 rounded-sm bg-[#1a1f29] overflow-hidden flex items-center justify-center text-[9px] font-semibold shrink-0">
+            <div className="h-5 w-5 rounded-sm bg-[var(--accent)] overflow-hidden flex items-center justify-center text-[9px] font-semibold shrink-0">
               {c.avatar_path && avatarUrls[c.avatar_path]
                 ? <img src={avatarUrls[c.avatar_path]} alt="" className="h-full w-full object-cover" />
                 : (c.display_name ?? "?").slice(0, 1).toUpperCase()}
@@ -168,8 +168,8 @@ function CallsPage() {
       </div>
 
       {view === "table" ? (
-        <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm overflow-hidden">
-          <div className="grid grid-cols-[0.7fr_1.3fr_1fr_0.9fr_0.9fr_0.7fr_auto] items-center px-4 py-2 border-b border-[#1f2530] text-[10px] uppercase tracking-widest text-muted-foreground gap-2">
+        <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm overflow-hidden">
+          <div className="grid grid-cols-[0.7fr_1.3fr_1fr_0.9fr_0.9fr_0.7fr_auto] items-center px-4 py-2 border-b border-[var(--border)] text-[10px] uppercase tracking-widest text-muted-foreground gap-2">
             <span>Date</span><span>Student</span><span>Coach</span><span title="1–5 stars — how the student is progressing overall">Progress (1–5)</span><span title="Open action items / total">Action items</span><span>Fathom</span><span />
           </div>
           {filtered.length === 0 && <div className="p-8 text-center text-xs text-muted-foreground">No calls match your filters.</div>}
@@ -177,7 +177,7 @@ function CallsPage() {
             const openA = c.action_items_json?.filter(a => !a.done).length ?? 0;
             const totalA = c.action_items_json?.length ?? 0;
             return (
-              <div key={c.id} className="grid grid-cols-[0.7fr_1.3fr_1fr_0.9fr_0.9fr_0.7fr_auto] items-center gap-2 px-4 py-3 border-b border-[#1a1f29] last:border-0 hover:bg-[#14171e]">
+              <div key={c.id} className="grid grid-cols-[0.7fr_1.3fr_1fr_0.9fr_0.9fr_0.7fr_auto] items-center gap-2 px-4 py-3 border-b border-[var(--accent)] last:border-0 hover:bg-[var(--muted)]">
                 <span className="text-xs font-mono text-muted-foreground">{c.call_date}</span>
                 <Link to={"/students/$id" as any} params={{ id: c.student_id } as any} className="text-sm truncate hover:text-green-400">
                   {studentName(c.student_id)}
@@ -211,7 +211,7 @@ function CallsPage() {
             const items = byStatus.get(col) ?? [];
             const meta = STATUS_META[col];
             return (
-              <div key={col} className="border border-[#1f2530] bg-[#0f1116] rounded-sm p-2 min-h-[200px]">
+              <div key={col} className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-2 min-h-[200px]">
                 <div className={`flex items-center justify-between text-[10px] uppercase tracking-wider px-1 py-1 mb-2 rounded-sm ${meta.color}`}>
                   <span>{meta.label}</span>
                   <span className="font-mono">{items.length}</span>
@@ -223,7 +223,7 @@ function CallsPage() {
                       <button
                         key={c.id}
                         onClick={() => setEditing(c)}
-                        className="w-full text-left p-2 rounded-sm bg-[#14171e] border border-[#1f2530] hover:border-[#2a3140]"
+                        className="w-full text-left p-2 rounded-sm bg-[var(--muted)] border border-[var(--border)] hover:border-[#2a3140]"
                       >
                         <div className="text-xs font-medium truncate">{studentName(c.student_id)}</div>
                         <div className="flex items-center justify-between mt-1 text-[10px] text-muted-foreground">
@@ -341,8 +341,8 @@ function CallModal({ call, onClose, onSaved, students, coaches, defaultCoachId }
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto" onClick={onClose}>
-      <div className="bg-[#0f1116] border border-[#1f2530] rounded-sm max-w-2xl w-full my-8 p-5 space-y-4" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between border-b border-[#1f2530] pb-3">
+      <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm max-w-2xl w-full my-8 p-5 space-y-4" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
           <h2 className="text-sm font-semibold flex items-center gap-2"><Phone className="h-4 w-4 text-blue-400" /> {call ? "Edit call" : "Log 1-on-1 call"}</h2>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
         </div>
@@ -391,7 +391,7 @@ function CallModal({ call, onClose, onSaved, students, coaches, defaultCoachId }
                   key={t.key}
                   type="button"
                   onClick={() => setForm(f => ({ ...f, coach_notes: f.coach_notes ? `${f.coach_notes}\n\n${t.body}` : t.body }))}
-                  className="text-[10px] px-1.5 py-0.5 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-muted-foreground hover:text-foreground hover:border-[#2a3140]"
+                  className="text-[10px] px-1.5 py-0.5 rounded-sm border border-[var(--border)] bg-[var(--background)] text-muted-foreground hover:text-foreground hover:border-[#2a3140]"
                 >{t.label}</button>
               ))}
             </div>
@@ -401,7 +401,7 @@ function CallModal({ call, onClose, onSaved, students, coaches, defaultCoachId }
           <Field label="Action items" full>
             <div className="space-y-1.5">
               {form.items.map(item => (
-                <div key={item.id} className="flex items-center gap-2 bg-[#0a0b0f] border border-[#1f2530] rounded-sm px-2 py-1.5">
+                <div key={item.id} className="flex items-center gap-2 bg-[var(--background)] border border-[var(--border)] rounded-sm px-2 py-1.5">
                   <button type="button" onClick={() => updateItem(item.id, { done: !item.done })} className={item.done ? "text-green-400" : "text-muted-foreground"}>
                     {item.done ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
                   </button>
@@ -415,7 +415,7 @@ function CallModal({ call, onClose, onSaved, students, coaches, defaultCoachId }
                     type="date"
                     value={item.due ?? ""}
                     onChange={e => updateItem(item.id, { due: e.target.value || null })}
-                    className="text-[10px] bg-transparent border border-[#1f2530] rounded-sm px-1 py-0.5 text-muted-foreground focus:outline-none"
+                    className="text-[10px] bg-transparent border border-[var(--border)] rounded-sm px-1 py-0.5 text-muted-foreground focus:outline-none"
                   />
                   <button type="button" onClick={() => removeItem(item.id)} className="text-muted-foreground hover:text-red-400"><X className="h-3 w-3" /></button>
                 </div>
@@ -434,7 +434,7 @@ function CallModal({ call, onClose, onSaved, students, coaches, defaultCoachId }
           </Field>
         </div>
 
-        <div className="flex justify-between gap-2 pt-3 border-t border-[#1f2530]">
+        <div className="flex justify-between gap-2 pt-3 border-t border-[var(--border)]">
           <div>
             {call && (
               <button onClick={del} className="text-xs text-red-400 hover:text-red-300 px-2 py-1.5">Delete call</button>
@@ -452,7 +452,7 @@ function CallModal({ call, onClose, onSaved, students, coaches, defaultCoachId }
   );
 }
 
-const inputCls = "w-full h-9 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs focus:outline-none focus:border-green-500/40";
+const inputCls = "w-full h-9 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs focus:outline-none focus:border-green-500/40";
 
 function Field({ label, children, full }: { label: string; children: React.ReactNode; full?: boolean }) {
   return (

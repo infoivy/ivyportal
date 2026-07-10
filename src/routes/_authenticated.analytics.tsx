@@ -140,7 +140,7 @@ function Analytics() {
                     <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.06)" vertical={false} />
                     <XAxis dataKey="label" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
                     <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
-                    <Tooltip contentStyle={{ background: "#0f1116", border: "1px solid #1f2530", borderRadius: 4, fontSize: 11 }} />
+                    <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 4, fontSize: 11 }} />
                     <Line type="monotone" dataKey="dms"    stroke="#3b82f6" strokeWidth={1.5} dot={false} />
                     <Line type="monotone" dataKey="convos" stroke="#a855f7" strokeWidth={1.5} dot={false} />
                     <Line type="monotone" dataKey="booked" stroke="#22c55e" strokeWidth={2}   dot={false} />
@@ -160,7 +160,7 @@ function Analytics() {
                     <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.06)" vertical={false} />
                     <XAxis dataKey="label" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
                     <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
-                    <Tooltip contentStyle={{ background: "#0f1116", border: "1px solid #1f2530", borderRadius: 4, fontSize: 11 }} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
+                    <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 4, fontSize: 11 }} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
                     <Bar dataKey="booked" fill="#22c55e" radius={[2, 2, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
