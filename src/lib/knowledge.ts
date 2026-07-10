@@ -3,7 +3,7 @@ import type { Database } from "@/integrations/supabase/types";
 export type DocCategory = Database["public"]["Enums"]["doc_category"];
 
 // Team-facing categories only. "content" is intentionally excluded — content
-// SOPs now live in Founder Space (see /founder → SOPs & Playbooks tab).
+// SOPs now live in Founder Hub (see /founder → SOPs & Playbooks tab).
 export const DOC_CATEGORIES: { value: DocCategory; label: string }[] = [
   { value: "setting", label: "Setting" },
   { value: "closing", label: "Closing" },
