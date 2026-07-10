@@ -209,13 +209,10 @@ function StudentsLayout() {
 
   return (
     <div className="p-4 sm:p-6 max-w-[1500px] mx-auto space-y-5">
-      <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--border)] pb-4">
+      <header className="flex flex-wrap items-end justify-between gap-3 pb-5 mb-1">
         <div>
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-blue-400 mb-1">
-            <School className="h-3 w-3" /> Student Tracker
-          </div>
-          <h1 className="text-2xl font-semibold tracking-tight">Students</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <h1 className="text-[32px] font-bold tracking-[-0.02em] text-foreground leading-none">Students</h1>
+          <p className="text-[15px] text-muted-foreground mt-1.5">
             {filtered.length} shown · {students.length} total · {students.filter(s => s.phase === "coaching_1on1").length} in 1:1
           </p>
         </div>
@@ -247,7 +244,7 @@ function StudentsLayout() {
               </button>
               {colsOpen && (
                 <div className="absolute right-0 top-full mt-1 z-20 w-52 border border-[var(--border)] bg-[var(--card)] rounded-sm shadow-lg p-2" onMouseLeave={() => setColsOpen(false)}>
-                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground px-1 pb-1.5 border-b border-[var(--border)]">Columns</div>
+                  <div className="text-[12px] text-muted-foreground px-1 pb-1.5 border-b border-[var(--border)]">Columns</div>
                   {COLUMNS.filter(c => c.key !== "student").map(c => (
                     <label key={c.key} className="flex items-center gap-2 px-1 py-1.5 text-xs hover:bg-[var(--muted)] rounded-sm cursor-pointer">
                       <input type="checkbox" checked={visibleCols.has(c.key)} onChange={() => toggleCol(c.key)} className="accent-green-500" />
@@ -285,8 +282,8 @@ function StudentsLayout() {
       <div className="flex flex-wrap gap-1.5 items-center">
         <button
           onClick={() => setPhaseFilter("all")}
-          className={`text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-sm border transition ${
-            phaseFilter === "all" ? "text-foreground border-[#2a3140] bg-[var(--accent)]" : "text-muted-foreground border-[var(--border)]"
+          className={`text-[13px] font-medium px-3 py-1.5 rounded-md motion-safe:transition-colors ${
+            phaseFilter === "all" ? "bg-foreground text-background" : "bg-muted text-muted-foreground hover:text-foreground"
           }`}
         >
           All · {students.length}
@@ -295,8 +292,8 @@ function StudentsLayout() {
           <button
             key={p.key}
             onClick={() => setPhaseFilter(p.key)}
-            className={`text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-sm border transition ${
-              phaseFilter === p.key ? p.color : "text-muted-foreground border-[var(--border)] hover:border-[#2a3140]"
+            className={`text-[13px] font-medium px-3 py-1.5 rounded-md motion-safe:transition-colors ${
+              phaseFilter === p.key ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground hover:text-foreground"
             }`}
           >
             {p.label} · {students.filter(s => s.phase === p.key).length}
@@ -304,18 +301,18 @@ function StudentsLayout() {
         ))}
         <button
           onClick={() => setPhaseFilter("at_risk")}
-          className={`flex items-center gap-1 text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-sm border transition ${
-            phaseFilter === "at_risk" ? "text-red-400 border-red-500/30 bg-red-500/10" : "text-muted-foreground border-[var(--border)] hover:border-red-500/30"
+          className={`flex items-center gap-1 text-[13px] font-medium px-3 py-1.5 rounded-md motion-safe:transition-colors ${
+            phaseFilter === "at_risk" ? "bg-red-500/10 text-red-500 dark:text-red-400" : "bg-muted text-muted-foreground hover:text-foreground"
           }`}
         >
-          <AlertTriangle className="h-3 w-3" /> At risk · {atRiskCount}
+          <AlertTriangle className="h-3.5 w-3.5" /> At risk · {atRiskCount}
         </button>
 
         {view === "kanban" && (
-          <div className="ml-auto flex items-center border border-[var(--border)] bg-[var(--card)] rounded-sm p-0.5">
-            <button onClick={() => setKanbanBy("phase")} className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm ${kanbanBy === "phase" ? "bg-[var(--accent)] text-foreground" : "text-muted-foreground"}`}>By phase</button>
-            <button onClick={() => setKanbanBy("coach")} className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm flex items-center gap-1 ${kanbanBy === "coach" ? "bg-[var(--accent)] text-foreground" : "text-muted-foreground"}`}>
-              <Users className="h-3 w-3" /> By coach
+          <div className="ml-auto inline-flex rounded-lg bg-muted p-[3px]">
+            <button onClick={() => setKanbanBy("phase")} className={`text-[13px] font-medium px-3 py-1.5 rounded-[8px] motion-safe:transition-colors ${kanbanBy === "phase" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>By phase</button>
+            <button onClick={() => setKanbanBy("coach")} className={`flex items-center gap-1 text-[13px] font-medium px-3 py-1.5 rounded-[8px] motion-safe:transition-colors ${kanbanBy === "coach" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+              <Users className="h-3.5 w-3.5" /> By coach
             </button>
           </div>
         )}
@@ -324,9 +321,9 @@ function StudentsLayout() {
       {view === "graduation" ? (
         <GraduationKanban students={filtered} />
       ) : view === "table" ? (
-        <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm overflow-x-auto">
+        <div className="card-surface overflow-x-auto">
           <table className="w-full min-w-[560px] text-xs">
-            <thead className="text-[10px] uppercase tracking-widest text-muted-foreground bg-[var(--card)] sticky top-0">
+            <thead className="text-[11px] text-muted-foreground bg-card sticky top-0">
               <tr className="border-b border-[var(--border)]">
                 <th className="text-left px-4 py-2 font-normal">Student</th>
                 {visibleCols.has("grade") && <th className="text-left px-2 py-2 font-normal">Grade</th>}
@@ -366,7 +363,7 @@ function StudentsLayout() {
                           {showReasons && info.reasons.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-1">
                               {info.reasons.map(r => (
-                                <span key={r} className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm border border-red-500/30 bg-red-500/10 text-red-400">{r}</span>
+                                <span key={r} className="text-[11px] bg-red-500/10 text-red-500 dark:text-red-400 px-1.5 py-0.5 rounded-md">{r}</span>
                               ))}
                             </div>
                           )}
@@ -375,7 +372,7 @@ function StudentsLayout() {
                     </td>
                     {visibleCols.has("grade") && (
                       <td className="px-2 py-3">
-                        <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm border ${s.student_grade ? "border-amber-500/30 bg-amber-500/10 text-amber-400" : "border-[var(--border)] text-muted-foreground"}`}>
+                        <span className={`text-[11px] px-1.5 py-0.5 rounded-md ${s.student_grade ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" : "bg-muted text-muted-foreground"}`}>
                           {s.student_grade ?? "—"}
                         </span>
                       </td>
@@ -383,22 +380,22 @@ function StudentsLayout() {
                     {visibleCols.has("phase") && (
                       <td className="px-2 py-3">
                         {canManage ? (
-                          <select value={s.phase} onChange={e => updateStudent(s.id, { phase: e.target.value as Phase })} className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border bg-transparent ${phaseMeta(s.phase).color}`}>
+                          <select value={s.phase} onChange={e => updateStudent(s.id, { phase: e.target.value as Phase })} className={`text-[12px] px-2 py-1 rounded-md border bg-transparent ${phaseMeta(s.phase).color}`}>
                             {PHASES.map(p => <option key={p.key} value={p.key} className="bg-[var(--card)]">{p.label}</option>)}
                           </select>
                         ) : (
-                          <span className={`inline-flex items-center text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border ${phaseMeta(s.phase).color}`}>{phaseMeta(s.phase).label}</span>
+                          <span className={`inline-flex items-center text-[12px] px-2 py-0.5 rounded-md border ${phaseMeta(s.phase).color}`}>{phaseMeta(s.phase).label}</span>
                         )}
                       </td>
                     )}
                     {visibleCols.has("status") && (
                       <td className="px-2 py-3">
                         {canManage ? (
-                          <select value={s.status} onChange={e => updateStudent(s.id, { status: e.target.value as Status })} className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border bg-transparent ${statusMeta(s.status).color}`}>
+                          <select value={s.status} onChange={e => updateStudent(s.id, { status: e.target.value as Status })} className={`text-[12px] px-2 py-1 rounded-md border bg-transparent ${statusMeta(s.status).color}`}>
                             {STATUSES.map(x => <option key={x.key} value={x.key} className="bg-[var(--card)]">{x.label}</option>)}
                           </select>
                         ) : (
-                          <span className={`inline-flex items-center text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border ${statusMeta(s.status).color}`}>{statusMeta(s.status).label}</span>
+                          <span className={`inline-flex items-center text-[12px] px-2 py-0.5 rounded-md border ${statusMeta(s.status).color}`}>{statusMeta(s.status).label}</span>
                         )}
                       </td>
                     )}
@@ -417,7 +414,7 @@ function StudentsLayout() {
                     {visibleCols.has("payment") && (
                       <td className="px-2 py-3">
                         {s.payment_state ? (
-                          <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border ${PAYMENT_META[s.payment_state].color}`}>{PAYMENT_META[s.payment_state].label}</span>
+                          <span className={`text-[12px] px-2 py-0.5 rounded-md border ${PAYMENT_META[s.payment_state].color}`}>{PAYMENT_META[s.payment_state].label}</span>
                         ) : <span className="text-[10px] text-muted-foreground">—</span>}
                       </td>
                     )}
@@ -485,7 +482,7 @@ function StudentsLayout() {
               onDrop={e => { const id = e.dataTransfer.getData("text/plain"); if (id && canManage) onDropToPhase(id, p.key); }}
               className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-2 min-h-[200px]"
             >
-              <div className={`flex items-center justify-between text-[10px] uppercase tracking-wider px-1 py-1 mb-2 rounded-sm ${p.color}`}>
+              <div className={`flex items-center justify-between text-[12px] font-medium px-2 py-1.5 mb-2 rounded-lg ${p.color}`}>
                 <span>{p.label}</span>
                 <span className="">{byPhase.get(p.key)!.length}</span>
               </div>
@@ -508,7 +505,7 @@ function StudentsLayout() {
               onDrop={e => { const id = e.dataTransfer.getData("text/plain"); if (id && canManage) onDropToCoach(id, cid === "__unassigned__" ? null : cid); }}
               className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-2 min-h-[200px]"
             >
-              <div className="flex items-center justify-between text-[10px] uppercase tracking-wider px-1 py-1 mb-2 rounded-sm text-sky-400 border-sky-500/30 bg-sky-500/10 border">
+              <div className="flex items-center justify-between text-[12px] font-medium px-2 py-1.5 mb-2 rounded-lg text-primary bg-primary/10">
                 <span className="truncate">{cid === "__unassigned__" ? "Unassigned" : coachName(cid)}</span>
                 <span className="">{byCoach.get(cid)?.length ?? 0}</span>
               </div>
@@ -549,7 +546,7 @@ function GraduationKanban({ students }: { students: Student[] }) {
         const inStage = active.filter(s => st.match(s));
         return (
           <div key={st.key} className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-2 min-h-[200px]">
-            <div className={`flex items-center justify-between text-[10px] uppercase tracking-wider px-1 py-1 mb-2 rounded-sm border ${st.color}`}>
+            <div className={`flex items-center justify-between text-[12px] font-medium px-2 py-1.5 mb-2 rounded-lg border ${st.color}`}>
               <span className="truncate">{st.label}</span>
               <span className="">{inStage.length}</span>
             </div>
@@ -589,7 +586,7 @@ function StudentCard({ s, canDrag, coachName, atRisk }: { s: Student; canDrag: b
         <div className="text-xs font-medium truncate flex-1">{s.full_name}</div>
       </div>
       <div className="flex items-center justify-between mt-1">
-        <span className={`text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm border ${statusMeta(s.status).color}`}>{statusMeta(s.status).label}</span>
+        <span className={`text-[11px] px-1.5 py-0.5 rounded-md border ${statusMeta(s.status).color}`}>{statusMeta(s.status).label}</span>
         <span className="text-[9px] text-muted-foreground truncate ml-1">{coachName.slice(0, 14)}</span>
       </div>
     </Link>
@@ -946,7 +943,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
 
                   {scheduleMode === "custom" && (
                     <div className="col-span-2 space-y-2">
-                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+                      <div className="text-[13px] text-muted-foreground flex items-center justify-between">
                         <span>Scheduled payments</span>
                         <button type="button" onClick={addCustomRow} className="text-[10px] text-green-400 hover:text-green-300">+ Add payment</button>
                       </div>
@@ -993,7 +990,7 @@ const inputCls = "w-full h-9 px-2 rounded-sm border border-[var(--border)] bg-[v
 function Field({ label, children, full }: { label: string; children: React.ReactNode; full?: boolean }) {
   return (
     <div className={`space-y-1 ${full ? "col-span-2" : ""}`}>
-      <label className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</label>
+      <label className="text-[13px] text-muted-foreground">{label}</label>
       {children}
     </div>
   );
@@ -1002,7 +999,7 @@ function Field({ label, children, full }: { label: string; children: React.React
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="space-y-2 pt-3 border-t border-[var(--border)] first:border-0 first:pt-0">
-      <div className="text-[10px] uppercase tracking-[0.18em] text-blue-400">{title}</div>
+      <div className="text-[13px] font-medium text-muted-foreground">{title}</div>
       {children}
     </div>
   );

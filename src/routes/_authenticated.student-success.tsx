@@ -185,7 +185,7 @@ function StudentSuccessInner() {
 
   if (loading) {
     return (
-      <div className="dashboard-dark min-h-full flex items-center justify-center">
+      <div className="min-h-full flex items-center justify-center">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     );
@@ -194,12 +194,11 @@ function StudentSuccessInner() {
   const studentName = (id: string) => students.find(s => s.id === id)?.full_name ?? "Unknown";
 
   return (
-    <div className="dashboard-dark min-h-full">
+    <div className="min-h-full">
       <div className="max-w-[1400px] mx-auto p-4 sm:p-5 space-y-4">
         <div>
-          <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-1">Faizan</div>
-          <h1 className="text-lg font-bold">Student Success HQ</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">At-risk flags, this week's calls, open action items, testimonial pipeline.</p>
+          <h1 className="text-[32px] font-bold tracking-[-0.02em] text-foreground leading-none">Student Success</h1>
+          <p className="text-[15px] text-muted-foreground mt-1.5">At-risk flags, this week's calls, open action items, testimonial pipeline.</p>
         </div>
 
         {/* Summary strip */}
@@ -222,7 +221,7 @@ function StudentSuccessInner() {
           <TabsContent value="overview" className="space-y-5">
             {/* At-risk */}
             <section className="space-y-2">
-              <h2 className="text-[11px] uppercase tracking-widest text-muted-foreground font-semibold flex items-center gap-1.5">
+              <h2 className="text-[13px] text-muted-foreground flex items-center gap-1.5">
                 <AlertTriangle className="h-3 w-3 text-red-400" /> At-risk students
               </h2>
               {atRisk.length === 0 ? (
@@ -251,7 +250,7 @@ function StudentSuccessInner() {
                             ))}
                           </div>
                         </div>
-                        <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border ${
+                        <span className={`text-[12px] px-2 py-0.5 rounded-md border ${
                           s.status === "ghosting" ? "border-red-500/30 bg-red-500/10 text-red-400"
                           : s.status === "active" ? "border-green-500/30 bg-green-500/10 text-green-400"
                           : "border-zinc-500/30 bg-zinc-500/5 text-zinc-400"
@@ -267,7 +266,7 @@ function StudentSuccessInner() {
 
             {/* This week's calls */}
             <section className="space-y-2">
-              <h2 className="text-[11px] uppercase tracking-widest text-muted-foreground font-semibold flex items-center gap-1.5">
+              <h2 className="text-[13px] text-muted-foreground flex items-center gap-1.5">
                 <Calendar className="h-3 w-3 text-blue-400" /> This week's 1:1s ({weekStart} – {weekEnd})
               </h2>
               {thisWeekCalls.length === 0 ? (
@@ -296,7 +295,7 @@ function StudentSuccessInner() {
 
           {/* ─── ACTION ITEMS TAB ─────────────────────────────── */}
           <TabsContent value="action-items" className="space-y-3">
-            <h2 className="text-[11px] uppercase tracking-widest text-muted-foreground font-semibold">Open action items by student</h2>
+            <h2 className="text-[13px] text-muted-foreground">Open action items by student</h2>
             {adhoc.length === 0 ? (
               <div className="text-xs text-green-400 border border-green-500/20 bg-green-500/5 rounded-sm px-4 py-3 flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4" /> All action items resolved.
@@ -329,7 +328,7 @@ function StudentSuccessInner() {
 
           {/* ─── TESTIMONIALS TAB ─────────────────────────────── */}
           <TabsContent value="testimonials" className="space-y-3">
-            <h2 className="text-[11px] uppercase tracking-widest text-muted-foreground font-semibold">Pending testimonials</h2>
+            <h2 className="text-[13px] text-muted-foreground">Pending testimonials</h2>
             <p className="text-xs text-muted-foreground">Students in coaching or graduated phase who haven't provided a testimonial yet.</p>
             {pendingTestimonials.length === 0 ? (
               <div className="text-xs text-green-400 border border-green-500/20 bg-green-500/5 rounded-sm px-4 py-3 flex items-center gap-2">
@@ -343,7 +342,7 @@ function StudentSuccessInner() {
                       {s.full_name}
                     </Link>
                     <div className="flex items-center gap-2">
-                      <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border ${
+                      <span className={`text-[12px] px-2 py-0.5 rounded-md border ${
                         s.phase === "graduated"
                           ? "border-amber-500/30 bg-amber-500/10 text-amber-400"
                           : "border-blue-500/30 bg-blue-500/10 text-blue-400"
@@ -362,7 +361,7 @@ function StudentSuccessInner() {
 
           {/* ─── WEEKLY DIGEST TAB ────────────────────────────── */}
           <TabsContent value="digest" className="space-y-3">
-            <h2 className="text-[11px] uppercase tracking-widest text-muted-foreground font-semibold">Weekly digest — {weekStart} to {weekEnd}</h2>
+            <h2 className="text-[13px] text-muted-foreground">Weekly digest — {weekStart} to {weekEnd}</h2>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <DigestCard label="New students this week" value={digest.newThisWeek} icon={<Users className="h-4 w-4 text-sky-400" />} />
               <DigestCard label="Total graduated" value={digest.graduated} icon={<Trophy className="h-4 w-4 text-amber-400" />} />
@@ -391,20 +390,20 @@ function SummaryChip({ label, value, icon, accent }: {
 }) {
   const color = accent === "red" ? "text-red-400" : accent === "amber" ? "text-amber-400" : accent === "green" ? "text-green-400" : "text-foreground";
   return (
-    <div className="rounded-sm border border-border bg-card p-3">
-      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+    <div className="card-surface p-3">
+      <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground mb-1">
         {icon} {label}
       </div>
-      <div className={`text-xl font-semibold ${color}`}>{value}</div>
+      <div className={`text-[20px] font-semibold tabular-nums ${color}`}>{value}</div>
     </div>
   );
 }
 
 function DigestCard({ label, value, icon }: { label: string; value: number; icon: React.ReactNode }) {
   return (
-    <div className="rounded-sm border border-border bg-card p-4 space-y-2">
-      <div className="flex items-center gap-2">{icon}<span className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</span></div>
-      <div className="text-3xl font-bold">{value}</div>
+    <div className="card-surface p-4 space-y-2">
+      <div className="flex items-center gap-2">{icon}<span className="text-[12px] text-muted-foreground">{label}</span></div>
+      <div className="text-[28px] font-semibold tabular-nums tracking-[-0.02em]">{value}</div>
     </div>
   );
 }
