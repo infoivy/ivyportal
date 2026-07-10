@@ -18,6 +18,7 @@ import { RangePicker, type DateRange, rangeFor, daysBetween } from "@/components
 import { StatDrilldown, type MetricKey } from "@/components/stat-drilldown";
 import { DashboardSettingsSheet } from "@/components/dashboard-settings-sheet";
 import { useDashboardPrefs } from "@/lib/dashboard-prefs";
+import { VolumeAreaChart, VolumeLegend } from "@/components/ui/volume-area-chart";
 import { OnboardingPanel } from "@/components/onboarding-panel";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
