@@ -273,7 +273,7 @@ function Dashboard() {
         <OnboardingPanel compact />
 
         {/* IG monthly log reminder */}
-        {(roles.includes("founder") || roles.includes("admin")) && !igLoggedThisMonth && !igReminderDismissed && (
+        {roles.includes("founder") && !igLoggedThisMonth && !igReminderDismissed && (
           <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-muted text-[13px] text-foreground">
             <span>No IG analytics logged this month — keep your growth data up to date.</span>
             <div className="flex items-center gap-2 shrink-0">

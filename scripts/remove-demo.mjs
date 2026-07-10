@@ -1,43 +1,43 @@
+#!/usr/bin/env node
 /**
- * Remove all demo data created by seed-demo.mjs.
- * Deletes rows where is_demo=true and removes demo auth users.
- *
+ * Tear down everything seed-demo.mjs created.
+ * Cascades through demo students/users for tables without an is_demo flag.
  * Usage: node --env-file=.env scripts/remove-demo.mjs
  */
-
 import { createClient } from "@supabase/supabase-js";
 
-const url = process.env.SUPABASE_URL;
+const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-if (!url || !key) {
-  console.error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env");
-  process.exit(1);
+if (!url || !key) { console.error("Missing SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY"); process.exit(1); }
+const sb = createClient(url, key);
+
+const { data: demoStudents } = await sb.from("students").select("id").eq("is_demo", true);
+const ids = (demoStudents ?? []).map((s) => s.id);
+if (ids.length) {
+  const { data: plans } = await sb.from("installments").select("id").in("student_id", ids);
+  const planIds = (plans ?? []).map((p) => p.id);
+  if (planIds.length) await sb.from("installment_payments").delete().in("installment_id", planIds);
+  await sb.from("installments").delete().in("student_id", ids);
+  await sb.from("student_calls").delete().in("student_id", ids);
+  await sb.from("student_eods").delete().in("student_id", ids);
+  await sb.from("csm_student_notes").delete().in("student_id", ids);
+  await sb.from("testimonials").delete().in("student_id", ids);
+  console.log(`cascaded ${ids.length} demo students' dependents`);
 }
-const sb = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
-
-const DEMO_SUFFIX = "@isa.demo";
-
-// Delete demo rows from data tables (order matters for FK constraints)
-const TABLES = ["student_action_items", "eods", "deals", "ig_monthly_snapshots", "students"];
-
-console.log("Removing demo data…");
-for (const table of TABLES) {
-  const { error, count } = await sb.from(table).delete({ count: "exact" }).eq("is_demo", true);
-  if (error) console.error(`  ✗ ${table}: ${error.message}`);
-  else console.log(`  ✓ ${table}: ${count ?? "?"} rows deleted`);
-}
-
-// Remove demo auth users by email suffix
-console.log("Removing demo auth users…");
-const { data: { users }, error: listErr } = await sb.auth.admin.listUsers({ perPage: 1000 });
-if (listErr) { console.error("Could not list users:", listErr.message); process.exit(1); }
-
-const demoUsers = users.filter(u => u.email?.endsWith(DEMO_SUFFIX));
-for (const u of demoUsers) {
-  const { error } = await sb.auth.admin.deleteUser(u.id);
-  if (error) console.error(`  ✗ ${u.email}: ${error.message}`);
-  else console.log(`  ✓ ${u.email} deleted`);
+for (const table of ["student_action_items", "deals", "eods", "ig_monthly_snapshots", "students"]) {
+  const { count } = await sb.from(table).delete({ count: "exact" }).eq("is_demo", true);
+  console.log(`${table}: removed ${count ?? 0}`);
 }
 
-if (demoUsers.length === 0) console.log("  (no demo users found)");
-console.log("\n✅ Demo teardown complete.");
+const { data: list } = await sb.auth.admin.listUsers({ perPage: 500 });
+for (const u of list.users) {
+  if (u.email?.endsWith("@isa.demo")) {
+    await sb.from("csm_tally").delete().eq("user_id", u.id);
+    await sb.from("set_reminders").delete().eq("owner_id", u.id);
+    await sb.from("user_roles").delete().eq("user_id", u.id);
+    await sb.from("profiles").delete().eq("id", u.id);
+    await sb.auth.admin.deleteUser(u.id);
+    console.log("removed user", u.email);
+  }
+}
+console.log("✅ demo removed");

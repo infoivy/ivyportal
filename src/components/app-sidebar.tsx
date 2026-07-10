@@ -50,8 +50,8 @@ const libraryItems: Item[] = [
 ];
 
 const founderItems: Item[] = [
-  { title: "Gathering Hub", url: "/command", icon: Armchair, roles: ["founder", "admin"] },
-  { title: "Content", url: "/content", icon: Clapperboard, roles: ["founder", "admin"] },
+  { title: "Gathering Hub", url: "/command", icon: Armchair, roles: ["founder"] },
+  { title: "Content", url: "/content", icon: Clapperboard, roles: ["founder"] },
 ];
 
 const adminItems: Item[] = [
@@ -162,7 +162,7 @@ export function AppSidebar({ roles }: { roles: string[] }) {
         {renderGroup("Sales", salesItems)}
         {renderGroup("Students", studentsItems)}
         {renderGroup("Library", libraryItems)}
-        {(roles.includes("founder") || isAdmin) && renderGroup("Founder", founderItems)}
+        {roles.includes("founder") && renderGroup("Founder", founderItems)}
         {isAdmin && renderGroup("Admin", adminItems)}
         {renderGroup("Account", [{ title: "Profile", url: "/profile", icon: UserCircle }])}
       </SidebarContent>

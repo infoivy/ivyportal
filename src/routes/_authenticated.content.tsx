@@ -22,7 +22,7 @@ type Tab = (typeof TABS)[number]["value"];
 
 function ContentPage() {
   const { roles } = useAuth();
-  const canView = roles.includes("admin") || roles.includes("founder");
+  const canView = roles.includes("founder");
   const { tab } = Route.useSearch();
   const navigate = useNavigate({ from: "/content" });
 
@@ -31,7 +31,7 @@ function ContentPage() {
       <div className="p-8 max-w-md mx-auto text-center space-y-2">
         <Sparkles className="h-8 w-8 mx-auto text-muted-foreground" />
         <div className="text-title">Content</div>
-        <p className="text-caption text-muted-foreground">Founder or admin access required.</p>
+        <p className="text-caption text-muted-foreground">Founder access required.</p>
       </div>
     );
   }
