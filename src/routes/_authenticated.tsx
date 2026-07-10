@@ -38,7 +38,7 @@ function AuthedLayout() {
   useEffect(() => {
     const cleanupSessionOnly = installSessionOnlyCleanup();
     let alive = true;
-    const load = async (userId: string | null) => {
+    const load = async (userId: string | null, fromSignIn = false) => {
       if (!userId) {
         if (alive) setState({ user: null, roles: [], displayName: null, loading: false });
         return;
@@ -57,23 +57,35 @@ function AuthedLayout() {
         loading: false,
       });
       checkEod(userId);
-      // Redirect students to their portal if they land on team-only pages
+
+      const path = window.location.pathname;
       const isStudent = rolesArr.includes("student");
       const isTeam = rolesArr.some(r => ["admin", "coach", "closer", "setter"].includes(r));
-      if (isStudent && !isTeam) {
-        const path = window.location.pathname;
-        if (path === "/dashboard" || path === "/" || path === "/auth") {
+
+      if (fromSignIn) {
+        // Role-based landing: only fires on actual sign-in, not on page refresh
+        if (isStudent && !isTeam) {
+          navigate({ to: "/student-portal", replace: true });
+        } else if (!rolesArr.includes("admin") && !rolesArr.includes("founder")) {
+          if (rolesArr.includes("setter")) navigate({ to: "/eods", replace: true });
+          else if (rolesArr.includes("closer")) navigate({ to: "/revenue", replace: true });
+          else if (rolesArr.includes("csm")) navigate({ to: "/csm", replace: true });
+          else if (rolesArr.includes("coach")) navigate({ to: "/calls", replace: true });
+        }
+      } else {
+        // On page refresh: still protect student-only users from team pages
+        if (isStudent && !isTeam && (path === "/dashboard" || path === "/" || path === "/auth")) {
           navigate({ to: "/student-portal", replace: true });
         }
       }
     };
-    supabase.auth.getSession().then(({ data }) => load(data.session?.user.id ?? null));
+    supabase.auth.getSession().then(({ data }) => load(data.session?.user.id ?? null, false));
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT") {
         setState({ user: null, roles: [], displayName: null, loading: false });
         navigate({ to: "/auth", replace: true });
       } else if (event === "SIGNED_IN" || event === "USER_UPDATED") {
-        load(session?.user.id ?? null);
+        load(session?.user.id ?? null, true);
       }
     });
     return () => { alive = false; sub.subscription.unsubscribe(); cleanupSessionOnly(); };

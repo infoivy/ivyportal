@@ -20,7 +20,10 @@ export function installSessionOnlyCleanup() {
 
 export function AuthPage() {
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"signin" | "signup">("signin");
+  const inviteToken = typeof window !== "undefined"
+    ? new URLSearchParams(window.location.search).get("invite")
+    : null;
+  const [tab, setTab] = useState<"signin" | "signup">(inviteToken ? "signup" : "signin");
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -101,6 +104,12 @@ export function AuthPage() {
               {tab === "signin" ? "Sign in to your dashboard" : "Create your portal account"}
             </p>
           </div>
+
+          {inviteToken && tab === "signup" && (
+            <div className="rounded-sm border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-400">
+              You've been invited to join the ISA Portal. Create your account below — your roles will be assigned automatically when you sign up with your invited email address.
+            </div>
+          )}
 
           <div className="inline-flex w-full rounded-sm border border-border bg-[var(--background)] p-0.5">
             <button

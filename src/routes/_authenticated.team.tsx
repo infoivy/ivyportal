@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import {
   Users, Shield, Phone, UserCircle2, GraduationCap, Pencil, X, HeartHandshake, Sparkles, School,
-  Upload, Trash2, PowerOff, Power,
+  Upload, Trash2, PowerOff, Power, UserPlus, Copy, Check,
 } from "lucide-react";
 import { signAvatars, uploadAvatar } from "@/lib/avatars";
 import { deleteTeamMember, setMemberActive } from "@/lib/team-admin.functions";
@@ -45,6 +45,7 @@ function TeamPage() {
   const [avatarUrls, setAvatarUrls] = useState<Record<string, string>>({});
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState<Member | null>(null);
+  const [inviteOpen, setInviteOpen] = useState(false);
   const [templates, setTemplates] = useState<OnboardingTemplate[]>([]);
   const [progressByUser, setProgressByUser] = useState<Map<string, Set<string>>>(new Map());
 
@@ -158,12 +159,20 @@ function TeamPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Team</h1>
           <p className="text-xs text-muted-foreground mt-0.5">Assign roles, edit profiles, deactivate or permanently remove team members.</p>
         </div>
-        <input
-          value={q}
-          onChange={e => setQ(e.target.value)}
-          placeholder="Search members…"
-          className="h-8 px-3 rounded-sm border border-[var(--border)] bg-[var(--card)] text-xs w-56 focus:outline-none focus:border-green-500/40"
-        />
+        <div className="flex items-center gap-2">
+          <input
+            value={q}
+            onChange={e => setQ(e.target.value)}
+            placeholder="Search members…"
+            className="h-8 px-3 rounded-sm border border-[var(--border)] bg-[var(--card)] text-xs w-56 focus:outline-none focus:border-green-500/40"
+          />
+          <button
+            onClick={() => setInviteOpen(true)}
+            className="h-8 flex items-center gap-1.5 text-xs font-medium px-3 rounded-sm border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition"
+          >
+            <UserPlus className="h-3.5 w-3.5" /> Invite member
+          </button>
+        </div>
       </header>
 
       <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
@@ -274,6 +283,9 @@ function TeamPage() {
           onClose={() => setEditing(null)}
           onSaved={() => { setEditing(null); load(); }}
         />
+      )}
+      {inviteOpen && (
+        <InviteModal onClose={() => setInviteOpen(false)} invitedBy={user?.id ?? null} />
       )}
     </div>
   );
@@ -413,6 +425,137 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
             {saving ? "Saving…" : "Save"}
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function InviteModal({ onClose, invitedBy }: { onClose: () => void; invitedBy: string | null }) {
+  const [email, setEmail] = useState("");
+  const [selectedRoles, setSelectedRoles] = useState<AppRole[]>([]);
+  const [setterType, setSetterType] = useState<SetterType>(null);
+  const [saving, setSaving] = useState(false);
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const toggleRole = (role: AppRole) => {
+    setSelectedRoles(prev => prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role]);
+  };
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) return toast.error("Email is required");
+    if (selectedRoles.length === 0) return toast.error("Select at least one role");
+    setSaving(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any)
+      .from("invitations")
+      .insert({
+        email: email.trim().toLowerCase(),
+        roles: selectedRoles,
+        setter_type: selectedRoles.includes("setter") ? setterType : null,
+        invited_by: invitedBy,
+      })
+      .select("token")
+      .single();
+    setSaving(false);
+    if (error) { toast.error(error.message); return; }
+    setInviteLink(`${window.location.origin}/auth?invite=${data.token}`);
+    toast.success("Invitation created");
+  };
+
+  const copy = () => {
+    if (!inviteLink) return;
+    navigator.clipboard.writeText(inviteLink).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm max-w-md w-full p-5 space-y-4" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold">Invite team member</h2>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
+        </div>
+
+        {inviteLink ? (
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">Share this link. When they sign up with the invited email address, their roles are assigned automatically. Link expires in 30 days.</p>
+            <div className="flex items-center gap-2 p-3 rounded-sm bg-[var(--background)] border border-[var(--border)] text-[11px] break-all text-foreground font-mono">
+              {inviteLink}
+            </div>
+            <button
+              onClick={copy}
+              className="w-full flex items-center justify-center gap-2 text-xs font-medium px-3 py-2 rounded-sm bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 transition"
+            >
+              {copied ? <><Check className="h-3.5 w-3.5" /> Copied!</> : <><Copy className="h-3.5 w-3.5" /> Copy invite link</>}
+            </button>
+            <button onClick={onClose} className="w-full text-xs text-muted-foreground hover:text-foreground py-1">Done</button>
+          </div>
+        ) : (
+          <form onSubmit={submit} className="space-y-4">
+            <div className="space-y-1">
+              <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Email address</label>
+              <input
+                type="email" value={email} onChange={e => setEmail(e.target.value)}
+                placeholder="name@example.com" required autoFocus
+                className="w-full h-9 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-sm focus:outline-none focus:border-emerald-500/40"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Roles</label>
+              <div className="flex flex-wrap gap-1.5">
+                {ROLES.map(r => {
+                  const has = selectedRoles.includes(r.key);
+                  const Icon = r.icon;
+                  return (
+                    <button
+                      key={r.key} type="button"
+                      onClick={() => toggleRole(r.key)}
+                      className={`flex items-center gap-1 text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border transition ${
+                        has ? r.color : "text-muted-foreground border-[var(--border)] hover:border-[#2a3140]"
+                      }`}
+                    >
+                      <Icon className="h-3 w-3" /> {r.key}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            {selectedRoles.includes("setter") && (
+              <div className="space-y-1">
+                <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Setter type</label>
+                <div className="flex gap-1.5 flex-wrap">
+                  {([
+                    { key: null, label: "Not set" },
+                    { key: "phone" as const, label: "Phone (100 dials)" },
+                    { key: "dm" as const, label: "DM (125 leads)" },
+                  ]).map(opt => (
+                    <button
+                      key={String(opt.key)} type="button"
+                      onClick={() => setSetterType(opt.key as SetterType)}
+                      className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border transition ${
+                        setterType === opt.key
+                          ? "border-green-500/40 bg-green-500/10 text-green-400"
+                          : "border-[var(--border)] text-muted-foreground hover:border-[#2a3140]"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="flex justify-end gap-2 pt-2 border-t border-[var(--border)]">
+              <button type="button" onClick={onClose} className="text-xs text-muted-foreground hover:text-foreground px-3 py-1.5">Cancel</button>
+              <button type="submit" disabled={saving} className="text-xs bg-emerald-500 hover:bg-emerald-400 text-black font-medium px-3 py-1.5 rounded-sm disabled:opacity-50">
+                {saving ? "Creating…" : "Create invite link"}
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );
