@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -251,10 +251,10 @@ function RevenuePage() {
   // Commission milestone bonuses (team cash MTD)
   const milestones = useMemo(() => {
     const tiers = [
-      { threshold: 10_000, bonus: 500 },
-      { threshold: 25_000, bonus: 1_500 },
-      { threshold: 50_000, bonus: 4_000 },
-      { threshold: 100_000, bonus: 10_000 },
+      { threshold: 10_000 },
+      { threshold: 25_000 },
+      { threshold: 50_000 },
+      { threshold: 100_000 },
     ];
     const cash = stats.cash;
     return tiers.map((t) => ({ ...t, hit: cash >= t.threshold, progress: Math.min(1, cash / t.threshold) }));
@@ -394,94 +394,23 @@ function RevenuePage() {
                   style={{ width: `${m.progress * 100}%` }}
                 />
               </div>
-              <div className="text-[12px] text-muted-foreground">
-                Team bonus <span className="text-warning-fg font-medium">{money(m.bonus)}</span>
-              </div>
             </div>
           ))}
         </div>
       </Card>
 
 
-      {/* Per-closer breakdown */}
-      <Card className="overflow-hidden">
-        <div className="p-4 border-b border-[var(--border)] flex items-center justify-between">
-          <h3 className="text-[15px] font-semibold">Per-closer breakdown (MTD)</h3>
-          <span className="text-[13px] text-muted-foreground">{(rates.new_close * 100).toFixed(0)}% close-only · {(rates.set_close * 100).toFixed(0)}% set+close</span>
+      {/* Per-person payouts live in the Payouts ledger (Revenue → Payouts tab) */}
+      <Link
+        to="/payouts"
+        className="card-surface p-4 flex items-center justify-between hover:bg-muted/30 motion-safe:transition-colors"
+      >
+        <div>
+          <div className="text-body font-medium text-foreground">Per-closer & per-setter payouts</div>
+          <div className="text-caption text-muted-foreground mt-0.5">Full commission ledger for the current pay period (11th → 11th)</div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[480px] text-sm">
-            <thead className="text-[12px] text-muted-foreground/70 bg-card">
-              <tr>
-                <th className="text-left px-4 py-2.5">Closer</th>
-                <th className="text-right px-4 py-2.5">Deals</th>
-                <th className="text-right px-4 py-2.5">Set+close</th>
-                <th className="text-right px-4 py-2.5">Cash</th>
-                <th className="text-right px-4 py-2.5">Commission</th>
-              </tr>
-            </thead>
-            <tbody>
-              {perCloser.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="text-center text-muted-foreground py-8">No deals this month.</td>
-                </tr>
-              ) : (
-                perCloser.map((r) => (
-                  <tr key={r.closer_id} className="border-t border-[var(--border)]">
-                    <td className="px-4 py-3 font-medium">{r.name}</td>
-                    <td className="px-4 py-3 text-right tabular-nums">{r.deals}</td>
-                    <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">{r.setCloseDeals}/{r.deals}</td>
-                    <td className="px-4 py-3 text-right tabular-nums">{money(r.cash)}</td>
-                    <td className="px-4 py-3 text-right tabular-nums font-semibold text-primary">{money(r.commission)}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </Card>
-
-      {/* Per-setter breakdown */}
-      <Card className="overflow-hidden">
-        <div className="p-4 border-b border-[var(--border)] flex items-center justify-between">
-          <h3 className="text-[15px] font-semibold">Per-setter breakdown (MTD)</h3>
-          <span className="text-[13px] text-muted-foreground">
-            {(rates.setter_base * 100).toFixed(1)}% base · $5k week → +1% bonus
-          </span>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[420px] text-sm">
-            <thead className="text-[12px] text-muted-foreground/70 bg-card">
-              <tr>
-                <th className="text-left px-4 py-2.5">Setter</th>
-                <th className="text-right px-4 py-2.5">Set closes</th>
-                <th className="text-right px-4 py-2.5">$5k week</th>
-                <th className="text-right px-4 py-2.5">Cash</th>
-                <th className="text-right px-4 py-2.5">Commission</th>
-              </tr>
-            </thead>
-            <tbody>
-              {perSetter.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="text-center text-muted-foreground py-8">No setter-attributed deals this month.</td>
-                </tr>
-              ) : (
-                perSetter.map((r) => (
-                  <tr key={r.setter_id} className="border-t border-[var(--border)]">
-                    <td className="px-4 py-3 font-medium">{r.name}</td>
-                    <td className="px-4 py-3 text-right tabular-nums">{r.deals}</td>
-                    <td className="px-4 py-3 text-right tabular-nums">
-                      {r.weekBonus ? <span className="text-warning-fg">✓ +1%</span> : <span className="text-muted-foreground">—</span>}
-                    </td>
-                    <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">{money(r.cash)}</td>
-                    <td className="px-4 py-3 text-right tabular-nums font-semibold text-primary">{money(r.commission)}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+        <span className="text-caption text-primary">Open ledger →</span>
+      </Link>
 
       {/* Recent deals */}
       <Card className="overflow-hidden">
