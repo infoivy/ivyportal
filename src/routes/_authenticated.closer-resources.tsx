@@ -60,12 +60,32 @@ function CloserResources() {
     );
   }
 
-  const copy = async (id: string, url: string) => {
-    await navigator.clipboard.writeText(url);
+  const copy = async (id: string, text: string, label = "Copied") => {
+    await navigator.clipboard.writeText(text);
     setCopied(id);
-    toast.success("Link copied");
+    toast.success(label);
     setTimeout(() => setCopied((c) => (c === id ? null : c)), 1500);
   };
+
+  const whopMessage = (r: PL) =>
+    `Payment link for $${Number(r.amount ?? 0).toLocaleString()}:\n${r.url}\n\nLet me know once it goes through.`;
+
+  const categorize = (r: PL): string => {
+    if (r.method === "whop") return "Whop (main gateway)";
+    if (r.method === "wise" && r.currency === "USD") return "Wise USD — bank transfer";
+    if (r.method === "wise" && r.currency === "EUR") return "Wise EUR — SEPA";
+    if (r.method === "other") return "Revolut";
+    if (r.method === "bank") return "YO (UAE bank)";
+    return "Other";
+  };
+  const CATEGORY_ORDER = [
+    "Whop (main gateway)",
+    "Wise USD — bank transfer",
+    "Wise EUR — SEPA",
+    "Revolut",
+    "YO (UAE bank)",
+    "Other",
+  ];
 
   return (
     <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-6">
