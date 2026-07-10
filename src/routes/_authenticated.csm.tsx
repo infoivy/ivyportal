@@ -8,6 +8,7 @@ import {
   PhoneCall, AlertTriangle, Undo2, CheckCircle2, Circle, Clock, X,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { todayBiz } from "@/lib/dates";
 
 export const Route = createFileRoute("/_authenticated/csm")({
   head: () => ({ meta: [{ title: "CSM — ISA Portal" }] }),
@@ -43,8 +44,7 @@ const KIND_META: Record<TallyKind, { label: string; icon: typeof Video; color: s
   escalation: { label: "Escalation",        icon: AlertTriangle,  color: "bg-red-500/10 text-red-300 hover:bg-red-500/20 border-red-500/30",         ring: "focus:ring-red-400/40" },
 };
 
-const todayStr = () => new Date().toISOString().slice(0, 10);
-const isToday = (iso: string) => iso.slice(0, 10) === todayStr();
+const isToday = (iso: string) => iso.slice(0, 10) === todayBiz();
 
 function CsmPage() {
   const { user, roles } = useAuth();
@@ -209,7 +209,7 @@ function CsmPage() {
 
   const submitCsmEod = async () => {
     if (!user) return;
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayBiz();
     const payload = {
       user_id: user.id,
       report_date: today,

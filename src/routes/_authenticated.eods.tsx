@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { CheckCircle2, Clock, AlertTriangle, ChevronRight, ChevronDown, Trash2, Pencil, Flame } from "lucide-react";
 import { computeStreak } from "@/lib/streak";
+import { todayBiz } from "@/lib/dates";
 import confetti from "canvas-confetti";
 import { ResponsiveContainer, BarChart, Bar, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip as ReTooltip, Legend } from "recharts";
 
@@ -70,7 +71,7 @@ function EODsPage() {
   const isCloser = roles.includes("closer") || roles.includes("coach");
   const filesEods = isSetter || isCloser || isCsm;
   const isFounder = isAdmin && !filesEods;
-  const today = isoDate(new Date());
+  const today = todayBiz();
 
   const [form, setForm] = useState(emptyForm);
   const [existingId, setExistingId] = useState<string | null>(null);
@@ -677,7 +678,7 @@ function HistoryDayRow({ eod, setterType, isSetter, isCloser, onDelete }: { eod:
   const rawConv = eod.convos_started > 0 ? (eod.calls_booked / eod.convos_started) * 100 : 0;
   const dataError = eod.calls_booked > eod.convos_started && eod.convos_started > 0;
   const convDisplay = Math.min(100, Math.round(rawConv));
-  const today = isoDate(new Date());
+  const today = todayBiz();
   const canDelete = eod.report_date === today;
   return (
     <div className="border-b border-[var(--accent)] last:border-0">
