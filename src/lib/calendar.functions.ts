@@ -242,7 +242,7 @@ export const listUpcomingSets = createServerFn({ method: "GET" })
       .order("event_start", { ascending: true })
       .limit(200);
     if (error) throw new Error(error.message);
-    const ids = Array.from(new Set(((rows ?? []) as { owner_id: string }[]).map((r) => r.owner_id)));
+    const ids = Array.from(new Set(((rows ?? []) as { owner_id: string | null }[]).map((r) => r.owner_id).filter((x): x is string => !!x)));
     const { data: profs } = ids.length
       ? await context.supabase.from("profiles").select("id, display_name").in("id", ids)
       : { data: [] };
