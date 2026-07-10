@@ -113,8 +113,8 @@ export function WeeklyPlan({ onOpenItem }: { onOpenItem: (id: string) => void })
 
   const monday = useMemo(() => parseISO(weekStart), [weekStart]);
   const isThisWeek = mondayOf(new Date()) === weekStart;
-  const weekEnd = addDays(monday, 6);
   const nextEnd = addDays(parseISO(nextWeekStart), 6);
+
 
 
   const saveIdeaField = async (id: string, patch: Partial<WeekIdea>) => {
