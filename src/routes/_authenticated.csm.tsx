@@ -258,7 +258,7 @@ function CsmPage() {
     <div className="p-4 sm:p-6 max-w-[1400px] mx-auto space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--border)] pb-4">
         <div>
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-amber-400 mb-1">
+          <div className="flex items-center gap-2 text-[10px] text-amber-400 mb-1">
             <HeartHandshake className="h-3 w-3" /> Client success
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">CSM Workspace</h1>
@@ -272,7 +272,7 @@ function CsmPage() {
       {/* Daily tally */}
       <section className="space-y-2">
         <div className="flex items-center justify-between">
-          <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Today's tally</div>
+          <div className="text-[10px] text-muted-foreground">Today's tally</div>
           <div className="text-[10px] text-muted-foreground">Uses today's tally counts</div>
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
@@ -328,8 +328,8 @@ function CsmPage() {
                 <div className="text-sm font-medium truncate">{s.full_name}</div>
                 <div className="text-[10px] text-muted-foreground truncate">{s.email ?? "no email"}</div>
                 <div className="mt-1 flex gap-1">
-                  <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 border border-[#2a3140] rounded-sm text-muted-foreground">{s.phase.replace("_", " ")}</span>
-                  <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 border border-[#2a3140] rounded-sm text-muted-foreground">{s.status}</span>
+                  <span className="text-[9px] px-1.5 py-0.5 border border-[#2a3140] rounded-sm text-muted-foreground">{s.phase.replace("_", " ")}</span>
+                  <span className="text-[9px] px-1.5 py-0.5 border border-[#2a3140] rounded-sm text-muted-foreground">{s.status}</span>
                 </div>
               </button>
             ))}
@@ -342,7 +342,7 @@ function CsmPage() {
             <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm">
               <div className="p-4 border-b border-[var(--border)] flex items-start justify-between gap-3">
                 <div>
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-amber-400 mb-1">Accountability</div>
+                  <div className="text-[10px] text-amber-400 mb-1">Accountability</div>
                   <h2 className="text-lg font-semibold">{selected.full_name}</h2>
                   <p className="text-[11px] text-muted-foreground">{selected.email ?? "no email"}</p>
                 </div>
@@ -358,7 +358,7 @@ function CsmPage() {
               {/* Action items list — read-only. Only the student ticks these off in their portal. */}
               <div className="p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Action items from 1:1s</div>
+                  <div className="text-[10px] text-muted-foreground">Action items from 1:1s</div>
                   <div className="text-[10px] text-muted-foreground italic">Student ticks off in their portal</div>
                 </div>
                 {openActionItems.length === 0 ? (
@@ -387,7 +387,7 @@ function CsmPage() {
               {/* Ad-hoc action items — CSMs can add these directly */}
               <div className="p-4 border-t border-[var(--border)]">
                 <div className="flex items-center justify-between mb-2">
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-blue-400">Ad-hoc action items</div>
+                  <div className="text-[10px] text-blue-400">Ad-hoc action items</div>
                   <div className="text-[10px] text-muted-foreground italic">Assign anytime · outside of calls</div>
                 </div>
                 {selectedAdhoc.length === 0 ? (
@@ -453,7 +453,7 @@ function CsmPage() {
               {/* Recent loom/roleplay taps */}
               {(studentLoomsReviewed.length + studentRoleplaysReviewed.length) > 0 && (
                 <div className="p-4 border-t border-[var(--border)]">
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-2">Recent submissions reviewed</div>
+                  <div className="text-[10px] text-muted-foreground mb-2">Recent submissions reviewed</div>
                   <div className="space-y-1 text-xs">
                     {[...studentLoomsReviewed, ...studentRoleplaysReviewed]
                       .sort((a, b) => b.created_at.localeCompare(a.created_at))
@@ -477,7 +477,7 @@ function CsmPage() {
 
           {/* Notes flow (unchanged) */}
           <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-4">
-            <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-2">Add CSM note</div>
+            <div className="text-[10px] text-muted-foreground mb-2">Add CSM note</div>
             <textarea value={note} onChange={e => setNote(e.target.value)} rows={3} placeholder="Add a student success note, risk signal, follow-up, accountability update…" className="w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-sm resize-none focus:outline-none focus:border-green-500/40" />
             <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] gap-2">
               <input value={tags} onChange={e => setTags(e.target.value)} placeholder="tags, comma-separated" className="h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-green-500/40" />
@@ -496,7 +496,7 @@ function CsmPage() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{n.note}</p>
                     <div className="mt-2 flex flex-wrap gap-1.5 items-center text-[10px] text-muted-foreground">
-                      {(n.tags ?? []).map(tag => <span key={tag} className="px-1.5 py-0.5 rounded-sm border border-amber-500/30 text-amber-400 uppercase tracking-wider">#{tag}</span>)}
+                      {(n.tags ?? []).map(tag => <span key={tag} className="px-1.5 py-0.5 rounded-sm border border-amber-500/30 text-amber-400">#{tag}</span>)}
                       <span className="ml-auto">{n.author} · {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}</span>
                       {(n.user_id === user?.id || roles.includes("admin")) && (
                         <button onClick={() => deleteNote(n.id)} className="p-1 rounded-sm text-muted-foreground hover:text-red-400 hover:bg-red-500/10" title="Delete note">
@@ -521,14 +521,14 @@ function CsmPage() {
               <button onClick={() => setQuickKind(null)} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Student (optional)</label>
+              <label className="text-[10px] text-muted-foreground">Student (optional)</label>
               <select value={quickStudent} onChange={e => setQuickStudent(e.target.value)} className="mt-1 w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-green-500/40">
                 <option value="">— none —</option>
                 {students.map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Note (optional)</label>
+              <label className="text-[10px] text-muted-foreground">Note (optional)</label>
               <textarea value={quickNote} onChange={e => setQuickNote(e.target.value)} rows={3} className="mt-1 w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-sm resize-none focus:outline-none focus:border-green-500/40" placeholder="What was reviewed / said?" />
             </div>
             <div className="flex justify-end gap-2 pt-1">
@@ -546,7 +546,7 @@ function AccountStat({ label, value, tone }: { label: string; value: string | nu
   const color = tone === "warn" ? "text-amber-400" : tone === "ok" ? "text-green-400" : "text-foreground";
   return (
     <div className="bg-[var(--card)] p-3">
-      <div className="text-[9px] uppercase tracking-wider text-muted-foreground mb-1">{label}</div>
+      <div className="text-[9px] text-muted-foreground mb-1">{label}</div>
       <div className={`text-lg font-semibold ${color}`}>{value}</div>
     </div>
   );

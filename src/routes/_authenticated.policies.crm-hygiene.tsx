@@ -324,7 +324,7 @@ function ConsequenceStep({
       <Card className={`flex-1 p-5 border-l-4 ${toneStyles.border}`}>
         <div className="flex items-center justify-between gap-3 mb-3">
           <p className="font-semibold">{headerLabel}</p>
-          <span className={`text-[10px] uppercase tracking-widest font-medium px-2 py-0.5 rounded-full border ${toneStyles.badge}`}>
+          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${toneStyles.badge}`}>
             {badge}
           </span>
         </div>

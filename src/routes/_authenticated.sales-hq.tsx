@@ -179,17 +179,17 @@ function SalesHQInner() {
 
   if (loading) {
     return (
-      <div className="dashboard-dark min-h-full flex items-center justify-center">
+      <div className="min-h-full flex items-center justify-center">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   return (
-    <div className="dashboard-dark min-h-full">
+    <div className="min-h-full">
       <div className="max-w-[1400px] mx-auto p-4 sm:p-5 space-y-4">
         <div>
-          <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-1">Abu Bilal</div>
+          <div className="text-[10px] text-muted-foreground mb-1">Abu Bilal</div>
           <h1 className="text-2xl font-semibold tracking-tight">Sales HQ</h1>
           <p className="text-xs text-muted-foreground mt-0.5">Team compliance, pipeline, and setter performance.</p>
         </div>
@@ -256,7 +256,7 @@ function SalesHQInner() {
           <TabsContent value="today" className="space-y-4">
             {/* Today's status grid */}
             <section className="space-y-2">
-              <h2 className="text-[11px] uppercase tracking-widest text-muted-foreground font-semibold">Today's submission status</h2>
+              <h2 className="text-[11px] text-muted-foreground font-semibold">Today's submission status</h2>
               {setters.length === 0 ? (
                 <EmptyCard msg="No active setters yet." />
               ) : (
@@ -277,7 +277,7 @@ function SalesHQInner() {
                           <div>
                             <div className="text-sm font-medium">{s.display_name}</div>
                             {s.setter_type ? (
-                              <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                              <div className="text-[10px] text-muted-foreground">
                                 {s.setter_type === "phone" ? "Phone · 100 dials" : "DM · 125 leads"}
                               </div>
                             ) : canEditSetterType ? (
@@ -292,7 +292,7 @@ function SalesHQInner() {
                                 <option value="dm">DM</option>
                               </select>
                             ) : (
-                              <div className="text-[10px] text-amber-400 uppercase tracking-wider">Type not set</div>
+                              <div className="text-[10px] text-amber-400">Type not set</div>
                             )}
                           </div>
                         </div>
@@ -335,7 +335,7 @@ function SalesHQInner() {
             {/* Missed yesterday nudge */}
             {missedYesterday.length > 0 && (
               <section className="space-y-2">
-                <h2 className="text-[11px] uppercase tracking-widest text-muted-foreground font-semibold flex items-center gap-1.5">
+                <h2 className="text-[11px] text-muted-foreground font-semibold flex items-center gap-1.5">
                   <AlertTriangle className="h-3 w-3 text-amber-400" /> Missed yesterday — send nudge
                 </h2>
                 <div className="rounded-sm border border-amber-500/20 bg-card overflow-hidden">
@@ -364,7 +364,7 @@ function SalesHQInner() {
 
           {/* ─── PIPELINE TAB ───────────────────────────────────── */}
           <TabsContent value="pipeline" className="space-y-3">
-            <h2 className="text-[11px] uppercase tracking-widest text-muted-foreground font-semibold">Setter onboarding pipeline</h2>
+            <h2 className="text-[11px] text-muted-foreground font-semibold">Setter onboarding pipeline</h2>
             <PipelineTab
               setters={setters}
               invitations={invitations}
@@ -376,7 +376,7 @@ function SalesHQInner() {
 
           {/* ─── SCORECARDS TAB ─────────────────────────────────── */}
           <TabsContent value="scorecards" className="space-y-3">
-            <h2 className="text-[11px] uppercase tracking-widest text-muted-foreground font-semibold">Setter scorecards — last 30 days</h2>
+            <h2 className="text-[11px] text-muted-foreground font-semibold">Setter scorecards — last 30 days</h2>
             {setters.length === 0 ? (
               <EmptyCard msg="No active setters." />
             ) : (
@@ -459,7 +459,7 @@ function PipelineTab({
         const isLast = i === STAGES.length - 1;
         return (
           <div key={stage} className={`rounded-sm border bg-card p-3 space-y-2 ${isLast ? "border-green-500/30 bg-green-500/5" : "border-border"}`}>
-            <div className={`text-[10px] font-semibold uppercase tracking-wider ${isLast ? "text-green-400" : "text-muted-foreground"}`}>
+            <div className={`text-[10px] font-semibold ${isLast ? "text-green-400" : "text-muted-foreground"}`}>
               {stage}
               <span className="ml-1.5 text-foreground">{items.length}</span>
             </div>
@@ -535,7 +535,7 @@ function ScorecardRow({ setter, eods, expanded, onToggle }: {
 
       {expanded && (
         <div className="border-t border-border px-4 py-3 space-y-3">
-          <h3 className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Last 7 days</h3>
+          <h3 className="text-[10px] text-muted-foreground font-semibold">Last 7 days</h3>
           <div className="flex gap-1 flex-wrap">
             {eods.slice(0, 7).map(e => {
               const hit = kpiHit(e, setter.setter_type);
@@ -570,7 +570,7 @@ function StatChip({ label, value, accent }: { label: string; value: number | str
   const color = accent === "green" ? "text-green-400" : accent === "red" ? "text-red-400" : "text-foreground";
   return (
     <div className="rounded-sm border border-border bg-card p-3">
-      <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">{label}</div>
+      <div className="text-[10px] text-muted-foreground mb-1">{label}</div>
       <div className={`text-xl font-semibold ${color}`}>{value}</div>
     </div>
   );

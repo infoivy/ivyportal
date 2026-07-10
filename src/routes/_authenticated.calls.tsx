@@ -111,10 +111,10 @@ function CallsPage() {
     <div className="p-4 sm:p-6 max-w-[1500px] mx-auto space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--border)] pb-4">
         <div>
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-blue-400 mb-1">
+          <div className="flex items-center gap-2 text-[10px] text-blue-400 mb-1">
             <Phone className="h-3 w-3" /> 1-on-1 tracker
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight">1-on-1 Calls</h1>
+          <h1 className="text-[32px] font-bold tracking-[-0.02em] text-foreground leading-none">1-on-1 Calls</h1>
           <p className="text-xs text-muted-foreground mt-0.5">
             {stats.total} calls · {stats.completed} done · {stats.followUp} follow-up · {stats.noShow} no-show · avg rating {stats.avgRating} · {stats.openActions} open action items
           </p>
@@ -145,17 +145,17 @@ function CallsPage() {
       <div className="flex flex-wrap gap-1.5 items-center">
         <button
           onClick={() => setCoachFilter("all")}
-          className={`text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-sm border ${coachFilter === "all" ? "text-foreground border-[#2a3140] bg-[var(--accent)]" : "text-muted-foreground border-[var(--border)]"}`}
+          className={`text-[10px] px-2.5 py-1 rounded-sm border ${coachFilter === "all" ? "text-foreground border-[#2a3140] bg-[var(--accent)]" : "text-muted-foreground border-[var(--border)]"}`}
         >All coaches · {calls.length}</button>
         <button
           onClick={() => setCoachFilter("mine")}
-          className={`text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-sm border ${coachFilter === "mine" ? "text-blue-400 border-blue-500/30 bg-blue-500/10" : "text-muted-foreground border-[var(--border)]"}`}
+          className={`text-[10px] px-2.5 py-1 rounded-sm border ${coachFilter === "mine" ? "text-blue-400 border-blue-500/30 bg-blue-500/10" : "text-muted-foreground border-[var(--border)]"}`}
         >My calls · {calls.filter(c => c.coach_id === user?.id).length}</button>
         {coaches.map(c => (
           <button
             key={c.id}
             onClick={() => setCoachFilter(c.id)}
-            className={`flex items-center gap-1.5 text-[10px] uppercase tracking-wider pl-1 pr-2.5 py-0.5 rounded-sm border ${coachFilter === c.id ? "text-sky-400 border-sky-500/30 bg-sky-500/10" : "text-muted-foreground border-[var(--border)]"}`}
+            className={`flex items-center gap-1.5 text-[10px] pl-1 pr-2.5 py-0.5 rounded-sm border ${coachFilter === c.id ? "text-sky-400 border-sky-500/30 bg-sky-500/10" : "text-muted-foreground border-[var(--border)]"}`}
           >
             <div className="h-5 w-5 rounded-sm bg-[var(--accent)] overflow-hidden flex items-center justify-center text-[9px] font-semibold shrink-0">
               {c.avatar_path && avatarUrls[c.avatar_path]
@@ -169,7 +169,7 @@ function CallsPage() {
 
       {view === "table" ? (
         <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm overflow-hidden">
-          <div className="grid grid-cols-[0.7fr_1.3fr_1fr_0.9fr_0.9fr_0.7fr_auto] items-center px-4 py-2 border-b border-[var(--border)] text-[10px] uppercase tracking-widest text-muted-foreground gap-2">
+          <div className="grid grid-cols-[0.7fr_1.3fr_1fr_0.9fr_0.9fr_0.7fr_auto] items-center px-4 py-2 border-b border-[var(--border)] text-[10px] text-muted-foreground gap-2">
             <span>Date</span><span>Student</span><span>Coach</span><span title="1–5 stars — how the student is progressing overall">Progress (1–5)</span><span title="Open action items / total">Action items</span><span>Fathom</span><span />
           </div>
           {filtered.length === 0 && <div className="p-8 text-center text-xs text-muted-foreground">No calls match your filters.</div>}
@@ -212,7 +212,7 @@ function CallsPage() {
             const meta = STATUS_META[col];
             return (
               <div key={col} className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-2 min-h-[200px]">
-                <div className={`flex items-center justify-between text-[10px] uppercase tracking-wider px-1 py-1 mb-2 rounded-sm ${meta.color}`}>
+                <div className={`flex items-center justify-between text-[10px] px-1 py-1 mb-2 rounded-sm ${meta.color}`}>
                   <span>{meta.label}</span>
                   <span className="">{items.length}</span>
                 </div>
@@ -385,7 +385,7 @@ function CallModal({ call, onClose, onSaved, students, coaches, defaultCoachId }
           </Field>
           <Field label="Coach notes" full>
             <div className="flex items-center gap-1 flex-wrap mb-1">
-              <span className="text-[9px] uppercase tracking-wider text-muted-foreground flex items-center gap-1"><FileText className="h-2.5 w-2.5" /> Template:</span>
+              <span className="text-[9px] text-muted-foreground flex items-center gap-1"><FileText className="h-2.5 w-2.5" /> Template:</span>
               {CALL_NOTE_TEMPLATES.map(t => (
                 <button
                   key={t.key}
@@ -457,7 +457,7 @@ const inputCls = "w-full h-9 px-2 rounded-sm border border-[var(--border)] bg-[v
 function Field({ label, children, full }: { label: string; children: React.ReactNode; full?: boolean }) {
   return (
     <div className={`space-y-1 ${full ? "col-span-2" : ""}`}>
-      <label className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</label>
+      <label className="text-[10px] text-muted-foreground">{label}</label>
       {children}
     </div>
   );

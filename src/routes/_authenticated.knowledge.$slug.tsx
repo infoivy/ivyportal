@@ -120,7 +120,7 @@ function KnowledgeDoc() {
 
       <div className="grid lg:grid-cols-[1fr_240px] gap-6">
         <article className="min-w-0">
-          <div className="text-[11px] uppercase tracking-widest text-muted-foreground/70 mb-1">
+          <div className="text-[11px] text-muted-foreground/70 mb-1">
             {CATEGORY_LABEL[doc.category]}
           </div>
           <h1 className="text-3xl font-bold tracking-tight mb-2">{doc.title}</h1>
@@ -154,7 +154,7 @@ function KnowledgeDoc() {
 
           {doc.external_links && doc.external_links.length > 0 && (
             <div className="mt-10 pt-4 border-t border-[var(--border)]">
-              <div className="text-[11px] uppercase tracking-widest text-muted-foreground/70 mb-2">
+              <div className="text-[11px] text-muted-foreground/70 mb-2">
                 Original source
               </div>
               <div className="flex flex-wrap gap-2">
@@ -182,7 +182,7 @@ function KnowledgeDoc() {
         {toc.length > 2 && (
           <aside className="hidden lg:block">
             <div className="sticky top-16">
-              <div className="text-[11px] uppercase tracking-widest text-muted-foreground/70 mb-2 flex items-center gap-1.5">
+              <div className="text-[11px] text-muted-foreground/70 mb-2 flex items-center gap-1.5">
                 <ListTree className="h-3 w-3" /> Contents
               </div>
               <nav className="space-y-1 text-sm">

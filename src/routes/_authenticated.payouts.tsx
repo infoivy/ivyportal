@@ -246,19 +246,19 @@ function PayoutsInner() {
 
   if (loading) {
     return (
-      <div className="dashboard-dark min-h-full flex items-center justify-center">
+      <div className="min-h-full flex items-center justify-center">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   return (
-    <div className="dashboard-dark min-h-full">
+    <div className="min-h-full">
       <div className="max-w-[1100px] mx-auto p-4 sm:p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between gap-4">
           <div>
-            <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-1">Admin</div>
+            <div className="text-[10px] text-muted-foreground mb-1">Admin</div>
             <h1 className="text-xl font-bold">Payout Ledger</h1>
             <p className="text-xs text-muted-foreground mt-0.5">Commission owed per period</p>
           </div>
@@ -285,14 +285,14 @@ function PayoutsInner() {
 
         {/* Setters table */}
         <section className="space-y-2">
-          <h2 className="text-[11px] uppercase tracking-widest text-muted-foreground font-semibold">Setters — {(rates.setter_base * 100).toFixed(1)}% base (+ 1% if $5k week)</h2>
+          <h2 className="text-[11px] text-muted-foreground font-semibold">Setters — {(rates.setter_base * 100).toFixed(1)}% base (+ 1% if $5k week)</h2>
           <div className="border border-border bg-card rounded-sm overflow-x-auto">
             {setterRows.length === 0 ? (
               <div className="p-8 text-center text-xs text-muted-foreground">No setter-attributed activity this period.</div>
             ) : (
               <table className="w-full min-w-[580px] text-xs">
                 <thead>
-                  <tr className="border-b border-border text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <tr className="border-b border-border text-[10px] text-muted-foreground">
                     <th className="text-left px-4 py-2.5">Setter</th>
                     <th className="text-right px-3 py-2.5">Deals</th>
                     <th className="text-right px-3 py-2.5">Deal cash</th>
@@ -318,7 +318,7 @@ function PayoutsInner() {
                 </tbody>
                 <tfoot>
                   <tr className="border-t border-border bg-accent/30">
-                    <td className="px-4 py-2.5 text-[10px] uppercase tracking-wider text-muted-foreground" colSpan={5}>Total setter payouts</td>
+                    <td className="px-4 py-2.5 text-[10px] text-muted-foreground" colSpan={5}>Total setter payouts</td>
                     <td className="px-4 py-2.5 text-right font-bold text-emerald-400">{money(setterRows.reduce((s, r) => s + r.total, 0))}</td>
                   </tr>
                 </tfoot>
@@ -329,14 +329,14 @@ function PayoutsInner() {
 
         {/* Closers table */}
         <section className="space-y-2">
-          <h2 className="text-[11px] uppercase tracking-widest text-muted-foreground font-semibold">Closers — {(rates.new_close * 100).toFixed(0)}% close-only · {(rates.set_close * 100).toFixed(0)}% set+close</h2>
+          <h2 className="text-[11px] text-muted-foreground font-semibold">Closers — {(rates.new_close * 100).toFixed(0)}% close-only · {(rates.set_close * 100).toFixed(0)}% set+close</h2>
           <div className="border border-border bg-card rounded-sm overflow-x-auto">
             {closerRows.length === 0 ? (
               <div className="p-8 text-center text-xs text-muted-foreground">No closer-attributed activity this period.</div>
             ) : (
               <table className="w-full min-w-[580px] text-xs">
                 <thead>
-                  <tr className="border-b border-border text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <tr className="border-b border-border text-[10px] text-muted-foreground">
                     <th className="text-left px-4 py-2.5">Closer</th>
                     <th className="text-right px-3 py-2.5">Deals</th>
                     <th className="text-right px-3 py-2.5">Deal cash</th>
@@ -359,7 +359,7 @@ function PayoutsInner() {
                 </tbody>
                 <tfoot>
                   <tr className="border-t border-border bg-accent/30">
-                    <td className="px-4 py-2.5 text-[10px] uppercase tracking-wider text-muted-foreground" colSpan={5}>Total closer payouts</td>
+                    <td className="px-4 py-2.5 text-[10px] text-muted-foreground" colSpan={5}>Total closer payouts</td>
                     <td className="px-4 py-2.5 text-right font-bold text-emerald-400">{money(closerRows.reduce((s, r) => s + r.total, 0))}</td>
                   </tr>
                 </tfoot>
@@ -383,7 +383,7 @@ function SummaryChip({ label, value, accent }: { label: string; value: string | 
   return (
     <div className="border border-border bg-card rounded-sm p-3 text-center">
       <div className={`text-lg font-bold ${accent === "green" ? "text-green-400" : "text-foreground"}`}>{value}</div>
-      <div className="text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5">{label}</div>
+      <div className="text-[10px] text-muted-foreground mt-0.5">{label}</div>
     </div>
   );
 }

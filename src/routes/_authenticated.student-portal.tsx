@@ -305,7 +305,7 @@ function StudentPortal() {
       <section className="border border-[var(--border)] rounded-sm bg-gradient-to-br from-[#141821] via-[var(--card)] to-[var(--card)] p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
-            <div className="text-[10px] uppercase tracking-[0.18em] text-blue-400 mb-1">Student portal</div>
+            <div className="text-[10px] text-blue-400 mb-1">Student portal</div>
             <h1 className="text-2xl font-semibold tracking-tight">
               Salaam, {first} <span className="inline-block">👋</span>
             </h1>
@@ -346,7 +346,7 @@ function StudentPortal() {
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
-                  <div className="text-[9px] uppercase tracking-wider text-muted-foreground">Your coach</div>
+                  <div className="text-[9px] text-muted-foreground">Your coach</div>
                   <div className="text-sm font-medium truncate">{coach.display_name ?? "Coach"}</div>
                 </div>
               </>
@@ -356,7 +356,7 @@ function StudentPortal() {
                   <Users className="h-4 w-4" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-[9px] uppercase tracking-wider text-muted-foreground">Your coach</div>
+                  <div className="text-[9px] text-muted-foreground">Your coach</div>
                   <div className="text-xs text-muted-foreground">Will be assigned soon</div>
                 </div>
               </>
@@ -368,7 +368,7 @@ function StudentPortal() {
               <Calendar className="h-4 w-4" />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[9px] uppercase tracking-wider text-muted-foreground">Next 1:1</div>
+              <div className="text-[9px] text-muted-foreground">Next 1:1</div>
               {nextCallDate ? (
                 <div className="text-sm font-medium">
                   {nextCallDate}
@@ -466,7 +466,7 @@ function StudentPortal() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-xs font-medium truncate">{d.title}</div>
-                      <div className="text-[10px] text-muted-foreground uppercase tracking-wider">{d.category.replace("_", " ")}</div>
+                      <div className="text-[10px] text-muted-foreground">{d.category.replace("_", " ")}</div>
                     </div>
                     <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
                   </Link>
@@ -656,7 +656,7 @@ function StatCard({ label, value, prev, series, accent, brandNew, icon }: { labe
   const up = delta > 0;
   return (
     <div className={`border border-[var(--border)] rounded-sm p-3 ${accent ? "bg-green-500/5" : "bg-[var(--card)]"}`}>
-      <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-muted-foreground mb-1">{icon}{label}</div>
+      <div className="flex items-center gap-1 text-[9px] text-muted-foreground mb-1">{icon}{label}</div>
       {brandNew ? (
         <div className="text-[10px] text-muted-foreground py-1 italic">Your first log starts here.</div>
       ) : (
@@ -766,7 +766,7 @@ function ActionRow({ a, today, onToggle }: { a: { kind?: "call" | "adhoc"; callI
         </div>
         <div className="flex gap-2 mt-1 text-[10px] text-muted-foreground items-center flex-wrap">
           {isAdhoc ? (
-            <span className="px-1.5 py-0.5 rounded-sm border border-blue-500/30 bg-blue-500/10 text-blue-300 uppercase tracking-wider">
+            <span className="px-1.5 py-0.5 rounded-sm border border-blue-500/30 bg-blue-500/10 text-blue-300">
               Coach added
             </span>
           ) : (
@@ -789,7 +789,7 @@ function MiniStat({ label, value, tone }: { label: string; value: number; tone: 
     : "border-[var(--border)] bg-[var(--card)] text-foreground";
   return (
     <div className={`border rounded-sm p-3 ${cls}`}>
-      <div className="text-[9px] uppercase tracking-wider opacity-80 mb-1">{label}</div>
+      <div className="text-[9px] opacity-80 mb-1">{label}</div>
       <div className="text-xl font-semibold">{value}</div>
     </div>
   );
@@ -832,7 +832,7 @@ function RatingChart({ data }: { data: { date: string; rating: number }[] }) {
 function Counter({ label, value, onBump }: { label: string; value: number; onBump: (d: number) => void }) {
   return (
     <div className="border border-[var(--border)] rounded-sm bg-[var(--background)] p-2">
-      <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">{label}</div>
+      <div className="text-[10px] text-muted-foreground mb-1">{label}</div>
       <div className="flex items-center gap-1">
         <button onClick={() => onBump(-1)} className="h-8 w-8 rounded-sm border border-[var(--border)] hover:bg-[var(--accent)] text-lg leading-none">−</button>
         <div className="flex-1 text-center text-lg font-semibold">{value}</div>
@@ -845,7 +845,7 @@ function Counter({ label, value, onBump }: { label: string; value: number; onBum
 function TextField({ label, value, onChange, rows = 2 }: { label: string; value: string; onChange: (v: string) => void; rows?: number }) {
   return (
     <div className="space-y-1">
-      <label className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</label>
+      <label className="text-[10px] text-muted-foreground">{label}</label>
       <textarea value={value} onChange={e => onChange(e.target.value)} rows={rows}
         className="w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-xs resize-none focus:outline-none focus:border-green-500/40" />
     </div>

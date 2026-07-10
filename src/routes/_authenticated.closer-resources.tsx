@@ -124,7 +124,7 @@ function CloserResources() {
             if (!catRows.length) return null;
             return (
               <section key={cat}>
-                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-2">{cat}</h2>
+                <h2 className="text-sm font-semibold text-muted-foreground mb-2">{cat}</h2>
                 <div className="grid gap-2">
                   {catRows.map((r) => {
                     const hasLink = !!r.url;

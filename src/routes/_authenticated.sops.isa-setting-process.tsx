@@ -112,7 +112,7 @@ function Toolbar({ dark, setDark, onNotes, counter, setCounter, onReset, onHelp 
       {/* Session counter — matches EOD report format */}
       {COUNTER_FIELDS.map(({ key, label, full }) => (
         <div key={key} className="flex items-center h-8 shrink-0 rounded-full bg-muted/60 pl-1.5 pr-1 gap-1" title={full}>
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{label}</span>
+          <span className="text-[10px] text-muted-foreground font-semibold">{label}</span>
           <button onClick={() => bump(key, -1)} className="w-5 h-5 rounded-full bg-background hover:bg-foreground hover:text-background flex items-center justify-center text-xs font-bold" title={`-1 ${full}`}>−</button>
           <input
             type="text"
@@ -187,7 +187,7 @@ function Header({ onJump, query, setQuery, innerRef }: { onJump: (id: TabId) => 
           <button
             key={t.id}
             onClick={() => onJump(t.id)}
-            className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wide text-white px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full whitespace-nowrap hover:opacity-90 transition-opacity shrink-0"
+            className="text-[10px] sm:text-[11px] font-bold text-white px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full whitespace-nowrap hover:opacity-90 transition-opacity shrink-0"
             style={{ backgroundColor: t.color }}
           >{t.label}</button>
         ))}
@@ -198,7 +198,7 @@ function Header({ onJump, query, setQuery, innerRef }: { onJump: (id: TabId) => 
             <button
               key={c.label}
               onClick={() => setQuery(active ? "" : c.query)}
-              className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wide px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-full whitespace-nowrap border shrink-0 transition"
+              className="text-[10px] sm:text-[11px] font-semibold px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-full whitespace-nowrap border shrink-0 transition"
               style={active
                 ? { backgroundColor: c.color, color: "#fff", borderColor: c.color }
                 : { color: c.color, borderColor: `color-mix(in oklab, ${c.color} 50%, transparent)`, backgroundColor: "transparent" }}
@@ -208,7 +208,7 @@ function Header({ onJump, query, setQuery, innerRef }: { onJump: (id: TabId) => 
         })}
       </div>
       <div className="hidden sm:flex gap-1.5 mt-1.5 ml-12 items-center flex-wrap">
-        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Try:</span>
+        <span className="text-[10px] text-muted-foreground">Try:</span>
         {SUGGESTIONS.map(s => {
           const active = query === s;
           return (
@@ -243,7 +243,7 @@ function SectionHeading({ id, color, text }: { id: TabId; color: string; text: s
   return (
     <div id={`sec-${id}`} data-section={id} className="col-span-full flex items-center gap-2 mt-6 mb-2">
       <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
-      <h2 className="text-[11px] font-bold uppercase tracking-wider text-foreground/80">{text}</h2>
+      <h2 className="text-[11px] font-bold text-foreground/80">{text}</h2>
     </div>
   );
 }
@@ -346,10 +346,10 @@ const Card = React.memo(function Card({ cardId, color, title, subtitle, children
             {subtitle && <p className="text-[11px] text-muted-foreground mt-0.5">{subtitle}</p>}
           </div>
           <div className="flex flex-col gap-1 shrink-0">
-            <button onClick={copyAll} className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded border border-border/70 bg-background/60" title="Copy all scripts in this card">
+            <button onClick={copyAll} className="text-[9px] font-bold text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded border border-border/70 bg-background/60" title="Copy all scripts in this card">
               Copy all
             </button>
-            <button onClick={copyLink} className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded border border-border/70 bg-background/60" title="Copy shareable link to this card">
+            <button onClick={copyLink} className="text-[9px] font-bold text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded border border-border/70 bg-background/60" title="Copy shareable link to this card">
               {linkCopied ? "Copied" : "Link"}
             </button>
           </div>
@@ -584,7 +584,7 @@ const MobileView = React.memo(function MobileView({ matched, query, headerH }: {
             >
               <div className="flex items-center gap-2 mb-3 sticky z-10 bg-background/95 backdrop-blur-sm py-2 -mx-3 px-3 border-b border-border" style={{ top: headerH }}>
                 <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: section.color }} />
-                <h2 className="text-[12px] font-bold uppercase tracking-wider text-foreground truncate">{section.heading}</h2>
+                <h2 className="text-[12px] font-bold text-foreground truncate">{section.heading}</h2>
               </div>
               <div className="flex flex-col gap-3">
                 {section.cards.map((c, i) => (
@@ -615,7 +615,7 @@ function MobileToolbar({ dark, setDark, onNotes, counter, setCounter, onHelp }: 
     <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-background border border-border rounded-full shadow-lg px-2 py-1.5 max-w-[calc(100%-16px)] overflow-x-auto no-scrollbar">
       {COUNTER_FIELDS.map(({ key, label, full }) => (
         <div key={key} className="flex items-center h-8 shrink-0 rounded-full bg-muted/60 pl-1.5 pr-1 gap-1" title={full}>
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{label}</span>
+          <span className="text-[10px] text-muted-foreground font-semibold">{label}</span>
           <button onClick={() => bump(key, -1)} className="w-5 h-5 rounded-full bg-background flex items-center justify-center text-xs font-bold">−</button>
           <input
             type="text"

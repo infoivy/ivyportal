@@ -22,6 +22,7 @@ import { Route as AuthenticatedStudentSuccessRouteImport } from './routes/_authe
 import { Route as AuthenticatedStudentPortalRouteImport } from './routes/_authenticated.student-portal'
 import { Route as AuthenticatedSopsRouteImport } from './routes/_authenticated.sops'
 import { Route as AuthenticatedSalesHqRouteImport } from './routes/_authenticated.sales-hq'
+import { Route as AuthenticatedSalesRouteImport } from './routes/_authenticated.sales'
 import { Route as AuthenticatedRevenueRouteImport } from './routes/_authenticated.revenue'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated.profile'
 import { Route as AuthenticatedPoliciesRouteImport } from './routes/_authenticated.policies'
@@ -36,6 +37,7 @@ import { Route as AuthenticatedEodsRouteImport } from './routes/_authenticated.e
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
 import { Route as AuthenticatedCsmRouteImport } from './routes/_authenticated.csm'
 import { Route as AuthenticatedCrmRouteImport } from './routes/_authenticated.crm'
+import { Route as AuthenticatedCommandRouteImport } from './routes/_authenticated.command'
 import { Route as AuthenticatedCoachesRouteImport } from './routes/_authenticated.coaches'
 import { Route as AuthenticatedCloserResourcesRouteImport } from './routes/_authenticated.closer-resources'
 import { Route as AuthenticatedCallsRouteImport } from './routes/_authenticated.calls'
@@ -121,6 +123,11 @@ const AuthenticatedSalesHqRoute = AuthenticatedSalesHqRouteImport.update({
   path: '/sales-hq',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedSalesRoute = AuthenticatedSalesRouteImport.update({
+  id: '/sales',
+  path: '/sales',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedRevenueRoute = AuthenticatedRevenueRouteImport.update({
   id: '/revenue',
   path: '/revenue',
@@ -190,6 +197,11 @@ const AuthenticatedCsmRoute = AuthenticatedCsmRouteImport.update({
 const AuthenticatedCrmRoute = AuthenticatedCrmRouteImport.update({
   id: '/crm',
   path: '/crm',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedCommandRoute = AuthenticatedCommandRouteImport.update({
+  id: '/command',
+  path: '/command',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedCoachesRoute = AuthenticatedCoachesRouteImport.update({
@@ -294,6 +306,7 @@ export interface FileRoutesByFullPath {
   '/calls': typeof AuthenticatedCallsRoute
   '/closer-resources': typeof AuthenticatedCloserResourcesRoute
   '/coaches': typeof AuthenticatedCoachesRoute
+  '/command': typeof AuthenticatedCommandRoute
   '/crm': typeof AuthenticatedCrmRoute
   '/csm': typeof AuthenticatedCsmRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -308,6 +321,7 @@ export interface FileRoutesByFullPath {
   '/policies': typeof AuthenticatedPoliciesRouteWithChildren
   '/profile': typeof AuthenticatedProfileRoute
   '/revenue': typeof AuthenticatedRevenueRoute
+  '/sales': typeof AuthenticatedSalesRoute
   '/sales-hq': typeof AuthenticatedSalesHqRoute
   '/sops': typeof AuthenticatedSopsRouteWithChildren
   '/student-portal': typeof AuthenticatedStudentPortalRoute
@@ -338,6 +352,7 @@ export interface FileRoutesByTo {
   '/calls': typeof AuthenticatedCallsRoute
   '/closer-resources': typeof AuthenticatedCloserResourcesRoute
   '/coaches': typeof AuthenticatedCoachesRoute
+  '/command': typeof AuthenticatedCommandRoute
   '/crm': typeof AuthenticatedCrmRoute
   '/csm': typeof AuthenticatedCsmRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -350,6 +365,7 @@ export interface FileRoutesByTo {
   '/payouts': typeof AuthenticatedPayoutsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/revenue': typeof AuthenticatedRevenueRoute
+  '/sales': typeof AuthenticatedSalesRoute
   '/sales-hq': typeof AuthenticatedSalesHqRoute
   '/sops': typeof AuthenticatedSopsRouteWithChildren
   '/student-portal': typeof AuthenticatedStudentPortalRoute
@@ -382,6 +398,7 @@ export interface FileRoutesById {
   '/_authenticated/calls': typeof AuthenticatedCallsRoute
   '/_authenticated/closer-resources': typeof AuthenticatedCloserResourcesRoute
   '/_authenticated/coaches': typeof AuthenticatedCoachesRoute
+  '/_authenticated/command': typeof AuthenticatedCommandRoute
   '/_authenticated/crm': typeof AuthenticatedCrmRoute
   '/_authenticated/csm': typeof AuthenticatedCsmRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -396,6 +413,7 @@ export interface FileRoutesById {
   '/_authenticated/policies': typeof AuthenticatedPoliciesRouteWithChildren
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/revenue': typeof AuthenticatedRevenueRoute
+  '/_authenticated/sales': typeof AuthenticatedSalesRoute
   '/_authenticated/sales-hq': typeof AuthenticatedSalesHqRoute
   '/_authenticated/sops': typeof AuthenticatedSopsRouteWithChildren
   '/_authenticated/student-portal': typeof AuthenticatedStudentPortalRoute
@@ -428,6 +446,7 @@ export interface FileRouteTypes {
     | '/calls'
     | '/closer-resources'
     | '/coaches'
+    | '/command'
     | '/crm'
     | '/csm'
     | '/dashboard'
@@ -442,6 +461,7 @@ export interface FileRouteTypes {
     | '/policies'
     | '/profile'
     | '/revenue'
+    | '/sales'
     | '/sales-hq'
     | '/sops'
     | '/student-portal'
@@ -472,6 +492,7 @@ export interface FileRouteTypes {
     | '/calls'
     | '/closer-resources'
     | '/coaches'
+    | '/command'
     | '/crm'
     | '/csm'
     | '/dashboard'
@@ -484,6 +505,7 @@ export interface FileRouteTypes {
     | '/payouts'
     | '/profile'
     | '/revenue'
+    | '/sales'
     | '/sales-hq'
     | '/sops'
     | '/student-portal'
@@ -515,6 +537,7 @@ export interface FileRouteTypes {
     | '/_authenticated/calls'
     | '/_authenticated/closer-resources'
     | '/_authenticated/coaches'
+    | '/_authenticated/command'
     | '/_authenticated/crm'
     | '/_authenticated/csm'
     | '/_authenticated/dashboard'
@@ -529,6 +552,7 @@ export interface FileRouteTypes {
     | '/_authenticated/policies'
     | '/_authenticated/profile'
     | '/_authenticated/revenue'
+    | '/_authenticated/sales'
     | '/_authenticated/sales-hq'
     | '/_authenticated/sops'
     | '/_authenticated/student-portal'
@@ -650,6 +674,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSalesHqRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/sales': {
+      id: '/_authenticated/sales'
+      path: '/sales'
+      fullPath: '/sales'
+      preLoaderRoute: typeof AuthenticatedSalesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/revenue': {
       id: '/_authenticated/revenue'
       path: '/revenue'
@@ -746,6 +777,13 @@ declare module '@tanstack/react-router' {
       path: '/crm'
       fullPath: '/crm'
       preLoaderRoute: typeof AuthenticatedCrmRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/command': {
+      id: '/_authenticated/command'
+      path: '/command'
+      fullPath: '/command'
+      preLoaderRoute: typeof AuthenticatedCommandRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/coaches': {
@@ -944,6 +982,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedCallsRoute: typeof AuthenticatedCallsRoute
   AuthenticatedCloserResourcesRoute: typeof AuthenticatedCloserResourcesRoute
   AuthenticatedCoachesRoute: typeof AuthenticatedCoachesRoute
+  AuthenticatedCommandRoute: typeof AuthenticatedCommandRoute
   AuthenticatedCrmRoute: typeof AuthenticatedCrmRoute
   AuthenticatedCsmRoute: typeof AuthenticatedCsmRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
@@ -958,6 +997,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedPoliciesRoute: typeof AuthenticatedPoliciesRouteWithChildren
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedRevenueRoute: typeof AuthenticatedRevenueRoute
+  AuthenticatedSalesRoute: typeof AuthenticatedSalesRoute
   AuthenticatedSalesHqRoute: typeof AuthenticatedSalesHqRoute
   AuthenticatedSopsRoute: typeof AuthenticatedSopsRouteWithChildren
   AuthenticatedStudentPortalRoute: typeof AuthenticatedStudentPortalRoute
@@ -977,6 +1017,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedCallsRoute: AuthenticatedCallsRoute,
   AuthenticatedCloserResourcesRoute: AuthenticatedCloserResourcesRoute,
   AuthenticatedCoachesRoute: AuthenticatedCoachesRoute,
+  AuthenticatedCommandRoute: AuthenticatedCommandRoute,
   AuthenticatedCrmRoute: AuthenticatedCrmRoute,
   AuthenticatedCsmRoute: AuthenticatedCsmRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
@@ -991,6 +1032,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedPoliciesRoute: AuthenticatedPoliciesRouteWithChildren,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedRevenueRoute: AuthenticatedRevenueRoute,
+  AuthenticatedSalesRoute: AuthenticatedSalesRoute,
   AuthenticatedSalesHqRoute: AuthenticatedSalesHqRoute,
   AuthenticatedSopsRoute: AuthenticatedSopsRouteWithChildren,
   AuthenticatedStudentPortalRoute: AuthenticatedStudentPortalRoute,

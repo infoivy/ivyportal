@@ -69,19 +69,19 @@ function Training() {
 
   if (loading) {
     return (
-      <div className="dashboard-dark min-h-full flex items-center justify-center">
+      <div className="min-h-full flex items-center justify-center">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   return (
-    <div className="dashboard-dark min-h-full">
+    <div className="min-h-full">
       <div className="max-w-[1400px] mx-auto p-4 sm:p-5 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-lg font-bold">Training Library</h1>
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <h1 className="text-[32px] font-bold tracking-[-0.02em] text-foreground leading-none">Training</h1>
+            <p className="text-[13px] text-muted-foreground mt-0.5">
               {videos.length === 0 ? "No videos yet — admins can add them below." : `${videos.length} video${videos.length === 1 ? "" : "s"}`}
             </p>
           </div>
@@ -135,7 +135,7 @@ function Training() {
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {filtered.map(v => (
-              <div key={v.id} className="rounded-md border border-border bg-card overflow-hidden group hover:border-white/20 transition">
+              <div key={v.id} className="card-surface overflow-hidden group motion-safe:transition-shadow">
                 {/* Thumbnail */}
                 <div
                   className="aspect-video relative flex items-center justify-center cursor-pointer"
@@ -168,9 +168,9 @@ function Training() {
                   )}
                 </div>
                 <div className="p-3">
-                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">{v.category}</div>
-                  <h3 className="text-sm font-semibold leading-tight mb-1">{v.title}</h3>
-                  <p className="text-xs text-muted-foreground line-clamp-2">{v.description}</p>
+                  <div className="text-[12px] text-muted-foreground mb-1">{v.category}</div>
+                  <h3 className="text-[15px] font-semibold leading-tight mb-1">{v.title}</h3>
+                  <p className="text-[13px] text-muted-foreground line-clamp-2">{v.description}</p>
                 </div>
               </div>
             ))}

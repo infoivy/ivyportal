@@ -151,7 +151,7 @@ function Analytics() {
   ], [compare]);
 
   return (
-    <div className="dashboard-dark min-h-full">
+    <div className="min-h-full">
       <div className="max-w-[1400px] mx-auto p-4 sm:p-5 space-y-4">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:justify-between">
           <div className="min-w-0">
@@ -245,13 +245,13 @@ function Analytics() {
             <div className="flex items-center gap-2">
               <Users className="h-3.5 w-3.5 text-muted-foreground" />
               <h3 className="text-sm font-bold">Per-Setter Breakdown</h3>
-              <span className="text-[10px] text-muted-foreground uppercase tracking-wider">· {perSetter.length} active</span>
+              <span className="text-[10px] text-muted-foreground">· {perSetter.length} active</span>
             </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border">
+                <tr className="text-[10px] text-muted-foreground border-b border-border">
                   <th className="text-left px-3 py-2 font-normal">Setter</th>
                   <th className="text-right px-3 py-2 font-normal">Days</th>
                   <th className="text-right px-3 py-2 font-normal">DMs</th>

@@ -153,11 +153,10 @@ function TeamPage() {
 
   return (
     <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-5">
-      <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--border)] pb-4">
+      <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-1">Access control</div>
-          <h1 className="text-2xl font-semibold tracking-tight">Team</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">Assign roles, edit profiles, deactivate or permanently remove team members.</p>
+          <h1 className="text-[32px] font-bold tracking-[-0.02em] text-foreground leading-none">Team</h1>
+          <p className="text-[13px] text-muted-foreground mt-0.5">Assign roles, edit profiles, deactivate or permanently remove team members.</p>
         </div>
         <div className="flex items-center gap-2">
           <input
@@ -184,8 +183,8 @@ function TeamPage() {
         <StatTile label="CSMs" value={counts.csms} icon={<HeartHandshake className="h-3 w-3" />} accent="amber" />
       </div>
 
-      <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm overflow-hidden">
-        <div className="grid grid-cols-[1fr_auto_auto] items-center px-4 py-2 border-b border-[var(--border)] text-[10px] uppercase tracking-widest text-muted-foreground gap-4">
+      <div className="card-surface overflow-hidden">
+        <div className="grid grid-cols-[1fr_auto_auto] items-center px-4 py-2 border-b border-[var(--border)] text-[12px] text-muted-foreground gap-4">
           <span>Member</span>
           <span>Roles</span>
           <span>Actions</span>
@@ -202,12 +201,12 @@ function TeamPage() {
               <div className="min-w-0">
                 <div className="text-sm font-medium truncate flex items-center gap-2">
                   {m.display_name ?? "Unnamed"}
-                  {!m.active && <span className="text-[9px] uppercase tracking-wider text-red-400 border border-red-500/30 bg-red-500/10 px-1.5 py-0.5 rounded-sm">Inactive</span>}
+                  {!m.active && <span className="text-[9px] text-red-400 border border-red-500/30 bg-red-500/10 px-1.5 py-0.5 rounded-sm">Inactive</span>}
                   <button onClick={() => setEditing(m)} className="text-muted-foreground hover:text-foreground"><Pencil className="h-3 w-3" /></button>
                 </div>
-                <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
                   {m.roles.includes("setter") && m.setter_type && (
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm border border-green-500/30 bg-green-500/5 text-green-400 uppercase tracking-wider">
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm border border-green-500/30 bg-green-500/5 text-green-400">
                       {m.setter_type === "phone" ? "Phone setter" : "DM setter"}
                     </span>
                   )}
@@ -235,7 +234,7 @@ function TeamPage() {
                 return (
                   <span
                     key={r.key}
-                    className={`inline-flex items-center gap-1 text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border ${r.color}`}
+                    className={`inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-sm border ${r.color}`}
                   >
                     <Icon className="h-3 w-3" />
                     {r.key}
@@ -245,7 +244,7 @@ function TeamPage() {
               {m.roles.length === 0 && (
                 <button
                   onClick={() => setEditing(m)}
-                  className="text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border border-dashed border-[#2a3140] text-muted-foreground hover:text-foreground"
+                  className="text-[10px] px-2 py-1 rounded-sm border border-dashed border-[#2a3140] text-muted-foreground hover:text-foreground"
                 >
                   Assign roles
                 </button>
@@ -361,21 +360,21 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
               className="flex items-center gap-1 text-xs bg-[var(--accent)] hover:bg-[#232935] border border-[#2a3140] px-3 py-1.5 rounded-sm">
               <Upload className="h-3 w-3" /> {uploading ? "Uploading…" : "Upload picture"}
             </button>
-            <p className="text-[10px] text-muted-foreground">PNG or JPG, up to 5MB.</p>
+            <p className="text-[12px] text-muted-foreground">PNG or JPG, up to 5MB.</p>
           </div>
         </div>
         <div className="space-y-1">
-          <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Display name</label>
+          <label className="text-[12px] text-muted-foreground">Display name</label>
           <input value={displayName} onChange={e => setDisplayName(e.target.value)}
                  className="w-full h-9 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-sm" />
         </div>
         <div className="space-y-1">
-          <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Phone (optional)</label>
+          <label className="text-[12px] text-muted-foreground">Phone (optional)</label>
           <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="+1 555 123 4567" inputMode="tel"
                  className="w-full h-9 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-sm" />
         </div>
         <div className="space-y-1.5">
-          <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Roles</label>
+          <label className="text-[12px] text-muted-foreground">Roles</label>
           <div className="flex flex-wrap gap-1.5">
             {ROLES.map(r => {
               const has = localRoles.includes(r.key);
@@ -384,7 +383,7 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
                 <button
                   key={r.key}
                   onClick={() => toggle(r.key)}
-                  className={`flex items-center gap-1 text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border transition ${
+                  className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded-sm border transition ${
                     has ? r.color : "text-muted-foreground border-[var(--border)] bg-transparent hover:border-[#2a3140]"
                   }`}
                 >
@@ -396,7 +395,7 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
         </div>
         {showSetterType && (
           <div className="space-y-1">
-            <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Setter type</label>
+            <label className="text-[12px] text-muted-foreground">Setter type</label>
             <div className="flex gap-1.5">
               {([
                 { key: null, label: "Not set" },
@@ -406,7 +405,7 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
                 <button
                   key={String(opt.key)}
                   onClick={() => setSetterType(opt.key as SetterType)}
-                  className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border transition ${
+                  className={`text-[10px] px-2 py-1 rounded-sm border transition ${
                     setterType === opt.key
                       ? "border-green-500/40 bg-green-500/10 text-green-400"
                       : "border-[var(--border)] text-muted-foreground hover:border-[#2a3140]"
@@ -418,7 +417,7 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
             </div>
           </div>
         )}
-        <div className="text-[10px] text-muted-foreground pt-1 border-t border-[var(--border)]">ID: {member.id}</div>
+        <div className="text-[12px] text-muted-foreground pt-1 border-t border-[var(--border)]">ID: {member.id}</div>
         <div className="flex justify-end gap-2 pt-2 border-t border-[var(--border)]">
           <button onClick={onClose} className="text-xs text-muted-foreground hover:text-foreground px-3 py-1.5">Cancel</button>
           <button onClick={save} disabled={saving} className="text-xs bg-green-500 hover:bg-green-400 text-green-950 font-medium px-3 py-1.5 rounded-sm">
@@ -497,7 +496,7 @@ function InviteModal({ onClose, invitedBy }: { onClose: () => void; invitedBy: s
         ) : (
           <form onSubmit={submit} className="space-y-4">
             <div className="space-y-1">
-              <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Email address</label>
+              <label className="text-[12px] text-muted-foreground">Email address</label>
               <input
                 type="email" value={email} onChange={e => setEmail(e.target.value)}
                 placeholder="name@example.com" required autoFocus
@@ -505,7 +504,7 @@ function InviteModal({ onClose, invitedBy }: { onClose: () => void; invitedBy: s
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Roles</label>
+              <label className="text-[12px] text-muted-foreground">Roles</label>
               <div className="flex flex-wrap gap-1.5">
                 {ROLES.map(r => {
                   const has = selectedRoles.includes(r.key);
@@ -514,7 +513,7 @@ function InviteModal({ onClose, invitedBy }: { onClose: () => void; invitedBy: s
                     <button
                       key={r.key} type="button"
                       onClick={() => toggleRole(r.key)}
-                      className={`flex items-center gap-1 text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border transition ${
+                      className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded-sm border transition ${
                         has ? r.color : "text-muted-foreground border-[var(--border)] hover:border-[#2a3140]"
                       }`}
                     >
@@ -526,7 +525,7 @@ function InviteModal({ onClose, invitedBy }: { onClose: () => void; invitedBy: s
             </div>
             {selectedRoles.includes("setter") && (
               <div className="space-y-1">
-                <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Setter type</label>
+                <label className="text-[12px] text-muted-foreground">Setter type</label>
                 <div className="flex gap-1.5 flex-wrap">
                   {([
                     { key: null, label: "Not set" },
@@ -536,7 +535,7 @@ function InviteModal({ onClose, invitedBy }: { onClose: () => void; invitedBy: s
                     <button
                       key={String(opt.key)} type="button"
                       onClick={() => setSetterType(opt.key as SetterType)}
-                      className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border transition ${
+                      className={`text-[10px] px-2 py-1 rounded-sm border transition ${
                         setterType === opt.key
                           ? "border-green-500/40 bg-green-500/10 text-green-400"
                           : "border-[var(--border)] text-muted-foreground hover:border-[#2a3140]"
@@ -569,9 +568,9 @@ function StatTile({ label, value, icon, accent }: { label: string; value: number
     accent === "amber" ? "text-amber-400" :
     accent === "fuchsia" ? "text-blue-400" : "text-foreground";
   return (
-    <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-3">
-      <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-muted-foreground mb-1">{icon}{label}</div>
-      <div className={`text-xl font-semibold ${color}`}>{value}</div>
+    <div className="card-surface p-3">
+      <div className="flex items-center gap-1 text-[12px] text-muted-foreground mb-1">{icon}{label}</div>
+      <div className="text-[20px] font-semibold tabular-nums text-foreground">{value}</div>
     </div>
   );
 }

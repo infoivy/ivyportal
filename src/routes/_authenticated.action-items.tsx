@@ -188,10 +188,10 @@ function ActionItemsHub() {
     <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-5">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] pb-4 mb-1">
         <div>
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-blue-400 mb-1">
+          <div className="flex items-center gap-2 text-[10px] text-blue-400 mb-1">
             <ListChecks className="h-3 w-3" /> Action Items Hub
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight">Open action items</h1>
+          <h1 className="text-[32px] font-bold tracking-[-0.02em] text-foreground leading-none">Open action items</h1>
           <p className="text-xs text-muted-foreground mt-0.5">
             Coaches log items in <span className="text-foreground">/calls</span>; staff can add ad-hoc ones here anytime.
           </p>
@@ -216,7 +216,7 @@ function ActionItemsHub() {
           <button
             key={k}
             onClick={() => setFilt(k)}
-            className={`text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-sm border transition ${
+            className={`text-[10px] px-2.5 py-1 rounded-sm border transition ${
               filt === k
                 ? k === "overdue" ? "text-red-400 border-red-500/30 bg-red-500/10"
                 : "text-foreground border-[#2a3140] bg-[var(--accent)]"
@@ -241,7 +241,7 @@ function ActionItemsHub() {
       </div>
 
       <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm overflow-hidden">
-        <div className="grid grid-cols-[24px_minmax(0,1fr)_140px_120px_90px_28px] gap-2 px-3 py-2 border-b border-[var(--border)] text-[10px] uppercase tracking-widest text-muted-foreground">
+        <div className="grid grid-cols-[24px_minmax(0,1fr)_140px_120px_90px_28px] gap-2 px-3 py-2 border-b border-[var(--border)] text-[10px] text-muted-foreground">
           <span />
           <span>Item</span>
           <span>Student</span>
@@ -308,7 +308,7 @@ function ActionItemsHub() {
           <div className="w-full max-w-md bg-[var(--card)] border border-[var(--border)] rounded-sm p-4 space-y-3" onClick={e => e.stopPropagation()}>
             <div className="text-sm font-semibold">Add ad-hoc action item</div>
             <div className="space-y-1">
-              <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Student</label>
+              <label className="text-[10px] text-muted-foreground">Student</label>
               <select
                 value={newStudent}
                 onChange={e => setNewStudent(e.target.value)}
@@ -319,7 +319,7 @@ function ActionItemsHub() {
               </select>
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Action item</label>
+              <label className="text-[10px] text-muted-foreground">Action item</label>
               <textarea
                 value={newText}
                 onChange={e => setNewText(e.target.value)}
@@ -329,7 +329,7 @@ function ActionItemsHub() {
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Due date (optional)</label>
+              <label className="text-[10px] text-muted-foreground">Due date (optional)</label>
               <input
                 type="date"
                 value={newDue}

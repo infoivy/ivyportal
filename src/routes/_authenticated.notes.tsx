@@ -96,8 +96,8 @@ function NotesPage() {
               <StickyNote className="h-4 w-4 text-amber-400" />
             </div>
             <div className="min-w-0">
-              <h1 className="text-lg font-bold truncate">Notes</h1>
-              <p className="text-[11px] text-muted-foreground uppercase tracking-wider mt-0.5">
+              <h1 className="text-[32px] font-bold tracking-[-0.02em] text-foreground leading-none truncate">Notes</h1>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
                 {filtered.length} · {scope === "mine" ? "personal" : "team-wide"}
               </p>
             </div>
@@ -128,7 +128,7 @@ function NotesPage() {
               <Plus className="h-3 w-3 text-emerald-400" />
             </div>
             <h3 className="text-sm font-bold">New note</h3>
-            <span className="ml-auto text-[10px] text-muted-foreground uppercase tracking-wider">⌘ + Enter to save</span>
+            <span className="ml-auto text-[10px] text-muted-foreground">⌘ + Enter to save</span>
           </div>
           <textarea
             value={content}
@@ -158,7 +158,7 @@ function NotesPage() {
             </button>
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-1">
-            <span className="text-[9px] text-muted-foreground uppercase tracking-wider mr-1">Quick tags</span>
+            <span className="text-[9px] text-muted-foreground mr-1">Quick tags</span>
             {["objection", "win", "script-tweak", "insight"].map(preset => {
               const current = tagsStr.split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
               const on = current.includes(preset);
@@ -238,7 +238,7 @@ function NotesPage() {
                   <button
                     key={t}
                     onClick={() => setActiveTag(t)}
-                    className="text-[9px] font-semibold px-1.5 py-0.5 rounded-sm bg-blue-500/10 text-blue-400 border border-blue-500/30 hover:bg-blue-500/20 uppercase tracking-wider"
+                    className="text-[9px] font-semibold px-1.5 py-0.5 rounded-sm bg-blue-500/10 text-blue-400 border border-blue-500/30 hover:bg-blue-500/20"
                   >#{t}</button>
                 ))}
                 <span className="ml-auto text-[10px] text-muted-foreground">

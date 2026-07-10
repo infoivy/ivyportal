@@ -78,8 +78,8 @@ function KnowledgeIndex() {
             <BookOpen className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Knowledge Hub</h1>
-            <p className="text-sm text-muted-foreground">SOPs, playbooks, and policies for the team.</p>
+            <h1 className="text-[32px] font-bold tracking-[-0.02em] text-foreground leading-none">Knowledge Hub</h1>
+            <p className="text-[13px] text-muted-foreground">SOPs, playbooks, and policies for the team.</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -147,7 +147,7 @@ function KnowledgeIndex() {
             if (!showSection) return null;
             return (
               <section key={value}>
-                <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-3">
+                <h2 className="text-xs font-semibold text-muted-foreground/70 mb-3">
                   {label}
                 </h2>
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -164,7 +164,7 @@ function KnowledgeIndex() {
                           {s.description}
                         </p>
                         <div className="mt-3 flex items-center justify-between text-[10px] text-muted-foreground">
-                          <span className="uppercase tracking-wider">Core SOP</span>
+                          <span>Core SOP</span>
                           <span className="inline-flex items-center gap-1 text-primary opacity-0 group-hover:opacity-100 transition">
                             Open <ArrowRight className="h-3 w-3" />
                           </span>

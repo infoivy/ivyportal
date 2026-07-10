@@ -153,19 +153,16 @@ function AdminConsole() {
     <div className="p-4 sm:p-6 max-w-[1400px] mx-auto space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--border)] pb-4">
         <div>
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-red-400 mb-1">
-            <Shield className="h-3 w-3" /> Admin console
-          </div>
-          <h1 className="text-2xl font-semibold tracking-tight">Team health & administration</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">For deep analytics see <Link to="/analytics" className="underline hover:text-foreground">/analytics</Link>.</p>
+          <h1 className="text-[32px] font-bold tracking-[-0.02em] text-foreground leading-none">Admin</h1>
+          <p className="text-[13px] text-muted-foreground mt-0.5">Team health & administration</p>
         </div>
-        <div className="flex items-center gap-1 border border-[var(--border)] bg-[var(--card)] rounded-sm p-0.5">
+        <div className="inline-flex rounded-lg bg-muted p-[3px]">
           {RANGES.map(r => (
             <button
               key={r.key}
               onClick={() => setRange(r.key)}
-              className={`px-3 py-1 text-[11px] font-medium rounded-sm transition ${
-                range === r.key ? "bg-green-500/15 text-green-400" : "text-muted-foreground hover:text-foreground"
+              className={`px-3 py-1.5 text-[13px] font-medium rounded-[8px] leading-none motion-safe:transition-colors ${
+                range === r.key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {r.label}
@@ -195,9 +192,9 @@ function AdminConsole() {
       >
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
           {["admin", "coach", "setter", "closer", "csm", "student"].map(r => (
-            <div key={r} className="border border-[var(--border)] rounded-sm bg-[var(--background)] p-2.5">
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{r}</div>
-              <div className="text-lg font-semibold mt-0.5">{roleCounts[r] ?? 0}</div>
+            <div key={r} className="card-surface p-2.5">
+              <div className="text-[12px] text-muted-foreground">{r}</div>
+              <div className="text-[20px] font-semibold tabular-nums mt-0.5">{roleCounts[r] ?? 0}</div>
             </div>
           ))}
         </div>
@@ -373,7 +370,7 @@ function AdminConsole() {
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="border-b border-border text-muted-foreground text-[10px] uppercase tracking-wider">
+                <tr className="border-b border-border text-muted-foreground text-[11px]">
                   <th className="text-left py-2 pr-3">Time</th>
                   <th className="text-left py-2 pr-3">Action</th>
                   <th className="text-left py-2 pr-3">Table</th>
@@ -491,24 +488,24 @@ function buildCompliance(rows: EodRow[], userRoles: UserRole[], profiles: Record
 
 function Tile({ label, value, icon, tone = "muted" }: { label: string; value: number; icon: React.ReactNode; tone?: "muted" | "amber" | "rose" }) {
   const c =
-    tone === "amber" ? { border: "border-amber-500/40", bg: "bg-amber-500/5", text: "text-amber-400" } :
-    tone === "rose"  ? { border: "border-red-500/40",  bg: "bg-red-500/5",  text: "text-red-400" } :
-                       { border: "border-[var(--border)]",    bg: "bg-[var(--card)]",   text: "text-foreground" };
+    tone === "amber" ? { extra: "border border-amber-500/40 bg-amber-500/5", text: "text-amber-400" } :
+    tone === "rose"  ? { extra: "border border-red-500/40 bg-red-500/5",     text: "text-red-400" } :
+                       { extra: "card-surface",                               text: "text-foreground" };
   return (
-    <div className={`border rounded-sm p-2.5 ${c.border} ${c.bg}`}>
-      <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-muted-foreground mb-1">{icon}{label}</div>
-      <div className={`text-lg font-semibold ${c.text}`}>{value}</div>
+    <div className={`rounded-lg p-2.5 ${c.extra}`}>
+      <div className="flex items-center gap-1 text-[12px] text-muted-foreground mb-1">{icon}{label}</div>
+      <div className={`text-[20px] font-semibold tabular-nums ${c.text}`}>{value}</div>
     </div>
   );
 }
 
 function Panel({ title, subtitle, icon, action, children }: { title: string; subtitle?: string; icon?: React.ReactNode; action?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-4">
+    <div className="card-surface p-4">
       <div className="flex items-center justify-between mb-3 gap-3">
         <div className="min-w-0">
-          <div className="flex items-center gap-1.5 text-xs font-semibold">{icon}<span className="truncate">{title}</span></div>
-          {subtitle && <div className="text-[10px] text-muted-foreground mt-0.5">{subtitle}</div>}
+          <div className="flex items-center gap-1.5 text-[15px] font-semibold">{icon}<span className="truncate">{title}</span></div>
+          {subtitle && <div className="text-[13px] text-muted-foreground mt-0.5">{subtitle}</div>}
         </div>
         {action}
       </div>

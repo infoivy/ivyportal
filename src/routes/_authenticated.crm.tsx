@@ -139,7 +139,7 @@ function Crm() {
   const closeRate = filtered.length ? ((wonCount / filtered.length) * 100).toFixed(1) + "%" : "—";
 
   return (
-    <div className="dashboard-dark min-h-full">
+    <div className="min-h-full">
       <div className="max-w-[1400px] mx-auto p-3 sm:p-4 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="min-w-0">
@@ -160,11 +160,11 @@ function Crm() {
               </button>
             )}
             {connected ? (
-              <div className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-sm bg-green-500/10 text-green-400 border border-green-500/30 uppercase tracking-wider">
+              <div className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-sm bg-green-500/10 text-green-400 border border-green-500/30">
                 <CheckCircle2 className="h-3 w-3" /> Live
               </div>
             ) : (
-              <div className="text-[10px] font-semibold px-2 py-1 rounded-sm bg-amber-500/10 text-amber-400 border border-amber-500/30 uppercase tracking-wider">
+              <div className="text-[10px] font-semibold px-2 py-1 rounded-sm bg-amber-500/10 text-amber-400 border border-amber-500/30">
                 Offline
               </div>
             )}
@@ -230,7 +230,7 @@ function Crm() {
         {connected && pipeline.length > 0 && (
           <div className="rounded-md border border-border bg-card p-3">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Deal Pipeline</h3>
+              <h3 className="text-xs font-bold text-muted-foreground">Deal Pipeline</h3>
               <span className="text-[10px] text-muted-foreground tabular-nums">{currency(totalValue)} total</span>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-1.5">
@@ -245,7 +245,7 @@ function Crm() {
                 >
                   <div className="flex items-center gap-1.5 mb-1">
                     <span className="h-1.5 w-1.5 rounded-full" style={{ background: p.color }} />
-                    <span className="text-[9px] uppercase tracking-wider text-muted-foreground truncate">{p.stage}</span>
+                    <span className="text-[9px] text-muted-foreground truncate">{p.stage}</span>
                   </div>
                   <div className="text-xl font-bold tabular-nums leading-none" style={{ color: p.color }}>{p.count}</div>
                   <div className="text-[10px] text-muted-foreground mt-1 tabular-nums">{currency(p.value)}</div>
@@ -258,7 +258,7 @@ function Crm() {
         {/* Leads table */}
         <div className="rounded-md border border-border bg-card overflow-hidden">
           <div className="px-3 py-2 border-b border-border flex items-center justify-between">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+            <h3 className="text-xs font-bold text-muted-foreground">
               {q ? `Results for "${q}"` : "Recent activity"}
             </h3>
             <span className="text-[10px] text-muted-foreground tabular-nums">{filtered.length} shown</span>
@@ -446,7 +446,7 @@ function StatCard({
 }) {
   return (
     <div className="rounded-md border border-border bg-card p-2">
-      <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-muted-foreground">
+      <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
         <Icon className="h-2.5 w-2.5" style={{ color }} />
         {label}
       </div>
@@ -543,7 +543,7 @@ function LeadDetailDrawer({
           <div className="min-w-0">
             <div className="text-sm font-bold truncate">{lead.name}</div>
             <div className="flex items-center gap-2 mt-0.5">
-              <span className="text-[10px] uppercase tracking-wider" style={{ color: c }}>{lead.status}</span>
+              <span className="text-[10px]" style={{ color: c }}>{lead.status}</span>
               <span className="text-[10px] text-muted-foreground">·</span>
               <span className="text-[10px] text-green-400">{lead.value > 0 ? currency(lead.value) : "—"}</span>
               <span className="text-[10px] text-muted-foreground">·</span>
@@ -556,7 +556,7 @@ function LeadDetailDrawer({
         </div>
 
         <div className="p-4 space-y-3 border-b border-border">
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Add internal note</div>
+          <div className="text-[10px] text-muted-foreground font-semibold">Add internal note</div>
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
@@ -576,7 +576,7 @@ function LeadDetailDrawer({
         </div>
 
         <div className="flex-1 p-4">
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">
+          <div className="text-[10px] text-muted-foreground font-semibold mb-2">
             History · {notes.length} {notes.length === 1 ? "note" : "notes"}
           </div>
           {loading ? (

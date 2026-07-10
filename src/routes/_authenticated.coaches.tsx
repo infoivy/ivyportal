@@ -67,10 +67,10 @@ function CoachesPage() {
     <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--border)] pb-4">
         <div>
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-sky-400 mb-1">
+          <div className="flex items-center gap-2 text-[10px] text-sky-400 mb-1">
             <Users className="h-3 w-3" /> Coach capacity
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight">Coaches</h1>
+          <h1 className="text-[32px] font-bold tracking-[-0.02em] text-foreground leading-none">Coaches</h1>
           <p className="text-xs text-muted-foreground mt-0.5">
             Use when assigning new students. Lower load + high rating = green light.
           </p>
@@ -106,7 +106,7 @@ function CoachesPage() {
 
             {stale.length > 0 && (
               <div className="border-t border-[var(--border)] pt-2">
-                <div className="text-[10px] uppercase tracking-wider text-red-400 mb-1">&gt;14 days since 1:1</div>
+                <div className="text-[10px] text-red-400 mb-1">&gt;14 days since 1:1</div>
                 <div className="flex flex-wrap gap-1">
                   {stale.slice(0, 6).map(s => (
                     <Link key={s.id} to="/students/$id" params={{ id: s.id }} className="text-[10px] px-1.5 py-0.5 rounded-sm border border-red-500/30 bg-red-500/5 text-red-300 hover:bg-red-500/10">
@@ -133,7 +133,7 @@ function Stat({ label, value, sub, icon, tone }: { label: string; value: number 
   const colors = { emerald: "text-green-400", amber: "text-amber-400", rose: "text-red-400", sky: "text-sky-400" }[tone];
   return (
     <div className="border border-[var(--border)] bg-[var(--background)] rounded-sm p-2">
-      <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-muted-foreground mb-0.5">{icon}{label}</div>
+      <div className="flex items-center gap-1 text-[9px] text-muted-foreground mb-0.5">{icon}{label}</div>
       <div className={`text-lg font-semibold ${colors}`}>{value}</div>
       {sub && <div className="text-[9px] text-muted-foreground">{sub}</div>}
     </div>

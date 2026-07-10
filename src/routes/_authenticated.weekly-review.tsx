@@ -81,20 +81,19 @@ function WeeklyReviewInner() {
 
   if (loading) {
     return (
-      <div className="dashboard-dark min-h-full flex items-center justify-center">
+      <div className="min-h-full flex items-center justify-center">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   return (
-    <div className="dashboard-dark min-h-full">
+    <div className="min-h-full">
       <div className="max-w-[900px] mx-auto p-4 sm:p-6 space-y-6">
         <div className="flex items-end justify-between">
           <div>
-            <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-1">Weekly debrief</div>
-            <h1 className="text-2xl font-bold">Week of {weekStart}</h1>
-            <p className="text-xs text-muted-foreground mt-0.5">{weekLabel} · Prepared {today}</p>
+            <h1 className="text-[32px] font-bold tracking-[-0.02em] text-foreground leading-none">Week of {weekStart}</h1>
+            <p className="text-[13px] text-muted-foreground mt-0.5">{weekLabel} · Prepared {today}</p>
           </div>
           <button
             onClick={() => window.print()}
@@ -133,7 +132,7 @@ function WeeklyReviewInner() {
 
         {/* Notes section for the call */}
         <div className="space-y-3 print:block">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Notes for the review call</h2>
+          <h2 className="text-[13px] font-medium text-muted-foreground">Notes for the review call</h2>
           <div className="space-y-2">
             {["What went well this week?", "What needs to improve?", "Focus for next week"].map(q => (
               <div key={q} className="rounded-sm border border-dashed border-border p-3 print:border-solid print:min-h-[80px]">
@@ -145,16 +144,16 @@ function WeeklyReviewInner() {
         </div>
       </div>
 
-      <style>{`@media print { .dashboard-dark { background: white; color: black; } }`}</style>
+      <style>{`@media print { .{ background: white; color: black; } }`}</style>
     </div>
   );
 }
 
 function BigStat({ label, value, color = "text-foreground" }: { label: string; value: string | number; color?: string }) {
   return (
-    <div className="rounded-sm border border-border bg-card p-4 text-center print:border-gray-300">
-      <div className={`text-3xl font-bold ${color}`}>{value}</div>
-      <div className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1">{label}</div>
+    <div className="card-surface p-4 text-center print:border-gray-300">
+      <div className={`text-[28px] font-bold tabular-nums ${color}`}>{value}</div>
+      <div className="text-[12px] text-muted-foreground mt-1">{label}</div>
     </div>
   );
 }
@@ -162,8 +161,8 @@ function BigStat({ label, value, color = "text-foreground" }: { label: string; v
 function RateStat({ label, value, suffix, good }: { label: string; value: number; suffix: string; good: boolean }) {
   return (
     <div className={`rounded-sm border p-4 text-center ${good ? "border-green-500/30 bg-green-500/5" : "border-amber-500/30 bg-amber-500/5"}`}>
-      <div className={`text-3xl font-bold ${good ? "text-green-400" : "text-amber-400"}`}>{value}{suffix}</div>
-      <div className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1">{label}</div>
+      <div className={`text-[28px] font-bold tabular-nums ${good ? "text-green-400" : "text-amber-400"}`}>{value}{suffix}</div>
+      <div className="text-[12px] text-muted-foreground mt-1">{label}</div>
     </div>
   );
 }

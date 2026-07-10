@@ -86,21 +86,18 @@ function ProfilePage() {
 
   return (
     <div className="p-4 sm:p-6 max-w-2xl mx-auto space-y-5">
-      <header className="border-b border-[var(--border)] pb-4">
-        <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-1 flex items-center gap-1">
-          <UserCircle className="h-3 w-3" /> Account
-        </div>
-        <h1 className="text-2xl font-semibold tracking-tight">Profile</h1>
-        <p className="text-xs text-muted-foreground mt-0.5">{user?.email} · {roles.join(" · ") || "member"}</p>
+      <header>
+        <h1 className="text-[32px] font-bold tracking-[-0.02em] text-foreground leading-none">Profile</h1>
+        <p className="text-[13px] text-muted-foreground mt-0.5">{user?.email} · {roles.join(" · ") || "member"}</p>
       </header>
 
-      <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-5 space-y-4">
+      <div className="card-surface p-5 space-y-4">
         <div className="flex items-center gap-4">
           <div className="h-20 w-20 rounded-md border border-[var(--border)] bg-[var(--accent)] overflow-hidden flex items-center justify-center text-2xl font-bold text-muted-foreground shrink-0">
             {avatarSignedUrl ? <img src={avatarSignedUrl} alt="" className="h-full w-full object-cover" /> : (displayName ?? "?").slice(0, 1).toUpperCase()}
           </div>
           <div className="flex-1 space-y-2">
-            <label className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+            <label className="text-[12px] text-muted-foreground flex items-center gap-1">
               <Camera className="h-3 w-3" /> Profile picture
             </label>
             <div className="flex items-center gap-2">
@@ -118,12 +115,12 @@ function ProfilePage() {
                 </button>
               )}
             </div>
-            <p className="text-[10px] text-muted-foreground">PNG or JPG, up to 5MB.</p>
+            <p className="text-[12px] text-muted-foreground">PNG or JPG, up to 5MB.</p>
           </div>
         </div>
 
         <div className="space-y-1">
-          <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Display name</label>
+          <label className="text-[12px] text-muted-foreground">Display name</label>
           <input
             value={displayName}
             onChange={e => setDisplayName(e.target.value)}
