@@ -13,7 +13,7 @@ import { WeeklyPlan } from "@/components/weekly-plan";
 import { FounderSops } from "@/components/founder-sops";
 
 export const Route = createFileRoute("/_authenticated/founder")({
-  head: () => ({ meta: [{ title: "Founder Space — ISA Portal" }] }),
+  head: () => ({ meta: [{ title: "Founder Hub — ISA Portal" }] }),
   component: FounderPage,
 });
 
