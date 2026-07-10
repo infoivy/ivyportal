@@ -1,12 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { CATEGORY_LABEL, type DocCategory } from "@/lib/knowledge";
 import { MarkdownView, useToc } from "@/components/markdown-view";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Pencil, Trash2, ExternalLink as ExtIcon, ListTree } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ArrowLeft, Pencil, Trash2, ExternalLink as ExtIcon, ListTree, Search as SearchIcon, FileText } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/knowledge/$slug")({
