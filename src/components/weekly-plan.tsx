@@ -209,20 +209,26 @@ export function WeeklyPlan({ onOpenItem }: { onOpenItem: (id: string) => void })
       )}
 
       {/* TOF vs MOF reference */}
-      <div className="grid md:grid-cols-2 gap-2">
-        <div className="border border-blue-500/30 bg-blue-500/5 rounded-sm p-3">
-          <div className="text-[10px] font-bold text-blue-300 uppercase tracking-wider mb-1">TOF · Top of Funnel · Mon–Thu</div>
-          <div className="text-[11px] text-muted-foreground leading-relaxed">
+      <div className="grid md:grid-cols-2 gap-3">
+        <div className="rounded-xl border border-white/[0.07] bg-card p-4 border-l-2 border-l-blue-500">
+          <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-muted-foreground mb-1.5">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-blue-500" />
+            TOF · Top of Funnel · Mon–Thu
+          </div>
+          <div className="text-xs text-muted-foreground leading-relaxed">
             Reach cold strangers. No pitch, no offer. Hooks, entertainment, relatable moments, value drops, identity content.
           </div>
-          <div className="text-[10px] italic text-blue-400/70 mt-1">Would a total stranger stop at this?</div>
+          <div className="text-[11px] italic text-muted-foreground mt-1.5">Would a total stranger stop at this?</div>
         </div>
-        <div className="border border-green-500/30 bg-green-500/5 rounded-sm p-3">
-          <div className="text-[10px] font-bold text-green-300 uppercase tracking-wider mb-1">MOF · Middle of Funnel · Fri–Sun</div>
-          <div className="text-[11px] text-muted-foreground leading-relaxed">
+        <div className="rounded-xl border border-white/[0.07] bg-card p-4 border-l-2 border-l-green-500">
+          <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-muted-foreground mb-1.5">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-green-500" />
+            MOF · Middle of Funnel · Fri–Sun
+          </div>
+          <div className="text-xs text-muted-foreground leading-relaxed">
             Move warm followers closer. Social proof, breakdowns, results, deeper value, CTAs.
           </div>
-          <div className="text-[10px] italic text-green-400/70 mt-1">Would a warm follower take action from this?</div>
+          <div className="text-[11px] italic text-muted-foreground mt-1.5">Would a warm follower take action from this?</div>
         </div>
       </div>
 
