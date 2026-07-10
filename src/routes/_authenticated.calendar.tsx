@@ -7,15 +7,16 @@ import {
   addDays, addWeeks, endOfWeek, format, isSameDay, startOfWeek, subWeeks,
 } from "date-fns";
 import {
-  CalendarClock, ChevronLeft, ChevronRight, ExternalLink, Link2Off,
+  CalendarClock, ChevronLeft, ChevronRight, ExternalLink, Link2Off, Plus,
   RefreshCw, Users2, Video,
 } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
-  disconnectMyCalendar, getMyCalendarConnection, getTeamCalendarEvents,
+  disconnectMyCalendar, getMyCalendarConnection, getTeamCalendarEvents, createSetReminder,
   getTeamCalendarStatus, startGoogleCalendarAuth, type TeamEvent,
 } from "@/lib/calendar.functions";
 
@@ -53,6 +54,8 @@ function CalendarPage() {
   const teamEventsFn = useServerFn(getTeamCalendarEvents);
   const startAuthFn = useServerFn(startGoogleCalendarAuth);
   const disconnectFn = useServerFn(disconnectMyCalendar);
+  const setReminderFn = useServerFn(createSetReminder);
+  const [setOpen, setSetOpen] = useState(false);
 
   const myConn = useQuery({ queryKey: ["cal", "me"], queryFn: () => myConnFn() });
   const team = useQuery({ queryKey: ["cal", "team"], queryFn: () => teamStatusFn() });
@@ -122,6 +125,9 @@ function CalendarPage() {
           <div className="flex items-center gap-2">
             {myConn.data ? (
               <>
+                <Button size="sm" onClick={() => setSetOpen(true)}>
+                  <Plus className="h-4 w-4 mr-1.5" /> Log a set
+                </Button>
                 <Badge variant="outline" className="gap-1.5">
                   <span className="h-2 w-2 rounded-full" style={{ background: myConn.data.color_hex }} />
                   {myConn.data.google_email ?? "Connected"}
@@ -243,6 +249,28 @@ function CalendarPage() {
           <EventModal e={selectedEvent} onClose={() => setSelectedEvent(null)} />
         )}
       </div>
+      {setOpen && (
+        <SetReminderDialog
+          onClose={() => setSetOpen(false)}
+          onCreate={async (input) => {
+            try {
+              const r = await setReminderFn({ data: input });
+              toast.success("Set logged — reminders at 3 days, 1 day, and 3 hours before.");
+              if (r.htmlLink) window.open(r.htmlLink, "_blank");
+              setSetOpen(false);
+            } catch (e) {
+              const msg = String((e as Error).message ?? e);
+              if (msg.includes("insufficient-scope")) {
+                toast.error("Your calendar was connected read-only. Disconnect and reconnect to enable reminders.");
+              } else if (msg.includes("no-connection")) {
+                toast.error("Connect your Google Calendar first.");
+              } else {
+                toast.error(msg);
+              }
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -361,5 +389,68 @@ function GoogleIcon({ className }: { className?: string }) {
       <path fill="#FBBC05" d="M5.84 14.12A6.98 6.98 0 0 1 5.47 12c0-.74.13-1.45.37-2.12V7.04H2.18A11 11 0 0 0 1 12c0 1.78.43 3.46 1.18 4.96l3.66-2.84z"/>
       <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.65l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.04l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38z"/>
     </svg>
+  );
+}
+
+function SetReminderDialog({ onClose, onCreate }: {
+  onClose: () => void;
+  onCreate: (input: { prospect: string; startISO: string; durationMin: number; notes?: string }) => Promise<void>;
+}) {
+  const [prospect, setProspect] = useState("");
+  const [date, setDate] = useState(() => new Date(Date.now() + 86400000).toISOString().slice(0, 10));
+  const [time, setTime] = useState("18:00");
+  const [duration, setDuration] = useState("30");
+  const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const submit = async () => {
+    if (!prospect.trim()) { toast.error("Prospect name is required"); return; }
+    setSaving(true);
+    await onCreate({
+      prospect: prospect.trim(),
+      startISO: new Date(`${date}T${time}:00`).toISOString(),
+      durationMin: Number(duration) || 30,
+      notes: notes.trim() || undefined,
+    });
+    setSaving(false);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="w-full max-w-md card-surface p-4 space-y-3" onClick={(e) => e.stopPropagation()}>
+        <div>
+          <div className="text-sm font-semibold">Log a set</div>
+          <p className="text-caption text-muted-foreground mt-0.5">
+            Creates the call on your Google Calendar with reminders 3 days, 1 day, and 3 hours before.
+          </p>
+        </div>
+        <div className="space-y-1">
+          <label className="text-[10px] text-muted-foreground">Prospect</label>
+          <Input value={prospect} onChange={(e) => setProspect(e.target.value)} placeholder="e.g. Ahmed R." className="h-9 text-sm" />
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          <div className="space-y-1 col-span-1">
+            <label className="text-[10px] text-muted-foreground">Date</label>
+            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-9 text-sm" />
+          </div>
+          <div className="space-y-1">
+            <label className="text-[10px] text-muted-foreground">Time</label>
+            <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="h-9 text-sm" />
+          </div>
+          <div className="space-y-1">
+            <label className="text-[10px] text-muted-foreground">Duration (min)</label>
+            <Input type="number" value={duration} onChange={(e) => setDuration(e.target.value)} className="h-9 text-sm" />
+          </div>
+        </div>
+        <div className="space-y-1">
+          <label className="text-[10px] text-muted-foreground">Notes (optional)</label>
+          <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Objections, context…" className="h-9 text-sm" />
+        </div>
+        <div className="flex justify-end gap-2 pt-1">
+          <Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
+          <Button size="sm" onClick={submit} disabled={saving}>{saving ? "Creating…" : "Create reminder"}</Button>
+        </div>
+      </div>
+    </div>
   );
 }

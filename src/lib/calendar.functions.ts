@@ -7,6 +7,7 @@ import {
   getRedirectUri,
   refreshAccessToken,
   listCalendarEvents,
+  insertCalendarEvent,
   type GCalEvent,
 } from "@/lib/calendar.server";
 import { randomBytes } from "crypto";
@@ -146,4 +147,46 @@ export const getTeamCalendarEvents = createServerFn({ method: "POST" })
     }
     events.sort((a, b) => a.start.localeCompare(b.start));
     return events;
+  });
+
+/**
+ * Set reminder: creates the booked call on the setter's own Google Calendar
+ * with popup reminders 3 days, 1 day, and 3 hours before — so the prospect
+ * gets reminded, called, and followed up with before the call.
+ */
+export const createSetReminder = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { prospect: string; startISO: string; durationMin: number; notes?: string }) => data)
+  .handler(async ({ context, data }) => {
+    const { data: conn } = await context.supabase
+      .from("calendar_connections")
+      .select("*")
+      .eq("user_id", context.userId)
+      .maybeSingle();
+    if (!conn) throw new Error("no-connection");
+
+    let accessToken = conn.access_token as string | null;
+    const exp = conn.access_token_expires_at ? new Date(conn.access_token_expires_at).getTime() : 0;
+    if (!accessToken || exp - 60_000 < Date.now()) {
+      const r = await refreshAccessToken(conn.refresh_token);
+      accessToken = r.access_token;
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      await supabaseAdmin
+        .from("calendar_connections")
+        .update({ access_token: accessToken, access_token_expires_at: new Date(Date.now() + r.expires_in * 1000).toISOString() })
+        .eq("id", conn.id);
+    }
+
+    const start = new Date(data.startISO);
+    const end = new Date(start.getTime() + Math.max(15, data.durationMin) * 60_000);
+    const event = await insertCalendarEvent(accessToken!, conn.calendar_id, {
+      summary: `Set: ${data.prospect}`,
+      description: [data.notes, "Reminders: 3 days · 1 day · 3 hours before. Confirm, call, follow up."]
+        .filter(Boolean)
+        .join("\n\n"),
+      startISO: start.toISOString(),
+      endISO: end.toISOString(),
+      reminderMinutes: [3 * 24 * 60, 24 * 60, 3 * 60],
+    });
+    return { ok: true, htmlLink: event.htmlLink ?? null };
   });

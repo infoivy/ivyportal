@@ -44,7 +44,7 @@ export function buildGoogleAuthUrl(state: string, redirectUri: string): string {
     client_id: id,
     redirect_uri: redirectUri,
     response_type: "code",
-    scope: "https://www.googleapis.com/auth/calendar.readonly openid email",
+    scope: "https://www.googleapis.com/auth/calendar.events openid email",
     access_type: "offline",
     prompt: "consent",
     include_granted_scopes: "true",
@@ -154,4 +154,40 @@ export function getRedirectUri(requestUrl: string): string {
 const CLOSER_COLORS = ["#3b82f6", "#a855f7", "#22c55e", "#f59e0b", "#ec4899", "#06b6d4", "#f97316", "#ef4444"];
 export function pickColorForIndex(i: number): string {
   return CLOSER_COLORS[i % CLOSER_COLORS.length];
+}
+
+/** Insert an event with reminder overrides on the user's calendar. */
+export async function insertCalendarEvent(
+  accessToken: string,
+  calendarId: string,
+  event: {
+    summary: string;
+    description?: string;
+    startISO: string;
+    endISO: string;
+    reminderMinutes: number[];
+  },
+) {
+  const body = {
+    summary: event.summary,
+    description: event.description,
+    start: { dateTime: event.startISO },
+    end: { dateTime: event.endISO },
+    reminders: {
+      useDefault: false,
+      // Google caps overrides at 5
+      overrides: event.reminderMinutes.slice(0, 5).map((m) => ({ method: "popup" as const, minutes: m })),
+    },
+  };
+  const res = await fetch(
+    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+  );
+  if (res.status === 403) throw new Error("insufficient-scope");
+  if (!res.ok) throw new Error(`Google Calendar insert failed (${res.status}): ${await res.text()}`);
+  return (await res.json()) as { id: string; htmlLink?: string };
 }
