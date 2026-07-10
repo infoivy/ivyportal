@@ -80,22 +80,28 @@ function EODsPage() {
     }
   };
 
+  const [teamRoster, setTeamRoster] = useState<{ user_id: string; display_name: string; primary_role: string }[]>([]);
+
   const loadTeam = async () => {
-    const { data } = await supabase.from("eods").select("*").order("report_date", { ascending: false }).limit(50);
+    // Wider window for compliance / graphs (up to 30 days × ~15 people)
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 45);
+    const { data } = await supabase.from("eods").select("*").gte("report_date", cutoff.toISOString().slice(0, 10)).order("report_date", { ascending: false });
     const eods = (data ?? []) as EOD[];
-    const userIds = Array.from(new Set(eods.map(e => e.user_id)));
-    const [profRes, rolesRes] = await Promise.all([
+    // Load the full team roster (anyone with a reporting role), so people
+    // with zero submissions still appear as red ✗ rows in the matrix.
+    const { data: rolesData } = await supabase.from("user_roles").select("user_id, role").in("role", ["setter", "closer", "coach", "csm"]);
+    const userIds = Array.from(new Set([...(rolesData ?? []).map(r => r.user_id), ...eods.map(e => e.user_id)]));
+    const [profRes] = await Promise.all([
       supabase.from("profiles").select("id, display_name").in("id", userIds),
-      supabase.from("user_roles").select("user_id, role").in("user_id", userIds),
     ]);
     const nameMap = new Map(profRes.data?.map(p => [p.id, p.display_name]) ?? []);
     const roleMap = new Map<string, string[]>();
-    (rolesRes.data ?? []).forEach(r => {
+    (rolesData ?? []).forEach(r => {
       const arr = roleMap.get(r.user_id) ?? [];
       arr.push(r.role);
       roleMap.set(r.user_id, arr);
     });
-    // Priority: csm > closer > coach > setter > admin (for cell metric selection)
+    // Priority: csm > closer > coach > setter (for grouping)
     const priority = ["csm", "closer", "coach", "setter", "admin"];
     const primaryRole = (uid: string): string => {
       const rs = roleMap.get(uid) ?? [];
@@ -107,6 +113,9 @@ function EODsPage() {
       display_name: nameMap.get(e.user_id) ?? "Unknown",
       primary_role: primaryRole(e.user_id),
     })));
+    setTeamRoster(userIds
+      .filter(uid => (roleMap.get(uid) ?? []).some(r => ["setter", "closer", "coach", "csm"].includes(r)))
+      .map(uid => ({ user_id: uid, display_name: nameMap.get(uid) ?? "Unknown", primary_role: primaryRole(uid) })));
   };
 
   const syncCsmTally = async () => {
