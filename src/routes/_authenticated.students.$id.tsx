@@ -54,6 +54,7 @@ const PAYMENT_STATES: { key: PaymentState; label: string; color: string }[] = [
   { key: "behind", label: "Behind", color: "text-red-400 border-red-500/30 bg-red-500/10" },
 ];
 
+type Milestone = { id: string; name: string; sort_order: number };
 type Tab = "timeline" | "calls" | "eods" | "csm" | "installments" | "notes";
 
 function StudentDetail() {
@@ -71,8 +72,38 @@ function StudentDetail() {
   const [installment, setInstallment] = useState<Installment | null>(null);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [coaches, setCoaches] = useState<Coach[]>([]);
+  const [milestones, setMilestones] = useState<Milestone[]>([]);
+  const [milestoneProgress, setMilestoneProgress] = useState<Set<string>>(new Set());
   const [callFormOpen, setCallFormOpen] = useState(false);
   const [tab, setTab] = useState<Tab>("timeline");
+
+  const loadMilestones = async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [mRes, mpRes] = await Promise.all([
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any).from("student_milestones").select("id, name, sort_order").order("sort_order"),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any).from("student_milestone_progress").select("milestone_id").eq("student_id", id),
+    ]);
+    setMilestones((mRes.data ?? []) as Milestone[]);
+    setMilestoneProgress(new Set(((mpRes.data ?? []) as any[]).map((r: any) => r.milestone_id)));
+  };
+
+  const toggleMilestone = async (milestoneId: string) => {
+    const has = milestoneProgress.has(milestoneId);
+    if (has) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any).from("student_milestone_progress")
+        .delete().eq("student_id", id).eq("milestone_id", milestoneId);
+      if (error) return toast.error(error.message);
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any).from("student_milestone_progress")
+        .insert({ student_id: id, milestone_id: milestoneId });
+      if (error) return toast.error(error.message);
+    }
+    loadMilestones();
+  };
 
   const load = async () => {
     const [sRes, cRes, eRes, coachRes, csmRes, instRes] = await Promise.all([
@@ -107,7 +138,7 @@ function StudentDetail() {
     }
   };
 
-  useEffect(() => { load(); }, [id]);
+  useEffect(() => { load(); loadMilestones(); }, [id]);
 
   // ---- Derived stats (all hooks BEFORE any early return) ----
   const totals = useMemo(() => eods.reduce((a, e) => ({
@@ -350,6 +381,39 @@ function StudentDetail() {
           <div className="h-full bg-amber-400 transition-all" style={{ width: `${(graduationDone / 4) * 100}%` }} />
         </div>
       </div>
+
+      {/* Milestones */}
+      {milestones.length > 0 && (
+        <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Progress milestones</div>
+            <div className="text-[11px] font-mono text-muted-foreground">{milestoneProgress.size}/{milestones.length}</div>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {milestones.map(m => {
+              const done = milestoneProgress.has(m.id);
+              return (
+                <button
+                  key={m.id}
+                  onClick={() => canManage && toggleMilestone(m.id)}
+                  disabled={!canManage}
+                  className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-sm border transition ${
+                    done
+                      ? "border-green-500/40 bg-green-500/10 text-green-400"
+                      : "border-[var(--border)] bg-[var(--muted)] text-muted-foreground"
+                  } ${canManage ? "hover:border-green-500/40 cursor-pointer" : "cursor-default"}`}
+                >
+                  {done ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Circle className="h-3.5 w-3.5" />}
+                  {m.name}
+                </button>
+              );
+            })}
+          </div>
+          <div className="h-1.5 rounded-full bg-[var(--muted)] overflow-hidden">
+            <div className="h-full bg-green-500 transition-all" style={{ width: `${(milestoneProgress.size / milestones.length) * 100}%` }} />
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex items-center gap-1 border-b border-[var(--border)] overflow-x-auto">

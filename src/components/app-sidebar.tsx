@@ -2,7 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, FileText, BookOpen, Calendar, GraduationCap,
   BarChart3, Database, Users, StickyNote, Shield, UserCircle, School, HeartHandshake, Phone, DollarSign,
-  ListChecks, Trophy, TrendingUp, Quote, Sparkles, Building2,
+  ListChecks, Trophy, TrendingUp, Quote, Sparkles, Building2, HeartPulse,
 } from "lucide-react";
 
 
@@ -22,6 +22,7 @@ const workItems: Item[] = [
   { title: "Action Items", url: "/action-items", icon: ListChecks },
   { title: "Notes", url: "/notes", icon: StickyNote },
   { title: "CSM", url: "/csm", icon: HeartHandshake, roles: ["admin", "csm"] },
+  { title: "Student Success", url: "/student-success", icon: HeartPulse, roles: ["admin", "csm", "coach", "founder"] },
 ];
 
 const knowledgeItems: Item[] = [
