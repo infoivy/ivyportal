@@ -7,7 +7,7 @@ type SparklineProps = {
   height?: number;
 };
 
-export function Sparkline({ data, prevData, color = "#3b82f6", height = 36 }: SparklineProps) {
+export function Sparkline({ data, prevData, color = "var(--chart-1)", height = 36 }: SparklineProps) {
   if (data.length < 3) return null;
 
   const points = data.map((v, i) => ({
@@ -23,7 +23,7 @@ export function Sparkline({ data, prevData, color = "#3b82f6", height = 36 }: Sp
           <Line
             type="monotone"
             dataKey="prev"
-            stroke="#8A919C"
+            stroke="var(--color-muted-foreground)"
             strokeWidth={1}
             strokeOpacity={0.4}
             dot={false}

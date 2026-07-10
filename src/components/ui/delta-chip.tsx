@@ -20,8 +20,8 @@ export function DeltaChip({ value, format = "count", positiveIsGood = true }: De
   const good = positiveIsGood ? isPositive : !isPositive;
   const arrow = isPositive ? "▲" : "▼";
   const colorClass = good
-    ? "bg-green-500/10 text-green-400 border-green-500/20"
-    : "bg-amber-500/10 text-amber-400 border-amber-500/20";
+    ? "bg-success-bg text-success-fg border-success/20"
+    : "bg-warning-bg text-warning-fg border-warning/20";
 
   return (
     <span className={`inline-flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded-full border ${colorClass}`}>
