@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import { DateField } from "@/components/ui/date-field";
 import { SelectField } from "@/components/ui/select-field";
+import { StudentPaymentSetup } from "@/components/student-payment-setup";
 import {
   ArrowLeft, Video, Trash2, Plus, Save, Calendar as CalIcon,
   Phone, FileText, User, Pencil, ExternalLink, CheckCircle2, Circle,
@@ -14,6 +15,8 @@ import {
 
 export const Route = createFileRoute("/_authenticated/students/$id")({
   head: () => ({ meta: [{ title: "Student — ISA" }] }),
+  validateSearch: (s: Record<string, unknown>): { setup?: string } =>
+    typeof s.setup === "string" ? { setup: s.setup } : {},
   component: StudentDetail,
 });
 
@@ -67,6 +70,12 @@ function StudentDetail() {
   const isCsm = roles.includes("csm") || roles.includes("admin");
 
   const [student, setStudent] = useState<Student | null>(null);
+  const [paymentSetupOpen, setPaymentSetupOpen] = useState(false);
+  const { setup } = Route.useSearch();
+  useEffect(() => {
+    if (setup === "payment" && student && !student.payment_state) setPaymentSetupOpen(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setup, student?.id]);
   const [calls, setCalls] = useState<Call[]>([]);
   const [eods, setEods] = useState<SEod[]>([]);
   const [csmNotes, setCsmNotes] = useState<CsmNote[]>([]);
@@ -252,6 +261,21 @@ function StudentDetail() {
                 </span>
               )}
             </div>
+            {paymentSetupOpen && (
+              <StudentPaymentSetup
+                student={{ id: student.id, full_name: student.full_name, coach_id: student.coach_id }}
+                onClose={() => setPaymentSetupOpen(false)}
+                onDone={() => { setPaymentSetupOpen(false); load(); }}
+              />
+            )}
+            {!student.payment_state && (
+              <button
+                onClick={() => setPaymentSetupOpen(true)}
+                className="mt-2 inline-flex items-center gap-1.5 text-caption font-medium px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 motion-safe:transition-colors"
+              >
+                Set up payment — PIF or installments
+              </button>
+            )}
             <div className="text-xs text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1">
               <span>{student.email ?? "no email"}</span>
               {student.whatsapp && <span className="flex items-center gap-1"><MessageCircle className="h-3 w-3 text-success-fg" /> {student.whatsapp}</span>}

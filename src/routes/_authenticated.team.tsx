@@ -204,7 +204,7 @@ function TeamPage() {
                         const r = await approveStudentFn({ data: { userId: m.id } });
                         toast.success("Approved — now fill in their payment and package.");
                         load();
-                        if (r.studentId) navigate({ to: "/students/$id", params: { id: r.studentId } });
+                        if (r.studentId) navigate({ to: "/students/$id", params: { id: r.studentId }, search: { setup: "payment" } });
                       } catch (e) { toast.error(String((e as Error).message ?? e)); }
                     }}
                     className="text-caption font-medium px-3 py-1.5 rounded-md bg-muted text-foreground hover:bg-accent motion-safe:transition-colors"
