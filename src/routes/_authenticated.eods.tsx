@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { CheckCircle2, Clock, TrendingUp, Users, Phone, Target, AlertTriangle, ChevronRight, Trash2, HeartHandshake, Flame } from "lucide-react";
 import { computeStreak } from "@/lib/streak";
 import confetti from "canvas-confetti";
+import { ResponsiveContainer, BarChart, Bar, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip as ReTooltip, Legend } from "recharts";
 
 export const Route = createFileRoute("/_authenticated/eods")({
   head: () => ({ meta: [{ title: "EOD Reports — ISA Team" }] }),
