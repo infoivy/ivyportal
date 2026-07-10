@@ -63,7 +63,6 @@ export function VolumeAreaChart({
               boxShadow: "var(--shadow-overlay)",
             }}
             labelStyle={{ color: "var(--color-foreground)", fontWeight: 500, marginBottom: 4 }}
-            itemStyle={{ color: "var(--color-muted-foreground)" }}
             cursor={{ stroke: "var(--color-border)", strokeWidth: 1 }}
           />
           {series.map(s => (

@@ -13,6 +13,7 @@ import { computeStreak } from "@/lib/streak";
 import { todayBiz } from "@/lib/dates";
 import { exportToCsv } from "@/lib/csv";
 import confetti from "canvas-confetti";
+import { VolumeAreaChart, VolumeLegend } from "@/components/ui/volume-area-chart";
 import { ResponsiveContainer, BarChart, Bar, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip as ReTooltip, Legend } from "recharts";
 
 export const Route = createFileRoute("/_authenticated/eods")({
@@ -967,37 +968,39 @@ function SubmissionsChart({ data }: { data: { label: string; submitted: number; 
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart data={data}>
-        <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.06)" vertical={false} />
-        <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#8A919C" }} />
-        <YAxis tick={{ fontSize: 10, fill: "#8A919C" }} allowDecimals={false} />
-        <ReTooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", fontSize: 11 }} />
+        <CartesianGrid strokeDasharray="2 4" stroke="var(--color-border)" vertical={false} />
+        <XAxis dataKey="label" tick={{ fontSize: 10, fill: "var(--color-muted-foreground)" }} />
+        <YAxis tick={{ fontSize: 10, fill: "var(--color-muted-foreground)" }} allowDecimals={false} />
+        <ReTooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, fontSize: 11 }} />
         <Legend wrapperStyle={{ fontSize: 10 }} />
         <Bar dataKey="expected" fill="var(--border)" name="Expected" />
-        <Bar dataKey="submitted" fill="#10b981" name="Submitted" />
+        <Bar dataKey="submitted" fill="var(--chart-2)" name="Submitted" />
       </BarChart>
     </ResponsiveContainer>
   );
 }
 
 function FunnelChart({ data, compare }: { data: any[]; compare?: boolean }) {
+  const series = [
+    ...(compare ? [
+      { key: "prev_dms",    label: "", color: "var(--color-muted-foreground)", strokeWidth: 1, strokeOpacity: 0.35, ghost: true },
+      { key: "prev_convos", label: "", color: "var(--chart-1)", strokeWidth: 1, strokeOpacity: 0.35, ghost: true },
+      { key: "prev_booked", label: "", color: "var(--chart-2)", strokeWidth: 1, strokeOpacity: 0.35, ghost: true },
+      { key: "prev_shows",  label: "", color: "var(--chart-3)", strokeWidth: 1, strokeOpacity: 0.35, ghost: true },
+    ] : []),
+    { key: "dms",    label: "DMs",    color: "var(--color-muted-foreground)" },
+    { key: "convos", label: "Convos", color: "var(--chart-1)" },
+    { key: "booked", label: "Booked", color: "var(--chart-2)", strokeWidth: 2 },
+    { key: "shows",  label: "Shows",  color: "var(--chart-3)" },
+  ];
+  const legend = series.filter(s => !s.ghost);
   return (
-    <ResponsiveContainer width="100%" height="100%">
-      <LineChart data={data}>
-        <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.06)" vertical={false} />
-        <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#8A919C" }} />
-        <YAxis tick={{ fontSize: 10, fill: "#8A919C" }} allowDecimals={false} />
-        <ReTooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", fontSize: 11 }} />
-        <Legend wrapperStyle={{ fontSize: 10 }} />
-        {compare && <Line type="monotone" dataKey="prev_dms"    stroke="#3b82f6" strokeWidth={1} strokeOpacity={0.35} dot={false} name="" legendType="none" isAnimationActive={false} />}
-        {compare && <Line type="monotone" dataKey="prev_convos" stroke="#a855f7" strokeWidth={1} strokeOpacity={0.35} dot={false} name="" legendType="none" isAnimationActive={false} />}
-        {compare && <Line type="monotone" dataKey="prev_booked" stroke="#10b981" strokeWidth={1} strokeOpacity={0.35} dot={false} name="" legendType="none" isAnimationActive={false} />}
-        {compare && <Line type="monotone" dataKey="prev_shows"  stroke="#f59e0b" strokeWidth={1} strokeOpacity={0.35} dot={false} name="" legendType="none" isAnimationActive={false} />}
-        <Line type="monotone" dataKey="dms"    stroke="#3b82f6" strokeWidth={1.5} dot={false} name="DMs"    isAnimationActive={false} />
-        <Line type="monotone" dataKey="convos" stroke="#a855f7" strokeWidth={1.5} dot={false} name="Convos" isAnimationActive={false} />
-        <Line type="monotone" dataKey="booked" stroke="#10b981" strokeWidth={2}   dot={false} name="Booked" isAnimationActive={false} />
-        <Line type="monotone" dataKey="shows"  stroke="#f59e0b" strokeWidth={1.5} dot={false} name="Shows"  isAnimationActive={false} />
-      </LineChart>
-    </ResponsiveContainer>
+    <div className="h-full flex flex-col">
+      <div className="flex-1 min-h-0">
+        <VolumeAreaChart data={data} series={series} height={210} />
+      </div>
+      <VolumeLegend series={legend} />
+    </div>
   );
 }
 

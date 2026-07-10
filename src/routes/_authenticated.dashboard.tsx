@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  BarChart, Bar, Cell,
+  BarChart, Bar, LabelList, Cell,
 } from "recharts";
 import { format, subDays, differenceInCalendarDays } from "date-fns";
 import { money, startOfWeekMon, endOfWeekSun, isoDay, type Deal } from "@/lib/revenue";
@@ -36,7 +36,7 @@ type EodRow = {
   calls_booked: number;
   calls_scheduled: number;
   shows: number;
-  no_shows: number;
+  no_shows: number; closes: number;
 };
 type Profile = { id: string; display_name: string | null };
 
@@ -100,9 +100,9 @@ function Dashboard() {
 
     (async () => {
       const [cur, prev, profs, students, callsThisWeek, callsRecent, eodsRecent, todayEods, installmentsDue, installmentsLate, testimonials, actionCalls] = await Promise.all([
-        supabase.from("eods").select("id, user_id, report_date, dms_sent, convos_started, calls_booked, calls_scheduled, shows, no_shows").gte("report_date", from).lte("report_date", to).order("report_date", { ascending: true }),
+        supabase.from("eods").select("id, user_id, report_date, dms_sent, convos_started, calls_booked, calls_scheduled, shows, no_shows, closes").gte("report_date", from).lte("report_date", to).order("report_date", { ascending: true }),
         compare
-          ? supabase.from("eods").select("id, user_id, report_date, dms_sent, convos_started, calls_booked, calls_scheduled, shows, no_shows").gte("report_date", prevFrom).lte("report_date", prevTo)
+          ? supabase.from("eods").select("id, user_id, report_date, dms_sent, convos_started, calls_booked, calls_scheduled, shows, no_shows, closes").gte("report_date", prevFrom).lte("report_date", prevTo)
           : Promise.resolve({ data: [] as EodRow[] }),
         supabase.from("profiles").select("id, display_name"),
         supabase.from("students").select("id, status").eq("status", "active"),
@@ -199,10 +199,12 @@ function Dashboard() {
     return Object.values(byUser).sort((a, b) => b.calls - a.calls).slice(0, 8);
   }, [eods]);
 
+  const stagePct = (value: number, prev: number) => (prev > 0 ? Math.round((value / prev) * 1000) / 10 : null);
   const formatBreakdown = [
-    { label: "DMs → Convos", value: totals.convos_started, color: "var(--chart-1)" },
-    { label: "Convos → Booked", value: totals.calls_booked, color: "var(--chart-3)" },
-    { label: "Booked → Shows", value: totals.shows, color: "var(--chart-5)" },
+    { label: "DMs → Convos", value: totals.convos_started, pct: stagePct(totals.convos_started, totals.dms_sent), color: "var(--chart-1)" },
+    { label: "Convos → Booked", value: totals.calls_booked, pct: stagePct(totals.calls_booked, totals.convos_started), color: "var(--chart-3)" },
+    { label: "Booked → Shows", value: totals.shows, pct: stagePct(totals.shows, totals.calls_booked), color: "var(--chart-5)" },
+    { label: "Booked → Closed", value: totals.closes, pct: stagePct(totals.closes, totals.calls_booked), color: "var(--chart-4)" },
   ];
 
   const rangeLabel =
@@ -359,12 +361,33 @@ function Dashboard() {
                 <div className="h-[220px] mt-1">
                   {loading ? <Skeleton /> : (
                     <ResponsiveContainer>
-                      <BarChart data={formatBreakdown} layout="vertical" margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+                      <BarChart data={formatBreakdown} layout="vertical" margin={{ top: 5, right: 56, left: 20, bottom: 5 }}>
                         <XAxis type="number" stroke="var(--color-muted-foreground)" fontSize={10} tickLine={false} axisLine={false} />
-                        <YAxis type="category" dataKey="label" stroke="var(--color-muted-foreground)" fontSize={10} tickLine={false} axisLine={false} width={100} />
-                        <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 4, fontSize: 11 }} cursor={{ fill: "var(--muted)" }} />
+                        <YAxis type="category" dataKey="label" stroke="var(--color-muted-foreground)" fontSize={10} tickLine={false} axisLine={false} width={104} />
+                        <Tooltip
+                          contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, fontSize: 11 }}
+                          cursor={{ fill: "var(--muted)" }}
+                          formatter={(value: number, _name, entry) => {
+                            const pct = (entry?.payload as { pct?: number | null })?.pct;
+                            return [`${value.toLocaleString()}${pct != null ? ` · ${pct}% conversion` : ""}`, ""];
+                          }}
+                        />
                         <Bar dataKey="value" radius={[0, 2, 2, 0]}>
                           {formatBreakdown.map((f, i) => <Cell key={i} fill={f.color} />)}
+                          <LabelList
+                            dataKey="value"
+                            position="right"
+                            content={(props: any) => {
+                              const { x, y, width, height, index } = props;
+                              const row = formatBreakdown[index as number];
+                              if (!row) return null;
+                              return (
+                                <text x={Number(x) + Number(width) + 6} y={Number(y) + Number(height) / 2} dominantBaseline="middle" fontSize={10} fill="var(--color-muted-foreground)" className="num">
+                                  {row.value.toLocaleString()}{row.pct != null ? ` · ${row.pct}%` : ""}
+                                </text>
+                              );
+                            }}
+                          />
                         </Bar>
                       </BarChart>
                     </ResponsiveContainer>
@@ -478,7 +501,8 @@ function sumRows(rows: EodRow[]) {
     calls_scheduled: a.calls_scheduled + r.calls_scheduled,
     shows: a.shows + r.shows,
     no_shows: a.no_shows + r.no_shows,
-  }), { dms_sent: 0, convos_started: 0, calls_booked: 0, calls_scheduled: 0, shows: 0, no_shows: 0 });
+    closes: a.closes + (r.closes || 0),
+  }), { dms_sent: 0, convos_started: 0, calls_booked: 0, calls_scheduled: 0, shows: 0, no_shows: 0, closes: 0 });
 }
 function pctDelta(prev: number, curr: number): number | null {
   if (!prev) return curr > 0 ? 100 : null;
