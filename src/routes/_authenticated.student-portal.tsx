@@ -394,6 +394,33 @@ function StudentPortal() {
         </div>
       </section>
 
+      {/* To do — open action items live right under the hero, tick off inline */}
+      {openItems.length > 0 && (
+        <section className="card-surface p-4 space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-body font-semibold text-foreground">
+              <ListChecks className="h-4 w-4 text-muted-foreground" /> To do
+              {overdue.length > 0 && (
+                <span className="text-micro px-2 py-0.5 rounded-full bg-danger-bg text-danger-fg">{overdue.length} overdue</span>
+              )}
+              {dueToday.length > 0 && (
+                <span className="text-micro px-2 py-0.5 rounded-full bg-warning-bg text-warning-fg">{dueToday.length} due today</span>
+              )}
+            </div>
+            {openItems.length > 5 && (
+              <button onClick={() => setTab("actions")} className="text-caption text-primary hover:underline shrink-0">
+                View all {openItems.length} →
+              </button>
+            )}
+          </div>
+          <div className="divide-y divide-border/60">
+            {[...overdue, ...dueToday, ...upcoming].slice(0, 5).map(a => (
+              <ActionRow key={`todo-${a.callId}-${a.index}`} a={a} today={today} onToggle={toggleItem} />
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* TABS */}
       <nav className="flex flex-wrap gap-1 border-b border-[var(--border)] -mb-px">
         <TabButton active={tab === "eod"} onClick={() => setTab("eod")} icon={<Briefcase className="h-3.5 w-3.5" />} label="My EOD" />
@@ -478,7 +505,7 @@ function StudentPortal() {
               </div>
               <div className="divide-y divide-[var(--accent)]">
                 {docs.map(d => (
-                  <Link key={d.slug} to="/knowledge/$slug" params={{ slug: d.slug }} className="flex items-center gap-3 p-3 hover:bg-[#141821] group">
+                  <Link key={d.slug} to="/knowledge/$slug" params={{ slug: d.slug }} className="flex items-center gap-3 p-3 hover:bg-muted/50 group">
                     <div className="h-7 w-7 rounded-sm bg-[var(--background)] border border-[var(--border)] flex items-center justify-center">
                       <BookOpen className="h-3.5 w-3.5 text-muted-foreground group-hover:text-muted-foreground" />
                     </div>
@@ -489,7 +516,7 @@ function StudentPortal() {
                     <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
                   </Link>
                 ))}
-                <Link to="/training" className="flex items-center gap-3 p-3 hover:bg-[#141821] group">
+                <Link to="/training" className="flex items-center gap-3 p-3 hover:bg-muted/50 group">
                   <div className="h-7 w-7 rounded-sm bg-[var(--background)] border border-[var(--border)] flex items-center justify-center">
                     <PlayCircle className="h-3.5 w-3.5 text-muted-foreground group-hover:text-muted-foreground" />
                   </div>
@@ -771,12 +798,12 @@ function ActionRow({ a, today, onToggle }: { a: { kind?: "call" | "adhoc"; callI
   const isOverdue = !a.item.done && a.item.due_date && a.item.due_date < today;
   const isAdhoc = a.kind === "adhoc";
   return (
-    <label className="flex items-start gap-3 p-3 cursor-pointer hover:bg-[#141821]">
+    <label className="flex items-start gap-3 p-3 cursor-pointer hover:bg-muted/50 motion-safe:transition-colors">
       <input
         type="checkbox"
         checked={!!a.item.done}
         onChange={e => onToggle(a.callId, a.index, e.target.checked)}
-        className="mt-0.5 h-4 w-4 accent-green-500"
+        className="mt-0.5 h-4 w-4 accent-[var(--primary)]"
       />
       <div className="flex-1 min-w-0">
         <div className={`text-xs ${a.item.done ? "line-through text-muted-foreground" : isOverdue ? "text-danger-fg" : "text-foreground"}`}>

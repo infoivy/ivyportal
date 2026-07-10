@@ -114,9 +114,9 @@ export function NotificationsBell() {
                   key={item.id}
                   to={item.student_id ? "/students/$id" : "/installments"}
                   params={item.student_id ? { id: item.student_id } : (undefined as any)}
-                  className="flex items-start gap-2 px-3 py-2 border-b border-[var(--border)] hover:bg-[#141821] transition"
+                  className="flex items-start gap-2 px-3 py-2 border-b border-[var(--border)] hover:bg-muted/50 transition"
                 >
-                  <div className="mt-0.5 h-6 w-6 rounded-sm bg-[#141821] flex items-center justify-center">
+                  <div className="mt-0.5 h-6 w-6 rounded-sm bg-muted flex items-center justify-center">
                     <DollarSign className="h-3 w-3 text-muted-foreground" />
                   </div>
                   <div className="flex-1 min-w-0">

@@ -147,7 +147,7 @@ export function HookLibrary() {
         <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm divide-y divide-[var(--accent)]">
           {filtered.length === 0 && <div className="text-xs text-muted-foreground text-center p-8">No hooks match — add one above, or bulk import.</div>}
           {filtered.map(h => (
-            <div key={h.id} className="p-3 group hover:bg-[#141821] flex items-start gap-3">
+            <div key={h.id} className="p-3 group hover:bg-muted/50 flex items-start gap-3">
               <button onClick={() => toggleFav(h)} className="shrink-0 pt-0.5">
                 <Star className={`h-3.5 w-3.5 ${h.favorite ? "fill-amber-400 text-warning-fg" : "text-muted-foreground hover:text-warning-fg"}`} />
               </button>
