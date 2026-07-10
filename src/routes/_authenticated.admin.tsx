@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import {
   Shield, CheckCircle2, Users, Mail, UserX, Star,
   ArrowUpRight, ClipboardList, Percent, Save, Database, ExternalLink, History,
+  Circle, Rocket,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin")({
@@ -50,6 +51,7 @@ function AdminConsole() {
   const [founderSettingsId, setFounderSettingsId] = useState<string | null>(null);
   const [savingSettings, setSavingSettings] = useState(false);
   const [auditLog, setAuditLog] = useState<{ id: string; action: string; table_name: string; record_id: string | null; created_at: string; user_id: string | null }[]>([]);
+  const [checklist, setChecklist] = useState<Record<string, boolean>>({});
 
   const days = RANGES.find(r => r.key === range)!.days;
 
@@ -85,6 +87,36 @@ function AdminConsole() {
         setMonthlyGoal(fs.monthly_cash_goal ? String(fs.monthly_cash_goal) : "");
       }
       setAuditLog((auditRes.data ?? []) as any[]);
+
+      // Go-live checklist signals (fire-and-forget queries)
+      const now = new Date();
+      const sb = supabase as any;
+      const [plRes, ccRes, igRes, demoEodRes, demoStudentRes] = await Promise.all([
+        sb.from("payment_links").select("id", { count: "exact", head: true }),
+        sb.from("calendar_connections").select("id", { count: "exact", head: true }),
+        sb.from("ig_monthly_snapshots").select("id").eq("year", now.getFullYear()).eq("month", now.getMonth() + 1).maybeSingle(),
+        sb.from("eods").select("id", { count: "exact", head: true }).eq("is_demo", true),
+        sb.from("students").select("id", { count: "exact", head: true }).eq("is_demo", true),
+      ]);
+      const setterProfiles = (roleRes.data ?? []).filter(r => r.role === "setter").map(r => r.user_id);
+      const adminCount = (roleRes.data ?? []).filter(r => r.role === "admin").length;
+      const commissionOk = (ratesRes.data ?? []).some(r => r.key === "set_close" && r.active) &&
+                           (ratesRes.data ?? []).some(r => r.key === "new_close" && r.active);
+      const allSettersHaveType = setterProfiles.every(uid => {
+        const p = (profRes.data as Profile[] | null)?.find(p => p.id === uid);
+        return p && (p as any).setter_type;
+      });
+      setChecklist({
+        paymentLinks: (plRes.count ?? 0) > 0,
+        commissionConfirmed: commissionOk,
+        cashGoalSet: !!(fsRes.data as any)?.monthly_cash_goal,
+        setterTypesSet: allSettersHaveType,
+        teamInvited: adminCount >= 2,
+        calendarConnected: (ccRes.count ?? 0) > 0,
+        igLogged: !!igRes.data,
+        demoRemoved: (demoEodRes.count ?? 0) === 0 && (demoStudentRes.count ?? 0) === 0,
+      });
+
       setLoading(false);
     })();
   }, [days, isAdmin]);
@@ -141,6 +173,9 @@ function AdminConsole() {
           ))}
         </div>
       </header>
+
+      {/* Go-live checklist */}
+      <GoLiveChecklist checklist={checklist} />
 
       {/* Summary tiles */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
@@ -535,5 +570,52 @@ function CommissionRatesCard({
         ))}
       </div>
     </Panel>
+  );
+}
+
+const CHECKLIST_ITEMS: { key: string; label: string; hint: string }[] = [
+  { key: "paymentLinks", label: "Payment links seeded", hint: "Add links in Admin → Settings → Payment Links" },
+  { key: "commissionConfirmed", label: "Commission rates confirmed", hint: "new_close + set_close rates active in DB" },
+  { key: "cashGoalSet", label: "Monthly cash goal set", hint: "Set in Admin → Settings → Monthly Goal" },
+  { key: "setterTypesSet", label: "All setters have a type (phone/DM)", hint: "Set inline in Sales HQ or via Admin → Team" },
+  { key: "teamInvited", label: "Co-founders / team invited (≥2 admins)", hint: "Invite via Admin → Team" },
+  { key: "calendarConnected", label: "At least one calendar connected", hint: "Connect in Calendar → Connect Google Calendar" },
+  { key: "igLogged", label: "IG snapshot logged this month", hint: "Log in IG Analytics" },
+  { key: "demoRemoved", label: "Demo data removed", hint: "Run npm run demo:remove" },
+];
+
+function GoLiveChecklist({ checklist }: { checklist: Record<string, boolean> }) {
+  const done = CHECKLIST_ITEMS.filter(i => checklist[i.key]).length;
+  const total = CHECKLIST_ITEMS.length;
+  const allDone = done === total;
+
+  return (
+    <div className={`border rounded-sm p-4 ${allDone ? "border-green-500/30 bg-green-500/5" : "border-amber-500/20 bg-amber-500/5"}`}>
+      <div className="flex items-center gap-2 mb-3">
+        <Rocket className={`h-4 w-4 ${allDone ? "text-green-400" : "text-amber-400"}`} />
+        <span className="text-sm font-semibold">Go-live checklist</span>
+        <span className={`ml-auto text-xs font-mono ${allDone ? "text-green-400" : "text-amber-400"}`}>{done}/{total}</span>
+      </div>
+      <div className="space-y-1.5">
+        {CHECKLIST_ITEMS.map(item => {
+          const checked = !!checklist[item.key];
+          return (
+            <div key={item.key} className="flex items-start gap-2">
+              {checked
+                ? <CheckCircle2 className="h-3.5 w-3.5 text-green-400 mt-0.5 shrink-0" />
+                : <Circle className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+              }
+              <div>
+                <span className={`text-xs ${checked ? "line-through text-muted-foreground" : "text-foreground"}`}>{item.label}</span>
+                {!checked && <div className="text-[10px] text-muted-foreground mt-0.5">{item.hint}</div>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {allDone && (
+        <div className="mt-3 text-xs text-green-400 font-medium">Portal is go-live ready ✓</div>
+      )}
+    </div>
   );
 }
