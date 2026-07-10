@@ -194,8 +194,15 @@ function TeamPage() {
                   {!m.active && <span className="text-[9px] uppercase tracking-wider text-rose-400 border border-rose-500/30 bg-rose-500/10 px-1.5 py-0.5 rounded-sm">Inactive</span>}
                   <button onClick={() => setEditing(m)} className="text-muted-foreground hover:text-foreground"><Pencil className="h-3 w-3" /></button>
                 </div>
-                <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-mono">
-                  <span>{m.id === user?.id ? "You" : m.id.slice(0, 8)}</span>
+                <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                  {m.roles.includes("setter") && m.setter_type && (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm border border-emerald-500/30 bg-emerald-500/5 text-emerald-400 uppercase tracking-wider">
+                      {m.setter_type === "phone" ? "Phone setter" : "DM setter"}
+                    </span>
+                  )}
+                  {m.roles.length === 0 && (
+                    <span className="italic">No roles assigned</span>
+                  )}
                   {(() => {
                     const pct = memberOnboardingPct(m);
                     if (pct === null) return null;
@@ -212,22 +219,26 @@ function TeamPage() {
               </div>
             </div>
             <div className="flex gap-1.5 flex-wrap justify-end">
-              {ROLES.map(r => {
-                const has = m.roles.includes(r.key);
+              {ROLES.filter(r => m.roles.includes(r.key)).map(r => {
                 const Icon = r.icon;
                 return (
-                  <button
+                  <span
                     key={r.key}
-                    onClick={() => toggleRole(m.id, r.key, has)}
-                    className={`flex items-center gap-1 text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border transition ${
-                      has ? r.color : "text-muted-foreground border-[#1f2530] bg-transparent hover:border-[#2a3140]"
-                    }`}
+                    className={`inline-flex items-center gap-1 text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border ${r.color}`}
                   >
                     <Icon className="h-3 w-3" />
                     {r.key}
-                  </button>
+                  </span>
                 );
               })}
+              {m.roles.length === 0 && (
+                <button
+                  onClick={() => setEditing(m)}
+                  className="text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border border-dashed border-[#2a3140] text-muted-foreground hover:text-foreground"
+                >
+                  Assign roles
+                </button>
+              )}
             </div>
             <div className="flex items-center gap-1">
               {m.id !== user?.id && (
