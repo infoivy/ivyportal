@@ -65,7 +65,18 @@ type Idea = {
   link: string | null;
   promoted_item_id: string | null;
   created_at: string;
+  trigger_type: string | null;
+  explanation: string | null;
+  funnel_guess: string | null;
+  harvested: boolean;
 };
+
+export const TRIGGERS: { value: string; label: string; hint: string }[] = [
+  { value: "student_win",   label: "Student win",     hint: "A student result / breakthrough" },
+  { value: "client_call",   label: "Client call",     hint: "Something said on a call today" },
+  { value: "objection",     label: "Objection",       hint: "A repeated pushback / doubt" },
+  { value: "market_signal", label: "Market signal",   hint: "Something happening in the niche" },
+];
 
 const PLATFORMS: { value: Platform; label: string; color: string }[] = [
   { value: "instagram", label: "IG",       color: "bg-pink-500/10 text-pink-300 border-pink-500/30" },
@@ -393,15 +404,28 @@ function IdeaInbox({ ideas, userId, onChange, onPromote }: {
 }) {
   const [text, setText] = useState("");
   const [link, setLink] = useState("");
+  const [triggerType, setTriggerType] = useState<string>("");
+  const [explanation, setExplanation] = useState("");
+  const [funnelGuess, setFunnelGuess] = useState<string>("");
   const [saving, setSaving] = useState(false);
+  const [filter, setFilter] = useState<string>("all");
+  const [showReset, setShowReset] = useState(false);
 
   const add = async () => {
     if (!userId || !text.trim()) return;
     setSaving(true);
-    const { error } = await supabase.from("content_ideas").insert({ created_by: userId, text: text.trim(), link: link.trim() || null });
+    const { error } = await supabase.from("content_ideas").insert({
+      created_by: userId,
+      text: text.trim(),
+      link: link.trim() || null,
+      trigger_type: triggerType || null,
+      explanation: explanation.trim() || null,
+      funnel_guess: funnelGuess || null,
+    });
     setSaving(false);
     if (error) return toast.error(error.message);
-    setText(""); setLink(""); onChange();
+    setText(""); setLink(""); setExplanation(""); setTriggerType(""); setFunnelGuess("");
+    onChange();
   };
 
   const del = async (id: string) => {
@@ -409,24 +433,62 @@ function IdeaInbox({ ideas, userId, onChange, onPromote }: {
     if (error) toast.error(error.message); else onChange();
   };
 
-  const promote = (idea: Idea) => { onPromote(idea); };
+  const monthlyReset = async () => {
+    const unpromoted = ideas.filter(i => !i.promoted_item_id && !i.harvested);
+    if (unpromoted.length === 0) { toast.info("Nothing to archive"); setShowReset(false); return; }
+    const { error } = await supabase.from("content_ideas").update({ harvested: true }).in("id", unpromoted.map(i => i.id));
+    if (error) return toast.error(error.message);
+    toast.success(`Archived ${unpromoted.length} idea${unpromoted.length === 1 ? "" : "s"}`);
+    setShowReset(false); onChange();
+  };
 
+  const visible = ideas.filter(i => {
+    if (i.harvested) return filter === "archived";
+    if (filter === "all") return true;
+    if (filter === "archived") return false;
+    return i.trigger_type === filter;
+  });
+  const activeCount = ideas.filter(i => !i.harvested).length;
 
   return (
     <div className="border border-[#1f2530] bg-[#0f1116] rounded-sm">
       <div className="p-3 border-b border-[#1f2530] flex items-center gap-2">
         <Lightbulb className="h-3.5 w-3.5 text-amber-400" />
         <div className="text-sm font-semibold">Idea inbox</div>
-        <span className="ml-auto text-[10px] text-muted-foreground">{ideas.length}</span>
+        <span className="ml-auto text-[10px] text-muted-foreground">{activeCount} active</span>
+        <button onClick={() => setShowReset(true)} className="text-[10px] text-muted-foreground hover:text-fuchsia-300 underline decoration-dotted">Monthly reset</button>
       </div>
       <div className="p-3 space-y-2 border-b border-[#1f2530]">
+        <div className="flex flex-wrap gap-1">
+          {TRIGGERS.map(t => (
+            <button
+              key={t.value}
+              onClick={() => setTriggerType(triggerType === t.value ? "" : t.value)}
+              title={t.hint}
+              className={`h-6 px-2 rounded-sm text-[10px] border ${triggerType === t.value ? "bg-fuchsia-500/15 border-fuchsia-500/50 text-fuchsia-200" : "border-[#1f2530] text-muted-foreground hover:border-fuchsia-500/30"}`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
         <textarea
           value={text} onChange={e => setText(e.target.value)}
-          placeholder="Capture an idea… hook, angle, insight."
+          placeholder="What triggered this? Raw idea, hook, angle…"
+          rows={2}
+          className="w-full bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-2 text-xs resize-none focus:outline-none focus:border-fuchsia-500/40"
+        />
+        <textarea
+          value={explanation} onChange={e => setExplanation(e.target.value)}
+          placeholder="How I'd explain it to a friend (voice memo in text)…"
           rows={2}
           className="w-full bg-[#0a0b0f] border border-[#1f2530] rounded-sm p-2 text-xs resize-none focus:outline-none focus:border-fuchsia-500/40"
         />
         <div className="flex gap-2">
+          <select value={funnelGuess} onChange={e => setFunnelGuess(e.target.value)} className="h-7 px-1.5 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-[10px]">
+            <option value="">Funnel?</option>
+            <option value="tof">TOF</option>
+            <option value="mof">MOF</option>
+          </select>
           <input
             value={link} onChange={e => setLink(e.target.value)} placeholder="Optional link"
             className="flex-1 h-7 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-xs outline-none focus:border-fuchsia-500/40"
@@ -436,32 +498,79 @@ function IdeaInbox({ ideas, userId, onChange, onPromote }: {
           </button>
         </div>
       </div>
+
+      {/* Filter chips */}
+      <div className="p-2 border-b border-[#1f2530] flex flex-wrap gap-1">
+        <button onClick={() => setFilter("all")} className={`h-6 px-2 rounded-sm text-[10px] border ${filter === "all" ? "bg-fuchsia-500/15 border-fuchsia-500/50 text-fuchsia-200" : "border-[#1f2530] text-muted-foreground"}`}>All</button>
+        {TRIGGERS.map(t => (
+          <button key={t.value} onClick={() => setFilter(t.value)} className={`h-6 px-2 rounded-sm text-[10px] border ${filter === t.value ? "bg-fuchsia-500/15 border-fuchsia-500/50 text-fuchsia-200" : "border-[#1f2530] text-muted-foreground"}`}>{t.label}</button>
+        ))}
+        <button onClick={() => setFilter("archived")} className={`h-6 px-2 rounded-sm text-[10px] border ${filter === "archived" ? "bg-neutral-500/15 border-neutral-500/50 text-neutral-200" : "border-[#1f2530] text-muted-foreground"}`}>Archived</button>
+      </div>
+
       <div className="max-h-[560px] overflow-auto divide-y divide-[#1a1f29]">
-        {ideas.length === 0 && <div className="text-xs text-muted-foreground text-center p-6">Empty — capture your first idea.</div>}
-        {ideas.map(i => (
-          <div key={i.id} className={`p-2.5 group ${i.promoted_item_id ? "opacity-60" : ""}`}>
-            <p className="text-xs leading-relaxed whitespace-pre-wrap break-words">{i.text}</p>
-            {i.link && (
-              <a href={i.link} target="_blank" rel="noreferrer" className="mt-1 text-[10px] text-fuchsia-400 hover:text-fuchsia-300 inline-flex items-center gap-1 truncate max-w-full">
-                <ExternalLink className="h-2.5 w-2.5" /> {i.link}
-              </a>
-            )}
-            <div className="mt-1.5 flex items-center gap-2 text-[10px] text-muted-foreground">
-              {i.promoted_item_id ? (
-                <span className="text-fuchsia-400">→ promoted</span>
-              ) : (
-                <button onClick={() => promote(i)} className="text-fuchsia-400 hover:text-fuchsia-300 inline-flex items-center gap-0.5">
-                  Promote <ArrowRight className="h-2.5 w-2.5" />
-                </button>
+        {visible.length === 0 && <div className="text-xs text-muted-foreground text-center p-6">Empty.</div>}
+        {visible.map(i => {
+          const trig = TRIGGERS.find(t => t.value === i.trigger_type);
+          return (
+            <div key={i.id} className={`p-2.5 group ${i.promoted_item_id || i.harvested ? "opacity-60" : ""}`}>
+              <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                {trig && <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm border border-fuchsia-500/30 text-fuchsia-300">{trig.label}</span>}
+                {i.funnel_guess && <span className={`text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm border ${i.funnel_guess === "tof" ? "border-blue-500/30 text-blue-300" : "border-emerald-500/30 text-emerald-300"}`}>{i.funnel_guess}</span>}
+                {i.harvested && <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm border border-neutral-500/30 text-neutral-400">Archived</span>}
+              </div>
+              <p className="text-xs leading-relaxed whitespace-pre-wrap break-words">{i.text}</p>
+              {i.explanation && (
+                <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground italic whitespace-pre-wrap break-words">{i.explanation}</p>
               )}
-              <span className="ml-auto">{format(parseISO(i.created_at), "MMM d")}</span>
-              <button onClick={() => del(i.id)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-rose-400">
-                <Trash2 className="h-3 w-3" />
-              </button>
+              {i.link && (
+                <a href={i.link} target="_blank" rel="noreferrer" className="mt-1 text-[10px] text-fuchsia-400 hover:text-fuchsia-300 inline-flex items-center gap-1 truncate max-w-full">
+                  <ExternalLink className="h-2.5 w-2.5" /> {i.link}
+                </a>
+              )}
+              <div className="mt-1.5 flex items-center gap-2 text-[10px] text-muted-foreground">
+                {i.promoted_item_id ? (
+                  <span className="text-fuchsia-400">→ promoted</span>
+                ) : i.harvested ? (
+                  <span className="text-neutral-500">archived</span>
+                ) : (
+                  <button onClick={() => onPromote(i)} className="text-fuchsia-400 hover:text-fuchsia-300 inline-flex items-center gap-0.5">
+                    Harvest → content <ArrowRight className="h-2.5 w-2.5" />
+                  </button>
+                )}
+                <span className="ml-auto">{format(parseISO(i.created_at), "MMM d")}</span>
+                <button onClick={() => del(i.id)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-rose-400">
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {showReset && (
+        <div className="fixed inset-0 z-50 bg-black/70 grid place-items-center p-4" onClick={() => setShowReset(false)}>
+          <div className="w-full max-w-md bg-[#0f1116] border border-fuchsia-500/30 rounded-sm" onClick={e => e.stopPropagation()}>
+            <div className="p-4 border-b border-[#1f2530]">
+              <div className="text-sm font-semibold">Monthly reset</div>
+              <div className="text-[11px] text-muted-foreground mt-1">
+                Archive all un-harvested ideas so next month starts clean.
+                Nothing is deleted — you can filter by "Archived" to review later.
+              </div>
+            </div>
+            <div className="p-4 text-xs">
+              <div className="border border-[#1f2530] bg-[#0a0b0f] rounded-sm p-2.5">
+                <span className="text-2xl font-mono font-bold text-fuchsia-300">{ideas.filter(i => !i.promoted_item_id && !i.harvested).length}</span>
+                <span className="text-muted-foreground text-[11px]"> ideas will be archived</span>
+              </div>
+            </div>
+            <div className="p-3 border-t border-[#1f2530] flex justify-end gap-2">
+              <button onClick={() => setShowReset(false)} className="h-8 px-3 rounded-sm border border-[#1f2530] text-xs">Cancel</button>
+              <button onClick={monthlyReset} className="h-8 px-3 rounded-sm bg-fuchsia-500 hover:bg-fuchsia-400 text-fuchsia-950 text-xs font-medium">Archive</button>
             </div>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
