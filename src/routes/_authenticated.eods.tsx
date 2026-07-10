@@ -560,7 +560,7 @@ function OverviewCard({ card }: { card: {
         <div className="flex gap-1.5">
           {card.week.map(w => {
             const dt = new Date(w.d + "T00:00:00");
-            const bg = w.status === "green" ? "bg-green-500/25 border-green-500/50" : w.status === "amber" ? "bg-amber-500/25 border-amber-500/50" : "bg-red-500/15 border-red-500/40";
+            const bg = w.status === "green" ? "bg-green-500/10 border-green-500/25" : w.status === "amber" ? "bg-amber-500/10 border-amber-500/25" : "bg-red-500/[0.07] border-red-500/20";
             return (
               <div key={w.d} className={`flex-1 border rounded-sm px-1 py-1 text-center ${bg}`} title={fmtLong(w.d)}>
                 <div className="text-[9px] text-muted-foreground">{WEEKDAY[dt.getDay()]}</div>
@@ -804,7 +804,7 @@ function ComplianceMatrix({ eods, roster }: { eods: GridEod[]; roster: RosterEnt
                           const eod = byUserDate.get(`${m.user_id}::${d}`);
                           if (beforeJoin) return <td key={d} className="px-1 py-1 text-center"><span className="text-[#3a3f4a] text-[11px]">—</span></td>;
                           const status = dayStatus(eod, st);
-                          const cls = status === "green" ? "bg-green-500/20 border-green-500/40 text-green-300" : status === "amber" ? "bg-amber-500/20 border-amber-500/40 text-amber-300" : "bg-red-500/15 border-red-500/30 text-red-400";
+                          const cls = status === "green" ? "bg-green-500/10 border-green-500/25 text-green-400" : status === "amber" ? "bg-amber-500/10 border-amber-500/25 text-amber-400" : "bg-red-500/[0.07] border-red-500/20 text-red-400";
                           const glyph = status === "red" ? "✗" : status === "amber" ? "!" : "✓";
                           return (<td key={d} className="px-1 py-1 text-center"><span title={`${m.display_name} · ${fmtLong(d)} · ${status}`} className={`inline-flex items-center justify-center h-5 w-5 rounded-sm border text-[11px] ${cls}`}>{glyph}</span></td>);
                         })}
@@ -902,7 +902,7 @@ function SubmissionsGrid({ dayList, roster, eods }: { dayList: string[]; roster:
                 {dayList.map(d => {
                   const beforeJoin = r.joined_at && d < r.joined_at;
                   const eod = byUserDate.get(`${r.user_id}::${d}`);
-                  const bg = beforeJoin ? "bg-[#141821]" : !eod ? "bg-red-500/40" : st ? (didHitKpi(eod, st) ? "bg-green-500/70" : "bg-amber-500/60") : "bg-green-500/70";
+                  const bg = beforeJoin ? "bg-white/[0.04]" : !eod ? "bg-red-500/25" : st ? (didHitKpi(eod, st) ? "bg-green-500/35" : "bg-amber-500/30") : "bg-green-500/35";
                   return <div key={d} className={`h-3 w-3 rounded-[2px] ${bg}`} title={`${r.display_name} · ${fmtLong(d)} · ${!eod ? "missed" : "submitted"}`} />;
                 })}
               </div>

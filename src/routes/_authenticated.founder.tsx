@@ -162,7 +162,7 @@ function FounderPage() {
           </Link>
           <button
             onClick={() => setCreating(true)}
-            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-sm bg-blue-500 hover:bg-blue-400 text-blue-950 text-xs font-medium"
+            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-full bg-white hover:bg-white/90 text-neutral-900 text-xs font-medium"
           >
             <Plus className="h-3.5 w-3.5" /> New content
           </button>
