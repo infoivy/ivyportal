@@ -214,7 +214,7 @@ function Dashboard() {
 
   return (
     <div className="min-h-full">
-      <div className="max-w-[1400px] mx-auto p-4 sm:p-5"><div className="grid lg:grid-cols-[minmax(0,1fr)_220px] gap-6 items-start"><div className="space-y-5">
+      <div className="max-w-[1400px] mx-auto p-4 sm:p-5"><div className="space-y-5">
         {/* Header */}
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div className="min-w-0">
@@ -262,6 +262,19 @@ function Dashboard() {
           </div>
         )}
 
+        {/* Cash MTD hero — admin/founder only */}
+        {(roles.includes("admin") || roles.includes("founder")) && (
+          <div className="card-surface px-5 py-4 flex items-center justify-between">
+            <div>
+              <div className="text-[12px] text-muted-foreground mb-0.5">Cash collected this month</div>
+              <div className="text-[36px] font-bold tabular-nums text-foreground tracking-[-0.03em] leading-none">
+                {cashMtd > 0 ? money(cashMtd) : "—"}
+              </div>
+            </div>
+            <Link to="/revenue" className="text-[13px] text-primary hover:text-primary/80 flex items-center gap-1 shrink-0">Revenue →</Link>
+          </div>
+        )}
+
         {/* KPI Row */}
         {prefs.showKpis && (
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-9 gap-2">
@@ -277,22 +290,26 @@ function Dashboard() {
           </div>
         )}
 
-        {/* Ops Row */}
+        {/* Ops strip */}
         {prefs.showOps && (
-          <div>
-            <div className="text-[13px] text-muted-foreground mb-2 flex items-center gap-2">
-              <span>Ops today</span>
-              <span className="h-px flex-1 bg-border" />
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2">
-              <OpsCard to="/students" search={{ view: "atRisk" }} tone={ops && ops.atRisk > 0 ? "rose" : "muted"} icon={AlertTriangle} label="At-risk students" value={ops?.atRisk} />
-              <OpsCard to="/installments" tone={ops && ops.installmentsOverdue > 0 ? "rose" : "muted"} icon={DollarSign} label="Installments overdue" value={ops?.installmentsOverdue} />
-              <OpsCard to="/installments" tone={ops && ops.installmentsDueSoon > 0 ? "amber" : "muted"} icon={DollarSign} label="Due in ≤3 days" value={ops?.installmentsDueSoon} />
-              <OpsCard to="/calls" tone="sky" icon={Phone} label="1:1s this week" value={ops?.callsThisWeek} />
-              {!isFounder && <OpsCard to="/eods" tone={ops && ops.eodsMissingToday > 0 ? "amber" : "muted"} icon={FileText} label="EODs missing today" value={ops?.eodsMissingToday} />}
-              <OpsCard to="/students" tone={ops && ops.testimonialsPending > 0 ? "amber" : "muted"} icon={Star} label="Testimonials pending" value={ops?.testimonialsPending} />
-              <OpsCard to="/action-items" tone={ops && ops.openActionItems > 0 ? "amber" : "muted"} icon={ListChecks} label="Open action items" value={ops?.openActionItems} />
-            </div>
+          <div className="card-surface px-4 py-3 flex flex-wrap items-center gap-x-5 gap-y-2">
+            <span className="text-[11px] font-semibold text-muted-foreground/60 shrink-0">Today</span>
+            <OpsChip to="/students" search={{ view: "atRisk" } as any} danger={!!ops && ops.atRisk > 0} count={ops?.atRisk} label="at-risk" />
+            <OpsChip to="/installments" danger={!!ops && ops.installmentsOverdue > 0} count={ops?.installmentsOverdue} label="overdue" />
+            <OpsChip to="/installments" warn={!!ops && ops.installmentsDueSoon > 0} count={ops?.installmentsDueSoon} label="due soon" />
+            <OpsChip to="/calls" count={ops?.callsThisWeek} label="calls/wk" />
+            {!isFounder && <OpsChip to="/eods" warn={!!ops && ops.eodsMissingToday > 0} count={ops?.eodsMissingToday} label="EODs missing" />}
+            <OpsChip to="/students" warn={!!ops && ops.testimonialsPending > 0} count={ops?.testimonialsPending} label="testimonials" />
+            <OpsChip to="/action-items" warn={!!ops && ops.openActionItems > 0} count={ops?.openActionItems} label="actions open" />
+            {nextDue && (
+              <>
+                <span className="hidden sm:block h-3.5 w-px bg-border shrink-0" />
+                <Link to="/installments" className="text-[12px] text-muted-foreground hover:text-foreground ml-auto">
+                  Next due <span className="font-medium text-foreground">{nextDue.currency} {Number(nextDue.amount).toLocaleString()}</span>
+                  {nextDue.studentName && <span className="opacity-60"> · {nextDue.studentName}</span>}
+                </Link>
+              </>
+            )}
           </div>
         )}
 
@@ -382,17 +399,17 @@ function Dashboard() {
             {prefs.showGoals && (
               <Panel>
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="grid h-6 w-6 place-items-center rounded-sm bg-blue-500/15 border border-blue-500/40">
-                    <Target className="h-3 w-3 text-blue-400" />
+                  <div className="grid h-6 w-6 place-items-center rounded-[6px] bg-primary/10">
+                    <Target className="h-3 w-3 text-primary" />
                   </div>
                   <h3 className="text-sm font-bold">{goalsLabel}</h3>
                 </div>
                 <div className="space-y-3">
-                  <Goal label="DMs Sent"     value={totals.dms_sent}       target={GOALS.dms}     color="#3b82f6" />
-                  <Goal label="Convos"       value={totals.convos_started} target={GOALS.convos}  color="#a855f7" />
-                  <Goal label="Calls Booked" value={totals.calls_booked}   target={GOALS.calls}   color="#22c55e" />
-                  <Goal label="Shows"        value={totals.shows}          target={GOALS.shows}   color="#f59e0b" warn={totals.shows < GOALS.shows * 0.5 && days >= 30} />
-                  <Goal label="Show Rate"    value={showRate}              target={GOALS.showRate} suffix="%" color="#06b6d4" />
+                  <Goal label="DMs Sent"     value={totals.dms_sent}       target={GOALS.dms}     color="var(--color-primary)" />
+                  <Goal label="Convos"       value={totals.convos_started} target={GOALS.convos}  color="var(--color-primary)" />
+                  <Goal label="Calls Booked" value={totals.calls_booked}   target={GOALS.calls}   color="var(--color-primary)" />
+                  <Goal label="Shows"        value={totals.shows}          target={GOALS.shows}   color="var(--color-primary)" warn={totals.shows < GOALS.shows * 0.5 && days >= 30} />
+                  <Goal label="Show Rate"    value={showRate}              target={GOALS.showRate} suffix="%" color="var(--color-primary)" />
                 </div>
               </Panel>
             )}
@@ -400,15 +417,15 @@ function Dashboard() {
             {prefs.showTeamComp && (
               <Panel>
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="grid h-6 w-6 place-items-center rounded-sm bg-blue-500/15 border border-blue-500/40">
-                    <Globe className="h-3 w-3 text-blue-400" />
+                  <div className="grid h-6 w-6 place-items-center rounded-[6px] bg-primary/10">
+                    <Globe className="h-3 w-3 text-primary" />
                   </div>
                   <h3 className="text-sm font-bold">Team Composition</h3>
                 </div>
                 <div className="space-y-2">
-                  <AudienceRow label="Active this period" value={activeSetters} total={Math.max(activeSetters, 1)} color="#3b82f6" />
-                  <AudienceRow label="EODs / setter"      value={activeSetters > 0 ? Math.round(totalEods / activeSetters) : 0} total={days} color="#22c55e" suffix={` / ${days}`} />
-                  <AudienceRow label="Avg calls / setter" value={activeSetters > 0 ? Math.round(totals.calls_booked / activeSetters) : 0} total={GOALS.calls / Math.max(activeSetters, 1)} color="#f59e0b" />
+                  <AudienceRow label="Active this period" value={activeSetters} total={Math.max(activeSetters, 1)} color="var(--color-primary)" />
+                  <AudienceRow label="EODs / setter"      value={activeSetters > 0 ? Math.round(totalEods / activeSetters) : 0} total={days} color="var(--color-primary)" suffix={` / ${days}`} />
+                  <AudienceRow label="Avg calls / setter" value={activeSetters > 0 ? Math.round(totals.calls_booked / activeSetters) : 0} total={GOALS.calls / Math.max(activeSetters, 1)} color="var(--color-primary)" />
                 </div>
               </Panel>
             )}
@@ -427,20 +444,7 @@ function Dashboard() {
           </div>
         )}
       </div>
-      <aside className="hidden lg:flex lg:flex-col gap-2 pt-0">
-        <RightRailTile label="Cash MTD" value={cashMtd > 0 ? money(cashMtd) : "—"} to="/revenue" />
-        <RightRailTile label="EODs today" value={String(eodsTodayCount)} to="/eods" />
-        {nextDue && (
-          <RightRailTile
-            label="Next installment"
-            value={`${nextDue.currency} ${Number(nextDue.amount).toLocaleString()}`}
-            to="/installments"
-            hint={nextDue.studentName}
-          />
-        )}
-        <RightRailTile label="At-risk students" value={String(ops?.atRisk ?? "—")} to="/students" />
-      </aside>
-    </div></div>
+    </div>
 
       <StatDrilldown
         open={drilldown !== null}
@@ -631,7 +635,7 @@ function AudienceRow({ label, value, total, color, suffix }: { label: string; va
     <div>
       <div className="flex items-center justify-between text-xs mb-1">
         <span className="text-muted-foreground">{label}</span>
-        <span className="tabular-nums text-[11px] font-semibold" style={{ color }}>{value.toLocaleString()}{suffix ?? ""}</span>
+        <span className="tabular-nums text-[11px] font-semibold text-foreground">{value.toLocaleString()}{suffix ?? ""}</span>
       </div>
       <div className="h-1 rounded-full bg-white/5 overflow-hidden">
         <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
@@ -849,12 +853,18 @@ function MyDayBlock({ roles }: { roles: string[] }) {
   );
 }
 
-function RightRailTile({ label, value, to, hint }: { label: string; value: string; to: string; hint?: string }) {
+function OpsChip({ to, search, danger, warn, count, label }: {
+  to: string; search?: Record<string, unknown>;
+  danger?: boolean; warn?: boolean;
+  count: number | undefined; label: string;
+}) {
+  const cls = danger ? "text-red-400" : warn ? "text-amber-400" : "text-muted-foreground";
   return (
-    <Link to={to as any} className="card-surface p-3 block motion-safe:transition-transform motion-safe:hover:-translate-y-px">
-      <div className="text-[12px] text-muted-foreground">{label}</div>
-      <div className="text-[20px] font-semibold tabular-nums mt-1 text-foreground truncate tracking-[-0.01em]">{value}</div>
-      {hint && <div className="text-[12px] text-muted-foreground mt-0.5 truncate">{hint}</div>}
+    <Link to={to as any} search={search as any}>
+      <span className={`inline-flex items-baseline gap-1 ${cls} motion-safe:transition-colors hover:text-foreground`}>
+        <span className="text-[14px] font-semibold tabular-nums">{count ?? 0}</span>
+        <span className="text-[12px] opacity-70">{label}</span>
+      </span>
     </Link>
   );
 }

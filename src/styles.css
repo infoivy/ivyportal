@@ -7,8 +7,8 @@
 @theme inline {
   --radius-sm:   0.375rem;   /* 6px  — inputs, badges */
   --radius-md:   0.625rem;   /* 10px — buttons, inputs */
-  --radius-lg:   1rem;       /* 16px — cards, panels */
-  --radius-xl:   1.25rem;    /* 20px — modals, sheets */
+  --radius-lg:   0.75rem;    /* 12px — cards, panels */
+  --radius-xl:   1rem;       /* 16px — modals, sheets */
 
   --color-background:      var(--background);
   --color-foreground:      var(--foreground);
@@ -105,51 +105,51 @@
 
 /* ── Dark theme ──────────────────────────────────────────────────────────── */
 .dark {
-  /* Surfaces */
-  --background:        #0F1114;
-  --foreground:        #E3E5E8;
-  --card:              #1C1C1E;   /* Apple's elevated dark surface */
-  --card-foreground:   #E3E5E8;
-  --popover:           #1C1C1E;
-  --popover-foreground: #E3E5E8;
-  --muted:             #2C2C2E;
-  --muted-foreground:  #8A919C;
-  --border:            rgba(255, 255, 255, 0.08);
-  --input:             rgba(255, 255, 255, 0.07);
+  /* Surfaces — deep cool near-black, Whop-inspired */
+  --background:        #08090D;
+  --foreground:        #EDEDF0;
+  --card:              #0E0F14;
+  --card-foreground:   #EDEDF0;
+  --popover:           #131419;
+  --popover-foreground: #EDEDF0;
+  --muted:             #111318;
+  --muted-foreground:  #6B7280;
+  --border:            rgba(255, 255, 255, 0.07);
+  --input:             rgba(255, 255, 255, 0.06);
 
   /* Accent */
   --primary:           #22C55E;
-  --primary-foreground: #0B1F12;
+  --primary-foreground: #071810;
 
   /* Semantic */
-  --secondary:         #2C2C2E;
-  --secondary-foreground: #E3E5E8;
-  --accent:            #2C2C2E;
-  --accent-foreground: #E3E5E8;
+  --secondary:         #14161D;
+  --secondary-foreground: #EDEDF0;
+  --accent:            #14161D;
+  --accent-foreground: #EDEDF0;
   --destructive:       #EF4444;
-  --destructive-foreground: #E3E5E8;
-  --ring:              rgba(34, 197, 94, 0.35);
+  --destructive-foreground: #EDEDF0;
+  --ring:              rgba(34, 197, 94, 0.45);
 
-  /* Elevation — dark uses surface color, not shadow */
+  /* Elevation */
   --shadow-card:    none;
-  --shadow-raised:  none;
-  --shadow-overlay: 0 20px 60px rgba(0,0,0,0.6);
+  --shadow-raised:  0 0 0 1px rgba(255,255,255,0.07), 0 8px 32px rgba(0,0,0,0.5);
+  --shadow-overlay: 0 20px 60px rgba(0,0,0,0.85);
 
-  /* Sidebar */
-  --sidebar:              #0F1114;
-  --sidebar-foreground:   #E3E5E8;
+  /* Sidebar — slightly distinct from background */
+  --sidebar:              #060710;
+  --sidebar-foreground:   #EDEDF0;
   --sidebar-primary:      #22C55E;
-  --sidebar-primary-foreground: #0B1F12;
-  --sidebar-accent:       #2C2C2E;
-  --sidebar-accent-foreground: #E3E5E8;
-  --sidebar-border:       rgba(255, 255, 255, 0.07);
-  --sidebar-ring:         rgba(34, 197, 94, 0.35);
+  --sidebar-primary-foreground: #071810;
+  --sidebar-accent:       #0E0F14;
+  --sidebar-accent-foreground: #EDEDF0;
+  --sidebar-border:       rgba(255, 255, 255, 0.05);
+  --sidebar-ring:         rgba(34, 197, 94, 0.45);
 
   /* Canvas helpers */
-  --canvas-bg:     #0F1114;
-  --canvas-dot:    rgba(255, 255, 255, 0.05);
-  --script-bg:     rgba(255, 255, 255, 0.03);
-  --script-border: rgba(255, 255, 255, 0.12);
+  --canvas-bg:     #08090D;
+  --canvas-dot:    rgba(255, 255, 255, 0.04);
+  --script-bg:     rgba(255, 255, 255, 0.02);
+  --script-border: rgba(255, 255, 255, 0.10);
 
   /* Training content tab palette */
   --tab-stages:   #22C55E;
@@ -200,9 +200,10 @@
   box-shadow: var(--shadow-card);
   border-radius: var(--radius-lg);
 }
-/* Dark gets a hairline border instead of shadow */
+/* Dark: hairline border + inner top highlight for depth */
 .dark .card-surface {
-  border: 1px solid var(--color-border);
+  border: 1px solid rgba(255,255,255,0.07);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.09);
 }
 
 /* Frosted surfaces (top bar, sidebar) */
