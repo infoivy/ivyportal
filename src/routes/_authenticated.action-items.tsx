@@ -2,8 +2,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { useServerFn } from "@tanstack/react-start";
+import { listTeamMembers } from "@/lib/team-admin.functions";
 import { toast } from "sonner";
 import { ListChecks, AlertTriangle, User, Filter, Plus, Trash2, Sparkles } from "lucide-react";
+import { DateField } from "@/components/ui/date-field";
 
 export const Route = createFileRoute("/_authenticated/action-items")({
   head: () => ({ meta: [{ title: "Action Items — ISA Team" }] }),
@@ -27,6 +30,7 @@ type Row = {
   text: string; done: boolean; due: string | null;
   studentId: string | null; studentName: string;
   ownerId: string | null; ownerName: string; ownerLabel: string;
+  createdByName?: string;
   refDate: string;
   canDelete: boolean;
 };
@@ -42,7 +46,8 @@ function ActionItemsHub() {
   const [adhoc, setAdhoc] = useState<AdHocRow[]>([]);
   const [students, setStudents] = useState<Record<string, string>>({});
   const [profiles, setProfiles] = useState<Record<string, string>>({});
-  const [teamIds, setTeamIds] = useState<string[]>([]);
+  const [team, setTeam] = useState<{ id: string; name: string }[]>([]);
+  const teamFn = useServerFn(listTeamMembers);
   const [filt, setFilt] = useState<Filt>("open");
   const [ownerFilter, setOwnerFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
@@ -59,14 +64,13 @@ function ActionItemsHub() {
 
   const load = async () => {
     setLoading(true);
-    const [cRes, aRes, sRes, pRes, rRes] = await Promise.all([
+    const [cRes, aRes, sRes, pRes] = await Promise.all([
       supabase.from("student_calls").select("id, student_id, coach_id, call_date, action_items_json").order("call_date", { ascending: false }).limit(2000),
       supabase.from("student_action_items").select("*").order("created_at", { ascending: false }).limit(2000),
       supabase.from("students").select("id, full_name"),
       supabase.from("profiles").select("id, display_name"),
-      supabase.from("user_roles").select("user_id, role").in("role", ["admin", "closer", "setter", "coach", "csm"]),
     ]);
-    setTeamIds(Array.from(new Set((rRes.data ?? []).map((r: { user_id: string }) => r.user_id))));
+    teamFn().then(list => setTeam(list)).catch(() => setTeam([]));
     setCalls((cRes.data ?? []) as CallRow[]);
     setAdhoc((aRes.data ?? []) as AdHocRow[]);
     const sm: Record<string, string> = {}; (sRes.data ?? []).forEach((s: { id: string; full_name: string }) => { sm[s.id] = s.full_name; }); setStudents(sm);
@@ -79,10 +83,7 @@ function ActionItemsHub() {
     () => Object.entries(students).map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name)),
     [students],
   );
-  const teamList = useMemo(
-    () => teamIds.map(id => ({ id, name: profiles[id] ?? "Unknown" })).sort((a, b) => a.name.localeCompare(b.name)),
-    [teamIds, profiles],
-  );
+  const teamList = team;
 
   const rows: Row[] = useMemo(() => {
     const out: Row[] = [];
@@ -120,6 +121,7 @@ function ActionItemsHub() {
         ownerId,
         ownerName: profiles[ownerId] ?? "—",
         ownerLabel: a.assignee_id ? "Assignee" : "Assigned by",
+        createdByName: profiles[a.created_by] ?? undefined,
         refDate: a.created_at.slice(0, 10),
         canDelete: a.created_by === user?.id || roles.includes("admin"),
       });
@@ -307,6 +309,7 @@ function ActionItemsHub() {
                 </div>
                 <div className="text-[10px] text-muted-foreground">
                   {r.source === "call" ? `from call ${r.refDate}` : `ad-hoc · ${r.refDate}`}
+                  {r.source === "adhoc" && r.createdByName && r.createdByName !== r.ownerName ? ` · from ${r.createdByName}` : ""}
                   {r.done ? " · ticked" : ""}
                 </div>
               </div>
@@ -405,12 +408,7 @@ function ActionItemsHub() {
             </div>
             <div className="space-y-1">
               <label className="text-[10px] text-muted-foreground">Due date (optional)</label>
-              <input
-                type="date"
-                value={newDue}
-                onChange={e => setNewDue(e.target.value)}
-                className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border"
-              />
+              <DateField value={newDue} onChange={setNewDue} placeholder="No due date" />
             </div>
             <div className="flex justify-end gap-2 pt-1">
               <button onClick={() => setAddOpen(false)} className="h-8 px-3 rounded-sm border border-[var(--border)] text-xs">Cancel</button>

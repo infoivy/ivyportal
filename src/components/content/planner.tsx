@@ -13,6 +13,7 @@ import { WeeklyPlan } from "@/components/weekly-plan";
 import { FounderSops } from "@/components/founder-sops";
 import { RecordingDay } from "@/components/recording-day";
 import { HookLibrary } from "@/components/hook-library";
+import { DateField } from "@/components/ui/date-field";
 
 
 type Platform = "instagram" | "tiktok" | "youtube" | "twitter" | "linkedin" | "threads" | "other";
@@ -719,7 +720,7 @@ function ItemDialog({ initial, userId, onClose, onSaved, promotingIdea: pIdea }:
               </select>
             </Field>
             <Field label="Scheduled date">
-              <input type="date" value={scheduled} onChange={e => setScheduled(e.target.value)} className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border" />
+              <DateField value={scheduled} onChange={setScheduled} placeholder="Not scheduled" />
             </Field>
             <Field label="Format / creative type">
               <select value={format} onChange={e => setFormat(e.target.value)} className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border">

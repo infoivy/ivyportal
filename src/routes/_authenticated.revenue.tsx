@@ -33,6 +33,7 @@ import { StatCard } from "@/components/ui/stat-card";
 import { BreakdownBar } from "@/components/ui/breakdown-bar";
 import { FilterToolbar } from "@/components/ui/filter-toolbar";
 import { type DateRange, rangeFor, daysBetween } from "@/components/range-picker";
+import { DateField } from "@/components/ui/date-field";
 
 export const Route = createFileRoute("/_authenticated/revenue")({
   head: () => ({ meta: [{ title: "Revenue — ISA Team" }] }),
@@ -871,7 +872,7 @@ function LogDealDialog({
           <div className="grid sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Deal date</Label>
-              <Input type="date" value={dealDate} onChange={(e) => setDealDate(e.target.value)} />
+              <DateField value={dealDate} onChange={setDealDate} clearable={false} className="h-9" />
             </div>
             {paymentType === "split" && !editing && (
               <div className="space-y-1.5">

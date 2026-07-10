@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/lib/auth-context";
+import { DateField } from "@/components/ui/date-field";
 import {
   disconnectMyCalendar, getMyCalendarConnection, getTeamCalendarEvents, createSetReminder,
   listUpcomingSets, deleteSetReminder, syncCalendlySets, claimSet, type UpcomingSet,
@@ -38,14 +39,21 @@ const HOUR_END = 22;    // 10pm
 const HOUR_ROWS = HOUR_END - HOUR_START;
 const ROW_PX = 44;
 
-const TZ_OPTIONS = [
-  { value: "", label: "Device time" },
-  { value: "Asia/Dubai", label: "Dubai (GMT+4)" },
-  { value: "Europe/Amsterdam", label: "Amsterdam" },
-  { value: "Europe/London", label: "London" },
-  { value: "America/New_York", label: "New York" },
-  { value: "America/Los_Angeles", label: "Los Angeles" },
-];
+/** Every IANA timezone the browser knows, with the region's common ones first. */
+function tzOptions(): { value: string; label: string }[] {
+  const all: string[] = typeof Intl.supportedValuesOf === "function"
+    ? Intl.supportedValuesOf("timeZone")
+    : ["Asia/Riyadh", "Asia/Dubai", "Europe/Amsterdam", "Europe/London", "America/New_York", "America/Los_Angeles"];
+  const pinned = ["Asia/Riyadh", "Asia/Dubai", "Europe/Amsterdam", "Europe/London", "America/New_York", "America/Los_Angeles"];
+  const rest = all.filter((z) => !pinned.includes(z));
+  const label = (z: string) => z.replace(/_/g, " ");
+  return [
+    { value: "", label: "Device time" },
+    ...pinned.filter((z) => all.includes(z)).map((z) => ({ value: z, label: label(z) })),
+    ...rest.map((z) => ({ value: z, label: label(z) })),
+  ];
+}
+const TZ_OPTIONS = tzOptions();
 
 /** Date whose local fields equal the wall-clock time in tz (display only). */
 function shiftToTz(iso: string | Date, tz: string): Date {
@@ -612,7 +620,7 @@ function SetReminderDialog({ onClose, onCreate }: {
         <div className="grid grid-cols-3 gap-2">
           <div className="space-y-1 col-span-1">
             <label className="text-[10px] text-muted-foreground">Date</label>
-            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-9 text-sm" />
+            <DateField value={date} onChange={setDate} clearable={false} className="h-9" />
           </div>
           <div className="space-y-1">
             <label className="text-[10px] text-muted-foreground">Time</label>

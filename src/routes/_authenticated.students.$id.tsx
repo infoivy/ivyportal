@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
+import { DateField } from "@/components/ui/date-field";
 import {
   ArrowLeft, Video, Trash2, Plus, Save, Calendar as CalIcon,
   Phone, FileText, User, Pencil, ExternalLink, CheckCircle2, Circle,
@@ -750,7 +751,7 @@ function CallForm({ studentId, onCancel, onDone }: { studentId: string; onCancel
   return (
     <div className="p-3 border-b border-[var(--border)] bg-[var(--muted)] space-y-2">
       <div className="grid md:grid-cols-3 gap-2">
-        <input type="date" value={form.call_date} onChange={e => setForm(f => ({ ...f, call_date: e.target.value }))} className="h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs" />
+        <DateField value={form.call_date} onChange={v => setForm(f => ({ ...f, call_date: v }))} clearable={false} />
         <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs">
           <option value="scheduled">Scheduled</option>
           <option value="completed">Completed</option>

@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { todayBiz } from "@/lib/dates";
+import { DateField } from "@/components/ui/date-field";
 
 export const Route = createFileRoute("/_authenticated/csm")({
   head: () => ({ meta: [{ title: "CSM — ISA Portal" }] }),
@@ -432,12 +433,7 @@ function CsmPage() {
                     placeholder="New action item…"
                     className="h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border"
                   />
-                  <input
-                    type="date"
-                    value={newAdhocDue}
-                    onChange={e => setNewAdhocDue(e.target.value)}
-                    className="h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border"
-                  />
+                  <DateField value={newAdhocDue} onChange={setNewAdhocDue} placeholder="Due date" className="w-40" />
                   <button
                     onClick={addAdhoc}
                     disabled={savingAdhoc || !newAdhocText.trim()}

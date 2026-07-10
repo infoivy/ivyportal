@@ -1,0 +1,28 @@
+import { chromium } from "playwright";
+const browser = await chromium.launch({ channel: "chrome", headless: true });
+const ctx = await browser.newContext({ viewport: { width: 1380, height: 950 } });
+const page = await ctx.newPage();
+page.on("pageerror", e => console.log("PAGEERROR:", String(e).slice(0, 150)));
+await page.goto("http://localhost:3000/auth", { waitUntil: "networkidle" });
+await page.waitForTimeout(1200);
+await page.fill('input[type="email"]', "demo-setter1@isa.demo");
+await page.fill('input[type="password"]', "DemoPortal2026!");
+await page.click('button[type="submit"]:has-text("Sign in")');
+await page.waitForURL(u => !u.pathname.startsWith("/auth"), { timeout: 20000 });
+await page.waitForTimeout(2500);
+await page.goto("http://localhost:3000/action-items");
+await page.waitForTimeout(2000);
+await page.click('button:has-text("Add ad-hoc item")');
+await page.waitForTimeout(600);
+const modal = page.locator("div.fixed.inset-0");
+await modal.locator('button:has-text("No due date")').click();
+await page.waitForTimeout(600);
+const dayBtns = await page.locator("[data-slot=popover-content] button").count();
+console.log("calendar popover buttons:", dayBtns);
+// pick the 15th
+await page.locator("[data-slot=popover-content] button", { hasText: /^15$/ }).first().click();
+await page.waitForTimeout(400);
+const label = await modal.locator("button:has-text('Jul 15')").isVisible().catch(() => false);
+console.log("date selected shows formatted label:", label);
+await page.screenshot({ path: "/tmp/ivy-datepicker.png" });
+await browser.close();

@@ -11,6 +11,7 @@ import {
   ChevronRight, Users, AlertTriangle, Columns3, Award, MessageSquare, Trophy, Download,
 } from "lucide-react";
 import { exportToCsv } from "@/lib/csv";
+import { DateField } from "@/components/ui/date-field";
 
 
 
@@ -820,7 +821,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
               <input value={whatsapp} onChange={e => setWhatsapp(e.target.value)} className={inputCls} placeholder="+44…" />
             </Field>
             <Field label="Join date">
-              <input type="date" value={joinDate} onChange={e => setJoinDate(e.target.value)} className={inputCls} />
+              <DateField value={joinDate} onChange={setJoinDate} clearable={false} />
             </Field>
             <Field label="Assigned coach">
               <select value={coachId} onChange={e => setCoachId(e.target.value)} className={inputCls}>
@@ -884,7 +885,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
                 <input type="number" min="0" value={totalAmount} onChange={e => setTotalAmount(e.target.value)} className={inputCls} placeholder="e.g. 5000" />
               </Field>
               <Field label="Deal date">
-                <input type="date" value={dealDate} onChange={e => setDealDate(e.target.value)} className={inputCls} />
+                <DateField value={dealDate} onChange={setDealDate} clearable={false} />
               </Field>
               <Field label="Closer (who sold this)">
                 <select value={closerId} onChange={e => setCloserId(e.target.value)} className={inputCls}>
@@ -931,7 +932,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
                         </select>
                       </Field>
                       <Field label="First payment due" full>
-                        <input type="date" value={firstDueDate} onChange={e => setFirstDueDate(e.target.value)} className={inputCls} />
+                        <DateField value={firstDueDate} onChange={setFirstDueDate} clearable={false} />
                       </Field>
                       <div className="col-span-2 text-[11px] text-muted-foreground bg-[var(--background)] border border-[var(--border)] rounded-sm p-2">
                         {n} × ${perInstallment.toFixed(2)} = ${(n * perInstallment).toFixed(2)} remaining
@@ -951,7 +952,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
                         <div key={r.id} className="grid grid-cols-[24px_1fr_1.1fr_1fr_28px] gap-2 items-center">
                           <span className="text-[10px] text-muted-foreground">#{i + 1}</span>
                           <input type="number" min="0" step="0.01" value={r.amount} onChange={e => updateCustomRow(r.id, { amount: e.target.value })} placeholder="Amount" className={inputCls} />
-                          <input type="date" value={r.due_date} onChange={e => updateCustomRow(r.id, { due_date: e.target.value })} className={inputCls} />
+                          <DateField value={r.due_date} onChange={v => updateCustomRow(r.id, { due_date: v })} clearable={false} />
                           <input value={r.payment_method} onChange={e => updateCustomRow(r.id, { payment_method: e.target.value })} placeholder="Method (optional)" className={inputCls} />
                           <button type="button" onClick={() => removeCustomRow(r.id)} disabled={customRows.length === 1} className="text-muted-foreground hover:text-danger-fg disabled:opacity-30"><X className="h-3.5 w-3.5" /></button>
                         </div>

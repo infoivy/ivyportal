@@ -42,3 +42,31 @@ export const setMemberActive = createServerFn({ method: "POST" })
     if (profErr) throw new Error(profErr.message);
     return { ok: true };
   });
+
+/**
+ * Team roster for assignment pickers. Any business-role holder may call it —
+ * RLS hides other people's user_roles rows from non-admins, so this goes
+ * through the server after verifying the caller is staff.
+ */
+export const listTeamMembers = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data: myRoles } = await context.supabase
+      .from("user_roles").select("role").eq("user_id", context.userId);
+    const staff = (myRoles ?? []).some((r) =>
+      ["admin", "founder", "closer", "setter", "coach", "csm"].includes(r.role as string));
+    if (!staff) throw new Error("staff only");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: roleRows } = await supabaseAdmin
+      .from("user_roles").select("user_id, role")
+      .in("role", ["admin", "closer", "setter", "coach", "csm"]);
+    const ids = Array.from(new Set((roleRows ?? []).map((r) => r.user_id)));
+    if (ids.length === 0) return [] as { id: string; name: string }[];
+    const { data: profs } = await supabaseAdmin
+      .from("profiles").select("id, display_name, active").in("id", ids);
+    return (profs ?? [])
+      .filter((p) => (p as { active?: boolean }).active !== false)
+      .map((p) => ({ id: p.id, name: p.display_name ?? "Unnamed" }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  });

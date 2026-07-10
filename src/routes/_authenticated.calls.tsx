@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { signAvatars } from "@/lib/avatars";
 import { CALL_NOTE_TEMPLATES } from "@/components/call-note-templates";
+import { DateField } from "@/components/ui/date-field";
 
 export const Route = createFileRoute("/_authenticated/calls")({
   head: () => ({ meta: [{ title: "1-on-1s — ISA" }] }),
@@ -363,7 +364,7 @@ function CallModal({ call, onClose, onSaved, students, coaches, defaultCoachId }
             </select>
           </Field>
           <Field label="Call date">
-            <input type="date" value={form.call_date} onChange={e => setForm(f => ({ ...f, call_date: e.target.value }))} className={inputCls} />
+            <DateField value={form.call_date} onChange={v => setForm(f => ({ ...f, call_date: v }))} clearable={false} />
           </Field>
           <Field label="Duration (min)">
             <input type="number" min={0} value={form.duration_min} onChange={e => setForm(f => ({ ...f, duration_min: parseInt(e.target.value) || 0 }))} className={inputCls} />
@@ -413,11 +414,11 @@ function CallModal({ call, onClose, onSaved, students, coaches, defaultCoachId }
                     placeholder="Action item…"
                     className={`flex-1 bg-transparent text-xs focus:outline-none ${item.done ? "line-through text-muted-foreground" : ""}`}
                   />
-                  <input
-                    type="date"
+                  <DateField
                     value={item.due ?? ""}
-                    onChange={e => updateItem(item.id, { due: e.target.value || null })}
-                    className="text-[10px] bg-transparent border border-[var(--border)] rounded-sm px-1 py-0.5 text-muted-foreground focus:outline-none"
+                    onChange={v => updateItem(item.id, { due: v || null })}
+                    placeholder="Due"
+                    className="h-7 w-36 shrink-0 text-[10px]"
                   />
                   <button type="button" onClick={() => removeItem(item.id)} className="text-muted-foreground hover:text-danger-fg"><X className="h-3 w-3" /></button>
                 </div>
@@ -432,7 +433,7 @@ function CallModal({ call, onClose, onSaved, students, coaches, defaultCoachId }
             <input value={form.next_step} onChange={e => setForm(f => ({ ...f, next_step: e.target.value }))} placeholder="e.g. Post 3 reels + book 5 sales calls" className={inputCls} />
           </Field>
           <Field label="Next 1:1 date">
-            <input type="date" value={form.next_call_date} onChange={e => setForm(f => ({ ...f, next_call_date: e.target.value }))} className={inputCls} />
+            <DateField value={form.next_call_date} onChange={v => setForm(f => ({ ...f, next_call_date: v }))} placeholder="No date yet" />
           </Field>
         </div>
 

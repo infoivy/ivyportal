@@ -8,6 +8,7 @@ import {
   Calendar as CalendarIcon, Edit3, Search,
 } from "lucide-react";
 import { RevenueTabBar } from "@/components/revenue-tab-bar";
+import { DateField } from "@/components/ui/date-field";
 
 export const Route = createFileRoute("/_authenticated/installments")({
   head: () => ({ meta: [{ title: "Installments — ISA" }] }),
@@ -478,7 +479,7 @@ function PlanEditor({
                 <div key={i} className="grid grid-cols-12 gap-2 items-center">
                   <span className="col-span-1 text-xs text-muted-foreground">#{i+1}</span>
                   <input type="number" min="0" step="0.01" value={d.amount} onChange={e => setDrafts(list => list.map((r,idx) => idx === i ? { ...r, amount: e.target.value } : r))} placeholder="Amount" className="col-span-3 px-2 py-1.5 rounded border border-border bg-background text-sm" />
-                  <input type="date" value={d.due_date} onChange={e => setDrafts(list => list.map((r,idx) => idx === i ? { ...r, due_date: e.target.value } : r))} className="col-span-3 px-2 py-1.5 rounded border border-border bg-background text-sm" />
+                  <DateField value={d.due_date} onChange={v => setDrafts(list => list.map((r,idx) => idx === i ? { ...r, due_date: v } : r))} clearable={false} className="col-span-3 h-9 text-sm" />
                   <select value={d.status} onChange={e => setDrafts(list => list.map((r,idx) => idx === i ? { ...r, status: e.target.value as PayStatus } : r))} className="col-span-2 px-2 py-1.5 rounded border border-border bg-background text-sm">
                     {(Object.keys(STATUS_META) as PayStatus[]).map(s => <option key={s} value={s}>{STATUS_META[s].label}</option>)}
                   </select>
