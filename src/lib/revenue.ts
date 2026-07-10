@@ -24,15 +24,13 @@ export type CommissionRates = {
   pif_under_30d: number;
   payment_plan: number;
   setter_base: number;
-  setter_pif_bonus: number;
 };
 
 export const DEFAULT_RATES: CommissionRates = {
   new_close: 0.10,
   pif_under_30d: 0.12,
   payment_plan: 0.05,
-  setter_base: 0.03,
-  setter_pif_bonus: 0.02,
+  setter_base: 0.075,
 };
 
 function isPifWithin30d(d: Deal, asOf: Date): boolean {
@@ -55,16 +53,33 @@ export function commissionForDeal(d: Deal, rates: CommissionRates, asOf: Date = 
 }
 
 /**
- * Setter commission:
- * - setter_base × total_value when a setter is attributed
- * - + setter_pif_bonus × total_value when the deal is PIF within 30 days
+ * Setter commission (base only):
+ * - setter_base × cash_collected_upfront when a setter is attributed
  * - 0 when no setter attributed
+ * Weekly $5k bonus is calculated separately via setterWeekBonus().
  */
-export function setterCommissionForDeal(d: Deal, rates: CommissionRates, asOf: Date = new Date()): number {
+export function setterCommissionForDeal(d: Deal, rates: CommissionRates): number {
   if (!d.setter_id) return 0;
-  const base = d.total_value * rates.setter_base;
-  const bonus = isPifWithin30d(d, asOf) ? d.total_value * rates.setter_pif_bonus : 0;
-  return base + bonus;
+  return d.cash_collected_upfront * rates.setter_base;
+}
+
+/**
+ * Returns the set of setter_ids who earned the $5k-week bonus in the given deal list.
+ * A setter earns +1% bonus if their total cash_collected_upfront in any Mon–Sun week ≥ $5,000.
+ */
+export function setterWeekBonusIds(deals: Deal[]): Set<string> {
+  const weekMap = new Map<string, number>(); // key: "setterId::weekStart"
+  for (const d of deals) {
+    if (!d.setter_id) continue;
+    const weekStart = isoDay(startOfWeekMon(new Date(d.deal_date + "T00:00:00")));
+    const key = `${d.setter_id}::${weekStart}`;
+    weekMap.set(key, (weekMap.get(key) ?? 0) + d.cash_collected_upfront);
+  }
+  const ids = new Set<string>();
+  for (const [key, total] of weekMap) {
+    if (total >= 5000) ids.add(key.split("::")[0]);
+  }
+  return ids;
 }
 
 export function money(n: number, currency = "USD") {

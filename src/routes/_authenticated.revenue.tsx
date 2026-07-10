@@ -8,6 +8,7 @@ import {
   DEFAULT_RATES,
   commissionForDeal,
   setterCommissionForDeal,
+  setterWeekBonusIds,
   money,
   isSameMonth,
 } from "@/lib/revenue";
@@ -121,21 +122,23 @@ function RevenuePage() {
 
   // Per-setter breakdown (MTD)
   const perSetter = useMemo(() => {
-    const map = new Map<string, { booked: number; deals: number; pifBonus: number; commission: number }>();
+    const weekBonusIds = setterWeekBonusIds(monthDeals);
+    const map = new Map<string, { cash: number; deals: number; weekBonus: boolean; commission: number }>();
     for (const d of monthDeals) {
       if (!d.setter_id) continue;
-      const c = map.get(d.setter_id) ?? { booked: 0, deals: 0, pifBonus: 0, commission: 0 };
-      c.booked += Number(d.total_value);
+      const c = map.get(d.setter_id) ?? { cash: 0, deals: 0, weekBonus: false, commission: 0 };
+      c.cash += Number(d.cash_collected_upfront);
       c.deals += 1;
-      const comm = setterCommissionForDeal(d, rates);
-      c.commission += comm;
-      const base = Number(d.total_value) * rates.setter_base;
-      if (comm > base + 0.001) c.pifBonus += 1;
+      c.commission += setterCommissionForDeal(d, rates);
+      if (weekBonusIds.has(d.setter_id)) c.weekBonus = true;
       map.set(d.setter_id, c);
     }
     const nameMap = new Map(setters.map((s) => [s.id, s.display_name || "Unknown"]));
     return Array.from(map.entries())
-      .map(([id, v]) => ({ setter_id: id, name: nameMap.get(id) ?? "Unknown", ...v }))
+      .map(([id, v]) => {
+        const bonusComm = v.weekBonus ? v.cash * 0.01 : 0;
+        return { setter_id: id, name: nameMap.get(id) ?? "Unknown", ...v, commission: v.commission + bonusComm };
+      })
       .sort((a, b) => b.commission - a.commission);
   }, [monthDeals, setters, rates]);
 
@@ -367,7 +370,7 @@ function RevenuePage() {
         <div className="p-4 border-b border-[var(--border)] flex items-center justify-between">
           <h3 className="text-sm font-semibold">Per-setter breakdown (MTD)</h3>
           <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-            {(rates.setter_base * 100).toFixed(1)}% base · +{(rates.setter_pif_bonus * 100).toFixed(1)}% PIF bonus
+            {(rates.setter_base * 100).toFixed(1)}% base · $5k week → +1% bonus
           </span>
         </div>
         <div className="overflow-x-auto">
@@ -376,8 +379,8 @@ function RevenuePage() {
               <tr>
                 <th className="text-left px-4 py-2.5">Setter</th>
                 <th className="text-right px-4 py-2.5">Set closes</th>
-                <th className="text-right px-4 py-2.5">PIF bonuses</th>
-                <th className="text-right px-4 py-2.5">Booked</th>
+                <th className="text-right px-4 py-2.5">$5k week</th>
+                <th className="text-right px-4 py-2.5">Cash</th>
                 <th className="text-right px-4 py-2.5">Commission</th>
               </tr>
             </thead>
@@ -391,8 +394,10 @@ function RevenuePage() {
                   <tr key={r.setter_id} className="border-t border-[var(--border)]">
                     <td className="px-4 py-3 font-medium">{r.name}</td>
                     <td className="px-4 py-3 text-right tabular-nums">{r.deals}</td>
-                    <td className="px-4 py-3 text-right tabular-nums text-sky-400">{r.pifBonus}</td>
-                    <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">{money(r.booked)}</td>
+                    <td className="px-4 py-3 text-right tabular-nums">
+                      {r.weekBonus ? <span className="text-amber-400">✓ +1%</span> : <span className="text-muted-foreground">—</span>}
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">{money(r.cash)}</td>
                     <td className="px-4 py-3 text-right tabular-nums font-semibold text-emerald-400">{money(r.commission)}</td>
                   </tr>
                 ))
@@ -468,7 +473,13 @@ function RevenuePage() {
         </div>
       </Card>
 
-      {isAdmin && <CommissionRatesCard rows={rateRows} reload={load} />}
+      {isAdmin && (
+        <div className="flex justify-end">
+          <a href="/admin#commission" className="text-[11px] text-muted-foreground hover:text-foreground underline decoration-dotted">
+            Edit commission rates → Admin settings
+          </a>
+        </div>
+      )}
 
       <LogDealDialog
         open={logOpen}

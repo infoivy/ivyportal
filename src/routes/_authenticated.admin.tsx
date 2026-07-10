@@ -2,10 +2,15 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { CommissionRates, DEFAULT_RATES } from "@/lib/revenue";
 import { format, subDays } from "date-fns";
+import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import {
-  Shield, CheckCircle2, AlertTriangle, Users, Mail, UserX, Star,
-  ArrowUpRight, ClipboardList,
+  Shield, CheckCircle2, Users, Mail, UserX, Star,
+  ArrowUpRight, ClipboardList, Percent, Save,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin")({
@@ -39,6 +44,7 @@ function AdminConsole() {
   const [students, setStudents] = useState<Student[]>([]);
   const [unratedCalls, setUnratedCalls] = useState<CallRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [rateRows, setRateRows] = useState<{ id: string; key: string; label: string; rate: number; active: boolean }[]>([]);
 
   const days = RANGES.find(r => r.key === range)!.days;
 
@@ -47,12 +53,13 @@ function AdminConsole() {
     setLoading(true);
     const from = format(subDays(new Date(), days - 1), "yyyy-MM-dd");
     (async () => {
-      const [eodRes, profRes, roleRes, studRes, callsRes] = await Promise.all([
+      const [eodRes, profRes, roleRes, studRes, callsRes, ratesRes] = await Promise.all([
         supabase.from("eods").select("id, user_id, report_date").gte("report_date", from),
         supabase.from("profiles").select("id, display_name"),
         supabase.from("user_roles").select("user_id, role"),
         supabase.from("students").select("id, full_name, email, coach_id, status, first_win_at, testimonial_collected, trustpilot_collected"),
         supabase.from("student_calls").select("id, student_id, call_date, coach_id, progress_rating").eq("status", "completed").is("progress_rating", null).order("call_date", { ascending: false }).limit(50),
+        supabase.from("commission_rates").select("*").eq("active", true),
       ]);
       setEods((eodRes.data as EodRow[]) ?? []);
       const pmap: Record<string, Profile> = {};
@@ -61,6 +68,8 @@ function AdminConsole() {
       setUserRoles((roleRes.data as UserRole[]) ?? []);
       setStudents((studRes.data as Student[]) ?? []);
       setUnratedCalls((callsRes.data as CallRow[]) ?? []);
+      const rows = (ratesRes.data ?? []).map(r => ({ id: r.id, key: r.key, label: r.label, rate: Number(r.rate), active: r.active }));
+      setRateRows(rows);
       setLoading(false);
     })();
   }, [days, isAdmin]);
@@ -206,6 +215,15 @@ function AdminConsole() {
         </Panel>
       </div>
 
+      {/* Commission rates — moved from Revenue page */}
+      <div id="commission">
+        <CommissionRatesCard rows={rateRows} reload={() => {
+          supabase.from("commission_rates").select("*").eq("active", true).then(({ data }) => {
+            if (data) setRateRows(data.map(r => ({ id: r.id, key: r.key, label: r.label, rate: Number(r.rate), active: r.active })));
+          });
+        }} />
+      </div>
+
       {/* Data hygiene lists */}
       <div className="grid lg:grid-cols-2 gap-4">
         <Panel
@@ -322,4 +340,56 @@ function Panel({ title, subtitle, icon, action, children }: { title: string; sub
 
 function Empty({ text }: { text: string }) {
   return <div className="text-center text-xs text-muted-foreground py-6">{text}</div>;
+}
+
+function CommissionRatesCard({
+  rows, reload,
+}: {
+  rows: { id: string; key: string; label: string; rate: number; active: boolean }[];
+  reload: () => void;
+}) {
+  const [draft, setDraft] = useState(rows);
+  const [saving, setSaving] = useState(false);
+  useEffect(() => setDraft(rows), [rows]);
+
+  const displayRows = draft.length > 0 ? draft : Object.entries(DEFAULT_RATES).map(([k, v]) => ({
+    id: k, key: k, label: k.replace(/_/g, " "), rate: v as number, active: true,
+  }));
+
+  const save = async () => {
+    setSaving(true);
+    for (const r of draft) {
+      const orig = rows.find(x => x.id === r.id);
+      if (!orig || orig.rate !== r.rate) {
+        await supabase.from("commission_rates").update({ rate: r.rate }).eq("id", r.id);
+      }
+    }
+    setSaving(false);
+    toast.success("Commission rates updated");
+    reload();
+  };
+
+  return (
+    <Panel title="Commission rates" subtitle="Affects future commission calculations. Historical deals reflect the rate at time of display." icon={<Percent className="h-3.5 w-3.5 text-primary" />} action={
+      <Button size="sm" onClick={save} disabled={saving}>
+        <Save className="h-3.5 w-3.5 mr-1" /> Save
+      </Button>
+    }>
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-1">
+        {displayRows.map(r => (
+          <div key={r.id} className="space-y-1">
+            <Label className="text-xs">{r.label}</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number" step="0.001" min="0" max="1"
+                value={r.rate}
+                onChange={e => setDraft(d => d.map(x => x.id === r.id ? { ...x, rate: Math.max(0, Math.min(1, Number(e.target.value) || 0)) } : x))}
+              />
+              <span className="text-xs text-muted-foreground w-14 tabular-nums">{(r.rate * 100).toFixed(1)}%</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </Panel>
+  );
 }

@@ -69,6 +69,7 @@ export function WeeklyPlan({ onOpenItem }: { onOpenItem: (id: string) => void })
   const [ideas, setIdeas] = useState<WeekIdea[]>([]);
   const [slots, setSlots] = useState<WeekSlot[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [brand, setBrand] = useState<string>(() => {
     try { return localStorage.getItem("weekly-plan-brand") ?? ""; } catch { return ""; }
@@ -84,6 +85,7 @@ export function WeeklyPlan({ onOpenItem }: { onOpenItem: (id: string) => void })
 
   const load = useCallback(async () => {
     setLoading(true);
+    setLoadError(false);
     try {
       // Provision both weeks so the recording day → 2-week horizon works.
       await Promise.all([
@@ -92,6 +94,7 @@ export function WeeklyPlan({ onOpenItem }: { onOpenItem: (id: string) => void })
       ]);
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to prepare weeks");
+      setLoadError(true);
     }
     const [{ data: is }, { data: it }] = await Promise.all([
       supabase.from("content_week_ideas").select("*").in("week_start", [weekStart, nextWeekStart]).order("position"),
@@ -233,7 +236,15 @@ export function WeeklyPlan({ onOpenItem }: { onOpenItem: (id: string) => void })
       </div>
 
       {loading ? (
-        <div className="flex items-center gap-2 text-muted-foreground p-6"><Loader2 className="h-4 w-4 animate-spin" /> Loading weeks…</div>
+        <div className="flex items-center gap-2 text-muted-foreground p-6"><Loader2 className="h-4 w-4 animate-spin" /> Setting up this cycle…</div>
+      ) : loadError ? (
+        <div className="border border-amber-500/30 bg-amber-500/5 rounded-sm p-6 text-center space-y-3">
+          <p className="text-sm text-amber-400 font-medium">Couldn't load this week's plan</p>
+          <p className="text-xs text-muted-foreground">This usually means the content tables need to be initialised. Try refreshing or use the button below.</p>
+          <button onClick={() => load()} className="h-8 px-4 rounded-sm bg-blue-500 hover:bg-blue-400 text-blue-950 text-[11px] font-medium inline-flex items-center gap-1.5">
+            <Loader2 className="h-3 w-3" /> Retry
+          </button>
+        </div>
       ) : (
         <div className="space-y-6">
           <WeekBlock
