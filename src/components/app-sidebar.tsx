@@ -19,36 +19,38 @@ type Item = { title: string; url: string; icon: React.ComponentType<{ className?
 
 const workItems: Item[] = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Sales HQ", url: "/sales-hq", icon: Building2, roles: ["admin", "closer"] },
   { title: "EOD Reports", url: "/eods", icon: FileText },
   { title: "Action Items", url: "/action-items", icon: ListChecks },
   { title: "Notes", url: "/notes", icon: StickyNote },
-  { title: "CSM", url: "/csm", icon: HeartHandshake, roles: ["admin", "csm"] },
+];
+
+const salesItems: Item[] = [
+  { title: "Sales HQ", url: "/sales-hq", icon: Building2, roles: ["admin", "closer"] },
+  { title: "Revenue", url: "/revenue", icon: TrendingUp, roles: ["admin", "closer", "setter", "coach", "csm"] },
+  { title: "Analytics", url: "/analytics", icon: BarChart3, roles: ["admin", "closer", "setter"] },
+  { title: "Closer Resources", url: "/closer-resources", icon: DollarSign, roles: ["admin", "closer"] },
+  { title: "Training", url: "/training", icon: GraduationCap },
+  { title: "Calendar", url: "/calendar", icon: Calendar },
+  { title: "CRM", url: "/crm", icon: Database, roles: ["admin"] },
+];
+
+const fulfillmentItems: Item[] = [
   { title: "Student Success", url: "/student-success", icon: HeartPulse, roles: ["admin", "csm", "coach", "founder"] },
+  { title: "Students", url: "/students", icon: School, roles: ["admin", "closer", "csm", "coach"] },
+  { title: "1-on-1 Calls", url: "/calls", icon: Phone, roles: ["admin", "coach"] },
+  { title: "Coaches", url: "/coaches", icon: Trophy, roles: ["admin", "coach", "csm"] },
+  { title: "CSM", url: "/csm", icon: HeartHandshake, roles: ["admin", "csm"] },
+  { title: "Testimonials", url: "/testimonials", icon: Quote, roles: ["admin", "coach", "closer", "setter", "csm"] },
 ];
 
 const knowledgeItems: Item[] = [
   { title: "Knowledge Hub", url: "/knowledge", icon: BookOpen },
-  { title: "Closer Resources", url: "/closer-resources", icon: DollarSign, roles: ["admin", "closer"] },
-  { title: "Training", url: "/training", icon: GraduationCap },
 ];
-
-const opsItems: Item[] = [
-  { title: "Students", url: "/students", icon: School },
-  { title: "1-on-1 Calls", url: "/calls", icon: Phone, roles: ["admin", "coach"] },
-  { title: "Coaches", url: "/coaches", icon: Trophy, roles: ["admin", "coach", "csm"] },
-  { title: "Revenue", url: "/revenue", icon: TrendingUp, roles: ["admin", "closer", "setter", "coach", "csm"] },
-  { title: "Calendar", url: "/calendar", icon: Calendar },
-  { title: "Analytics", url: "/analytics", icon: BarChart3 },
-  { title: "CRM", url: "/crm", icon: Database, roles: ["admin"] },
-  { title: "Testimonials", url: "/testimonials", icon: Quote, roles: ["admin", "coach", "closer", "setter", "csm"] },
-];
-
 
 const founderItems: Item[] = [
   { title: "Command", url: "/founder-hq", icon: LayoutDashboard, roles: ["founder", "admin"] },
-  { title: "Founder Hub", url: "/founder", icon: Sparkles, roles: ["founder"] },
-  { title: "IG Analytics", url: "/instagram", icon: BarChart3, roles: ["founder"] },
+  { title: "Founder Hub", url: "/founder", icon: Sparkles, roles: ["founder", "admin"] },
+  { title: "IG Analytics", url: "/instagram", icon: BarChart3, roles: ["founder", "admin"] },
   { title: "Weekly Review", url: "/weekly-review", icon: ClipboardList, roles: ["founder", "admin"] },
 ];
 
@@ -156,9 +158,10 @@ export function AppSidebar({ roles }: { roles: string[] }) {
       {header(isAdmin ? "Admin" : "Team")}
       <SidebarContent className="gap-0 py-2">
         {renderGroup("Work", workItems)}
+        {renderGroup("Sales", salesItems)}
+        {renderGroup("Fulfillment", fulfillmentItems)}
         {renderGroup("Knowledge", knowledgeItems)}
-        {renderGroup("Ops", opsItems)}
-        {roles.includes("founder") && renderGroup("Founder", founderItems)}
+        {(roles.includes("founder") || isAdmin) && renderGroup("Founder", founderItems)}
         {isAdmin && renderGroup("Admin", adminItems)}
         {renderGroup("Account", [{ title: "Profile", url: "/profile", icon: UserCircle }])}
       </SidebarContent>
