@@ -11,7 +11,6 @@ import {
   setterCommissionForDeal,
   setterWeekBonusIds,
   money,
-  isSameMonth,
 } from "@/lib/revenue";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,6 +29,10 @@ import {
 import { RevenueTabBar } from "@/components/revenue-tab-bar";
 import { exportToCsv } from "@/lib/csv";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
+import { StatCard } from "@/components/ui/stat-card";
+import { BreakdownBar } from "@/components/ui/breakdown-bar";
+import { FilterToolbar } from "@/components/ui/filter-toolbar";
+import { type DateRange, rangeFor, daysBetween } from "@/components/range-picker";
 
 export const Route = createFileRoute("/_authenticated/revenue")({
   head: () => ({ meta: [{ title: "Revenue — ISA Team" }] }),
@@ -54,6 +57,8 @@ function RevenuePage() {
   const [loading, setLoading] = useState(true);
   const [logOpen, setLogOpen] = useState(false);
   const [editing, setEditing] = useState<Deal | null>(null);
+  const [dateRange, setDateRange] = useState<DateRange>(() => rangeFor("30d"));
+  const [compare, setCompare] = useState(false);
 
   const load = async () => {
     const [dealsRes, ratesRes, rolesRes, studentsRes] = await Promise.all([
@@ -96,20 +101,64 @@ function RevenuePage() {
 
   useEffect(() => { load(); }, []);
 
-  const monthDeals = useMemo(() => deals.filter((d) => isSameMonth(d.deal_date)), [deals]);
+  const fromISO = dateRange.from.toISOString().slice(0, 10);
+  const toISO = dateRange.to.toISOString().slice(0, 10);
+  const days = daysBetween(dateRange);
+
+  const rangeDeals = useMemo(
+    () => deals.filter((d) => d.deal_date >= fromISO && d.deal_date <= toISO),
+    [deals, fromISO, toISO],
+  );
+  const prevRangeDeals = useMemo(() => {
+    if (!compare) return [];
+    const prevTo = new Date(dateRange.from); prevTo.setDate(prevTo.getDate() - 1);
+    const prevFrom = new Date(prevTo); prevFrom.setDate(prevFrom.getDate() - days + 1);
+    const pf = prevFrom.toISOString().slice(0, 10);
+    const pt = prevTo.toISOString().slice(0, 10);
+    return deals.filter((d) => d.deal_date >= pf && d.deal_date <= pt);
+  }, [deals, compare, dateRange.from, days]);
+
   const stats = useMemo(() => {
-    const cash = monthDeals.reduce((a, d) => a + Number(d.cash_collected_upfront), 0);
-    const booked = monthDeals.reduce((a, d) => a + Number(d.total_value), 0);
-    const count = monthDeals.length;
+    const cash = rangeDeals.reduce((a, d) => a + Number(d.cash_collected_upfront), 0);
+    const booked = rangeDeals.reduce((a, d) => a + Number(d.total_value), 0);
+    const count = rangeDeals.length;
     const avg = count > 0 ? booked / count : 0;
     return { cash, booked, count, avg };
-  }, [monthDeals]);
+  }, [rangeDeals]);
+
+  const prevStats = useMemo(() => {
+    const cash = prevRangeDeals.reduce((a, d) => a + Number(d.cash_collected_upfront), 0);
+    const booked = prevRangeDeals.reduce((a, d) => a + Number(d.total_value), 0);
+    const count = prevRangeDeals.length;
+    return { cash, booked, count };
+  }, [prevRangeDeals]);
+
+  const cashSparkData = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const d of rangeDeals) map[d.deal_date] = (map[d.deal_date] || 0) + Number(d.cash_collected_upfront);
+    const from = new Date(fromISO + "T00:00:00");
+    return Array.from({ length: days }, (_, i) => {
+      const dt = new Date(from); dt.setDate(dt.getDate() + i);
+      return map[dt.toISOString().slice(0, 10)] ?? 0;
+    });
+  }, [rangeDeals, fromISO, days]);
+
+  const paymentBreakdown = useMemo(() => {
+    const pif = rangeDeals.filter((d) => d.payment_type === "pif").length;
+    const deposit = rangeDeals.filter((d) => d.payment_type === "deposit").length;
+    const split = rangeDeals.filter((d) => d.payment_type === "split").length;
+    return [
+      { label: "PIF", value: pif, color: "#22c55e" },
+      { label: "Deposit", value: deposit, color: "#3b82f6" },
+      { label: "Split", value: split, color: "#f59e0b" },
+    ];
+  }, [rangeDeals]);
 
   // Per-closer breakdown (MTD)
   const perCloser = useMemo(() => {
     const closerMap = new Map(closers.map((c) => [c.id, c]));
     const map = new Map<string, { cash: number; booked: number; deals: number; setCloseDeals: number; commission: number }>();
-    for (const d of monthDeals) {
+    for (const d of rangeDeals) {
       const closer = closerMap.get(d.closer_id);
       const c = map.get(d.closer_id) ?? { cash: 0, booked: 0, deals: 0, setCloseDeals: 0, commission: 0 };
       c.cash += Number(d.cash_collected_upfront);
@@ -123,13 +172,13 @@ function RevenuePage() {
     return Array.from(map.entries())
       .map(([id, v]) => ({ closer_id: id, name: nameMap.get(id) ?? "Unknown", ...v }))
       .sort((a, b) => b.cash - a.cash);
-  }, [monthDeals, closers, rates]);
+  }, [rangeDeals, closers, rates]);
 
   // Per-setter breakdown (MTD)
   const perSetter = useMemo(() => {
-    const weekBonusIds = setterWeekBonusIds(monthDeals);
+    const weekBonusIds = setterWeekBonusIds(rangeDeals);
     const map = new Map<string, { cash: number; deals: number; weekBonus: boolean; commission: number }>();
-    for (const d of monthDeals) {
+    for (const d of rangeDeals) {
       if (!d.setter_id) continue;
       const c = map.get(d.setter_id) ?? { cash: 0, deals: 0, weekBonus: false, commission: 0 };
       c.cash += Number(d.cash_collected_upfront);
@@ -145,7 +194,7 @@ function RevenuePage() {
         return { setter_id: id, name: nameMap.get(id) ?? "Unknown", ...v, commission: v.commission + bonusComm };
       })
       .sort((a, b) => b.commission - a.commission);
-  }, [monthDeals, setters, rates]);
+  }, [rangeDeals, setters, rates]);
 
   // Monthly / weekly / daily trend
   const [trendMode, setTrendMode] = useState<"monthly" | "weekly" | "daily">("monthly");
@@ -227,23 +276,55 @@ function RevenuePage() {
         <div>
           <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-1">Sales</div>
           <h1 className="text-2xl font-semibold tracking-tight">Revenue</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">Closes, cash, and commissions — month to date.</p>
         </div>
-        {canLog && (
-          <Button onClick={() => { setEditing(null); setLogOpen(true); }} size="sm">
-            <Plus className="h-4 w-4 mr-1" /> Log a close
-          </Button>
-        )}
+        <div className="flex items-center gap-2 flex-wrap">
+          <FilterToolbar value={dateRange} onChange={setDateRange} compare={compare} onCompareToggle={() => setCompare((c) => !c)} />
+          {canLog && (
+            <Button onClick={() => { setEditing(null); setLogOpen(true); }} size="sm">
+              <Plus className="h-4 w-4 mr-1" /> Log a close
+            </Button>
+          )}
+        </div>
       </header>
 
       <RevenueTabBar />
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <KpiCard label="Cash collected MTD" value={money(stats.cash)} icon={<DollarSign className="h-4 w-4" />} accent />
-        <KpiCard label="Booked value MTD" value={money(stats.booked)} icon={<TrendingUp className="h-4 w-4" />} />
-        <KpiCard label="Deals MTD" value={String(stats.count)} icon={<ClipboardList className="h-4 w-4" />} />
-        <KpiCard label="Avg deal size" value={money(stats.avg)} icon={<Trophy className="h-4 w-4" />} />
+        <StatCard
+          label="Cash collected"
+          value={money(stats.cash)}
+          icon={<DollarSign className="h-3.5 w-3.5" />}
+          accent
+          sparkData={cashSparkData}
+          delta={compare ? { value: stats.cash - prevStats.cash, format: "money" } : undefined}
+          noData={rangeDeals.length === 0}
+        />
+        <StatCard
+          label="Booked value"
+          value={money(stats.booked)}
+          icon={<TrendingUp className="h-3.5 w-3.5" />}
+          delta={compare ? { value: stats.booked - prevStats.booked, format: "money" } : undefined}
+          noData={rangeDeals.length === 0}
+        />
+        <StatCard
+          label="Deals"
+          value={String(stats.count)}
+          icon={<ClipboardList className="h-3.5 w-3.5" />}
+          delta={compare ? { value: stats.count - prevStats.count, format: "count" } : undefined}
+          noData={rangeDeals.length === 0}
+        />
+        <StatCard
+          label="Avg deal size"
+          value={money(stats.avg)}
+          icon={<Trophy className="h-3.5 w-3.5" />}
+          noData={rangeDeals.length === 0}
+        />
+      </div>
+
+      {/* Payment type breakdown */}
+      <div className="rounded-xl border border-white/[0.07] bg-card p-4">
+        <BreakdownBar segments={paymentBreakdown} title="Payment types" />
       </div>
 
       <div className="grid lg:grid-cols-3 gap-4">
@@ -510,18 +591,6 @@ function RevenuePage() {
         onSaved={() => { setLogOpen(false); setEditing(null); load(); }}
       />
     </div>
-  );
-}
-
-function KpiCard({ label, value, icon, accent }: { label: string; value: string; icon: React.ReactNode; accent?: boolean }) {
-  return (
-    <Card className={"p-4 " + (accent ? "border-emerald-500/30 bg-emerald-500/5" : "")}>
-      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground mb-2">
-        {icon}
-        {label}
-      </div>
-      <div className={"text-2xl font-semibold " + (accent ? "text-emerald-400" : "")}>{value}</div>
-    </Card>
   );
 }
 
