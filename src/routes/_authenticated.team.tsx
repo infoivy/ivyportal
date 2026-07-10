@@ -360,6 +360,51 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
           <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="+1 555 123 4567" inputMode="tel"
                  className="w-full h-9 px-2 rounded-sm border border-[#1f2530] bg-[#0a0b0f] text-sm" />
         </div>
+        <div className="space-y-1.5">
+          <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Roles</label>
+          <div className="flex flex-wrap gap-1.5">
+            {ROLES.map(r => {
+              const has = localRoles.includes(r.key);
+              const Icon = r.icon;
+              return (
+                <button
+                  key={r.key}
+                  onClick={() => toggle(r.key)}
+                  className={`flex items-center gap-1 text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border transition ${
+                    has ? r.color : "text-muted-foreground border-[#1f2530] bg-transparent hover:border-[#2a3140]"
+                  }`}
+                >
+                  <Icon className="h-3 w-3" /> {r.key}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        {showSetterType && (
+          <div className="space-y-1">
+            <label className="text-[10px] uppercase tracking-wider text-muted-foreground">Setter type</label>
+            <div className="flex gap-1.5">
+              {([
+                { key: null, label: "Not set" },
+                { key: "phone" as const, label: "Phone setter (100 dials + 3 sets/day)" },
+                { key: "dm" as const, label: "DM setter (125 contacted + 3 sets/day)" },
+              ]).map(opt => (
+                <button
+                  key={String(opt.key)}
+                  onClick={() => setSetterType(opt.key as SetterType)}
+                  className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border transition ${
+                    setterType === opt.key
+                      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400"
+                      : "border-[#1f2530] text-muted-foreground hover:border-[#2a3140]"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        <div className="text-[10px] text-muted-foreground font-mono pt-1 border-t border-[#1f2530]">ID: {member.id}</div>
         <div className="flex justify-end gap-2 pt-2 border-t border-[#1f2530]">
           <button onClick={onClose} className="text-xs text-muted-foreground hover:text-foreground px-3 py-1.5">Cancel</button>
           <button onClick={save} disabled={saving} className="text-xs bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-medium px-3 py-1.5 rounded-sm">
