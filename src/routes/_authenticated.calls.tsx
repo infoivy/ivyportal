@@ -173,29 +173,37 @@ function CallsPage() {
 
       {view === "table" ? (
         <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm overflow-hidden">
-          <div className="grid grid-cols-[0.7fr_1.3fr_1fr_0.9fr_0.9fr_0.7fr_auto] items-center px-4 py-2 border-b border-[var(--border)] text-[10px] text-muted-foreground gap-2">
-            <span>Date</span><span>Student</span><span>Coach</span><span title="1–5 stars — how the student is progressing overall">Progress (1–5)</span><span title="Open action items / total">Action items</span><span>Fathom</span><span />
+          <div className="grid grid-cols-[64px_1.3fr_auto] sm:grid-cols-[0.7fr_1.3fr_1fr_0.9fr_0.9fr_0.7fr_auto] items-center px-4 py-2 border-b border-[var(--border)] text-[10px] text-muted-foreground gap-2">
+            <span>Date</span><span>Student</span><span className="hidden sm:block">Coach</span><span className="hidden sm:block" title="1–5 stars — how the student is progressing overall">Progress (1–5)</span><span className="hidden sm:block" title="Open action items / total">Action items</span><span className="hidden sm:block">Fathom</span><span />
           </div>
           {filtered.length === 0 && <div className="p-8 text-center text-xs text-muted-foreground">No calls match your filters.</div>}
           {filtered.map(c => {
             const openA = c.action_items_json?.filter(a => !a.done).length ?? 0;
             const totalA = c.action_items_json?.length ?? 0;
             return (
-              <div key={c.id} className="grid grid-cols-[0.7fr_1.3fr_1fr_0.9fr_0.9fr_0.7fr_auto] items-center gap-2 px-4 py-3 border-b border-[var(--accent)] last:border-0 hover:bg-[var(--muted)]">
-                <span className="text-xs text-muted-foreground">{c.call_date}</span>
-                <Link to={"/students/$id" as any} params={{ id: c.student_id } as any} className="text-sm truncate hover:text-success-fg">
-                  {studentName(c.student_id)}
-                </Link>
-                <span className="text-xs text-muted-foreground truncate">{coachName(c.coach_id)}</span>
-                <span className="flex items-center gap-0.5 text-xs" title="Progress rating: 1 (stuck) – 5 (crushing it)">
+              <div key={c.id} className="grid grid-cols-[64px_1.3fr_auto] sm:grid-cols-[0.7fr_1.3fr_1fr_0.9fr_0.9fr_0.7fr_auto] items-center gap-2 px-4 py-3 border-b border-[var(--accent)] last:border-0 hover:bg-[var(--muted)]">
+                <span className="text-xs text-muted-foreground whitespace-nowrap"><span className="sm:hidden">{c.call_date.slice(5)}</span><span className="hidden sm:inline">{c.call_date}</span></span>
+                <div className="min-w-0">
+                  <Link to={"/students/$id" as any} params={{ id: c.student_id } as any} className="block text-sm truncate hover:text-success-fg">
+                    {studentName(c.student_id)}
+                  </Link>
+                  <div className="sm:hidden mt-0.5 flex flex-wrap items-center gap-x-2 text-[11px] text-muted-foreground">
+                    <span className="truncate max-w-[120px]">{coachName(c.coach_id)}</span>
+                    {c.progress_rating ? <span className="text-warning-fg">{"★".repeat(c.progress_rating)}</span> : null}
+                    {totalA ? <span className={openA > 0 ? "text-warning-fg" : ""}>{totalA - openA}/{totalA} done</span> : null}
+                    {c.fathom_url && <a href={c.fathom_url} target="_blank" rel="noopener" className="text-success-fg">Fathom</a>}
+                  </div>
+                </div>
+                <span className="hidden sm:block text-xs text-muted-foreground truncate">{coachName(c.coach_id)}</span>
+                <span className="hidden sm:flex items-center gap-0.5 text-xs" title="Progress rating: 1 (stuck) – 5 (crushing it)">
                   {c.progress_rating ? Array.from({ length: 5 }).map((_, i) => (
                     <Star key={i} className={`h-3 w-3 ${i < c.progress_rating! ? "fill-amber-400 text-warning-fg" : "text-[#2a3140]"}`} />
                   )) : <span className="text-muted-foreground">—</span>}
                 </span>
-                <span className={`text-xs ${openA > 0 ? "text-warning-fg" : "text-muted-foreground"}`} title="Open / total action items from this call">
+                <span className={`hidden sm:block text-xs ${openA > 0 ? "text-warning-fg" : "text-muted-foreground"}`} title="Open / total action items from this call">
                   {totalA ? `${totalA - openA}/${totalA} done` : "—"}
                 </span>
-                <span>
+                <span className="hidden sm:block">
                   {c.fathom_url ? (
                     <a href={c.fathom_url} target="_blank" rel="noopener" className="flex items-center gap-1 text-success-fg hover:text-success-fg text-[11px]">
                       <Video className="h-3 w-3" /> Open <ExternalLink className="h-2.5 w-2.5" />

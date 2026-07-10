@@ -276,7 +276,7 @@ function ActionItemsHub() {
       <section key={sec.label} className="space-y-2">
         <h2 className="text-micro font-medium uppercase tracking-[0.08em] text-muted-foreground/70 px-1">{sec.label} · {sec.items.length}</h2>
         <div className="border border-[var(--border)] bg-[var(--card)] rounded-lg overflow-hidden">
-        <div className="grid grid-cols-[24px_minmax(0,1fr)_140px_120px_90px_28px] gap-2 px-3 py-2 border-b border-[var(--border)] text-[10px] text-muted-foreground">
+        <div className="hidden sm:grid grid-cols-[24px_minmax(0,1fr)_140px_120px_90px_28px] gap-2 px-3 py-2 border-b border-[var(--border)] text-[10px] text-muted-foreground">
           <span />
           <span>Item</span>
           <span>{sec.label === "Team" ? "Assignee" : "Student"}</span>
@@ -289,7 +289,7 @@ function ActionItemsHub() {
           return (
             <div
               key={r.key}
-              className="grid grid-cols-[24px_minmax(0,1fr)_140px_120px_90px_28px] gap-2 items-center px-3 py-2.5 border-b border-[var(--accent)] last:border-0 hover:bg-[var(--muted)]"
+              className="grid grid-cols-[24px_minmax(0,1fr)_28px] sm:grid-cols-[24px_minmax(0,1fr)_140px_120px_90px_28px] gap-2 items-center px-3 py-2.5 border-b border-[var(--accent)] last:border-0 hover:bg-[var(--muted)]"
               title={r.source === "call" ? "From 1:1 call — student ticks off in portal" : "Ad-hoc — staff or student can tick off"}
             >
               <Checkbox
@@ -308,18 +308,33 @@ function ActionItemsHub() {
                   {r.source === "adhoc" && r.createdByName && r.createdByName !== r.ownerName ? ` · from ${r.createdByName}` : ""}
                   {r.done ? " · ticked" : ""}
                 </div>
+                <div className="sm:hidden mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
+                  {r.studentId ? (
+                    <Link to="/students/$id" params={{ id: r.studentId }} className="inline-flex items-center gap-1 hover:text-success-fg">
+                      <User className="h-3 w-3" /> {r.studentName}
+                    </Link>
+                  ) : (
+                    <span className="inline-flex items-center gap-1"><User className="h-3 w-3" /> {r.studentName}</span>
+                  )}
+                  {r.ownerName && <span>· {r.ownerName}</span>}
+                  {r.due && (
+                    <span className={`inline-flex items-center gap-1 ${overdue ? "text-danger-fg" : ""}`}>
+                      · {overdue && <AlertTriangle className="h-3 w-3" />}{r.due}
+                    </span>
+                  )}
+                </div>
               </div>
               {r.studentId ? (
-                <Link to="/students/$id" params={{ id: r.studentId }} className="text-xs truncate hover:text-success-fg flex items-center gap-1">
+                <Link to="/students/$id" params={{ id: r.studentId }} className="hidden sm:flex text-xs truncate hover:text-success-fg items-center gap-1">
                   <User className="h-3 w-3 text-muted-foreground" /> {r.studentName}
                 </Link>
               ) : (
-                <span className="text-xs truncate flex items-center gap-1 text-foreground">
+                <span className="hidden sm:flex text-xs truncate items-center gap-1 text-foreground">
                   <User className="h-3 w-3 text-muted-foreground" /> {r.studentName}
                 </span>
               )}
-              <span className="text-xs text-muted-foreground truncate" title={r.ownerLabel}>{r.ownerName}</span>
-              <span className={`text-[11px] text-right ${overdue ? "text-danger-fg" : r.due ? "text-muted-foreground" : "text-[#2a3140]"}`}>
+              <span className="hidden sm:block text-xs text-muted-foreground truncate" title={r.ownerLabel}>{r.ownerName}</span>
+              <span className={`hidden sm:block text-[11px] text-right ${overdue ? "text-danger-fg" : r.due ? "text-muted-foreground" : "text-[#2a3140]"}`}>
                 {r.due ? (overdue ? <span className="inline-flex items-center gap-1"><AlertTriangle className="h-3 w-3" />{r.due}</span> : r.due) : "—"}
               </span>
               <span className="flex justify-end">

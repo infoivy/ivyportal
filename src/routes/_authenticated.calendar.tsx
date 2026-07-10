@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/lib/auth-context";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { DateField } from "@/components/ui/date-field";
 import {
   disconnectMyCalendar, getMyCalendarConnection, getTeamCalendarEvents, createSetReminder,
@@ -118,10 +119,24 @@ function CalendarPage() {
   const [selectedEvent, setSelectedEvent] = useState<TeamEvent | null>(null);
   const qc = useQueryClient();
 
-  const weekEnd = useMemo(() => endOfWeek(weekStart, { weekStartsOn: 1 }), [weekStart]);
+  const isMobile = useIsMobile();
+  const daySpan = isMobile ? 3 : 7;
+  // On phones a full week is unreadable — show a 3-day window anchored on today.
+  useEffect(() => {
+    if (isMobile) setWeekStart((w) => {
+      const now = shiftToTz(new Date(), tz);
+      now.setHours(0, 0, 0, 0);
+      return w <= now && now < addDays(w, 7) ? now : w;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMobile]);
+  const weekEnd = useMemo(
+    () => (daySpan === 7 ? endOfWeek(weekStart, { weekStartsOn: 1 }) : addDays(weekStart, daySpan - 1)),
+    [weekStart, daySpan],
+  );
   const days = useMemo(
-    () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
-    [weekStart],
+    () => Array.from({ length: daySpan }, (_, i) => addDays(weekStart, i)),
+    [weekStart, daySpan],
   );
 
   const myConnFn = useServerFn(getMyCalendarConnection);
@@ -148,7 +163,7 @@ function CalendarPage() {
   const myConn = useQuery({ queryKey: ["cal", "me"], queryFn: () => myConnFn() });
   const team = useQuery({ queryKey: ["cal", "team"], queryFn: () => teamStatusFn() });
   const events = useQuery({
-    queryKey: ["cal", "events", weekStart.toISOString()],
+    queryKey: ["cal", "events", weekStart.toISOString(), daySpan],
     queryFn: () => teamEventsFn({
       data: { timeMin: weekStart.toISOString(), timeMax: addDays(weekEnd, 1).toISOString() },
     }),
@@ -293,7 +308,7 @@ function CalendarPage() {
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex flex-wrap items-center gap-1">
               <select
                 value={tz}
                 onChange={(e) => changeTz(e.target.value)}
@@ -302,16 +317,16 @@ function CalendarPage() {
               >
                 {TZ_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
-              <Button size="icon" variant="ghost" onClick={() => setWeekStart((w) => subWeeks(w, 1))}>
+              <Button size="icon" variant="ghost" onClick={() => setWeekStart((w) => (daySpan === 7 ? subWeeks(w, 1) : addDays(w, -daySpan)))}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <Button size="sm" variant="ghost" onClick={() => setWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))}>
+              <Button size="sm" variant="ghost" onClick={() => { const now = shiftToTz(new Date(), tz); now.setHours(0, 0, 0, 0); setWeekStart(daySpan === 7 ? startOfWeek(now, { weekStartsOn: 1 }) : now); }}>
                 Today
               </Button>
-              <Button size="icon" variant="ghost" onClick={() => setWeekStart((w) => addWeeks(w, 1))}>
+              <Button size="icon" variant="ghost" onClick={() => setWeekStart((w) => (daySpan === 7 ? addWeeks(w, 1) : addDays(w, daySpan)))}>
                 <ChevronRight className="h-4 w-4" />
               </Button>
-              <span className="ml-2 text-sm text-muted-foreground tabular-nums">
+              <span className="ml-1 sm:ml-2 basis-full sm:basis-auto text-sm text-muted-foreground tabular-nums">
                 {format(weekStart, "MMM d")} – {format(weekEnd, "MMM d, yyyy")}
               </span>
             </div>
@@ -321,7 +336,7 @@ function CalendarPage() {
         {/* Week grid — full 24h, scrollable, opens at the working day */}
         <Card className="p-0 border-border/60 overflow-hidden">
           <div ref={gridScrollRef} className="max-h-[68vh] overflow-y-auto">
-          <div className="grid" style={{ gridTemplateColumns: "48px repeat(7, minmax(0, 1fr))" }}>
+          <div className="grid" style={{ gridTemplateColumns: `${isMobile ? 40 : 48}px repeat(${daySpan}, minmax(0, 1fr))` }}>
             {/* header row */}
             <div className="sticky top-0 z-20 border-b border-border/60 bg-card" />
             {days.map((d) => {

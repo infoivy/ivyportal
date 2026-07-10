@@ -234,14 +234,14 @@ function TeamPage() {
       </div>
 
       <div className="card-surface overflow-hidden">
-        <div className="grid grid-cols-[1fr_auto_auto] items-center px-4 py-2 border-b border-[var(--border)] text-[12px] text-muted-foreground gap-4">
+        <div className="grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_auto_auto] items-center px-4 py-2 border-b border-[var(--border)] text-[12px] text-muted-foreground gap-4">
           <span>Member</span>
-          <span>Roles</span>
+          <span className="hidden sm:block">Roles</span>
           <span>Actions</span>
         </div>
         {filtered.length === 0 && <div className="p-6 text-center text-xs text-muted-foreground">No members match "{q}"</div>}
         {filtered.map(m => (
-          <div key={m.id} className={`grid grid-cols-[1fr_auto_auto] items-center gap-4 px-4 py-3 border-b border-[var(--accent)] last:border-0 hover:bg-[var(--muted)] transition ${!m.active ? "opacity-50" : ""}`}>
+          <div key={m.id} className={`grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[1fr_auto_auto] items-center gap-x-4 gap-y-2 px-4 py-3 border-b border-[var(--accent)] last:border-0 hover:bg-[var(--muted)] transition ${!m.active ? "opacity-50" : ""}`}>
             <div className="flex items-center gap-3 min-w-0">
               <div className="h-9 w-9 rounded-sm bg-[var(--accent)] border border-[var(--border)] overflow-hidden flex items-center justify-center text-xs font-semibold text-muted-foreground shrink-0">
                 {m.avatar_path && avatarUrls[m.avatar_path]
@@ -278,7 +278,7 @@ function TeamPage() {
                 </div>
               </div>
             </div>
-            <div className="flex gap-1.5 flex-wrap justify-end">
+            <div className="col-span-2 sm:col-span-1 order-last sm:order-none flex gap-1.5 flex-wrap justify-start sm:justify-end">
               {ROLES.filter(r => m.roles.includes(r.key)).map(r => {
                 const Icon = r.icon;
                 return (
