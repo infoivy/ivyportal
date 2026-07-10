@@ -231,11 +231,10 @@ function EODsPage() {
 
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-5">
-      <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--border)] pb-4">
+      <header className="flex flex-wrap items-end justify-between gap-3 pb-5 mb-1">
         <div>
-          <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-1">Daily Reporting</div>
-          <h1 className="text-2xl font-semibold tracking-tight">End of Day</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">Log your numbers. Track the funnel. Ship consistency.</p>
+          <h1 className="text-[32px] font-bold tracking-[-0.02em] text-foreground leading-none">End of Day</h1>
+          <p className="text-[15px] text-muted-foreground mt-1.5">Log your numbers. Track the funnel. Ship consistency.</p>
         </div>
         <div className="flex items-center gap-2">
           {!isFounder && (
@@ -252,8 +251,8 @@ function EODsPage() {
       {(filesEods || canViewTeam) && (
         <div className="grid md:grid-cols-2 gap-3">
           {filesEods && (
-            <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-3">
-              <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground mb-2">My week (last 7 days)</div>
+            <div className="card-surface p-3">
+              <div className="text-[13px] text-muted-foreground mb-2">My week (last 7 days)</div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <MiniChip label="Streak" value={`${streak}d`} tone="amber" icon={<Flame className="h-3 w-3" />} />
                 <MiniChip label="Reports" value={`${myWeek.submitted}/7`} />
@@ -271,8 +270,8 @@ function EODsPage() {
             </div>
           )}
           {canViewTeam && (
-            <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-3">
-              <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground mb-2">Team today</div>
+            <div className="card-surface p-3">
+              <div className="text-[13px] text-muted-foreground mb-2">Team today</div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <MiniChip label="Submitted" value={`${teamToday.submitted}/${teamToday.expected}`} tone={teamToday.submitted === teamToday.expected ? "green" : "amber"} />
                 <MiniChip label="Dials + leads" value={teamToday.dials.toLocaleString()} />
@@ -285,7 +284,7 @@ function EODsPage() {
       )}
 
       {isFounder && (
-        <div className="rounded-sm border border-border bg-card px-4 py-3 text-xs text-muted-foreground">
+        <div className="card-surface px-4 py-3 text-[13px] text-muted-foreground">
           This account has no setter or closer role — you don't submit EODs. Use the tabs below to view team reports.
         </div>
       )}
@@ -386,11 +385,11 @@ function EODsPage() {
                     <SectionLabel>Cash</SectionLabel>
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
-                        <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Cash collected today ($)</Label>
+                        <Label className="text-[13px] text-muted-foreground">Cash collected today ($)</Label>
                         <Input type="number" min={0} step="0.01" value={form.cash_collected} onChange={e => setFloat("cash_collected")(e.target.value)} onFocus={e => e.currentTarget.select()} className="bg-[var(--background)] border-[var(--border)] rounded-sm h-9 text-sm" />
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Deferred cash — PIF &lt;30d ($)</Label>
+                        <Label className="text-[13px] text-muted-foreground">Deferred cash — PIF &lt;30d ($)</Label>
                         <Input type="number" min={0} step="0.01" value={form.deferred_cash} onChange={e => setFloat("deferred_cash")(e.target.value)} onFocus={e => e.currentTarget.select()} className="bg-[var(--background)] border-[var(--border)] rounded-sm h-9 text-sm" />
                       </div>
                     </div>
@@ -417,8 +416,8 @@ function EODsPage() {
               ) : (
                 <MyLast7Panel myEods={myEods} today={today} setterType={mySetterType} />
               )}
-              <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-4 text-[11px] text-muted-foreground leading-relaxed">
-                <div className="text-[10px] uppercase tracking-widest text-green-400 mb-2">Pro tip</div>
+              <div className="card-surface p-4 text-[13px] text-muted-foreground leading-relaxed">
+                <div className="text-[13px] font-medium text-primary mb-2">Pro tip</div>
                 Submit before <span className="text-foreground">23:59</span>. Missed days hurt the team's rolling average.
               </div>
             </aside>
@@ -564,7 +563,7 @@ function OverviewCard({ card }: { card: {
         <span className="text-sm">{card.todayLine}</span>
       </div>
       <div>
-        <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">This week</div>
+        <div className="text-[13px] text-muted-foreground mb-1.5">This week</div>
         <div className="flex gap-1.5">
           {card.week.map(w => {
             const dt = new Date(w.d + "T00:00:00");
@@ -771,9 +770,9 @@ function ComplianceMatrix({ eods, roster }: { eods: GridEod[]; roster: RosterEnt
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2 flex-wrap">
-        <div className="inline-flex rounded-sm border border-border bg-card p-0.5">
+        <div className="inline-flex rounded-lg bg-muted p-[3px]">
           {[7, 14, 30, 90].map(n => (
-            <button key={n} onClick={() => setDays(n as 7 | 14 | 30 | 90)} className={`text-[11px] font-semibold px-2.5 py-1 rounded-[2px] transition ${days === n ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"}`}>{n}D</button>
+            <button key={n} onClick={() => setDays(n as 7 | 14 | 30 | 90)} className={`text-[13px] font-medium px-3 py-1.5 rounded-[8px] leading-none motion-safe:transition-colors ${days === n ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>{n}D</button>
           ))}
         </div>
         <div className="text-[11px] text-muted-foreground">
@@ -784,7 +783,7 @@ function ComplianceMatrix({ eods, roster }: { eods: GridEod[]; roster: RosterEnt
       <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm overflow-x-auto">
         <table className="w-full min-w-[560px] text-xs">
           <thead>
-            <tr className="border-b border-[var(--border)] text-[10px] uppercase tracking-wider text-muted-foreground">
+            <tr className="border-b border-[var(--border)] text-[11px] text-muted-foreground">
               <th className="text-left px-3 py-2 sticky left-0 bg-[var(--card)] z-10">Person</th>
               {dayList.map(d => (<th key={d} className="px-1.5 py-2 text-center font-normal whitespace-nowrap">{fmtDayShort(new Date(d + "T00:00:00"))}</th>))}
               <th className="px-3 py-2 text-right font-normal">Streak</th>
@@ -797,7 +796,7 @@ function ComplianceMatrix({ eods, roster }: { eods: GridEod[]; roster: RosterEnt
               if (!members.length) return null;
               return (
                 <React.Fragment key={group.key}>
-                  <tr className="bg-[var(--background)]"><td colSpan={dayList.length + 3} className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">{group.label} · {members.length}</td></tr>
+                  <tr className="bg-[var(--background)]"><td colSpan={dayList.length + 3} className="px-3 py-1.5 text-[12px] text-muted-foreground">{group.label} · {members.length}</td></tr>
                   {members.map(m => {
                     const s = rowStats(m);
                     const st: SetterType = m.primary_role === "setter" ? m.setter_type : null;
@@ -805,7 +804,7 @@ function ComplianceMatrix({ eods, roster }: { eods: GridEod[]; roster: RosterEnt
                       <tr key={m.user_id} className="border-b border-[var(--accent)] last:border-0">
                         <td className="px-3 py-2 sticky left-0 bg-[var(--card)] font-medium truncate max-w-[180px]">
                           <div className="text-xs">{m.display_name}</div>
-                          <div className="text-[9px] uppercase tracking-wider text-muted-foreground">{m.setter_type ? `${m.setter_type} setter` : m.primary_role}</div>
+                          <div className="text-[11px] text-muted-foreground">{m.setter_type ? `${m.setter_type} setter` : m.primary_role}</div>
                         </td>
                         {dayList.map(d => {
                           const beforeJoin = m.joined_at && d < m.joined_at;
@@ -891,9 +890,9 @@ function ComplianceGraphs({ eods, roster }: { eods: GridEod[]; roster: RosterEnt
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 flex-wrap">
-        <div className="inline-flex rounded-sm border border-border bg-card p-0.5">
+        <div className="inline-flex rounded-lg bg-muted p-[3px]">
           {[7, 30, 90].map(n => (
-            <button key={n} onClick={() => setDays(n as 7 | 30 | 90)} className={`text-[11px] font-semibold px-2.5 py-1 rounded-[2px] transition ${days === n ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"}`}>{n}D</button>
+            <button key={n} onClick={() => setDays(n as 7 | 30 | 90)} className={`text-[13px] font-medium px-3 py-1.5 rounded-[8px] leading-none motion-safe:transition-colors ${days === n ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>{n}D</button>
           ))}
         </div>
         <select value={personFilter} onChange={e => setPersonFilter(e.target.value)} className="text-[11px] bg-[var(--background)] border border-[var(--border)] rounded-sm h-7 px-2">
@@ -902,7 +901,7 @@ function ComplianceGraphs({ eods, roster }: { eods: GridEod[]; roster: RosterEnt
         </select>
         <button
           onClick={() => setCompare(c => !c)}
-          className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1.5 rounded-sm border transition ${compare ? "border-emerald-500/40 text-emerald-400 bg-emerald-500/5" : "border-border text-muted-foreground hover:text-foreground"}`}
+          className={`inline-flex items-center gap-1.5 text-[13px] font-medium px-3 py-1.5 rounded-md motion-safe:transition-colors ${compare ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground hover:text-foreground"}`}
         >
           Compare prev
         </button>
@@ -1053,7 +1052,7 @@ function TeamFeed({ eods, isAdmin, onDelete }: { eods: GridEod[]; isAdmin: boole
       {grouped.length === 0 && <EmptyState text="No EODs in this range." />}
       {grouped.map(([day, rows]) => (
         <div key={day} className="space-y-2">
-          <div className="text-[11px] uppercase tracking-wider text-muted-foreground border-b border-[var(--border)] pb-1">
+          <div className="text-[13px] text-muted-foreground border-b border-[var(--border)] pb-1">
             {fmtLong(day)} — {rows.length} submitted
           </div>
           <div className="grid md:grid-cols-2 gap-2">
@@ -1084,11 +1083,11 @@ function FeedCard({ e, isAdmin, onDelete }: { e: GridEod; isAdmin: boolean; onDe
     chips.push({ label: "Roleplays", value: e.roleplays_reviewed });
   }
   return (
-    <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-3 space-y-2">
+    <div className="card-surface p-3 space-y-2">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <div className="text-sm font-semibold">{e.display_name}</div>
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{st ? `${st} setter` : e.primary_role}</div>
+          <div className="text-[15px] font-semibold">{e.display_name}</div>
+          <div className="text-[12px] text-muted-foreground">{st ? `${st} setter` : e.primary_role}</div>
         </div>
         <div className="flex items-center gap-2">
           {kpi !== null && <span className={`text-[10px] px-1.5 py-0.5 rounded-sm ${kpi ? "bg-green-500/15 text-green-400" : "bg-amber-500/15 text-amber-400"}`}>KPI {kpi ? "✓" : "✗"}</span>}
@@ -1117,8 +1116,8 @@ function FeedCard({ e, isAdmin, onDelete }: { e: GridEod; isAdmin: boolean; onDe
 function SubmittedTodayPanel({ roster, eods, today }: { roster: RosterEntry[]; eods: GridEod[]; today: string }) {
   const submittedIds = new Set(eods.filter(e => e.report_date === today).map(e => e.user_id));
   return (
-    <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-4">
-      <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-3">Who's submitted today</div>
+    <div className="card-surface p-4">
+      <div className="text-[13px] text-muted-foreground mb-3">Who's submitted today</div>
       <div className="space-y-1.5 text-xs max-h-64 overflow-y-auto">
         {roster.map(r => (
           <div key={r.user_id} className="flex items-center justify-between">
@@ -1136,8 +1135,8 @@ function MyLast7Panel({ myEods, today, setterType }: { myEods: EOD[]; today: str
   const days = useMemo(() => { const list: string[] = []; const t = new Date(today + "T00:00:00"); for (let i = 6; i >= 0; i--) { const d = new Date(t); d.setDate(t.getDate() - i); list.push(isoDate(d)); } return list; }, [today]);
   const byDate = new Map(myEods.map(e => [e.report_date, e]));
   return (
-    <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-4">
-      <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-3">My last 7 days</div>
+    <div className="card-surface p-4">
+      <div className="text-[13px] text-muted-foreground mb-3">My last 7 days</div>
       <div className="space-y-1.5 text-xs">
         {days.map(d => {
           const e = byDate.get(d);
@@ -1154,15 +1153,15 @@ function MyLast7Panel({ myEods, today, setterType }: { myEods: EOD[]; today: str
 // ---------- Small parts ----------
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
-  return <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground border-b border-[var(--border)] pb-1.5">{children}</div>;
+  return <div className="text-[13px] font-medium text-muted-foreground border-b border-[var(--border)] pb-1.5">{children}</div>;
 }
 
 function MiniChip({ label, value, tone, icon }: { label: string; value: number | string; tone?: "green" | "amber" | "default"; icon?: React.ReactNode }) {
-  const cls = tone === "green" ? "border-green-500/30 bg-green-500/5 text-green-400" : tone === "amber" ? "border-amber-500/30 bg-amber-500/5 text-amber-400" : "border-[var(--border)] bg-[var(--background)] text-foreground";
+  const valueColor = tone === "green" ? "text-primary" : tone === "amber" ? "text-amber-600 dark:text-amber-400" : "text-foreground";
   return (
-    <div className={`border rounded-sm p-2 ${cls}`}>
-      <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-muted-foreground mb-0.5">{icon}{label}</div>
-      <div className="text-base font-semibold">{value}</div>
+    <div className="card-surface p-2">
+      <div className="flex items-center gap-1 text-[12px] text-muted-foreground mb-0.5">{icon}{label}</div>
+      <div className={`text-[18px] font-semibold tabular-nums ${valueColor}`}>{value}</div>
     </div>
   );
 }
@@ -1173,7 +1172,7 @@ function KpiBar({ label, value, target }: { label: string; value: number; target
   return (
     <div>
       <div className="flex items-baseline justify-between mb-1">
-        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</span>
+        <span className="text-[13px] text-muted-foreground">{label}</span>
         <span className={`text-[11px] ${hit ? "text-green-400 font-semibold" : "text-foreground"}`}>{value} / {target}</span>
       </div>
       <div className="h-1.5 bg-[var(--accent)] rounded-sm overflow-hidden">
@@ -1187,7 +1186,7 @@ function NumField({ label, value, onChange }: { label: string; value: number; on
   const bump = (d: number) => onChange(String(Math.max(0, value + d)));
   return (
     <div className="space-y-1">
-      <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</Label>
+      <Label className="text-[13px] text-muted-foreground">{label}</Label>
       <div className="flex items-center gap-1">
         <button type="button" onClick={() => bump(-1)} className="h-9 w-8 rounded-sm border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--accent)] text-lg leading-none">−</button>
         <Input type="number" min={0} value={value} onChange={e => onChange(e.target.value)} onFocus={e => e.currentTarget.select()} className="bg-[var(--background)] border-[var(--border)] rounded-sm h-9 text-sm text-center" />
@@ -1200,7 +1199,7 @@ function NumField({ label, value, onChange }: { label: string; value: number; on
 function TextField({ label, value, onChange, rows = 2 }: { label: string; value: string; onChange: (v: string) => void; rows?: number }) {
   return (
     <div className="space-y-1">
-      <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</Label>
+      <Label className="text-[13px] text-muted-foreground">{label}</Label>
       <Textarea value={value} onChange={e => onChange(e.target.value)} rows={rows} className="bg-[var(--background)] border-[var(--border)] rounded-sm text-sm resize-none" />
     </div>
   );
@@ -1213,7 +1212,7 @@ function EmptyState({ text }: { text: string }) {
 function RowStat({ label, value, accent }: { label: string; value: number | string; accent?: boolean }) {
   return (
     <div className="flex items-baseline gap-1.5">
-      <span className="text-[9px] uppercase tracking-wider text-muted-foreground">{label}</span>
+      <span className="text-[12px] text-muted-foreground">{label}</span>
       <span className={`${accent ? "text-green-400 font-semibold" : "text-foreground"}`}>{value}</span>
     </div>
   );
