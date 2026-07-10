@@ -20,7 +20,7 @@ export const Route = createFileRoute("/_authenticated/students/$id")({
   component: StudentDetail,
 });
 
-type Phase = "uncategorized" | "onboarding" | "coaching_1on1" | "training" | "graduated" | "paused";
+type Phase = "uncategorized" | "onboarding" | "coaching_1on1" | "applying" | "offer_won" | "testimonial" | "training" | "graduated" | "paused";
 type Status = "active" | "inactive" | "ghosting";
 type PaymentState = "paid_in_full" | "installments" | "behind";
 type Student = {
@@ -50,7 +50,7 @@ type Installment = { id: string; total_amount: number; currency: string; notes: 
 type Payment = { id: string; installment_id: string; sequence: number; amount: number; currency: string; due_date: string; status: string; paid_at: string | null };
 type Coach = { id: string; display_name: string | null };
 
-const PHASES: Phase[] = ["uncategorized", "onboarding", "coaching_1on1", "training", "graduated", "paused"];
+const PHASES: Phase[] = ["uncategorized", "onboarding", "coaching_1on1", "applying", "offer_won", "testimonial", "paused"];
 const STATUSES: Status[] = ["active", "inactive", "ghosting"];
 const GRADES = ["A", "B", "C", "D", "At Risk"];
 const PAYMENT_STATES: { key: PaymentState; label: string; color: string }[] = [

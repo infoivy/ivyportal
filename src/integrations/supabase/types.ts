@@ -1861,6 +1861,9 @@ export type Database = {
         | "training"
         | "graduated"
         | "paused"
+        | "applying"
+        | "offer_won"
+        | "testimonial"
       student_status: "active" | "inactive" | "ghosting"
       testimonial_status: "requested" | "received" | "approved" | "published"
       testimonial_type: "video" | "image" | "text" | "trustpilot"
@@ -2046,6 +2049,9 @@ export const Constants = {
         "training",
         "graduated",
         "paused",
+        "applying",
+        "offer_won",
+        "testimonial",
       ],
       student_status: ["active", "inactive", "ghosting"],
       testimonial_status: ["requested", "received", "approved", "published"],
@@ -2053,4 +2059,3 @@ export const Constants = {
     },
   },
 } as const
-

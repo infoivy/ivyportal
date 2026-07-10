@@ -22,7 +22,7 @@ export const Route = createFileRoute("/_authenticated/students")({
   component: StudentsLayout,
 });
 
-type Phase = "uncategorized" | "onboarding" | "coaching_1on1" | "training" | "graduated" | "paused";
+type Phase = "uncategorized" | "onboarding" | "coaching_1on1" | "applying" | "offer_won" | "testimonial" | "training" | "graduated" | "paused";
 type Status = "active" | "inactive" | "ghosting";
 type PaymentState = "paid_in_full" | "installments" | "behind";
 type Student = {
@@ -41,8 +41,9 @@ const PHASES: { key: Phase; label: string; color: string }[] = [
   { key: "uncategorized", label: "Uncategorized", color: "text-muted-foreground border-border bg-slate-500/5" },
   { key: "onboarding", label: "Onboarding", color: "text-muted-foreground border-border bg-muted" },
   { key: "coaching_1on1", label: "1:1 Coaching", color: "text-muted-foreground border-border bg-muted" },
-  { key: "training", label: "Training", color: "text-success-fg border-success/25 bg-success-bg" },
-  { key: "graduated", label: "Graduated", color: "text-warning-fg border-warning/25 bg-warning-bg" },
+  { key: "applying", label: "Applying", color: "text-success-fg border-success/25 bg-success-bg" },
+  { key: "offer_won", label: "Offer Won", color: "text-warning-fg border-warning/25 bg-warning-bg" },
+  { key: "testimonial", label: "Testimonial", color: "text-success-fg border-success/25 bg-success-bg" },
   { key: "paused", label: "Paused", color: "text-muted-foreground border-border bg-zinc-500/5" },
 ];
 const STATUSES: { key: Status; label: string; color: string }[] = [
@@ -56,7 +57,7 @@ const PAYMENT_META: Record<PaymentState, { label: string; color: string }> = {
   behind: { label: "Behind", color: "text-danger-fg border-danger/25 bg-danger-bg" },
 };
 
-const phaseMeta = (p: Phase) => PHASES.find(x => x.key === p)!;
+const phaseMeta = (p: Phase) => PHASES.find(x => x.key === p) ?? PHASES[0];
 const statusMeta = (s: Status) => STATUSES.find(x => x.key === s)!;
 
 type ColKey = "student" | "grade" | "phase" | "status" | "coach" | "payment" | "calls_remaining" | "last_call" | "last_eod" | "next_action" | "badges";
@@ -128,10 +129,12 @@ function StudentsLayout() {
   const daysSince = (dateStr: string) => Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
   const atRiskInfo = (s: Student): { risky: boolean; reasons: string[] } => {
     const reasons: string[] = [];
+    // Past coaching (offer won, testimonial) or dormant — not in the risk pool.
+    if (!["onboarding", "coaching_1on1", "applying"].includes(s.phase)) return { risky: false, reasons };
     if (s.status === "ghosting") reasons.push("Ghosting");
     const lastEod = lastEodByStudent[s.id];
     const eodDays = lastEod ? daysSince(lastEod) : null;
-    if (eodDays == null && s.phase !== "onboarding" && s.phase !== "graduated" && s.phase !== "paused") {
+    if (eodDays == null && s.phase !== "onboarding") {
       reasons.push("No EOD ever");
     } else if (eodDays != null && eodDays >= 5) {
       reasons.push(`No EOD ${eodDays}d`);
@@ -143,7 +146,7 @@ function StudentsLayout() {
       else if (d > 14) reasons.push(`No 1:1 ${d}d`);
     }
     const apps = apps7dByStudent[s.id] ?? 0;
-    if (s.phase !== "onboarding" && s.phase !== "graduated" && s.phase !== "paused" && apps === 0 && lastEod && daysSince(lastEod) < 7) {
+    if (s.phase !== "onboarding" && apps === 0 && lastEod && daysSince(lastEod) < 7) {
       reasons.push("Low apps");
     }
     return { risky: reasons.length > 0, reasons };

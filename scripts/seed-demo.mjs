@@ -151,8 +151,8 @@ for (let n = DAYS - 1; n >= 0; n--) {
 console.log(`  ${deals.length} deals · cash by month (old→new): ${cashByMonth.map((c) => "$" + c.toLocaleString()).join(" / ")}`);
 
 const phaseByAge = (n) => {
-  if (n > 75) return chance(0.35) ? "graduated" : chance(0.5) ? "training" : "coaching_1on1";
-  if (n > 45) return chance(0.6) ? "coaching_1on1" : "training";
+  if (n > 75) return chance(0.4) ? "offer_won" : chance(0.3) ? "testimonial" : "applying";
+  if (n > 45) return chance(0.55) ? "coaching_1on1" : "applying";
   if (n > 18) return chance(0.7) ? "coaching_1on1" : "onboarding";
   return "onboarding";
 };
@@ -167,8 +167,8 @@ const studentRows = deals.map((deal) => {
     join_date: deal.date,
     calls_included: 10, calls_allotted: 10,
     payment_state: deal.type === "pif" ? "paid_in_full" : chance(0.85) ? "installments" : "behind",
-    first_win_at: phase === "graduated" || (phase === "training" && chance(0.4)) ? iso(dayAgo(Math.max(2, deal.dayN - ri(25, 45)))) : null,
-    testimonial_collected: phase === "graduated" && chance(0.6),
+    first_win_at: ["offer_won", "testimonial"].includes(phase) || (phase === "applying" && chance(0.3)) ? iso(dayAgo(Math.max(2, deal.dayN - ri(25, 45)))) : null,
+    testimonial_collected: phase === "testimonial",
     is_demo: true,
   };
 });
@@ -348,12 +348,15 @@ console.log("Seeding 1:1 calls…");
 const callRows = [];
 const OUTCOMES = ["Dialed in the niche and offer angle.", "Reviewed loom feedback together.", "Roleplay: objection handling round 2.", "Application strategy for this week.", "Portfolio review + next milestones.", "Mindset reset, weekly plan rebuilt."];
 for (const [i, s] of insertedStudents.entries()) {
-  if (!["coaching_1on1", "training", "graduated"].includes(s.phase)) continue;
+  if (!["coaching_1on1", "applying", "offer_won", "testimonial"].includes(s.phase)) continue;
+  const doneCoaching = s.phase !== "coaching_1on1"; // used up their 1:1 block
   const start = new Date(s.join_date + "T00:00:00"); start.setDate(start.getDate() + 10);
-  const nCalls = s.phase === "graduated" ? ri(6, 9) : ri(2, 6);
-  for (let c = 0; c < nCalls; c++) {
+  // Weekly cadence from join+10 all the way to today (graduated students taper off).
+  for (let c = 0; ; c++) {
     const d = new Date(start); d.setDate(d.getDate() + c * 7 + ri(-1, 1));
     if (d >= today) break;
+    if (doneCoaching && c >= ri(7, 10)) break; // finished their 1:1 block
+    if (!doneCoaching && chance(0.12)) continue; // occasional skipped week
     const noShow = chance(0.07);
     callRows.push({
       student_id: s.id, coach_id: ID.musa, call_date: iso(d),
@@ -382,7 +385,7 @@ const AI_TEXTS = [
   "Record objection-handling loom", "Confirm payment method for installment 2", "Prep case study notes",
 ];
 const aiRows = [];
-const activeStudents = insertedStudents.filter((x) => x.phase !== "graduated");
+const activeStudents = insertedStudents.filter((x) => !["offer_won", "testimonial"].includes(x.phase));
 for (let i = 0; i < 26; i++) {
   const s = pick(activeStudents);
   const created = dayAgo(ri(0, 21));
@@ -416,12 +419,12 @@ console.log(`  ${aiRows.length} action items`);
 console.log("Seeding student EODs…");
 const sEodRows = [];
 for (const s of insertedStudents) {
-  if (!["onboarding", "coaching_1on1", "training"].includes(s.phase)) continue;
+  if (!["onboarding", "coaching_1on1", "applying"].includes(s.phase)) continue;
   const consistency = 0.45 + rnd() * 0.5; // some students grind, some coast
   const since = Math.min(DAYS - 1, Math.floor((today - new Date(s.join_date + "T00:00:00")) / 86400000));
   for (let n = Math.min(since, 45); n >= 0; n--) {
     if (!chance(consistency)) continue;
-    const training = s.phase !== "coaching_1on1";
+    const training = s.phase === "onboarding";
     sEodRows.push({
       student_id: s.id, report_date: iso(dayAgo(n)),
       roleplays: ri(0, 4), looms_sent: training ? ri(0, 4) : 0,
@@ -460,7 +463,7 @@ if (tallyErr) throw tallyErr;
 console.log(`  ${tallyRows.length} tallies`);
 
 // ── testimonials ─────────────────────────────────────────────────────────────
-const grads = insertedStudents.filter((s) => s.phase === "graduated");
+const grads = insertedStudents.filter((s) => ["offer_won", "testimonial"].includes(s.phase));
 const testiRows = grads.slice(0, 6).map((s, i) => ({
   student_id: s.id,
   type: pick(["text", "video", "text", "trustpilot"]),

@@ -131,9 +131,11 @@ function StudentSuccessInner() {
     );
 
     return students.filter(s => {
-      if (s.phase === "graduated" || s.phase === "paused") return false;
+      // Only students still in the active journey can be at-risk; the 1:1
+      // cadence check only applies while they are actually in coaching.
+      if (!["onboarding", "coaching_1on1", "applying"].includes(s.phase)) return false;
       const lastCall = recentCallByStudent.get(s.id);
-      const noRecentCall = !lastCall || lastCall < fourteenDaysAgo;
+      const noRecentCall = s.phase === "coaching_1on1" && (!lastCall || lastCall < fourteenDaysAgo);
       const isGhosting = s.status === "ghosting";
       const noRecentEod = !eodsByStudent.has(s.id);
       const paymentLate = lateStudentIds.has(s.id);
@@ -169,7 +171,7 @@ function StudentSuccessInner() {
   const pendingTestimonials = useMemo(() =>
     students.filter(s =>
       !s.testimonial_collected &&
-      (s.phase === "coaching_1on1" || s.phase === "graduated")
+      ["coaching_1on1", "applying", "offer_won"].includes(s.phase)
     ),
     [students]
   );
@@ -177,7 +179,7 @@ function StudentSuccessInner() {
   // Weekly digest stats
   const digest = useMemo(() => {
     const newThisWeek = students.filter(s => s.join_date >= weekStart).length;
-    const graduated = students.filter(s => s.phase === "graduated").length;
+    const graduated = students.filter(s => s.phase === "offer_won" || s.phase === "testimonial").length;
     const activeCsmNotes = csmNotes.length;
     const callsThisWeek = thisWeekCalls.length;
     return { newThisWeek, graduated, activeCsmNotes, callsThisWeek };
@@ -343,11 +345,11 @@ function StudentSuccessInner() {
                     </Link>
                     <div className="flex items-center gap-2">
                       <span className={`text-[12px] px-2 py-0.5 rounded-md border ${
-                        s.phase === "graduated"
+                        s.phase === "offer_won"
                           ? "border-warning/25 bg-warning-bg text-warning-fg"
                           : "border-border bg-muted text-muted-foreground"
                       }`}>
-                        {s.phase === "graduated" ? "Graduated" : "1:1 Coaching"}
+                        {s.phase === "offer_won" ? "Offer Won" : s.phase === "applying" ? "Applying" : "1:1 Coaching"}
                       </span>
                       <Link to="/students/$id" params={{ id: s.id }} className="text-[11px] px-2 py-1 rounded-sm border border-border text-muted-foreground hover:text-foreground transition">
                         Request →
@@ -364,7 +366,7 @@ function StudentSuccessInner() {
             <h2 className="text-[13px] text-muted-foreground">Weekly digest — {weekStart} to {weekEnd}</h2>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <DigestCard label="New students this week" value={digest.newThisWeek} icon={<Users className="h-4 w-4 text-muted-foreground" />} />
-              <DigestCard label="Total graduated" value={digest.graduated} icon={<Trophy className="h-4 w-4 text-warning-fg" />} />
+              <DigestCard label="Offers won" value={digest.graduated} icon={<Trophy className="h-4 w-4 text-warning-fg" />} />
               <DigestCard label="1:1s this week" value={digest.callsThisWeek} icon={<Phone className="h-4 w-4 text-muted-foreground" />} />
               <DigestCard label="CSM notes (14d)" value={digest.activeCsmNotes} icon={<TrendingUp className="h-4 w-4 text-success-fg" />} />
             </div>

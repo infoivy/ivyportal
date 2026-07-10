@@ -29,7 +29,7 @@ type EODRow = { id: string; user_id: string; report_date: string; dials: number;
 type TrendsRow = {
   id: string; user_id: string; report_date: string;
   dms_sent: number; convos_started: number; calls_booked: number;
-  calls_scheduled: number; shows: number; no_shows: number;
+  calls_scheduled: number; shows: number; no_shows: number; closes: number;
 };
 
 const isoDate = (d: Date) => d.toISOString().slice(0, 10);
@@ -326,7 +326,7 @@ function TrendsTab() {
     const pt = prevTo.toISOString().slice(0, 10);
     (async () => {
       const [r, prev, p] = await Promise.all([
-        supabase.from("eods").select("id, user_id, report_date, dms_sent, convos_started, calls_booked, calls_scheduled, shows, no_shows").gte("report_date", fromISO).lte("report_date", toISO).order("report_date"),
+        supabase.from("eods").select("id, user_id, report_date, dms_sent, convos_started, calls_booked, calls_scheduled, shows, no_shows, closes").gte("report_date", fromISO).lte("report_date", toISO).order("report_date"),
         compare
           ? supabase.from("eods").select("*").gte("report_date", pf).lte("report_date", pt).order("report_date")
           : Promise.resolve({ data: [] as TrendsRow[] }),
@@ -343,13 +343,13 @@ function TrendsTab() {
 
   const totals = useMemo(() => rows.reduce((a, r) => ({
     dms: a.dms + r.dms_sent, convos: a.convos + r.convos_started,
-    booked: a.booked + r.calls_booked, shows: a.shows + r.shows, noshows: a.noshows + r.no_shows,
-  }), { dms: 0, convos: 0, booked: 0, shows: 0, noshows: 0 }), [rows]);
+    booked: a.booked + r.calls_booked, shows: a.shows + r.shows, noshows: a.noshows + r.no_shows, closes: a.closes + (r.closes ?? 0),
+  }), { dms: 0, convos: 0, booked: 0, shows: 0, noshows: 0, closes: 0 }), [rows]);
 
   const prevTotals = useMemo(() => prevRows.reduce((a, r) => ({
     dms: a.dms + r.dms_sent, convos: a.convos + r.convos_started,
-    booked: a.booked + r.calls_booked, shows: a.shows + r.shows, noshows: a.noshows + r.no_shows,
-  }), { dms: 0, convos: 0, booked: 0, shows: 0, noshows: 0 }), [prevRows]);
+    booked: a.booked + r.calls_booked, shows: a.shows + r.shows, noshows: a.noshows + r.no_shows, closes: a.closes + (r.closes ?? 0),
+  }), { dms: 0, convos: 0, booked: 0, shows: 0, noshows: 0, closes: 0 }), [prevRows]);
 
   const perSetter = useMemo(() => {
     const by: Record<string, { user_id: string; dms: number; convos: number; booked: number; shows: number; noshows: number; days: number }> = {};
@@ -388,11 +388,11 @@ function TrendsTab() {
   const dmToConvo = totals.dms > 0 ? (totals.convos / totals.dms) * 100 : 0;
   const convoToBook = totals.convos > 0 ? (totals.booked / totals.convos) * 100 : 0;
   const bookToShow = totals.booked > 0 ? (totals.shows / totals.booked) * 100 : 0;
-  const showRate = totals.shows + totals.noshows > 0 ? (totals.shows / (totals.shows + totals.noshows)) * 100 : 0;
+  const closedRate = totals.shows > 0 ? (totals.closes / totals.shows) * 100 : 0;
   const prevDmToConvo = prevTotals.dms > 0 ? (prevTotals.convos / prevTotals.dms) * 100 : 0;
   const prevConvoToBook = prevTotals.convos > 0 ? (prevTotals.booked / prevTotals.convos) * 100 : 0;
   const prevBookToShow = prevTotals.booked > 0 ? (prevTotals.shows / prevTotals.booked) * 100 : 0;
-  const prevShowRate = prevTotals.shows + prevTotals.noshows > 0 ? (prevTotals.shows / (prevTotals.shows + prevTotals.noshows)) * 100 : 0;
+  const prevClosedRate = prevTotals.shows > 0 ? (prevTotals.closes / prevTotals.shows) * 100 : 0;
 
   const exportCsv = () => {
     const header = ["Setter", "Days", "DMs", "Convos", "Booked", "Shows", "No-shows", "Show %"];
@@ -433,7 +433,7 @@ function TrendsTab() {
         <StatCard label="DMs → Convos" value={`${dmToConvo.toFixed(1)}%`} icon={<TrendingUp className="h-3.5 w-3.5" />} hint={`${totals.convos.toLocaleString()} / ${totals.dms.toLocaleString()}`} delta={compare ? { value: dmToConvo - prevDmToConvo, format: "pct" } : undefined} noData={rows.length === 0} />
         <StatCard label="Convos → Booked" value={`${convoToBook.toFixed(1)}%`} icon={<TrendingUp className="h-3.5 w-3.5" />} hint={`${totals.booked.toLocaleString()} / ${totals.convos.toLocaleString()}`} delta={compare ? { value: convoToBook - prevConvoToBook, format: "pct" } : undefined} noData={rows.length === 0} />
         <StatCard label="Booked → Shows" value={`${bookToShow.toFixed(1)}%`} icon={<TrendingUp className="h-3.5 w-3.5" />} hint={`${totals.shows.toLocaleString()} / ${totals.booked.toLocaleString()}`} delta={compare ? { value: bookToShow - prevBookToShow, format: "pct" } : undefined} noData={rows.length === 0} />
-        <StatCard label="Show Rate" value={`${showRate.toFixed(0)}%`} icon={<TrendingUp className="h-3.5 w-3.5" />} hint={`${totals.shows.toLocaleString()} shows`} delta={compare ? { value: showRate - prevShowRate, format: "pct" } : undefined} noData={rows.length === 0} />
+        <StatCard label="Closed Rate" value={`${closedRate.toFixed(1)}%`} icon={<TrendingUp className="h-3.5 w-3.5" />} hint={`${totals.closes.toLocaleString()} / ${totals.shows.toLocaleString()} shows`} delta={compare ? { value: closedRate - prevClosedRate, format: "pct" } : undefined} noData={rows.length === 0} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">

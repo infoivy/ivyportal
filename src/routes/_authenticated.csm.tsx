@@ -326,12 +326,12 @@ function CsmPage() {
           </div>
           <div className="max-h-[720px] overflow-auto divide-y divide-[var(--accent)]">
             {filteredStudents.map(s => (
-              <button key={s.id} onClick={() => setStudentId(s.id)} className={`w-full text-left p-3 hover:bg-[var(--muted)] transition ${studentId === s.id ? "bg-warning-bg border-l-2 border-warning" : ""}`}>
+              <button key={s.id} onClick={() => setStudentId(s.id)} className={`w-full text-left p-3 hover:bg-[var(--muted)] transition ${studentId === s.id ? "bg-[var(--muted)] shadow-[inset_2px_0_0_0_var(--warning)]" : ""}`}>
                 <div className="text-sm font-medium truncate">{s.full_name}</div>
                 <div className="text-[10px] text-muted-foreground truncate">{s.email ?? "no email"}</div>
                 <div className="mt-1 flex gap-1">
-                  <span className="text-[9px] px-1.5 py-0.5 border border-[#2a3140] rounded-sm text-muted-foreground">{s.phase.replace("_", " ")}</span>
-                  <span className="text-[9px] px-1.5 py-0.5 border border-[#2a3140] rounded-sm text-muted-foreground">{s.status}</span>
+                  <span className="text-[9px] px-1.5 py-0.5 border border-border rounded-sm text-muted-foreground">{s.phase.replace("_", " ")}</span>
+                  <span className="text-[9px] px-1.5 py-0.5 border border-border rounded-sm text-muted-foreground">{s.status}</span>
                 </div>
               </button>
             ))}

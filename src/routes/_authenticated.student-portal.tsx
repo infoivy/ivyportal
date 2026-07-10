@@ -53,8 +53,9 @@ type Tab = "eod" | "actions" | "coaching" | "milestones";
 const PHASES: { key: string; label: string }[] = [
   { key: "onboarding", label: "Onboarding" },
   { key: "coaching_1on1", label: "1:1 Coaching" },
-  { key: "training", label: "Training" },
-  { key: "graduated", label: "Graduated" },
+  { key: "applying", label: "Applying" },
+  { key: "offer_won", label: "Offer Won" },
+  { key: "testimonial", label: "Testimonial" },
 ];
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
@@ -233,7 +234,7 @@ function StudentPortal() {
     [completedCalls]
   );
 
-  const isTraining = student?.phase === "training" || student?.phase === "onboarding";
+  const isTraining = student?.phase === "onboarding";
 
   const submit = async () => {
     if (!student) return;
