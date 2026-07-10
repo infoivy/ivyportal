@@ -60,7 +60,18 @@ function KnowledgeDoc() {
     })();
   }, [slug]);
 
-  const toc = useToc(doc?.content ?? "");
+  const [findQ, setFindQ] = useState("");
+  const filteredContent = useMemo(() => {
+    if (!doc) return "";
+    if (!findQ.trim()) return doc.content;
+    const term = findQ.trim().toLowerCase();
+    // Keep paragraphs (blank-line-separated blocks) whose text contains the term.
+    const blocks = doc.content.split(/\n{2,}/);
+    const kept = blocks.filter((b) => b.toLowerCase().includes(term));
+    return kept.length ? kept.join("\n\n") : "";
+  }, [doc, findQ]);
+
+  const toc = useToc(filteredContent);
 
   const handleDelete = async () => {
     if (!doc) return;
