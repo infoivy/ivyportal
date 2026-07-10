@@ -154,14 +154,21 @@ export const getTeamCalendarEvents = createServerFn({ method: "POST" })
     return events;
   });
 
+/** Reminder cadence for sets: 2 days, 1 day, 3 hours, 1 hour before. */
+export const SET_REMINDER_MINUTES = [2 * 24 * 60, 24 * 60, 3 * 60, 60];
+
 /**
  * Set reminder: creates the booked call on the setter's own Google Calendar
- * with popup reminders 3 days, 1 day, and 3 hours before — so the prospect
- * gets reminded, called, and followed up with before the call.
+ * with popup reminders 2 days, 1 day, 3 hours, and 1 hour before — confirm,
+ * remind, call, follow up. Also records the set in set_reminders so the
+ * upcoming-sets list shows it to the whole sales team.
  */
 export const createSetReminder = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { prospect: string; startISO: string; durationMin: number; notes?: string }) => data)
+  .inputValidator((data: {
+    prospect: string; startISO: string; durationMin: number; notes?: string;
+    source?: "manual" | "claimed";
+  }) => data)
   .handler(async ({ context, data }) => {
     const { data: conn } = await context.supabase
       .from("calendar_connections")
@@ -186,12 +193,73 @@ export const createSetReminder = createServerFn({ method: "POST" })
     const end = new Date(start.getTime() + Math.max(15, data.durationMin) * 60_000);
     const event = await insertCalendarEvent(accessToken!, conn.calendar_id, {
       summary: `Set: ${data.prospect}`,
-      description: [data.notes, "Reminders: 3 days · 1 day · 3 hours before. Confirm, call, follow up."]
+      description: [data.notes, "Reminders: 2 days · 1 day · 3 hours · 1 hour before. Confirm, remind, call, follow up."]
         .filter(Boolean)
         .join("\n\n"),
       startISO: start.toISOString(),
       endISO: end.toISOString(),
-      reminderMinutes: [3 * 24 * 60, 24 * 60, 3 * 60],
+      reminderMinutes: SET_REMINDER_MINUTES,
     });
+
+    // Track it for the upcoming-sets list (RLS: owner must be the caller)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: insErr } = await (context.supabase as any).from("set_reminders").insert({
+      owner_id: context.userId,
+      prospect: data.prospect,
+      event_start: start.toISOString(),
+      duration_min: Math.max(15, data.durationMin),
+      notes: data.notes ?? null,
+      source: data.source ?? "manual",
+      gcal_event_id: event.id,
+      gcal_html_link: event.htmlLink ?? null,
+    });
+    if (insErr) console.error("[set_reminders] insert failed:", insErr.message);
+
     return { ok: true, htmlLink: event.htmlLink ?? null };
+  });
+
+export type UpcomingSet = {
+  id: string;
+  owner_id: string;
+  owner_name: string;
+  prospect: string;
+  event_start: string;
+  duration_min: number;
+  notes: string | null;
+  source: string;
+  gcal_html_link: string | null;
+};
+
+/** Upcoming sets across the sales team, soonest first. */
+export const listUpcomingSets = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: rows, error } = await (context.supabase as any)
+      .from("set_reminders")
+      .select("*")
+      .gte("event_start", new Date(Date.now() - 60 * 60 * 1000).toISOString())
+      .order("event_start", { ascending: true })
+      .limit(200);
+    if (error) throw new Error(error.message);
+    const ids = Array.from(new Set(((rows ?? []) as { owner_id: string }[]).map((r) => r.owner_id)));
+    const { data: profs } = ids.length
+      ? await context.supabase.from("profiles").select("id, display_name").in("id", ids)
+      : { data: [] };
+    const pmap = new Map((profs ?? []).map((p) => [p.id, p.display_name ?? "Unknown"]));
+    return ((rows ?? []) as Omit<UpcomingSet, "owner_name">[]).map((r) => ({
+      ...r,
+      owner_name: pmap.get(r.owner_id) ?? "Unknown",
+    })) as UpcomingSet[];
+  });
+
+/** Remove a set reminder row (own or admin; the calendar event stays). */
+export const deleteSetReminder = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { id: string }) => data)
+  .handler(async ({ context, data }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (context.supabase as any).from("set_reminders").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });

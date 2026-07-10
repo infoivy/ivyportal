@@ -7,7 +7,7 @@ import {
   addDays, addWeeks, endOfWeek, format, isSameDay, startOfWeek, subWeeks,
 } from "date-fns";
 import {
-  CalendarClock, ChevronLeft, ChevronRight, ExternalLink, Link2Off, Plus,
+  CalendarClock, ChevronLeft, ChevronRight, ExternalLink, Link2Off, Plus, X,
   RefreshCw, Users2, Video,
 } from "lucide-react";
 
@@ -15,8 +15,10 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/lib/auth-context";
 import {
   disconnectMyCalendar, getMyCalendarConnection, getTeamCalendarEvents, createSetReminder,
+  listUpcomingSets, deleteSetReminder, type UpcomingSet,
   getTeamCalendarStatus, startGoogleCalendarAuth, type TeamEvent,
 } from "@/lib/calendar.functions";
 
@@ -55,7 +57,11 @@ function CalendarPage() {
   const startAuthFn = useServerFn(startGoogleCalendarAuth);
   const disconnectFn = useServerFn(disconnectMyCalendar);
   const setReminderFn = useServerFn(createSetReminder);
+  const listSetsFn = useServerFn(listUpcomingSets);
+  const deleteSetFn = useServerFn(deleteSetReminder);
   const [setOpen, setSetOpen] = useState(false);
+  const [setsFilter, setSetsFilter] = useState<"all" | "mine">("all");
+  const upcomingSets = useQuery({ queryKey: ["cal", "sets"], queryFn: () => listSetsFn(), staleTime: 30_000 });
 
   const myConn = useQuery({ queryKey: ["cal", "me"], queryFn: () => myConnFn() });
   const team = useQuery({ queryKey: ["cal", "team"], queryFn: () => teamStatusFn() });
@@ -244,9 +250,61 @@ function CalendarPage() {
           )}
         </Card>
 
+        {/* Set reminders — every upcoming set and its reminder schedule */}
+        <Card className="p-4 border-border/60 space-y-3">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <h2 className="text-title text-foreground">Set reminders</h2>
+              <p className="text-caption text-muted-foreground">Upcoming sets · each reminds its setter 2 days, 1 day, 3 hours, and 1 hour before.</p>
+            </div>
+            <div className="flex gap-1">
+              {(["all", "mine"] as const).map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setSetsFilter(f)}
+                  className={`text-caption font-medium px-3 py-1.5 rounded-md motion-safe:transition-colors ${setsFilter === f ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}
+                >
+                  {f === "all" ? "All sets" : "My sets"}
+                </button>
+              ))}
+            </div>
+          </div>
+          <UpcomingSetsList
+            sets={upcomingSets.data ?? []}
+            loading={upcomingSets.isLoading}
+            filter={setsFilter}
+            onDelete={async (id) => {
+              try {
+                await deleteSetFn({ data: { id } });
+                qc.invalidateQueries({ queryKey: ["cal", "sets"] });
+                toast.success("Removed from the list (the calendar event stays).");
+              } catch (err) { toast.error(String((err as Error).message ?? err)); }
+            }}
+          />
+        </Card>
+
         {/* Detail modal */}
         {selectedEvent && (
-          <EventModal e={selectedEvent} onClose={() => setSelectedEvent(null)} />
+          <EventModal
+            e={selectedEvent}
+            onClose={() => setSelectedEvent(null)}
+            canClaim={!!myConn.data}
+            onClaim={async (ev) => {
+              try {
+                const start = new Date(ev.start);
+                const durationMin = Math.max(15, Math.round((new Date(ev.end).getTime() - start.getTime()) / 60000));
+                await setReminderFn({ data: { prospect: ev.summary.replace(/^Set:\s*/i, ""), startISO: ev.start, durationMin, notes: ev.description ?? undefined, source: "claimed" } });
+                toast.success("Set claimed — it's on your calendar with reminders 2d · 1d · 3h · 1h before.");
+                qc.invalidateQueries({ queryKey: ["cal", "sets"] });
+                setSelectedEvent(null);
+              } catch (err) {
+                const msg = String((err as Error).message ?? err);
+                if (msg.includes("insufficient-scope")) toast.error("Your calendar was connected read-only. Disconnect and reconnect to enable reminders.");
+                else if (msg.includes("no-connection")) toast.error("Connect your Google Calendar first.");
+                else toast.error(msg);
+              }
+            }}
+          />
         )}
       </div>
       {setOpen && (
@@ -254,8 +312,9 @@ function CalendarPage() {
           onClose={() => setSetOpen(false)}
           onCreate={async (input) => {
             try {
-              const r = await setReminderFn({ data: input });
-              toast.success("Set logged — reminders at 3 days, 1 day, and 3 hours before.");
+              const r = await setReminderFn({ data: { ...input, source: "manual" as const } });
+              qc.invalidateQueries({ queryKey: ["cal", "sets"] });
+              toast.success("Set logged — reminders at 2 days, 1 day, 3 hours, and 1 hour before.");
               if (r.htmlLink) window.open(r.htmlLink, "_blank");
               setSetOpen(false);
             } catch (e) {
@@ -340,7 +399,10 @@ function DayColumn({ day, events, onSelect }: { day: Date; events: TeamEvent[]; 
   );
 }
 
-function EventModal({ e, onClose }: { e: TeamEvent; onClose: () => void }) {
+function EventModal({ e, onClose, canClaim, onClaim }: {
+  e: TeamEvent; onClose: () => void;
+  canClaim: boolean; onClaim: (e: TeamEvent) => Promise<void>;
+}) {
   const s = new Date(e.start);
   const en = new Date(e.end);
   return (
@@ -371,6 +433,11 @@ function EventModal({ e, onClose }: { e: TeamEvent; onClose: () => void }) {
                 <a href={e.html_link} target="_blank" rel="noreferrer">
                   <ExternalLink className="h-3.5 w-3.5 mr-1.5" /> Open in Google
                 </a>
+              </Button>
+            )}
+            {canClaim && (
+              <Button size="sm" onClick={() => onClaim(e)}>
+                <Plus className="h-3.5 w-3.5 mr-1.5" /> Claim as my set
               </Button>
             )}
             <Button size="sm" variant="ghost" className="ml-auto" onClick={onClose}>Close</Button>
@@ -421,7 +488,7 @@ function SetReminderDialog({ onClose, onCreate }: {
         <div>
           <div className="text-sm font-semibold">Log a set</div>
           <p className="text-caption text-muted-foreground mt-0.5">
-            Creates the call on your Google Calendar with reminders 3 days, 1 day, and 3 hours before.
+            Creates the call on your Google Calendar with reminders 2 days, 1 day, 3 hours, and 1 hour before.
           </p>
         </div>
         <div className="space-y-1">
@@ -451,6 +518,68 @@ function SetReminderDialog({ onClose, onCreate }: {
           <Button size="sm" onClick={submit} disabled={saving}>{saving ? "Creating…" : "Create reminder"}</Button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function UpcomingSetsList({ sets, loading, filter, onDelete }: {
+  sets: UpcomingSet[];
+  loading: boolean;
+  filter: "all" | "mine";
+  onDelete: (id: string) => void;
+}) {
+  const { user, roles } = useAuth();
+  const isAdmin = roles.includes("admin");
+  const visible = filter === "mine" ? sets.filter((s) => s.owner_id === user?.id) : sets;
+
+  const untilLabel = (iso: string) => {
+    const ms = new Date(iso).getTime() - Date.now();
+    if (ms <= 0) return "now";
+    const h = Math.floor(ms / 3_600_000);
+    if (h < 1) return `in ${Math.max(1, Math.floor(ms / 60_000))}m`;
+    if (h < 48) return `in ${h}h`;
+    return `in ${Math.floor(h / 24)}d`;
+  };
+
+  if (loading) return <div className="text-caption text-muted-foreground py-4">Loading…</div>;
+  if (visible.length === 0) {
+    return (
+      <div className="text-caption text-muted-foreground py-6 text-center">
+        {filter === "mine" ? "No upcoming sets assigned to you. Log one or claim one from the calendar above." : "No upcoming sets yet. Log a set, or click a calendar event and claim it."}
+      </div>
+    );
+  }
+  return (
+    <div className="divide-y divide-border/60">
+      {visible.map((s) => {
+        const start = new Date(s.event_start);
+        const mine = s.owner_id === user?.id;
+        return (
+          <div key={s.id} className="flex items-center gap-3 py-2.5">
+            <div className="min-w-0 flex-1">
+              <div className="text-body font-medium text-foreground truncate">
+                {s.prospect}
+                {s.source === "claimed" && <span className="ml-2 text-micro text-muted-foreground">claimed</span>}
+              </div>
+              <div className="text-caption text-muted-foreground truncate">
+                {format(start, "EEE, MMM d · h:mm a")} · {s.owner_name}{mine ? " (you)" : ""}
+              </div>
+            </div>
+            <span className="text-caption text-muted-foreground tabular-nums shrink-0">{untilLabel(s.event_start)}</span>
+            <span className="hidden sm:inline-flex text-micro text-muted-foreground bg-muted rounded-full px-2 py-0.5 shrink-0" title="Reminder schedule">2d · 1d · 3h · 1h</span>
+            {s.gcal_html_link && (
+              <a href={s.gcal_html_link} target="_blank" rel="noreferrer" className="text-muted-foreground hover:text-foreground shrink-0" title="Open in Google Calendar">
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            )}
+            {(mine || isAdmin) && (
+              <button onClick={() => onDelete(s.id)} className="text-muted-foreground hover:text-danger-fg shrink-0" title="Remove from list">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
