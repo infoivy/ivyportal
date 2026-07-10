@@ -25,7 +25,7 @@ export function FilterToolbar({
           onClick={onCompareToggle}
           className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1.5 rounded-sm border transition ${
             compare
-              ? "border-emerald-500/40 text-emerald-400 bg-emerald-500/5"
+              ? "border-primary/25 text-primary bg-primary/5"
               : "border-border text-muted-foreground hover:text-foreground"
           }`}
         >

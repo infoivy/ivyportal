@@ -308,7 +308,7 @@ function TestimonialCard({
         </div>
       )}
       {t.type === "trustpilot" && (
-        <div className="p-5 pb-3 bg-gradient-to-br from-amber-500/5 to-transparent">
+        <div className="p-5 pb-3">
           <div className="flex items-center gap-1 mb-2">
             {Array.from({ length: 5 }).map((_, i) => <Star key={i} className="h-4 w-4 fill-amber-400 text-warning-fg" />)}
           </div>

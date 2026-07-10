@@ -21,7 +21,7 @@ export function StudentBottomNav({ activeTab, onTabChange }: { activeTab?: strin
             <button
               key={it.tab}
               onClick={() => onTabChange?.(it.tab)}
-              className={`flex flex-col items-center gap-0.5 py-2 text-[10px] ${active ? "text-emerald-400" : "text-muted-foreground"}`}
+              className={`flex flex-col items-center gap-0.5 py-2 text-[10px] ${active ? "text-primary" : "text-muted-foreground"}`}
             >
               <Icon className="h-4 w-4" />
               {it.label}
@@ -30,7 +30,7 @@ export function StudentBottomNav({ activeTab, onTabChange }: { activeTab?: strin
         })}
         <Link
           to="/profile"
-          className={`flex flex-col items-center gap-0.5 py-2 text-[10px] ${path === "/profile" ? "text-emerald-400" : "text-muted-foreground"}`}
+          className={`flex flex-col items-center gap-0.5 py-2 text-[10px] ${path === "/profile" ? "text-primary" : "text-muted-foreground"}`}
         >
           <UserCircle className="h-4 w-4" />
           Me

@@ -311,9 +311,9 @@ function ConsequenceStep({
   tone: "warning" | "action" | "critical";
 }) {
   const toneStyles = {
-    warning: { border: "border-l-amber-500", ring: "ring-ring", badge: "bg-amber-500/15 text-amber-500 border-amber-500/30", num: "bg-amber-500/10 text-amber-500 border-amber-500/30" },
-    action: { border: "border-l-orange-500", ring: "ring-orange-500/40", badge: "bg-orange-500/15 text-orange-500 border-orange-500/30", num: "bg-orange-500/10 text-orange-500 border-orange-500/30" },
-    critical: { border: "border-l-red-500", ring: "ring-ring", badge: "bg-red-500/15 text-red-500 border-red-500/30", num: "bg-red-500/10 text-red-500 border-red-500/30" },
+    warning: { border: "border-l-amber-500", ring: "ring-ring", badge: "bg-warning-bg text-warning-fg border-warning/25", num: "bg-warning-bg text-warning-fg border-warning/25" },
+    action: { border: "border-l-orange-500", ring: "ring-orange-500/40", badge: "bg-warning-bg text-warning-fg border-warning/25", num: "bg-warning-bg text-warning-fg border-warning/25" },
+    critical: { border: "border-l-red-500", ring: "ring-ring", badge: "bg-danger-bg text-danger-fg border-danger/25", num: "bg-danger-bg text-danger-fg border-danger/25" },
   }[tone];
 
   return (

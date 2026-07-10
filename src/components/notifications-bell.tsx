@@ -16,9 +16,9 @@ type Reminder = {
 };
 
 function bucketLabel(days: number) {
-  if (days < 0) return { text: `Overdue ${Math.abs(days)}d`, tone: "text-red-400" };
-  if (days === 0) return { text: "Due today", tone: "text-amber-400" };
-  if (days === 1) return { text: "Due tomorrow", tone: "text-amber-300" };
+  if (days < 0) return { text: `Overdue ${Math.abs(days)}d`, tone: "text-danger-fg" };
+  if (days === 0) return { text: "Due today", tone: "text-warning-fg" };
+  if (days === 1) return { text: "Due tomorrow", tone: "text-warning-fg" };
   return { text: `Due in ${days}d`, tone: "text-muted-foreground" };
 }
 
@@ -78,7 +78,7 @@ export function NotificationsBell() {
   const overdue = items.filter(i => i.days < 0).length;
   const dueSoon = items.length - overdue;
   const badgeCount = items.length;
-  const badgeTone = overdue > 0 ? "bg-red-500" : dueSoon > 0 ? "bg-amber-500" : "";
+  const badgeTone = overdue > 0 ? "bg-danger" : dueSoon > 0 ? "bg-warning" : "";
 
   return (
     <Popover>
@@ -99,7 +99,7 @@ export function NotificationsBell() {
         <div className="px-3 py-2 border-b border-[var(--border)] flex items-center justify-between">
           <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Reminders</span>
           <span className="text-[10px] text-muted-foreground">
-            {overdue > 0 && <span className="text-red-400">{overdue} overdue · </span>}
+            {overdue > 0 && <span className="text-danger-fg">{overdue} overdue · </span>}
             {dueSoon} upcoming
           </span>
         </div>

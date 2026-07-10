@@ -81,8 +81,6 @@ export function AuthPage() {
 
   return (
     <div className="dashboard-dark min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
-      <div className="grid-bg absolute inset-0 opacity-40" />
-      <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/[0.04] via-transparent to-blue-500/[0.04]" />
 
       <div className="relative w-full max-w-md">
         <div className="flex items-center gap-2 mb-6 justify-center">
@@ -95,7 +93,7 @@ export function AuthPage() {
           </div>
         </div>
 
-        <div className="rounded-md border border-border bg-card p-5 space-y-4">
+        <div className="card-surface p-6 space-y-4">
           <div>
             <h1 className="text-lg font-bold">
               {tab === "signin" ? "Welcome back" : "Join the team"}
@@ -106,7 +104,7 @@ export function AuthPage() {
           </div>
 
           {inviteToken && tab === "signup" && (
-            <div className="rounded-sm border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-400">
+            <div className="rounded-sm border border-primary/25 bg-primary/10 px-3 py-2 text-xs text-primary">
               You've been invited to join the ISA Portal. Create your account below — your roles will be assigned automatically when you sign up with your invited email address.
             </div>
           )}
@@ -142,7 +140,7 @@ export function AuthPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full text-[12px] font-semibold px-3 py-2 rounded-sm bg-emerald-500 text-black hover:bg-emerald-400 disabled:opacity-40"
+                className="w-full text-[12px] font-semibold px-3 py-2 rounded-sm bg-primary text-black hover:bg-primary disabled:opacity-40"
               >{loading ? "Signing in…" : "Sign in →"}</button>
             </form>
           ) : (
@@ -162,7 +160,7 @@ export function AuthPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full text-[12px] font-semibold px-3 py-2 rounded-sm bg-emerald-500 text-black hover:bg-emerald-400 disabled:opacity-40"
+                className="w-full text-[12px] font-semibold px-3 py-2 rounded-sm bg-primary text-black hover:bg-primary disabled:opacity-40"
               >{loading ? "Creating…" : "Create account →"}</button>
             </form>
           )}
@@ -176,7 +174,7 @@ export function AuthPage() {
 
           <button
             onClick={handleGoogle}
-            className="w-full inline-flex items-center justify-center gap-2 text-[12px] font-medium px-3 py-2 rounded-sm border border-border bg-[var(--background)] text-foreground hover:border-emerald-500/60"
+            className="w-full inline-flex items-center justify-center gap-2 text-[12px] font-medium px-3 py-2 rounded-sm border border-border bg-[var(--background)] text-foreground hover:border-primary/25"
           >
             <GoogleIcon /> Continue with Google
           </button>
@@ -206,7 +204,7 @@ function Field({
         onChange={e => onChange(e.target.value)}
         required
         minLength={minLength}
-        className="w-full bg-[var(--background)] border border-border rounded-sm px-3 py-2 text-sm outline-none focus:border-emerald-500/60"
+        className="w-full bg-[var(--background)] border border-border rounded-sm px-3 py-2 text-sm outline-none focus:border-primary/25"
       />
     </div>
   );

@@ -290,6 +290,13 @@
   .pressable:active { transform: none; }
 }
 
+/* Whiteboard canvas (SOP map only) — dot grid aids spatial navigation */
+.canvas-bg {
+  background-color: var(--background);
+  background-image: radial-gradient(circle, var(--border) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
 /* Reading surfaces (training scripts, SOPs) */
 .script-block {
   background-color: var(--script-bg);

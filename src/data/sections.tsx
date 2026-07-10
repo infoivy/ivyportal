@@ -56,9 +56,9 @@ const UL = ({ items }: { items: React.ReactNode[] }) => (
 
 const Tag = ({ children, tone = "neutral" }: { children: React.ReactNode; tone?: "green" | "yellow" | "red" | "neutral" }) => {
   const toneCls = {
-    green: "bg-green-500/15 text-green-700 dark:text-green-300 border-green-500/30",
-    yellow: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30",
-    red: "bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/30",
+    green: "bg-success-bg text-success-fg dark:text-success-fg border-success/25",
+    yellow: "bg-warning-bg text-warning-fg dark:text-warning-fg border-warning/25",
+    red: "bg-danger-bg text-danger-fg dark:text-danger-fg border-danger/25",
     neutral: "bg-muted text-foreground border-border",
   }[tone];
   return <span className={`inline-block text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${toneCls}`}>{children}</span>;

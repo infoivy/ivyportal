@@ -281,8 +281,8 @@ function StudentPortal() {
   if (!student) {
     return (
       <div className="p-6 max-w-2xl mx-auto">
-        <div className="border border-amber-500/30 bg-amber-500/5 rounded-sm p-8 text-center">
-          <div className="text-amber-400 text-sm font-medium mb-2">Your account isn't linked to a student profile yet</div>
+        <div className="border border-warning/25 bg-warning-bg rounded-sm p-8 text-center">
+          <div className="text-warning-fg text-sm font-medium mb-2">Your account isn't linked to a student profile yet</div>
           <p className="text-xs text-muted-foreground">
             Contact your coach so they can add you (email: <span className="text-foreground">{user?.email}</span>). Once linked, this page becomes your daily hub.
           </p>
@@ -302,10 +302,10 @@ function StudentPortal() {
       {confetti && <ConfettiBurst />}
 
       {/* HERO */}
-      <section className="border border-[var(--border)] rounded-sm bg-gradient-to-br from-[#141821] via-[var(--card)] to-[var(--card)] p-5">
+      <section className="card-surface p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
-            <div className="text-[10px] text-blue-400 mb-1">Student portal</div>
+            <div className="text-[10px] text-muted-foreground mb-1">Student portal</div>
             <h1 className="text-2xl font-semibold tracking-tight">
               Salaam, {first} <span className="inline-block">👋</span>
             </h1>
@@ -315,7 +315,7 @@ function StudentPortal() {
           </div>
           <div className="flex items-center gap-2">
             {streak > 0 && (
-              <div className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-sm border border-amber-500/30 bg-amber-500/5 text-amber-400">
+              <div className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-sm border border-warning/25 bg-warning-bg text-warning-fg">
                 <Flame className="h-3.5 w-3.5" />
                 {streak}-day streak
               </div>
@@ -325,7 +325,7 @@ function StudentPortal() {
                 if (existingId) { setShowForm(true); setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth" }), 50); }
                 else { setTab("eod"); setShowForm(true); setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth" }), 50); }
               }}
-              className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-sm border transition ${existingId ? "border-green-500/30 bg-green-500/5 text-green-400 hover:bg-green-500/10" : "border-amber-500/30 bg-amber-500/5 text-amber-400 hover:bg-amber-500/10"}`}
+              className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-sm border transition ${existingId ? "border-success/25 bg-success-bg text-success-fg hover:bg-success-bg" : "border-warning/25 bg-warning-bg text-warning-fg hover:bg-warning-bg"}`}
             >
               {existingId ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Clock className="h-3.5 w-3.5" />}
               {existingId ? "Today logged — edit" : "Submit today's log"}
@@ -341,7 +341,7 @@ function StudentPortal() {
                 {coach.avatar_url ? (
                   <img src={coach.avatar_url} alt="" className="h-10 w-10 rounded-full object-cover border border-[var(--border)]" />
                 ) : (
-                  <div className="h-10 w-10 rounded-full bg-blue-500/20 text-blue-300 flex items-center justify-center text-xs font-semibold">
+                  <div className="h-10 w-10 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-xs font-semibold">
                     {(coach.display_name ?? "C").slice(0, 1).toUpperCase()}
                   </div>
                 )}
@@ -364,7 +364,7 @@ function StudentPortal() {
           </div>
           {/* Next call */}
           <div className="border border-[var(--border)] rounded-sm bg-[var(--background)] p-3 flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-green-500/15 text-green-300 flex items-center justify-center">
+            <div className="h-10 w-10 rounded-full bg-success-bg text-success-fg flex items-center justify-center">
               <Calendar className="h-4 w-4" />
             </div>
             <div className="min-w-0 flex-1">
@@ -444,7 +444,7 @@ function StudentPortal() {
                 <TextField label="Tomorrow's focus" value={form.tomorrow_focus} onChange={v => setForm(f => ({ ...f, tomorrow_focus: v }))} />
                 <TextField label="Summary" value={form.summary} onChange={v => setForm(f => ({ ...f, summary: v }))} rows={3} />
 
-                <button onClick={submit} disabled={saving} className="w-full bg-green-500 hover:bg-green-400 text-green-950 font-medium h-9 rounded-sm text-sm">
+                <button onClick={submit} disabled={saving} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium h-9 rounded-sm text-sm">
                   {saving ? "Saving…" : existingId ? "Update EOD" : "Submit EOD"}
                 </button>
               </div>
@@ -455,14 +455,14 @@ function StudentPortal() {
           {docs.length > 0 && (
             <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm">
               <div className="px-4 py-3 border-b border-[var(--border)] flex items-center gap-2">
-                <BookOpen className="h-3.5 w-3.5 text-blue-400" />
+                <BookOpen className="h-3.5 w-3.5 text-muted-foreground" />
                 <div className="text-xs font-semibold">Resources for you</div>
               </div>
               <div className="divide-y divide-[var(--accent)]">
                 {docs.map(d => (
                   <Link key={d.slug} to="/knowledge/$slug" params={{ slug: d.slug }} className="flex items-center gap-3 p-3 hover:bg-[#141821] group">
                     <div className="h-7 w-7 rounded-sm bg-[var(--background)] border border-[var(--border)] flex items-center justify-center">
-                      <BookOpen className="h-3.5 w-3.5 text-muted-foreground group-hover:text-blue-400" />
+                      <BookOpen className="h-3.5 w-3.5 text-muted-foreground group-hover:text-muted-foreground" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-xs font-medium truncate">{d.title}</div>
@@ -473,7 +473,7 @@ function StudentPortal() {
                 ))}
                 <Link to="/training" className="flex items-center gap-3 p-3 hover:bg-[#141821] group">
                   <div className="h-7 w-7 rounded-sm bg-[var(--background)] border border-[var(--border)] flex items-center justify-center">
-                    <PlayCircle className="h-3.5 w-3.5 text-muted-foreground group-hover:text-blue-400" />
+                    <PlayCircle className="h-3.5 w-3.5 text-muted-foreground group-hover:text-muted-foreground" />
                   </div>
                   <div className="flex-1 text-xs font-medium">Training videos</div>
                   <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
@@ -491,12 +491,12 @@ function StudentPortal() {
                 <div key={e.id} className="grid grid-cols-[80px_1fr_auto] items-center gap-3 p-3 text-xs">
                   <span className="text-muted-foreground">{e.report_date}</span>
                   <div className="flex gap-3 text-[11px] text-muted-foreground flex-wrap">
-                    <span>Apps <span className="text-green-400">{e.applications_submitted}</span></span>
+                    <span>Apps <span className="text-success-fg">{e.applications_submitted}</span></span>
                     <span>Out <span className="text-foreground">{e.outreach_sent}</span></span>
                     <span>Repl <span className="text-foreground">{e.replies}</span></span>
                     <span>Int <span className="text-foreground">{e.interviews}</span></span>
                   </div>
-                  <button onClick={() => deleteEod(e.id)} className="p-1 text-muted-foreground hover:text-red-400"><Trash2 className="h-3 w-3" /></button>
+                  <button onClick={() => deleteEod(e.id)} className="p-1 text-muted-foreground hover:text-danger-fg"><Trash2 className="h-3 w-3" /></button>
                 </div>
               ))}
             </div>
@@ -513,12 +513,12 @@ function StudentPortal() {
           </div>
 
           {dueToday.length > 0 && (
-            <ActionSection title="Due today" icon={<AlertCircle className="h-3.5 w-3.5 text-amber-400" />}>
+            <ActionSection title="Due today" icon={<AlertCircle className="h-3.5 w-3.5 text-warning-fg" />}>
               {dueToday.map(a => <ActionRow key={`${a.callId}-${a.index}`} a={a} today={today} onToggle={toggleItem} />)}
             </ActionSection>
           )}
           {overdue.length > 0 && (
-            <ActionSection title="Overdue" icon={<AlertCircle className="h-3.5 w-3.5 text-red-400" />} tone="rose">
+            <ActionSection title="Overdue" icon={<AlertCircle className="h-3.5 w-3.5 text-danger-fg" />} tone="rose">
               {overdue.map(a => <ActionRow key={`${a.callId}-${a.index}`} a={a} today={today} onToggle={toggleItem} />)}
             </ActionSection>
           )}
@@ -542,7 +542,7 @@ function StudentPortal() {
             </div>
             <div className="h-2 rounded-sm bg-[var(--accent)] overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-green-500 to-blue-500"
+                className="h-full bg-primary"
                 style={{ width: `${callsAllotted ? Math.min(100, (callsUsed / callsAllotted) * 100) : 0}%` }}
               />
             </div>
@@ -575,7 +575,7 @@ function StudentPortal() {
               <div className="divide-y divide-[var(--accent)]">
                 {lastCallItems.items.map((it, i) => (
                   <div key={i} className="flex items-start gap-3 p-3 text-xs">
-                    {it.done ? <CheckCircle2 className="h-3.5 w-3.5 text-green-400 mt-0.5" /> : <Clock className="h-3.5 w-3.5 text-muted-foreground mt-0.5" />}
+                    {it.done ? <CheckCircle2 className="h-3.5 w-3.5 text-success-fg mt-0.5" /> : <Clock className="h-3.5 w-3.5 text-muted-foreground mt-0.5" />}
                     <span className={it.done ? "line-through text-muted-foreground" : ""}>{it.text || <span className="italic">(no text)</span>}</span>
                   </div>
                 ))}
@@ -619,10 +619,10 @@ function StudentPortal() {
 
 function TabButton({ active, onClick, icon, label, badge, urgent }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string; badge?: number; urgent?: boolean }) {
   return (
-    <button onClick={onClick} className={`flex items-center gap-1.5 px-3 py-2 text-xs border-b-2 -mb-px ${active ? "border-blue-400 text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
+    <button onClick={onClick} className={`flex items-center gap-1.5 px-3 py-2 text-xs border-b-2 -mb-px ${active ? "border-border text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
       {icon}{label}
       {badge != null && badge > 0 && (
-        <span className={`ml-1 text-[10px] px-1.5 py-0.5 rounded-full ${urgent ? "bg-red-500/20 text-red-400" : "bg-[var(--accent)] text-muted-foreground"}`}>{badge}</span>
+        <span className={`ml-1 text-[10px] px-1.5 py-0.5 rounded-full ${urgent ? "bg-danger/20 text-danger-fg" : "bg-[var(--accent)] text-muted-foreground"}`}>{badge}</span>
       )}
     </button>
   );
@@ -637,8 +637,8 @@ function JourneyStepper({ current }: { current: string }) {
         const active = i === currentIndex;
         return (
           <div key={p.key} className="flex items-center gap-2 flex-shrink-0">
-            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-sm border text-[11px] ${active ? "border-blue-500/40 bg-blue-500/10 text-blue-300" : done ? "border-green-500/30 bg-green-500/5 text-green-400" : "border-[var(--border)] text-muted-foreground"}`}>
-              <div className={`h-4 w-4 rounded-full flex items-center justify-center text-[9px] ${active ? "bg-blue-500 text-blue-950" : done ? "bg-green-500 text-green-950" : "border border-[#2b3240]"}`}>
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-sm border text-[11px] ${active ? "border-border bg-muted text-muted-foreground" : done ? "border-success/25 bg-success-bg text-success-fg" : "border-[var(--border)] text-muted-foreground"}`}>
+              <div className={`h-4 w-4 rounded-full flex items-center justify-center text-[9px] ${active ? "bg-muted text-muted-foreground" : done ? "bg-success text-success-fg" : "border border-[#2b3240]"}`}>
                 {done ? <CheckCircle2 className="h-2.5 w-2.5" /> : i + 1}
               </div>
               {p.label}
@@ -655,18 +655,18 @@ function StatCard({ label, value, prev, series, accent, brandNew, icon }: { labe
   const delta = prev === 0 ? (value > 0 ? 100 : 0) : Math.round(((value - prev) / prev) * 100);
   const up = delta > 0;
   return (
-    <div className={`border border-[var(--border)] rounded-sm p-3 ${accent ? "bg-green-500/5" : "bg-[var(--card)]"}`}>
+    <div className={`border border-[var(--border)] rounded-sm p-3 ${accent ? "bg-success-bg" : "bg-[var(--card)]"}`}>
       <div className="flex items-center gap-1 text-[9px] text-muted-foreground mb-1">{icon}{label}</div>
       {brandNew ? (
         <div className="text-[10px] text-muted-foreground py-1 italic">Your first log starts here.</div>
       ) : (
         <>
           <div className="flex items-end justify-between gap-2">
-            <div className={`text-xl font-semibold ${accent ? "text-green-400" : "text-foreground"}`}>{value}</div>
+            <div className={`text-xl font-semibold ${accent ? "text-success-fg" : "text-foreground"}`}>{value}</div>
             <Sparkline data={series} color={accent ? "#34d399" : "#a78bfa"} />
           </div>
           {prev > 0 || value > 0 ? (
-            <div className={`text-[10px] mt-1 ${up ? "text-green-400" : delta < 0 ? "text-red-400" : "text-muted-foreground"}`}>
+            <div className={`text-[10px] mt-1 ${up ? "text-success-fg" : delta < 0 ? "text-danger-fg" : "text-muted-foreground"}`}>
               {up ? "↑" : delta < 0 ? "↓" : "→"} {Math.abs(delta)}% vs prev 7d
             </div>
           ) : (
@@ -693,13 +693,13 @@ function Sparkline({ data, color }: { data: number[]; color: string }) {
 function WeeklyRecap({ prev, totals }: { prev: any; evenPrior: any; totals: any }) {
   const pct = (a: number, b: number) => (b === 0 ? (a > 0 ? "+∞" : "0") : `${a >= b ? "+" : ""}${Math.round(((a - b) / b) * 100)}%`);
   return (
-    <div className="border border-blue-500/30 bg-blue-500/5 rounded-sm p-4">
+    <div className="border border-border bg-muted rounded-sm p-4">
       <div className="flex items-center gap-2 mb-2">
-        <Sparkles className="h-3.5 w-3.5 text-blue-400" />
-        <div className="text-xs font-semibold text-blue-300">Weekly recap</div>
+        <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />
+        <div className="text-xs font-semibold text-muted-foreground">Weekly recap</div>
       </div>
       <div className="text-xs text-foreground">
-        Last week: <span className="font-semibold text-green-400">{prev.apps}</span> applications, <span className="font-semibold">{prev.replies}</span> replies, <span className="font-semibold">{prev.interviews}</span> interviews.
+        Last week: <span className="font-semibold text-success-fg">{prev.apps}</span> applications, <span className="font-semibold">{prev.replies}</span> replies, <span className="font-semibold">{prev.interviews}</span> interviews.
       </div>
       <div className="text-[11px] text-muted-foreground mt-1">
         Apps {pct(totals.apps, prev.apps)} · Replies {pct(totals.replies, prev.replies)} · Interviews {pct(totals.interviews, prev.interviews)} vs this week so far
@@ -710,25 +710,25 @@ function WeeklyRecap({ prev, totals }: { prev: any; evenPrior: any; totals: any 
 
 function SubmittedRecap({ form, streak, onEdit }: { form: typeof empty; streak: number; onEdit: () => void }) {
   return (
-    <div className="border border-green-500/30 bg-gradient-to-br from-green-500/10 via-green-500/5 to-transparent rounded-sm p-6 text-center space-y-4">
+    <div className="border border-success/25 bg-success-bg rounded-lg p-6 text-center space-y-4">
       <div className="flex justify-center">
-        <div className="h-12 w-12 rounded-full bg-green-500 text-green-950 flex items-center justify-center">
+        <div className="h-12 w-12 rounded-full bg-success text-success-fg flex items-center justify-center">
           <CheckCircle2 className="h-6 w-6" />
         </div>
       </div>
       <div>
-        <div className="text-sm font-semibold text-green-300">Submitted ✓</div>
+        <div className="text-sm font-semibold text-success-fg">Submitted ✓</div>
         <div className="text-[11px] text-muted-foreground mt-1">See you tomorrow.</div>
       </div>
       <div className="flex justify-center gap-6 text-xs flex-wrap">
-        <span><span className="text-green-400 text-lg font-semibold">{form.applications_submitted}</span> <span className="text-muted-foreground">apps</span></span>
+        <span><span className="text-success-fg text-lg font-semibold">{form.applications_submitted}</span> <span className="text-muted-foreground">apps</span></span>
         <span><span className="text-foreground text-lg font-semibold">{form.outreach_sent}</span> <span className="text-muted-foreground">outreach</span></span>
         <span><span className="text-foreground text-lg font-semibold">{form.replies}</span> <span className="text-muted-foreground">replies</span></span>
-        <span><span className="text-green-400 text-lg font-semibold">{form.interviews}</span> <span className="text-muted-foreground">int.</span></span>
+        <span><span className="text-success-fg text-lg font-semibold">{form.interviews}</span> <span className="text-muted-foreground">int.</span></span>
       </div>
       {streak > 0 && (
         <div className="flex justify-center">
-          <div className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-400">
+          <div className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-warning/25 bg-warning-bg text-warning-fg">
             <Flame className="h-3.5 w-3.5" /> {streak}-day streak
           </div>
         </div>
@@ -740,8 +740,8 @@ function SubmittedRecap({ form, streak, onEdit }: { form: typeof empty; streak: 
 
 function ActionSection({ title, icon, children, tone }: { title: string; icon: React.ReactNode; children: React.ReactNode; tone?: "rose" }) {
   return (
-    <div className={`border rounded-sm ${tone === "rose" ? "border-red-500/30 bg-red-500/5" : "border-[var(--border)] bg-[var(--card)]"}`}>
-      <div className={`px-4 py-2.5 border-b flex items-center gap-2 ${tone === "rose" ? "border-red-500/20" : "border-[var(--border)]"}`}>
+    <div className={`border rounded-sm ${tone === "rose" ? "border-danger/25 bg-danger-bg" : "border-[var(--border)] bg-[var(--card)]"}`}>
+      <div className={`px-4 py-2.5 border-b flex items-center gap-2 ${tone === "rose" ? "border-danger/25" : "border-[var(--border)]"}`}>
         {icon}<div className="text-xs font-semibold">{title}</div>
       </div>
       <div className="divide-y divide-[var(--accent)]">{children}</div>
@@ -761,19 +761,19 @@ function ActionRow({ a, today, onToggle }: { a: { kind?: "call" | "adhoc"; callI
         className="mt-0.5 h-4 w-4 accent-green-500"
       />
       <div className="flex-1 min-w-0">
-        <div className={`text-xs ${a.item.done ? "line-through text-muted-foreground" : isOverdue ? "text-red-300" : "text-foreground"}`}>
+        <div className={`text-xs ${a.item.done ? "line-through text-muted-foreground" : isOverdue ? "text-danger-fg" : "text-foreground"}`}>
           {a.item.text || <span className="italic text-muted-foreground">(no text)</span>}
         </div>
         <div className="flex gap-2 mt-1 text-[10px] text-muted-foreground items-center flex-wrap">
           {isAdhoc ? (
-            <span className="px-1.5 py-0.5 rounded-sm border border-blue-500/30 bg-blue-500/10 text-blue-300">
+            <span className="px-1.5 py-0.5 rounded-sm border border-border bg-muted text-muted-foreground">
               Coach added
             </span>
           ) : (
             <span>from call {a.callDate}</span>
           )}
           {a.item.due_date && (
-            <span className={isOverdue ? "text-red-400" : ""}>
+            <span className={isOverdue ? "text-danger-fg" : ""}>
               · due {a.item.due_date}{isOverdue ? " (overdue)" : ""}
             </span>
           )}
@@ -784,8 +784,8 @@ function ActionRow({ a, today, onToggle }: { a: { kind?: "call" | "adhoc"; callI
 }
 
 function MiniStat({ label, value, tone }: { label: string; value: number; tone: "amber" | "rose" | "neutral" }) {
-  const cls = tone === "amber" ? "border-amber-500/30 bg-amber-500/5 text-amber-400"
-    : tone === "rose" ? "border-red-500/30 bg-red-500/5 text-red-400"
+  const cls = tone === "amber" ? "border-warning/25 bg-warning-bg text-warning-fg"
+    : tone === "rose" ? "border-danger/25 bg-danger-bg text-danger-fg"
     : "border-[var(--border)] bg-[var(--card)] text-foreground";
   return (
     <div className={`border rounded-sm p-3 ${cls}`}>
@@ -797,12 +797,12 @@ function MiniStat({ label, value, tone }: { label: string; value: number; tone: 
 
 function MilestoneCard({ done, label, detail }: { done: boolean; label: string; detail?: string }) {
   return (
-    <div className={`relative overflow-hidden border rounded-sm p-5 ${done ? "border-green-500/40 bg-gradient-to-br from-green-500/15 via-green-500/5 to-transparent" : "border-[var(--border)] bg-[var(--background)]"}`}>
-      {done && <PartyPopper className="absolute -right-2 -top-2 h-16 w-16 text-green-500/10" />}
-      <div className={`h-10 w-10 rounded-full flex items-center justify-center mb-3 ${done ? "bg-green-500 text-green-950" : "border border-[var(--border)] text-muted-foreground"}`}>
+    <div className={`relative overflow-hidden border rounded-sm p-5 ${done ? "border-success/25 bg-success-bg" : "border-[var(--border)] bg-[var(--background)]"}`}>
+      {done && <PartyPopper className="absolute -right-2 -top-2 h-16 w-16 text-success-fg/10" />}
+      <div className={`h-10 w-10 rounded-full flex items-center justify-center mb-3 ${done ? "bg-success text-success-fg" : "border border-[var(--border)] text-muted-foreground"}`}>
         {done ? <Trophy className="h-5 w-5" /> : <Lock className="h-4 w-4" />}
       </div>
-      <div className={`text-sm font-semibold ${done ? "text-green-300" : "text-foreground"}`}>{label}</div>
+      <div className={`text-sm font-semibold ${done ? "text-success-fg" : "text-foreground"}`}>{label}</div>
       {detail && <div className="text-[11px] text-muted-foreground mt-1">{detail}</div>}
     </div>
   );
@@ -847,7 +847,7 @@ function TextField({ label, value, onChange, rows = 2 }: { label: string; value:
     <div className="space-y-1">
       <label className="text-[10px] text-muted-foreground">{label}</label>
       <textarea value={value} onChange={e => onChange(e.target.value)} rows={rows}
-        className="w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-xs resize-none focus:outline-none focus:border-green-500/40" />
+        className="w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-xs resize-none focus:outline-none focus:border-ring" />
     </div>
   );
 }

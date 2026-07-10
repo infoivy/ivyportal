@@ -554,7 +554,7 @@ function NotesModal({ open, onClose, counter, setCounter }: { open: boolean; onC
           <button onClick={resetTpl} className="text-xs text-muted-foreground hover:text-foreground">Reset template</button>
           <div className="flex items-center gap-2">
             {tab === "eod" && (
-              <button onClick={syncToEod} disabled={syncing} className="px-3 py-1.5 rounded-md bg-emerald-500 hover:bg-emerald-400 text-emerald-950 text-xs font-semibold disabled:opacity-60">
+              <button onClick={syncToEod} disabled={syncing} className="px-3 py-1.5 rounded-md bg-primary hover:bg-primary text-primary text-xs font-semibold disabled:opacity-60">
                 {syncing ? "Syncing…" : "Sync to EOD Reports"}
               </button>
             )}

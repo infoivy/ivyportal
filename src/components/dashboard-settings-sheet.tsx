@@ -41,7 +41,7 @@ export function DashboardSettingsSheet({
           {SECTIONS.map((s) => (
             <label
               key={s.key}
-              className="flex items-start gap-3 p-2.5 rounded-sm border border-border hover:bg-white/[0.02] cursor-pointer"
+              className="flex items-start gap-3 p-2.5 rounded-sm border border-border hover:bg-muted cursor-pointer"
             >
               <Checkbox checked={prefs[s.key]} onCheckedChange={() => toggle(s.key)} />
               <div className="flex-1 min-w-0">

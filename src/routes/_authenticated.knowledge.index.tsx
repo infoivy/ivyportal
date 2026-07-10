@@ -136,7 +136,17 @@ function KnowledgeIndex() {
                       to: "/sops/isa-setting-process",
                     },
                   ]
-                : [];
+                : value === "team_ops"
+                  ? [
+                      {
+                        key: "crm-hygiene",
+                        title: "CRM Hygiene Policy",
+                        description:
+                          "How leads, stages, and notes must be kept in the CRM — the rules that keep pipeline data trustworthy.",
+                        to: "/policies/crm-hygiene",
+                      },
+                    ]
+                  : [];
             if (items.length === 0 && staticItems.length === 0) return null;
             const showSection = q
               ? items.length > 0 ||

@@ -58,11 +58,11 @@ export function OnboardingPanel({ compact }: { compact?: boolean }) {
   };
 
   return (
-    <div className="rounded-md border border-emerald-500/30 bg-gradient-to-br from-emerald-500/5 to-transparent p-4 space-y-3">
+    <div className="card-surface p-4 space-y-3">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
         <div className="flex min-w-0 items-center gap-2.5">
-          <div className="grid h-8 w-8 shrink-0 place-items-center rounded-sm bg-emerald-500/15 border border-emerald-500/40">
-            <GraduationCap className="h-4 w-4 text-emerald-400" />
+          <div className="grid h-8 w-8 shrink-0 place-items-center rounded-sm bg-primary/15 border border-primary/25">
+            <GraduationCap className="h-4 w-4 text-primary" />
           </div>
           <div className="min-w-0">
             <h3 className="text-sm font-bold truncate">{template.title}</h3>
@@ -70,14 +70,14 @@ export function OnboardingPanel({ compact }: { compact?: boolean }) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <div className="text-[10px] text-emerald-400">{pct}%</div>
+          <div className="text-[10px] text-primary">{pct}%</div>
           {pct === 100 && !compact && (
             <button onClick={() => setDismissed(true)} className="text-[10px] text-muted-foreground hover:text-foreground">dismiss</button>
           )}
         </div>
       </div>
       <div className="h-1 rounded-full bg-[var(--accent)] overflow-hidden">
-        <div className="h-full bg-emerald-500 transition-all" style={{ width: `${pct}%` }} />
+        <div className="h-full bg-primary transition-all" style={{ width: `${pct}%` }} />
       </div>
       <ul className="space-y-1">
         {template.steps.map(step => {
@@ -91,13 +91,13 @@ export function OnboardingPanel({ compact }: { compact?: boolean }) {
                 title={isDone ? "Mark not done" : "Mark done"}
               >
                 {isDone
-                  ? <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                  ? <CheckCircle2 className="h-4 w-4 text-primary" />
                   : <Circle className="h-4 w-4 text-muted-foreground group-hover:text-foreground" />}
               </button>
               <Icon className="h-3 w-3 text-muted-foreground shrink-0" />
               <Link
                 to={step.target as any}
-                className={`flex-1 truncate ${isDone ? "line-through text-muted-foreground" : "hover:text-emerald-400"}`}
+                className={`flex-1 truncate ${isDone ? "line-through text-muted-foreground" : "hover:text-primary"}`}
               >{step.label}</Link>
             </li>
           );

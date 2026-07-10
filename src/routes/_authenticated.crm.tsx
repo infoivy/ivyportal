@@ -153,25 +153,25 @@ function Crm() {
               <button
                 onClick={() => refresh(q)}
                 disabled={loading}
-                className="inline-flex items-center justify-center h-7 w-7 rounded-sm border border-border hover:border-green-500/40"
+                className="inline-flex items-center justify-center h-7 w-7 rounded-sm border border-border hover:border-success/25"
                 title="Refresh"
               >
                 {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
               </button>
             )}
             {connected ? (
-              <div className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-sm bg-green-500/10 text-green-400 border border-green-500/30">
+              <div className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-sm bg-success-bg text-success-fg border border-success/25">
                 <CheckCircle2 className="h-3 w-3" /> Live
               </div>
             ) : (
-              <div className="text-[10px] font-semibold px-2 py-1 rounded-sm bg-amber-500/10 text-amber-400 border border-amber-500/30">
+              <div className="text-[10px] font-semibold px-2 py-1 rounded-sm bg-warning-bg text-warning-fg border border-warning/25">
                 Offline
               </div>
             )}
             {isAdmin && (
               <button
                 onClick={() => setOpenDialog(true)}
-                className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1.5 rounded-sm bg-green-500 text-black hover:bg-green-400"
+                className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1.5 rounded-sm bg-success text-black hover:bg-success"
               >
                 <Zap className="h-3 w-3" /> {connected ? "Manage" : "Connect"}
               </button>
@@ -180,12 +180,12 @@ function Crm() {
         </div>
 
         {!connected && connected !== null && (
-          <div className="rounded-md border border-blue-500/40 bg-blue-500/5 p-2.5 flex items-start gap-2.5">
-            <div className="grid h-5 w-5 place-items-center rounded-sm bg-blue-500/20 shrink-0">
-              <ExternalLink className="h-3 w-3 text-blue-400" />
+          <div className="rounded-md border border-border bg-muted p-2.5 flex items-start gap-2.5">
+            <div className="grid h-5 w-5 place-items-center rounded-sm bg-muted shrink-0">
+              <ExternalLink className="h-3 w-3 text-muted-foreground" />
             </div>
             <div className="text-xs flex-1">
-              <p className="font-semibold text-blue-400 mb-0.5">Not connected</p>
+              <p className="font-semibold text-muted-foreground mb-0.5">Not connected</p>
               <p className="text-muted-foreground text-[11px]">
                 {isAdmin ? "Paste your Close API key to sync real pipeline data." : "Ask an admin to add the Close API key."}
               </p>
@@ -211,7 +211,7 @@ function Crm() {
                 onChange={(e) => setQ(e.target.value)}
                 placeholder={connected ? "Search leads by name, email, phone…" : "Connect Close to search"}
                 disabled={!connected}
-                className="w-full h-8 pl-8 pr-3 rounded-sm border border-border bg-white/[0.02] text-xs disabled:opacity-50 focus:outline-none focus:border-green-500/40"
+                className="w-full h-8 pl-8 pr-3 rounded-sm border border-border bg-muted text-xs disabled:opacity-50 focus:outline-none focus:border-ring"
               />
             </div>
             {loading && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
@@ -239,8 +239,8 @@ function Crm() {
                   key={p.stage}
                   onClick={() => setStatusFilter(p.stage === statusFilter ? "all" : p.stage)}
                   className={
-                    "text-left rounded-sm border p-2.5 bg-white/[0.01] hover:bg-white/[0.03] transition " +
-                    (statusFilter === p.stage ? "border-green-500/50" : "border-border")
+                    "text-left rounded-sm border p-2.5 bg-muted hover:bg-muted transition " +
+                    (statusFilter === p.stage ? "border-success/25" : "border-border")
                   }
                 >
                   <div className="flex items-center gap-1.5 mb-1">
@@ -287,7 +287,7 @@ function Crm() {
                   <button
                     key={l.id}
                     onClick={() => setActiveLead(l)}
-                    className="w-full text-left grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-3 px-3 py-2 border-b border-border/50 last:border-0 hover:bg-white/[0.02]"
+                    className="w-full text-left grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-3 px-3 py-2 border-b border-border/50 last:border-0 hover:bg-muted"
                   >
                     <div className="min-w-0">
                       <div className="text-xs font-medium truncate">{l.name}</div>
@@ -297,7 +297,7 @@ function Crm() {
                       className={
                         "inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-sm border " +
                         (nc > 0
-                          ? "border-blue-500/40 bg-blue-500/10 text-blue-300"
+                          ? "border-border bg-muted text-muted-foreground"
                           : "border-border/60 text-muted-foreground")
                       }
                       title={nc === 1 ? "1 internal note" : `${nc} internal notes`}
@@ -305,7 +305,7 @@ function Crm() {
                       <StickyNote className="h-3 w-3" />
                       {nc}
                     </span>
-                    <span className="text-xs font-bold tabular-nums text-green-400">{l.value > 0 ? currency(l.value) : "—"}</span>
+                    <span className="text-xs font-bold tabular-nums text-success-fg">{l.value > 0 ? currency(l.value) : "—"}</span>
                     <span className="text-[10px] text-muted-foreground tabular-nums whitespace-nowrap">{relTime(l.updated_at)}</span>
                   </button>
                 );
@@ -334,8 +334,8 @@ function Chip({ active, onClick, label }: { active: boolean; onClick: () => void
       className={
         "text-[10px] px-2 py-0.5 rounded-sm border tabular-nums transition " +
         (active
-          ? "bg-green-500/15 border-green-500/40 text-green-300"
-          : "bg-white/[0.02] border-border text-muted-foreground hover:text-foreground")
+          ? "bg-success-bg border-success/25 text-success-fg"
+          : "bg-muted border-border text-muted-foreground hover:text-foreground")
       }
     >
       {label}
@@ -413,8 +413,8 @@ function CloseKeyDialog({
               className={
                 "text-xs px-3 py-2 rounded-sm border " +
                 (result.ok
-                  ? "border-green-500/30 bg-green-500/5 text-green-400"
-                  : "border-red-500/30 bg-red-500/5 text-red-400")
+                  ? "border-success/25 bg-success-bg text-success-fg"
+                  : "border-danger/25 bg-danger-bg text-danger-fg")
               }
             >
               {result.msg}
@@ -545,12 +545,12 @@ function LeadDetailDrawer({
             <div className="flex items-center gap-2 mt-0.5">
               <span className="text-[10px]" style={{ color: c }}>{lead.status}</span>
               <span className="text-[10px] text-muted-foreground">·</span>
-              <span className="text-[10px] text-green-400">{lead.value > 0 ? currency(lead.value) : "—"}</span>
+              <span className="text-[10px] text-success-fg">{lead.value > 0 ? currency(lead.value) : "—"}</span>
               <span className="text-[10px] text-muted-foreground">·</span>
               <span className="text-[10px] text-muted-foreground">updated {relTime(lead.updated_at)}</span>
             </div>
           </div>
-          <button onClick={onClose} className="h-7 w-7 grid place-items-center rounded-sm border border-border hover:border-red-500/40">
+          <button onClick={onClose} className="h-7 w-7 grid place-items-center rounded-sm border border-border hover:border-danger/25">
             <X className="h-3.5 w-3.5" />
           </button>
         </div>
@@ -562,7 +562,7 @@ function LeadDetailDrawer({
             onChange={(e) => setBody(e.target.value)}
             placeholder="What happened on this lead? Context, follow-up, objections…"
             rows={3}
-            className="w-full text-xs bg-white/[0.02] border border-border rounded-sm p-2 focus:outline-none focus:border-green-500/40 resize-y"
+            className="w-full text-xs bg-muted border border-border rounded-sm p-2 focus:outline-none focus:border-ring resize-y"
           />
           <div className="flex items-center justify-between gap-2">
             <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
@@ -591,10 +591,10 @@ function LeadDetailDrawer({
                 const canEdit = isAdmin || n.created_by === user?.id;
                 const editing = editingId === n.id;
                 return (
-                  <div key={n.id} className="rounded-sm border border-border bg-white/[0.02] p-2.5">
+                  <div key={n.id} className="rounded-sm border border-border bg-muted p-2.5">
                     <div className="flex items-center justify-between gap-2 mb-1.5">
                       <div className="flex items-center gap-2 min-w-0">
-                        {n.pinned && <Pin className="h-3 w-3 text-blue-400 shrink-0" />}
+                        {n.pinned && <Pin className="h-3 w-3 text-muted-foreground shrink-0" />}
                         <span className="text-[11px] font-medium truncate">{n.author_name || "Team member"}</span>
                         <span className="text-[10px] text-muted-foreground whitespace-nowrap">{relTime(n.created_at)}</span>
                       </div>
@@ -603,7 +603,7 @@ function LeadDetailDrawer({
                           <button
                             onClick={() => togglePin(n)}
                             title={n.pinned ? "Unpin" : "Pin"}
-                            className="h-6 w-6 grid place-items-center rounded-sm hover:bg-white/[0.04] text-muted-foreground hover:text-blue-400"
+                            className="h-6 w-6 grid place-items-center rounded-sm hover:bg-muted text-muted-foreground hover:text-muted-foreground"
                           >
                             <Pin className="h-3 w-3" />
                           </button>
@@ -618,7 +618,7 @@ function LeadDetailDrawer({
                           <button
                             onClick={() => remove(n)}
                             title="Delete"
-                            className="h-6 w-6 grid place-items-center rounded-sm hover:bg-white/[0.04] text-muted-foreground hover:text-red-400"
+                            className="h-6 w-6 grid place-items-center rounded-sm hover:bg-muted text-muted-foreground hover:text-danger-fg"
                           >
                             <Trash2 className="h-3 w-3" />
                           </button>
@@ -631,7 +631,7 @@ function LeadDetailDrawer({
                           value={editBody}
                           onChange={(e) => setEditBody(e.target.value)}
                           rows={3}
-                          className="w-full text-xs bg-white/[0.02] border border-border rounded-sm p-2 focus:outline-none focus:border-green-500/40"
+                          className="w-full text-xs bg-muted border border-border rounded-sm p-2 focus:outline-none focus:border-ring"
                         />
                         <div className="flex justify-end gap-1.5">
                           <Button size="sm" variant="outline" onClick={() => { setEditingId(null); setEditBody(""); }}>Cancel</Button>
