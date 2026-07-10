@@ -268,6 +268,7 @@ function TeamPage() {
         <EditProfileModal
           member={editing}
           initialUrl={editing.avatar_path ? avatarUrls[editing.avatar_path] ?? null : null}
+          onToggleRole={toggleRole}
           onClose={() => setEditing(null)}
           onSaved={() => { setEditing(null); load(); }}
         />
