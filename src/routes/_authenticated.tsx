@@ -185,7 +185,9 @@ function AuthedLayout() {
             </header>
 
             <main className={`flex-1 min-w-0 overflow-auto relative ${studentOnly ? "pb-16 sm:pb-0" : ""}`}>
-              <div className="page-enter">
+              {/* relative + min-h-full: full-viewport pages (SOP canvas) position
+                  against this wrapper even while the enter animation holds a transform */}
+              <div className="page-enter relative min-h-full">
                 <Outlet />
               </div>
             </main>

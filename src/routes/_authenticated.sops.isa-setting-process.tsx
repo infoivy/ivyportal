@@ -554,7 +554,7 @@ function NotesModal({ open, onClose, counter, setCounter }: { open: boolean; onC
           <button onClick={resetTpl} className="text-xs text-muted-foreground hover:text-foreground">Reset template</button>
           <div className="flex items-center gap-2">
             {tab === "eod" && (
-              <button onClick={syncToEod} disabled={syncing} className="px-3 py-1.5 rounded-md bg-primary hover:bg-primary text-primary text-xs font-semibold disabled:opacity-60">
+              <button onClick={syncToEod} disabled={syncing} className="px-3 py-1.5 rounded-md bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold disabled:opacity-60">
                 {syncing ? "Syncing…" : "Sync to EOD Reports"}
               </button>
             )}
@@ -677,8 +677,7 @@ function Index() {
   useEffect(() => {
     if (typeof localStorage === "undefined") return;
     try {
-      const saved = localStorage.getItem("isa:dark");
-      setDark(saved === null ? true : saved === "1");
+      setDark(document.documentElement.classList.contains("dark"));
     } catch { /* ignore */ }
     try {
       const raw = localStorage.getItem("isa:counter");
@@ -740,7 +739,7 @@ function Index() {
   useEffect(() => {
     if (typeof document === "undefined") return;
     document.documentElement.classList.toggle("dark", dark);
-    try { localStorage.setItem("isa:dark", dark ? "1" : "0"); } catch { /* ignore */ }
+    try { localStorage.setItem("isa-theme", dark ? "dark" : "light"); } catch { /* ignore */ }
   }, [dark]);
 
   const jumpToEl = useCallback((el: HTMLElement) => {
