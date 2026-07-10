@@ -3,8 +3,10 @@ import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tool
 export type VolumeSeries = {
   key: string;
   label: string;
-  color: string; // one of #9CA3AF, #3B82F6, #22C55E, #F59E0B
+  color: string;
   strokeWidth?: number;
+  strokeOpacity?: number;
+  ghost?: boolean; // true = low fill + no gradient entry needed
 };
 
 /**
@@ -49,9 +51,11 @@ export function VolumeAreaChart({
               dataKey={s.key}
               stroke={s.color}
               strokeWidth={s.strokeWidth ?? 1.75}
-              fill={`url(#grad-${s.key})`}
+              strokeOpacity={s.strokeOpacity ?? 1}
+              fill={s.ghost ? "none" : `url(#grad-${s.key})`}
+              fillOpacity={s.ghost ? 0 : 1}
               dot={false}
-              activeDot={{ r: 3, strokeWidth: 0 }}
+              activeDot={s.ghost ? false : { r: 3, strokeWidth: 0 }}
               isAnimationActive={false}
             />
           ))}
