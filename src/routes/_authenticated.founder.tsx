@@ -317,7 +317,7 @@ function KanbanView({ items, onOpen, onUpdate }: { items: ContentItem[]; onOpen:
                     <div className="text-xs font-medium line-clamp-3">{i.hook}</div>
                   </button>
                   <div className="mt-1.5 flex gap-0.5 opacity-0 group-hover:opacity-100 transition">
-                    {STATUSES.map(target => target.value !== i.status && (
+                    {STATUSES.filter(t => t.value !== "filmed").map(target => target.value !== i.status && (
                       <button
                         key={target.value}
                         onClick={() => setStatus(i.id, target.value)}
