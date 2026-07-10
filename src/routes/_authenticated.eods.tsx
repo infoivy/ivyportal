@@ -560,7 +560,7 @@ function OverviewCard({ card }: { card: {
         <div className="flex gap-1.5">
           {card.week.map(w => {
             const dt = new Date(w.d + "T00:00:00");
-            const bg = w.status === "green" ? "bg-green-500/25 border-green-500/50" : w.status === "amber" ? "bg-amber-500/25 border-amber-500/50" : "bg-red-500/15 border-red-500/40";
+            const bg = w.status === "green" ? "bg-green-500/10 border-green-500/25" : w.status === "amber" ? "bg-amber-500/10 border-amber-500/25" : "bg-red-500/[0.07] border-red-500/20";
             return (
               <div key={w.d} className={`flex-1 border rounded-sm px-1 py-1 text-center ${bg}`} title={fmtLong(w.d)}>
                 <div className="text-[9px] text-muted-foreground">{WEEKDAY[dt.getDay()]}</div>
