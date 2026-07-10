@@ -252,7 +252,7 @@ function EODsPage() {
           {filesEods && (
             <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-3">
               <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground mb-2">My week (last 7 days)</div>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <MiniChip label="Streak" value={`${streak}d`} tone="amber" icon={<Flame className="h-3 w-3" />} />
                 <MiniChip label="Reports" value={`${myWeek.submitted}/7`} />
                 <MiniChip label="KPI hit" value={`${myWeek.kpiHitDays}/7`} tone={myWeek.kpiHitDays >= 5 ? "green" : "default"} />
@@ -271,7 +271,7 @@ function EODsPage() {
           {canViewTeam && (
             <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-3">
               <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground mb-2">Team today</div>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <MiniChip label="Submitted" value={`${teamToday.submitted}/${teamToday.expected}`} tone={teamToday.submitted === teamToday.expected ? "green" : "amber"} />
                 <MiniChip label="Dials + leads" value={teamToday.dials.toLocaleString()} />
                 <MiniChip label="Booked" value={teamToday.booked} />
@@ -774,7 +774,7 @@ function ComplianceMatrix({ eods, roster }: { eods: GridEod[]; roster: RosterEnt
       </div>
 
       <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm overflow-x-auto">
-        <table className="w-full text-xs">
+        <table className="w-full min-w-[560px] text-xs">
           <thead>
             <tr className="border-b border-[var(--border)] text-[10px] uppercase tracking-wider text-muted-foreground">
               <th className="text-left px-3 py-2 sticky left-0 bg-[var(--card)] z-10">Person</th>

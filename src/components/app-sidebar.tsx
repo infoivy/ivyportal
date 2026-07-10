@@ -1,8 +1,10 @@
 import { Link, useRouterState } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import {
   LayoutDashboard, FileText, BookOpen, Calendar, GraduationCap,
   BarChart3, Database, Users, StickyNote, Shield, UserCircle, School, HeartHandshake, Phone, DollarSign,
-  ListChecks, Trophy, TrendingUp, Quote, Sparkles, Building2, HeartPulse,
+  ListChecks, Trophy, TrendingUp, Quote, Sparkles, Building2, HeartPulse, ClipboardList,
 } from "lucide-react";
 
 
@@ -39,7 +41,7 @@ const opsItems: Item[] = [
   { title: "Installments", url: "/installments", icon: DollarSign, roles: ["admin", "setter", "coach", "csm"] },
   { title: "Calendar", url: "/calendar", icon: Calendar },
   { title: "Analytics", url: "/analytics", icon: BarChart3 },
-  { title: "CRM", url: "/crm", icon: Database },
+  { title: "CRM", url: "/crm", icon: Database, roles: ["admin"] },
   { title: "Testimonials", url: "/testimonials", icon: Quote, roles: ["admin", "coach", "closer", "setter", "csm"] },
 ];
 
@@ -48,6 +50,7 @@ const founderItems: Item[] = [
   { title: "Command", url: "/founder-hq", icon: LayoutDashboard, roles: ["founder", "admin"] },
   { title: "Founder Hub", url: "/founder", icon: Sparkles, roles: ["founder"] },
   { title: "IG Analytics", url: "/instagram", icon: BarChart3, roles: ["founder"] },
+  { title: "Weekly Review", url: "/weekly-review", icon: ClipboardList, roles: ["founder", "admin"] },
 ];
 
 const adminItems: Item[] = [
@@ -67,12 +70,22 @@ export function AppSidebar({ roles }: { roles: string[] }) {
   const isAdmin = roles.includes("admin");
   const isStudent = roles.includes("student");
   const isTeam = roles.some(r => ["admin", "coach", "closer", "setter", "csm"].includes(r));
+  const [crmEnabled, setCrmEnabled] = useState(false);
+
+  useEffect(() => {
+    supabase.from("founder_settings").select("crm_enabled").maybeSingle().then(({ data }) => {
+      setCrmEnabled(!!(data as any)?.crm_enabled);
+    });
+  }, []);
 
   const isActive = (url: string) =>
     url === "/dashboard" ? currentPath === url : currentPath.startsWith(url);
 
   const renderGroup = (label: string, items: Item[]) => {
-    const filtered = items.filter(i => !i.roles || i.roles.some(r => roles.includes(r)));
+    const filtered = items.filter(i => {
+      if (i.url === "/crm" && !crmEnabled) return false;
+      return !i.roles || i.roles.some(r => roles.includes(r));
+    });
     if (filtered.length === 0) return null;
     return (
       <SidebarGroup className="px-2 py-1.5">

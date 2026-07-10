@@ -332,7 +332,7 @@ function RevenuePage() {
           <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Commission via active rates</span>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[480px] text-sm">
             <thead className="text-xs uppercase tracking-wider text-muted-foreground/70 bg-[var(--card)]">
               <tr>
                 <th className="text-left px-4 py-2.5">Closer</th>
@@ -374,7 +374,7 @@ function RevenuePage() {
           </span>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[420px] text-sm">
             <thead className="text-xs uppercase tracking-wider text-muted-foreground/70 bg-[var(--card)]">
               <tr>
                 <th className="text-left px-4 py-2.5">Setter</th>
@@ -413,7 +413,7 @@ function RevenuePage() {
           <h3 className="text-sm font-semibold">Recent deals</h3>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[640px] text-sm">
             <thead className="text-xs uppercase tracking-wider text-muted-foreground/70 bg-[var(--card)]">
               <tr>
                 <th className="text-left px-4 py-2.5">Date</th>

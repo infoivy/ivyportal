@@ -214,7 +214,7 @@ function SalesHQInner() {
                     const primaryVal = eod ? (s.setter_type === "phone" ? eod.dials : eod.leads_contacted) : null;
                     const primaryTarget = s.setter_type === "phone" ? 100 : s.setter_type === "dm" ? 125 : null;
                     return (
-                      <div key={s.id} className="flex items-center justify-between gap-3 px-4 py-3 border-b border-accent last:border-0">
+                      <div key={s.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-3 border-b border-accent last:border-0">
                         <div className="flex items-center gap-2 min-w-0">
                           <div className="h-7 w-7 rounded-sm bg-accent border border-border flex items-center justify-center text-[10px] font-semibold text-muted-foreground shrink-0">
                             {s.display_name.slice(0, 2).toUpperCase()}

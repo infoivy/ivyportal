@@ -13,12 +13,15 @@ import { Route as PrintRouteImport } from './routes/print'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedWeeklyReviewRouteImport } from './routes/_authenticated.weekly-review'
 import { Route as AuthenticatedTrainingRouteImport } from './routes/_authenticated.training'
 import { Route as AuthenticatedTestimonialsRouteImport } from './routes/_authenticated.testimonials'
 import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated.team'
 import { Route as AuthenticatedStudentsRouteImport } from './routes/_authenticated.students'
+import { Route as AuthenticatedStudentSuccessRouteImport } from './routes/_authenticated.student-success'
 import { Route as AuthenticatedStudentPortalRouteImport } from './routes/_authenticated.student-portal'
 import { Route as AuthenticatedSopsRouteImport } from './routes/_authenticated.sops'
+import { Route as AuthenticatedSalesHqRouteImport } from './routes/_authenticated.sales-hq'
 import { Route as AuthenticatedRevenueRouteImport } from './routes/_authenticated.revenue'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated.profile'
 import { Route as AuthenticatedPoliciesRouteImport } from './routes/_authenticated.policies'
@@ -26,6 +29,7 @@ import { Route as AuthenticatedNotesRouteImport } from './routes/_authenticated.
 import { Route as AuthenticatedKnowledgeRouteImport } from './routes/_authenticated.knowledge'
 import { Route as AuthenticatedInstallmentsRouteImport } from './routes/_authenticated.installments'
 import { Route as AuthenticatedInstagramRouteImport } from './routes/_authenticated.instagram'
+import { Route as AuthenticatedFounderHqRouteImport } from './routes/_authenticated.founder-hq'
 import { Route as AuthenticatedFounderRouteImport } from './routes/_authenticated.founder'
 import { Route as AuthenticatedEodsRouteImport } from './routes/_authenticated.eods'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
@@ -67,6 +71,12 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedWeeklyReviewRoute =
+  AuthenticatedWeeklyReviewRouteImport.update({
+    id: '/weekly-review',
+    path: '/weekly-review',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedTrainingRoute = AuthenticatedTrainingRouteImport.update({
   id: '/training',
   path: '/training',
@@ -88,6 +98,12 @@ const AuthenticatedStudentsRoute = AuthenticatedStudentsRouteImport.update({
   path: '/students',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedStudentSuccessRoute =
+  AuthenticatedStudentSuccessRouteImport.update({
+    id: '/student-success',
+    path: '/student-success',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedStudentPortalRoute =
   AuthenticatedStudentPortalRouteImport.update({
     id: '/student-portal',
@@ -97,6 +113,11 @@ const AuthenticatedStudentPortalRoute =
 const AuthenticatedSopsRoute = AuthenticatedSopsRouteImport.update({
   id: '/sops',
   path: '/sops',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedSalesHqRoute = AuthenticatedSalesHqRouteImport.update({
+  id: '/sales-hq',
+  path: '/sales-hq',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedRevenueRoute = AuthenticatedRevenueRouteImport.update({
@@ -133,6 +154,11 @@ const AuthenticatedInstallmentsRoute =
 const AuthenticatedInstagramRoute = AuthenticatedInstagramRouteImport.update({
   id: '/instagram',
   path: '/instagram',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedFounderHqRoute = AuthenticatedFounderHqRouteImport.update({
+  id: '/founder-hq',
+  path: '/founder-hq',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedFounderRoute = AuthenticatedFounderRouteImport.update({
@@ -267,6 +293,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/eods': typeof AuthenticatedEodsRoute
   '/founder': typeof AuthenticatedFounderRoute
+  '/founder-hq': typeof AuthenticatedFounderHqRoute
   '/instagram': typeof AuthenticatedInstagramRoute
   '/installments': typeof AuthenticatedInstallmentsRoute
   '/knowledge': typeof AuthenticatedKnowledgeRouteWithChildren
@@ -274,12 +301,15 @@ export interface FileRoutesByFullPath {
   '/policies': typeof AuthenticatedPoliciesRouteWithChildren
   '/profile': typeof AuthenticatedProfileRoute
   '/revenue': typeof AuthenticatedRevenueRoute
+  '/sales-hq': typeof AuthenticatedSalesHqRoute
   '/sops': typeof AuthenticatedSopsRouteWithChildren
   '/student-portal': typeof AuthenticatedStudentPortalRoute
+  '/student-success': typeof AuthenticatedStudentSuccessRoute
   '/students': typeof AuthenticatedStudentsRouteWithChildren
   '/team': typeof AuthenticatedTeamRoute
   '/testimonials': typeof AuthenticatedTestimonialsRoute
   '/training': typeof AuthenticatedTrainingRoute
+  '/weekly-review': typeof AuthenticatedWeeklyReviewRoute
   '/knowledge/$slug': typeof AuthenticatedKnowledgeSlugRouteWithChildren
   '/knowledge/new': typeof AuthenticatedKnowledgeNewRoute
   '/policies/crm-hygiene': typeof AuthenticatedPoliciesCrmHygieneRoute
@@ -306,17 +336,21 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/eods': typeof AuthenticatedEodsRoute
   '/founder': typeof AuthenticatedFounderRoute
+  '/founder-hq': typeof AuthenticatedFounderHqRoute
   '/instagram': typeof AuthenticatedInstagramRoute
   '/installments': typeof AuthenticatedInstallmentsRoute
   '/notes': typeof AuthenticatedNotesRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/revenue': typeof AuthenticatedRevenueRoute
+  '/sales-hq': typeof AuthenticatedSalesHqRoute
   '/sops': typeof AuthenticatedSopsRouteWithChildren
   '/student-portal': typeof AuthenticatedStudentPortalRoute
+  '/student-success': typeof AuthenticatedStudentSuccessRoute
   '/students': typeof AuthenticatedStudentsRouteWithChildren
   '/team': typeof AuthenticatedTeamRoute
   '/testimonials': typeof AuthenticatedTestimonialsRoute
   '/training': typeof AuthenticatedTrainingRoute
+  '/weekly-review': typeof AuthenticatedWeeklyReviewRoute
   '/knowledge/$slug': typeof AuthenticatedKnowledgeSlugRouteWithChildren
   '/knowledge/new': typeof AuthenticatedKnowledgeNewRoute
   '/policies/crm-hygiene': typeof AuthenticatedPoliciesCrmHygieneRoute
@@ -345,6 +379,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/eods': typeof AuthenticatedEodsRoute
   '/_authenticated/founder': typeof AuthenticatedFounderRoute
+  '/_authenticated/founder-hq': typeof AuthenticatedFounderHqRoute
   '/_authenticated/instagram': typeof AuthenticatedInstagramRoute
   '/_authenticated/installments': typeof AuthenticatedInstallmentsRoute
   '/_authenticated/knowledge': typeof AuthenticatedKnowledgeRouteWithChildren
@@ -352,12 +387,15 @@ export interface FileRoutesById {
   '/_authenticated/policies': typeof AuthenticatedPoliciesRouteWithChildren
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/revenue': typeof AuthenticatedRevenueRoute
+  '/_authenticated/sales-hq': typeof AuthenticatedSalesHqRoute
   '/_authenticated/sops': typeof AuthenticatedSopsRouteWithChildren
   '/_authenticated/student-portal': typeof AuthenticatedStudentPortalRoute
+  '/_authenticated/student-success': typeof AuthenticatedStudentSuccessRoute
   '/_authenticated/students': typeof AuthenticatedStudentsRouteWithChildren
   '/_authenticated/team': typeof AuthenticatedTeamRoute
   '/_authenticated/testimonials': typeof AuthenticatedTestimonialsRoute
   '/_authenticated/training': typeof AuthenticatedTrainingRoute
+  '/_authenticated/weekly-review': typeof AuthenticatedWeeklyReviewRoute
   '/_authenticated/knowledge/$slug': typeof AuthenticatedKnowledgeSlugRouteWithChildren
   '/_authenticated/knowledge/new': typeof AuthenticatedKnowledgeNewRoute
   '/_authenticated/policies/crm-hygiene': typeof AuthenticatedPoliciesCrmHygieneRoute
@@ -386,6 +424,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/eods'
     | '/founder'
+    | '/founder-hq'
     | '/instagram'
     | '/installments'
     | '/knowledge'
@@ -393,12 +432,15 @@ export interface FileRouteTypes {
     | '/policies'
     | '/profile'
     | '/revenue'
+    | '/sales-hq'
     | '/sops'
     | '/student-portal'
+    | '/student-success'
     | '/students'
     | '/team'
     | '/testimonials'
     | '/training'
+    | '/weekly-review'
     | '/knowledge/$slug'
     | '/knowledge/new'
     | '/policies/crm-hygiene'
@@ -425,17 +467,21 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/eods'
     | '/founder'
+    | '/founder-hq'
     | '/instagram'
     | '/installments'
     | '/notes'
     | '/profile'
     | '/revenue'
+    | '/sales-hq'
     | '/sops'
     | '/student-portal'
+    | '/student-success'
     | '/students'
     | '/team'
     | '/testimonials'
     | '/training'
+    | '/weekly-review'
     | '/knowledge/$slug'
     | '/knowledge/new'
     | '/policies/crm-hygiene'
@@ -463,6 +509,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/eods'
     | '/_authenticated/founder'
+    | '/_authenticated/founder-hq'
     | '/_authenticated/instagram'
     | '/_authenticated/installments'
     | '/_authenticated/knowledge'
@@ -470,12 +517,15 @@ export interface FileRouteTypes {
     | '/_authenticated/policies'
     | '/_authenticated/profile'
     | '/_authenticated/revenue'
+    | '/_authenticated/sales-hq'
     | '/_authenticated/sops'
     | '/_authenticated/student-portal'
+    | '/_authenticated/student-success'
     | '/_authenticated/students'
     | '/_authenticated/team'
     | '/_authenticated/testimonials'
     | '/_authenticated/training'
+    | '/_authenticated/weekly-review'
     | '/_authenticated/knowledge/$slug'
     | '/_authenticated/knowledge/new'
     | '/_authenticated/policies/crm-hygiene'
@@ -525,6 +575,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/weekly-review': {
+      id: '/_authenticated/weekly-review'
+      path: '/weekly-review'
+      fullPath: '/weekly-review'
+      preLoaderRoute: typeof AuthenticatedWeeklyReviewRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/training': {
       id: '/_authenticated/training'
       path: '/training'
@@ -553,6 +610,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStudentsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/student-success': {
+      id: '/_authenticated/student-success'
+      path: '/student-success'
+      fullPath: '/student-success'
+      preLoaderRoute: typeof AuthenticatedStudentSuccessRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/student-portal': {
       id: '/_authenticated/student-portal'
       path: '/student-portal'
@@ -565,6 +629,13 @@ declare module '@tanstack/react-router' {
       path: '/sops'
       fullPath: '/sops'
       preLoaderRoute: typeof AuthenticatedSopsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/sales-hq': {
+      id: '/_authenticated/sales-hq'
+      path: '/sales-hq'
+      fullPath: '/sales-hq'
+      preLoaderRoute: typeof AuthenticatedSalesHqRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/revenue': {
@@ -614,6 +685,13 @@ declare module '@tanstack/react-router' {
       path: '/instagram'
       fullPath: '/instagram'
       preLoaderRoute: typeof AuthenticatedInstagramRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/founder-hq': {
+      id: '/_authenticated/founder-hq'
+      path: '/founder-hq'
+      fullPath: '/founder-hq'
+      preLoaderRoute: typeof AuthenticatedFounderHqRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/founder': {
@@ -852,6 +930,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEodsRoute: typeof AuthenticatedEodsRoute
   AuthenticatedFounderRoute: typeof AuthenticatedFounderRoute
+  AuthenticatedFounderHqRoute: typeof AuthenticatedFounderHqRoute
   AuthenticatedInstagramRoute: typeof AuthenticatedInstagramRoute
   AuthenticatedInstallmentsRoute: typeof AuthenticatedInstallmentsRoute
   AuthenticatedKnowledgeRoute: typeof AuthenticatedKnowledgeRouteWithChildren
@@ -859,12 +938,15 @@ interface AuthenticatedRouteChildren {
   AuthenticatedPoliciesRoute: typeof AuthenticatedPoliciesRouteWithChildren
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedRevenueRoute: typeof AuthenticatedRevenueRoute
+  AuthenticatedSalesHqRoute: typeof AuthenticatedSalesHqRoute
   AuthenticatedSopsRoute: typeof AuthenticatedSopsRouteWithChildren
   AuthenticatedStudentPortalRoute: typeof AuthenticatedStudentPortalRoute
+  AuthenticatedStudentSuccessRoute: typeof AuthenticatedStudentSuccessRoute
   AuthenticatedStudentsRoute: typeof AuthenticatedStudentsRouteWithChildren
   AuthenticatedTeamRoute: typeof AuthenticatedTeamRoute
   AuthenticatedTestimonialsRoute: typeof AuthenticatedTestimonialsRoute
   AuthenticatedTrainingRoute: typeof AuthenticatedTrainingRoute
+  AuthenticatedWeeklyReviewRoute: typeof AuthenticatedWeeklyReviewRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -880,6 +962,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEodsRoute: AuthenticatedEodsRoute,
   AuthenticatedFounderRoute: AuthenticatedFounderRoute,
+  AuthenticatedFounderHqRoute: AuthenticatedFounderHqRoute,
   AuthenticatedInstagramRoute: AuthenticatedInstagramRoute,
   AuthenticatedInstallmentsRoute: AuthenticatedInstallmentsRoute,
   AuthenticatedKnowledgeRoute: AuthenticatedKnowledgeRouteWithChildren,
@@ -887,12 +970,15 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedPoliciesRoute: AuthenticatedPoliciesRouteWithChildren,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedRevenueRoute: AuthenticatedRevenueRoute,
+  AuthenticatedSalesHqRoute: AuthenticatedSalesHqRoute,
   AuthenticatedSopsRoute: AuthenticatedSopsRouteWithChildren,
   AuthenticatedStudentPortalRoute: AuthenticatedStudentPortalRoute,
+  AuthenticatedStudentSuccessRoute: AuthenticatedStudentSuccessRoute,
   AuthenticatedStudentsRoute: AuthenticatedStudentsRouteWithChildren,
   AuthenticatedTeamRoute: AuthenticatedTeamRoute,
   AuthenticatedTestimonialsRoute: AuthenticatedTestimonialsRoute,
   AuthenticatedTrainingRoute: AuthenticatedTrainingRoute,
+  AuthenticatedWeeklyReviewRoute: AuthenticatedWeeklyReviewRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

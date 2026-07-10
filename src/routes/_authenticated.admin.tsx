@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import {
   Shield, CheckCircle2, Users, Mail, UserX, Star,
-  ArrowUpRight, ClipboardList, Percent, Save,
+  ArrowUpRight, ClipboardList, Percent, Save, Database, ExternalLink, History,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin")({
@@ -45,6 +45,11 @@ function AdminConsole() {
   const [unratedCalls, setUnratedCalls] = useState<CallRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [rateRows, setRateRows] = useState<{ id: string; key: string; label: string; rate: number; active: boolean }[]>([]);
+  const [crmEnabled, setCrmEnabled] = useState(false);
+  const [monthlyGoal, setMonthlyGoal] = useState<string>("");
+  const [founderSettingsId, setFounderSettingsId] = useState<string | null>(null);
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [auditLog, setAuditLog] = useState<{ id: string; action: string; table_name: string; record_id: string | null; created_at: string; user_id: string | null }[]>([]);
 
   const days = RANGES.find(r => r.key === range)!.days;
 
@@ -53,13 +58,16 @@ function AdminConsole() {
     setLoading(true);
     const from = format(subDays(new Date(), days - 1), "yyyy-MM-dd");
     (async () => {
-      const [eodRes, profRes, roleRes, studRes, callsRes, ratesRes] = await Promise.all([
+      const [eodRes, profRes, roleRes, studRes, callsRes, ratesRes, fsRes, auditRes] = await Promise.all([
         supabase.from("eods").select("id, user_id, report_date").gte("report_date", from),
         supabase.from("profiles").select("id, display_name"),
         supabase.from("user_roles").select("user_id, role"),
         supabase.from("students").select("id, full_name, email, coach_id, status, first_win_at, testimonial_collected, trustpilot_collected"),
         supabase.from("student_calls").select("id, student_id, call_date, coach_id, progress_rating").eq("status", "completed").is("progress_rating", null).order("call_date", { ascending: false }).limit(50),
         supabase.from("commission_rates").select("*").eq("active", true),
+        supabase.from("founder_settings").select("id, crm_enabled, monthly_cash_goal").maybeSingle(),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any).from("audit_log").select("id, action, table_name, record_id, created_at, user_id").order("created_at", { ascending: false }).limit(100),
       ]);
       setEods((eodRes.data as EodRow[]) ?? []);
       const pmap: Record<string, Profile> = {};
@@ -70,6 +78,13 @@ function AdminConsole() {
       setUnratedCalls((callsRes.data as CallRow[]) ?? []);
       const rows = (ratesRes.data ?? []).map(r => ({ id: r.id, key: r.key, label: r.label, rate: Number(r.rate), active: r.active }));
       setRateRows(rows);
+      if (fsRes.data) {
+        const fs = fsRes.data as any;
+        setFounderSettingsId(fs.id);
+        setCrmEnabled(!!fs.crm_enabled);
+        setMonthlyGoal(fs.monthly_cash_goal ? String(fs.monthly_cash_goal) : "");
+      }
+      setAuditLog((auditRes.data ?? []) as any[]);
       setLoading(false);
     })();
   }, [days, isAdmin]);
@@ -223,6 +238,124 @@ function AdminConsole() {
           });
         }} />
       </div>
+
+      {/* Portal settings */}
+      <Panel title="Portal settings" icon={<Shield className="h-3.5 w-3.5 text-muted-foreground" />}>
+        <div className="space-y-4">
+          {/* Monthly cash goal */}
+          <div className="space-y-1">
+            <Label className="text-xs">Monthly cash goal (USD)</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                value={monthlyGoal}
+                onChange={e => setMonthlyGoal(e.target.value)}
+                placeholder="e.g. 50000"
+                className="w-40 h-8 text-xs"
+              />
+              <Button
+                size="sm"
+                disabled={savingSettings}
+                onClick={async () => {
+                  setSavingSettings(true);
+                  const goal = Number(monthlyGoal) || null;
+                  if (founderSettingsId) {
+                    const { error } = await supabase.from("founder_settings").update({ monthly_cash_goal: goal } as any).eq("id", founderSettingsId);
+                    if (error) toast.error(error.message); else toast.success("Goal saved");
+                  }
+                  setSavingSettings(false);
+                }}
+              >
+                <Save className="h-3.5 w-3.5 mr-1" /> Save goal
+              </Button>
+            </div>
+            <p className="text-[10px] text-muted-foreground">Shown on the Founder HQ command view progress bar.</p>
+          </div>
+
+          {/* CRM toggle */}
+          <div className="flex items-center justify-between py-3 border-t border-border">
+            <div>
+              <div className="text-xs font-medium flex items-center gap-1.5"><Database className="h-3.5 w-3.5 text-muted-foreground" /> CRM Integration</div>
+              <p className="text-[10px] text-muted-foreground mt-0.5">Enable the CRM sidebar link and /crm route. Disable if Close CRM is not connected.</p>
+            </div>
+            <button
+              onClick={async () => {
+                const next = !crmEnabled;
+                setCrmEnabled(next);
+                if (founderSettingsId) {
+                  const { error } = await supabase.from("founder_settings").update({ crm_enabled: next } as any).eq("id", founderSettingsId);
+                  if (error) { toast.error(error.message); setCrmEnabled(!next); }
+                  else toast.success(next ? "CRM enabled" : "CRM disabled");
+                }
+              }}
+              className={`relative h-5 w-9 rounded-full transition-colors ${crmEnabled ? "bg-green-500" : "bg-muted"}`}
+            >
+              <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${crmEnabled ? "translate-x-4" : "translate-x-0.5"}`} />
+            </button>
+          </div>
+
+          {/* Backups note */}
+          <div className="flex items-start gap-3 py-3 border-t border-border">
+            <CheckCircle2 className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
+            <div>
+              <div className="text-xs font-medium">Database backups</div>
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                Enable daily point-in-time backups in Supabase dashboard → Settings → Backups. Requires Pro tier. Do this now if not already done.
+              </p>
+              <a
+                href="https://supabase.com/docs/guides/platform/backups"
+                target="_blank"
+                rel="noopener"
+                className="text-[10px] text-green-400 hover:text-green-300 flex items-center gap-0.5 mt-1"
+              >
+                Supabase backup docs <ExternalLink className="h-2.5 w-2.5" />
+              </a>
+            </div>
+          </div>
+        </div>
+      </Panel>
+
+      {/* Audit log */}
+      <Panel
+        title="Audit log"
+        subtitle="Last 100 events on roles, commission rates, and deals"
+        icon={<History className="h-3.5 w-3.5 text-muted-foreground" />}
+      >
+        {auditLog.length === 0 ? (
+          <div className="py-4 text-center text-xs text-muted-foreground">No audit events yet.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-border text-muted-foreground text-[10px] uppercase tracking-wider">
+                  <th className="text-left py-2 pr-3">Time</th>
+                  <th className="text-left py-2 pr-3">Action</th>
+                  <th className="text-left py-2 pr-3">Table</th>
+                  <th className="text-left py-2">Record</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-accent">
+                {auditLog.map(e => (
+                  <tr key={e.id} className="hover:bg-accent/50">
+                    <td className="py-2 pr-3 font-mono text-muted-foreground whitespace-nowrap">{new Date(e.created_at).toISOString().slice(0, 19).replace("T", " ")}</td>
+                    <td className="py-2 pr-3">
+                      <span className={`px-1.5 py-0.5 rounded-sm border text-[10px] uppercase ${
+                        e.action === "INSERT" ? "border-green-500/30 bg-green-500/10 text-green-400"
+                        : e.action === "DELETE" ? "border-red-500/30 bg-red-500/10 text-red-400"
+                        : "border-amber-500/30 bg-amber-500/10 text-amber-400"
+                      }`}>
+                        {e.action}
+                      </span>
+                    </td>
+                    <td className="py-2 pr-3 text-muted-foreground">{e.table_name}</td>
+                    <td className="py-2 text-muted-foreground font-mono truncate max-w-[120px]">{e.record_id ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Panel>
 
       {/* Data hygiene lists */}
       <div className="grid lg:grid-cols-2 gap-4">

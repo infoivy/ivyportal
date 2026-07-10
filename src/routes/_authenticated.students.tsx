@@ -313,7 +313,7 @@ function StudentsLayout() {
         <GraduationKanban students={filtered} />
       ) : view === "table" ? (
         <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm overflow-x-auto">
-          <table className="w-full text-xs">
+          <table className="w-full min-w-[560px] text-xs">
             <thead className="text-[10px] uppercase tracking-widest text-muted-foreground bg-[var(--card)] sticky top-0">
               <tr className="border-b border-[var(--border)]">
                 <th className="text-left px-4 py-2 font-normal">Student</th>
