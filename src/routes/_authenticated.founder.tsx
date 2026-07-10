@@ -297,9 +297,9 @@ function KanbanView({ items, onOpen, onUpdate }: { items: ContentItem[]; onOpen:
   };
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
-      {STATUSES.map(s => {
-        const col = items.filter(i => i.status === s.value);
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-2">
+      {STATUSES.filter(s => s.value !== "filmed").map(s => {
+        const col = items.filter(i => i.status === s.value || (s.value === "recorded" && i.status === "filmed"));
         return (
           <div key={s.value} className="border border-[#1f2530] bg-[#0f1116] rounded-sm flex flex-col min-h-[400px]">
             <div className={`p-2 border-b border-[#1f2530] flex items-center justify-between ${s.color}`}>
