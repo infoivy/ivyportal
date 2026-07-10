@@ -33,7 +33,7 @@
   --color-tab-engage:   var(--tab-engage);
   --color-tab-pacing:   var(--tab-pacing);
 
-  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Geist", -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, ui-sans-serif, system-ui, sans-serif;
 }
 
 /* ── Light theme (default) ───────────────────────────────────────────────── */

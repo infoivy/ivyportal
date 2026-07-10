@@ -264,30 +264,35 @@ function Dashboard() {
 
         {/* Cash MTD hero — admin/founder only */}
         {(roles.includes("admin") || roles.includes("founder")) && (
-          <div className="card-surface px-5 py-4 flex items-center justify-between">
+          <div className="card-surface px-6 py-5 flex items-end justify-between">
             <div>
-              <div className="text-[12px] text-muted-foreground mb-0.5">Cash collected this month</div>
-              <div className="text-[36px] font-bold tabular-nums text-foreground tracking-[-0.03em] leading-none">
+              <div className="text-[12px] text-muted-foreground mb-3">Cash collected this month</div>
+              <div className="text-[44px] font-bold tabular-nums text-foreground tracking-[-0.04em] leading-none">
                 {cashMtd > 0 ? money(cashMtd) : "—"}
               </div>
             </div>
-            <Link to="/revenue" className="text-[13px] text-primary hover:text-primary/80 flex items-center gap-1 shrink-0">Revenue →</Link>
+            <Link to="/revenue" className="text-[13px] text-primary hover:text-primary/80 mb-1 shrink-0">View revenue →</Link>
           </div>
         )}
 
-        {/* KPI Row */}
+        {/* KPI Row — 4 primary metrics + secondary inline */}
         {prefs.showKpis && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-9 gap-2">
-            <Kpi icon={Users}         label="Active Setters" value={activeSetters} highlight />
-            <Kpi icon={UserPlus}      label="EODs Filed"     value={totalEods} onClick={() => navigate({ to: "/eods" })} title={`${totalEods} EOD reports filed by the team in ${rangeLabel.toLowerCase()}. Click to open EOD reports.`} />
-            <Kpi icon={Eye}            label="DMs Sent"       value={totals.dms_sent} color="#3b82f6" onClick={() => setDrilldown("dms_sent")} delta={compare ? { value: totals.dms_sent - prevTotals.dms_sent, format: "count" } : null} />
-            <Kpi icon={Zap}            label="Convos"         value={totals.convos_started} color="#a855f7" onClick={() => setDrilldown("convos_started")} delta={compare ? { value: totals.convos_started - prevTotals.convos_started, format: "count" } : null} />
-            <Kpi icon={Users}          label="Booked"         value={totals.calls_booked} color="#22c55e" onClick={() => setDrilldown("calls_booked")} delta={compare ? { value: totals.calls_booked - prevTotals.calls_booked, format: "count" } : null} />
-            <Kpi icon={Heart}          label="Shows"          value={totals.shows} color="#f59e0b" onClick={() => setDrilldown("shows")} delta={compare ? { value: totals.shows - prevTotals.shows, format: "count" } : null} />
-            <Kpi icon={MessagesSquare} label="No-Shows"       value={totals.no_shows} color="#ef4444" onClick={() => setDrilldown("no_shows")} delta={compare ? { value: totals.no_shows - prevTotals.no_shows, format: "count", positiveIsGood: false } : null} />
-            <Kpi icon={Link2}          label="Show Rate"      value={showRate} suffix="%" color="#06b6d4" delta={compare ? { value: showRate - prevShowRateOf(prevTotals), format: "pct" } : null} />
-            <Kpi icon={FileText}       label="Scheduled"      value={totals.calls_scheduled} color="#ec4899" onClick={() => setDrilldown("calls_scheduled")} delta={compare ? { value: totals.calls_scheduled - prevTotals.calls_scheduled, format: "count" } : null} />
-          </div>
+          <>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <Kpi label="DMs Sent"   value={totals.dms_sent}    onClick={() => setDrilldown("dms_sent")}    delta={compare ? { value: totals.dms_sent - prevTotals.dms_sent, format: "count" } : null} />
+              <Kpi label="Booked"     value={totals.calls_booked} onClick={() => setDrilldown("calls_booked")} delta={compare ? { value: totals.calls_booked - prevTotals.calls_booked, format: "count" } : null} />
+              <Kpi label="Shows"      value={totals.shows}        onClick={() => setDrilldown("shows")}       delta={compare ? { value: totals.shows - prevTotals.shows, format: "count" } : null} />
+              <Kpi label="Show Rate"  value={showRate} suffix="%" delta={compare ? { value: showRate - prevShowRateOf(prevTotals), format: "pct" } : null} />
+            </div>
+            {/* Secondary stats — compact inline row */}
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 px-1">
+              <SecondaryKpi label="Convos" value={totals.convos_started} onClick={() => setDrilldown("convos_started")} delta={compare ? totals.convos_started - prevTotals.convos_started : null} />
+              <SecondaryKpi label="No-Shows" value={totals.no_shows} onClick={() => setDrilldown("no_shows")} />
+              <SecondaryKpi label="Scheduled" value={totals.calls_scheduled} onClick={() => setDrilldown("calls_scheduled")} />
+              <SecondaryKpi label="Active setters" value={activeSetters} />
+              <SecondaryKpi label="EODs filed" value={totalEods} onClick={() => navigate({ to: "/eods" })} />
+            </div>
+          </>
         )}
 
         {/* Ops strip */}
@@ -531,29 +536,23 @@ function PanelHead({ title, subtitle, legend }: { title: string; subtitle?: stri
     </div>
   );
 }
-function Kpi({ icon: Icon, label, value, suffix, highlight, onClick, delta, title }: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string; value: number; suffix?: string; color?: string; highlight?: boolean;
+function Kpi({ label, value, suffix, onClick, delta }: {
+  label: string; value: number; suffix?: string;
   onClick?: () => void;
   delta?: { value: number; format?: "money" | "count" | "pct"; positiveIsGood?: boolean } | null;
-  title?: string;
 }) {
   const clickable = !!onClick;
   return (
     <div
       onClick={onClick}
-      title={title}
       role={clickable ? "button" : undefined}
       tabIndex={clickable ? 0 : undefined}
       onKeyDown={clickable ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick!(); } } : undefined}
-      className={`card-surface p-2.5 motion-safe:transition-transform ${highlight ? "ring-1 ring-primary/40" : ""} ${clickable ? "cursor-pointer motion-safe:hover:-translate-y-px" : ""}`}
+      className={`card-surface px-5 py-4 ${clickable ? "cursor-pointer motion-safe:hover:brightness-110 motion-safe:transition-all" : ""}`}
     >
-      <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
-        <Icon className="h-3 w-3 shrink-0" />
-        <span className="truncate">{label}</span>
-      </div>
-      <div className="flex items-baseline gap-2 flex-wrap">
-        <div className="text-[20px] font-semibold tabular-nums mt-1 text-foreground tracking-[-0.01em]">
+      <div className="text-[12px] text-muted-foreground mb-3">{label}</div>
+      <div className="flex items-baseline gap-2.5 flex-wrap">
+        <div className="text-[32px] font-bold tabular-nums text-foreground tracking-[-0.03em] leading-none">
           {value >= 1000 ? `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}K` : value.toLocaleString()}{suffix}
         </div>
         {delta != null && (
@@ -850,6 +849,22 @@ function MyDayBlock({ roles }: { roles: string[] }) {
         })}
       </div>
     </div>
+  );
+}
+
+function SecondaryKpi({ label, value, suffix, onClick, delta }: { label: string; value: number; suffix?: string; onClick?: () => void; delta?: number | null }) {
+  const up = delta != null && delta > 0;
+  const down = delta != null && delta < 0;
+  return (
+    <button onClick={onClick} className="text-left group">
+      <span className="text-[13px] tabular-nums font-medium text-foreground group-hover:text-primary motion-safe:transition-colors">
+        {value >= 1000 ? `${(value / 1000).toFixed(1)}K` : value.toLocaleString()}{suffix}
+      </span>
+      {delta != null && delta !== 0 && (
+        <span className={`ml-1 text-[11px] ${up ? "text-green-400" : "text-red-400"}`}>{up ? "+" : ""}{delta}</span>
+      )}
+      <span className="ml-1.5 text-[12px] text-muted-foreground">{label}</span>
+    </button>
   );
 }
 
