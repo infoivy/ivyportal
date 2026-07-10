@@ -102,7 +102,7 @@ function FounderPage() {
 
   const [items, setItems] = useState<ContentItem[]>([]);
   const [ideas, setIdeas] = useState<Idea[]>([]);
-  const [view, setView] = useState<"weekly" | "calendar" | "kanban" | "list" | "sops">("weekly");
+  const [view, setView] = useState<"weekly" | "recording" | "hooks" | "calendar" | "kanban" | "list" | "sops">("weekly");
   const [monthCursor, setMonthCursor] = useState(new Date());
   const [editing, setEditing] = useState<ContentItem | null>(null);
   const [creating, setCreating] = useState(false);
