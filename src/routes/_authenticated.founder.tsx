@@ -95,7 +95,7 @@ function FounderPage() {
     return (
       <div className="p-8 max-w-md mx-auto text-center space-y-2">
         <Sparkles className="h-8 w-8 mx-auto text-muted-foreground" />
-        <div className="text-lg font-semibold">Founder Space</div>
+        <div className="text-lg font-semibold">Founder Hub</div>
         <p className="text-sm text-muted-foreground">This area is not accessible with your account.</p>
       </div>
     );
