@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
@@ -105,31 +106,38 @@ export function InstagramInner() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [logOpen, setLogOpen] = useState(false);
 
-  const load = async () => {
-    if (!user) return;
-    setLoading(true);
+  const fetchPage = async () => {
+    if (!user) return null;
     const [{ data: conn }, { data: dash }, { data: snaps }, { data: rls }] = await Promise.all([
       supabase.from("ig_connections").select("*").eq("user_id", user.id).maybeSingle(),
       supabase.from("ig_dashboards").select("*").eq("user_id", user.id).maybeSingle(),
       supabase.from("ig_monthly_snapshots").select("*").order("month", { ascending: false }),
       supabase.from("ig_top_reels").select("*").order("views", { ascending: false }),
     ]);
-    if (conn) setConnection(conn as never);
-    if (dash) {
-      const d = (dash as never as { data: Partial<DashboardSettings> }).data ?? {};
-      setSettings({ ...DEFAULT_SETTINGS, ...d });
-    }
-    const ss = (snaps ?? []) as Snapshot[];
-    setSnapshots(ss);
-    setReels((rls ?? []) as TopReel[]);
-    // Default to most recent snapshot if any exist
-    if (ss.length && !ss.find(s => s.month === selectedMonth)) {
-      setSelectedMonth(ss[0].month);
-    }
-    setLoading(false);
+    return { conn, dash, snaps: (snaps ?? []) as Snapshot[], reels: (rls ?? []) as TopReel[] };
   };
 
-  useEffect(() => { if (isFounder && user) load(); /* eslint-disable-next-line */ }, [isFounder, user?.id]);
+  const pageQ = useQuery({
+    queryKey: ["page", "instagram", user?.id],
+    queryFn: fetchPage,
+    enabled: isFounder && !!user,
+  });
+  useEffect(() => {
+    const d = pageQ.data;
+    if (!d) return;
+    if (d.conn) setConnection(d.conn as never);
+    if (d.dash) {
+      const dd = (d.dash as never as { data: Partial<DashboardSettings> }).data ?? {};
+      setSettings({ ...DEFAULT_SETTINGS, ...dd });
+    }
+    setSnapshots(d.snaps);
+    setReels(d.reels);
+    // Default to most recent snapshot if any exist
+    setSelectedMonth(prev => (d.snaps.length && !d.snaps.find(s => s.month === prev) ? d.snaps[0].month : prev));
+    setLoading(false);
+  }, [pageQ.data]);
+  const load = () => pageQ.refetch();
+
 
   const selected = useMemo(() => snapshots.find(s => s.month === selectedMonth) ?? null, [snapshots, selectedMonth]);
   const previous = useMemo(() => {

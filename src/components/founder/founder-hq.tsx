@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { Loader2, DollarSign, TrendingUp, BarChart3, Users, CheckCircle2, AlertTriangle } from "lucide-react";
@@ -43,33 +44,41 @@ export function FounderHQInner() {
   const [prevMtdCash, setPrevMtdCash] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
-  const load = async () => {
-    setLoading(true);
-    const [dealsRes, eodsRes, roleRes, contentRes, settingsRes] = await Promise.all([
+  const fetchPage = async () => {
+    const todayObj = new Date(today);
+    const lastMonthStart = new Date(todayObj.getFullYear(), todayObj.getMonth() - 1, 1).toISOString().slice(0, 10);
+    const lastMonthSameDay = new Date(todayObj.getFullYear(), todayObj.getMonth() - 1, todayObj.getDate()).toISOString().slice(0, 10);
+    const [dealsRes, eodsRes, roleRes, contentRes, settingsRes, prevRes] = await Promise.all([
       supabase.from("deals").select("id, closer_id, setter_id, total_value, cash_collected_upfront, deal_date, payment_type").gte("deal_date", monthStart),
       supabase.from("eods").select("user_id, report_date, calls_booked, shows, no_shows").gte("report_date", weekStart).lte("report_date", weekEnd),
       supabase.from("user_roles").select("user_id").eq("role", "setter"),
       supabase.from("content_items").select("scheduled_date, status").gte("scheduled_date", cycleStartStr).lte("scheduled_date", cycleEndStr),
       supabase.from("founder_settings").select("monthly_cash_goal").maybeSingle(),
+      supabase.from("deals").select("cash_collected_upfront").gte("deal_date", lastMonthStart).lte("deal_date", lastMonthSameDay),
     ]);
-    setDeals((dealsRes.data ?? []) as Deal[]);
-    setEods((eodsRes.data ?? []) as any[]);
-    setSetterRoster(Array.from(new Set(((roleRes.data ?? []) as any[]).map((r: any) => r.user_id))));
-    setContentItems((contentRes.data ?? []) as any[]);
-    setMonthlyGoal((settingsRes.data as any)?.monthly_cash_goal ?? null);
-
-    // Last month same-day cash for delta
-    const todayObj = new Date(today);
-    const lastMonthStart = new Date(todayObj.getFullYear(), todayObj.getMonth() - 1, 1).toISOString().slice(0, 10);
-    const lastMonthSameDay = new Date(todayObj.getFullYear(), todayObj.getMonth() - 1, todayObj.getDate()).toISOString().slice(0, 10);
-    supabase.from("deals").select("cash_collected_upfront").gte("deal_date", lastMonthStart).lte("deal_date", lastMonthSameDay).then(({ data }) => {
-      setPrevMtdCash(((data ?? []) as any[]).reduce((s, d) => s + (Number(d.cash_collected_upfront) || 0), 0));
-    });
-
-    setLoading(false);
+    return {
+      deals: (dealsRes.data ?? []) as Deal[],
+      eods: (eodsRes.data ?? []) as any[],
+      roster: Array.from(new Set(((roleRes.data ?? []) as any[]).map((r: any) => r.user_id))),
+      content: (contentRes.data ?? []) as any[],
+      goal: (settingsRes.data as any)?.monthly_cash_goal ?? null,
+      prevMtd: ((prevRes.data ?? []) as any[]).reduce((s, d) => s + (Number(d.cash_collected_upfront) || 0), 0),
+    };
   };
 
-  useEffect(() => { load(); }, []);
+  const pageQ = useQuery({ queryKey: ["page", "founder-hq", today], queryFn: fetchPage });
+  useEffect(() => {
+    const d = pageQ.data;
+    if (!d) return;
+    setDeals(d.deals);
+    setEods(d.eods);
+    setSetterRoster(d.roster);
+    setContentItems(d.content);
+    setMonthlyGoal(d.goal);
+    setPrevMtdCash(d.prevMtd);
+    setLoading(false);
+  }, [pageQ.data]);
+
 
   // MTD cash
   const mtdCash = useMemo(() => deals.reduce((s, d) => s + (d.cash_collected_upfront ?? 0), 0), [deals]);

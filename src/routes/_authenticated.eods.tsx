@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { Input } from "@/components/ui/input";
@@ -90,7 +91,11 @@ function EODsPage() {
 
   const loadMine = async () => {
     if (!user) return;
-    const { data } = await supabase.from("eods").select("*").eq("user_id", user.id).order("report_date", { ascending: false }).limit(120);
+    const [{ data }, { data: prof }] = await Promise.all([
+      supabase.from("eods").select("*").eq("user_id", user.id).order("report_date", { ascending: false }).limit(120),
+      supabase.from("profiles").select("setter_type").eq("id", user.id).maybeSingle(),
+    ]);
+    setMySetterType(((prof as { setter_type?: string } | null)?.setter_type ?? null) as SetterType);
     const rows = (data ?? []) as EOD[];
     setMyEods(rows);
     const todayEod = rows.find(e => e.report_date === today);
@@ -110,15 +115,15 @@ function EODsPage() {
         tomorrow_focus: todayEod.tomorrow_focus ?? "", summary: todayEod.summary ?? "",
       });
     }
-    const { data: prof } = await supabase.from("profiles").select("setter_type").eq("id", user.id).maybeSingle();
-    setMySetterType(((prof as { setter_type?: string } | null)?.setter_type ?? null) as SetterType);
   };
 
-  const loadTeam = async () => {
+  const fetchTeam = async () => {
     const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 45);
-    const { data } = await supabase.from("eods").select("*").gte("report_date", isoDate(cutoff)).order("report_date", { ascending: false });
+    const [{ data }, { data: rolesData }] = await Promise.all([
+      supabase.from("eods").select("*").gte("report_date", isoDate(cutoff)).order("report_date", { ascending: false }),
+      supabase.from("user_roles").select("user_id, role").in("role", ["setter", "closer", "coach", "csm"]),
+    ]);
     const eods = (data ?? []) as EOD[];
-    const { data: rolesData } = await supabase.from("user_roles").select("user_id, role").in("role", ["setter", "closer", "coach", "csm"]);
     const userIds = Array.from(new Set([...(rolesData ?? []).map(r => r.user_id), ...eods.map(e => e.user_id)]));
     const { data: profs } = await supabase.from("profiles").select("id, display_name, setter_type, created_at").in("id", userIds);
     const profMap = new Map((profs ?? []).map(p => [p.id, p as { id: string; display_name: string; setter_type: SetterType; created_at: string }]));
@@ -132,19 +137,31 @@ function EODsPage() {
       for (const p of priorityRoles) if (rs.includes(p)) return p;
       return rs[0] ?? "member";
     };
-    setTeamEods(eods.map(e => {
-      const p = profMap.get(e.user_id);
-      return { ...e, display_name: p?.display_name ?? "Unknown", primary_role: primaryRole(e.user_id), setter_type: p?.setter_type ?? null };
-    }));
-    setTeamRoster(userIds
-      .filter(uid => (roleMap.get(uid) ?? []).some(r => ["setter", "closer", "coach", "csm"].includes(r)))
-      .map(uid => {
-        const p = profMap.get(uid);
-        return { user_id: uid, display_name: p?.display_name ?? "Unknown", primary_role: primaryRole(uid), setter_type: p?.setter_type ?? null, joined_at: (p?.created_at ?? "").slice(0, 10) };
-      }));
+    return {
+      teamEods: eods.map(e => {
+        const p = profMap.get(e.user_id);
+        return { ...e, display_name: p?.display_name ?? "Unknown", primary_role: primaryRole(e.user_id), setter_type: p?.setter_type ?? null };
+      }) as GridEod[],
+      roster: userIds
+        .filter(uid => (roleMap.get(uid) ?? []).some(r => ["setter", "closer", "coach", "csm"].includes(r)))
+        .map(uid => {
+          const p = profMap.get(uid);
+          return { user_id: uid, display_name: p?.display_name ?? "Unknown", primary_role: primaryRole(uid), setter_type: p?.setter_type ?? null, joined_at: (p?.created_at ?? "").slice(0, 10) };
+        }) as RosterEntry[],
+    };
   };
 
-  useEffect(() => { (async () => { await loadMine(); })(); if (canViewTeam) loadTeam(); /* eslint-disable-next-line */ }, [user]);
+  // NOTE: the submit form (loadMine) is intentionally NOT cached — form state
+  // must never hydrate from a stale cache. Only the read-only team view is.
+  const teamQ = useQuery({ queryKey: ["page", "eods", "team"], queryFn: fetchTeam, enabled: canViewTeam });
+  useEffect(() => {
+    if (!teamQ.data) return;
+    setTeamEods(teamQ.data.teamEods);
+    setTeamRoster(teamQ.data.roster);
+  }, [teamQ.data]);
+  const loadTeam = () => teamQ.refetch();
+
+  useEffect(() => { loadMine(); /* eslint-disable-next-line */ }, [user]);
 
   // Autosave draft
   const draftKey = user ? `eod-draft:${user.id}:${today}` : null;

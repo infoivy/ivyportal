@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
@@ -118,18 +119,23 @@ export function FounderPageContent() {
   const [promotingIdea, setPromotingIdea] = useState<Idea | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const load = async () => {
-    setLoading(true);
-    const [ci, ii] = await Promise.all([
-      supabase.from("content_items").select("*").order("scheduled_date", { ascending: true, nullsFirst: false }),
-      supabase.from("content_ideas").select("*").order("created_at", { ascending: false }),
-    ]);
-    setItems((ci.data ?? []) as ContentItem[]);
-    setIdeas((ii.data ?? []) as Idea[]);
+  const pageQ = useQuery({
+    queryKey: ["page", "content-planner"],
+    queryFn: async () => {
+      const [ci, ii] = await Promise.all([
+        supabase.from("content_items").select("*").order("scheduled_date", { ascending: true, nullsFirst: false }),
+        supabase.from("content_ideas").select("*").order("created_at", { ascending: false }),
+      ]);
+      return { items: (ci.data ?? []) as ContentItem[], ideas: (ii.data ?? []) as Idea[] };
+    },
+  });
+  useEffect(() => {
+    if (!pageQ.data) return;
+    setItems(pageQ.data.items);
+    setIdeas(pageQ.data.ideas);
     setLoading(false);
-  };
-
-  useEffect(() => { load(); }, []);
+  }, [pageQ.data]);
+  const load = () => pageQ.refetch();
 
   return (
     <div className="space-y-4">

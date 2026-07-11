@@ -21,13 +21,15 @@ export const coachesQuery = () =>
   queryOptions({
     queryKey: ["coaches", "all"],
     queryFn: async () => {
-      const { data: roles, error: rErr } = await supabase.from("user_roles").select("user_id, role").in("role", ["coach", "admin"]);
-      if (rErr) throw rErr;
-      const ids = Array.from(new Set((roles ?? []).map(r => r.user_id)));
-      if (!ids.length) return [];
-      const { data: profs, error: pErr } = await supabase.from("profiles").select("id, display_name").in("id", ids);
-      if (pErr) throw pErr;
-      return (profs ?? []) as { id: string; display_name: string | null }[];
+      // Both tables are small — fetch in parallel and join client-side
+      const [rolesRes, profsRes] = await Promise.all([
+        supabase.from("user_roles").select("user_id, role").in("role", ["coach", "admin"]),
+        supabase.from("profiles").select("id, display_name"),
+      ]);
+      if (rolesRes.error) throw rolesRes.error;
+      if (profsRes.error) throw profsRes.error;
+      const ids = new Set((rolesRes.data ?? []).map(r => r.user_id));
+      return ((profsRes.data ?? []) as { id: string; display_name: string | null }[]).filter(p => ids.has(p.id));
     },
     staleTime: 5 * 60_000, // 5min — coach roster changes rarely
   });

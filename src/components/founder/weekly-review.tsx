@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { Loader2, Printer } from "lucide-react";
@@ -20,8 +21,7 @@ export function WeeklyReviewInner() {
   const [contentPosted, setContentPosted] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  const load = async () => {
-    setLoading(true);
+  const fetchPage = async () => {
     const [dealsRes, eodsRes, setterRes, eodsCountRes, msRes, testRes, contentRes] = await Promise.all([
       supabase.from("deals").select("id, closer_id, setter_id, total_value, cash_collected_upfront, deal_date, payment_type").gte("deal_date", weekStart).lte("deal_date", weekEnd),
       supabase.from("eods").select("user_id, calls_booked, shows, no_shows").gte("report_date", weekStart).lte("report_date", weekEnd),
@@ -32,19 +32,33 @@ export function WeeklyReviewInner() {
       supabase.from("students").select("id", { count: "exact", head: true }).eq("testimonial_collected", true).gte("updated_at", weekStart + "T00:00:00"),
       supabase.from("content_items").select("id", { count: "exact", head: true }).eq("status", "posted").gte("posted_at", weekStart + "T00:00:00"),
     ]);
-    setDeals((dealsRes.data ?? []) as Deal[]);
-    setEods((eodsRes.data ?? []) as any[]);
     const sc = setterRes.count ?? 0;
     const daysElapsed = Math.min(7, Math.floor((new Date().getTime() - new Date(weekStart).getTime()) / 86400000) + 1);
-    setExpectedEods(sc * daysElapsed);
-    setEodCount(eodsCountRes.count ?? 0);
-    setMilestonesThisWeek(msRes.count ?? 0);
-    setTestimonials(testRes.count ?? 0);
-    setContentPosted(contentRes.count ?? 0);
-    setLoading(false);
+    return {
+      deals: (dealsRes.data ?? []) as Deal[],
+      eods: (eodsRes.data ?? []) as any[],
+      expectedEods: sc * daysElapsed,
+      eodCount: eodsCountRes.count ?? 0,
+      milestones: msRes.count ?? 0,
+      testimonials: testRes.count ?? 0,
+      contentPosted: contentRes.count ?? 0,
+    };
   };
 
-  useEffect(() => { load(); }, []);
+  const pageQ = useQuery({ queryKey: ["page", "weekly-review", weekStart], queryFn: fetchPage });
+  useEffect(() => {
+    const d = pageQ.data;
+    if (!d) return;
+    setDeals(d.deals);
+    setEods(d.eods);
+    setExpectedEods(d.expectedEods);
+    setEodCount(d.eodCount);
+    setMilestonesThisWeek(d.milestones);
+    setTestimonials(d.testimonials);
+    setContentPosted(d.contentPosted);
+    setLoading(false);
+  }, [pageQ.data]);
+
 
   const weekCash = useMemo(() => deals.reduce((s, d) => s + (d.cash_collected_upfront ?? 0), 0), [deals]);
   const weekSets = useMemo(() => eods.reduce((s, e) => s + e.calls_booked, 0), [eods]);

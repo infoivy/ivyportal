@@ -42,16 +42,28 @@ function CoachesPage() {
   const today = Date.now();
   const dayMs = 86400000;
 
+  const callsByCoach = useMemo(() => {
+    const m = new Map<string, CallRow[]>();
+    for (const x of calls) {
+      if (!x.coach_id) continue;
+      const arr = m.get(x.coach_id) ?? [];
+      arr.push(x);
+      m.set(x.coach_id, arr);
+    }
+    return m;
+  }, [calls]);
+
   const rows = useMemo(() => coaches.map(c => {
+    const coachCalls = callsByCoach.get(c.id) ?? [];
     const roster = students.filter(s => s.coach_id === c.id);
     const active = roster.filter(s => s.status === "active");
     const totalAllotted = roster.reduce((n, s) => n + (s.calls_allotted ?? 0), 0);
-    const completed = calls.filter(x => x.coach_id === c.id && x.status === "completed").length;
+    const completed = coachCalls.filter(x => x.status === "completed").length;
     const remaining = Math.max(0, totalAllotted - completed);
-    const ratings = calls.filter(x => x.coach_id === c.id && x.progress_rating != null).map(x => x.progress_rating!) as number[];
+    const ratings = coachCalls.filter(x => x.progress_rating != null).map(x => x.progress_rating!) as number[];
     const avgRating = ratings.length ? (ratings.reduce((a, b) => a + b, 0) / ratings.length) : 0;
     const lastCallByStudent = new Map<string, string>();
-    calls.filter(x => x.coach_id === c.id && x.status === "completed").forEach(x => {
+    coachCalls.filter(x => x.status === "completed").forEach(x => {
       const prev = lastCallByStudent.get(x.student_id);
       if (!prev || prev < x.call_date) lastCallByStudent.set(x.student_id, x.call_date);
     });
@@ -62,7 +74,7 @@ function CoachesPage() {
       return (today - new Date(last).getTime()) / dayMs > 14;
     });
     return { coach: c, roster, active, totalAllotted, completed, remaining, avgRating, ratings, stale };
-  }).sort((a, b) => b.active.length - a.active.length), [coaches, students, calls]);
+  }).sort((a, b) => b.active.length - a.active.length), [coaches, students, callsByCoach]);
 
   return (
     <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-5">

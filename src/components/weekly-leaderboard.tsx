@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   type Deal,
@@ -19,9 +20,8 @@ export function CashLeaderboard({ compact = false }: { compact?: boolean }) {
   const [rows, setRows] = useState<{ user_id: string; name: string; cash: number; closes: number }[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = async () => {
-    setLoading(true);
-    try {
+  const fetchRows = async () => {
+    {
       const startISO = isoDay(startOfWeekMon(new Date()));
       const endISO = isoDay(endOfWeekSun(new Date()));
 
@@ -47,21 +47,20 @@ export function CashLeaderboard({ compact = false }: { compact?: boolean }) {
       }
 
       const userIds = Array.from(totals.keys());
-      if (userIds.length === 0) { setRows([]); return; }
+      if (userIds.length === 0) return [];
       const { data: profiles } = await supabase.from("profiles").select("id, display_name").in("id", userIds);
       const nameMap = new Map((profiles ?? []).map((p) => [p.id, p.display_name || "Unknown"]));
-      setRows(userIds.map((id) => ({
+      return userIds.map((id) => ({
         user_id: id, name: nameMap.get(id) ?? "Unknown",
         cash: totals.get(id)!.cash, closes: totals.get(id)!.closes,
-      })).sort((a, b) => b.cash - a.cash));
-    } catch (e) {
-      console.error("CashLeaderboard load failed", e);
-      setRows([]);
-    } finally {
-      setLoading(false);
+      })).sort((a, b) => b.cash - a.cash);
     }
   };
-  useEffect(() => { load(); }, []);
+  const rowsQ = useQuery({ queryKey: ["page", "weekly-leaderboard"], queryFn: fetchRows });
+  useEffect(() => {
+    if (rowsQ.data) { setRows(rowsQ.data); setLoading(false); }
+    else if (rowsQ.isError) { setRows([]); setLoading(false); }
+  }, [rowsQ.data, rowsQ.isError]);
 
   return (
     <Card className={compact ? "p-4" : "p-5"}>
