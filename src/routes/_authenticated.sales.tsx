@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
@@ -89,8 +90,7 @@ function OperationsTab() {
   const { roles } = useAuth();
   const canEditSetterType = roles.includes("admin");
 
-  const load = async () => {
-    setLoading(true);
+  const fetchPage = async () => {
     const [profsRes, rolesRes, todayRes, yestRes, recentRes] = await Promise.all([
       supabase.from("profiles").select("id, display_name, setter_type, active" as any),
       supabase.from("user_roles").select("user_id, role"),
@@ -103,21 +103,30 @@ function OperationsTab() {
     const rolesData = rolesRes.data ?? [];
     const profileNames: Record<string, string> = {};
     profs.forEach((p: any) => { profileNames[p.id] = p.display_name ?? "Unnamed"; });
-    setAllProfiles(profileNames);
 
     const setterIds = new Set<string>(rolesData.filter(r => r.role === "setter").map(r => r.user_id));
     const setterList: SetterProfile[] = profs
       .filter((p: any) => setterIds.has(p.id) && p.active !== false)
       .map((p: any) => ({ id: p.id, display_name: p.display_name ?? "Unnamed", setter_type: p.setter_type ?? null }));
-    setSetters(setterList);
 
-    setTodayEods((todayRes.data ?? []) as EODRow[]);
-    setYesterdayEods((yestRes.data ?? []) as EODRow[]);
-    setRecentEods((recentRes.data ?? []) as EODRow[]);
-    setLoading(false);
+    return {
+      profileNames, setterList,
+      today: (todayRes.data ?? []) as EODRow[],
+      yesterday: (yestRes.data ?? []) as EODRow[],
+      recent: (recentRes.data ?? []) as EODRow[],
+    };
   };
 
-  useEffect(() => { load(); }, []);
+  const pageQ = useQuery({ queryKey: ["page", "sales", "ops", today], queryFn: fetchPage });
+  useEffect(() => {
+    if (!pageQ.data) return;
+    setAllProfiles(pageQ.data.profileNames);
+    setSetters(pageQ.data.setterList);
+    setTodayEods(pageQ.data.today);
+    setYesterdayEods(pageQ.data.yesterday);
+    setRecentEods(pageQ.data.recent);
+    setLoading(false);
+  }, [pageQ.data]);
 
   const todayByUser = useMemo(() => { const m = new Map<string, EODRow>(); todayEods.forEach(e => m.set(e.user_id, e)); return m; }, [todayEods]);
   const yesterdayByUser = useMemo(() => { const m = new Map<string, EODRow>(); yesterdayEods.forEach(e => m.set(e.user_id, e)); return m; }, [yesterdayEods]);
@@ -318,13 +327,14 @@ function TrendsTab() {
   const fromISO = dateRange.from.toISOString().slice(0, 10);
   const toISO = dateRange.to.toISOString().slice(0, 10);
 
-  useEffect(() => {
-    setLoading(true);
-    const prevTo = new Date(dateRange.from); prevTo.setDate(prevTo.getDate() - 1);
-    const prevFrom = new Date(prevTo); prevFrom.setDate(prevFrom.getDate() - days + 1);
-    const pf = prevFrom.toISOString().slice(0, 10);
-    const pt = prevTo.toISOString().slice(0, 10);
-    (async () => {
+  const trendsQ = useQuery({
+    queryKey: ["page", "sales", "trends", fromISO, toISO, compare],
+    placeholderData: (prev) => prev, // keep numbers on screen while a new range loads
+    queryFn: async () => {
+      const prevTo = new Date(dateRange.from); prevTo.setDate(prevTo.getDate() - 1);
+      const prevFrom = new Date(prevTo); prevFrom.setDate(prevFrom.getDate() - days + 1);
+      const pf = prevFrom.toISOString().slice(0, 10);
+      const pt = prevTo.toISOString().slice(0, 10);
       const [r, prev, p] = await Promise.all([
         supabase.from("eods").select("id, user_id, report_date, dms_sent, convos_started, calls_booked, calls_scheduled, shows, no_shows, closes").gte("report_date", fromISO).lte("report_date", toISO).order("report_date"),
         compare
@@ -332,14 +342,18 @@ function TrendsTab() {
           : Promise.resolve({ data: [] as TrendsRow[] }),
         supabase.from("profiles").select("id, display_name"),
       ]);
-      setRows((r.data as TrendsRow[]) ?? []);
-      setPrevRows((prev.data as TrendsRow[]) ?? []);
       const map: Record<string, { id: string; display_name: string | null }> = {};
       ((p.data as any[]) ?? []).forEach((x: any) => { map[x.id] = x; });
-      setProfiles(map);
-      setLoading(false);
-    })();
-  }, [fromISO, toISO, compare]);
+      return { rows: (r.data as TrendsRow[]) ?? [], prevRows: (prev.data as TrendsRow[]) ?? [], map };
+    },
+  });
+  useEffect(() => {
+    if (!trendsQ.data) return;
+    setRows(trendsQ.data.rows);
+    setPrevRows(trendsQ.data.prevRows);
+    setProfiles(trendsQ.data.map);
+    setLoading(false);
+  }, [trendsQ.data]);
 
   const totals = useMemo(() => rows.reduce((a, r) => ({
     dms: a.dms + r.dms_sent, convos: a.convos + r.convos_started,

@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
@@ -71,8 +72,8 @@ function CsmPage() {
   const [quickNote, setQuickNote] = useState("");
   const [quickStudent, setQuickStudent] = useState("");
 
-  const load = async () => {
-    if (!user) return;
+  const fetchPage = async () => {
+    if (!user) return null;
     const since = new Date(Date.now() - 14 * 86400000).toISOString();
     const [studentsRes, notesRes, tallyRes, callsRes, sEodRes, adhocRes] = await Promise.all([
       supabase.from("students").select("id, full_name, email, phase, status, coach_id").order("full_name", { ascending: true }),
@@ -83,9 +84,6 @@ function CsmPage() {
       supabase.from("student_action_items").select("id, student_id, text, done, due_date, created_at, created_by").order("created_at", { ascending: false }).limit(500),
     ]);
     const studentRows = (studentsRes.data ?? []) as Student[];
-    setStudents(studentRows);
-    if (!studentId && studentRows[0]) setStudentId(studentRows[0].id);
-
     const noteRows = (notesRes.data ?? []) as CsmNote[];
     const userIds = Array.from(new Set(noteRows.map(n => n.user_id)));
     const { data: profs } = userIds.length
@@ -93,13 +91,29 @@ function CsmPage() {
       : { data: [] as { id: string; display_name: string | null }[] };
     const names = new Map((profs ?? []).map(p => [p.id, p.display_name ?? "Unknown"]));
     const studentNames = new Map(studentRows.map(s => [s.id, s.full_name]));
-    setNotes(noteRows.map(n => ({ ...n, author: names.get(n.user_id) ?? "Unknown", student_name: studentNames.get(n.student_id) ?? "Student" })));
-
-    setTally((tallyRes.data ?? []) as TallyRow[]);
-    setCalls((callsRes.data ?? []) as StudentCall[]);
-    setStudentEods((sEodRes.data ?? []) as StudentEodLite[]);
-    setAdhoc((adhocRes.data ?? []) as AdHocItem[]);
+    return {
+      studentRows,
+      notes: noteRows.map(n => ({ ...n, author: names.get(n.user_id) ?? "Unknown", student_name: studentNames.get(n.student_id) ?? "Student" })),
+      tally: (tallyRes.data ?? []) as TallyRow[],
+      calls: (callsRes.data ?? []) as StudentCall[],
+      studentEods: (sEodRes.data ?? []) as StudentEodLite[],
+      adhoc: (adhocRes.data ?? []) as AdHocItem[],
+    };
   };
+
+  const pageQ = useQuery({ queryKey: ["page", "csm", user?.id], queryFn: fetchPage, enabled: !!user });
+  useEffect(() => {
+    const d = pageQ.data;
+    if (!d) return;
+    setStudents(d.studentRows);
+    setStudentId(prev => prev || (d.studentRows[0]?.id ?? ""));
+    setNotes(d.notes);
+    setTally(d.tally);
+    setCalls(d.calls);
+    setStudentEods(d.studentEods);
+    setAdhoc(d.adhoc);
+  }, [pageQ.data]);
+  const load = () => pageQ.refetch();
 
   useEffect(() => { if (canUse) load(); /* eslint-disable-next-line */ }, [canUse, user]);
 

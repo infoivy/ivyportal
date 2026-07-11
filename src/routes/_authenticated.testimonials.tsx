@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
@@ -73,17 +74,15 @@ function TestimonialsPage() {
   const [requestOpen, setRequestOpen] = useState(false);
   const [lightbox, setLightbox] = useState<{ url: string; type: TType } | null>(null);
 
-  const load = async () => {
-    setLoading(true);
+  const fetchPage = async () => {
     const [{ data: ts }, { data: sts }] = await Promise.all([
       supabase.from("testimonials").select("*").order("created_at", { ascending: false }),
       supabase.from("students").select("id, full_name").order("full_name"),
     ]);
     const list = (ts ?? []) as Testimonial[];
-    setRows(list);
-    setStudents((sts ?? []) as StudentLite[]);
     // Batch signed URLs for file-backed items
     const paths = list.map(r => r.file_path).filter(Boolean) as string[];
+    let signed: Record<string, string> = {};
     if (paths.length) {
       const results = await Promise.all(
         paths.map(async p => {
@@ -91,14 +90,20 @@ function TestimonialsPage() {
           return [p, data?.signedUrl ?? ""] as const;
         })
       );
-      setSignedUrls(Object.fromEntries(results));
-    } else {
-      setSignedUrls({});
+      signed = Object.fromEntries(results);
     }
-    setLoading(false);
+    return { list, students: (sts ?? []) as StudentLite[], signed };
   };
 
-  useEffect(() => { load(); }, []);
+  const pageQ = useQuery({ queryKey: ["page", "testimonials"], queryFn: fetchPage, staleTime: 30 * 60_000 });
+  useEffect(() => {
+    if (!pageQ.data) return;
+    setRows(pageQ.data.list);
+    setStudents(pageQ.data.students);
+    setSignedUrls(pageQ.data.signed);
+    setLoading(false);
+  }, [pageQ.data]);
+  const load = () => pageQ.refetch();
 
   const studentName = (id: string | null) => id ? (students.find(s => s.id === id)?.full_name ?? "—") : "—";
 

@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
@@ -31,7 +32,7 @@ function NotesPage() {
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const load = async () => {
+  const fetchPage = async () => {
     let q = supabase.from("notes").select("*").order("created_at", { ascending: false }).limit(200);
     if (scope === "mine" && user) q = q.eq("user_id", user.id);
     const { data } = await q;
@@ -40,11 +41,14 @@ function NotesPage() {
       const ids = Array.from(new Set(rows.map(n => n.user_id)));
       const { data: profs } = await supabase.from("profiles").select("id, display_name").in("id", ids);
       const map = new Map(profs?.map(p => [p.id, p.display_name]) ?? []);
-      setNotes(rows.map(n => ({ ...n, display_name: map.get(n.user_id) ?? "Unknown" })));
-    } else setNotes(rows);
+      return rows.map(n => ({ ...n, display_name: map.get(n.user_id) ?? "Unknown" }));
+    }
+    return rows;
   };
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [user, scope]);
+  const pageQ = useQuery({ queryKey: ["page", "notes", scope, user?.id], queryFn: fetchPage, enabled: !!user });
+  useEffect(() => { if (pageQ.data) setNotes(pageQ.data); }, [pageQ.data]);
+  const load = () => pageQ.refetch();
 
   const add = async () => {
     if (!user || !content.trim()) return;

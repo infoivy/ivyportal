@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { CommissionRates, DEFAULT_RATES } from "@/lib/revenue";
@@ -56,11 +57,9 @@ function AdminConsole() {
 
   const days = RANGES.find(r => r.key === range)!.days;
 
-  useEffect(() => {
-    if (!isAdmin) return;
-    setLoading(true);
+  const fetchPage = async () => {
     const from = format(subDays(new Date(), days - 1), "yyyy-MM-dd");
-    (async () => {
+    {
       const [eodRes, profRes, roleRes, studRes, callsRes, ratesRes, fsRes, auditRes] = await Promise.all([
         supabase.from("eods").select("id, user_id, report_date").gte("report_date", from),
         supabase.from("profiles").select("id, display_name"),
@@ -72,24 +71,9 @@ function AdminConsole() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (supabase as any).from("audit_log").select("id, action, table_name, record_id, created_at, user_id").order("created_at", { ascending: false }).limit(100),
       ]);
-      setEods((eodRes.data as EodRow[]) ?? []);
       const pmap: Record<string, Profile> = {};
       (profRes.data as Profile[] | null)?.forEach(p => { pmap[p.id] = p; });
-      setProfiles(pmap);
-      setUserRoles((roleRes.data as UserRole[]) ?? []);
-      setStudents((studRes.data as Student[]) ?? []);
-      setUnratedCalls((callsRes.data as CallRow[]) ?? []);
       const rows = (ratesRes.data ?? []).map(r => ({ id: r.id, key: r.key, label: r.label, rate: Number(r.rate), active: r.active }));
-      setRateRows(rows);
-      if (fsRes.data) {
-        const fs = fsRes.data as any;
-        setFounderSettingsId(fs.id);
-        setCrmEnabled(!!fs.crm_enabled);
-        setMonthlyGoal(fs.monthly_cash_goal ? String(fs.monthly_cash_goal) : "");
-        const qg = (fs as { quarterly_goals?: Record<string, number> }).quarterly_goals;
-        if (qg) setQGoals(Object.fromEntries(Object.entries(qg).map(([k, v]) => [k, String(v)])));
-      }
-      setAuditLog((auditRes.data ?? []) as any[]);
 
       // Go-live checklist signals (fire-and-forget queries)
       const now = new Date();
@@ -109,7 +93,7 @@ function AdminConsole() {
         const p = (profRes.data as Profile[] | null)?.find(p => p.id === uid);
         return p && (p as any).setter_type;
       });
-      setChecklist({
+      const checklist = {
         paymentLinks: (plRes.count ?? 0) > 0,
         commissionConfirmed: commissionOk,
         cashGoalSet: !!(fsRes.data as any)?.monthly_cash_goal,
@@ -118,11 +102,44 @@ function AdminConsole() {
         calendarConnected: (ccRes.count ?? 0) > 0,
         igLogged: !!igRes.data,
         demoRemoved: (demoEodRes.count ?? 0) === 0 && (demoStudentRes.count ?? 0) === 0,
-      });
+      };
 
-      setLoading(false);
-    })();
-  }, [days, isAdmin]);
+      return {
+        eods: (eodRes.data as EodRow[]) ?? [],
+        pmap,
+        userRoles: (roleRes.data as UserRole[]) ?? [],
+        students: (studRes.data as Student[]) ?? [],
+        unratedCalls: (callsRes.data as CallRow[]) ?? [],
+        rateRows: rows,
+        founderSettings: (fsRes.data as any) ?? null,
+        auditLog: (auditRes.data ?? []) as any[],
+        checklist,
+      };
+    }
+  };
+
+  const pageQ = useQuery({ queryKey: ["page", "admin", days], queryFn: fetchPage, enabled: isAdmin });
+  useEffect(() => {
+    const d = pageQ.data;
+    if (!d) return;
+    setEods(d.eods);
+    setProfiles(d.pmap);
+    setUserRoles(d.userRoles);
+    setStudents(d.students);
+    setUnratedCalls(d.unratedCalls);
+    setRateRows(d.rateRows);
+    if (d.founderSettings) {
+      const fs = d.founderSettings;
+      setFounderSettingsId(fs.id);
+      setCrmEnabled(!!fs.crm_enabled);
+      setMonthlyGoal(fs.monthly_cash_goal ? String(fs.monthly_cash_goal) : "");
+      const qg = (fs as { quarterly_goals?: Record<string, number> }).quarterly_goals;
+      if (qg) setQGoals(Object.fromEntries(Object.entries(qg).map(([k, v]) => [k, String(v)])));
+    }
+    setAuditLog(d.auditLog);
+    setChecklist(d.checklist);
+    setLoading(false);
+  }, [pageQ.data]);
 
   const compliance = useMemo(() => buildCompliance(eods, userRoles, profiles, days), [eods, userRoles, profiles, days]);
 
@@ -267,11 +284,7 @@ function AdminConsole() {
 
       {/* Commission rates — moved from Revenue page */}
       <div id="commission">
-        <CommissionRatesCard rows={rateRows} reload={() => {
-          supabase.from("commission_rates").select("*").eq("active", true).then(({ data }) => {
-            if (data) setRateRows(data.map(r => ({ id: r.id, key: r.key, label: r.label, rate: Number(r.rate), active: r.active })));
-          });
-        }} />
+        <CommissionRatesCard rows={rateRows} reload={() => pageQ.refetch()} />
       </div>
 
       {/* Portal settings */}

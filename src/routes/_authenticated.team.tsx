@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -54,11 +55,13 @@ function TeamPage() {
   const deleteMemberFn = useServerFn(deleteTeamMember);
   const setActiveFn = useServerFn(setMemberActive);
 
-  const load = async () => {
-    const { data: profs } = await supabase
-      .from("profiles")
-      .select("id, display_name, avatar_path, active, phone, setter_type" as any);
-    const { data: rolesData } = await supabase.from("user_roles").select("user_id, role");
+  const fetchPage = async () => {
+    const [{ data: profs }, { data: rolesData }, tpls, { data: progressRows }] = await Promise.all([
+      supabase.from("profiles").select("id, display_name, avatar_path, active, phone, setter_type" as any),
+      supabase.from("user_roles").select("user_id, role"),
+      fetchAllTemplates(),
+      supabase.from("onboarding_progress").select("user_id, role, step_id"),
+    ]);
     const rolesByUser = new Map<string, string[]>();
     (rolesData ?? []).forEach(r => {
       const arr = rolesByUser.get(r.user_id) ?? [];
@@ -74,21 +77,28 @@ function TeamPage() {
       roles: rolesByUser.get(p.id) ?? [],
       setter_type: (p.setter_type ?? null) as SetterType,
     }));
-    setMembers(list.filter(m => !(m.roles.length === 1 && m.roles[0] === "student")));
-    setAvatarUrls(await signAvatars(list.map(m => m.avatar_path)));
-    const [tpls, { data: progressRows }] = await Promise.all([
-      fetchAllTemplates(),
-      supabase.from("onboarding_progress").select("user_id, role, step_id"),
-    ]);
-    setTemplates(tpls);
+    const avatars = await signAvatars(list.map(m => m.avatar_path));
     const pmap = new Map<string, Set<string>>();
     ((progressRows ?? []) as any[]).forEach(r => {
       const s = pmap.get(r.user_id) ?? new Set<string>();
       s.add(`${r.role}:${r.step_id}`);
       pmap.set(r.user_id, s);
     });
-    setProgressByUser(pmap);
+    return {
+      members: list.filter(m => !(m.roles.length === 1 && m.roles[0] === "student")),
+      avatars, templates: tpls, pmap,
+    };
   };
+
+  const pageQ = useQuery({ queryKey: ["page", "team"], queryFn: fetchPage });
+  useEffect(() => {
+    if (!pageQ.data) return;
+    setMembers(pageQ.data.members);
+    setAvatarUrls(pageQ.data.avatars);
+    setTemplates(pageQ.data.templates);
+    setProgressByUser(pageQ.data.pmap);
+  }, [pageQ.data]);
+  const load = () => pageQ.refetch();
 
   const memberOnboardingPct = (m: Member): number | null => {
     for (const r of ["setter", "closer", "coach", "csm"] as const) {
@@ -99,8 +109,6 @@ function TeamPage() {
     }
     return null;
   };
-
-  useEffect(() => { load(); }, []);
 
   const toggleRole = async (userId: string, role: AppRole, has: boolean) => {
     if (has && role === "admin" && userId === user?.id) {
