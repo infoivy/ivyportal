@@ -32,3 +32,20 @@ Python bulk-edit scripts over route files; MCP `apply_migration` + local migrati
 - Remaining approved perf plan: router preload/progress bar (#28), useQuery cache conversions (#29–31), smoothness (#32), QoL skeletons (#33), verification (#34).
 - Consider a UI affordance to collect testimonial when moving a student to the `testimonial` phase (currently just a phase + `testimonial_collected` flag).
 - Google OAuth client secret was pasted in chat earlier — user should regenerate it.
+
+---
+
+## Addendum: full performance pass (same day)
+
+### What I did
+- Router `defaultPreload: "intent"` (all links preload route code on hover/touch); 2px route-transition progress bar; notifications bell converted from `setInterval` to `useQuery` with `refetchInterval`.
+- Converted ~20 pages/components from `useState + useEffect + load()` to the useQuery-hydration pattern (`fetchPage` → `useQuery` → one hydration effect → `load = () => q.refetch()`): dashboard (main/cash/goals/IG), calls, revenue, student detail (+milestones), action items, sales (ops + trends), testimonials, admin, team, notes, CSM, founder HQ, weekly review, content planner, Instagram, cash leaderboard, EODs team view. EOD submit form deliberately left uncached (form state must never hydrate stale). Dashboard and sales trends use `placeholderData` to keep numbers visible during range switches.
+- Waterfall fixes: coachesQuery, team templates/progress, eods loadMine profile fetch, founder-hq prev-month cash — all folded into their `Promise.all`s.
+- Render smoothness: `isAnimationActive={false}` across Recharts series; action items capped at 120 rows/section with "Show all N"; `content-visibility: auto` (`.cv-auto`) on EOD feed + notes cards; `overscroll-contain` on inner scrollers; students at-risk computation memoized into a Map; coaches page indexes calls by coach.
+- QoL: ListSkeleton + skeletons replacing bare "Loading…" on 8 surfaces; EOD "Draft saved ✓"; CRM "synced HH:MM" caption. (Add-student disabled-while-saving and deals empty state already existed.)
+
+### Verification
+25-route headless crawl: zero blank pages, zero page errors (only pre-existing dev-mode hydration-attribute warnings). Dashboard revisit paints full content in ~290ms, calls revisit ~215ms (cache-hydrated). Mutation smoke: adding an ad-hoc action item through the UI refreshed the list via the refetch path (smoke row cleaned up). Commits `2770fec`, `4a90fda`, `78e0a53`, `74b43bc`, `defc0f2`.
+
+### Future work
+- The Vercel env still needs GOOGLE_OAUTH_* + CALENDLY_API_KEY set by the user in the dashboard for calendar/set-reminder features in production.
