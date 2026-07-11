@@ -25,6 +25,7 @@ export const CONFIGURABLE_PAGES: NavPage[] = [
   { title: "1-on-1 Calls", url: "/calls", roles: ["admin", "coach", "csm"] },
   { title: "Student Success", url: "/student-success", roles: ["admin", "csm", "coach", "founder"] },
   { title: "CSM", url: "/csm", roles: ["admin", "csm"] },
+  { title: "Student Alerts", url: "/alerts", roles: ["admin", "coach", "closer", "setter", "csm"] },
   { title: "Testimonials", url: "/testimonials", roles: ["admin", "coach", "closer", "setter", "csm"] },
   { title: "Knowledge", url: "/knowledge", locked: true },
   { title: "Notes", url: "/notes" },

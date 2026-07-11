@@ -1482,6 +1482,38 @@ export type Database = {
           },
         ]
       }
+      student_alerts: {
+        Row: {
+          body: string
+          created_at: string
+          created_by: string
+          id: string
+          student_id: string | null
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          created_by: string
+          id?: string
+          student_id?: string | null
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          student_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_alerts_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_calls: {
         Row: {
           action_items: string | null
