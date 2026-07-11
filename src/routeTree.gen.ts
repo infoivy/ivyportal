@@ -33,6 +33,7 @@ import { Route as AuthenticatedInstallmentsRouteImport } from './routes/_authent
 import { Route as AuthenticatedInstagramRouteImport } from './routes/_authenticated.instagram'
 import { Route as AuthenticatedFounderHqRouteImport } from './routes/_authenticated.founder-hq'
 import { Route as AuthenticatedFounderRouteImport } from './routes/_authenticated.founder'
+import { Route as AuthenticatedFinanceRouteImport } from './routes/_authenticated.finance'
 import { Route as AuthenticatedEodsRouteImport } from './routes/_authenticated.eods'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
 import { Route as AuthenticatedCsmRouteImport } from './routes/_authenticated.csm'
@@ -181,6 +182,11 @@ const AuthenticatedFounderRoute = AuthenticatedFounderRouteImport.update({
   path: '/founder',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedFinanceRoute = AuthenticatedFinanceRouteImport.update({
+  id: '/finance',
+  path: '/finance',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedEodsRoute = AuthenticatedEodsRouteImport.update({
   id: '/eods',
   path: '/eods',
@@ -325,6 +331,7 @@ export interface FileRoutesByFullPath {
   '/csm': typeof AuthenticatedCsmRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/eods': typeof AuthenticatedEodsRoute
+  '/finance': typeof AuthenticatedFinanceRoute
   '/founder': typeof AuthenticatedFounderRoute
   '/founder-hq': typeof AuthenticatedFounderHqRoute
   '/instagram': typeof AuthenticatedInstagramRoute
@@ -373,6 +380,7 @@ export interface FileRoutesByTo {
   '/csm': typeof AuthenticatedCsmRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/eods': typeof AuthenticatedEodsRoute
+  '/finance': typeof AuthenticatedFinanceRoute
   '/founder': typeof AuthenticatedFounderRoute
   '/founder-hq': typeof AuthenticatedFounderHqRoute
   '/instagram': typeof AuthenticatedInstagramRoute
@@ -421,6 +429,7 @@ export interface FileRoutesById {
   '/_authenticated/csm': typeof AuthenticatedCsmRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/eods': typeof AuthenticatedEodsRoute
+  '/_authenticated/finance': typeof AuthenticatedFinanceRoute
   '/_authenticated/founder': typeof AuthenticatedFounderRoute
   '/_authenticated/founder-hq': typeof AuthenticatedFounderHqRoute
   '/_authenticated/instagram': typeof AuthenticatedInstagramRoute
@@ -471,6 +480,7 @@ export interface FileRouteTypes {
     | '/csm'
     | '/dashboard'
     | '/eods'
+    | '/finance'
     | '/founder'
     | '/founder-hq'
     | '/instagram'
@@ -519,6 +529,7 @@ export interface FileRouteTypes {
     | '/csm'
     | '/dashboard'
     | '/eods'
+    | '/finance'
     | '/founder'
     | '/founder-hq'
     | '/instagram'
@@ -566,6 +577,7 @@ export interface FileRouteTypes {
     | '/_authenticated/csm'
     | '/_authenticated/dashboard'
     | '/_authenticated/eods'
+    | '/_authenticated/finance'
     | '/_authenticated/founder'
     | '/_authenticated/founder-hq'
     | '/_authenticated/instagram'
@@ -774,6 +786,13 @@ declare module '@tanstack/react-router' {
       path: '/founder'
       fullPath: '/founder'
       preLoaderRoute: typeof AuthenticatedFounderRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/finance': {
+      id: '/_authenticated/finance'
+      path: '/finance'
+      fullPath: '/finance'
+      preLoaderRoute: typeof AuthenticatedFinanceRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/eods': {
@@ -1029,6 +1048,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedCsmRoute: typeof AuthenticatedCsmRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEodsRoute: typeof AuthenticatedEodsRoute
+  AuthenticatedFinanceRoute: typeof AuthenticatedFinanceRoute
   AuthenticatedFounderRoute: typeof AuthenticatedFounderRoute
   AuthenticatedFounderHqRoute: typeof AuthenticatedFounderHqRoute
   AuthenticatedInstagramRoute: typeof AuthenticatedInstagramRoute
@@ -1065,6 +1085,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedCsmRoute: AuthenticatedCsmRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEodsRoute: AuthenticatedEodsRoute,
+  AuthenticatedFinanceRoute: AuthenticatedFinanceRoute,
   AuthenticatedFounderRoute: AuthenticatedFounderRoute,
   AuthenticatedFounderHqRoute: AuthenticatedFounderHqRoute,
   AuthenticatedInstagramRoute: AuthenticatedInstagramRoute,

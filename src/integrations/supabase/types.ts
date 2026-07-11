@@ -47,6 +47,54 @@ export type Database = {
         }
         Relationships: []
       }
+      business_expenses: {
+        Row: {
+          active: boolean
+          amount: number
+          category: string | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          due_day: number | null
+          id: string
+          name: string
+          notes: string | null
+          one_off_date: string | null
+          recurring: boolean
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          amount: number
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          due_day?: number | null
+          id?: string
+          name: string
+          notes?: string | null
+          one_off_date?: string | null
+          recurring?: boolean
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          amount?: number
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          due_day?: number | null
+          id?: string
+          name?: string
+          notes?: string | null
+          one_off_date?: string | null
+          recurring?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       calendar_connections: {
         Row: {
           access_token: string | null
@@ -714,6 +762,8 @@ export type Database = {
           crm_enabled: boolean
           id: string
           monthly_cash_goal: number | null
+          processor_balance: number | null
+          processor_balance_updated_at: string | null
           quarterly_goals: Json | null
           recording_day_of_week: number
           top_setter_bonus_pct: number
@@ -727,6 +777,8 @@ export type Database = {
           crm_enabled?: boolean
           id?: string
           monthly_cash_goal?: number | null
+          processor_balance?: number | null
+          processor_balance_updated_at?: string | null
           quarterly_goals?: Json | null
           recording_day_of_week?: number
           top_setter_bonus_pct?: number
@@ -740,6 +792,8 @@ export type Database = {
           crm_enabled?: boolean
           id?: string
           monthly_cash_goal?: number | null
+          processor_balance?: number | null
+          processor_balance_updated_at?: string | null
           quarterly_goals?: Json | null
           recording_day_of_week?: number
           top_setter_bonus_pct?: number

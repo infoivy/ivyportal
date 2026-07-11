@@ -5,7 +5,7 @@ import { useAccess } from "@/lib/use-access";
 import {
   LayoutDashboard, FileText, BookOpen, Calendar, GraduationCap,
   Database, Users, StickyNote, Shield, UserCircle, School, HeartHandshake, Phone, DollarSign, Armchair,
-  ListChecks, TrendingUp, Quote, Building2, HeartPulse, Sparkles, Clapperboard,
+  ListChecks, TrendingUp, Quote, Building2, HeartPulse, Sparkles, Clapperboard, Wallet,
 } from "lucide-react";
 
 import {
@@ -52,6 +52,7 @@ const libraryItems: Item[] = [
 
 const founderItems: Item[] = [
   { title: "Gathering Hub", url: "/command", icon: Armchair, roles: ["founder"] },
+  { title: "Finance", url: "/finance", icon: Wallet, roles: ["founder"] },
   { title: "Content", url: "/content", icon: Clapperboard, roles: ["founder"] },
 ];
 
