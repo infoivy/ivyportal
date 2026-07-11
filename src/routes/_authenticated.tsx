@@ -102,6 +102,8 @@ function AuthedLayout() {
       supabase.auth.getSession().then(({ data }) => load(data.session?.user.id ?? null, false));
     };
     window.addEventListener("isa:roles-changed", onRolesChanged);
+    const onEodSubmitted = () => setEodSubmitted(true);
+    window.addEventListener("isa:eod-submitted", onEodSubmitted);
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT") {
         setState({ user: null, roles: [], displayName: null, loading: false });
@@ -110,7 +112,7 @@ function AuthedLayout() {
         load(session?.user.id ?? null, true);
       }
     });
-    return () => { alive = false; sub.subscription.unsubscribe(); cleanupSessionOnly(); window.removeEventListener("isa:roles-changed", onRolesChanged); };
+    return () => { alive = false; sub.subscription.unsubscribe(); cleanupSessionOnly(); window.removeEventListener("isa:roles-changed", onRolesChanged); window.removeEventListener("isa:eod-submitted", onEodSubmitted); };
   }, [navigate]);
 
   const signOut = async () => {
@@ -254,7 +256,7 @@ function PendingApproval({ email, onSignOut }: { email: string; onSignOut: () =>
 }
 
 const PAGE_LABELS: Array<[string, string]> = [
-  ["/dashboard", "Dashboard"], ["/eods", "EOD Reports"], ["/action-items", "Action Items"],
+  ["/dashboard", "Dashboard"], ["/eods", "EOD Reports"], ["/action-items", "Action Items"], ["/chat", "Team Chat"],
   ["/notes", "Notes"], ["/sales", "Sales"], ["/revenue", "Revenue"], ["/installments", "Revenue"],
   ["/payouts", "Revenue"], ["/closer-resources", "Closer Resources"], ["/training", "Training"],
   ["/calendar", "Calendar"], ["/crm", "CRM"], ["/mochi", "Instagram CRM"], ["/students", "Students"], ["/calls", "1-on-1 Calls"],

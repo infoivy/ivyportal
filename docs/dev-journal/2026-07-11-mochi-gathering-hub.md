@@ -52,3 +52,10 @@ Probed the MCP with curl (401 → `.well-known/oauth-protected-resource` → aut
 - `SetterActivityCard` on the dashboard: per-rep table joining Close call activities (dials, answered, avg duration — live: 221 dials, 1m55s avg) with Mochi per-member outbound DMs. `getCloseCallStats` pages `/activity/call/` — NOTE: activity endpoints cap `_limit` at 100 (leads allow 200); a 200 limit 400s and reads as "no calls".
 - Instagram card mobile spacing: stats now a 3-col grid on phones (was uneven flex-wrap), sparkline full-width below.
 - `getMochiDashboard` now returns `members` (per-member outbound DMs) for cross-CRM joins.
+
+## Addendum 3 — 2026-07-12: chat, funnel viz, EOD fixes
+
+- **Team Chat** (`/chat`, sidebar for all team roles): general channel cloned from the alerts pattern — `team_chat` table (kind: general/issue/tip/bug, team RLS, admin delete, permanent history), kind chips in composer, colored badges on non-general messages. Migration applied live via Supabase MCP + types regenerated.
+- **Mochi-style funnel** (`mochi-funnel.tsx`): stage columns (New/In contact/Qualified/Booked call/Won) + smooth SVG ribbon (band height ∝ stage count, min floor, bezier segments, chart-1 blue ramp) + conversion % chips at boundaries + Unqualified/Deposit/No-show strip — replica of Mochi's dashboard funnel. Self-fetching panel in The Room; presentational version replaces the pipeline chips on /mochi. Also added Instagram CRM to the sidebar (admin/founder).
+- **EOD fixes**: NumField draft-string state so backspace can clear (controlled number snapped "" → 0); "EOD due" chip clears on submit via `isa:eod-submitted` event; founder-approved KPI fold — "leads contacted/outreached" removed, DM setters 125 DMs sent, full-cycle 50 DMs sent, `outreachOf()` = max(dms_sent, leads_contacted) keeps historical KPI days intact (CLAUDE.md updated).
+- Live data at verify time: 14 IG leads, 30 active convos, 58 DMs in / 26 out, 73% reply rate — the real team is onboarded and active.

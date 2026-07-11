@@ -5,6 +5,7 @@ import { Instagram, ArrowUpRight } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { getMochiDashboard, getMochiDetail, type MochiPeriod } from "@/lib/mochi.functions";
 import { Area, AreaChart, Bar, BarChart, Legend, Pie, PieChart, Tooltip, XAxis } from "@/components/dither-kit";
+import { MochiFunnel } from "@/components/mochi-funnel";
 import { format, subDays } from "date-fns";
 
 export const Route = createFileRoute("/_authenticated/mochi")({
@@ -127,33 +128,26 @@ function MochiPage() {
         <Stat label="Booked" value={d?.conversion?.reachedBooked} />
       </div>
 
-      {/* Pipeline census + conversion rates */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="card-surface p-4">
-          <SectionTitle title="Pipeline right now" sub="every lead's current stage" />
-          <div className="flex flex-wrap gap-2">
-            {(d?.pipelineNow ?? []).map((s) => (
-              <div key={s.stage} className="flex items-baseline gap-2 rounded-md bg-muted px-3 py-2">
-                <span className="text-[18px] font-medium tabular-nums text-foreground">{s.count}</span>
-                <span className="text-[12px] text-muted-foreground">{STAGE_LABELS[s.stage] ?? s.stage}</span>
-              </div>
-            ))}
-            {d && d.pipelineNow.length === 0 && <span className="text-sm text-muted-foreground">No leads yet.</span>}
-          </div>
+      {/* Pipeline funnel — Mochi's dashboard look */}
+      <div className="card-surface p-1">
+        <div className="px-3 pt-3 pb-1">
+          <SectionTitle title="The funnel" sub="every lead's current stage" />
         </div>
+        <MochiFunnel pipeline={d?.pipelineNow ?? []} />
+      </div>
 
-        <div className="card-surface p-4">
-          <SectionTitle title="Conversion" sub={`cohort of ${d?.conversion?.cohortSize ?? 0} leads created in period`} />
-          <div className="flex flex-wrap gap-x-8 gap-y-2">
-            <RateStat label="New → Qualified" value={pct(d?.conversion?.newToQualified ?? null)} />
-            <RateStat label="Qualified → Booked" value={pct(d?.conversion?.qualifiedToBooked ?? null)} />
-            <RateStat label="Booked → Won" value={pct(d?.conversion?.bookedToWon ?? null)} />
-            <RateStat label="Lead reply rate" value={pct(d?.replyRate ?? null)} />
-            <RateStat
-              label="Median response"
-              value={d?.medianResponseMinutes != null ? `${Math.round(d.medianResponseMinutes)}m` : "—"}
-            />
-          </div>
+      {/* Conversion rates */}
+      <div className="card-surface p-4">
+        <SectionTitle title="Conversion" sub={`cohort of ${d?.conversion?.cohortSize ?? 0} leads created in period`} />
+        <div className="flex flex-wrap gap-x-8 gap-y-2">
+          <RateStat label="New → Qualified" value={pct(d?.conversion?.newToQualified ?? null)} />
+          <RateStat label="Qualified → Booked" value={pct(d?.conversion?.qualifiedToBooked ?? null)} />
+          <RateStat label="Booked → Won" value={pct(d?.conversion?.bookedToWon ?? null)} />
+          <RateStat label="Lead reply rate" value={pct(d?.replyRate ?? null)} />
+          <RateStat
+            label="Median response"
+            value={d?.medianResponseMinutes != null ? `${Math.round(d.medianResponseMinutes)}m` : "—"}
+          />
         </div>
       </div>
 

@@ -6,6 +6,7 @@ import { getMochiDashboard, getMochiPayments } from "@/lib/mochi.functions";
 import { getCloseLeadStats } from "@/lib/close-crm.functions";
 import { BlurMoney } from "@/components/blur-money";
 import { DitherFireplace } from "@/components/founder/dither-fireplace";
+import { MochiFunnelPanel } from "@/components/mochi-funnel";
 import { Area, AreaChart, Bar, BarChart, Legend, Pie, PieChart, Tooltip, XAxis } from "@/components/dither-kit";
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
@@ -158,6 +159,9 @@ export function TheRoomInner() {
           <RoomStat label="Content posted · this cycle">{portal.data ? contentThisCycle : "…"}</RoomStat>
         </div>
       </div>
+
+      {/* ── The funnel — Mochi pipeline, their dashboard's look ───────── */}
+      <MochiFunnelPanel />
 
       {/* ── Students ────────────────────────────────────────────────── */}
       <div className="card-surface px-5 py-4 flex flex-wrap items-center gap-x-10 gap-y-3">

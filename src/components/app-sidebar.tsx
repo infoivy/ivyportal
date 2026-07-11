@@ -6,6 +6,7 @@ import {
   LayoutDashboard, FileText, BookOpen, Calendar, GraduationCap,
   Database, Users, StickyNote, Shield, UserCircle, School, HeartHandshake, Phone, DollarSign, Armchair,
   ListChecks, TrendingUp, Quote, Building2, HeartPulse, Sparkles, Clapperboard, Wallet, Megaphone,
+  MessagesSquare, Instagram,
 } from "lucide-react";
 
 import {
@@ -26,6 +27,7 @@ const todayItems: Item[] = [
   { title: "Dashboard",    url: "/dashboard",    icon: LayoutDashboard, roles: ["admin", "founder", "closer", "setter", "coach"] },
   { title: "EOD Reports",  url: "/eods",         icon: FileText },
   { title: "Action Items", url: "/action-items", icon: ListChecks },
+  { title: "Team Chat",    url: "/chat",         icon: MessagesSquare },
 ];
 
 const salesItems: Item[] = [
@@ -35,6 +37,7 @@ const salesItems: Item[] = [
   { title: "Training",         url: "/training",         icon: GraduationCap, roles: ["admin", "founder", "closer", "setter", "coach"] },
   { title: "Calendar",         url: "/calendar",         icon: Calendar },
   { title: "CRM",              url: "/crm",              icon: Database,      roles: ["admin"] },
+  { title: "Instagram CRM",    url: "/mochi",            icon: Instagram,     roles: ["admin", "founder"] },
 ];
 
 const studentsItems: Item[] = [

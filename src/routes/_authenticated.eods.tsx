@@ -44,9 +44,12 @@ type GridEod = EOD & { display_name?: string; primary_role?: string; setter_type
 // KPI defaults — plain numbers; adjust in Admin → Settings later
 const KPI = {
   phone:      { primary: { key: "dials" as const, label: "Dials", target: 100 }, secondary: null, sets: 3 },
-  dm:         { primary: { key: "leads_contacted" as const, label: "Leads contacted", target: 125 }, secondary: null, sets: 3 },
+  // 2026-07-11 founder-approved: "leads contacted/outreached" folded into
+  // "DMs sent" — same activity, one field. Historical rows keep
+  // leads_contacted; readers take the max of both so old KPI days hold.
+  dm:         { primary: { key: "dms_sent" as const, label: "DMs sent", target: 125 }, secondary: null, sets: 3 },
   // Full cycle does both: dials AND outreach must hit
-  full_cycle: { primary: { key: "dials" as const, label: "Dials", target: 100 }, secondary: { key: "leads_contacted" as const, label: "Outreached", target: 50 }, sets: 3 },
+  full_cycle: { primary: { key: "dials" as const, label: "Dials", target: 100 }, secondary: { key: "dms_sent" as const, label: "DMs sent", target: 50 }, sets: 3 },
 };
 
 const SETTER_TYPE_LABEL: Record<string, string> = { phone: "Phone setter", dm: "DM setter", full_cycle: "Full cycle" };
@@ -209,6 +212,8 @@ function EODsPage() {
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success(existingId ? "EOD updated" : "EOD submitted → Team Reports");
+    // Clears the "EOD due" chip in the top bar without a reload
+    window.dispatchEvent(new CustomEvent("isa:eod-submitted"));
     if (wasNew) {
       confetti({ particleCount: 120, spread: 80, origin: { y: 0.7 }, colors: ["#10b981", "#f59e0b", "#3b82f6", "#a855f7"] });
       if (draftKey) { try { localStorage.removeItem(draftKey); } catch {} }
@@ -236,7 +241,7 @@ function EODsPage() {
     const sum = (k: keyof EOD) => recent.reduce((a, e) => a + (Number(e[k]) || 0), 0);
     const kpiHitDays = recent.filter(e => didHitKpi(e, mySetterType)).length;
     return { submitted: recent.length, kpiHitDays,
-      dials: sum("dials"), leads: sum("leads_contacted"), sets: sum("calls_booked"),
+      dials: sum("dials"), leads: recent.reduce((a, e) => a + outreachOf(e), 0), sets: sum("calls_booked"),
       shows: sum("shows"), cash: sum("cash_collected"), closes: sum("closes") };
   }, [myEods, mySetterType]);
   const streak = useMemo(() => computeStreak(myEods.map(e => e.report_date)), [myEods]);
@@ -246,14 +251,14 @@ function EODsPage() {
     const rows = teamEods.filter(e => e.report_date === today);
     const sum = (k: keyof EOD) => rows.reduce((a, e) => a + (Number(e[k]) || 0), 0);
     return { submitted: rows.length, expected: teamRoster.length,
-      dials: sum("dials") + sum("leads_contacted"),
+      dials: sum("dials") + rows.reduce((a, e) => a + outreachOf(e), 0),
       booked: sum("calls_booked"),
       cash: sum("cash_collected") };
   }, [teamEods, teamRoster, today]);
 
   const kpi = mySetterType ? KPI[mySetterType] : null;
-  const primaryVal = mySetterType === "dm" ? form.leads_contacted : form.dials;
-  // full_cycle primary = dials; its outreach bar reads form.leads_contacted directly
+  const primaryVal = mySetterType === "dm" ? form.dms_sent : form.dials;
+  // full_cycle primary = dials; its outreach bar reads form.dms_sent directly
 
   const defaultTab = isFounder ? "overview" : (canViewTeam ? "overview" : "submit");
 
@@ -366,7 +371,7 @@ function EODsPage() {
                   </div>
                   <div className={`grid gap-3 ${kpi.secondary ? "grid-cols-3" : "grid-cols-2"}`}>
                     <KpiBar label={kpi.primary.label} value={primaryVal} target={kpi.primary.target} />
-                    {kpi.secondary && <KpiBar label={kpi.secondary.label} value={form.leads_contacted} target={kpi.secondary.target} />}
+                    {kpi.secondary && <KpiBar label={kpi.secondary.label} value={form.dms_sent} target={kpi.secondary.target} />}
                     <KpiBar label="Calls booked (sets)" value={form.calls_booked} target={kpi.sets} />
                   </div>
                 </div>
@@ -379,9 +384,6 @@ function EODsPage() {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     {(mySetterType === "phone" || mySetterType === "full_cycle" || !mySetterType) && (
                       <NumField label="Dials" value={form.dials} onChange={setNum("dials")} />
-                    )}
-                    {(mySetterType === "dm" || mySetterType === "full_cycle") && (
-                      <NumField label={mySetterType === "full_cycle" ? "Leads outreached" : "Leads contacted"} value={form.leads_contacted} onChange={setNum("leads_contacted")} />
                     )}
                     <NumField label="DMs sent" value={form.dms_sent} onChange={setNum("dms_sent")} />
                     <NumField label="Convos started" value={form.convos_started} onChange={setNum("convos_started")} />
@@ -488,12 +490,17 @@ function EODsPage() {
 
 // ---------- KPI logic ----------
 
+/** Outreach volume with legacy fallback: pre-2026-07-11 rows logged it as leads_contacted. */
+function outreachOf(e: EOD): number {
+  return Math.max(e.dms_sent ?? 0, e.leads_contacted ?? 0);
+}
+
 function didHitKpi(e: EOD, st: SetterType): boolean {
   if (!st) return false;
   const cfg = KPI[st];
-  const primary = (e[cfg.primary.key] ?? 0) as number;
-  if (primary < cfg.primary.target) return false;
-  if (cfg.secondary && ((e[cfg.secondary.key] ?? 0) as number) < cfg.secondary.target) return false;
+  const read = (k: keyof EOD) => (k === "dms_sent" ? outreachOf(e) : ((e[k] ?? 0) as number));
+  if (read(cfg.primary.key) < cfg.primary.target) return false;
+  if (cfg.secondary && read(cfg.secondary.key) < cfg.secondary.target) return false;
   return (e.calls_booked ?? 0) >= cfg.sets;
 }
 
@@ -539,7 +546,7 @@ function TeamOverview({ roster, eods, today }: { roster: RosterEntry[]; eods: Gr
     if (todayEod) {
       if (r.primary_role === "setter" && st) {
         const cfg = KPI[st];
-        const primary = st === "dm" ? todayEod.leads_contacted : todayEod.dials;
+        const primary = st === "dm" ? outreachOf(todayEod) : todayEod.dials;
         if (didHitKpi(todayEod, st)) todayLine = `Submitted — hit KPI (${primary} ${cfg.primary.label.toLowerCase()}, ${todayEod.calls_booked} sets)`;
         else todayLine = `Submitted — missed KPI (${primary} of ${cfg.primary.target} ${cfg.primary.label.toLowerCase()}, ${todayEod.calls_booked} of ${cfg.sets} sets)`;
       } else if (r.primary_role === "closer" || r.primary_role === "coach") {
@@ -628,7 +635,7 @@ function OverviewCard({ card }: { card: {
                 {w.e ? (
                   <div>
                     {card.r.primary_role === "setter" && (
-                      <span>{(card.r.setter_type === "dm" ? w.e.leads_contacted : w.e.dials)} {card.r.setter_type === "dm" ? "leads" : "dials"}, {w.e.calls_booked} sets</span>
+                      <span>{(card.r.setter_type === "dm" ? outreachOf(w.e) : w.e.dials)} {card.r.setter_type === "dm" ? "DMs" : "dials"}, {w.e.calls_booked} sets</span>
                     )}
                     {(card.r.primary_role === "closer" || card.r.primary_role === "coach") && (
                       <span>{w.e.calls_taken} calls, {w.e.closes} closes, ${Math.round(Number(w.e.cash_collected)).toLocaleString()}</span>
@@ -676,7 +683,7 @@ function MyHistory({ myEods, setterType, isSetter, isCloser, onDelete }: { myEod
         const submitted = rows.length;
         const dms = rows.reduce((a, e) => a + e.dms_sent, 0);
         const dials = rows.reduce((a, e) => a + (e.dials ?? 0), 0);
-        const leads = rows.reduce((a, e) => a + (e.leads_contacted ?? 0), 0);
+        const leads = rows.reduce((a, e) => a + outreachOf(e), 0);
         const sets = rows.reduce((a, e) => a + e.calls_booked, 0);
         const cash = rows.reduce((a, e) => a + Number(e.cash_collected ?? 0), 0);
         const kpiDays = rows.filter(e => didHitKpi(e, setterType)).length;
@@ -689,7 +696,7 @@ function MyHistory({ myEods, setterType, isSetter, isCloser, onDelete }: { myEod
               </div>
               <div className="text-[11px] text-muted-foreground flex gap-3 flex-wrap justify-end">
                 <span>{submitted}/7 submitted</span>
-                {isSetter && (setterType === "dm" ? <span>{leads} leads</span> : <span>{dials} dials</span>)}
+                {isSetter && (setterType === "dm" ? <span>{leads} DMs</span> : <span>{dials} dials</span>)}
                 {isSetter && <span>{sets} sets</span>}
                 {isCloser && <span>${Math.round(cash).toLocaleString()} cash</span>}
                 {setterType && <span className={kpiDays >= 5 ? "text-success-fg" : "text-warning-fg"}>KPI {kpiDays} of {submitted}</span>}
@@ -1214,13 +1221,30 @@ function KpiBar({ label, value, target }: { label: string; value: number; target
 }
 
 function NumField({ label, value, onChange }: { label: string; value: number; onChange: (v: string) => void }) {
+  // Draft string so the field can sit empty while typing — a controlled
+  // number value snaps "" back to 0 and backspace can never clear it.
+  const [draft, setDraft] = useState(String(value));
+  useEffect(() => {
+    // Sync external changes (steppers, "use" buttons, draft restore) without
+    // fighting an in-progress edit like an empty field.
+    if ((parseInt(draft) || 0) !== value) setDraft(String(value));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
   const bump = (d: number) => onChange(String(Math.max(0, value + d)));
   return (
     <div className="space-y-1">
       <Label className="text-[13px] text-muted-foreground">{label}</Label>
       <div className="flex items-center gap-1">
         <button type="button" onClick={() => bump(-1)} className="h-9 w-8 rounded-sm border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--accent)] text-lg leading-none">−</button>
-        <Input type="number" min={0} value={value} onChange={e => onChange(e.target.value)} onFocus={e => e.currentTarget.select()} className="bg-[var(--background)] border-[var(--border)] rounded-sm h-9 text-sm text-center" />
+        <Input
+          type="number"
+          min={0}
+          value={draft}
+          onChange={e => { setDraft(e.target.value); onChange(e.target.value); }}
+          onBlur={() => setDraft(String(value))}
+          onFocus={e => e.currentTarget.select()}
+          className="bg-[var(--background)] border-[var(--border)] rounded-sm h-9 text-sm text-center"
+        />
         <button type="button" onClick={() => bump(1)} className="h-9 w-8 rounded-sm border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--accent)] text-lg leading-none">+</button>
       </div>
     </div>

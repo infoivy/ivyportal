@@ -1788,6 +1788,30 @@ export type Database = {
         }
         Relationships: []
       }
+      team_chat: {
+        Row: {
+          body: string
+          created_at: string
+          created_by: string
+          id: string
+          kind: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          created_by: string
+          id?: string
+          kind?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          kind?: string
+        }
+        Relationships: []
+      }
       testimonials: {
         Row: {
           collected_at: string | null

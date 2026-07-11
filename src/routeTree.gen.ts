@@ -43,6 +43,7 @@ import { Route as AuthenticatedContentRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedCommandRouteImport } from './routes/_authenticated.command'
 import { Route as AuthenticatedCoachesRouteImport } from './routes/_authenticated.coaches'
 import { Route as AuthenticatedCloserResourcesRouteImport } from './routes/_authenticated.closer-resources'
+import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated.chat'
 import { Route as AuthenticatedCallsRouteImport } from './routes/_authenticated.calls'
 import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticated.calendar'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated.analytics'
@@ -235,6 +236,11 @@ const AuthenticatedCloserResourcesRoute =
     path: '/closer-resources',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedChatRoute = AuthenticatedChatRouteImport.update({
+  id: '/chat',
+  path: '/chat',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedCallsRoute = AuthenticatedCallsRouteImport.update({
   id: '/calls',
   path: '/calls',
@@ -336,6 +342,7 @@ export interface FileRoutesByFullPath {
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/calendar': typeof AuthenticatedCalendarRoute
   '/calls': typeof AuthenticatedCallsRoute
+  '/chat': typeof AuthenticatedChatRoute
   '/closer-resources': typeof AuthenticatedCloserResourcesRoute
   '/coaches': typeof AuthenticatedCoachesRoute
   '/command': typeof AuthenticatedCommandRoute
@@ -387,6 +394,7 @@ export interface FileRoutesByTo {
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/calendar': typeof AuthenticatedCalendarRoute
   '/calls': typeof AuthenticatedCallsRoute
+  '/chat': typeof AuthenticatedChatRoute
   '/closer-resources': typeof AuthenticatedCloserResourcesRoute
   '/coaches': typeof AuthenticatedCoachesRoute
   '/command': typeof AuthenticatedCommandRoute
@@ -438,6 +446,7 @@ export interface FileRoutesById {
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
   '/_authenticated/calendar': typeof AuthenticatedCalendarRoute
   '/_authenticated/calls': typeof AuthenticatedCallsRoute
+  '/_authenticated/chat': typeof AuthenticatedChatRoute
   '/_authenticated/closer-resources': typeof AuthenticatedCloserResourcesRoute
   '/_authenticated/coaches': typeof AuthenticatedCoachesRoute
   '/_authenticated/command': typeof AuthenticatedCommandRoute
@@ -491,6 +500,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/calendar'
     | '/calls'
+    | '/chat'
     | '/closer-resources'
     | '/coaches'
     | '/command'
@@ -542,6 +552,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/calendar'
     | '/calls'
+    | '/chat'
     | '/closer-resources'
     | '/coaches'
     | '/command'
@@ -592,6 +603,7 @@ export interface FileRouteTypes {
     | '/_authenticated/analytics'
     | '/_authenticated/calendar'
     | '/_authenticated/calls'
+    | '/_authenticated/chat'
     | '/_authenticated/closer-resources'
     | '/_authenticated/coaches'
     | '/_authenticated/command'
@@ -882,6 +894,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCloserResourcesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/chat': {
+      id: '/_authenticated/chat'
+      path: '/chat'
+      fullPath: '/chat'
+      preLoaderRoute: typeof AuthenticatedChatRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/calls': {
       id: '/_authenticated/calls'
       path: '/calls'
@@ -1079,6 +1098,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
   AuthenticatedCalendarRoute: typeof AuthenticatedCalendarRoute
   AuthenticatedCallsRoute: typeof AuthenticatedCallsRoute
+  AuthenticatedChatRoute: typeof AuthenticatedChatRoute
   AuthenticatedCloserResourcesRoute: typeof AuthenticatedCloserResourcesRoute
   AuthenticatedCoachesRoute: typeof AuthenticatedCoachesRoute
   AuthenticatedCommandRoute: typeof AuthenticatedCommandRoute
@@ -1118,6 +1138,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
   AuthenticatedCalendarRoute: AuthenticatedCalendarRoute,
   AuthenticatedCallsRoute: AuthenticatedCallsRoute,
+  AuthenticatedChatRoute: AuthenticatedChatRoute,
   AuthenticatedCloserResourcesRoute: AuthenticatedCloserResourcesRoute,
   AuthenticatedCoachesRoute: AuthenticatedCoachesRoute,
   AuthenticatedCommandRoute: AuthenticatedCommandRoute,
