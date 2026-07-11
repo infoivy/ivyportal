@@ -140,6 +140,13 @@ function KnowledgeIndex() {
                 : value === "team_ops"
                   ? [
                       {
+                        key: "eod-hygiene",
+                        title: "EOD & Meetings Policy",
+                        description:
+                          "The daily EOD standard for every role — 7 days a week, zero misses — plus meeting attendance rules and consequences.",
+                        to: "/policies/eod-hygiene",
+                      },
+                      {
                         key: "crm-hygiene",
                         title: "CRM Hygiene Policy",
                         description:

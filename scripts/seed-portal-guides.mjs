@@ -41,6 +41,17 @@ const SIGN_IN = `## Signing in
 
 > Tip: the sidebar on the left is your map. Everything in this guide lives there. On your phone, tap the ☰ button (top-left) to open it.`;
 
+const EOD_POLICY = `## The EOD rule — read once, never break it
+
+EODs are **7 days a week, for every role — you cannot miss a single one, ever.** Zero is a valid answer; silence is not.
+
+- The amber **EOD due** pill in the top bar means you haven't filed today. When it disappears, you're done.
+- Real emergency? Message a founder **before 23:59** — pre-approved is fine; explained the next morning is a miss.
+- Misses escalate fast: **1st** = written warning · **2nd** (within 60 days) = PIP, bonuses paused · **3rd or any fabricated number** = disciplinary.
+- Team meetings follow the same rule: **mandatory, on time**, absence pre-approved by a founder.
+
+Full policy (read it once): **[EOD & Meetings Policy](/policies/eod-hygiene)**.`;
+
 const EOD_RULES = `EODs are **7 days a week — there are no off days.** Zero is a valid answer; a missed report is not.
 
 | Setter type | Daily target |
@@ -79,8 +90,11 @@ ${EOD_RULES}
 4. Write your **Wins / summary** (required) — one or two honest sentences.
 5. Press **Submit**. Done before **23:59** — missed days hurt the team's rolling average and your streak.
 
-> The form **autosaves a draft** as you type ("Draft saved ✓" next to the heading). If you close the tab and come back, your numbers are still there.
+> The form **autosaves a draft** as you type ("Draft saved ✓" next to the heading). If you close the tab and come back — even on your phone — your numbers are still there.
 > Already submitted? Open the same page and press **Update** to correct today's numbers.
+> The **My history** tab shows every report you've filed, and the streak card at the top shows your run — protect it.
+
+${EOD_POLICY}
 
 ## 2. Check where you stand — Sales page
 
@@ -119,12 +133,23 @@ Click **Revenue** to see deals, cash collected, and your commissions:
 - **+1%** in any Mon–Sun week where **you personally** collect **$5,000+ cash** (individual, not team).
 - Setters don't close — if you somehow set *and* closed the same deal, that's paid as one 15% "set + close", not base + 10%.
 
-## 6. Small but useful
+## 6. Everything else you'll touch
 
-- **Action Items** — tasks assigned to you (or that you assign to teammates). Tick them off here.
-- **Leaderboards** on the Dashboard show the weekly cash and setter races.
-- **⌘K / Ctrl-K** opens search from anywhere — type a page or student name.
-- **Knowledge** holds every SOP, including the full ISA setting process.
+- **Action Items** — tasks assigned to you, and tasks you assign to teammates (yes, setters can assign to each other — the item shows who it came from). Tick them off here; overdue ones turn red.
+- **Testimonials** — when a student posts a win in the community, drop the screenshot/video here the same day so marketing can use it.
+- **Training** — course material and recordings for setters.
+- **Notes** — your personal scratchpad (switch to Team to see shared notes).
+- **Dashboard** — the team-wide funnel and the weekly cash + setter leaderboards. Your name on that board is the goal.
+- **Profile** — set your display name and avatar so the leaderboards and feeds show *you*.
+- **⌘K / Ctrl-K** — search from anywhere: pages, students, docs.
+- **Knowledge** — every SOP, including the full **ISA Setting Process** (the 8-stage system) and both policies.
+- Dark/light mode: the moon/sun button in the top bar.
+
+## If something looks wrong
+
+- A set in the Set reminders list isn't yours → leave it; only claim sets you booked.
+- You submitted wrong numbers → open **EOD Reports** and press **Update** (same day only — backfilling later days isn't allowed, see the policy).
+- You can't see a page you think you need → ask a founder; pages are role-gated on purpose.
 `,
 },
 // ═════════════════════════════ CLOSERS ═════════════════════════════
@@ -148,7 +173,11 @@ ${SIGN_IN}
 2. Fill in **calls taken, closes, deposits, cash collected, deferred cash, follow-ups** — zero is a valid answer.
 3. Write your **Wins / summary** and press **Submit** before **23:59**. Seven days a week, no off days.
 
-The form autosaves a draft as you type, so nothing is lost if you get pulled into a call.
+Field notes: **deposits** = partial payments taken today; **cash collected** = money that actually landed today; **deferred cash** = signed but not yet collected (e.g. a split's later payments). Your EOD numbers must match the Revenue log — they're audited against each other.
+
+The form autosaves a draft as you type, so nothing is lost if you get pulled into a call. The **My history** tab shows every report you've filed.
+
+${EOD_POLICY}
 
 ## 2. Log a close — the most important 60 seconds
 
@@ -186,11 +215,20 @@ Click **Revenue → Installments** tab:
 - The cards at the top show what's **overdue** and what's **due in 1–3 days**.
 - The **Follow-up queue** lists exactly who to message today. After you reach out, press **Followed up**; when money lands, press **Mark paid**.
 
-## 5. Small but useful
+## 5. Fixing and finding deals
 
-- **Calendar** — connect your Google Calendar once (**Connect Google Calendar** button); all closer calendars can be viewed together, in your timezone.
-- **Sales** — the funnel trends and Closed Rate for any date range.
-- **Students** — look up any student's record before a call.
+- Made a typo in a deal? Open **Revenue**, find the deal in the table, click it, correct, save. Deals are operational records — fix mistakes the day you spot them, never "adjust" history to change a number.
+- The **Payouts** tab shows commission per person for the period — that's where your 10% / 15% math is visible.
+
+## 6. Everything else you'll touch
+
+- **Calendar** — connect your Google Calendar once (**Connect Google Calendar** button). Every closer's calendar shows in one grid, in your timezone; Calendly sets appear in the Set reminders list.
+- **Sales** — the funnel trends and Closed Rate for any date range; your submission status is on this page too.
+- **Students** — look up any student before a call: payment state, phase, history.
+- **Testimonials** — a client win crosses your DMs? Drop it here the same day.
+- **Training** — closer course material and recordings.
+- **Notes** — personal scratchpad; Team tab for shared notes.
+- **Profile** — display name + avatar.
 - **⌘K / Ctrl-K** — search anything from anywhere.
 `,
 },
@@ -217,7 +255,7 @@ Click **CSM** in the sidebar.
 
 **a) Tally as you work.** The four cards at the top are counters: **Loom reviewed, Roleplay reviewed, Check-in done, Escalation**. Every time you finish one, tap the card once (+1). Don't batch it at the end of the day — tap as you go and the numbers stay honest.
 
-**b) Submit to Team Reports.** At the end of your day, press the green **Submit to Team Reports** button. That files your EOD using today's tallies — you don't fill a separate form.
+**b) Submit to Team Reports.** At the end of your day, press the green **Submit to Team Reports** button. That files your EOD using today's tallies — you don't fill a separate form. This is your daily EOD and follows the same zero-miss rule as everyone else's.
 
 **c) Work the student list.** Search or scroll the list on the left, click a student, and the **Accountability panel** shows their open action items, last student EOD, and your review counts for them (14 days).
 
@@ -248,7 +286,26 @@ ${img("testimonials", "Testimonials library")}
 
 Click **Testimonials**: upload video/image/text proof, set the status (**Requested → Received → Approved → Published**), and filter by student or type. When a student sends proof in the group chat, drop it here the same day.
 
-## 5. What you won't see
+${EOD_POLICY}
+
+## 5. Escalations — the one flow that must never stall
+
+When a student is angry, stuck beyond your reach, or talking about refunds:
+
+1. Tap **Escalation +1** on the workspace (so it's counted).
+2. Write a CSM note on the student tagged **#escalation** with what happened, in their words.
+3. Message the coach (and Faizan if it's payment- or refund-related) the same hour — the note is the record, the message is the alarm.
+
+## 6. Everything else you'll touch
+
+- **1-on-1 Calls** — read the coach's call log for any student: ratings, notes, and the action items they set. Use it before check-ins so you never ask a question the coach already answered.
+- **Students** — the full list with journey phases (Onboarding → 1:1 Coaching → Applying → Offer Won → Testimonial). Open a student for their timeline, EODs, milestones, and your CSM notes tab.
+- **Calendar** — the team calendar in your timezone; connect your Google Calendar with one click if you take calls.
+- **Notes** — personal scratchpad; Team tab for shared notes.
+- **Profile** — display name + avatar.
+- **⌘K / Ctrl-K** — jump to any student or page instantly.
+
+## 7. What you won't see
 
 Money pages (Dashboard, Sales, Revenue, Closer Resources) are outside the CSM role on purpose — your world is students, not deals. If you need a number from those, ask Faizan.
 `,
@@ -303,13 +360,25 @@ On the 1-on-1 Calls page, switch to the **Coaches** tab: active roster count, av
 
 ## 4. Your own EOD
 
-You file one too — 7 days a week. **EOD Reports** in the sidebar: check-ins done, sessions, wins, blockers. Takes a minute.
+You file one too — 7 days a week. **EOD Reports** in the sidebar: check-ins done, sessions, wins, blockers. Takes a minute, autosaves as you type, works on your phone.
 
-## 5. Small but useful
+${EOD_POLICY}
 
-- **Student Success** — the team-wide radar (at-risk, this week's calls, testimonials pipeline).
-- **Action Items** — everything you've assigned, in one place, with overdue flags.
-- **Calendar** — connect Google Calendar once and see the team's calls in your timezone.
+## 5. Milestones and the student's record
+
+Open any student (from **Students** or ⌘K) and you get the full picture in tabs: **timeline** of every touch, their daily **EODs** (roleplays + applications — the same numbers the at-risk radar reads), **milestones** to tick off as they hit them, **installments**, and **CSM notes**. Tick milestones the moment they happen — first win especially, since it feeds the testimonial pipeline.
+
+Forgot to rate a call? It shows up in **Admin's unrated calls** queue and you'll get chased — rate as you log and you'll never hear about it.
+
+## 6. Everything else you'll touch
+
+- **Student Success** — the team-wide radar: at-risk (with reasons), this week's 1:1s, testimonials pipeline, weekly digest.
+- **Action Items** — everything you've assigned across calls and ad-hoc, with overdue flags. You can assign to multiple students at once with **+ Add ad-hoc item**.
+- **Revenue** — read access so you can see a student's deal/payment context before a call.
+- **Testimonials** — when a student you coach sends proof of a win, upload it here the same day.
+- **Calendar** — connect Google Calendar once; the team's calls in your timezone.
+- **Notes** — personal scratchpad; Team tab for shared notes.
+- **Profile** — display name + avatar.
 - **⌘K / Ctrl-K** — jump to any student or page instantly.
 `,
 },
@@ -342,6 +411,16 @@ Click **Dashboard** in the sidebar. Read it top to bottom:
 
 **Faizan:** your daily flow is Dashboard → **Sales** (who filed EODs, who missed — the *missed yesterday* card has a **Copy nudge** button that writes the chase message for you) → **Student Success** (who's at-risk).
 **Abu Bilal:** your daily flow is Dashboard → **Revenue** (deals + installments due) → **Sales** trends.
+
+## 1b. Enforcing the EOD rule (2 minutes, every morning)
+
+The team policy is simple: **nobody misses an EOD, ever** — 7 days a week, every role, zeros allowed, silence not. The portal does the policing for you:
+
+1. Open **Sales** before 10:00. The *submission status* list shows exactly who filed, who hit KPI, and who is **missing**.
+2. For anyone on the *missed yesterday* card, press **Copy nudge** — a ready-made chase message lands on your clipboard; paste it in their DM.
+3. A silent miss = an instance, logged the same day: 1st = written warning, 2nd within 60 days = PIP with bonuses paused, 3rd or fabricated numbers = disciplinary.
+4. The only exception is an emergency cleared with **you** before 23:59 the day of.
+5. The full policy the team reads: **[EOD & Meetings Policy](/policies/eod-hygiene)** (in Knowledge, next to the [CRM Hygiene Policy](/policies/crm-hygiene)). Meetings follow the same rule — attendance is mandatory unless pre-approved by you.
 
 ## 2. When someone new signs up — approve them (Team page)
 
@@ -395,6 +474,18 @@ ${img("content", "Content planner")}
 
 - **Content** — the content planner (TOF posts Monday–Thursday, MOF Friday–Sunday, recorded in two-week batches — Thursday is recording day) and Instagram analytics (log a snapshot once a month).
 
+## 6b. Calendar & booked sets
+
+- **Calendar** in the sidebar shows every connected team calendar in one grid. Press **Connect Google Calendar** once for your own (about 20 seconds).
+- Sets booked through **Calendly appear automatically** in the *Set reminders* list. Setters claim their own; whoever claims gets automatic reminders 2 days / 1 day / 3 hours / 1 hour before the call.
+- Use the timezone picker to view in Riyadh, Amsterdam, or anywhere else.
+
+## 6c. Weekly rhythm
+
+- **Gathering Hub → Weekly review** — cash vs goal, funnel, EOD compliance, milestones, and testimonials for the week; read it before the team meeting.
+- **Content → Instagram** — on the 1st of each month, log the IG snapshot (followers, reach, top reels). The dashboard reminds you if it's missing.
+- **Sunday**: spot-check EOD numbers against the CRM ([CRM Hygiene Policy](/policies/crm-hygiene) has the audit steps).
+
 ## 7. The library — Knowledge
 
 ${img("knowledge", "Knowledge Hub")}
@@ -415,6 +506,9 @@ ${img("knowledge", "Knowledge Hub")}
 | Assign a task | **Action Items** → + Add ad-hoc item |
 | See who's at risk | **Student Success** |
 | Plan content | **Content** (founders only) |
+| Read the EOD rules | **Knowledge → EOD & Meetings Policy** |
+| See a coach's call quality | **Admin** → unrated calls · **1-on-1 Calls** → Coaches tab |
+| Remove the demo data | **Admin** → go-live checklist → run \`npm run demo:remove\` |
 
 > One habit to keep the whole machine honest: **everything gets logged the day it happens** — closes, calls, EODs, testimonials. The dashboard is only as truthful as the logging.
 `,

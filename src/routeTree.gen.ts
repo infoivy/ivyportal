@@ -51,6 +51,7 @@ import { Route as AuthenticatedKnowledgeIndexRouteImport } from './routes/_authe
 import { Route as ApiPublicGoogleOauthCallbackRouteImport } from './routes/api/public/google-oauth-callback'
 import { Route as AuthenticatedStudentsIdRouteImport } from './routes/_authenticated.students.$id'
 import { Route as AuthenticatedSopsIsaSettingProcessRouteImport } from './routes/_authenticated.sops.isa-setting-process'
+import { Route as AuthenticatedPoliciesEodHygieneRouteImport } from './routes/_authenticated.policies.eod-hygiene'
 import { Route as AuthenticatedPoliciesCrmHygieneRouteImport } from './routes/_authenticated.policies.crm-hygiene'
 import { Route as AuthenticatedKnowledgeNewRouteImport } from './routes/_authenticated.knowledge.new'
 import { Route as AuthenticatedKnowledgeSlugRouteImport } from './routes/_authenticated.knowledge.$slug'
@@ -276,6 +277,12 @@ const AuthenticatedSopsIsaSettingProcessRoute =
     path: '/isa-setting-process',
     getParentRoute: () => AuthenticatedSopsRoute,
   } as any)
+const AuthenticatedPoliciesEodHygieneRoute =
+  AuthenticatedPoliciesEodHygieneRouteImport.update({
+    id: '/eod-hygiene',
+    path: '/eod-hygiene',
+    getParentRoute: () => AuthenticatedPoliciesRoute,
+  } as any)
 const AuthenticatedPoliciesCrmHygieneRoute =
   AuthenticatedPoliciesCrmHygieneRouteImport.update({
     id: '/crm-hygiene',
@@ -341,6 +348,7 @@ export interface FileRoutesByFullPath {
   '/knowledge/$slug': typeof AuthenticatedKnowledgeSlugRouteWithChildren
   '/knowledge/new': typeof AuthenticatedKnowledgeNewRoute
   '/policies/crm-hygiene': typeof AuthenticatedPoliciesCrmHygieneRoute
+  '/policies/eod-hygiene': typeof AuthenticatedPoliciesEodHygieneRoute
   '/sops/isa-setting-process': typeof AuthenticatedSopsIsaSettingProcessRoute
   '/students/$id': typeof AuthenticatedStudentsIdRoute
   '/api/public/google-oauth-callback': typeof ApiPublicGoogleOauthCallbackRoute
@@ -386,6 +394,7 @@ export interface FileRoutesByTo {
   '/knowledge/$slug': typeof AuthenticatedKnowledgeSlugRouteWithChildren
   '/knowledge/new': typeof AuthenticatedKnowledgeNewRoute
   '/policies/crm-hygiene': typeof AuthenticatedPoliciesCrmHygieneRoute
+  '/policies/eod-hygiene': typeof AuthenticatedPoliciesEodHygieneRoute
   '/sops/isa-setting-process': typeof AuthenticatedSopsIsaSettingProcessRoute
   '/students/$id': typeof AuthenticatedStudentsIdRoute
   '/api/public/google-oauth-callback': typeof ApiPublicGoogleOauthCallbackRoute
@@ -435,6 +444,7 @@ export interface FileRoutesById {
   '/_authenticated/knowledge/$slug': typeof AuthenticatedKnowledgeSlugRouteWithChildren
   '/_authenticated/knowledge/new': typeof AuthenticatedKnowledgeNewRoute
   '/_authenticated/policies/crm-hygiene': typeof AuthenticatedPoliciesCrmHygieneRoute
+  '/_authenticated/policies/eod-hygiene': typeof AuthenticatedPoliciesEodHygieneRoute
   '/_authenticated/sops/isa-setting-process': typeof AuthenticatedSopsIsaSettingProcessRoute
   '/_authenticated/students/$id': typeof AuthenticatedStudentsIdRoute
   '/api/public/google-oauth-callback': typeof ApiPublicGoogleOauthCallbackRoute
@@ -484,6 +494,7 @@ export interface FileRouteTypes {
     | '/knowledge/$slug'
     | '/knowledge/new'
     | '/policies/crm-hygiene'
+    | '/policies/eod-hygiene'
     | '/sops/isa-setting-process'
     | '/students/$id'
     | '/api/public/google-oauth-callback'
@@ -529,6 +540,7 @@ export interface FileRouteTypes {
     | '/knowledge/$slug'
     | '/knowledge/new'
     | '/policies/crm-hygiene'
+    | '/policies/eod-hygiene'
     | '/sops/isa-setting-process'
     | '/students/$id'
     | '/api/public/google-oauth-callback'
@@ -577,6 +589,7 @@ export interface FileRouteTypes {
     | '/_authenticated/knowledge/$slug'
     | '/_authenticated/knowledge/new'
     | '/_authenticated/policies/crm-hygiene'
+    | '/_authenticated/policies/eod-hygiene'
     | '/_authenticated/sops/isa-setting-process'
     | '/_authenticated/students/$id'
     | '/api/public/google-oauth-callback'
@@ -889,6 +902,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSopsIsaSettingProcessRouteImport
       parentRoute: typeof AuthenticatedSopsRoute
     }
+    '/_authenticated/policies/eod-hygiene': {
+      id: '/_authenticated/policies/eod-hygiene'
+      path: '/eod-hygiene'
+      fullPath: '/policies/eod-hygiene'
+      preLoaderRoute: typeof AuthenticatedPoliciesEodHygieneRouteImport
+      parentRoute: typeof AuthenticatedPoliciesRoute
+    }
     '/_authenticated/policies/crm-hygiene': {
       id: '/_authenticated/policies/crm-hygiene'
       path: '/crm-hygiene'
@@ -955,11 +975,13 @@ const AuthenticatedKnowledgeRouteWithChildren =
 
 interface AuthenticatedPoliciesRouteChildren {
   AuthenticatedPoliciesCrmHygieneRoute: typeof AuthenticatedPoliciesCrmHygieneRoute
+  AuthenticatedPoliciesEodHygieneRoute: typeof AuthenticatedPoliciesEodHygieneRoute
   AuthenticatedPoliciesIndexRoute: typeof AuthenticatedPoliciesIndexRoute
 }
 
 const AuthenticatedPoliciesRouteChildren: AuthenticatedPoliciesRouteChildren = {
   AuthenticatedPoliciesCrmHygieneRoute: AuthenticatedPoliciesCrmHygieneRoute,
+  AuthenticatedPoliciesEodHygieneRoute: AuthenticatedPoliciesEodHygieneRoute,
   AuthenticatedPoliciesIndexRoute: AuthenticatedPoliciesIndexRoute,
 }
 
