@@ -17,12 +17,13 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/lib/auth-context";
+import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DateField } from "@/components/ui/date-field";
 import {
   disconnectMyCalendar, getMyCalendarConnection, getTeamCalendarEvents, createSetReminder,
   listUpcomingSets, deleteSetReminder, syncCalendlySets, claimSet, type UpcomingSet,
-  updateSetTracking, cancelSet, restoreSet, type ReminderWindow, type ReminderState,
+  updateSetTracking, cancelSet, restoreSet, unclaimSet, assignSet, type ReminderWindow, type ReminderState,
   getTeamCalendarStatus, startGoogleCalendarAuth, type TeamEvent,
 } from "@/lib/calendar.functions";
 
@@ -162,6 +163,21 @@ function CalendarPage() {
   const trackSetFn = useServerFn(updateSetTracking);
   const cancelSetFn = useServerFn(cancelSet);
   const restoreSetFn = useServerFn(restoreSet);
+  const unclaimSetFn = useServerFn(unclaimSet);
+  const assignSetFn = useServerFn(assignSet);
+
+  // setter roster for the assign dropdown
+  const settersQ = useQuery({
+    queryKey: ["cal", "setters"],
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const { data: roleRows } = await supabase.from("user_roles").select("user_id, role").in("role", ["setter", "closer", "admin"]);
+      const ids = Array.from(new Set((roleRows ?? []).map((r: { user_id: string }) => r.user_id)));
+      if (!ids.length) return [] as { id: string; display_name: string | null }[];
+      const { data: profs } = await supabase.from("profiles").select("id, display_name").in("id", ids);
+      return (profs ?? []) as { id: string; display_name: string | null }[];
+    },
+  });
   const upcomingSets = useQuery({ queryKey: ["cal", "sets"], queryFn: () => listSetsFn(), staleTime: 30_000 });
 
   // 6-hour rule: a set the lead hasn't confirmed by 6h before start is pulled
@@ -486,6 +502,21 @@ function CalendarPage() {
             big
             sets={upcomingSets.data ?? []}
             toLocal={toLocal}
+            team={settersQ.data ?? []}
+            onUnclaim={async (id) => {
+              try {
+                await unclaimSetFn({ data: { id } });
+                qc.invalidateQueries({ queryKey: ["cal", "sets"] });
+                toast.success("Unclaimed — back in the pool (removed from the calendar).");
+              } catch (err) { toast.error(String((err as Error).message ?? err)); }
+            }}
+            onAssign={async (id, userId) => {
+              try {
+                const r = await assignSetFn({ data: { id, userId } });
+                qc.invalidateQueries({ queryKey: ["cal", "sets"] });
+                toast.success(r.calendar ? "Assigned — it's on their calendar with reminders." : "Assigned. They should connect Google Calendar for the reminders.");
+              } catch (err) { toast.error(String((err as Error).message ?? err)); }
+            }}
             onTrack={async (id, window, state) => {
               try {
                 await trackSetFn({ data: { id, window, state } });
@@ -827,7 +858,7 @@ const WINDOWS: { key: "48h" | "24h" | "3h" | "1h"; label: string; minutes: numbe
   { key: "1h", label: "1h", minutes: 60 },
 ];
 
-function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, onConfirm, onCancel, onRestore, toLocal, big = false }: {
+function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, onConfirm, onCancel, onRestore, onUnclaim, onAssign, team = [], toLocal, big = false }: {
   sets: UpcomingSet[];
   loading: boolean;
   filter: "all" | "mine";
@@ -837,6 +868,9 @@ function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, o
   onConfirm: (id: string, confirm: boolean) => void;
   onCancel: (id: string) => void;
   onRestore: (id: string) => void;
+  onUnclaim?: (id: string) => void;
+  onAssign?: (id: string, userId: string) => void;
+  team?: { id: string; display_name: string | null }[];
   toLocal: (iso: string | Date) => Date;
   big?: boolean;
 }) {
@@ -901,6 +935,24 @@ function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, o
                 <Button size="sm" variant="outline" className="h-7 px-2.5 text-caption shrink-0" onClick={() => onClaim(s.id)}>
                   Claim
                 </Button>
+              )}
+              {onAssign && (isAdmin || roles.includes("founder") || mine) && team.length > 0 && (
+                <select
+                  value=""
+                  onChange={(e) => { if (e.target.value) onAssign(s.id, e.target.value); }}
+                  className="h-7 text-caption px-1.5 rounded-md border border-border bg-card text-muted-foreground shrink-0"
+                  title="Assign this set to a setter"
+                >
+                  <option value="">{s.owner_id ? "Reassign…" : "Assign…"}</option>
+                  {team.filter(t => t.id !== s.owner_id).map(t => (
+                    <option key={t.id} value={t.id}>{t.display_name ?? t.id.slice(0, 8)}</option>
+                  ))}
+                </select>
+              )}
+              {s.owner_id && onUnclaim && (mine || isAdmin || roles.includes("founder")) && (
+                <button onClick={() => onUnclaim(s.id)} className="text-micro text-muted-foreground hover:text-foreground shrink-0" title="Give this set back to the pool">
+                  unclaim
+                </button>
               )}
               <span className="text-caption text-muted-foreground tabular-nums shrink-0">{untilLabel(s.event_start)}</span>
               {s.gcal_html_link && (

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Checkbox } from "@/components/ui/checkbox";
 import { BlurMoney } from "@/components/blur-money";
+import { fetchSetNudges } from "@/lib/set-nudges";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -311,6 +312,9 @@ function Dashboard() {
 
         {/* Action items assigned to me — always at the very top */}
         <MyAssignedItems />
+
+        {/* Set reminders due — same urgency treatment */}
+        <MySetNudges />
 
         {/* IG monthly log reminder */}
         {roles.includes("founder") && !igLoggedThisMonth && !igReminderDismissed && (
@@ -1182,6 +1186,43 @@ function MyAssignedItems() {
           <Link to="/action-items" className="block text-[12px] text-muted-foreground hover:text-foreground pl-6">
             +{items.length - 4} more
           </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Claimed sets needing action now (open reminder window or today's warm
+ *  touch) — mirrors the action-items banner because a cold set costs a slot. */
+function MySetNudges() {
+  const { user } = useAuth();
+  const q = useQuery({
+    queryKey: ["dashboard", "set-nudges", user?.id],
+    enabled: !!user,
+    refetchInterval: 2 * 60_000,
+    queryFn: () => fetchSetNudges(user!.id),
+  });
+  const nudges = q.data ?? [];
+  if (!nudges.length) return null;
+  return (
+    <div className="rounded-xl border border-warning/25 bg-warning-bg/50 px-4 py-3">
+      <div className="flex items-center justify-between gap-3 mb-2">
+        <span className="text-[12px] font-medium text-warning-fg">Your sets need you · {nudges.length}</span>
+        <Link to="/calendar" search={{} as never} className="text-[12px] text-muted-foreground hover:text-foreground shrink-0">Open the tracker →</Link>
+      </div>
+      <div className="space-y-1">
+        {nudges.slice(0, 4).map(n => (
+          <Link key={n.id} to="/calendar" search={{} as never} className="block text-[13px] leading-snug hover:opacity-80">
+            <span className="text-foreground font-medium">{n.prospect}</span>
+            <span className="text-muted-foreground">
+              {" "}· {n.window.startsWith("keep warm")
+                ? n.window
+                : `${n.window} reminder due · call ${new Date(n.event_start).toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" })}`}
+            </span>
+          </Link>
+        ))}
+        {nudges.length > 4 && (
+          <span className="block text-[12px] text-muted-foreground">+{nudges.length - 4} more</span>
         )}
       </div>
     </div>

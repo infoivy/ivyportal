@@ -521,3 +521,106 @@ export const restoreSet = createServerFn({ method: "POST" })
     }
     return { ok: true, calendarRestored: false };
   });
+
+// Internal: run a Google Calendar operation with a user's fresh access token.
+async function withUserCalendar<T>(
+  ownerId: string,
+  fn: (accessToken: string, calendarId: string) => Promise<T>,
+): Promise<T | null> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data: conn } = await supabaseAdmin
+    .from("calendar_connections").select("*").eq("user_id", ownerId).maybeSingle();
+  if (!conn) return null;
+  let accessToken = conn.access_token as string | null;
+  const exp = conn.access_token_expires_at ? new Date(conn.access_token_expires_at).getTime() : 0;
+  if (!accessToken || exp - 60_000 < Date.now()) {
+    const r = await refreshAccessToken(conn.refresh_token);
+    accessToken = r.access_token;
+    await supabaseAdmin.from("calendar_connections")
+      .update({ access_token: accessToken, access_token_expires_at: new Date(Date.now() + r.expires_in * 1000).toISOString() })
+      .eq("id", conn.id);
+  }
+  return fn(accessToken!, conn.calendar_id);
+}
+
+/** Give a claimed set back to the pool (owner or admin/founder). Removes the
+ *  previous owner's calendar event. */
+export const unclaimSet = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { id: string }) => data)
+  .handler(async ({ context, data }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sr = context.supabase as any;
+    const { data: row, error } = await sr.from("set_reminders").select("*").eq("id", data.id).maybeSingle();
+    if (error || !row) throw new Error("set not found");
+    if (!row.owner_id) return { ok: true };
+    const { data: myRoles } = await context.supabase.from("user_roles").select("role").eq("user_id", context.userId);
+    const elevated = (myRoles ?? []).some(r => r.role === "admin" || r.role === "founder");
+    if (row.owner_id !== context.userId && !elevated) throw new Error("Only the owner or an admin can unclaim");
+
+    if (row.gcal_event_id) {
+      try {
+        const { deleteCalendarEvent } = await import("@/lib/calendar.server");
+        await withUserCalendar(row.owner_id, (t, cal) => deleteCalendarEvent(t, cal, row.gcal_event_id));
+      } catch (err) { console.error("[unclaimSet] gcal delete failed:", err); }
+    }
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: upErr } = await (supabaseAdmin as any).from("set_reminders")
+      .update({ owner_id: null, gcal_event_id: null, gcal_html_link: null })
+      .eq("id", data.id);
+    if (upErr) throw new Error(upErr.message);
+    return { ok: true };
+  });
+
+/** Assign a set to a specific setter (admin/founder, or the current owner
+ *  handing it off). Moves the calendar event to the new owner. */
+export const assignSet = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { id: string; userId: string }) => data)
+  .handler(async ({ context, data }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sr = context.supabase as any;
+    const { data: row, error } = await sr.from("set_reminders").select("*").eq("id", data.id).maybeSingle();
+    if (error || !row) throw new Error("set not found");
+    const { data: myRoles } = await context.supabase.from("user_roles").select("role").eq("user_id", context.userId);
+    const elevated = (myRoles ?? []).some(r => r.role === "admin" || r.role === "founder");
+    if (!elevated && row.owner_id !== context.userId) throw new Error("Only an admin or the current owner can assign");
+
+    // remove from the previous owner's calendar
+    if (row.owner_id && row.owner_id !== data.userId && row.gcal_event_id) {
+      try {
+        const { deleteCalendarEvent } = await import("@/lib/calendar.server");
+        await withUserCalendar(row.owner_id, (t, cal) => deleteCalendarEvent(t, cal, row.gcal_event_id));
+      } catch (err) { console.error("[assignSet] old gcal delete failed:", err); }
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const admin = supabaseAdmin as any;
+    const { error: upErr } = await admin.from("set_reminders")
+      .update({ owner_id: data.userId, gcal_event_id: null, gcal_html_link: null })
+      .eq("id", data.id);
+    if (upErr) throw new Error(upErr.message);
+
+    // create the event on the new owner's calendar (best effort)
+    try {
+      const start = new Date(row.event_start);
+      const end = new Date(start.getTime() + row.duration_min * 60_000);
+      const event = await withUserCalendar(data.userId, (t, cal) =>
+        insertCalendarEvent(t, cal, {
+          summary: `Set: ${row.prospect}`,
+          description: [row.notes, "Reminders: 2 days · 1 day · 3 hours · 1 hour before."].filter(Boolean).join("\n\n"),
+          startISO: start.toISOString(),
+          endISO: end.toISOString(),
+          reminderMinutes: SET_REMINDER_MINUTES,
+        }));
+      if (event) {
+        await admin.from("set_reminders")
+          .update({ gcal_event_id: event.id, gcal_html_link: event.htmlLink ?? null })
+          .eq("id", data.id);
+        return { ok: true, calendar: true };
+      }
+    } catch (err) { console.error("[assignSet] gcal insert failed:", err); }
+    return { ok: true, calendar: false };
+  });
