@@ -17,6 +17,7 @@ import confetti from "canvas-confetti";
 import { VolumeAreaChart, VolumeLegend } from "@/components/ui/volume-area-chart";
 import { ResponsiveContainer, BarChart, Bar, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip as ReTooltip, Legend } from "recharts";
 import { SelectField } from "@/components/ui/select-field";
+import { MochiEodReference } from "@/components/mochi-eod-reference";
 
 export const Route = createFileRoute("/_authenticated/eods")({
   head: () => ({ meta: [{ title: "EOD Reports — ISA Team" }] }),
@@ -374,6 +375,7 @@ function EODsPage() {
               {isSetter && (
                 <div className="space-y-3">
                   <SectionLabel>Setting activity</SectionLabel>
+                  <MochiEodReference onApply={(field, value) => setNum(field)(String(value))} />
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     {(mySetterType === "phone" || mySetterType === "full_cycle" || !mySetterType) && (
                       <NumField label="Dials" value={form.dials} onChange={setNum("dials")} />

@@ -32,3 +32,16 @@ Probed the MCP with curl (401 → `.well-known/oauth-protected-resource` → aut
 - Direct Whop API integration (key stored) if Mochi's synced payment data proves insufficient.
 - A "connect Mochi" admin UI for token re-auth without a terminal (tokens die if refresh fails repeatedly).
 - Vercel env vars must include the SUPABASE_* server names (already true in prod for Close to work).
+
+## Addendum — EOD reference + Room v2 (same day, ~10:30pm)
+
+**Prompt:** "go" on the EOD tie-in, then: cash purely through Whop, hearth text out of the flames, student success rate, total leads (IG + Close) in team output.
+
+**What changed:**
+- `getMochiEodReference` server fn: matches the signed-in user to a Mochi member by email; personal scope returns their DMs out / sets / new leads, unmatched falls back to team-wide numbers with a "not linked" hint. Credential reads moved to the service-role client (`supabaseAdmin`) so setters get derived numbers without weakening the admin-only RLS on service_credentials. Reference only — per-field "use" buttons for DMs sent and Sets booked exist only in personal scope; nothing auto-writes (EOD KPI rules untouched).
+- `MochiEodReference` strip renders inside the EOD Setting activity section.
+- `getMochiPayments` reworked: 30d net/gross KPIs + 90d daily `gross_volume_series` from `get_payment_overview` (last_90_days is accepted).
+- `getCloseLeadStats` in close-crm.functions: lead counts + per-day creation buckets via Close query `date_created >= …`.
+- The Room: cash KPI + weekly bars now purely Whop; fireplace confined to the card's lower 55% with the meta line top-right; students strip (count · landed roles via `offer_landed_at` · success rate + bar); team output gains a third dither series: daily leads = Mochi funnel + Close created.
+
+**Gotcha:** Mochi's team currently has only manager accounts + Sair — setters will hit team scope until they're added to Mochi with their portal emails (matching is by email).

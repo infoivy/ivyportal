@@ -3,6 +3,7 @@ import { format, subDays } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { money, startOfWeekMon, isoDay } from "@/lib/revenue";
 import { getMochiDashboard, getMochiPayments } from "@/lib/mochi.functions";
+import { getCloseLeadStats } from "@/lib/close-crm.functions";
 import { BlurMoney } from "@/components/blur-money";
 import { DitherFireplace } from "@/components/founder/dither-fireplace";
 import { Area, AreaChart, Bar, BarChart, Legend, Pie, PieChart, Tooltip, XAxis } from "@/components/dither-kit";
@@ -11,12 +12,12 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
 
 /**
  * The Room — the founder's cozy all-company view. One glance, no drilling:
- * cash, Instagram leads, team output, content shipped. Dither charts + hearth.
+ * cash (Whop), Instagram + Close leads, students landed, team output,
+ * content shipped. Dither charts + hearth.
  */
 export function TheRoomInner() {
   const today = new Date();
   const monthStart = iso(today).slice(0, 8) + "01";
-  const eightWeeksAgo = iso(startOfWeekMon(subDays(today, 7 * 7)));
   const fourteenDaysAgo = iso(subDays(today, 13));
   const sixWeeksAgo = iso(subDays(today, 41));
 
@@ -24,17 +25,17 @@ export function TheRoomInner() {
     queryKey: ["the-room", iso(today)],
     staleTime: 2 * 60_000,
     queryFn: async () => {
-      const [deals, eods, content, students] = await Promise.all([
-        supabase.from("deals").select("deal_date, cash_collected_upfront").gte("deal_date", eightWeeksAgo),
-        supabase.from("eods").select("report_date, dials, dms_sent, calls_booked").gte("report_date", fourteenDaysAgo),
+      const [eods, content, students, landed] = await Promise.all([
+        supabase.from("eods").select("report_date, dials, dms_sent").gte("report_date", fourteenDaysAgo),
         supabase.from("content_items").select("posted_at, status").not("posted_at", "is", null).gte("posted_at", sixWeeksAgo),
         supabase.from("students").select("id", { count: "exact", head: true }),
+        supabase.from("students").select("id", { count: "exact", head: true }).not("offer_landed_at", "is", null),
       ]);
       return {
-        deals: deals.data ?? [],
         eods: eods.data ?? [],
         content: content.data ?? [],
         studentCount: students.count ?? 0,
+        landedCount: landed.count ?? 0,
       };
     },
   });
@@ -49,29 +50,48 @@ export function TheRoomInner() {
 
   const payments = useQuery({
     queryKey: ["the-room-payments"],
-    queryFn: () => getMochiPayments({ data: { period: "last_30_days" } }),
+    queryFn: () => getMochiPayments(),
+    staleTime: 10 * 60_000,
+    retry: 1,
+  });
+
+  const closeLeads = useQuery({
+    queryKey: ["the-room-close-leads"],
+    queryFn: () => getCloseLeadStats({ data: { days: 30 } }),
     staleTime: 10 * 60_000,
     retry: 1,
   });
 
   // ── Shape the series ──────────────────────────────────────────────────
+  // Cash: purely Whop (via Mochi's provider-synced payments)
+  const whopByDay = new Map((payments.data?.series ?? []).map((s) => [s.date, s.volume]));
+
   const cashWeekly = (() => {
     const weeks = new Map<string, number>();
     for (let i = 7; i >= 0; i--) weeks.set(iso(startOfWeekMon(subDays(today, i * 7))), 0);
-    for (const d of portal.data?.deals ?? []) {
-      const wk = isoDay(startOfWeekMon(new Date(d.deal_date)));
-      if (weeks.has(wk)) weeks.set(wk, (weeks.get(wk) ?? 0) + Number(d.cash_collected_upfront || 0));
+    for (const [date, volume] of whopByDay) {
+      const wk = isoDay(startOfWeekMon(new Date(date)));
+      if (weeks.has(wk)) weeks.set(wk, (weeks.get(wk) ?? 0) + volume);
     }
-    return [...weeks.entries()].map(([wk, cash]) => ({ week: format(new Date(wk), "MMM d"), cash }));
+    return [...weeks.entries()].map(([wk, cash]) => ({ week: format(new Date(wk), "MMM d"), cash: Math.round(cash) }));
   })();
 
+  const whopMtd = [...whopByDay.entries()]
+    .filter(([date]) => date >= monthStart)
+    .reduce((s, [, v]) => s + v, 0);
+
+  // Leads per day from both CRMs
+  const mochiLeadsByDay = new Map((mochi.data?.funnel ?? []).map((f) => [f.day, f.new_leads]));
+  const closeLeadsByDay = new Map((closeLeads.data?.daily ?? []).map((d) => [d.date, d.count]));
+
   const outputDaily = (() => {
-    const days = new Map<string, { dials: number; dms: number }>();
-    for (let i = 13; i >= 0; i--) days.set(iso(subDays(today, i)), { dials: 0, dms: 0 });
+    const days = new Map<string, { dials: number; dms: number; leads: number }>();
+    for (let i = 13; i >= 0; i--) days.set(iso(subDays(today, i)), { dials: 0, dms: 0, leads: 0 });
     for (const e of portal.data?.eods ?? []) {
       const row = days.get(e.report_date);
       if (row) { row.dials += e.dials ?? 0; row.dms += e.dms_sent ?? 0; }
     }
+    for (const [d, row] of days) row.leads = (mochiLeadsByDay.get(d) ?? 0) + (closeLeadsByDay.get(d) ?? 0);
     return [...days.entries()].map(([d, v]) => ({ day: format(new Date(d), "d MMM"), ...v }));
   })();
 
@@ -101,46 +121,60 @@ export function TheRoomInner() {
     .filter((s) => s.lead_count > 0)
     .map((s) => ({ name: s.source.toLowerCase(), leads: s.lead_count }));
 
-  const cashMtd = (portal.data?.deals ?? [])
-    .filter((d) => d.deal_date >= monthStart)
-    .reduce((s, d) => s + Number(d.cash_collected_upfront || 0), 0);
-
   const contentThisCycle = contentWeekly.slice(-2).reduce((s, w) => s + w.posts, 0);
+  const totalLeads30 = (mochi.data?.totals.newLeads ?? 0) + (closeLeads.data?.total ?? 0);
+  const successRate = portal.data && portal.data.studentCount > 0
+    ? Math.round((portal.data.landedCount / portal.data.studentCount) * 100)
+    : null;
 
   return (
     <div className="space-y-4">
       {/* ── The hearth ──────────────────────────────────────────────── */}
       <div className="grid gap-4 lg:grid-cols-3">
-        <div className="card-surface overflow-hidden relative lg:col-span-2 min-h-[170px]">
-          <DitherFireplace className="absolute inset-0" />
-          <div className="relative p-5 flex flex-col justify-between h-full pointer-events-none">
+        <div className="card-surface overflow-hidden relative lg:col-span-2 min-h-[190px]">
+          {/* Fire stays in the lower half so the copy never sits in the flames */}
+          <DitherFireplace className="absolute inset-x-0 bottom-0 h-[55%]" />
+          <div className="relative p-5 flex items-start justify-between pointer-events-none">
             <div>
               <div className="text-[13px] font-medium text-foreground">The hearth</div>
               <div className="text-[11px] text-muted-foreground">Everything the company did, in one warm place.</div>
             </div>
-            <div className="text-[11px] text-muted-foreground font-mono">
-              {format(today, "EEEE, MMM d")} · {portal.data?.studentCount ?? "…"} students
+            <div className="text-[11px] text-muted-foreground font-mono text-right">
+              {format(today, "EEEE, MMM d")}
             </div>
           </div>
         </div>
 
         <div className="card-surface p-5 space-y-4">
-          <RoomStat label="Cash collected this month">
-            <BlurMoney>{cashMtd > 0 ? money(cashMtd) : "—"}</BlurMoney>
+          <RoomStat label="Cash collected this month · Whop">
+            <BlurMoney>{payments.data?.connected ? money(Math.round(whopMtd)) : "…"}</BlurMoney>
           </RoomStat>
-          <RoomStat label="IG leads · 30 days">{mochi.data ? mochi.data.totals.newLeads.toLocaleString() : "…"}</RoomStat>
+          <RoomStat label="Whop net · 30 days">
+            <BlurMoney>{payments.data?.net30 != null ? money(Math.round(payments.data.net30)) : "—"}</BlurMoney>
+          </RoomStat>
+          <RoomStat label="Leads · 30 days · IG + Close">
+            {mochi.data || closeLeads.data ? totalLeads30.toLocaleString() : "…"}
+          </RoomStat>
           <RoomStat label="Content posted · this cycle">{portal.data ? contentThisCycle : "…"}</RoomStat>
-          {payments.data?.netRevenue != null && (
-            <RoomStat label="Whop net · 30 days">
-              <BlurMoney>{money(payments.data.netRevenue)}</BlurMoney>
-            </RoomStat>
-          )}
+        </div>
+      </div>
+
+      {/* ── Students ────────────────────────────────────────────────── */}
+      <div className="card-surface px-5 py-4 flex flex-wrap items-center gap-x-10 gap-y-3">
+        <RoomStat label="Students">{portal.data?.studentCount ?? "…"}</RoomStat>
+        <RoomStat label="Landed roles">{portal.data?.landedCount ?? "…"}</RoomStat>
+        <RoomStat label="Success rate">{successRate != null ? `${successRate}%` : "—"}</RoomStat>
+        <div className="flex-1 min-w-[140px] h-2 rounded-full bg-muted overflow-hidden">
+          <div
+            className="h-full bg-success motion-safe:transition-[width] duration-500 ease-(--ease-out)"
+            style={{ width: `${successRate ?? 0}%` }}
+          />
         </div>
       </div>
 
       {/* ── The charts ──────────────────────────────────────────────── */}
       <div className="grid gap-4 md:grid-cols-2">
-        <RoomChart title="Cash collected" sub="weekly · last 8 weeks">
+        <RoomChart title="Cash collected" sub="weekly · last 8 weeks · Whop">
           <BarChart data={cashWeekly} config={{ cash: { label: "Cash", color: "green" } }}>
             <XAxis dataKey="week" maxTicks={4} />
             <Tooltip labelKey="week" />
@@ -150,7 +184,7 @@ export function TheRoomInner() {
 
         <RoomChart title="Instagram leads" sub="daily · last 30 days · Mochi">
           <AreaChart
-            data={igDaily.length ? igDaily : [{ day: "", leads: 0, booked: 0 }]}
+            data={igDaily}
             config={{ leads: { label: "New leads", color: "green" }, booked: { label: "Booked", color: "blue" } }}
           >
             <XAxis dataKey="day" maxTicks={5} />
@@ -160,16 +194,21 @@ export function TheRoomInner() {
           </AreaChart>
         </RoomChart>
 
-        <RoomChart title="Team output" sub="daily dials & DMs · last 14 days">
+        <RoomChart title="Team output" sub="daily · dials, DMs & leads (IG + Close) · last 14 days">
           <AreaChart
             data={outputDaily}
-            config={{ dials: { label: "Dials", color: "blue" }, dms: { label: "DMs", color: "purple" } }}
+            config={{
+              dials: { label: "Dials", color: "blue" },
+              dms: { label: "DMs", color: "purple" },
+              leads: { label: "Leads", color: "green" },
+            }}
           >
             <XAxis dataKey="day" maxTicks={5} />
             <Legend />
             <Tooltip labelKey="day" />
             <Area dataKey="dials" variant="gradient" />
             <Area dataKey="dms" variant="hatched" />
+            <Area dataKey="leads" variant="dotted" />
           </AreaChart>
         </RoomChart>
 

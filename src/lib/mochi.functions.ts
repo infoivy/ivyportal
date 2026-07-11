@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 /**
  * Mochi (themochi.app) Instagram CRM integration.
@@ -30,8 +31,11 @@ async function requireFounderOrAdmin(context: Ctx) {
   if (!admin && !founder) throw new Error("Forbidden: admin or founder only");
 }
 
-async function readCreds(context: Ctx) {
-  const { data } = await context.supabase
+/* Tokens are read/written with the service-role client: callers (setters
+   included) never see the credentials, only derived numbers — and the RLS
+   admin-only policy on service_credentials stays intact for direct access. */
+async function readCreds(_context: Ctx) {
+  const { data } = await supabaseAdmin
     .from("service_credentials")
     .select("key, value")
     .in("key", Object.values(KEYS));
@@ -57,7 +61,7 @@ async function saveTokens(context: Ctx, tokens: { access_token: string; refresh_
       ? [{ key: KEYS.refresh, value: tokens.refresh_token, label: "Mochi refresh token", updated_by: context.userId }]
       : []),
   ];
-  const { error } = await context.supabase.from("service_credentials").upsert(rows, { onConflict: "key" });
+  const { error } = await supabaseAdmin.from("service_credentials").upsert(rows, { onConflict: "key" });
   if (error) throw new Error(`Failed to persist Mochi tokens: ${error.message}`);
 }
 
@@ -186,32 +190,112 @@ export const getMochiDashboard = createServerFn({ method: "GET" })
 
 export type MochiPayments = {
   connected: boolean;
-  netRevenue: number | null;
-  grossRevenue: number | null;
-  transactionCount: number | null;
+  /** Net revenue ("you keep") over the last 30 days. */
+  net30: number | null;
+  /** Gross volume over the last 30 days. */
+  gross30: number | null;
+  paymentsCount30: number | null;
+  /** Daily gross volume over the last 90 days — feeds the weekly cash bars. */
+  series: { date: string; volume: number; count: number }[];
 };
 
-/** Provider-synced payment KPIs (Whop, Stripe, …) via Mochi. Founder/admin only. */
+type PaymentOverview = {
+  net_revenue?: string;
+  you_keep?: string;
+  gross_volume?: string;
+  payments_count?: number;
+  gross_volume_series?: { date: string; volume: string; count: number }[];
+};
+
+/** Provider-synced payment data (Whop, Stripe, …) via Mochi. Founder/admin only. */
 export const getMochiPayments = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { period?: MochiPeriod }) => ({
-    period: (["today", "last_7_days", "last_30_days"].includes(input?.period ?? "") ? input.period : "last_30_days") as MochiPeriod,
-  }))
-  .handler(async ({ context, data }): Promise<MochiPayments> => {
+  .handler(async ({ context }): Promise<MochiPayments> => {
     const ctx = context as Ctx;
     await requireFounderOrAdmin(ctx);
+    const empty: MochiPayments = { connected: false, net30: null, gross30: null, paymentsCount30: null, series: [] };
     const creds = await readCreds(ctx);
-    if (!creds.access) return { connected: false, netRevenue: null, grossRevenue: null, transactionCount: null };
+    if (!creds.access) return empty;
     try {
-      const pay = await callTool<Record<string, number>>(ctx, "get_payment_overview", { time_period: data.period });
+      const [p30, p90] = await Promise.all([
+        callTool<PaymentOverview>(ctx, "get_payment_overview", { time_period: "last_30_days" }),
+        callTool<PaymentOverview>(ctx, "get_payment_overview", { time_period: "last_90_days" }),
+      ]);
       return {
         connected: true,
-        netRevenue: pay.net_revenue ?? null,
-        grossRevenue: pay.gross_revenue ?? null,
-        transactionCount: pay.transaction_count ?? pay.transactions ?? null,
+        net30: p30.you_keep != null ? Number(p30.you_keep) : p30.net_revenue != null ? Number(p30.net_revenue) : null,
+        gross30: p30.gross_volume != null ? Number(p30.gross_volume) : null,
+        paymentsCount30: p30.payments_count ?? null,
+        series: (p90.gross_volume_series ?? []).map((s) => ({ date: s.date, volume: Number(s.volume), count: s.count })),
       };
     } catch {
       // Payment provider not linked inside Mochi yet — not an error state.
-      return { connected: true, netRevenue: null, grossRevenue: null, transactionCount: null };
+      return { ...empty, connected: true };
+    }
+  });
+
+export type MochiEodReference = {
+  available: boolean;
+  /** "personal" when the signed-in user matched a Mochi member, else "team". */
+  scope: "personal" | "team";
+  memberName: string | null;
+  dmsOut: number | null;
+  newLeads: number | null;
+  callsBooked: number | null;
+  activeConvos: number | null;
+};
+
+/**
+ * Today's Mochi numbers for the EOD form — reference only, never auto-writes.
+ * Matches the signed-in user to a Mochi member by email; when unmatched,
+ * returns team-wide numbers so the setter still gets context.
+ */
+export const getMochiEodReference = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<MochiEodReference> => {
+    const ctx = context as Ctx;
+    const none: MochiEodReference = {
+      available: false, scope: "team", memberName: null,
+      dmsOut: null, newLeads: null, callsBooked: null, activeConvos: null,
+    };
+    const creds = await readCreds(ctx);
+    if (!creds.access) return none;
+
+    const { data: userRes } = await ctx.supabase.auth.getUser();
+    const email = userRes?.user?.email?.toLowerCase() ?? null;
+
+    try {
+      const team = await callTool<{ members: { email: string; first_name: string; last_name: string; is_active: boolean }[] }>(
+        ctx, "get_team_members",
+      );
+      const member = email
+        ? (team.members ?? []).find((m) => m.is_active && m.email?.toLowerCase() === email)
+        : undefined;
+      const memberName = member ? `${member.first_name} ${member.last_name}`.trim() : null;
+
+      const [metrics, msgs] = await Promise.all([
+        callTool<{ new_leads?: number; calls_booked?: number }>(
+          ctx, "get_setter_metrics", memberName ? { time_period: "today", member_name: memberName } : { time_period: "today" },
+        ),
+        callTool<{ outbound_messages?: number; active_conversations?: number; messages_by_member?: { member_name?: string; name?: string; outbound?: number; outbound_messages?: number }[] }>(
+          ctx, "get_message_counts", { time_period: "today" },
+        ),
+      ]);
+
+      const memberMsgs = memberName
+        ? (msgs.messages_by_member ?? []).find((m) => (m.member_name ?? m.name ?? "").trim() === memberName)
+        : undefined;
+
+      return {
+        available: true,
+        scope: memberName ? "personal" : "team",
+        memberName,
+        dmsOut: memberName ? (memberMsgs?.outbound ?? memberMsgs?.outbound_messages ?? null) : (msgs.outbound_messages ?? null),
+        newLeads: metrics.new_leads ?? null,
+        callsBooked: metrics.calls_booked ?? null,
+        activeConvos: msgs.active_conversations ?? null,
+      };
+    } catch {
+      return none;
     }
   });
