@@ -110,7 +110,7 @@ export function StudentPaymentSetup({
         student_name: student.full_name,
         closer_id: closerId,
         setter_id: setterId || null,
-        program_type: pkg === "one_on_one" ? "1:1 Pathway" : "Group Coaching",
+        program_type: pkg === "one_on_one" ? "1:1 Pathway" : "Group Expertise Pathway",
         total_value: tv,
         cash_collected_upfront: cashUpfront,
         payment_type: paymentType,
@@ -203,8 +203,8 @@ export function StudentPaymentSetup({
               value={pkg}
               onChange={(v) => setPkg(v as typeof pkg)}
               options={[
-                { value: "one_on_one", label: "1:1 Pathway" },
-                { value: "group_only", label: "Group Coaching" },
+                { value: "one_on_one", label: "1:1 Pathway — 10 coaching calls" },
+                { value: "group_only", label: "Group Expertise Pathway" },
               ]}
               className="h-9 text-sm"
             />

@@ -186,17 +186,47 @@ ${img("log-a-close", "The Log a close dialog on the Revenue page")}
 1. Click **Revenue** in the sidebar, then the green **+ Log a close** button.
 2. **Student** — pick an existing student, or choose **New student** and type their name; the student record is created for you.
 3. **Setter (optional)** — attribute the setter who booked the call. This pays them their commission, so don't skip it.
-4. Fill in **Program type, Total value, Cash upfront**, and the **Payment type**:
+4. **Pathway** — pick what they bought. This matters:
+   - **1:1 Pathway** — the student gets **10 one-on-one coaching calls** (their call allowance is set automatically).
+   - **Group Expertise Pathway** — **group coaching only, no 1:1 calls**. Their 1:1 allowance is set to zero, so they never appear in the "needs a 1:1" radar.
+5. Fill in **Total value ($)** and **Cash upfront ($)**, and pick the **Payment type**:
    - **PIF** — paid in full today.
-   - **Deposit** — partial cash now, rest on a plan.
+   - **Deposit** — partial cash now, the rest on a plan.
    - **Split** — installments from day one.
-5. Add the **Contract URL** and **Fathom URL** if you have them, then press **Log close**.
+6. Add the **Contract URL** and **Fathom URL** if you have them, then press **Log close**.
 
-That one entry drives everything: the Revenue dashboard, the Installments tracker, the student's record, and your commission — no double entry anywhere.
+That one entry drives everything: the Revenue dashboard, the Installments tracker, the student's record and coaching allowance, and your commission — no double entry anywhere.
 
 **Commission rules:** you earn **10%** on a close. If **you yourself** also set the call (you = setter **and** closer), it's **15% total** instead — not 10% + setter base.
 
-## 3. Payment links — Closer Resources
+## 3. Installment plans — even split or custom schedule
+
+${img("log-a-close-schedule", "Custom installment schedule inside Log a close — $5,000 as $2,000 + $2,000 + $1,000")}
+
+When the payment type is **Deposit** or **Split**, the plan builder appears in the dialog. Leave **"Create installment plan for the remaining balance"** ticked and choose a schedule:
+
+- **Even split** — set the number of payments, the first due date, and the frequency (monthly / biweekly / weekly). The per-payment amount is calculated for you.
+- **Custom schedule** — for deals that don't split evenly. Example: a **$5,000** close paid as **$2,000 + $2,000 + $1,000** over three months — add a row per payment with its own amount, due date, and (optionally) payment method. The counter at the bottom right must read **"matches remaining"** in green before you can save; if it shows *unallocated* or *over*, your rows don't add up to the remaining balance.
+
+Every payment lands in **Revenue → Installments** with its own due date, and the follow-up queue chases them automatically.
+
+## 4. Student signed themselves up? Close them from their page
+
+${img("student-setup-payment", "A self-signed-up student — no payment on file yet, with the Set up payment button")}
+
+Some students create their portal account **before** any money changes hands (they sign up, an admin approves them as a student). They exist on the **Students** page but have **no payment on file**. When you close them:
+
+1. Click **Students** in the sidebar and open their name (or ⌘K → type it).
+2. Their page shows a **Set up payment** button — press it.
+
+${img("payment-setup-dialog", "The Set up payment dialog — same pathway, PIF/installments, and custom schedule options")}
+
+3. The dialog is the same flow as Log a close: **pathway** (1:1 vs Group Expertise), total value, **PIF or installments**, and the same **even/custom schedule** builder.
+4. Press **Create deal & plan**. The deal, the installment schedule, and your commission are recorded exactly as if you'd used Log a close — Revenue and Installments update automatically.
+
+Rule of thumb: **already in the Students list → close from their page. Not in the list → Log a close with "New student".** Never do both — that would double-log the deal.
+
+## 5. Payment links — Closer Resources
 
 ${img("closer-resources", "Closer Resources — payment links by gateway")}
 
@@ -206,7 +236,7 @@ Click **Closer Resources**. Every live payment link, grouped by gateway (Whop, W
 - **Copy message** copies a ready-to-send message with the link inside — paste it straight into the chat while on the call.
 - The section list on the left follows you as you scroll; click a gateway to jump.
 
-## 4. Chasing installments
+## 6. Chasing installments
 
 ${img("installments", "Installments tab — follow-up queue")}
 
@@ -215,12 +245,12 @@ Click **Revenue → Installments** tab:
 - The cards at the top show what's **overdue** and what's **due in 1–3 days**.
 - The **Follow-up queue** lists exactly who to message today. After you reach out, press **Followed up**; when money lands, press **Mark paid**.
 
-## 5. Fixing and finding deals
+## 7. Fixing and finding deals
 
 - Made a typo in a deal? Open **Revenue**, find the deal in the table, click it, correct, save. Deals are operational records — fix mistakes the day you spot them, never "adjust" history to change a number.
 - The **Payouts** tab shows commission per person for the period — that's where your 10% / 15% math is visible.
 
-## 6. Everything else you'll touch
+## 8. Everything else you'll touch
 
 - **Calendar** — connect your Google Calendar once (**Connect Google Calendar** button). Every closer's calendar shows in one grid, in your timezone; Calendly sets appear in the Set reminders list.
 - **Sales** — the funnel trends and Closed Rate for any date range; your submission status is on this page too.
@@ -261,6 +291,10 @@ Click **CSM** in the sidebar.
 
 **d) Assign ad-hoc action items.** In the panel, type a task in **New action item…**, optionally pick a due date, press **Add**. The student sees it at the top of their own portal and ticks it off there — you'll see it update here.
 
+${img("action-item-new", "Adding an ad-hoc action item from the Action Items hub — multiple students or team members at once")}
+
+For bigger sweeps, use **Action Items → + Add ad-hoc item**: pick **several students at once** (or team members — they'll see it at the top of their dashboard with your name on it), one task, one due date, done.
+
 **e) Log CSM notes.** Bottom of the panel: write risk signals, follow-ups, or progress notes, tag them (e.g. \`#progress\`, \`#check-in\`), press **Save note**. Notes are visible to coaches and admins on the student's record.
 
 ## 2. The radar — Student Success
@@ -298,8 +332,10 @@ When a student is angry, stuck beyond your reach, or talking about refunds:
 
 ## 6. Everything else you'll touch
 
+${img("student-detail", "A student's full record — timeline, EODs, milestones, installments, CSM notes")}
+
 - **1-on-1 Calls** — read the coach's call log for any student: ratings, notes, and the action items they set. Use it before check-ins so you never ask a question the coach already answered.
-- **Students** — the full list with journey phases (Onboarding → 1:1 Coaching → Applying → Offer Won → Testimonial). Open a student for their timeline, EODs, milestones, and your CSM notes tab.
+- **Students** — the full list with journey phases (Onboarding → 1:1 Coaching → Applying → Offer Won → Testimonial). Open a student for their timeline, EODs, milestones, and your CSM notes tab (pictured above).
 - **Calendar** — the team calendar in your timezone; connect your Google Calendar with one click if you take calls.
 - **Notes** — personal scratchpad; Team tab for shared notes.
 - **Profile** — display name + avatar.
@@ -356,7 +392,11 @@ Click **Students**. Every student sits in a journey phase:
 
 ## 3. Your capacity — Coaches tab
 
+${img("coaches-tab", "The Coaches capacity view — load, rating, and stale students")}
+
 On the 1-on-1 Calls page, switch to the **Coaches** tab: active roster count, average rating, calls done, and a list of your students who are **>14 days since their last 1:1** — clear them first each week.
+
+One thing to know about pathways: **Group Expertise Pathway** students have a 1:1 allowance of **zero** — they're coached in group calls only and will never appear in your stale-1:1 list. **1:1 Pathway** students get **10 one-on-one calls**; their remaining allowance shows on their record.
 
 ## 4. Your own EOD
 
@@ -365,6 +405,8 @@ You file one too — 7 days a week. **EOD Reports** in the sidebar: check-ins do
 ${EOD_POLICY}
 
 ## 5. Milestones and the student's record
+
+${img("student-detail", "A student's record — timeline, EODs, milestones, installments, notes")}
 
 Open any student (from **Students** or ⌘K) and you get the full picture in tabs: **timeline** of every touch, their daily **EODs** (roleplays + applications — the same numbers the at-risk radar reads), **milestones** to tick off as they hit them, **installments**, and **CSM notes**. Tick milestones the moment they happen — first win especially, since it feeds the testimonial pipeline.
 

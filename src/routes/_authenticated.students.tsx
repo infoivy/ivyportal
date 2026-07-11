@@ -724,7 +724,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
           student_name: fullName.trim(),
           closer_id: closerId,
           setter_id: setterId || null,
-          program_type: pkg === "one_on_one" ? "1:1 Pathway" : "Group Coaching",
+          program_type: pkg === "one_on_one" ? "1:1 Pathway" : "Group Expertise Pathway",
           total_value: tv,
           cash_collected_upfront: cashUpfront,
           payment_type: paymentType as any,
@@ -853,7 +853,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
               onClick={() => setPkg("group_only")}
               className={`text-left p-3 rounded-sm border transition ${pkg === "group_only" ? "border-border bg-muted" : "border-[var(--border)] hover:border-[#2a3140]"}`}
             >
-              <div className="text-xs font-medium">Group Coaching Only</div>
+              <div className="text-xs font-medium">Group Expertise Pathway</div>
               <div className="text-[10px] text-muted-foreground mt-0.5">Group calls only, no 1:1s</div>
             </button>
           </div>

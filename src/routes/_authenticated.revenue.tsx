@@ -627,8 +627,19 @@ function LogDealDialog({
   const [notes, setNotes] = useState("");
   const [autoCreateStudent, setAutoCreateStudent] = useState(true);
   const [autoCreateInstallment, setAutoCreateInstallment] = useState(true);
-  const [installments, setInstallments] = useState<string>("3");
   const [saving, setSaving] = useState(false);
+
+  // Installment schedule builder (mirrors StudentPaymentSetup)
+  type ScheduleRow = { id: string; amount: string; due_date: string; payment_method: string };
+  const nextMonth = () => { const d = new Date(); d.setMonth(d.getMonth() + 1); return d.toISOString().slice(0, 10); };
+  const [scheduleMode, setScheduleMode] = useState<"even" | "custom">("even");
+  const [numInstallments, setNumInstallments] = useState<string>("3");
+  const [firstDueDate, setFirstDueDate] = useState<string>(nextMonth);
+  const [frequency, setFrequency] = useState<"monthly" | "biweekly" | "weekly">("monthly");
+  const [customRows, setCustomRows] = useState<ScheduleRow[]>([]);
+  const addCustomRow = () => setCustomRows(rs => [...rs, { id: crypto.randomUUID(), amount: "", due_date: nextMonth(), payment_method: "" }]);
+  const removeCustomRow = (id: string) => setCustomRows(rs => rs.length > 1 ? rs.filter(r => r.id !== id) : rs);
+  const updateCustomRow = (id: string, patch: Partial<ScheduleRow>) => setCustomRows(rs => rs.map(r => r.id === id ? { ...r, ...patch } : r));
 
   useEffect(() => {
     if (!open) return;
@@ -663,9 +674,15 @@ function LogDealDialog({
       setFathomUrl("");
       setNotes("");
       setAutoCreateStudent(true);
-      setAutoCreateInstallment(false);
-      setInstallments("3");
+      setAutoCreateInstallment(true);
+      setScheduleMode("even");
+      setNumInstallments("3");
+      setFirstDueDate(nextMonth());
+      setFrequency("monthly");
+      setCustomRows([{ id: crypto.randomUUID(), amount: "", due_date: nextMonth(), payment_method: "" }]);
+      setProgramType("1:1 Pathway");
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, editing, currentUserId]);
 
   const submit = async () => {
@@ -681,8 +698,21 @@ function LogDealDialog({
     const cu = Number(cashUpfront) || 0;
     if (tv <= 0) return toast.error("Total value must be > 0");
     if (cu > tv) return toast.error("Cash upfront cannot exceed total value");
+    const remaining = Math.max(0, tv - cu);
+    const planWanted = !editing && paymentType !== "pif" && autoCreateInstallment && remaining > 0;
+    const cleanCustom = customRows.filter(r => Number(r.amount) > 0);
+    if (planWanted && scheduleMode === "custom") {
+      if (cleanCustom.length === 0) return toast.error("Add at least one payment row to the schedule");
+      if (cleanCustom.some(r => !r.due_date)) return toast.error("Each payment row needs a due date");
+      const scheduled = cleanCustom.reduce((a, r) => a + Number(r.amount), 0);
+      if (Math.abs(scheduled - remaining) > 0.01) return toast.error(`Schedule ($${scheduled.toLocaleString()}) must match the remaining balance ($${remaining.toLocaleString()})`);
+    }
 
     setSaving(true);
+
+    // Pathway drives the coaching allowance: 1:1 gets ten 1-on-1 calls,
+    // Group Expertise runs on group calls only.
+    const callsAllotted = programType === "1:1 Pathway" ? 10 : 0;
 
     // Optionally create student first
     if (!editing && studentMode === "new" && autoCreateStudent) {
@@ -693,6 +723,8 @@ function LogDealDialog({
           phase: "onboarding",
           status: "active",
           payment_state: paymentType === "pif" ? "paid_in_full" : "installments",
+          calls_included: callsAllotted,
+          calls_allotted: callsAllotted,
         })
         .select("id")
         .single();
@@ -701,6 +733,14 @@ function LogDealDialog({
         return toast.error("Create student: " + error.message);
       }
       finalStudentId = newStu.id;
+    } else if (!editing && finalStudentId) {
+      // Existing student (e.g. signed up themselves): the deal defines their
+      // package and payment state.
+      await supabase.from("students").update({
+        payment_state: paymentType === "pif" ? "paid_in_full" : "installments",
+        calls_included: callsAllotted,
+        calls_allotted: callsAllotted,
+      } as never).eq("id", finalStudentId);
     }
 
     const payload = {
@@ -732,17 +772,16 @@ function LogDealDialog({
       dealId = data.id;
     }
 
-    // Optionally create installment plan
-    if (!editing && paymentType === "split" && autoCreateInstallment && finalStudentId) {
-      const n = Math.max(1, Math.min(24, Number(installments) || 3));
-      const remaining = Math.max(0, tv - cu);
-      const perInstallment = remaining / n;
+    // Installment plan — even split or custom schedule (deposit or split)
+    if (planWanted && finalStudentId) {
+      const n = Math.max(1, Math.min(24, Number(numInstallments) || 3));
       const { data: inst, error: instErr } = await supabase
         .from("installments")
         .insert({
           student_id: finalStudentId,
           student_name: finalStudentName,
           closer_id: closerId,
+          setter_id: setterId || null,
           total_amount: remaining,
           currency: "USD",
           created_by: currentUserId,
@@ -752,19 +791,39 @@ function LogDealDialog({
       if (instErr) {
         toast.error("Installment plan: " + instErr.message);
       } else {
-        const payments = Array.from({ length: n }, (_, i) => {
-          const due = new Date(dealDate + "T00:00:00");
-          due.setMonth(due.getMonth() + i + 1);
-          return {
-            installment_id: inst.id,
-            sequence: i + 1,
-            amount: perInstallment,
-            currency: "USD",
-            due_date: due.toISOString().slice(0, 10),
-            status: "upcoming" as const,
-          };
-        });
-        const { error: payErr } = await supabase.from("installment_payments").insert(payments);
+        let payments: Record<string, unknown>[];
+        if (scheduleMode === "even") {
+          const perInstallment = remaining / n;
+          const start = new Date(firstDueDate + "T00:00:00");
+          payments = Array.from({ length: n }, (_, i) => {
+            const due = new Date(start);
+            if (frequency === "monthly") due.setMonth(start.getMonth() + i);
+            else if (frequency === "biweekly") due.setDate(start.getDate() + i * 14);
+            else due.setDate(start.getDate() + i * 7);
+            return {
+              installment_id: inst.id,
+              sequence: i + 1,
+              amount: perInstallment,
+              currency: "USD",
+              due_date: due.toISOString().slice(0, 10),
+              status: "upcoming" as const,
+            };
+          });
+        } else {
+          payments = cleanCustom
+            .slice()
+            .sort((a, b) => a.due_date.localeCompare(b.due_date))
+            .map((r, i) => ({
+              installment_id: inst.id,
+              sequence: i + 1,
+              amount: Number(r.amount),
+              currency: "USD",
+              due_date: r.due_date,
+              status: "upcoming" as const,
+              payment_method: r.payment_method.trim() || null,
+            }));
+        }
+        const { error: payErr } = await supabase.from("installment_payments").insert(payments as never);
         if (payErr) toast.error("Installment schedule: " + payErr.message);
       }
     }
@@ -849,8 +908,20 @@ function LogDealDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label>Program type</Label>
-            <Input value={programType} onChange={(e) => setProgramType(e.target.value)} placeholder="e.g. Setter Accelerator" />
+            <Label>Pathway</Label>
+            <SelectField
+              value={programType}
+              onChange={setProgramType}
+              options={[
+                { value: "1:1 Pathway", label: "1:1 Pathway — 10 one-on-one coaching calls" },
+                { value: "Group Expertise Pathway", label: "Group Expertise Pathway — group coaching only" },
+                ...(programType && !["1:1 Pathway", "Group Expertise Pathway"].includes(programType)
+                  ? [{ value: programType, label: programType }]
+                  : []),
+              ]}
+              placeholder="— Select pathway —"
+              className="h-9 text-sm"
+            />
           </div>
 
           <div className="grid sm:grid-cols-3 gap-3">
@@ -882,19 +953,104 @@ function LogDealDialog({
               <Label>Deal date</Label>
               <DateField value={dealDate} onChange={setDealDate} clearable={false} className="h-9" />
             </div>
-            {paymentType === "split" && !editing && (
-              <div className="space-y-1.5">
-                <Label># of installments</Label>
-                <Input
-                  type="number"
-                  min="1"
-                  max="24"
-                  value={installments}
-                  onChange={(e) => setInstallments(e.target.value)}
-                />
-              </div>
-            )}
           </div>
+
+          {paymentType !== "pif" && !editing && (
+            <div className="rounded-lg border border-[var(--border)] p-3 space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <label className="flex items-center gap-2 text-sm">
+                  <Checkbox checked={autoCreateInstallment} onCheckedChange={(v) => setAutoCreateInstallment(!!v)} />
+                  Create installment plan for the remaining balance
+                </label>
+                <span className="text-caption text-muted-foreground tabular-nums">
+                  remaining ${Math.max(0, (Number(totalValue) || 0) - (Number(cashUpfront) || 0)).toLocaleString()}
+                </span>
+              </div>
+              {autoCreateInstallment && (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-caption text-muted-foreground">Schedule</Label>
+                      <SelectField
+                        value={scheduleMode}
+                        onChange={(v) => setScheduleMode(v as "even" | "custom")}
+                        options={[
+                          { value: "even", label: "Even split" },
+                          { value: "custom", label: "Custom schedule" },
+                        ]}
+                        className="h-9 text-sm"
+                      />
+                    </div>
+                    {scheduleMode === "even" && (
+                      <div className="space-y-1.5">
+                        <Label className="text-caption text-muted-foreground"># payments</Label>
+                        <Input type="number" min="1" max="24" value={numInstallments} onChange={(e) => setNumInstallments(e.target.value)} className="h-9" />
+                      </div>
+                    )}
+                  </div>
+                  {scheduleMode === "even" ? (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-caption text-muted-foreground">First due</Label>
+                        <DateField value={firstDueDate} onChange={setFirstDueDate} clearable={false} className="h-9" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-caption text-muted-foreground">Frequency</Label>
+                        <SelectField
+                          value={frequency}
+                          onChange={(v) => setFrequency(v as "monthly" | "biweekly" | "weekly")}
+                          options={[
+                            { value: "monthly", label: "Monthly" },
+                            { value: "biweekly", label: "Biweekly" },
+                            { value: "weekly", label: "Weekly" },
+                          ]}
+                          className="h-9 text-sm"
+                        />
+                      </div>
+                      {(() => {
+                        const rem = Math.max(0, (Number(totalValue) || 0) - (Number(cashUpfront) || 0));
+                        const nn = Math.max(1, Math.min(24, Number(numInstallments) || 0));
+                        return rem > 0 && nn > 0 ? (
+                          <div className="col-span-2 text-caption text-muted-foreground">
+                            {nn} × <span className="text-foreground font-medium">${(rem / nn).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                          </div>
+                        ) : null;
+                      })()}
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {customRows.map((r, i) => (
+                        <div key={r.id} className="grid grid-cols-12 gap-2 items-center">
+                          <span className="col-span-1 text-caption text-muted-foreground">#{i + 1}</span>
+                          <Input type="number" min="0" step="0.01" value={r.amount} onChange={(e) => updateCustomRow(r.id, { amount: e.target.value })} placeholder="Amount" className="col-span-3 h-9" />
+                          <DateField value={r.due_date} onChange={(v) => updateCustomRow(r.id, { due_date: v })} clearable={false} className="col-span-4 h-9" />
+                          <Input value={r.payment_method} onChange={(e) => updateCustomRow(r.id, { payment_method: e.target.value })} placeholder="Method" className="col-span-3 h-9" />
+                          <button onClick={() => removeCustomRow(r.id)} className="col-span-1 p-1 rounded hover:bg-danger-bg text-danger-fg justify-self-end">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                      {(() => {
+                        const rem = Math.max(0, (Number(totalValue) || 0) - (Number(cashUpfront) || 0));
+                        const scheduled = customRows.reduce((a, r) => a + (Number(r.amount) || 0), 0);
+                        const delta = rem - scheduled;
+                        return (
+                          <div className="flex items-center justify-between">
+                            <Button variant="outline" size="sm" onClick={addCustomRow}>
+                              <Plus className="h-3.5 w-3.5 mr-1" /> Add row
+                            </Button>
+                            <span className={`text-caption tabular-nums ${Math.abs(delta) < 0.01 ? "text-success-fg" : "text-warning-fg"}`}>
+                              scheduled ${scheduled.toLocaleString()} · {Math.abs(delta) < 0.01 ? "matches remaining" : delta > 0 ? `$${delta.toLocaleString()} unallocated` : `$${Math.abs(delta).toLocaleString()} over`}
+                            </span>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
 
           <div className="grid sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
@@ -921,15 +1077,6 @@ function LogDealDialog({
                     onCheckedChange={(v) => setAutoCreateStudent(!!v)}
                   />
                   Create student record (goes into onboarding)
-                </label>
-              )}
-              {paymentType === "split" && (
-                <label className="flex items-center gap-2 text-sm">
-                  <Checkbox
-                    checked={autoCreateInstallment}
-                    onCheckedChange={(v) => setAutoCreateInstallment(!!v)}
-                  />
-                  Auto-create installment plan (monthly, starting next month)
                 </label>
               )}
             </div>
