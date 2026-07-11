@@ -16,8 +16,8 @@ export const CONFIGURABLE_PAGES: NavPage[] = [
   { title: "Dashboard", url: "/dashboard", roles: ["admin", "founder", "closer", "setter", "coach"] },
   { title: "EOD Reports", url: "/eods", locked: true }, // the EOD policy depends on it
   { title: "Action Items", url: "/action-items" },
-  { title: "Sales", url: "/sales", roles: ["admin", "closer", "setter"] },
-  { title: "Revenue", url: "/revenue", roles: ["admin", "closer", "setter", "coach"] },
+  { title: "Sales", url: "/sales", roles: ["admin", "closer"] },
+  { title: "Revenue", url: "/revenue", roles: ["admin", "closer", "coach"] },
   { title: "Closer Resources", url: "/closer-resources", roles: ["admin", "closer"] },
   { title: "Training", url: "/training", roles: ["admin", "founder", "closer", "setter", "coach"] },
   { title: "Calendar", url: "/calendar" },

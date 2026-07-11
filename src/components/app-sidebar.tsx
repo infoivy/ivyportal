@@ -29,8 +29,8 @@ const todayItems: Item[] = [
 ];
 
 const salesItems: Item[] = [
-  { title: "Sales",            url: "/sales",            icon: Building2,     roles: ["admin", "closer", "setter"] },
-  { title: "Revenue",          url: "/revenue",          icon: TrendingUp,    roles: ["admin", "closer", "setter", "coach"] },
+  { title: "Sales",            url: "/sales",            icon: Building2,     roles: ["admin", "closer"] },
+  { title: "Revenue",          url: "/revenue",          icon: TrendingUp,    roles: ["admin", "closer", "coach"] },
   { title: "Closer Resources", url: "/closer-resources", icon: DollarSign,    roles: ["admin", "closer"] },
   { title: "Training",         url: "/training",         icon: GraduationCap, roles: ["admin", "founder", "closer", "setter", "coach"] },
   { title: "Calendar",         url: "/calendar",         icon: Calendar },

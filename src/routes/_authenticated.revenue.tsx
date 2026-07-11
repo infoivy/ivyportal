@@ -49,6 +49,19 @@ type Student = { id: string; full_name: string };
 type PaymentType = Deal["payment_type"];
 
 function RevenuePage() {
+  const { roles } = useAuth();
+  const canView = roles.includes("admin") || roles.includes("closer") || roles.includes("coach") || roles.includes("founder");
+  if (!canView) {
+    return (
+      <div className="p-8 max-w-2xl mx-auto">
+        <div className="card-surface p-8 text-center text-[13px] text-muted-foreground">Admin, closer, or coach access required.</div>
+      </div>
+    );
+  }
+  return <RevenueInner />;
+}
+
+function RevenueInner() {
   const { user, roles } = useAuth();
   const isAdmin = roles.includes("admin");
   const canLog = isAdmin || roles.includes("closer") || roles.includes("coach");

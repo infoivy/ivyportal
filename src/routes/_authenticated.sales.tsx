@@ -44,12 +44,12 @@ function kpiHit(eod: EODRow, setterType: "phone" | "dm" | "full_cycle" | null) {
 
 function Sales() {
   const { roles } = useAuth();
-  const isAllowed = roles.includes("admin") || roles.includes("closer") || roles.includes("setter");
+  const isAllowed = roles.includes("admin") || roles.includes("closer");
   if (!isAllowed) {
     return (
       <div className="p-8 max-w-2xl mx-auto">
         <div className="card-surface p-8 text-center text-[13px] text-muted-foreground">
-          Admin, closer, or setter access required.
+          Admin or closer access required.
         </div>
       </div>
     );
@@ -376,15 +376,15 @@ function TrendsTab() {
   }, [rows]);
 
   const trend = useMemo(() => {
-    const map: Record<string, { dms: number; convos: number; booked: number; shows: number }> = {};
-    const out: { key: string; label: string; dms: number; convos: number; booked: number; shows: number; prev_dms: number; prev_convos: number; prev_booked: number; prev_shows: number }[] = [];
+    const map: Record<string, { dms: number; convos: number; booked: number; shows: number; closes: number }> = {};
+    const out: { key: string; label: string; dms: number; convos: number; booked: number; shows: number; closes: number; prev_dms: number; prev_convos: number; prev_booked: number; prev_shows: number }[] = [];
     for (let i = days - 1; i >= 0; i--) {
       const d = subDays(new Date(), i);
       const key = format(d, "yyyy-MM-dd");
-      map[key] = { dms: 0, convos: 0, booked: 0, shows: 0 };
-      out.push({ key, label: format(d, days <= 7 ? "EEE" : "MMM d"), dms: 0, convos: 0, booked: 0, shows: 0, prev_dms: 0, prev_convos: 0, prev_booked: 0, prev_shows: 0 });
+      map[key] = { dms: 0, convos: 0, booked: 0, shows: 0, closes: 0 };
+      out.push({ key, label: format(d, days <= 7 ? "EEE" : "MMM d"), dms: 0, convos: 0, booked: 0, shows: 0, closes: 0, prev_dms: 0, prev_convos: 0, prev_booked: 0, prev_shows: 0 });
     }
-    for (const r of rows) { const b = map[r.report_date]; if (!b) continue; b.dms += r.dms_sent; b.convos += r.convos_started; b.booked += r.calls_booked; b.shows += r.shows; }
+    for (const r of rows) { const b = map[r.report_date]; if (!b) continue; b.dms += r.dms_sent; b.convos += r.convos_started; b.booked += r.calls_booked; b.shows += r.shows; b.closes += r.closes ?? 0; }
     if (compare && prevRows.length > 0) {
       const prevFrom = new Date(dateRange.from); prevFrom.setDate(prevFrom.getDate() - days);
       const prevMap: Record<string, { dms: number; convos: number; booked: number; shows: number }> = {};
@@ -432,6 +432,7 @@ function TrendsTab() {
     { key: "convos", label: "Convos", color: "#6366F1" },
     { key: "booked", label: "Booked", color: "#22C55E", strokeWidth: 2 },
     { key: "shows",  label: "Shows",  color: "#F59E0B" },
+    { key: "closes", label: "Closes", color: "#A855F7" },
   ], [compare]);
 
   return (

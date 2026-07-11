@@ -289,6 +289,7 @@ function AdminConsole() {
         <CommissionRatesCard rows={rateRows} reload={() => pageQ.refetch()} />
       </div>
 
+
       {/* Access defaults — per-role page visibility + money blur */}
       <div id="access">
         <AccessDefaultsCard />
@@ -420,47 +421,6 @@ function AdminConsole() {
         </div>
       </Panel>
 
-      {/* Audit log */}
-      <Panel
-        title="Audit log"
-        subtitle="Last 100 events on roles, commission rates, and deals"
-        icon={<History className="h-3.5 w-3.5 text-muted-foreground" />}
-      >
-        {auditLog.length === 0 ? (
-          <div className="py-4 text-center text-xs text-muted-foreground">No audit events yet.</div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b border-border text-muted-foreground text-[11px]">
-                  <th className="text-left py-2 pr-3">Time</th>
-                  <th className="text-left py-2 pr-3">Action</th>
-                  <th className="text-left py-2 pr-3">Table</th>
-                  <th className="text-left py-2">Record</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-accent">
-                {auditLog.map(e => (
-                  <tr key={e.id} className="hover:bg-accent/50">
-                    <td className="py-2 pr-3 font-mono text-muted-foreground whitespace-nowrap">{new Date(e.created_at).toISOString().slice(0, 19).replace("T", " ")}</td>
-                    <td className="py-2 pr-3">
-                      <span className={`px-1.5 py-0.5 rounded-sm border text-[10px] uppercase ${
-                        e.action === "INSERT" ? "border-success/25 bg-success-bg text-success-fg"
-                        : e.action === "DELETE" ? "border-danger/25 bg-danger-bg text-danger-fg"
-                        : "border-warning/25 bg-warning-bg text-warning-fg"
-                      }`}>
-                        {e.action}
-                      </span>
-                    </td>
-                    <td className="py-2 pr-3 text-muted-foreground">{e.table_name}</td>
-                    <td className="py-2 text-muted-foreground font-mono truncate max-w-[120px]">{e.record_id ?? "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Panel>
 
       {/* Data hygiene lists */}
       <div className="grid lg:grid-cols-2 gap-4">
@@ -512,6 +472,48 @@ function AdminConsole() {
             )}
         </Panel>
       </div>
+
+      {/* Audit log */}
+      <Panel
+        title="Audit log"
+        subtitle="Last 100 events on roles, commission rates, and deals"
+        icon={<History className="h-3.5 w-3.5 text-muted-foreground" />}
+      >
+        {auditLog.length === 0 ? (
+          <div className="py-4 text-center text-xs text-muted-foreground">No audit events yet.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-border text-muted-foreground text-[11px]">
+                  <th className="text-left py-2 pr-3">Time</th>
+                  <th className="text-left py-2 pr-3">Action</th>
+                  <th className="text-left py-2 pr-3">Table</th>
+                  <th className="text-left py-2">Record</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-accent">
+                {auditLog.map(e => (
+                  <tr key={e.id} className="hover:bg-accent/50">
+                    <td className="py-2 pr-3 font-mono text-muted-foreground whitespace-nowrap">{new Date(e.created_at).toISOString().slice(0, 19).replace("T", " ")}</td>
+                    <td className="py-2 pr-3">
+                      <span className={`px-1.5 py-0.5 rounded-sm border text-[10px] uppercase ${
+                        e.action === "INSERT" ? "border-success/25 bg-success-bg text-success-fg"
+                        : e.action === "DELETE" ? "border-danger/25 bg-danger-bg text-danger-fg"
+                        : "border-warning/25 bg-warning-bg text-warning-fg"
+                      }`}>
+                        {e.action}
+                      </span>
+                    </td>
+                    <td className="py-2 pr-3 text-muted-foreground">{e.table_name}</td>
+                    <td className="py-2 text-muted-foreground font-mono truncate max-w-[120px]">{e.record_id ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Panel>
     </div>
   );
 }

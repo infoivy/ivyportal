@@ -7,6 +7,7 @@ import { Loader2, DollarSign, TrendingUp, BarChart3, Users, CheckCircle2, AlertT
 import { money, type Deal, startOfWeekMon, isoDay } from "@/lib/revenue";
 import { DeltaChip } from "@/components/ui/delta-chip";
 import { BreakdownBar } from "@/components/ui/breakdown-bar";
+import { ResponsiveContainer, ComposedChart, Area, Line, XAxis, YAxis, Tooltip, ReferenceDot } from "recharts";
 
 
 const isoDate = (d: Date) => d.toISOString().slice(0, 10);
@@ -122,17 +123,8 @@ export function FounderHQInner() {
             </div>
             <div className="text-xs text-muted-foreground">MTD cash · vs last month same day</div>
             {monthlyGoal && (
-              <div className="mt-3 space-y-1">
-                <div className="flex justify-between text-xs">
-                  <span>Goal: {money(monthlyGoal)}</span>
-                  <span className={goalPct! >= 100 ? "text-success-fg" : "text-muted-foreground"}>{goalPct}%</span>
-                </div>
-                <div className="h-2 rounded-full bg-muted overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all ${goalPct! >= 100 ? "bg-success" : goalPct! >= 60 ? "bg-warning" : "bg-danger"}`}
-                    style={{ width: `${Math.min(100, goalPct!)}%` }}
-                  />
-                </div>
+              <div className="mt-3">
+                <GoalPaceChart deals={deals} goal={monthlyGoal} mtdCash={mtdCash} />
               </div>
             )}
             {!monthlyGoal && (
@@ -228,6 +220,77 @@ function FunnelStat({ label, value, suffix = "", color = "text-foreground" }: { 
     <div className="text-center">
       <div className={`text-[20px] font-semibold tabular-nums ${color}`}>{value}{suffix}</div>
       <div className="text-[12px] text-muted-foreground">{label}</div>
+    </div>
+  );
+}
+
+/**
+ * The month as a race: your cumulative cash vs the straight-line pace to the
+ * goal (ghost dashed line). The dot is today; the caption says whether the
+ * month lands ahead or behind at the current run rate.
+ */
+function GoalPaceChart({ deals, goal, mtdCash }: { deals: Deal[]; goal: number; mtdCash: number }) {
+  const now = new Date();
+  const dayOfMonth = now.getDate();
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+
+  const data = useMemo(() => {
+    const byDay = new Map<number, number>();
+    for (const d of deals) {
+      const day = Number(d.deal_date.slice(8, 10));
+      byDay.set(day, (byDay.get(day) ?? 0) + (Number(d.cash_collected_upfront) || 0));
+    }
+    let run = 0;
+    return Array.from({ length: daysInMonth }, (_, i) => {
+      const day = i + 1;
+      if (day <= dayOfMonth) run += byDay.get(day) ?? 0;
+      return {
+        day,
+        actual: day <= dayOfMonth ? run : null,
+        pace: Math.round((goal * day) / daysInMonth),
+      };
+    });
+  }, [deals, goal, dayOfMonth, daysInMonth]);
+
+  const projected = dayOfMonth > 0 ? (mtdCash / dayOfMonth) * daysInMonth : 0;
+  const ahead = projected >= goal;
+  const pct = Math.min(999, Math.round((mtdCash / goal) * 100));
+
+  return (
+    <div>
+      <div className="flex items-baseline justify-between text-xs mb-1">
+        <span className="text-muted-foreground">Goal {money(goal)} · <span className={pct >= 100 ? "text-success-fg" : "text-foreground"}>{pct}%</span></span>
+        <span className={ahead ? "text-success-fg" : "text-warning-fg"}>
+          {ahead ? "▲" : "▽"} pace {money(Math.round(projected))}
+        </span>
+      </div>
+      <div className="h-28">
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={data} margin={{ top: 6, right: 8, bottom: 0, left: 0 }}>
+            <defs>
+              <linearGradient id="goalActual" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={ahead ? "var(--chart-2)" : "var(--chart-5)"} stopOpacity={0.3} />
+                <stop offset="100%" stopColor={ahead ? "var(--chart-2)" : "var(--chart-5)"} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <XAxis dataKey="day" hide />
+            <YAxis hide domain={[0, Math.max(goal, mtdCash) * 1.05]} />
+            <Tooltip
+              contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }}
+              formatter={(v: number, k: string) => [money(v), k === "actual" ? "collected" : "goal pace"]}
+              labelFormatter={(d) => `Day ${d}`}
+            />
+            <Line type="monotone" dataKey="pace" stroke="var(--muted-foreground)" strokeDasharray="4 4" strokeWidth={1} dot={false} isAnimationActive={false} strokeOpacity={0.5} />
+            <Area type="monotone" dataKey="actual" stroke={ahead ? "var(--chart-2)" : "var(--chart-5)"} strokeWidth={2} fill="url(#goalActual)" connectNulls={false} isAnimationActive={false} />
+            <ReferenceDot x={dayOfMonth} y={mtdCash} r={3.5} fill={ahead ? "var(--chart-2)" : "var(--chart-5)"} stroke="var(--card)" strokeWidth={1.5} />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+      <p className="text-[11px] text-muted-foreground mt-1">
+        {ahead
+          ? `At this run rate the month lands at ${money(Math.round(projected))} — ${money(Math.round(projected - goal))} over the goal.`
+          : `At this run rate the month lands at ${money(Math.round(projected))} — ${money(Math.round(goal - projected))} short. The dashed line is the pace to hit it.`}
+      </p>
     </div>
   );
 }

@@ -416,20 +416,24 @@ function Dashboard() {
                       data={trend}
                       series={[
                         ...(hasPrev ? [
-                          { key: "prev_dms",    label: "DMs (prev)",    color: "var(--color-muted-foreground)", strokeWidth: 1, strokeOpacity: 0.35, ghost: true },
-                          { key: "prev_convos", label: "Convos (prev)", color: "var(--chart-1)", strokeWidth: 1, strokeOpacity: 0.35, ghost: true },
-                          { key: "prev_booked", label: "Booked (prev)", color: "var(--chart-2)", strokeWidth: 1, strokeOpacity: 0.35, ghost: true },
+                          { key: "prev_dms",    label: "DMs (prev)",    color: "#9CA3AF", strokeWidth: 1, strokeOpacity: 0.35, ghost: true },
+                          { key: "prev_convos", label: "Convos (prev)", color: "#6366F1", strokeWidth: 1, strokeOpacity: 0.35, ghost: true },
+                          { key: "prev_booked", label: "Booked (prev)", color: "#22C55E", strokeWidth: 1, strokeOpacity: 0.35, ghost: true },
                         ] : []),
-                        { key: "dms",    label: "DMs",    color: "var(--color-muted-foreground)" },
-                        { key: "convos", label: "Convos", color: "var(--chart-1)" },
-                        { key: "booked", label: "Booked", color: "var(--chart-2)", strokeWidth: 2 },
+                        { key: "dms",    label: "DMs",    color: "#9CA3AF" },
+                        { key: "convos", label: "Convos", color: "#6366F1" },
+                        { key: "booked", label: "Booked", color: "#22C55E", strokeWidth: 2 },
+                        { key: "shows",  label: "Shows",  color: "#F59E0B" },
+                        { key: "closes", label: "Closes", color: "#A855F7" },
                       ]}
                     />
                     <div className="flex items-center justify-between">
                       <VolumeLegend series={[
-                        { key: "dms",    label: "DMs",    color: "var(--color-muted-foreground)" },
-                        { key: "convos", label: "Convos", color: "var(--chart-1)" },
-                        { key: "booked", label: "Booked", color: "var(--chart-2)" },
+                        { key: "dms",    label: "DMs",    color: "#9CA3AF" },
+                        { key: "convos", label: "Convos", color: "#6366F1" },
+                        { key: "booked", label: "Booked", color: "#22C55E" },
+                        { key: "shows",  label: "Shows",  color: "#F59E0B" },
+                        { key: "closes", label: "Closes", color: "#A855F7" },
                       ]} />
                       {hasPrev && <span className="text-micro text-muted-foreground">faded = previous {days}d</span>}
                     </div>
@@ -598,15 +602,15 @@ function prevShowRateOf(t: ReturnType<typeof sumRows>) {
   return t.shows + t.no_shows > 0 ? Math.round((t.shows / (t.shows + t.no_shows)) * 100) : 0;
 }
 function buildTrend(rows: EodRow[], days: number, shiftBack = 0) {
-  const map: Record<string, { dms: number; convos: number; booked: number }> = {};
-  const out: { key: string; label: string; dms: number; convos: number; booked: number }[] = [];
+  const map: Record<string, { dms: number; convos: number; booked: number; shows: number; closes: number }> = {};
+  const out: { key: string; label: string; dms: number; convos: number; booked: number; shows: number; closes: number }[] = [];
   const today = new Date();
   const step = days <= 7 ? 1 : days <= 30 ? 1 : 3;
   for (let i = days - 1; i >= 0; i -= step) {
     const d = subDays(today, i + shiftBack);
     const key = format(d, "yyyy-MM-dd");
-    map[key] = { dms: 0, convos: 0, booked: 0 };
-    out.push({ key, label: format(d, days <= 7 ? "EEE" : "MMM d"), dms: 0, convos: 0, booked: 0 });
+    map[key] = { dms: 0, convos: 0, booked: 0, shows: 0, closes: 0 };
+    out.push({ key, label: format(d, days <= 7 ? "EEE" : "MMM d"), dms: 0, convos: 0, booked: 0, shows: 0, closes: 0 });
   }
   for (const r of rows) {
     const b = map[r.report_date];
@@ -614,6 +618,8 @@ function buildTrend(rows: EodRow[], days: number, shiftBack = 0) {
     b.dms += r.dms_sent;
     b.convos += r.convos_started;
     b.booked += r.calls_booked;
+    b.shows += r.shows;
+    b.closes += r.closes ?? 0;
   }
   return out.map((o) => ({ ...o, ...map[o.key] }));
 }
