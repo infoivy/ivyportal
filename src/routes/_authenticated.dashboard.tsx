@@ -1,6 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import {
@@ -300,6 +302,9 @@ function Dashboard() {
 
         {/* Start Here — one checklist per business role held */}
         <OnboardingPanel compact />
+
+        {/* Action items assigned to me — always at the very top */}
+        <MyAssignedItems />
 
         {/* IG monthly log reminder */}
         {roles.includes("founder") && !igLoggedThisMonth && !igReminderDismissed && (
@@ -1090,3 +1095,76 @@ function UnifiedLeaderboard({ profiles, eods, canSeeCash }: { profiles: Record<s
 }
 
 
+
+/** Open action items assigned to the signed-in team member — amber banner at
+ *  the top of the dashboard, with who it came from and inline tick-off. */
+function MyAssignedItems() {
+  const { user } = useAuth();
+  const q = useQuery({
+    queryKey: ["dashboard", "my-items", user?.id],
+    enabled: !!user,
+    refetchInterval: 2 * 60_000, // new assignments show up without a reload
+    queryFn: async () => {
+      const { data: items } = await supabase
+        .from("student_action_items")
+        .select("id, text, due_date, created_at, created_by")
+        .eq("assignee_id", user!.id)
+        .eq("done", false)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      const rows = (items ?? []) as { id: string; text: string; due_date: string | null; created_at: string; created_by: string }[];
+      const senderIds = Array.from(new Set(rows.map(r => r.created_by)));
+      let names: Record<string, string> = {};
+      if (senderIds.length) {
+        const { data: profs } = await supabase.from("profiles").select("id, display_name").in("id", senderIds);
+        (profs ?? []).forEach((p: { id: string; display_name: string | null }) => { names[p.id] = p.display_name ?? "Teammate"; });
+      }
+      return rows.map(r => ({ ...r, from: names[r.created_by] ?? "Teammate" }));
+    },
+  });
+
+  const items = q.data ?? [];
+  if (!items.length) return null;
+  const today = new Date().toISOString().slice(0, 10);
+
+  const tick = async (id: string) => {
+    const { error } = await supabase
+      .from("student_action_items")
+      .update({ done: true, done_at: new Date().toISOString() })
+      .eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Done ✓");
+    q.refetch();
+  };
+
+  return (
+    <div className="rounded-xl border border-warning/25 bg-warning-bg/50 px-4 py-3">
+      <div className="flex items-center justify-between gap-3 mb-2">
+        <span className="text-[12px] font-medium text-warning-fg">For you · {items.length} open</span>
+        <Link to="/action-items" search={{ } as never} className="text-[12px] text-muted-foreground hover:text-foreground shrink-0">All action items →</Link>
+      </div>
+      <div className="space-y-1.5">
+        {items.slice(0, 4).map(it => {
+          const overdue = !!it.due_date && it.due_date < today;
+          return (
+            <div key={it.id} className="flex items-start gap-2.5">
+              <Checkbox className="mt-0.5" checked={false} onCheckedChange={() => tick(it.id)} aria-label="Mark done" />
+              <div className="min-w-0 flex-1 text-[13px] leading-snug">
+                <span className="text-foreground">{it.text}</span>
+                <span className="text-muted-foreground"> · from {it.from}</span>
+                {it.due_date && (
+                  <span className={overdue ? "text-danger-fg" : "text-muted-foreground"}> · due {it.due_date}{overdue ? " (overdue)" : ""}</span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+        {items.length > 4 && (
+          <Link to="/action-items" className="block text-[12px] text-muted-foreground hover:text-foreground pl-6">
+            +{items.length - 4} more
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
