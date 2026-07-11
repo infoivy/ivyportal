@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { CoachingTabBar } from "@/components/coaching-tab-bar";
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
@@ -55,29 +56,37 @@ function CallsPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [editing, setEditing] = useState<Call | null>(null);
 
-  const load = async () => {
+  const fetchPage = async () => {
     const [cRes, sRes, roleRes] = await Promise.all([
       supabase.from("student_calls").select("*").order("call_date", { ascending: false }).limit(500),
       supabase.from("students").select("id, full_name").order("full_name"),
       supabase.from("user_roles").select("user_id, role").in("role", ["coach", "admin"]),
     ]);
-    setCalls((cRes.data ?? []) as Call[]);
-    setStudents((sRes.data ?? []) as Student[]);
     const coachIds = Array.from(new Set((roleRes.data ?? []).map(r => r.user_id)));
+    let coachList: Coach[] = [];
+    let avatars: Record<string, string> = {};
     if (coachIds.length) {
       const { data: profs } = await supabase
         .from("profiles")
         .select("id, display_name, avatar_path" as any)
         .in("id", coachIds);
-      const list = ((profs ?? []) as any[]).map(p => ({
+      coachList = ((profs ?? []) as any[]).map(p => ({
         id: p.id, display_name: p.display_name, avatar_path: p.avatar_path ?? null,
       })) as Coach[];
-      setCoaches(list);
-      setAvatarUrls(await signAvatars(list.map(c => c.avatar_path)));
+      avatars = await signAvatars(coachList.map(c => c.avatar_path));
     }
+    return { calls: (cRes.data ?? []) as Call[], students: (sRes.data ?? []) as Student[], coachList, avatars };
   };
 
-  useEffect(() => { load(); }, []);
+  const pageQ = useQuery({ queryKey: ["page", "calls"], queryFn: fetchPage });
+  useEffect(() => {
+    if (!pageQ.data) return;
+    setCalls(pageQ.data.calls);
+    setStudents(pageQ.data.students);
+    setCoaches(pageQ.data.coachList);
+    setAvatarUrls(pageQ.data.avatars);
+  }, [pageQ.data]);
+  const load = () => pageQ.refetch();
 
   const studentName = (id: string) => students.find(s => s.id === id)?.full_name ?? "Unknown";
   const coachName = (id: string | null) => id ? (coaches.find(c => c.id === id)?.display_name ?? id.slice(0, 8)) : "Unassigned";

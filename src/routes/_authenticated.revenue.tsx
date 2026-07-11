@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import {
@@ -62,7 +63,7 @@ function RevenuePage() {
   const [dateRange, setDateRange] = useState<DateRange>(() => rangeFor("30d"));
   const [compare, setCompare] = useState(false);
 
-  const load = async () => {
+  const fetchPage = async () => {
     const [dealsRes, ratesRes, rolesRes, studentsRes] = await Promise.all([
       supabase.from("deals").select("*").order("deal_date", { ascending: false }).limit(500),
       supabase.from("commission_rates").select("*").eq("active", true),
@@ -73,7 +74,6 @@ function RevenuePage() {
       supabase.from("students").select("id, full_name").order("full_name"),
     ]);
 
-    setDeals(((dealsRes.data ?? []) as Deal[]));
     const r: CommissionRates = { ...DEFAULT_RATES };
     const rows: { id: string; key: string; label: string; rate: number; active: boolean }[] = [];
     for (const row of ratesRes.data ?? []) {
@@ -81,8 +81,6 @@ function RevenuePage() {
       const k = row.key as keyof CommissionRates;
       if (k in r) (r as Record<string, number>)[k] = Number(row.rate);
     }
-    setRates(r);
-    setRateRows(rows);
 
     const closerIds = Array.from(
       new Set((rolesRes.data ?? []).filter((r) => r.role !== "setter").map((r) => r.user_id)),
@@ -91,17 +89,33 @@ function RevenuePage() {
       new Set((rolesRes.data ?? []).filter((r) => r.role === "setter" || r.role === "admin").map((r) => r.user_id)),
     );
     const allIds = Array.from(new Set([...closerIds, ...setterIds]));
+    let closerList: Profile[] = [];
+    let setterList: Profile[] = [];
     if (allIds.length > 0) {
       const { data: profs } = await supabase.from("profiles").select("id, display_name, commission_cap_pct").in("id", allIds);
       const profMap = new Map(((profs ?? []) as Profile[]).map((p) => [p.id, p]));
-      setClosers(closerIds.map((id) => profMap.get(id)).filter(Boolean) as Profile[]);
-      setSetters(setterIds.map((id) => profMap.get(id)).filter(Boolean) as Profile[]);
+      closerList = closerIds.map((id) => profMap.get(id)).filter(Boolean) as Profile[];
+      setterList = setterIds.map((id) => profMap.get(id)).filter(Boolean) as Profile[];
     }
-    setStudents((studentsRes.data ?? []) as Student[]);
-    setLoading(false);
+    return {
+      deals: (dealsRes.data ?? []) as Deal[],
+      rates: r, rateRows: rows, closerList, setterList,
+      students: (studentsRes.data ?? []) as Student[],
+    };
   };
 
-  useEffect(() => { load(); }, []);
+  const pageQ = useQuery({ queryKey: ["page", "revenue"], queryFn: fetchPage });
+  useEffect(() => {
+    if (!pageQ.data) return;
+    setDeals(pageQ.data.deals);
+    setRates(pageQ.data.rates);
+    setRateRows(pageQ.data.rateRows);
+    setClosers(pageQ.data.closerList);
+    setSetters(pageQ.data.setterList);
+    setStudents(pageQ.data.students);
+    setLoading(false);
+  }, [pageQ.data]);
+  const load = () => pageQ.refetch();
 
   const fromISO = dateRange.from.toISOString().slice(0, 10);
   const toISO = dateRange.to.toISOString().slice(0, 10);

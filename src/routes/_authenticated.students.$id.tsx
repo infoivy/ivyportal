@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
@@ -88,17 +89,28 @@ function StudentDetail() {
   const [callFormOpen, setCallFormOpen] = useState(false);
   const [tab, setTab] = useState<Tab>("timeline");
 
-  const loadMilestones = async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [mRes, mpRes] = await Promise.all([
+  const milestonesQ = useQuery({
+    queryKey: ["page", "student", id, "milestones"],
+    queryFn: async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (supabase as any).from("student_milestones").select("id, name, sort_order").order("sort_order"),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (supabase as any).from("student_milestone_progress").select("milestone_id").eq("student_id", id),
-    ]);
-    setMilestones((mRes.data ?? []) as Milestone[]);
-    setMilestoneProgress(new Set(((mpRes.data ?? []) as any[]).map((r: any) => r.milestone_id)));
-  };
+      const [mRes, mpRes] = await Promise.all([
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any).from("student_milestones").select("id, name, sort_order").order("sort_order"),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any).from("student_milestone_progress").select("milestone_id").eq("student_id", id),
+      ]);
+      return {
+        milestones: (mRes.data ?? []) as Milestone[],
+        done: ((mpRes.data ?? []) as any[]).map((r: any) => r.milestone_id) as string[],
+      };
+    },
+  });
+  useEffect(() => {
+    if (!milestonesQ.data) return;
+    setMilestones(milestonesQ.data.milestones);
+    setMilestoneProgress(new Set(milestonesQ.data.done));
+  }, [milestonesQ.data]);
+  const loadMilestones = () => milestonesQ.refetch();
 
   const toggleMilestone = async (milestoneId: string) => {
     const has = milestoneProgress.has(milestoneId);
@@ -116,7 +128,7 @@ function StudentDetail() {
     loadMilestones();
   };
 
-  const load = async () => {
+  const fetchPage = async () => {
     const [sRes, cRes, eRes, coachRes, csmRes, instRes] = await Promise.all([
       supabase.from("students").select("*").eq("id", id).maybeSingle(),
       supabase.from("student_calls").select("*").eq("student_id", id).order("call_date", { ascending: false }),
@@ -125,31 +137,44 @@ function StudentDetail() {
       supabase.from("csm_student_notes").select("*").eq("student_id", id).order("created_at", { ascending: false }),
       supabase.from("installments").select("*").eq("student_id", id).maybeSingle(),
     ]);
-    setStudent((sRes.data as Student) ?? null);
-    setCalls((cRes.data ?? []) as Call[]);
-    setEods((eRes.data ?? []) as SEod[]);
-    setCsmNotes((csmRes.data ?? []) as CsmNote[]);
-    setInstallment((instRes.data as Installment) ?? null);
-
     const coachIds = Array.from(new Set((coachRes.data ?? []).map(r => r.user_id)));
     const csmAuthorIds = Array.from(new Set((csmRes.data ?? []).map((n: any) => n.user_id)));
     const allProfIds = Array.from(new Set([...coachIds, ...csmAuthorIds]));
+    let coachList: Coach[] = [];
+    const authors: Record<string, string> = {};
     if (allProfIds.length) {
       const { data: profs } = await supabase.from("profiles").select("id, display_name").in("id", allProfIds);
-      setCoaches((profs ?? []).filter((p: any) => coachIds.includes(p.id)) as Coach[]);
-      const authors: Record<string, string> = {};
+      coachList = (profs ?? []).filter((p: any) => coachIds.includes(p.id)) as Coach[];
       (profs ?? []).forEach((p: any) => { authors[p.id] = p.display_name ?? "Unknown"; });
-      setCsmAuthors(authors);
     }
+    let payments: Payment[] = [];
     if (instRes.data) {
       const { data: pRows } = await supabase.from("installment_payments").select("*").eq("installment_id", (instRes.data as any).id).order("sequence");
-      setPayments((pRows ?? []) as Payment[]);
-    } else {
-      setPayments([]);
+      payments = (pRows ?? []) as Payment[];
     }
+    return {
+      student: (sRes.data as Student) ?? null,
+      calls: (cRes.data ?? []) as Call[],
+      eods: (eRes.data ?? []) as SEod[],
+      csmNotes: (csmRes.data ?? []) as CsmNote[],
+      installment: (instRes.data as Installment) ?? null,
+      coachList, authors, payments,
+    };
   };
 
-  useEffect(() => { load(); loadMilestones(); }, [id]);
+  const pageQ = useQuery({ queryKey: ["page", "student", id], queryFn: fetchPage });
+  useEffect(() => {
+    if (!pageQ.data) return;
+    setStudent(pageQ.data.student);
+    setCalls(pageQ.data.calls);
+    setEods(pageQ.data.eods);
+    setCsmNotes(pageQ.data.csmNotes);
+    setInstallment(pageQ.data.installment);
+    setCoaches(pageQ.data.coachList);
+    setCsmAuthors(pageQ.data.authors);
+    setPayments(pageQ.data.payments);
+  }, [pageQ.data]);
+  const load = () => pageQ.refetch();
 
   // ---- Derived stats (all hooks BEFORE any early return) ----
   const totals = useMemo(() => eods.reduce((a, e) => ({
