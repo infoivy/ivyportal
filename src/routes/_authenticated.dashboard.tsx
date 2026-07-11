@@ -25,6 +25,7 @@ import { DashboardSettingsSheet } from "@/components/dashboard-settings-sheet";
 import { useDashboardPrefs } from "@/lib/dashboard-prefs";
 import { VolumeAreaChart, VolumeLegend } from "@/components/ui/volume-area-chart";
 import { OnboardingPanel } from "@/components/onboarding-panel";
+import { MochiIgSection } from "@/components/mochi-ig-section";
 import { DeltaChip } from "@/components/ui/delta-chip";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -373,6 +374,9 @@ function Dashboard() {
           </>
         )}
 
+        {/* Instagram funnel — live from Mochi CRM */}
+        {(roles.includes("admin") || roles.includes("founder")) && <MochiIgSection />}
+
         {/* Ops strip */}
         {prefs.showOps && (
           <div className="card-surface px-4 py-3 flex flex-wrap items-center gap-x-5 gap-y-2">
@@ -664,7 +668,7 @@ function Kpi({ label, value, suffix, onClick, delta }: {
       role={clickable ? "button" : undefined}
       tabIndex={clickable ? 0 : undefined}
       onKeyDown={clickable ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick!(); } } : undefined}
-      className={`card-surface px-5 py-4 ${clickable ? "cursor-pointer motion-safe:hover:brightness-110 motion-safe:transition-all" : ""}`}
+      className={`card-surface px-5 py-4 ${clickable ? "cursor-pointer motion-safe:hover:brightness-110 motion-safe:transition-[filter]" : ""}`}
     >
       <div className="text-[12px] text-muted-foreground mb-3">{label}</div>
       <div className="flex items-baseline gap-2.5 flex-wrap">
@@ -739,7 +743,7 @@ function Goal({ label, value, target, suffix, color, warn }: { label: string; va
         </span>
       </div>
       <div className="h-1 rounded-full bg-white/5 overflow-hidden">
-        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: warn ? "#ef4444" : color }} />
+        <div className="h-full rounded-full motion-safe:transition-[width] duration-500 ease-(--ease-out)" style={{ width: `${pct}%`, background: warn ? "#ef4444" : color }} />
       </div>
     </div>
   );

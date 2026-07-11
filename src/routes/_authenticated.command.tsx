@@ -3,17 +3,19 @@ import { useAuth } from "@/lib/auth-context";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { FounderHQInner } from "@/components/founder/founder-hq";
 import { WeeklyReviewInner } from "@/components/founder/weekly-review";
+import { TheRoomInner } from "@/components/founder/the-room";
 import { Sparkles } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/command")({
   validateSearch: (s: Record<string, unknown>) => ({
-    tab: (s.tab as string) ?? "overview",
+    tab: (s.tab as string) ?? "room",
   }),
   head: () => ({ meta: [{ title: "Gathering Hub — ISA Portal" }] }),
   component: CommandPage,
 });
 
 const TABS = [
+  { label: "The Room", value: "room" },
   { label: "Overview", value: "overview" },
   { label: "Weekly Review", value: "weekly" },
 ] as const;
@@ -36,7 +38,7 @@ function CommandPage() {
     );
   }
 
-  const activeTab: Tab = tab === "weekly" ? "weekly" : "overview";
+  const activeTab: Tab = tab === "weekly" ? "weekly" : tab === "overview" ? "overview" : "room";
 
   return (
     <div className="p-4 sm:p-6 max-w-[1400px] mx-auto space-y-5">
@@ -52,7 +54,7 @@ function CommandPage() {
         />
       </header>
 
-      {activeTab === "overview" ? <FounderHQInner /> : <WeeklyReviewInner />}
+      {activeTab === "room" ? <TheRoomInner /> : activeTab === "overview" ? <FounderHQInner /> : <WeeklyReviewInner />}
     </div>
   );
 }

@@ -1,0 +1,217 @@
+import { createServerFn } from "@tanstack/react-start";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
+/**
+ * Mochi (themochi.app) Instagram CRM integration.
+ *
+ * Auth: OAuth tokens live in service_credentials (admin-only RLS), seeded by a
+ * one-time PKCE flow. The access token is refreshed here server-side when it
+ * nears expiry. Data is fetched through Mochi's MCP endpoint (JSON-RPC
+ * tools/call) — Mochi has no separate public REST API.
+ */
+
+const MCP_URL = "https://mcp.themochi.app/mcp";
+const TOKEN_URL = "https://api.themochi.app/api/zapier/oauth/token/";
+
+const KEYS = {
+  clientId: "mochi_client_id",
+  access: "mochi_access_token",
+  refresh: "mochi_refresh_token",
+  expiresAt: "mochi_token_expires_at",
+} as const;
+
+type Ctx = { supabase: any; userId: string };
+
+async function requireFounderOrAdmin(context: Ctx) {
+  const [{ data: admin }, { data: founder }] = await Promise.all([
+    context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" }),
+    context.supabase.rpc("has_role", { _user_id: context.userId, _role: "founder" }),
+  ]);
+  if (!admin && !founder) throw new Error("Forbidden: admin or founder only");
+}
+
+async function readCreds(context: Ctx) {
+  const { data } = await context.supabase
+    .from("service_credentials")
+    .select("key, value")
+    .in("key", Object.values(KEYS));
+  const map = new Map<string, string>((data ?? []).map((r: { key: string; value: string }) => [r.key, r.value]));
+  return {
+    clientId: map.get(KEYS.clientId) ?? null,
+    access: map.get(KEYS.access) ?? null,
+    refresh: map.get(KEYS.refresh) ?? null,
+    expiresAt: map.get(KEYS.expiresAt) ?? null,
+  };
+}
+
+async function saveTokens(context: Ctx, tokens: { access_token: string; refresh_token?: string; expires_in?: number }) {
+  const rows = [
+    { key: KEYS.access, value: tokens.access_token, label: "Mochi access token", updated_by: context.userId },
+    {
+      key: KEYS.expiresAt,
+      value: new Date(Date.now() + ((tokens.expires_in ?? 3600) - 300) * 1000).toISOString(),
+      label: "Mochi access token expiry",
+      updated_by: context.userId,
+    },
+    ...(tokens.refresh_token
+      ? [{ key: KEYS.refresh, value: tokens.refresh_token, label: "Mochi refresh token", updated_by: context.userId }]
+      : []),
+  ];
+  const { error } = await context.supabase.from("service_credentials").upsert(rows, { onConflict: "key" });
+  if (error) throw new Error(`Failed to persist Mochi tokens: ${error.message}`);
+}
+
+async function freshAccessToken(context: Ctx): Promise<string | null> {
+  const creds = await readCreds(context);
+  if (!creds.access || !creds.refresh || !creds.clientId) return null;
+  if (creds.expiresAt && new Date(creds.expiresAt) > new Date()) return creds.access;
+
+  const body = new URLSearchParams({
+    grant_type: "refresh_token",
+    refresh_token: creds.refresh,
+    client_id: creds.clientId,
+  });
+  const res = await fetch(TOKEN_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body,
+  });
+  if (!res.ok) throw new Error(`Mochi token refresh failed (${res.status})`);
+  const json = (await res.json()) as { access_token: string; refresh_token?: string; expires_in?: number };
+  await saveTokens(context, json);
+  return json.access_token;
+}
+
+/** Call one Mochi MCP tool and return its parsed JSON payload. */
+async function callTool<T = unknown>(context: Ctx, name: string, args: Record<string, unknown> = {}): Promise<T> {
+  const token = await freshAccessToken(context);
+  if (!token) throw new Error("Mochi is not connected");
+
+  const res = await fetch(MCP_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      Accept: "application/json, text/event-stream",
+    },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name, arguments: args } }),
+  });
+  if (!res.ok) throw new Error(`Mochi MCP ${name} failed (${res.status})`);
+
+  // The endpoint answers either plain JSON or a single SSE frame.
+  const raw = await res.text();
+  const payload = raw.startsWith("event:") || raw.includes("\ndata:")
+    ? raw.split("\n").find((l) => l.startsWith("data:"))?.slice(5).trim() ?? "{}"
+    : raw;
+  const rpc = JSON.parse(payload) as { result?: { content?: { text?: string }[]; isError?: boolean }; error?: { message?: string } };
+  if (rpc.error) throw new Error(`Mochi ${name}: ${rpc.error.message ?? "unknown error"}`);
+  const text = rpc.result?.content?.[0]?.text ?? "{}";
+  if (rpc.result?.isError) throw new Error(`Mochi ${name}: ${text.slice(0, 200)}`);
+  return JSON.parse(text) as T;
+}
+
+export type MochiPeriod = "today" | "last_7_days" | "last_30_days";
+
+export type MochiDashboard = {
+  connected: boolean;
+  period: MochiPeriod;
+  messages: {
+    inbound: number;
+    outbound: number;
+    total: number;
+    activeConversations: number;
+  } | null;
+  funnel: { day: string; new_leads: number; qualified: number; booked: number; won: number }[];
+  sources: { source: string; label: string; lead_count: number; calls_booked: number }[];
+  totals: { newLeads: number; booked: number; won: number; comments: number };
+};
+
+/** Whether Mochi is connected. Founder/admin only (matches credential RLS). */
+export const getMochiStatus = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const creds = await readCreds(context as Ctx);
+    return { configured: !!(creds.access && creds.refresh) };
+  });
+
+/** Instagram funnel + message metrics for dashboard/hub. Founder/admin only. */
+export const getMochiDashboard = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { period?: MochiPeriod }) => ({
+    period: (["today", "last_7_days", "last_30_days"].includes(input?.period ?? "") ? input.period : "last_7_days") as MochiPeriod,
+  }))
+  .handler(async ({ context, data }): Promise<MochiDashboard> => {
+    const ctx = context as Ctx;
+    await requireFounderOrAdmin(ctx);
+    const empty: MochiDashboard = {
+      connected: false,
+      period: data.period,
+      messages: null,
+      funnel: [],
+      sources: [],
+      totals: { newLeads: 0, booked: 0, won: 0, comments: 0 },
+    };
+    const creds = await readCreds(ctx);
+    if (!creds.access) return empty;
+
+    const [msg, trend, src] = await Promise.all([
+      callTool<{ inbound_messages: number; outbound_messages: number; total_messages: number; active_conversations: number }>(
+        ctx, "get_message_counts", { time_period: data.period },
+      ),
+      callTool<{ trend: MochiDashboard["funnel"] }>(ctx, "get_funnel_trend", { time_period: data.period }),
+      callTool<{ sources: MochiDashboard["sources"] }>(ctx, "get_lead_source_breakdown", { time_period: data.period }),
+    ]);
+
+    const funnel = trend.trend ?? [];
+    const sources = src.sources ?? [];
+    return {
+      connected: true,
+      period: data.period,
+      messages: {
+        inbound: msg.inbound_messages ?? 0,
+        outbound: msg.outbound_messages ?? 0,
+        total: msg.total_messages ?? 0,
+        activeConversations: msg.active_conversations ?? 0,
+      },
+      funnel,
+      sources,
+      totals: {
+        newLeads: funnel.reduce((s, d) => s + (d.new_leads ?? 0), 0),
+        booked: funnel.reduce((s, d) => s + (d.booked ?? 0), 0),
+        won: funnel.reduce((s, d) => s + (d.won ?? 0), 0),
+        comments: sources.find((s) => s.source === "COMMENT")?.lead_count ?? 0,
+      },
+    };
+  });
+
+export type MochiPayments = {
+  connected: boolean;
+  netRevenue: number | null;
+  grossRevenue: number | null;
+  transactionCount: number | null;
+};
+
+/** Provider-synced payment KPIs (Whop, Stripe, …) via Mochi. Founder/admin only. */
+export const getMochiPayments = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { period?: MochiPeriod }) => ({
+    period: (["today", "last_7_days", "last_30_days"].includes(input?.period ?? "") ? input.period : "last_30_days") as MochiPeriod,
+  }))
+  .handler(async ({ context, data }): Promise<MochiPayments> => {
+    const ctx = context as Ctx;
+    await requireFounderOrAdmin(ctx);
+    const creds = await readCreds(ctx);
+    if (!creds.access) return { connected: false, netRevenue: null, grossRevenue: null, transactionCount: null };
+    try {
+      const pay = await callTool<Record<string, number>>(ctx, "get_payment_overview", { time_period: data.period });
+      return {
+        connected: true,
+        netRevenue: pay.net_revenue ?? null,
+        grossRevenue: pay.gross_revenue ?? null,
+        transactionCount: pay.transaction_count ?? pay.transactions ?? null,
+      };
+    } catch {
+      // Payment provider not linked inside Mochi yet — not an error state.
+      return { connected: true, netRevenue: null, grossRevenue: null, transactionCount: null };
+    }
+  });
