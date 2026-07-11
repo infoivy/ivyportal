@@ -803,8 +803,8 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto" onClick={onClose}>
-      <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm max-w-2xl w-full my-8 p-5 space-y-4" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex p-4 overflow-y-auto" onClick={onClose}>
+      <div className="m-auto bg-[var(--card)] border border-[var(--border)] rounded-sm max-w-2xl w-full p-5 space-y-4" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-sm font-semibold">Add student</h2>

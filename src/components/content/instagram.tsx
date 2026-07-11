@@ -711,8 +711,8 @@ function ConnectDialog({ userId, existing, onClose, onSaved }: {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="w-full max-w-md bg-card border border-[var(--border)] rounded-xl p-5 space-y-3" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 overflow-y-auto z-50 bg-black/70 flex p-4" onClick={onClose}>
+      <div className="m-auto w-full max-w-md bg-card border border-[var(--border)] rounded-xl p-5 space-y-3" onClick={e => e.stopPropagation()}>
         <div className="flex items-center gap-2">
           <Instagram className="h-4 w-4 text-muted-foreground" />
           <div className="text-[15px] font-semibold">Instagram profile</div>
@@ -753,8 +753,8 @@ function SettingsDialog({ userId, settings, onClose, onSaved }: {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="w-full max-w-3xl bg-card border border-[var(--border)] rounded-xl p-5 space-y-3 max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 overflow-y-auto z-50 bg-black/70 flex p-4" onClick={onClose}>
+      <div className="m-auto w-full max-w-3xl bg-card border border-[var(--border)] rounded-xl p-5 space-y-3 max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
         <div className="flex items-center gap-2">
           <Pencil className="h-4 w-4 text-primary" />
           <div className="text-[15px] font-semibold">Goals · Pillars · Audience</div>

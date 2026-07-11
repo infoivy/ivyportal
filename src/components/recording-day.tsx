@@ -170,8 +170,8 @@ export function RecordingDay({ onOpenItem }: { onOpenItem: (id: string) => void 
 
       {/* Focus mode */}
       {current && (
-        <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4" onClick={() => setFocusIdx(null)}>
-          <div className="w-full max-w-4xl bg-[var(--card)] border border-border rounded-sm" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 overflow-y-auto z-50 bg-black/90 flex p-4" onClick={() => setFocusIdx(null)}>
+          <div className="m-auto w-full max-w-4xl bg-[var(--card)] border border-border rounded-sm" onClick={e => e.stopPropagation()}>
             <div className="p-4 border-b border-[var(--border)] flex items-center justify-between">
               <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
                 {focusIdx! + 1} of {ordered.length} · {current.scheduled_date ? format(parseISO(current.scheduled_date), "EEE MMM d") : "—"}

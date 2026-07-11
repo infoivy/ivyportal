@@ -250,14 +250,14 @@ function TestimonialsPage() {
       />
 
       {lightbox && (
-        <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-8" onClick={() => setLightbox(null)}>
+        <div className="fixed inset-0 overflow-y-auto z-50 bg-black/90 flex p-8" onClick={() => setLightbox(null)}>
           <button className="absolute top-4 right-4 text-white/80 hover:text-white" onClick={() => setLightbox(null)}>
             <X className="h-6 w-6" />
           </button>
           {lightbox.type === "video" ? (
-            <video src={lightbox.url} controls autoPlay className="max-h-full max-w-full rounded-lg" onClick={e => e.stopPropagation()} />
+            <video src={lightbox.url} controls autoPlay className="m-auto max-h-[90vh] max-w-full rounded-lg" onClick={e => e.stopPropagation()} />
           ) : (
-            <img src={lightbox.url} alt="testimonial" className="max-h-full max-w-full rounded-lg" onClick={e => e.stopPropagation()} />
+            <img src={lightbox.url} alt="testimonial" className="m-auto max-h-[90vh] max-w-full rounded-lg" onClick={e => e.stopPropagation()} />
           )}
         </div>
       )}

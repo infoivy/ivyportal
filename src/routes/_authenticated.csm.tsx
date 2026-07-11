@@ -525,8 +525,8 @@ function CsmPage() {
 
       {/* Quick-tally modal */}
       {quickKind && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setQuickKind(null)}>
-          <div className="w-full max-w-md bg-[var(--card)] border border-[var(--border)] rounded-sm p-4 space-y-3" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 overflow-y-auto z-50 bg-black/70 flex p-4" onClick={() => setQuickKind(null)}>
+          <div className="m-auto w-full max-w-md bg-[var(--card)] border border-[var(--border)] rounded-sm p-4 space-y-3" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <div className="text-sm font-semibold">+1 {KIND_META[quickKind].label}</div>
               <button onClick={() => setQuickKind(null)} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>

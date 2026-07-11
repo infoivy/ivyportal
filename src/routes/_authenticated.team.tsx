@@ -402,8 +402,8 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
   const showSetterType = localRoles.includes("setter");
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm max-w-md w-full p-5 space-y-4" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 overflow-y-auto z-50 bg-black/60 backdrop-blur-sm flex p-4" onClick={onClose}>
+      <div className="m-auto bg-[var(--card)] border border-[var(--border)] rounded-sm max-w-md w-full p-5 space-y-4" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold">Edit member profile</h2>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
@@ -531,8 +531,8 @@ function InviteModal({ onClose, invitedBy }: { onClose: () => void; invitedBy: s
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm max-w-md w-full p-5 space-y-4" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 overflow-y-auto z-50 bg-black/60 backdrop-blur-sm flex p-4" onClick={onClose}>
+      <div className="m-auto bg-[var(--card)] border border-[var(--border)] rounded-sm max-w-md w-full p-5 space-y-4" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold">Invite team member</h2>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>

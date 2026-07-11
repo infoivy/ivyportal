@@ -361,8 +361,8 @@ function CallModal({ call, onClose, onSaved, students, coaches, defaultCoachId }
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto" onClick={onClose}>
-      <div className="bg-[var(--card)] border border-[var(--border)] rounded-sm max-w-2xl w-full my-8 p-5 space-y-4" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex p-4 overflow-y-auto" onClick={onClose}>
+      <div className="m-auto bg-[var(--card)] border border-[var(--border)] rounded-sm max-w-2xl w-full p-5 space-y-4" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
           <h2 className="text-sm font-semibold flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /> {call ? "Edit call" : "Log 1-on-1 call"}</h2>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>

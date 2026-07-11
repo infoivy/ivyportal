@@ -590,8 +590,8 @@ function EventModal({ e, onClose, canClaim, onClaim, toLocal }: {
   const s = toLocal(e.start);
   const en = toLocal(e.end);
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <Card className="max-w-md w-full p-5 border-border/60" onClick={(evt) => evt.stopPropagation()}>
+    <div className="fixed inset-0 overflow-y-auto bg-black/50 flex z-50 p-4" onClick={onClose}>
+      <Card className="m-auto max-w-md w-full p-5 border-border/60" onClick={(evt) => evt.stopPropagation()}>
         <div className="flex items-start gap-3 mb-3">
           <span className="h-3 w-3 rounded-full mt-1.5 shrink-0" style={{ background: e.color }} />
           <div className="min-w-0 flex-1">

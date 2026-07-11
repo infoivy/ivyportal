@@ -426,8 +426,8 @@ function PlanEditor({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="w-full max-w-3xl max-h-[90vh] overflow-auto rounded-lg border border-border bg-card" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 overflow-y-auto z-50 bg-black/60 flex p-4" onClick={onClose}>
+      <div className="m-auto w-full max-w-3xl max-h-[90vh] overflow-auto rounded-lg border border-border bg-card" onClick={e => e.stopPropagation()}>
         <header className="px-4 py-3 border-b border-border flex items-center gap-2">
           <h3 className="font-medium">{initial ? "Edit installment plan" : "New installment plan"}</h3>
           <button onClick={onClose} className="ml-auto p-1 hover:bg-accent rounded"><X className="h-4 w-4" /></button>
