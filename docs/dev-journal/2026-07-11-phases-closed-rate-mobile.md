@@ -49,3 +49,15 @@ Python bulk-edit scripts over route files; MCP `apply_migration` + local migrati
 
 ### Future work
 - The Vercel env still needs GOOGLE_OAUTH_* + CALENDLY_API_KEY set by the user in the dashboard for calendar/set-reminder features in production.
+
+---
+
+## Addendum 2: pathway/schedules, access defaults, Finance, sets tracker (same day)
+
+- **Log a close parity + tiles**: pathway as two tiles (1:1 = 10 calls / Group Expertise = group only) setting the student's coaching allowance; deposit/split deals get even or custom installment schedules (e.g. $5k = $2k+$2k+$1k) with a matches-remaining validator. RLS bugs found by real-closer E2E: closers couldn't insert/update students or write/read installment plans — fixed in two migrations.
+- **Access defaults** (Admin): per-role page visibility + per-role revenue-figure blur; role_access table; AccessGate route guard; BlurMoney wrapper; sidebar filtering. Admin/founder exempt; EOD/Knowledge locked on.
+- **Students**: coach filter chips. **Dashboard**: cash hero month-over-month same-day delta line.
+- **Finance page** (founder-only): business_expenses table + tracker, day-by-day money flow with running processor balance (manual balance input in founder_settings), profit split 70/15/15, MRR + 6-month chart from installment schedules. Local-date fix (UTC shift zeroed July MRR in GMT+3).
+- **Sets tracker**: reminder_log chips (48h/24h/3h/1h, reminded/no-reply), lead confirmation, automatic 6-hour unconfirmed drop (client-triggered cancelSet + gcal delete), bell nudges for open windows, calendar type filter chips (Closing/Coaching/Meetings).
+- Guides re-seeded (dark screenshots) after each feature; EOD & Meetings policy page added earlier the same day.
+- Commits: 0f89fa4, a157119, 8260210, b4ae520 (+ 74df938, 1f3512f earlier).
