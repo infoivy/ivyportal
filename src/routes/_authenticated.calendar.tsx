@@ -421,7 +421,7 @@ function CalendarPage() {
         </Card>
 
         {/* Week grid — full 24h, scrollable, opens at the working day */}
-        <Card className="p-0 border-border/60 overflow-hidden">
+        <Card className="p-0 border-border/60 overflow-hidden relative">
           <div ref={gridScrollRef} className="max-h-[68vh] overflow-y-auto overscroll-contain">
           <div className="grid" style={{ gridTemplateColumns: `${isMobile ? 40 : 48}px repeat(${daySpan}, minmax(0, 1fr))` }}>
             {/* header row */}
@@ -468,10 +468,12 @@ function CalendarPage() {
             </div>
           )}
           {!events.isLoading && (events.data?.length ?? 0) === 0 && (
-            <div className="p-8 text-center text-sm text-muted-foreground border-t border-border/60">
-              {teamList.length === 0
-                ? "Connect your Google Calendar to start seeing events here."
-                : "No events for this week."}
+            <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center p-6">
+              <div className="rounded-md border border-border/60 bg-card/95 px-4 py-3 text-sm text-muted-foreground shadow-sm text-center">
+                {teamList.length === 0
+                  ? "Connect your Google Calendar to start seeing events here."
+                  : "No events for this week."}
+              </div>
             </div>
           )}
         </Card>

@@ -44,8 +44,8 @@ type StudentLite = { id: string; full_name: string };
 const TYPE_META: Record<TType, { label: string; icon: typeof Video; color: string }> = {
   video:      { label: "Video",      icon: Video,      color: "bg-muted text-muted-foreground border-border" },
   image:      { label: "Image",      icon: ImageIcon,  color: "bg-muted text-muted-foreground border-border" },
-  text:       { label: "Text",       icon: Quote,      color: "bg-success-bg text-success-fg border-success/25" },
-  trustpilot: { label: "Trustpilot", icon: Star,       color: "bg-warning-bg text-warning-fg border-warning/25" },
+  text:       { label: "Text",       icon: Quote,      color: "bg-muted text-muted-foreground border-border" },
+  trustpilot: { label: "Trustpilot", icon: Star,       color: "bg-muted text-muted-foreground border-border" },
 };
 
 const STATUS_META: Record<TStatus, string> = {

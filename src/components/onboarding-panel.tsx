@@ -86,7 +86,7 @@ function RoleChecklist({ role, compact }: { role: string; compact?: boolean }) {
         </div>
       </div>
       <div className="h-1 rounded-full bg-[var(--accent)] overflow-hidden">
-        <div className="h-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+        <div className="h-full bg-primary motion-safe:transition-[width] duration-500 ease-(--ease-out)" style={{ width: `${pct}%` }} />
       </div>
       <ul className="space-y-1">
         {template.steps.map(step => {

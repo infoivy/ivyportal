@@ -113,7 +113,7 @@ export function RecordingDay({ onOpenItem }: { onOpenItem: (id: string) => void 
 
       {/* Progress bar */}
       <div className="h-1.5 rounded-full bg-[var(--background)] overflow-hidden border border-[var(--border)]">
-        <div className="h-full bg-muted transition-all" style={{ width: `${ordered.length ? (readyCount / ordered.length) * 100 : 0}%` }} />
+        <div className="h-full bg-muted motion-safe:transition-[width] duration-500 ease-(--ease-out)" style={{ width: `${ordered.length ? (readyCount / ordered.length) * 100 : 0}%` }} />
       </div>
 
       {/* Checklist */}

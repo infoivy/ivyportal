@@ -82,18 +82,20 @@ function Training() {
           <div>
             <h1 className="text-display text-foreground">Training</h1>
             <p className="text-[13px] text-muted-foreground mt-0.5">
-              {videos.length === 0 ? "No videos yet — admins can add them below." : `${videos.length} video${videos.length === 1 ? "" : "s"}`}
+              {videos.length === 0 ? "The team's video library." : `${videos.length} video${videos.length === 1 ? "" : "s"}`}
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <div className="relative">
-              <Search className="h-3.5 w-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <input
-                value={query} onChange={e => setQuery(e.target.value)}
-                placeholder="Search videos…"
-                className="pl-8 pr-3 py-1.5 rounded-sm border border-border bg-card text-xs w-44 sm:w-56 focus:outline-none focus:border-ring"
-              />
-            </div>
+            {videos.length > 0 && (
+              <div className="relative">
+                <Search className="h-3.5 w-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  value={query} onChange={e => setQuery(e.target.value)}
+                  placeholder="Search videos…"
+                  className="pl-8 pr-3 py-1.5 rounded-sm border border-border bg-card text-xs w-44 sm:w-56 focus:outline-none focus:border-ring"
+                />
+              </div>
+            )}
             {isAdmin && (
               <Button size="sm" onClick={() => { setEditVideo(null); setAddOpen(true); }}>
                 <Plus className="h-4 w-4 mr-1" /> Add video
@@ -122,7 +124,9 @@ function Training() {
             <GraduationCap className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
             <h3 className="text-sm font-medium text-muted-foreground">No training videos yet</h3>
             <p className="text-xs text-muted-foreground/70 mt-1 max-w-xs mx-auto">
-              Admins can add videos by clicking "Add video". Paste in a YouTube, Loom, or any embed URL.
+              {isAdmin
+                ? "Paste in a YouTube, Loom, or any embed URL to start the library."
+                : "Training videos will appear here once an admin adds them."}
             </p>
             {isAdmin && (
               <Button size="sm" className="mt-4" onClick={() => { setEditVideo(null); setAddOpen(true); }}>
@@ -142,7 +146,7 @@ function Training() {
                   style={{ background: `color-mix(in srgb, ${v.thumbnail_color} 14%, var(--card))` }}
                   onClick={() => v.video_url && window.open(v.video_url, "_blank")}
                 >
-                  <div className={`grid h-12 w-12 place-items-center rounded-full bg-white/90 group-hover:scale-110 transition ${v.video_url ? "cursor-pointer" : "opacity-40"}`}>
+                  <div className={`grid h-12 w-12 place-items-center rounded-full bg-white/90 group-hover:scale-105 motion-safe:transition-transform duration-200 ease-(--ease-out) ${v.video_url ? "cursor-pointer" : "opacity-40"}`}>
                     <Play className="h-5 w-5 text-black fill-black ml-0.5" />
                   </div>
                   {!v.video_url && (

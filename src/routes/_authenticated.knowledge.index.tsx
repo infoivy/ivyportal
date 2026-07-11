@@ -200,7 +200,7 @@ function KnowledgeIndex() {
                           {d.pinned && <Pin className="h-3.5 w-3.5 text-primary shrink-0" />}
                         </div>
                         <p className="text-xs text-muted-foreground mt-2 line-clamp-3">
-                          {stripMarkdown(d.content).slice(0, 160)}
+                          {isStubDoc(d.content) ? <span className="italic text-muted-foreground/70">Content coming soon.</span> : stripMarkdown(d.content).slice(0, 160)}
                         </p>
                         <div className="mt-3 flex items-center justify-between text-[10px] text-muted-foreground">
                           <span>Updated {new Date(d.updated_at).toLocaleDateString()}</span>
@@ -222,6 +222,12 @@ function KnowledgeIndex() {
       )}
     </div>
   );
+}
+
+/* Migration stubs carry an admin-facing remediation note in the body —
+   never surface that text to readers browsing the hub. */
+function isStubDoc(s: string) {
+  return s.includes("Content missing") && s.includes("paste the document body");
 }
 
 function stripMarkdown(s: string) {

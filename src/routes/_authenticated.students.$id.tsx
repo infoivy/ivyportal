@@ -430,7 +430,7 @@ function StudentDetail() {
           })}
         </div>
         <div className="mt-3 h-1.5 rounded-full bg-[var(--muted)] overflow-hidden">
-          <div className="h-full bg-warning transition-all" style={{ width: `${(graduationDone / 4) * 100}%` }} />
+          <div className="h-full bg-warning motion-safe:transition-[width] duration-500 ease-(--ease-out)" style={{ width: `${(graduationDone / 4) * 100}%` }} />
         </div>
       </div>
 
@@ -462,7 +462,7 @@ function StudentDetail() {
             })}
           </div>
           <div className="h-1.5 rounded-full bg-[var(--muted)] overflow-hidden">
-            <div className="h-full bg-success transition-all" style={{ width: `${(milestoneProgress.size / milestones.length) * 100}%` }} />
+            <div className="h-full bg-success motion-safe:transition-[width] duration-500 ease-(--ease-out)" style={{ width: `${(milestoneProgress.size / milestones.length) * 100}%` }} />
           </div>
         </div>
       )}

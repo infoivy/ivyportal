@@ -1200,9 +1200,9 @@ function KpiBar({ label, value, target }: { label: string; value: number; target
   const hit = value >= target;
   return (
     <div>
-      <div className="flex items-baseline justify-between mb-1">
-        <span className="text-[13px] text-muted-foreground">{label}</span>
-        <span className={`text-[11px] ${hit ? "text-success-fg font-semibold" : "text-foreground"}`}>{value} / {target}</span>
+      <div className="flex items-baseline justify-between gap-3 mb-1">
+        <span className="text-[13px] text-muted-foreground truncate">{label}</span>
+        <span className={`text-[11px] shrink-0 whitespace-nowrap ${hit ? "text-success-fg font-semibold" : "text-foreground"}`}>{value} / {target}</span>
       </div>
       <div className="h-1.5 bg-[var(--accent)] rounded-sm overflow-hidden">
         <div className={`h-full ${hit ? "bg-success" : "bg-warning"}`} style={{ width: `${pct}%` }} />
