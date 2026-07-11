@@ -26,6 +26,7 @@ import { useDashboardPrefs } from "@/lib/dashboard-prefs";
 import { VolumeAreaChart, VolumeLegend } from "@/components/ui/volume-area-chart";
 import { OnboardingPanel } from "@/components/onboarding-panel";
 import { MochiIgSection } from "@/components/mochi-ig-section";
+import { SetterActivityCard } from "@/components/setter-activity-card";
 import { DeltaChip } from "@/components/ui/delta-chip";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -376,6 +377,9 @@ function Dashboard() {
 
         {/* Instagram funnel — live from Mochi CRM */}
         {(roles.includes("admin") || roles.includes("founder")) && <MochiIgSection />}
+
+        {/* Per-rep dials, call durations & DMs — Close + Mochi */}
+        {(roles.includes("admin") || roles.includes("founder")) && <SetterActivityCard />}
 
         {/* Ops strip */}
         {prefs.showOps && (

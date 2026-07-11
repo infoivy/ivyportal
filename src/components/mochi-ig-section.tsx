@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Instagram } from "lucide-react";
+import { ChevronRight, Instagram } from "lucide-react";
 import { getMochiDashboard, type MochiPeriod } from "@/lib/mochi.functions";
 import { Sparkline } from "@/components/dither-kit";
 
@@ -28,11 +29,15 @@ export function MochiIgSection() {
   return (
     <div className="card-surface px-4 py-3.5">
       <div className="flex items-center justify-between gap-3 mb-3">
-        <div className="flex items-center gap-2 text-[13px] font-medium text-foreground">
+        <Link
+          to="/mochi"
+          className="group flex items-center gap-2 text-[13px] font-medium text-foreground hover:text-primary motion-safe:transition-colors"
+        >
           <Instagram className="h-3.5 w-3.5 text-muted-foreground" />
           Instagram
           <span className="text-[11px] text-muted-foreground font-normal">via Mochi · live</span>
-        </div>
+          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary" />
+        </Link>
         <div className="flex gap-1">
           {PERIODS.map((p) => (
             <button
@@ -48,8 +53,9 @@ export function MochiIgSection() {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
-        <div className="flex flex-wrap gap-x-8 gap-y-3">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+        {/* Even 3-up grid on phones; inline row with room to breathe on desktop */}
+        <div className="grid grid-cols-3 gap-x-4 gap-y-3 sm:flex sm:flex-wrap sm:gap-x-8">
           <IgStat label="New leads" value={d?.totals.newLeads} loading={q.isLoading} />
           <IgStat label="Conversations" value={d?.messages?.activeConversations} loading={q.isLoading} />
           <IgStat
@@ -62,7 +68,7 @@ export function MochiIgSection() {
           <IgStat label="Booked" value={d?.totals.booked} loading={q.isLoading} />
         </div>
         {spark.length > 1 && (
-          <div className="h-10 w-36 shrink-0" title="New leads per day">
+          <div className="h-10 w-full sm:w-36 shrink-0" title="New leads per day">
             <Sparkline data={spark} color="green" />
           </div>
         )}

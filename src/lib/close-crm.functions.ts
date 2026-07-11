@@ -159,3 +159,82 @@ export const getCloseLeadStats = createServerFn({ method: "GET" })
       return { ...empty, configured: true };
     }
   });
+
+export type CloseCallStats = {
+  configured: boolean;
+  totalDials: number;
+  totalAnswered: number;
+  avgDurationSec: number | null;
+  perUser: { name: string; dials: number; answered: number; avgDurationSec: number | null }[];
+};
+
+/** Dials + call durations per rep from Close call activities. */
+export const getCloseCallStats = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { days?: number } | undefined) => ({
+    days: Math.min(Math.max(input?.days ?? 7, 1), 30),
+  }))
+  .handler(async ({ context, data }): Promise<CloseCallStats> => {
+    const empty: CloseCallStats = { configured: false, totalDials: 0, totalAnswered: 0, avgDurationSec: null, perUser: [] };
+    const key = await readCloseKey(context);
+    if (!key) return empty;
+    const basic = Buffer.from(`${key}:`).toString("base64");
+    const since = new Date(Date.now() - data.days * 86400000).toISOString();
+
+    type Call = { user_name?: string; duration?: number; disposition?: string; direction?: string };
+    const calls: Call[] = [];
+    try {
+      // Page through up to 1000 recent calls — plenty for a 7–30 day window.
+      // Activity endpoints cap _limit at 100 (leads allow 200).
+      for (let skip = 0; skip < 1000; skip += 100) {
+        const params = new URLSearchParams({
+          date_created__gte: since,
+          _limit: "100",
+          _skip: String(skip),
+          _fields: "id,user_name,duration,direction,disposition",
+        });
+        const res = await fetch(`https://api.close.com/api/v1/activity/call/?${params}`, {
+          headers: { Authorization: `Basic ${basic}` },
+        });
+        if (!res.ok) break;
+        const json = (await res.json()) as { data?: Call[]; has_more?: boolean };
+        calls.push(...(json.data ?? []));
+        if (!json.has_more) break;
+      }
+    } catch {
+      return { ...empty, configured: true };
+    }
+
+    const byUser = new Map<string, { dials: number; answered: number; durationSum: number }>();
+    for (const c of calls) {
+      if (c.direction !== "outbound") continue;
+      const name = c.user_name || "Unknown";
+      const row = byUser.get(name) ?? { dials: 0, answered: 0, durationSum: 0 };
+      row.dials += 1;
+      if (c.disposition === "answered" || (c.duration ?? 0) > 0) {
+        row.answered += 1;
+        row.durationSum += c.duration ?? 0;
+      }
+      byUser.set(name, row);
+    }
+
+    const perUser = [...byUser.entries()]
+      .map(([name, r]) => ({
+        name,
+        dials: r.dials,
+        answered: r.answered,
+        avgDurationSec: r.answered > 0 ? Math.round(r.durationSum / r.answered) : null,
+      }))
+      .sort((a, b) => b.dials - a.dials);
+
+    const totalDials = perUser.reduce((s, u) => s + u.dials, 0);
+    const totalAnswered = perUser.reduce((s, u) => s + u.answered, 0);
+    const durationSum = [...byUser.values()].reduce((s, r) => s + r.durationSum, 0);
+    return {
+      configured: true,
+      totalDials,
+      totalAnswered,
+      avgDurationSec: totalAnswered > 0 ? Math.round(durationSum / totalAnswered) : null,
+      perUser,
+    };
+  });

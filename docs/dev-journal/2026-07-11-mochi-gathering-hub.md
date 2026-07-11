@@ -45,3 +45,10 @@ Probed the MCP with curl (401 → `.well-known/oauth-protected-resource` → aut
 - The Room: cash KPI + weekly bars now purely Whop; fireplace confined to the card's lower 55% with the meta line top-right; students strip (count · landed roles via `offer_landed_at` · success rate + bar); team output gains a third dither series: daily leads = Mochi funnel + Close created.
 
 **Gotcha:** Mochi's team currently has only manager accounts + Sair — setters will hit team scope until they're added to Mochi with their portal emails (matching is by email).
+
+## Addendum 2 — /mochi detail page, setter activity, mobile spacing (~10:45pm)
+
+- New founder/admin route `/mochi`: headline stats (leads, active convos, DMs in/out incl. AI-assisted, qualified, booked), live pipeline census by stage, conversion cohort rates (new→qualified→booked→won), lead reply rate, median response time, response-time bucket bars, leads/bookings trend, source donut. Dashboard Instagram card links to it (chevron in header).
+- `SetterActivityCard` on the dashboard: per-rep table joining Close call activities (dials, answered, avg duration — live: 221 dials, 1m55s avg) with Mochi per-member outbound DMs. `getCloseCallStats` pages `/activity/call/` — NOTE: activity endpoints cap `_limit` at 100 (leads allow 200); a 200 limit 400s and reads as "no calls".
+- Instagram card mobile spacing: stats now a 3-col grid on phones (was uneven flex-wrap), sparkline full-width below.
+- `getMochiDashboard` now returns `members` (per-member outbound DMs) for cross-CRM joins.

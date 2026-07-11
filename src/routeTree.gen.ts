@@ -28,6 +28,7 @@ import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedPoliciesRouteImport } from './routes/_authenticated.policies'
 import { Route as AuthenticatedPayoutsRouteImport } from './routes/_authenticated.payouts'
 import { Route as AuthenticatedNotesRouteImport } from './routes/_authenticated.notes'
+import { Route as AuthenticatedMochiRouteImport } from './routes/_authenticated.mochi'
 import { Route as AuthenticatedKnowledgeRouteImport } from './routes/_authenticated.knowledge'
 import { Route as AuthenticatedInstallmentsRouteImport } from './routes/_authenticated.installments'
 import { Route as AuthenticatedInstagramRouteImport } from './routes/_authenticated.instagram'
@@ -155,6 +156,11 @@ const AuthenticatedPayoutsRoute = AuthenticatedPayoutsRouteImport.update({
 const AuthenticatedNotesRoute = AuthenticatedNotesRouteImport.update({
   id: '/notes',
   path: '/notes',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedMochiRoute = AuthenticatedMochiRouteImport.update({
+  id: '/mochi',
+  path: '/mochi',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedKnowledgeRoute = AuthenticatedKnowledgeRouteImport.update({
@@ -344,6 +350,7 @@ export interface FileRoutesByFullPath {
   '/instagram': typeof AuthenticatedInstagramRoute
   '/installments': typeof AuthenticatedInstallmentsRoute
   '/knowledge': typeof AuthenticatedKnowledgeRouteWithChildren
+  '/mochi': typeof AuthenticatedMochiRoute
   '/notes': typeof AuthenticatedNotesRoute
   '/payouts': typeof AuthenticatedPayoutsRoute
   '/policies': typeof AuthenticatedPoliciesRouteWithChildren
@@ -393,6 +400,7 @@ export interface FileRoutesByTo {
   '/founder-hq': typeof AuthenticatedFounderHqRoute
   '/instagram': typeof AuthenticatedInstagramRoute
   '/installments': typeof AuthenticatedInstallmentsRoute
+  '/mochi': typeof AuthenticatedMochiRoute
   '/notes': typeof AuthenticatedNotesRoute
   '/payouts': typeof AuthenticatedPayoutsRoute
   '/profile': typeof AuthenticatedProfileRoute
@@ -444,6 +452,7 @@ export interface FileRoutesById {
   '/_authenticated/instagram': typeof AuthenticatedInstagramRoute
   '/_authenticated/installments': typeof AuthenticatedInstallmentsRoute
   '/_authenticated/knowledge': typeof AuthenticatedKnowledgeRouteWithChildren
+  '/_authenticated/mochi': typeof AuthenticatedMochiRoute
   '/_authenticated/notes': typeof AuthenticatedNotesRoute
   '/_authenticated/payouts': typeof AuthenticatedPayoutsRoute
   '/_authenticated/policies': typeof AuthenticatedPoliciesRouteWithChildren
@@ -496,6 +505,7 @@ export interface FileRouteTypes {
     | '/instagram'
     | '/installments'
     | '/knowledge'
+    | '/mochi'
     | '/notes'
     | '/payouts'
     | '/policies'
@@ -545,6 +555,7 @@ export interface FileRouteTypes {
     | '/founder-hq'
     | '/instagram'
     | '/installments'
+    | '/mochi'
     | '/notes'
     | '/payouts'
     | '/profile'
@@ -595,6 +606,7 @@ export interface FileRouteTypes {
     | '/_authenticated/instagram'
     | '/_authenticated/installments'
     | '/_authenticated/knowledge'
+    | '/_authenticated/mochi'
     | '/_authenticated/notes'
     | '/_authenticated/payouts'
     | '/_authenticated/policies'
@@ -763,6 +775,13 @@ declare module '@tanstack/react-router' {
       path: '/notes'
       fullPath: '/notes'
       preLoaderRoute: typeof AuthenticatedNotesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/mochi': {
+      id: '/_authenticated/mochi'
+      path: '/mochi'
+      fullPath: '/mochi'
+      preLoaderRoute: typeof AuthenticatedMochiRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/knowledge': {
@@ -1074,6 +1093,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedInstagramRoute: typeof AuthenticatedInstagramRoute
   AuthenticatedInstallmentsRoute: typeof AuthenticatedInstallmentsRoute
   AuthenticatedKnowledgeRoute: typeof AuthenticatedKnowledgeRouteWithChildren
+  AuthenticatedMochiRoute: typeof AuthenticatedMochiRoute
   AuthenticatedNotesRoute: typeof AuthenticatedNotesRoute
   AuthenticatedPayoutsRoute: typeof AuthenticatedPayoutsRoute
   AuthenticatedPoliciesRoute: typeof AuthenticatedPoliciesRouteWithChildren
@@ -1112,6 +1132,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedInstagramRoute: AuthenticatedInstagramRoute,
   AuthenticatedInstallmentsRoute: AuthenticatedInstallmentsRoute,
   AuthenticatedKnowledgeRoute: AuthenticatedKnowledgeRouteWithChildren,
+  AuthenticatedMochiRoute: AuthenticatedMochiRoute,
   AuthenticatedNotesRoute: AuthenticatedNotesRoute,
   AuthenticatedPayoutsRoute: AuthenticatedPayoutsRoute,
   AuthenticatedPoliciesRoute: AuthenticatedPoliciesRouteWithChildren,
