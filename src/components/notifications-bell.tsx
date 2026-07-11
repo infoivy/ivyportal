@@ -98,12 +98,20 @@ export function NotificationsBell() {
         .order("event_start")
         .limit(30);
       const now = Date.now();
+      const todayKey = "warm:" + new Date().toISOString().slice(0, 10);
       const out: SetNudge[] = [];
       for (const r of (data ?? []) as any[]) {
         const msLeft = new Date(r.event_start).getTime() - now;
-        // the tightest window that is open but not ticked yet
-        const due = SET_WINDOWS.filter(w => msLeft <= w.minutes * 60_000 && !(r.reminder_log ?? {})[w.key]);
-        if (due.length) out.push({ id: r.id, prospect: r.prospect, event_start: r.event_start, window: due[due.length - 1].key });
+        const log = (r.reminder_log ?? {}) as Record<string, string>;
+        // inside 48h: the tightest open window not ticked yet
+        const due = SET_WINDOWS.filter(w => msLeft <= w.minutes * 60_000 && !log[w.key]);
+        if (due.length) {
+          out.push({ id: r.id, prospect: r.prospect, event_start: r.event_start, window: due[due.length - 1].key });
+        } else if (msLeft > 48 * 3_600_000 && !log[todayKey]) {
+          // further out: one keep-warm touch per day until the 48h window starts
+          const days = Math.round(msLeft / 86_400_000);
+          out.push({ id: r.id, prospect: r.prospect, event_start: r.event_start, window: `keep warm · call in ${days}d` });
+        }
       }
       return out;
     },
@@ -151,7 +159,7 @@ export function NotificationsBell() {
                   <div className="flex-1 min-w-0">
                     <div className="text-xs text-foreground truncate">Remind {n.prospect}</div>
                     <div className="text-[10px] text-muted-foreground">
-                      {n.window} window open · call {new Date(n.event_start).toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" })}
+                      {n.window.startsWith("keep warm") ? n.window : `${n.window} window open · call ${new Date(n.event_start).toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" })}`}
                     </div>
                   </div>
                   <span className="text-[10px] font-medium text-warning-fg whitespace-nowrap">tick it off →</span>

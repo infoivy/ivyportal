@@ -22,7 +22,7 @@ import { DateField } from "@/components/ui/date-field";
 import {
   disconnectMyCalendar, getMyCalendarConnection, getTeamCalendarEvents, createSetReminder,
   listUpcomingSets, deleteSetReminder, syncCalendlySets, claimSet, type UpcomingSet,
-  updateSetTracking, cancelSet, type ReminderWindow, type ReminderState,
+  updateSetTracking, cancelSet, restoreSet, type ReminderWindow, type ReminderState,
   getTeamCalendarStatus, startGoogleCalendarAuth, type TeamEvent,
 } from "@/lib/calendar.functions";
 
@@ -150,10 +150,18 @@ function CalendarPage() {
   const deleteSetFn = useServerFn(deleteSetReminder);
   const [setOpen, setSetOpen] = useState(false);
   const [setsFilter, setSetsFilter] = useState<"all" | "mine">("all");
+  const [pageView, setPageView] = useState<"calendar" | "sets">(() => {
+    try { return (localStorage.getItem("isa-cal-view") as "calendar" | "sets") ?? "calendar"; } catch { return "calendar"; }
+  });
+  const changePageView = (v: "calendar" | "sets") => {
+    setPageView(v);
+    try { localStorage.setItem("isa-cal-view", v); } catch { /* ignore */ }
+  };
   const syncCalendlyFn = useServerFn(syncCalendlySets);
   const claimSetFn = useServerFn(claimSet);
   const trackSetFn = useServerFn(updateSetTracking);
   const cancelSetFn = useServerFn(cancelSet);
+  const restoreSetFn = useServerFn(restoreSet);
   const upcomingSets = useQuery({ queryKey: ["cal", "sets"], queryFn: () => listSetsFn(), staleTime: 30_000 });
 
   // 6-hour rule: a set the lead hasn't confirmed by 6h before start is pulled
@@ -274,6 +282,10 @@ function CalendarPage() {
               <h1 className="text-2xl font-semibold tracking-tight">Team Calendar</h1>
               <p className="text-sm text-muted-foreground">Unified view of every closer's booked calls.</p>
             </div>
+            <div className="inline-flex rounded-lg bg-muted p-[3px] ml-2">
+              <button onClick={() => changePageView("calendar")} className={`text-[13px] font-medium px-3 py-1.5 rounded-[8px] motion-safe:transition-colors ${pageView === "calendar" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>Calendar</button>
+              <button onClick={() => changePageView("sets")} className={`text-[13px] font-medium px-3 py-1.5 rounded-[8px] motion-safe:transition-colors ${pageView === "sets" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>Sets</button>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             {myConn.data ? (
@@ -301,6 +313,7 @@ function CalendarPage() {
           </div>
         </div>
 
+        {pageView === "calendar" && (<>
         {/* Connected team + filters */}
         <Card className="p-4 border-border/60">
           <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -447,8 +460,11 @@ function CalendarPage() {
           )}
         </Card>
 
+        </>)}
+
         {/* Set reminders — every upcoming set and its reminder schedule */}
-        <Card className="p-4 border-border/60 space-y-3">
+        {pageView === "sets" && (
+        <Card className="p-5 border-border/60 space-y-4">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
               <h2 className="text-title text-foreground">Set reminders</h2>
@@ -467,6 +483,7 @@ function CalendarPage() {
             </div>
           </div>
           <UpcomingSetsList
+            big
             sets={upcomingSets.data ?? []}
             toLocal={toLocal}
             onTrack={async (id, window, state) => {
@@ -486,7 +503,14 @@ function CalendarPage() {
               try {
                 const r = await cancelSetFn({ data: { id, reason: "removed manually" } });
                 qc.invalidateQueries({ queryKey: ["cal", "sets"] });
-                toast.success(r.calendarRemoved ? "Cancelled and removed from the calendar." : "Cancelled.");
+                toast.success(r.calendarRemoved ? "Cancelled and removed from the calendar. Undo below if that was a mistake." : "Cancelled — undo below if that was a mistake.");
+              } catch (err) { toast.error(String((err as Error).message ?? err)); }
+            }}
+            onRestore={async (id) => {
+              try {
+                const r = await restoreSetFn({ data: { id } });
+                qc.invalidateQueries({ queryKey: ["cal", "sets"] });
+                toast.success(r.calendarRestored ? "Restored — it's back on the calendar with reminders." : "Restored to the list. Reconnect Google Calendar to re-add the event.");
               } catch (err) { toast.error(String((err as Error).message ?? err)); }
             }}
             onClaim={async (id) => {
@@ -509,6 +533,7 @@ function CalendarPage() {
             }}
           />
         </Card>
+        )}
 
         {/* Detail modal */}
         {selectedEvent && (
@@ -802,16 +827,18 @@ const WINDOWS: { key: "48h" | "24h" | "3h" | "1h"; label: string; minutes: numbe
   { key: "1h", label: "1h", minutes: 60 },
 ];
 
-function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, onConfirm, onCancel, toLocal }: {
+function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, onConfirm, onCancel, onRestore, toLocal, big = false }: {
   sets: UpcomingSet[];
   loading: boolean;
   filter: "all" | "mine";
   onDelete: (id: string) => void;
   onClaim: (id: string) => void;
-  onTrack: (id: string, window: ReminderWindow, state: ReminderState | null) => void;
+  onTrack: (id: string, window: ReminderWindow | string, state: ReminderState | null) => void;
   onConfirm: (id: string, confirm: boolean) => void;
   onCancel: (id: string) => void;
+  onRestore: (id: string) => void;
   toLocal: (iso: string | Date) => Date;
+  big?: boolean;
 }) {
   const { user, roles } = useAuth();
   const isAdmin = roles.includes("admin");
@@ -845,11 +872,14 @@ function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, o
         const confirmed = !!s.confirmed_at;
         const inDanger = !confirmed && msLeft > 0 && msLeft <= 12 * 3_600_000;
         const canTrack = mine || isAdmin || roles.includes("closer");
+        const todayWarmKey = "warm:" + new Date().toISOString().slice(0, 10);
+        const warmToday = !!(s.reminder_log as Record<string, string> | undefined)?.[todayWarmKey];
+        const farOut = msLeft > 48 * 3_600_000;
         return (
-          <div key={s.id} className="py-2.5 space-y-1.5">
+          <div key={s.id} className={big ? "py-4 space-y-2.5" : "py-2.5 space-y-1.5"}>
             <div className="flex items-center gap-3">
               <div className="min-w-0 flex-1">
-                <div className="text-body font-medium text-foreground truncate">
+                <div className={`${big ? "text-[15px]" : "text-body"} font-medium text-foreground truncate`}>
                   {s.prospect}
                   {s.source === "calendly" && <span className="ml-2 text-micro text-muted-foreground">calendly</span>}
                 </div>
@@ -913,6 +943,20 @@ function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, o
                     </button>
                   );
                 })}
+                {farOut && (
+                  <button
+                    disabled={!canTrack}
+                    onClick={() => onTrack(s.id, todayWarmKey, warmToday ? null : "reminded")}
+                    title={warmToday ? "Warm touch logged today — click to undo" : "Booked days out — send one warm touch per day so the lead stays engaged"}
+                    className={`text-micro font-medium rounded-full px-2 py-0.5 border motion-safe:transition-colors disabled:cursor-default ${
+                      warmToday
+                        ? "text-success-fg bg-success-bg border-success/25"
+                        : "text-warning-fg bg-warning-bg border-warning/25 animate-pulse"
+                    }`}
+                  >
+                    {warmToday ? "kept warm today ✓" : "keep warm today"}
+                  </button>
+                )}
                 <span className="mx-1 h-3 w-px bg-border" />
                 {canTrack && (confirmed ? (
                   <button onClick={() => onConfirm(s.id, false)} className="text-micro text-muted-foreground hover:text-foreground" title="Undo confirmation">
@@ -940,6 +984,11 @@ function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, o
             <div key={s.id} className="flex items-center gap-3 py-1.5 opacity-55">
               <span className="text-caption line-through truncate flex-1">{s.prospect} · {format(toLocal(s.event_start), "EEE, MMM d · h:mm a")}</span>
               <span className="text-micro text-danger-fg shrink-0">cancelled</span>
+              {new Date(s.event_start).getTime() > Date.now() && (
+                <button onClick={() => onRestore(s.id)} className="text-micro font-medium text-primary hover:opacity-80 shrink-0">
+                  Undo
+                </button>
+              )}
               {(s.owner_id === user?.id || isAdmin) && (
                 <button onClick={() => onDelete(s.id)} className="text-muted-foreground hover:text-danger-fg shrink-0" title="Delete row">
                   <X className="h-3 w-3" />

@@ -399,7 +399,7 @@ export type ReminderState = "reminded" | "no_response";
 /** Tick a reminder window, mark confirmed, or reopen. */
 export const updateSetTracking = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { id: string; window?: ReminderWindow; state?: ReminderState | null; confirm?: boolean }) => data)
+  .inputValidator((data: { id: string; window?: ReminderWindow | string; state?: ReminderState | null; confirm?: boolean }) => data)
   .handler(async ({ context, data }) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sr = context.supabase as any;
@@ -465,4 +465,59 @@ export const cancelSet = createServerFn({ method: "POST" })
       }
     }
     return { ok: true, calendarRemoved: false };
+  });
+
+/** Undo a cancellation: reactivate the set and re-create the claimer's
+ *  Google Calendar event (with the standard reminder schedule). */
+export const restoreSet = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { id: string }) => data)
+  .handler(async ({ context, data }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sr = context.supabase as any;
+    const { data: row, error } = await sr.from("set_reminders").select("*").eq("id", data.id).maybeSingle();
+    if (error || !row) throw new Error("set not found");
+    if (row.status !== "cancelled") throw new Error("set is not cancelled");
+
+    const { error: upErr } = await sr.from("set_reminders").update({
+      status: "active",
+      notes: [row.notes, "Restored"].filter(Boolean).join("\n"),
+    }).eq("id", data.id);
+    if (upErr) throw new Error(upErr.message);
+
+    // Recreate the calendar event on the claimer's calendar (best effort)
+    if (row.owner_id) {
+      try {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { data: conn } = await supabaseAdmin
+          .from("calendar_connections").select("*").eq("user_id", row.owner_id).maybeSingle();
+        if (conn) {
+          let accessToken = conn.access_token as string | null;
+          const exp = conn.access_token_expires_at ? new Date(conn.access_token_expires_at).getTime() : 0;
+          if (!accessToken || exp - 60_000 < Date.now()) {
+            const r = await refreshAccessToken(conn.refresh_token);
+            accessToken = r.access_token;
+            await supabaseAdmin.from("calendar_connections")
+              .update({ access_token: accessToken, access_token_expires_at: new Date(Date.now() + r.expires_in * 1000).toISOString() })
+              .eq("id", conn.id);
+          }
+          const start = new Date(row.event_start);
+          const end = new Date(start.getTime() + row.duration_min * 60_000);
+          const event = await insertCalendarEvent(accessToken!, conn.calendar_id, {
+            summary: `Set: ${row.prospect}`,
+            description: [row.notes, "Reminders: 2 days · 1 day · 3 hours · 1 hour before."].filter(Boolean).join("\n\n"),
+            startISO: start.toISOString(),
+            endISO: end.toISOString(),
+            reminderMinutes: SET_REMINDER_MINUTES,
+          });
+          await (supabaseAdmin as any).from("set_reminders")
+            .update({ gcal_event_id: event.id, gcal_html_link: event.htmlLink ?? null })
+            .eq("id", data.id);
+          return { ok: true, calendarRestored: true };
+        }
+      } catch (err) {
+        console.error("[restoreSet] gcal insert failed:", err);
+      }
+    }
+    return { ok: true, calendarRestored: false };
   });

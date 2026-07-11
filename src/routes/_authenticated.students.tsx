@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { useDebouncedValue } from "@/hooks/use-debounced";
 import { studentsQuery, coachesQuery, studentCallsAggQuery, studentEodsAggQuery } from "@/lib/queries";
+import { signAvatars } from "@/lib/avatars";
 import { toast } from "sonner";
 import {
   School, Search, Plus, LayoutGrid, Table as TableIcon, Trash2, X,
@@ -97,6 +98,22 @@ function StudentsLayout() {
   const q = useDebouncedValue(qRaw, 250);
   const [phaseFilter, setPhaseFilter] = useState<Phase | "all" | "at_risk">("all");
   const [coachFilter, setCoachFilter] = useState<string>("all"); // all | unassigned | <coach_id>
+  const coachAvatarsQ = useQuery({
+    queryKey: ["coach-avatars", coaches.map(c => c.id).join(",")],
+    enabled: coaches.length > 0,
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const { data: profs } = await supabase.from("profiles").select("id, avatar_path" as any).in("id", coaches.map(c => c.id));
+      const paths: Record<string, string | null> = {};
+      ((profs ?? []) as any[]).forEach(p => { paths[p.id] = p.avatar_path ?? null; });
+      const signed = await signAvatars(Object.values(paths));
+      return { paths, signed };
+    },
+  });
+  const coachAvatar = (id: string) => {
+    const path = coachAvatarsQ.data?.paths[id];
+    return path ? coachAvatarsQ.data?.signed[path] : undefined;
+  };
   const [view, setView] = useState<"table" | "kanban" | "graduation">("table");
   const [kanbanBy, setKanbanBy] = useState<"phase" | "coach">("phase");
   const [addOpen, setAddOpen] = useState(false);
@@ -326,54 +343,50 @@ function StudentsLayout() {
           <AlertTriangle className="h-3.5 w-3.5" /> At risk · {atRiskCount}
         </button>
 
-        {coaches.length > 0 && (
-          <>
-            <span className="h-4 w-px bg-border mx-1 hidden sm:block" />
-            <button
-              onClick={() => setCoachFilter("all")}
-              className={`text-[13px] font-medium px-3 py-1.5 rounded-md motion-safe:transition-colors ${
-                coachFilter === "all" ? "bg-foreground text-background" : "bg-muted text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              All coaches
-            </button>
-            {coaches.map(c => {
-              const count = students.filter(s => s.coach_id === c.id).length;
-              if (count === 0 && coachFilter !== c.id) return null;
-              return (
-                <button
-                  key={c.id}
-                  onClick={() => setCoachFilter(coachFilter === c.id ? "all" : c.id)}
-                  className={`text-[13px] font-medium px-3 py-1.5 rounded-md motion-safe:transition-colors ${
-                    coachFilter === c.id ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {(c.display_name ?? "Coach").split(" ")[0]} · {count}
-                </button>
-              );
-            })}
-            {students.some(s => !s.coach_id) && (
-              <button
-                onClick={() => setCoachFilter(coachFilter === "unassigned" ? "all" : "unassigned")}
-                className={`text-[13px] font-medium px-3 py-1.5 rounded-md motion-safe:transition-colors ${
-                  coachFilter === "unassigned" ? "bg-warning-bg text-warning-fg" : "bg-muted text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Unassigned · {students.filter(s => !s.coach_id).length}
-              </button>
-            )}
-          </>
-        )}
-
-        {view === "kanban" && (
-          <div className="ml-auto inline-flex rounded-lg bg-muted p-[3px]">
-            <button onClick={() => setKanbanBy("phase")} className={`text-[13px] font-medium px-3 py-1.5 rounded-[8px] motion-safe:transition-colors ${kanbanBy === "phase" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>By phase</button>
-            <button onClick={() => setKanbanBy("coach")} className={`flex items-center gap-1 text-[13px] font-medium px-3 py-1.5 rounded-[8px] motion-safe:transition-colors ${kanbanBy === "coach" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-              <Users className="h-3.5 w-3.5" /> By coach
-            </button>
-          </div>
-        )}
       </div>
+
+      {/* Coach filter — same treatment as the 1-on-1 Calls page */}
+      {coaches.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 items-center">
+          <button
+            onClick={() => setCoachFilter("all")}
+            className={`text-[10px] px-2.5 py-1 rounded-sm border ${coachFilter === "all" ? "text-foreground border-border bg-muted" : "text-muted-foreground border-[var(--border)]"}`}
+          >All coaches · {students.length}</button>
+          {coaches.map(c => {
+            const count = students.filter(s => s.coach_id === c.id).length;
+            const avatar = coachAvatar(c.id);
+            return (
+              <button
+                key={c.id}
+                onClick={() => setCoachFilter(coachFilter === c.id ? "all" : c.id)}
+                className={`flex items-center gap-1.5 text-[10px] pl-1 pr-2.5 py-0.5 rounded-sm border ${coachFilter === c.id ? "text-foreground border-border bg-muted" : "text-muted-foreground border-[var(--border)]"}`}
+              >
+                <div className="h-5 w-5 rounded-sm bg-[var(--accent)] overflow-hidden flex items-center justify-center text-[9px] font-semibold shrink-0">
+                  {avatar
+                    ? <img src={avatar} alt="" className="h-full w-full object-cover" />
+                    : (c.display_name ?? "?").slice(0, 1).toUpperCase()}
+                </div>
+                {c.display_name ?? "Unnamed"} · {count}
+              </button>
+            );
+          })}
+          {students.some(s => !s.coach_id) && (
+            <button
+              onClick={() => setCoachFilter(coachFilter === "unassigned" ? "all" : "unassigned")}
+              className={`text-[10px] px-2.5 py-1 rounded-sm border ${coachFilter === "unassigned" ? "text-warning-fg border-warning/25 bg-warning-bg" : "text-muted-foreground border-[var(--border)]"}`}
+            >Unassigned · {students.filter(s => !s.coach_id).length}</button>
+          )}
+
+          {view === "kanban" && (
+            <div className="ml-auto inline-flex rounded-lg bg-muted p-[3px]">
+              <button onClick={() => setKanbanBy("phase")} className={`text-[13px] font-medium px-3 py-1.5 rounded-[8px] motion-safe:transition-colors ${kanbanBy === "phase" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>By phase</button>
+              <button onClick={() => setKanbanBy("coach")} className={`flex items-center gap-1 text-[13px] font-medium px-3 py-1.5 rounded-[8px] motion-safe:transition-colors ${kanbanBy === "coach" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+                <Users className="h-3.5 w-3.5" /> By coach
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {view === "graduation" ? (
         <GraduationKanban students={filtered} />
