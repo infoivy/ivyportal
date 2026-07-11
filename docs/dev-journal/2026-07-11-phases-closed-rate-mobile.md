@@ -61,3 +61,16 @@ Python bulk-edit scripts over route files; MCP `apply_migration` + local migrati
 - **Sets tracker**: reminder_log chips (48h/24h/3h/1h, reminded/no-reply), lead confirmation, automatic 6-hour unconfirmed drop (client-triggered cancelSet + gcal delete), bell nudges for open windows, calendar type filter chips (Closing/Coaching/Meetings).
 - Guides re-seeded (dark screenshots) after each feature; EOD & Meetings policy page added earlier the same day.
 - Commits: 0f89fa4, a157119, 8260210, b4ae520 (+ 74df938, 1f3512f earlier).
+
+---
+
+## Addendum 3: alerts channel, goal pace, trends, setter access, mobile re-pass
+
+- Student Alerts channel (/alerts): persistent team feed, @student tag chips linking to records, day grouping, 20s polling, admin-only delete. student_alerts table + team RLS.
+- Gathering Hub goal: pace-vs-goal chart (cumulative cash area vs dashed goal-pace line, today dot, plain-language projection).
+- Volume trends unified (dashboard + sales): DMs/Convos/Booked/Shows/Closes, one palette.
+- Setters: Sales + Revenue removed from defaults/sidebar/gates (founder decision; CLAUDE.md updated). The "all zeros" report was RLS scoping on a fresh setter account, not the blur.
+- Sets: unclaim, assign-to-setter (moves the gcal event), dashboard urgency banner, keep-warm daily cadence with bell nudges, undo/restore for cancelled sets, Calendar|Sets view switcher, coach chips restyled with avatars on Students.
+- Admin: audit log moved to the bottom.
+- Mobile re-crawl: 22 routes × 3 personas at 390px, zero overflow; set rows now wrap badges under the name.
+- Commits: 218afd6, 8dcc204, ce8d43c, 1852ac6 (+ ff68b72 earlier).
