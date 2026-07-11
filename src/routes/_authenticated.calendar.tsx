@@ -911,8 +911,8 @@ function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, o
         const farOut = msLeft > 48 * 3_600_000;
         return (
           <div key={s.id} className={big ? "py-4 space-y-2.5" : "py-2.5 space-y-1.5"}>
-            <div className="flex items-center gap-3">
-              <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <div className="min-w-[55%] flex-1">
                 <div className={`${big ? "text-[15px]" : "text-body"} font-medium text-foreground truncate`}>
                   {s.prospect}
                   {s.source === "calendly" && <span className="ml-2 text-micro text-muted-foreground">calendly</span>}
