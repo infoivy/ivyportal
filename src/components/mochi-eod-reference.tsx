@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Instagram } from "lucide-react";
 import { getMochiEodReference } from "@/lib/mochi.functions";
@@ -5,11 +6,18 @@ import { getMochiEodReference } from "@/lib/mochi.functions";
 type ApplyField = "dms_sent" | "calls_booked";
 
 /**
- * Today's Mochi numbers beside the EOD form — a reference, never an
- * auto-write. Apply buttons only exist for fields with a clean 1:1 meaning
- * (DMs out → DMs sent, booked → sets); everything else is context.
+ * Today's Mochi numbers beside the EOD form. When the signed-in setter is
+ * matched to a Mochi member (by email), their DMs and sets auto-fill any
+ * still-zero fields once — the setter keeps full control after that, and
+ * "use" re-syncs a field on demand. Nothing is ever submitted automatically.
  */
-export function MochiEodReference({ onApply }: { onApply: (field: ApplyField, value: number) => void }) {
+export function MochiEodReference({
+  values,
+  onApply,
+}: {
+  values: { dms_sent: number; calls_booked: number };
+  onApply: (field: ApplyField, value: number) => void;
+}) {
   const q = useQuery({
     queryKey: ["mochi-eod-reference"],
     queryFn: () => getMochiEodReference(),
@@ -18,9 +26,22 @@ export function MochiEodReference({ onApply }: { onApply: (field: ApplyField, va
   });
 
   const d = q.data;
-  if (!d?.available) return null;
+  const personal = d?.scope === "personal";
+  const autoFilled = useRef(false);
+  const [didAutoFill, setDidAutoFill] = useState(false);
 
-  const personal = d.scope === "personal";
+  // One-shot prefill: only into fields that are still zero, only when matched.
+  useEffect(() => {
+    if (!d?.available || !personal || autoFilled.current) return;
+    autoFilled.current = true;
+    let filled = false;
+    if (values.dms_sent === 0 && (d.dmsOut ?? 0) > 0) { onApply("dms_sent", d.dmsOut!); filled = true; }
+    if (values.calls_booked === 0 && (d.callsBooked ?? 0) > 0) { onApply("calls_booked", d.callsBooked!); filled = true; }
+    if (filled) setDidAutoFill(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [d]);
+
+  if (!d?.available) return null;
 
   return (
     <div className="rounded-sm border border-[var(--border)] bg-[var(--background)] p-3 space-y-2">
@@ -28,6 +49,7 @@ export function MochiEodReference({ onApply }: { onApply: (field: ApplyField, va
         <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
           <Instagram className="h-3 w-3" />
           Mochi today {personal ? `· ${d.memberName}` : "· team-wide"}
+          {didAutoFill && <span className="text-success-fg">· auto-filled</span>}
         </div>
         {!personal && (
           <span className="text-[10px] text-muted-foreground/70">

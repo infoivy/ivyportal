@@ -29,14 +29,15 @@ type Member = {
   roles: string[];
   setter_type: SetterType;
 };
+// Every role needs a visibly distinct "on" state — a muted "on" reads as off.
 const ROLES: { key: AppRole; icon: React.ComponentType<{ className?: string }>; color: string }[] = [
   { key: "admin", icon: Shield, color: "text-danger-fg border-danger/25 bg-danger-bg" },
-  { key: "closer", icon: Phone, color: "text-muted-foreground border-border bg-muted" },
+  { key: "closer", icon: Phone, color: "text-chart-1 border-chart-1/25 bg-chart-1/10" },
   { key: "setter", icon: UserCircle2, color: "text-success-fg border-success/25 bg-success-bg" },
-  { key: "coach", icon: GraduationCap, color: "text-muted-foreground border-border bg-muted" },
+  { key: "coach", icon: GraduationCap, color: "text-chart-4 border-chart-4/25 bg-chart-4/10" },
   { key: "csm", icon: HeartHandshake, color: "text-warning-fg border-warning/25 bg-warning-bg" },
-  { key: "founder", icon: Sparkles, color: "text-muted-foreground border-border bg-muted" },
-  { key: "student", icon: School, color: "text-muted-foreground border-border bg-muted" },
+  { key: "founder", icon: Sparkles, color: "text-chart-6 border-chart-6/25 bg-chart-6/10" },
+  { key: "student", icon: School, color: "text-foreground border-foreground/30 bg-muted" },
 ];
 
 function TeamPage() {

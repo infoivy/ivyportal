@@ -1930,7 +1930,54 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      eods_activity: {
+        Row: {
+          calls_booked: number | null
+          calls_scheduled: number | null
+          closes: number | null
+          convos_started: number | null
+          created_at: string | null
+          dials: number | null
+          dms_sent: number | null
+          id: string | null
+          leads_contacted: number | null
+          no_shows: number | null
+          report_date: string | null
+          shows: number | null
+          user_id: string | null
+        }
+        Insert: {
+          calls_booked?: number | null
+          calls_scheduled?: number | null
+          closes?: number | null
+          convos_started?: number | null
+          created_at?: string | null
+          dials?: number | null
+          dms_sent?: number | null
+          id?: string | null
+          leads_contacted?: number | null
+          no_shows?: number | null
+          report_date?: string | null
+          shows?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          calls_booked?: number | null
+          calls_scheduled?: number | null
+          closes?: number | null
+          convos_started?: number | null
+          created_at?: string | null
+          dials?: number | null
+          dms_sent?: number | null
+          id?: string | null
+          leads_contacted?: number | null
+          no_shows?: number | null
+          report_date?: string | null
+          shows?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {

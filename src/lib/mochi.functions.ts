@@ -189,8 +189,8 @@ export const getMochiDashboard = createServerFn({ method: "GET" })
         comments: sources.find((s) => s.source === "COMMENT")?.lead_count ?? 0,
       },
       members: (msg.messages_by_member ?? [])
-        .map((m) => ({ name: (m.member_name ?? m.name ?? "").trim(), outbound: m.outbound ?? m.outbound_messages ?? 0 }))
-        .filter((m) => m.name),
+        .map((m: any) => ({ name: (m.member_name ?? m.name ?? "").trim(), outbound: m.messages_sent ?? m.outbound ?? m.outbound_messages ?? 0 }))
+        .filter((m: { name: string }) => m.name),
     };
   });
 
@@ -289,14 +289,16 @@ export const getMochiEodReference = createServerFn({ method: "GET" })
       ]);
 
       const memberMsgs = memberName
-        ? (msgs.messages_by_member ?? []).find((m) => (m.member_name ?? m.name ?? "").trim() === memberName)
+        ? (msgs.messages_by_member ?? []).find((m: any) => (m.member_name ?? m.name ?? "").trim() === memberName)
         : undefined;
 
       return {
         available: true,
         scope: memberName ? "personal" : "team",
         memberName,
-        dmsOut: memberName ? (memberMsgs?.outbound ?? memberMsgs?.outbound_messages ?? null) : (msgs.outbound_messages ?? null),
+        dmsOut: memberName
+          ? ((memberMsgs as any)?.messages_sent ?? memberMsgs?.outbound ?? memberMsgs?.outbound_messages ?? 0)
+          : (msgs.outbound_messages ?? null),
         newLeads: metrics.new_leads ?? null,
         callsBooked: metrics.calls_booked ?? null,
         activeConvos: msgs.active_conversations ?? null,

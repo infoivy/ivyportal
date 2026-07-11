@@ -380,7 +380,10 @@ function EODsPage() {
               {isSetter && (
                 <div className="space-y-3">
                   <SectionLabel>Setting activity</SectionLabel>
-                  <MochiEodReference onApply={(field, value) => setNum(field)(String(value))} />
+                  <MochiEodReference
+                    values={{ dms_sent: form.dms_sent, calls_booked: form.calls_booked }}
+                    onApply={(field, value) => setNum(field)(String(value))}
+                  />
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     {(mySetterType === "phone" || mySetterType === "full_cycle" || !mySetterType) && (
                       <NumField label="Dials" value={form.dials} onChange={setNum("dials")} />
@@ -1237,10 +1240,17 @@ function NumField({ label, value, onChange }: { label: string; value: number; on
       <div className="flex items-center gap-1">
         <button type="button" onClick={() => bump(-1)} className="h-9 w-8 rounded-sm border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--accent)] text-lg leading-none">−</button>
         <Input
-          type="number"
-          min={0}
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
           value={draft}
-          onChange={e => { setDraft(e.target.value); onChange(e.target.value); }}
+          onChange={e => {
+            // Digits only, no leading zeros — type="number" fights the caret
+            // and renders things like "030" that backspace can't clean up.
+            const clean = e.target.value.replace(/\D/g, "").replace(/^0+(?=\d)/, "");
+            setDraft(clean);
+            onChange(clean);
+          }}
           onBlur={() => setDraft(String(value))}
           onFocus={e => e.currentTarget.select()}
           className="bg-[var(--background)] border-[var(--border)] rounded-sm h-9 text-sm text-center"

@@ -116,16 +116,17 @@ function Dashboard() {
 
     {
       const [cur, prev, profs, students, callsThisWeek, callsRecent, eodsRecent, todayEods, installmentsDue, installmentsLate, testimonials, actionCalls] = await Promise.all([
-        supabase.from("eods").select("id, user_id, report_date, dms_sent, convos_started, calls_booked, calls_scheduled, shows, no_shows, closes").gte("report_date", from).lte("report_date", to).order("report_date", { ascending: true }),
+        // eods_activity: whole team can read team activity (no money columns)
+        supabase.from("eods_activity").select("id, user_id, report_date, dms_sent, convos_started, calls_booked, calls_scheduled, shows, no_shows, closes").gte("report_date", from).lte("report_date", to).order("report_date", { ascending: true }),
         compare
-          ? supabase.from("eods").select("id, user_id, report_date, dms_sent, convos_started, calls_booked, calls_scheduled, shows, no_shows, closes").gte("report_date", prevFrom).lte("report_date", prevTo)
+          ? supabase.from("eods_activity").select("id, user_id, report_date, dms_sent, convos_started, calls_booked, calls_scheduled, shows, no_shows, closes").gte("report_date", prevFrom).lte("report_date", prevTo)
           : Promise.resolve({ data: [] as EodRow[] }),
         supabase.from("profiles").select("id, display_name"),
         supabase.from("students").select("id, status, phase").eq("status", "active"),
         supabase.from("student_calls").select("id", { count: "exact", head: true }).eq("status", "scheduled").gte("call_date", today).lte("call_date", in7),
         supabase.from("student_calls").select("student_id, call_date").eq("status", "completed").gte("call_date", callRisk),
         supabase.from("student_eods").select("student_id, report_date").gte("report_date", eodRisk),
-        supabase.from("eods").select("user_id").eq("report_date", today),
+        supabase.from("eods_activity").select("user_id").eq("report_date", today),
         supabase.from("installment_payments").select("id", { count: "exact", head: true }).eq("status", "upcoming").gte("due_date", today).lte("due_date", in3),
         supabase.from("installment_payments").select("id", { count: "exact", head: true }).eq("status", "upcoming").lt("due_date", today),
         supabase.from("students").select("id", { count: "exact", head: true }).eq("status", "active").eq("testimonial_collected", false).not("first_win_at", "is", null),
@@ -224,19 +225,32 @@ function Dashboard() {
   });
   useEffect(() => { if (igQ.data != null) setIgLoggedThisMonth(igQ.data); }, [igQ.data]);
 
-  const totals = useMemo(() => sumRows(eods), [eods]);
-  const prevTotals = useMemo(() => sumRows(prevEods), [prevEods]);
+  // Non-admin team members can flip between the team's collective numbers
+  // (default) and just their own — revenue widgets stay role-gated regardless.
+  const canScope = !roles.includes("admin") && !roles.includes("founder");
+  const [scope, setScope] = useState<"team" | "me">("team");
+  const scopedEods = useMemo(
+    () => (canScope && scope === "me" ? eods.filter((e) => e.user_id === user?.id) : eods),
+    [eods, canScope, scope, user?.id],
+  );
+  const scopedPrev = useMemo(
+    () => (canScope && scope === "me" ? prevEods.filter((e) => e.user_id === user?.id) : prevEods),
+    [prevEods, canScope, scope, user?.id],
+  );
+
+  const totals = useMemo(() => sumRows(scopedEods), [scopedEods]);
+  const prevTotals = useMemo(() => sumRows(scopedPrev), [scopedPrev]);
   const trend = useMemo(() => {
-    const curr = buildTrend(eods, days);
-    if (!compare || prevEods.length === 0) return curr;
-    const prev = buildTrend(prevEods, days, days); // same shape, shifted one window back
+    const curr = buildTrend(scopedEods, days);
+    if (!compare || scopedPrev.length === 0) return curr;
+    const prev = buildTrend(scopedPrev, days, days); // same shape, shifted one window back
     return curr.map((row, i) => ({
       ...row,
       prev_dms: prev[i]?.dms ?? 0,
       prev_convos: prev[i]?.convos ?? 0,
       prev_booked: prev[i]?.booked ?? 0,
     }));
-  }, [eods, prevEods, compare, days]);
+  }, [scopedEods, scopedPrev, compare, days]);
   const hasPrev = compare && prevEods.length > 0;
 
   const showRate = totals.shows + totals.no_shows > 0
@@ -286,6 +300,21 @@ function Dashboard() {
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
+            {canScope && (
+              <div className="flex rounded-md bg-muted p-0.5">
+                {(["team", "me"] as const).map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setScope(s)}
+                    className={`text-[12px] font-medium px-2.5 py-1 rounded-[5px] motion-safe:transition-colors ${
+                      scope === s ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {s === "team" ? "Team" : "Me"}
+                  </button>
+                ))}
+              </div>
+            )}
             <RangePicker value={dateRange} onChange={setDateRange} />
             <button
               onClick={() => setCompare((c) => !c)}
