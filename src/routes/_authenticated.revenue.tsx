@@ -37,6 +37,7 @@ import { FilterToolbar } from "@/components/ui/filter-toolbar";
 import { type DateRange, rangeFor, daysBetween } from "@/components/range-picker";
 import { DateField } from "@/components/ui/date-field";
 import { SelectField } from "@/components/ui/select-field";
+import { BlurMoney } from "@/components/blur-money";
 
 export const Route = createFileRoute("/_authenticated/revenue")({
   head: () => ({ meta: [{ title: "Revenue — ISA Team" }] }),
@@ -310,7 +311,7 @@ function RevenuePage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard
           label="Cash collected"
-          value={money(stats.cash)}
+          value={<BlurMoney>{money(stats.cash)}</BlurMoney>}
           icon={<DollarSign className="h-3.5 w-3.5" />}
           accent
           sparkData={cashSparkData}
@@ -319,7 +320,7 @@ function RevenuePage() {
         />
         <StatCard
           label="Booked value"
-          value={money(stats.booked)}
+          value={<BlurMoney>{money(stats.booked)}</BlurMoney>}
           icon={<TrendingUp className="h-3.5 w-3.5" />}
           delta={compare ? { value: stats.booked - prevStats.booked, format: "money" } : undefined}
           noData={rangeDeals.length === 0}
@@ -333,7 +334,7 @@ function RevenuePage() {
         />
         <StatCard
           label="Avg deal size"
-          value={money(stats.avg)}
+          value={<BlurMoney>{money(stats.avg)}</BlurMoney>}
           icon={<Trophy className="h-3.5 w-3.5" />}
           noData={rangeDeals.length === 0}
         />
@@ -390,7 +391,7 @@ function RevenuePage() {
             <h3 className="text-[15px] font-semibold">Team cash milestones (MTD)</h3>
           </div>
           <span className="text-[13px] text-muted-foreground">
-            Cash collected: <span className="text-primary font-semibold">{money(stats.cash)}</span>
+            Cash collected: <span className="text-primary font-semibold"><BlurMoney>{money(stats.cash)}</BlurMoney></span>
           </span>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -909,19 +910,27 @@ function LogDealDialog({
 
           <div className="space-y-1.5">
             <Label>Pathway</Label>
-            <SelectField
-              value={programType}
-              onChange={setProgramType}
-              options={[
-                { value: "1:1 Pathway", label: "1:1 Pathway — 10 one-on-one coaching calls" },
-                { value: "Group Expertise Pathway", label: "Group Expertise Pathway — group coaching only" },
-                ...(programType && !["1:1 Pathway", "Group Expertise Pathway"].includes(programType)
-                  ? [{ value: programType, label: programType }]
-                  : []),
-              ]}
-              placeholder="— Select pathway —"
-              className="h-9 text-sm"
-            />
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setProgramType("1:1 Pathway")}
+                className={`text-left p-3 rounded-lg border transition ${programType === "1:1 Pathway" ? "border-primary/40 bg-primary/10" : "border-[var(--border)] bg-[var(--card)] hover:bg-muted"}`}
+              >
+                <div className="text-sm font-medium">1:1 Pathway</div>
+                <div className="text-[11px] text-muted-foreground mt-0.5">10 one-on-one coaching calls + group access</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setProgramType("Group Expertise Pathway")}
+                className={`text-left p-3 rounded-lg border transition ${programType === "Group Expertise Pathway" ? "border-primary/40 bg-primary/10" : "border-[var(--border)] bg-[var(--card)] hover:bg-muted"}`}
+              >
+                <div className="text-sm font-medium">Group Expertise Pathway</div>
+                <div className="text-[11px] text-muted-foreground mt-0.5">Group coaching only — no 1:1 calls</div>
+              </button>
+            </div>
+            {programType && !["1:1 Pathway", "Group Expertise Pathway"].includes(programType) && (
+              <p className="text-[11px] text-muted-foreground">Current value: "{programType}" — picking a tile will replace it.</p>
+            )}
           </div>
 
           <div className="grid sm:grid-cols-3 gap-3">

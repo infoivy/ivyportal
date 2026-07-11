@@ -1,14 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { CommissionRates, DEFAULT_RATES } from "@/lib/revenue";
 import { format, subDays } from "date-fns";
+import { CONFIGURABLE_ROLES, defaultPagesFor, type RoleAccess } from "@/lib/nav-pages";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Shield, CheckCircle2, Users, Mail, UserX, Star,
   ArrowUpRight, ClipboardList, Percent, Save, Database, ExternalLink, History,
@@ -285,6 +287,11 @@ function AdminConsole() {
       {/* Commission rates — moved from Revenue page */}
       <div id="commission">
         <CommissionRatesCard rows={rateRows} reload={() => pageQ.refetch()} />
+      </div>
+
+      {/* Access defaults — per-role page visibility + money blur */}
+      <div id="access">
+        <AccessDefaultsCard />
       </div>
 
       {/* Portal settings */}
@@ -678,5 +685,104 @@ function GoLiveChecklist({ checklist }: { checklist: Record<string, boolean> }) 
         <div className="mt-3 text-xs text-success-fg font-medium">Portal is go-live ready ✓</div>
       )}
     </div>
+  );
+}
+
+/* ---------- Access defaults ---------- */
+
+function AccessDefaultsCard() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const accessQ = useQuery({
+    queryKey: ["role-access"],
+    queryFn: async () => {
+      const { data } = await supabase.from("role_access").select("role, hidden_pages, hide_money");
+      return (data ?? []) as RoleAccess[];
+    },
+  });
+  const [draft, setDraft] = useState<Record<string, { hidden: Set<string>; hideMoney: boolean }>>({});
+  const [savingRole, setSavingRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!accessQ.data) return;
+    const next: Record<string, { hidden: Set<string>; hideMoney: boolean }> = {};
+    for (const r of CONFIGURABLE_ROLES) {
+      const row = accessQ.data.find(a => a.role === r);
+      next[r] = { hidden: new Set(row?.hidden_pages ?? []), hideMoney: row?.hide_money ?? false };
+    }
+    setDraft(next);
+  }, [accessQ.data]);
+
+  const toggle = (role: string, url: string) =>
+    setDraft(d => {
+      const cur = new Set(d[role]?.hidden ?? []);
+      if (cur.has(url)) cur.delete(url); else cur.add(url);
+      return { ...d, [role]: { hidden: cur, hideMoney: d[role]?.hideMoney ?? false } };
+    });
+
+  const save = async (role: string) => {
+    const d = draft[role];
+    if (!d) return;
+    setSavingRole(role);
+    const { error } = await (supabase as any).from("role_access").upsert({
+      role,
+      hidden_pages: Array.from(d.hidden),
+      hide_money: d.hideMoney,
+      updated_at: new Date().toISOString(),
+      updated_by: user?.id ?? null,
+    }, { onConflict: "role" });
+    setSavingRole(null);
+    if (error) return toast.error(error.message);
+    toast.success(`${role} defaults saved`);
+    qc.invalidateQueries({ queryKey: ["role-access"] });
+  };
+
+  const ROLE_LABEL: Record<string, string> = { setter: "Setters", closer: "Closers", coach: "Coaches", csm: "CSMs" };
+
+  return (
+    <Panel
+      title="Access defaults"
+      subtitle="What each role sees. Applies to everyone with that role; extra roles only ever add access. Admins and founders are never restricted — and this is a visibility layer, not data security."
+      icon={<Shield className="h-3.5 w-3.5 text-primary" />}
+    >
+      <div className="grid gap-4 lg:grid-cols-2">
+        {CONFIGURABLE_ROLES.map(role => {
+          const d = draft[role];
+          const pages = defaultPagesFor(role);
+          return (
+            <div key={role} className="rounded-lg border border-[var(--border)] p-4 space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-semibold">{ROLE_LABEL[role]}</p>
+                <Button size="sm" variant="outline" onClick={() => save(role)} disabled={savingRole === role || !d}>
+                  {savingRole === role ? "Saving…" : "Save"}
+                </Button>
+              </div>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+                {pages.map(pg => (
+                  <label key={pg.url} className={`flex items-center gap-2 text-[13px] ${pg.locked ? "opacity-50" : ""}`}>
+                    <Checkbox
+                      checked={pg.locked ? true : !(d?.hidden.has(pg.url))}
+                      disabled={pg.locked || !d}
+                      onCheckedChange={() => toggle(role, pg.url)}
+                    />
+                    <span className="truncate">{pg.title}</span>
+                    {pg.locked && <span className="text-[10px] text-muted-foreground shrink-0">always on</span>}
+                  </label>
+                ))}
+              </div>
+              <label className="flex items-center gap-2 text-[13px] pt-2 border-t border-[var(--border)]">
+                <Checkbox
+                  checked={d?.hideMoney ?? false}
+                  disabled={!d}
+                  onCheckedChange={() => setDraft(dd => ({ ...dd, [role]: { hidden: dd[role]?.hidden ?? new Set(), hideMoney: !(dd[role]?.hideMoney ?? false) } }))}
+                />
+                <span>Blur revenue figures</span>
+                <span className="text-[11px] text-muted-foreground">cash totals show pixelated for this role</span>
+              </label>
+            </div>
+          );
+        })}
+      </div>
+    </Panel>
   );
 }

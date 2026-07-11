@@ -197,19 +197,28 @@ export function StudentPaymentSetup({
         </DialogHeader>
 
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label className="text-caption text-muted-foreground">Package</Label>
-            <SelectField
-              value={pkg}
-              onChange={(v) => setPkg(v as typeof pkg)}
-              options={[
-                { value: "one_on_one", label: "1:1 Pathway — 10 coaching calls" },
-                { value: "group_only", label: "Group Expertise Pathway" },
-              ]}
-              className="h-9 text-sm"
-            />
+          <div className="col-span-2 space-y-1.5">
+            <Label className="text-caption text-muted-foreground">Pathway</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setPkg("one_on_one")}
+                className={`text-left p-3 rounded-lg border transition ${pkg === "one_on_one" ? "border-primary/40 bg-primary/10" : "border-[var(--border)] bg-[var(--card)] hover:bg-muted"}`}
+              >
+                <div className="text-sm font-medium">1:1 Pathway</div>
+                <div className="text-[11px] text-muted-foreground mt-0.5">10 one-on-one coaching calls + group access</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPkg("group_only")}
+                className={`text-left p-3 rounded-lg border transition ${pkg === "group_only" ? "border-primary/40 bg-primary/10" : "border-[var(--border)] bg-[var(--card)] hover:bg-muted"}`}
+              >
+                <div className="text-sm font-medium">Group Expertise Pathway</div>
+                <div className="text-[11px] text-muted-foreground mt-0.5">Group coaching only — no 1:1 calls</div>
+              </button>
+            </div>
           </div>
-          <div className="space-y-1.5">
+          <div className="col-span-2 space-y-1.5">
             <Label className="text-caption text-muted-foreground">Payment</Label>
             <SelectField
               value={payMode}

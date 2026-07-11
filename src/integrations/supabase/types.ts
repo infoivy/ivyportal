@@ -1260,6 +1260,30 @@ export type Database = {
         }
         Relationships: []
       }
+      role_access: {
+        Row: {
+          hidden_pages: string[]
+          hide_money: boolean
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          hidden_pages?: string[]
+          hide_money?: boolean
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          hidden_pages?: string[]
+          hide_money?: boolean
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       service_credentials: {
         Row: {
           created_at: string

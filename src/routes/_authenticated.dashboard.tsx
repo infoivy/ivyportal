@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Checkbox } from "@/components/ui/checkbox";
+import { BlurMoney } from "@/components/blur-money";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -188,17 +189,22 @@ function Dashboard() {
       const m = String(now.getMonth() + 1).padStart(2, "0");
       const monthStart = `${y}-${m}-01`;
       const today = now.toISOString().slice(0, 10);
-      const [dealsRes, instRes] = await Promise.all([
+      const prevStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().slice(0, 10);
+      const prevSameDay = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate()).toISOString().slice(0, 10);
+      const [dealsRes, instRes, prevRes] = await Promise.all([
         supabase.from("deals").select("cash_collected_upfront").gte("deal_date", monthStart).lte("deal_date", today),
         supabase.from("installment_payments").select("amount, currency, due_date, installments!inner(students(full_name))").eq("status", "upcoming").gte("due_date", today).order("due_date", { ascending: true }).limit(1),
+        supabase.from("deals").select("cash_collected_upfront").gte("deal_date", prevStart).lte("deal_date", prevSameDay),
       ]);
-      return { deals: dealsRes.data ?? [], firstDue: (instRes.data ?? [])[0] as any };
+      return { deals: dealsRes.data ?? [], firstDue: (instRes.data ?? [])[0] as any, prevDeals: prevRes.data ?? [] };
     },
   });
+  const [cashPrevMtd, setCashPrevMtd] = useState<number | null>(null);
   useEffect(() => {
     if (!cashQ.data) return;
     const total = (cashQ.data.deals as any[]).reduce((s, d) => s + (Number(d.cash_collected_upfront) || 0), 0);
     setCashMtd(total);
+    setCashPrevMtd((cashQ.data.prevDeals as any[]).reduce((s, d) => s + (Number(d.cash_collected_upfront) || 0), 0));
     const first = cashQ.data.firstDue;
     if (first) setNextDue({ date: first.due_date, amount: first.amount, currency: first.currency, studentName: first.installments?.students?.full_name ?? "Unknown" });
   }, [cashQ.data]);
@@ -323,8 +329,21 @@ function Dashboard() {
             <div>
               <div className="text-[12px] text-muted-foreground mb-3">Cash collected this month</div>
               <div className="text-[36px] font-medium tabular-nums text-foreground tracking-[-0.025em] leading-none">
-                {cashMtd > 0 ? money(cashMtd) : "—"}
+                <BlurMoney>{cashMtd > 0 ? money(cashMtd) : "—"}</BlurMoney>
               </div>
+              {cashPrevMtd != null && cashPrevMtd > 0 && cashMtd > 0 && (() => {
+                const pct = ((cashMtd - cashPrevMtd) / cashPrevMtd) * 100;
+                const up = pct >= 0;
+                const prevMonthName = new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1).toLocaleString("en", { month: "long" });
+                return (
+                  <div className="mt-3 text-[12px] text-muted-foreground tabular-nums">
+                    <span className={up ? "text-success-fg" : "text-danger-fg"}>
+                      {up ? "↑" : "↓"} {Math.abs(pct).toFixed(0)}%
+                    </span>
+                    {" "}vs {prevMonthName} same day · <BlurMoney>{money(cashPrevMtd)}</BlurMoney>
+                  </div>
+                );
+              })()}
             </div>
             <Link to="/revenue" className="text-[13px] text-primary hover:text-primary/80 mb-1 shrink-0">View revenue →</Link>
           </div>

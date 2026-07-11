@@ -6,6 +6,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { LogOut, Search } from "lucide-react";
 import { Toaster } from "sonner";
+import { useAccess } from "@/lib/use-access";
 import { AuthContext, type AuthState } from "@/lib/auth-context";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -203,7 +204,9 @@ function AuthedLayout() {
               {/* relative + min-h-full: full-viewport pages (SOP canvas) position
                   against this wrapper even while the enter animation holds a transform */}
               <div className="page-enter relative min-h-full">
-                <Outlet />
+                <AccessGate roles={state.roles}>
+                  <Outlet />
+                </AccessGate>
               </div>
             </main>
           </div>
@@ -281,6 +284,23 @@ function RouteProgress() {
   return (
     <div className="fixed top-0 left-0 right-0 z-50 h-0.5 overflow-hidden bg-transparent" aria-hidden>
       <div className="h-full w-1/3 bg-primary rounded-full animate-route-progress" />
+    </div>
+  );
+}
+
+/** Blocks pages an admin has turned off for this person's role. */
+function AccessGate({ roles, children }: { roles: string[]; children: React.ReactNode }) {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { pageHidden } = useAccess();
+  if (!pageHidden(pathname)) return <>{children}</>;
+  return (
+    <div className="p-8 max-w-xl mx-auto">
+      <div className="card-surface p-8 text-center">
+        <p className="text-sm font-medium text-foreground">This page is turned off for your role</p>
+        <p className="text-[13px] text-muted-foreground mt-2">
+          An admin has hidden this page in the access defaults. If you think you need it, ask a founder or admin.
+        </p>
+      </div>
     </div>
   );
 }

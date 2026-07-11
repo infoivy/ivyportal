@@ -96,6 +96,7 @@ function StudentsLayout() {
   const [qRaw, setQ] = useState("");
   const q = useDebouncedValue(qRaw, 250);
   const [phaseFilter, setPhaseFilter] = useState<Phase | "all" | "at_risk">("all");
+  const [coachFilter, setCoachFilter] = useState<string>("all"); // all | unassigned | <coach_id>
   const [view, setView] = useState<"table" | "kanban" | "graduation">("table");
   const [kanbanBy, setKanbanBy] = useState<"phase" | "coach">("phase");
   const [addOpen, setAddOpen] = useState(false);
@@ -166,8 +167,12 @@ function StudentsLayout() {
       phaseFilter === "all" ? true :
       phaseFilter === "at_risk" ? isAtRisk(s) :
       s.phase === phaseFilter;
-    return matchesQ && matchesPhase;
-  }), [students, q, phaseFilter, lastCallByStudent, lastEodByStudent, apps7dByStudent]);
+    const matchesCoach =
+      coachFilter === "all" ? true :
+      coachFilter === "unassigned" ? !s.coach_id :
+      s.coach_id === coachFilter;
+    return matchesQ && matchesPhase && matchesCoach;
+  }), [students, q, phaseFilter, coachFilter, lastCallByStudent, lastEodByStudent, apps7dByStudent]);
 
   const byPhase = useMemo(() => {
     const map = new Map<Phase, Student[]>();
@@ -320,6 +325,45 @@ function StudentsLayout() {
         >
           <AlertTriangle className="h-3.5 w-3.5" /> At risk · {atRiskCount}
         </button>
+
+        {coaches.length > 0 && (
+          <>
+            <span className="h-4 w-px bg-border mx-1 hidden sm:block" />
+            <button
+              onClick={() => setCoachFilter("all")}
+              className={`text-[13px] font-medium px-3 py-1.5 rounded-md motion-safe:transition-colors ${
+                coachFilter === "all" ? "bg-foreground text-background" : "bg-muted text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              All coaches
+            </button>
+            {coaches.map(c => {
+              const count = students.filter(s => s.coach_id === c.id).length;
+              if (count === 0 && coachFilter !== c.id) return null;
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => setCoachFilter(coachFilter === c.id ? "all" : c.id)}
+                  className={`text-[13px] font-medium px-3 py-1.5 rounded-md motion-safe:transition-colors ${
+                    coachFilter === c.id ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {(c.display_name ?? "Coach").split(" ")[0]} · {count}
+                </button>
+              );
+            })}
+            {students.some(s => !s.coach_id) && (
+              <button
+                onClick={() => setCoachFilter(coachFilter === "unassigned" ? "all" : "unassigned")}
+                className={`text-[13px] font-medium px-3 py-1.5 rounded-md motion-safe:transition-colors ${
+                  coachFilter === "unassigned" ? "bg-warning-bg text-warning-fg" : "bg-muted text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Unassigned · {students.filter(s => !s.coach_id).length}
+              </button>
+            )}
+          </>
+        )}
 
         {view === "kanban" && (
           <div className="ml-auto inline-flex rounded-lg bg-muted p-[3px]">

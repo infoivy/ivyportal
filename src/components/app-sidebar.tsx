@@ -1,6 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAccess } from "@/lib/use-access";
 import {
   LayoutDashboard, FileText, BookOpen, Calendar, GraduationCap,
   Database, Users, StickyNote, Shield, UserCircle, School, HeartHandshake, Phone, DollarSign, Armchair,
@@ -65,6 +66,7 @@ const studentOnlyItems: Item[] = [
 ];
 
 export function AppSidebar({ roles }: { roles: string[] }) {
+  const { pageHidden } = useAccess();
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const currentPath = useRouterState({ select: s => s.location.pathname });
@@ -85,6 +87,7 @@ export function AppSidebar({ roles }: { roles: string[] }) {
   const renderGroup = (label: string, items: Item[]) => {
     const filtered = items.filter(i => {
       if (i.url === "/crm" && !crmEnabled) return false;
+      if (pageHidden(i.url)) return false;
       return !i.roles || i.roles.some(r => roles.includes(r));
     });
     if (filtered.length === 0) return null;

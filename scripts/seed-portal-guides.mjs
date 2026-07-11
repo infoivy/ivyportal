@@ -445,7 +445,7 @@ ${img("dashboard", "The Dashboard")}
 
 Click **Dashboard** in the sidebar. Read it top to bottom:
 
-1. **The big number** = cash collected this month. Click **View revenue →** to see the deals behind it.
+1. **The big number** = cash collected this month. The small line under it compares to **last month at the same day** (↑ green = ahead, ↓ red = behind). Click **View revenue →** to see the deals behind it.
 2. **The four cards** (DMs, Booked, Shows, Show Rate) = this period's sales activity. The **7D / 30D / 90D** buttons change the period. **Compare** shows the previous period as a faint line behind the current one.
 3. **The ops strip** = today's problems: **at-risk students, overdue payments, payments due soon, testimonials pending**. Each one is clickable and takes you to the page where you fix it.
 4. **Click any number card** to open a breakdown by person and by day.
@@ -481,13 +481,15 @@ ${img("add-student", "Add student dialog")}
 
 **Students → + Add student**: name, email (use the same email they'll sign up with — the portal links their login automatically), package, and payment plan. If they pay in installments, the schedule is created for you and shows up in **Revenue → Installments** with due dates.
 
+Use the **coach chips** above the list (All coaches / per-coach / Unassigned) to see one coach's roster at a glance — same pattern as the 1-on-1 Calls page.
+
 Students move through phases as they progress — change it on their row:
 
 **Onboarding → 1:1 Coaching → Applying → Offer Won → Testimonial**
 
 ## 4. Money — Revenue page
 
-- **+ Log a close** records a deal (usually the closer does this — see the Closers guide).
+- **+ Log a close** records a deal (usually the closer does this — see the Closers guide). Two things worth knowing as a founder: the **Pathway tiles** (1:1 Pathway = 10 one-on-one calls; Group Expertise Pathway = group coaching only) set the student's coaching allowance automatically, and deposit/split deals can carry a **custom payment schedule** — e.g. $5,000 as $2,000 + $2,000 + $1,000 — which lands straight in the Installments tracker.
 - **Overview** — cash, booked value, payment types, the trend, and each closer's totals.
 - **Installments** — who owes what and when; a follow-up queue for late payers.
 - **Payouts** — commission per person. The rules the portal applies: closer **10%**; if the same person set *and* closed it's **15%**; setters get their base % plus **+1%** for the top setter each 14 days and **+1%** for a $5,000+ personal collection week.
@@ -501,6 +503,10 @@ ${img("admin", "Admin page — goals, rates, checklist")}
 - **Monthly cash goal** and **quarterly goals** (these drive the Dashboard progress).
 - **Commission rates** — change a % here and every future calculation uses it.
 - **Role management** — give or remove roles for anyone.
+- **Access defaults** — control what each role sees. Untick a page for a role (e.g. hide Revenue from setters) and it disappears from their sidebar; if they type the address anyway they get a polite "turned off for your role" card. The **Blur revenue figures** toggle pixelates cash totals for that role without hiding the pages — useful later if you'd rather not share numbers with a bigger team. Admins and founders are never restricted, extra roles only ever add access, and the EOD + Knowledge pages can't be hidden (the EOD policy depends on them).
+
+${img("access-defaults", "Access defaults — per-role page visibility and the money-blur toggle")}
+
 - **Go-live checklist** — one-time setup items; work through them until 8/8.
 - **Unrated calls** — coach calls missing a 1–5 rating; chase these.
 
