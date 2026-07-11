@@ -69,22 +69,31 @@ function ActionItemsHub() {
 
   const today = new Date().toISOString().slice(0, 10);
 
-  const load = async () => {
-    setLoading(true);
-    const [cRes, aRes, sRes, pRes] = await Promise.all([
+  const fetchPage = async () => {
+    const [cRes, aRes, sRes, pRes, teamList] = await Promise.all([
       supabase.from("student_calls").select("id, student_id, coach_id, call_date, action_items_json").order("call_date", { ascending: false }).limit(2000),
       supabase.from("student_action_items").select("*").order("created_at", { ascending: false }).limit(2000),
       supabase.from("students").select("id, full_name"),
       supabase.from("profiles").select("id, display_name"),
+      teamFn().catch(() => []),
     ]);
-    teamFn().then(list => setTeam(list)).catch(() => setTeam([]));
-    setCalls((cRes.data ?? []) as CallRow[]);
-    setAdhoc((aRes.data ?? []) as AdHocRow[]);
-    const sm: Record<string, string> = {}; (sRes.data ?? []).forEach((s: { id: string; full_name: string }) => { sm[s.id] = s.full_name; }); setStudents(sm);
-    const pm: Record<string, string> = {}; (pRes.data ?? []).forEach((p: { id: string; display_name: string | null }) => { pm[p.id] = p.display_name ?? "Unknown"; }); setProfiles(pm);
-    setLoading(false);
+    const sm: Record<string, string> = {}; (sRes.data ?? []).forEach((s: { id: string; full_name: string }) => { sm[s.id] = s.full_name; });
+    const pm: Record<string, string> = {}; (pRes.data ?? []).forEach((p: { id: string; display_name: string | null }) => { pm[p.id] = p.display_name ?? "Unknown"; });
+    return { calls: (cRes.data ?? []) as CallRow[], adhoc: (aRes.data ?? []) as AdHocRow[], sm, pm, teamList };
   };
-  useEffect(() => { load(); }, []);
+
+  const pageQ = useQuery({ queryKey: ["page", "action-items"], queryFn: fetchPage });
+  useEffect(() => {
+    if (!pageQ.data) return;
+    setCalls(pageQ.data.calls);
+    setAdhoc(pageQ.data.adhoc);
+    setStudents(pageQ.data.sm);
+    setProfiles(pageQ.data.pm);
+    setTeam(pageQ.data.teamList);
+    setLoading(false);
+  }, [pageQ.data]);
+  const load = () => pageQ.refetch();
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   const studentList = useMemo(
     () => Object.entries(students).map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name)),
@@ -285,7 +294,7 @@ function ActionItemsHub() {
           <span className="text-right">Due</span>
           <span />
         </div>
-        {sec.items.map(r => {
+        {(expanded[sec.label] ? sec.items : sec.items.slice(0, 120)).map(r => {
           const overdue = isOverdue(r);
           return (
             <div
@@ -352,6 +361,14 @@ function ActionItemsHub() {
             </div>
           );
         })}
+        {sec.items.length > 120 && !expanded[sec.label] && (
+          <button
+            onClick={() => setExpanded(e => ({ ...e, [sec.label]: true }))}
+            className="w-full py-2.5 text-xs text-muted-foreground hover:text-foreground hover:bg-[var(--muted)] transition"
+          >
+            Show all {sec.items.length}
+          </button>
+        )}
         </div>
       </section>
       ))}

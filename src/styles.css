@@ -356,3 +356,9 @@
 .animate-route-progress {
   animation: route-progress 0.9s ease-in-out infinite;
 }
+
+/* Defer offscreen rendering for long card lists */
+.cv-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 120px;
+}

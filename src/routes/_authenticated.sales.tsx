@@ -479,8 +479,8 @@ function TrendsTab() {
                   <XAxis dataKey="label" stroke="var(--color-muted-foreground)" fontSize={11} tickLine={false} axisLine={false} />
                   <YAxis stroke="var(--color-muted-foreground)" fontSize={11} tickLine={false} axisLine={false} />
                   <Tooltip contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: 10, fontSize: 12, boxShadow: "var(--shadow-overlay)" }} cursor={{ fill: "color-mix(in srgb, var(--color-foreground) 4%, transparent)" }} />
-                  <Bar dataKey="booked" fill="#22c55e" radius={[4, 4, 0, 0]} />
-                  {compare && <Bar dataKey="prev_booked" fill="#22c55e" fillOpacity={0.3} radius={[4, 4, 0, 0]} />}
+                  <Bar dataKey="booked" fill="#22c55e" radius={[4, 4, 0, 0]} isAnimationActive={false} />
+                  {compare && <Bar dataKey="prev_booked" fill="#22c55e" fillOpacity={0.3} radius={[4, 4, 0, 0]} isAnimationActive={false} />}
                 </BarChart>
               </ResponsiveContainer>
             )}

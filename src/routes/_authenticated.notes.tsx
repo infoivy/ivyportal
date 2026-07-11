@@ -234,7 +234,7 @@ function NotesPage() {
           {filtered.map(n => (
             <div
               key={n.id}
-              className="group rounded-md border border-border bg-card p-3 hover:border-primary/25 transition"
+              className="cv-auto group rounded-md border border-border bg-card p-3 hover:border-primary/25 transition"
             >
               <p className="whitespace-pre-wrap text-sm leading-relaxed break-words">{n.content}</p>
               <div className="mt-2.5 flex items-center flex-wrap gap-1.5 pt-2 border-t border-border/60">

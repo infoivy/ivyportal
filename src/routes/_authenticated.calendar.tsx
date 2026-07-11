@@ -335,7 +335,7 @@ function CalendarPage() {
 
         {/* Week grid — full 24h, scrollable, opens at the working day */}
         <Card className="p-0 border-border/60 overflow-hidden">
-          <div ref={gridScrollRef} className="max-h-[68vh] overflow-y-auto">
+          <div ref={gridScrollRef} className="max-h-[68vh] overflow-y-auto overscroll-contain">
           <div className="grid" style={{ gridTemplateColumns: `${isMobile ? 40 : 48}px repeat(${daySpan}, minmax(0, 1fr))` }}>
             {/* header row */}
             <div className="sticky top-0 z-20 border-b border-border/60 bg-card" />

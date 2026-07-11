@@ -998,8 +998,8 @@ function SubmissionsChart({ data }: { data: { label: string; submitted: number; 
         <YAxis tick={{ fontSize: 10, fill: "var(--color-muted-foreground)" }} allowDecimals={false} />
         <ReTooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, fontSize: 11 }} />
         <Legend wrapperStyle={{ fontSize: 10 }} />
-        <Bar dataKey="expected" fill="var(--border)" name="Expected" />
-        <Bar dataKey="submitted" fill="var(--chart-2)" name="Submitted" />
+        <Bar dataKey="expected" fill="var(--border)" name="Expected" isAnimationActive={false} />
+        <Bar dataKey="submitted" fill="var(--chart-2)" name="Submitted" isAnimationActive={false} />
       </BarChart>
     </ResponsiveContainer>
   );
@@ -1078,7 +1078,7 @@ function TeamFeed({ eods, isAdmin, onDelete }: { eods: GridEod[]; isAdmin: boole
             {fmtLong(day)} — {rows.length} submitted
           </div>
           <div className="grid md:grid-cols-2 gap-2">
-            {rows.map(e => <FeedCard key={e.id} e={e} isAdmin={isAdmin} onDelete={onDelete} />)}
+            {rows.map(e => <div key={e.id} className="cv-auto"><FeedCard e={e} isAdmin={isAdmin} onDelete={onDelete} /></div>)}
           </div>
         </div>
       ))}

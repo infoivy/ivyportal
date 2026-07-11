@@ -370,8 +370,8 @@ function RevenuePage() {
                     contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: 10, fontSize: 12, boxShadow: "var(--shadow-overlay)" }}
                     formatter={(v: number, k: string) => (k === "deals" ? [v, "deals"] : [money(v), k === "cash" ? "cash" : "booked"])}
                   />
-                  <Bar dataKey="booked" fill="var(--chart-1)" radius={[3, 3, 0, 0]} />
-                  <Bar dataKey="cash" fill="var(--chart-2)" radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="booked" fill="var(--chart-1)" radius={[3, 3, 0, 0]} isAnimationActive={false} />
+                  <Bar dataKey="cash" fill="var(--chart-2)" radius={[3, 3, 0, 0]} isAnimationActive={false} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

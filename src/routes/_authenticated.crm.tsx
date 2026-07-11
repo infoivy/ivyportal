@@ -280,7 +280,7 @@ function Crm() {
               )}
             </div>
           ) : (
-            <div className="max-h-[520px] overflow-auto">
+            <div className="max-h-[520px] overflow-auto overscroll-contain">
               {filtered.slice(0, 100).map((l) => {
                 const c = STATUS_TYPE_COLOR[l.status_type] ?? "#a855f7";
                 const nc = noteCounts[l.id] ?? 0;
@@ -539,7 +539,7 @@ function LeadDetailDrawer({
   return (
     <div className="fixed inset-0 z-50 flex" role="dialog" aria-modal="true">
       <button onClick={onClose} className="flex-1 bg-black/60" aria-label="Close" />
-      <aside className="w-full max-w-[520px] bg-[#0b0d12] border-l border-border h-full overflow-y-auto flex flex-col">
+      <aside className="w-full max-w-[520px] bg-[#0b0d12] border-l border-border h-full overflow-y-auto overscroll-contain flex flex-col">
         <div className="px-4 py-3 border-b border-border flex items-start justify-between gap-3 sticky top-0 bg-[#0b0d12] z-10">
           <div className="min-w-0">
             <div className="text-sm font-semibold truncate">{lead.name}</div>

@@ -428,7 +428,7 @@ function Dashboard() {
                             return [`${value.toLocaleString()}${pct != null ? ` · ${pct}% conversion` : ""}`, ""];
                           }}
                         />
-                        <Bar dataKey="value" radius={[0, 2, 2, 0]}>
+                        <Bar dataKey="value" radius={[0, 2, 2, 0]} isAnimationActive={false}>
                           {formatBreakdown.map((f, i) => <Cell key={i} fill={f.color} />)}
                           <LabelList
                             dataKey="value"

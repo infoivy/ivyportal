@@ -106,7 +106,7 @@ export function StatDrilldown({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto overscroll-contain">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <span
@@ -144,8 +144,8 @@ export function StatDrilldown({
                   <XAxis dataKey="label" stroke="var(--color-muted-foreground)" fontSize={10} tickLine={false} axisLine={false} />
                   <YAxis stroke="var(--color-muted-foreground)" fontSize={10} tickLine={false} axisLine={false} />
                   <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, fontSize: 11 }} />
-                  {hasPrev && <Bar dataKey="prev" name={prevLabel ?? "Previous"} fill={color} fillOpacity={0.25} radius={[2, 2, 0, 0]} />}
-                  <Bar dataKey="value" name={label} fill={color} radius={[2, 2, 0, 0]} />
+                  {hasPrev && <Bar dataKey="prev" name={prevLabel ?? "Previous"} fill={color} fillOpacity={0.25} radius={[2, 2, 0, 0]} isAnimationActive={false} />}
+                  <Bar dataKey="value" name={label} fill={color} radius={[2, 2, 0, 0]} isAnimationActive={false} />
                 </BarChart>
               </ResponsiveContainer>
             )}

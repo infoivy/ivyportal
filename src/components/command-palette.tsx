@@ -177,7 +177,7 @@ export function CommandPalette() {
           />
           <span className="text-[10px] text-muted-foreground border border-[var(--border)] rounded px-1.5 py-0.5">ESC</span>
         </div>
-        <div className="max-h-[50vh] overflow-y-auto py-1">
+        <div className="max-h-[50vh] overflow-y-auto overscroll-contain py-1">
           {results.length === 0 && <div className="p-6 text-center text-xs text-muted-foreground">No matches.</div>}
           {results.map((it, i) => {
             const isActive = i === active;

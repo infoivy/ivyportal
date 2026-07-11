@@ -338,7 +338,7 @@ function CsmPage() {
               <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search students…" className="w-full h-8 pl-8 pr-3 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-ring" />
             </div>
           </div>
-          <div className="max-h-[720px] overflow-auto divide-y divide-[var(--accent)]">
+          <div className="max-h-[720px] overflow-auto overscroll-contain divide-y divide-[var(--accent)]">
             {filteredStudents.map(s => (
               <button key={s.id} onClick={() => setStudentId(s.id)} className={`w-full text-left p-3 hover:bg-[var(--muted)] transition ${studentId === s.id ? "bg-[var(--muted)] shadow-[inset_2px_0_0_0_var(--warning)]" : ""}`}>
                 <div className="text-sm font-medium truncate">{s.full_name}</div>

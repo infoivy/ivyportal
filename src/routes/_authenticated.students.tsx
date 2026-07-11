@@ -151,7 +151,14 @@ function StudentsLayout() {
     }
     return { risky: reasons.length > 0, reasons };
   };
-  const isAtRisk = (s: Student) => atRiskInfo(s).risky;
+  // Precompute once per data change — atRiskInfo is called in filters and rows
+  const riskByStudent = useMemo(() => {
+    const m = new Map<string, { risky: boolean; reasons: string[] }>();
+    students.forEach(s => m.set(s.id, atRiskInfo(s)));
+    return m;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [students, lastEodByStudent, lastCallByStudent, apps7dByStudent]);
+  const isAtRisk = (s: Student) => riskByStudent.get(s.id)?.risky ?? false;
 
   const filtered = useMemo(() => students.filter(s => {
     const matchesQ = !q || s.full_name.toLowerCase().includes(q.toLowerCase()) || (s.email ?? "").toLowerCase().includes(q.toLowerCase());
@@ -354,7 +361,7 @@ function StudentsLayout() {
                 const lastEod = lastEodByStudent[s.id];
                 const used = callsUsedByStudent[s.id] ?? 0;
                 const remaining = Math.max(0, s.calls_allotted - used);
-                const info = atRiskInfo(s);
+                const info = riskByStudent.get(s.id) ?? { risky: false, reasons: [] };
                 const showReasons = phaseFilter === "at_risk";
                 return (
                   <tr key={s.id} className="border-b border-[var(--accent)] last:border-0 hover:bg-[var(--muted)] transition">
