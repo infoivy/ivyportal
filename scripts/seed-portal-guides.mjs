@@ -106,15 +106,16 @@ Click **Sales** in the sidebar. One scrolling page shows:
 - **Trends** — the funnel over any date range: DMs → Convos → Booked → Shows → Closed Rate. Use the **7D / 30D / 90D** buttons or pick a custom range, and press **Compare** to see the previous period as a shadow line.
 - **Scorecards** — your per-setter totals and show rate. **CSV** exports the table.
 
-## 3. Claim your sets — Calendar
+## 3. Claim and track your sets — Calendar
 
-${img("calendar", "Calendar page with the Set reminders list")}
+${img("set-tracker", "The Set reminders tracker — windows, confirmation, and the 6-hour rule")}
 
-1. Click **Calendar** in the sidebar.
-2. Bookings made through Calendly appear automatically in the **Set reminders** list as **Unclaimed**.
-3. Press **Claim** on a set you booked. It becomes yours, and if your Google Calendar is connected you'll get reminders **2 days, 1 day, 3 hours, and 1 hour** before the call.
-4. To connect your Google Calendar, press **Connect Google Calendar** at the top of the page (one-time, ~20 seconds).
-5. The timezone picker above the grid lets you view everything in your own timezone.
+1. Click **Calendar** in the sidebar. Bookings made through Calendly appear automatically in the **Set reminders** list as **Unclaimed** — press **Claim** on the ones you booked.
+2. Claiming puts the call on your Google Calendar (connect it once with the button at the top) with popup reminders **48h, 24h, 3h, and 1h** before, and the bell in the top-right nudges you when a reminder window opens.
+3. **Tick each reminder as you send it.** Under your set are four chips — 48h / 24h / 3h / 1h. Click once when you've reminded the lead (**✓ green**); click again if you reached out and got **no reply** (amber); a pulsing chip means the window is open and you haven't acted yet. Closers and founders can see these — this is how they know a set was worked.
+4. **Get the lead to confirm.** When they reply "yes, I'll be there", press **Lead confirmed ✓**. The set gets a green Confirmed badge and the slot is locked.
+5. **The 6-hour rule:** a set that is still unconfirmed **6 hours before the call is removed automatically** — from the list and from the calendar. An unconfirmed lead is a probable no-show, and that hour goes back on the market. Don't let your sets die: remind early, confirm early.
+6. The calendar grid itself can be filtered with the **All / Closing / Coaching / Meetings** chips, and the timezone picker shows everything in your own timezone.
 
 ## 4. After you set a call
 
@@ -252,7 +253,7 @@ Click **Revenue → Installments** tab:
 
 ## 8. Everything else you'll touch
 
-- **Calendar** — connect your Google Calendar once (**Connect Google Calendar** button). Every closer's calendar shows in one grid, in your timezone; Calendly sets appear in the Set reminders list.
+- **Calendar** — connect your Google Calendar once (**Connect Google Calendar** button). Every closer's calendar shows in one grid, in your timezone. Use the **Closing** filter chip to see only sales calls. The **Set reminders** tracker below the grid shows, per set, whether the setter ticked each reminder window (48h/24h/3h/1h) and whether the **lead confirmed** — an unconfirmed set auto-drops 6 hours before the call, so your calendar only holds confirmed leads.
 - **Sales** — the funnel trends and Closed Rate for any date range; your submission status is on this page too.
 - **Students** — look up any student before a call: payment state, phase, history.
 - **Testimonials** — a client win crosses your DMs? Drop it here the same day.
@@ -522,13 +523,28 @@ ${img("content", "Content planner")}
 
 - **Content** — the content planner (TOF posts Monday–Thursday, MOF Friday–Sunday, recorded in two-week batches — Thursday is recording day) and Instagram analytics (log a snapshot once a month).
 
-## 6b. Calendar & booked sets
+## 6b. Calendar & the set-confirmation system
 
-- **Calendar** in the sidebar shows every connected team calendar in one grid. Press **Connect Google Calendar** once for your own (about 20 seconds).
-- Sets booked through **Calendly appear automatically** in the *Set reminders* list. Setters claim their own; whoever claims gets automatic reminders 2 days / 1 day / 3 hours / 1 hour before the call.
-- Use the timezone picker to view in Riyadh, Amsterdam, or anywhere else.
+${img("set-tracker", "Set reminders tracker — reminder windows, confirmation, 6-hour auto-drop")}
 
-## 6c. Weekly rhythm
+- **Calendar** shows every connected team calendar in one grid; filter it with the **All / Closing / Coaching / Meetings** chips. Press **Connect Google Calendar** once for your own.
+- Sets booked through **Calendly appear automatically** in the *Set reminders* list. Setters claim their own; claiming adds it to their Google Calendar with reminders **48h / 24h / 3h / 1h** before, and the bell nudges them when each window opens.
+- Under each set, the setter ticks the reminder chips as they send them (green = reminded, amber = no reply) and presses **Lead confirmed** when the lead commits. You and the closers can see the state of every set at a glance.
+- **The 6-hour rule (enforced automatically):** any claimed set still unconfirmed 6 hours before the call is removed from the list and the calendar — unconfirmed leads are probable no-shows and the hour goes back to the team.
+
+## 6c. Finance (founders only)
+
+${img("finance", "The Finance page — cash in/out, profit split, MRR")}
+
+**Finance** in the sidebar is only visible to you three:
+
+- **Top row** — cash collected this month (+ what's still scheduled), total expenses, projected profit, and MRR.
+- **Recurring revenue** — the installment income scheduled for the next six months, as a quiet chart.
+- **Profit split** — after expenses: **70% Abdulrahmane · 15% Faizan · 15% Abu Bilal**, calculated on both projected and banked cash.
+- **Money flow** — enter today's payment-processor balance once and the list shows day-by-day what comes in (installments) and goes out (expenses) with a running balance to end of month.
+- **Business expenses** — add every recurring bill (name, amount, day of the month it hits) and one-offs; they feed the flow and the profit math automatically.
+
+## 6d. Weekly rhythm
 
 - **Gathering Hub → Weekly review** — cash vs goal, funnel, EOD compliance, milestones, and testimonials for the week; read it before the team meeting.
 - **Content → Instagram** — on the 1st of each month, log the IG snapshot (followers, reach, top reels). The dashboard reminds you if it's missing.

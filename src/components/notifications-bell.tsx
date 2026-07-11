@@ -15,6 +15,15 @@ type Reminder = {
   days: number; // negative = overdue
 };
 
+type SetNudge = { id: string; prospect: string; event_start: string; window: string };
+
+const SET_WINDOWS: { key: string; minutes: number }[] = [
+  { key: "48h", minutes: 48 * 60 },
+  { key: "24h", minutes: 24 * 60 },
+  { key: "3h", minutes: 3 * 60 },
+  { key: "1h", minutes: 60 },
+];
+
 function bucketLabel(days: number) {
   if (days < 0) return { text: `Overdue ${Math.abs(days)}d`, tone: "text-danger-fg" };
   if (days === 0) return { text: "Due today", tone: "text-warning-fg" };
@@ -73,12 +82,40 @@ export function NotificationsBell() {
   });
   const items = q.data ?? [];
 
-  if (!isAdmin && !isCoach) return null;
+  // My claimed sets with an open, unticked reminder window → nudge me.
+  const setsQ = useQuery({
+    queryKey: ["notifications", "sets", user?.id],
+    enabled: !!user,
+    refetchInterval: 5 * 60_000,
+    staleTime: 60_000,
+    queryFn: async (): Promise<SetNudge[]> => {
+      const { data } = await supabase
+        .from("set_reminders")
+        .select("id, prospect, event_start, reminder_log, confirmed_at, status")
+        .eq("owner_id", user!.id)
+        .eq("status", "active")
+        .gte("event_start", new Date().toISOString())
+        .order("event_start")
+        .limit(30);
+      const now = Date.now();
+      const out: SetNudge[] = [];
+      for (const r of (data ?? []) as any[]) {
+        const msLeft = new Date(r.event_start).getTime() - now;
+        // the tightest window that is open but not ticked yet
+        const due = SET_WINDOWS.filter(w => msLeft <= w.minutes * 60_000 && !(r.reminder_log ?? {})[w.key]);
+        if (due.length) out.push({ id: r.id, prospect: r.prospect, event_start: r.event_start, window: due[due.length - 1].key });
+      }
+      return out;
+    },
+  });
+  const setNudges = setsQ.data ?? [];
+
+  if (!isAdmin && !isCoach && setNudges.length === 0) return null;
 
   const overdue = items.filter(i => i.days < 0).length;
   const dueSoon = items.length - overdue;
-  const badgeCount = items.length;
-  const badgeTone = overdue > 0 ? "bg-danger" : dueSoon > 0 ? "bg-warning" : "";
+  const badgeCount = items.length + setNudges.length;
+  const badgeTone = overdue > 0 || setNudges.length > 0 ? "bg-danger" : dueSoon > 0 ? "bg-warning" : "";
 
   return (
     <Popover>
@@ -104,8 +141,26 @@ export function NotificationsBell() {
           </span>
         </div>
         <div className="max-h-96 overflow-auto">
-          {items.length === 0 ? (
-            <div className="px-3 py-8 text-center text-xs text-muted-foreground">No installment reminders</div>
+          {setNudges.length > 0 && (
+            <div className="border-b border-[var(--border)]">
+              {setNudges.map(n => (
+                <Link key={n.id} to="/calendar" search={{} as never} className="flex items-start gap-2 px-3 py-2 hover:bg-muted/50 transition">
+                  <div className="mt-0.5 h-6 w-6 rounded-sm bg-warning-bg flex items-center justify-center">
+                    <Bell className="h-3 w-3 text-warning-fg" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs text-foreground truncate">Remind {n.prospect}</div>
+                    <div className="text-[10px] text-muted-foreground">
+                      {n.window} window open · call {new Date(n.event_start).toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" })}
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-medium text-warning-fg whitespace-nowrap">tick it off →</span>
+                </Link>
+              ))}
+            </div>
+          )}
+          {items.length === 0 && setNudges.length === 0 ? (
+            <div className="px-3 py-8 text-center text-xs text-muted-foreground">Nothing needs you right now</div>
           ) : (
             items.map(item => {
               const b = bucketLabel(item.days);

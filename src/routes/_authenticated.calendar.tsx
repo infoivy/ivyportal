@@ -22,6 +22,7 @@ import { DateField } from "@/components/ui/date-field";
 import {
   disconnectMyCalendar, getMyCalendarConnection, getTeamCalendarEvents, createSetReminder,
   listUpcomingSets, deleteSetReminder, syncCalendlySets, claimSet, type UpcomingSet,
+  updateSetTracking, cancelSet, type ReminderWindow, type ReminderState,
   getTeamCalendarStatus, startGoogleCalendarAuth, type TeamEvent,
 } from "@/lib/calendar.functions";
 
@@ -151,7 +152,31 @@ function CalendarPage() {
   const [setsFilter, setSetsFilter] = useState<"all" | "mine">("all");
   const syncCalendlyFn = useServerFn(syncCalendlySets);
   const claimSetFn = useServerFn(claimSet);
+  const trackSetFn = useServerFn(updateSetTracking);
+  const cancelSetFn = useServerFn(cancelSet);
   const upcomingSets = useQuery({ queryKey: ["cal", "sets"], queryFn: () => listSetsFn(), staleTime: 30_000 });
+
+  // 6-hour rule: a set the lead hasn't confirmed by 6h before start is pulled
+  // from the calendar so the slot can be re-used. Runs once per set per visit.
+  const autoCancelled = useRef(new Set<string>());
+  useEffect(() => {
+    const sets = upcomingSets.data ?? [];
+    const cutoff = 6 * 3_600_000;
+    for (const s of sets) {
+      if (s.status !== "active" || s.confirmed_at || s.owner_id == null) continue;
+      const msLeft = new Date(s.event_start).getTime() - Date.now();
+      if (msLeft > 0 && msLeft <= cutoff && !autoCancelled.current.has(s.id)) {
+        autoCancelled.current.add(s.id);
+        cancelSetFn({ data: { id: s.id, reason: "no confirmation 6h before the call" } })
+          .then(() => {
+            toast.warning(`${s.prospect} removed — no confirmation 6h before the call.`);
+            qc.invalidateQueries({ queryKey: ["cal", "sets"] });
+          })
+          .catch(() => {});
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [upcomingSets.data]);
   // pull fresh Calendly bookings once per visit, then refresh the list
   useEffect(() => {
     syncCalendlyFn().then((r) => {
@@ -201,7 +226,24 @@ function CalendarPage() {
   }, [search.connect, qc]);
 
   const teamList = team.data ?? [];
-  const visibleEvents = (events.data ?? []).filter((e) => !hiddenUsers.has(e.user_id));
+  // Classify calendar events by title so the grid can be filtered down to
+  // just closing calls (sets), coaching, or team meetings.
+  const classify = (summary: string): "closing" | "coaching" | "team" | "other" => {
+    const t = summary.toLowerCase();
+    if (/coach|role ?play|pathway|mastery|1[:\-]?1|one[- ]on[- ]one/.test(t)) return "coaching";
+    if (/team|meeting|sync|standup|all[- ]?hands|huddle/.test(t)) return "team";
+    if (/isa call|set[:\s]|closing|sales call|discovery|45|60 ?min/.test(t)) return "closing";
+    return "other";
+  };
+  const [typeFilter, setTypeFilter] = useState<"all" | "closing" | "coaching" | "team">(() => {
+    try { return (localStorage.getItem("isa-cal-type") as "all" | "closing" | "coaching" | "team") ?? "all"; } catch { return "all"; }
+  });
+  const changeTypeFilter = (t: typeof typeFilter) => {
+    setTypeFilter(t);
+    try { localStorage.setItem("isa-cal-type", t); } catch { /* ignore */ }
+  };
+  const visibleEvents = (events.data ?? []).filter((e) =>
+    !hiddenUsers.has(e.user_id) && (typeFilter === "all" || classify(e.summary ?? "") === typeFilter));
 
   // Full 24-hour grid, scrolled to the working day by default
   const hourStart = 0;
@@ -309,6 +351,22 @@ function CalendarPage() {
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-1">
+              <div className="inline-flex rounded-lg bg-muted p-[3px] mr-1">
+                {([
+                  ["all", "All"],
+                  ["closing", "Closing"],
+                  ["coaching", "Coaching"],
+                  ["team", "Meetings"],
+                ] as const).map(([key, label]) => (
+                  <button
+                    key={key}
+                    onClick={() => changeTypeFilter(key)}
+                    className={`text-caption font-medium px-2.5 py-1 rounded-[7px] motion-safe:transition-colors ${typeFilter === key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
               <select
                 value={tz}
                 onChange={(e) => changeTz(e.target.value)}
@@ -394,7 +452,7 @@ function CalendarPage() {
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
               <h2 className="text-title text-foreground">Set reminders</h2>
-              <p className="text-caption text-muted-foreground">Upcoming sets · each reminds its setter 2 days, 1 day, 3 hours, and 1 hour before.</p>
+              <p className="text-caption text-muted-foreground">Track every set: tick each reminder window as you send it, confirm the lead, and unconfirmed sets auto-drop 6h before the call.</p>
             </div>
             <div className="flex gap-1">
               {(["all", "mine"] as const).map((f) => (
@@ -411,6 +469,26 @@ function CalendarPage() {
           <UpcomingSetsList
             sets={upcomingSets.data ?? []}
             toLocal={toLocal}
+            onTrack={async (id, window, state) => {
+              try {
+                await trackSetFn({ data: { id, window, state } });
+                qc.invalidateQueries({ queryKey: ["cal", "sets"] });
+              } catch (err) { toast.error(String((err as Error).message ?? err)); }
+            }}
+            onConfirm={async (id, confirm) => {
+              try {
+                await trackSetFn({ data: { id, confirm } });
+                qc.invalidateQueries({ queryKey: ["cal", "sets"] });
+                if (confirm) toast.success("Confirmed — the slot is locked in.");
+              } catch (err) { toast.error(String((err as Error).message ?? err)); }
+            }}
+            onCancel={async (id) => {
+              try {
+                const r = await cancelSetFn({ data: { id, reason: "removed manually" } });
+                qc.invalidateQueries({ queryKey: ["cal", "sets"] });
+                toast.success(r.calendarRemoved ? "Cancelled and removed from the calendar." : "Cancelled.");
+              } catch (err) { toast.error(String((err as Error).message ?? err)); }
+            }}
             onClaim={async (id) => {
               try {
                 const r = await claimSetFn({ data: { id } });
@@ -717,17 +795,29 @@ function SetReminderDialog({ onClose, onCreate }: {
   );
 }
 
-function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, toLocal }: {
+const WINDOWS: { key: "48h" | "24h" | "3h" | "1h"; label: string; minutes: number }[] = [
+  { key: "48h", label: "48h", minutes: 48 * 60 },
+  { key: "24h", label: "24h", minutes: 24 * 60 },
+  { key: "3h", label: "3h", minutes: 3 * 60 },
+  { key: "1h", label: "1h", minutes: 60 },
+];
+
+function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, onConfirm, onCancel, toLocal }: {
   sets: UpcomingSet[];
   loading: boolean;
   filter: "all" | "mine";
   onDelete: (id: string) => void;
   onClaim: (id: string) => void;
+  onTrack: (id: string, window: ReminderWindow, state: ReminderState | null) => void;
+  onConfirm: (id: string, confirm: boolean) => void;
+  onCancel: (id: string) => void;
   toLocal: (iso: string | Date) => Date;
 }) {
   const { user, roles } = useAuth();
   const isAdmin = roles.includes("admin");
-  const visible = filter === "mine" ? sets.filter((s) => s.owner_id === user?.id) : sets;
+  const pool = filter === "mine" ? sets.filter((s) => s.owner_id === user?.id) : sets;
+  const visible = pool.filter((s) => s.status !== "cancelled");
+  const cancelled = pool.filter((s) => s.status === "cancelled");
 
   const untilLabel = (iso: string) => {
     const ms = new Date(iso).getTime() - Date.now();
@@ -739,7 +829,7 @@ function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, toLocal }:
   };
 
   if (loading) return <div className="text-caption text-muted-foreground py-4">Loading…</div>;
-  if (visible.length === 0) {
+  if (visible.length === 0 && cancelled.length === 0) {
     return (
       <div className="text-caption text-muted-foreground py-6 text-center">
         {filter === "mine" ? "No upcoming sets assigned to you. Log one or claim one from the calendar above." : "No upcoming sets yet. Log a set, or click a calendar event and claim it."}
@@ -751,41 +841,114 @@ function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, toLocal }:
       {visible.map((s) => {
         const start = toLocal(s.event_start);
         const mine = s.owner_id === user?.id;
+        const msLeft = new Date(s.event_start).getTime() - Date.now();
+        const confirmed = !!s.confirmed_at;
+        const inDanger = !confirmed && msLeft > 0 && msLeft <= 12 * 3_600_000;
+        const canTrack = mine || isAdmin || roles.includes("closer");
         return (
-          <div key={s.id} className="flex items-center gap-3 py-2.5">
-            <div className="min-w-0 flex-1">
-              <div className="text-body font-medium text-foreground truncate">
-                {s.prospect}
-                {s.source === "calendly" && <span className="ml-2 text-micro text-muted-foreground">calendly</span>}
-                {s.source === "claimed" && <span className="ml-2 text-micro text-muted-foreground">claimed</span>}
+          <div key={s.id} className="py-2.5 space-y-1.5">
+            <div className="flex items-center gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="text-body font-medium text-foreground truncate">
+                  {s.prospect}
+                  {s.source === "calendly" && <span className="ml-2 text-micro text-muted-foreground">calendly</span>}
+                </div>
+                <div className="text-caption truncate">
+                  <span className="text-muted-foreground">{format(start, "EEE, MMM d · h:mm a")} · </span>
+                  {s.owner_id
+                    ? <span className="text-muted-foreground">{s.owner_name}{mine ? " (you)" : ""}</span>
+                    : <span className="text-warning-fg">Unclaimed — needs a setter</span>}
+                </div>
               </div>
-              <div className="text-caption truncate">
-                <span className="text-muted-foreground">{format(start, "EEE, MMM d · h:mm a")} · </span>
-                {s.owner_id
-                  ? <span className="text-muted-foreground">{s.owner_name}{mine ? " (you)" : ""}</span>
-                  : <span className="text-warning-fg">Unclaimed — needs a setter</span>}
-              </div>
+              {confirmed ? (
+                <span className="text-micro font-medium text-success-fg bg-success-bg border border-success/25 rounded-full px-2 py-0.5 shrink-0">Confirmed</span>
+              ) : (
+                <span className={`text-micro font-medium rounded-full px-2 py-0.5 border shrink-0 ${inDanger ? "text-danger-fg bg-danger-bg border-danger/25" : "text-warning-fg bg-warning-bg border-warning/25"}`}>
+                  {inDanger ? "Unconfirmed — drops 6h before" : "Unconfirmed"}
+                </span>
+              )}
+              {!s.owner_id && (
+                <Button size="sm" variant="outline" className="h-7 px-2.5 text-caption shrink-0" onClick={() => onClaim(s.id)}>
+                  Claim
+                </Button>
+              )}
+              <span className="text-caption text-muted-foreground tabular-nums shrink-0">{untilLabel(s.event_start)}</span>
+              {s.gcal_html_link && (
+                <a href={s.gcal_html_link} target="_blank" rel="noreferrer" className="text-muted-foreground hover:text-foreground shrink-0" title="Open in Google Calendar">
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              )}
+              {(mine || isAdmin) && (
+                <button onClick={() => onDelete(s.id)} className="text-muted-foreground hover:text-danger-fg shrink-0" title="Remove from list">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
             </div>
-            {!s.owner_id && (
-              <Button size="sm" variant="outline" className="h-7 px-2.5 text-caption shrink-0" onClick={() => onClaim(s.id)}>
-                Claim
-              </Button>
-            )}
-            <span className="text-caption text-muted-foreground tabular-nums shrink-0">{untilLabel(s.event_start)}</span>
-            <span className="hidden sm:inline-flex text-micro text-muted-foreground bg-muted rounded-full px-2 py-0.5 shrink-0" title="Reminder schedule">2d · 1d · 3h · 1h</span>
-            {s.gcal_html_link && (
-              <a href={s.gcal_html_link} target="_blank" rel="noreferrer" className="text-muted-foreground hover:text-foreground shrink-0" title="Open in Google Calendar">
-                <ExternalLink className="h-3.5 w-3.5" />
-              </a>
-            )}
-            {(mine || isAdmin) && (
-              <button onClick={() => onDelete(s.id)} className="text-muted-foreground hover:text-danger-fg shrink-0" title="Remove from list">
-                <X className="h-3.5 w-3.5" />
-              </button>
+
+            {/* Reminder tracker: tick each window as you send it */}
+            {s.owner_id && (
+              <div className="flex flex-wrap items-center gap-1.5 pl-0.5">
+                <span className="text-micro text-muted-foreground mr-0.5">Reminders:</span>
+                {WINDOWS.map((w) => {
+                  const state = s.reminder_log?.[w.key];
+                  const windowOpen = msLeft <= w.minutes * 60_000;
+                  const next: ReminderState | null = state === "reminded" ? "no_response" : state === "no_response" ? null : "reminded";
+                  return (
+                    <button
+                      key={w.key}
+                      disabled={!canTrack}
+                      onClick={() => onTrack(s.id, w.key, next)}
+                      title={state === "reminded" ? `${w.label}: reminded — click for 'no response'` : state === "no_response" ? `${w.label}: reached out, no response — click to clear` : windowOpen ? `${w.label} window open — click when you've sent the reminder` : `${w.label} before the call`}
+                      className={`text-micro font-medium rounded-full px-2 py-0.5 border motion-safe:transition-colors disabled:cursor-default ${
+                        state === "reminded"
+                          ? "text-success-fg bg-success-bg border-success/25"
+                          : state === "no_response"
+                            ? "text-warning-fg bg-warning-bg border-warning/25"
+                            : windowOpen
+                              ? "text-foreground bg-muted border-border animate-pulse"
+                              : "text-muted-foreground bg-transparent border-border"
+                      }`}
+                    >
+                      {w.label}{state === "reminded" ? " ✓" : state === "no_response" ? " · no reply" : ""}
+                    </button>
+                  );
+                })}
+                <span className="mx-1 h-3 w-px bg-border" />
+                {canTrack && (confirmed ? (
+                  <button onClick={() => onConfirm(s.id, false)} className="text-micro text-muted-foreground hover:text-foreground" title="Undo confirmation">
+                    confirmed {format(toLocal(s.confirmed_at!), "MMM d, h:mm a")} · undo
+                  </button>
+                ) : (
+                  <>
+                    <button onClick={() => onConfirm(s.id, true)} className="text-micro font-medium text-success-fg hover:opacity-80">
+                      Lead confirmed ✓
+                    </button>
+                    <button onClick={() => onCancel(s.id)} className="text-micro text-muted-foreground hover:text-danger-fg">
+                      remove from calendar
+                    </button>
+                  </>
+                ))}
+              </div>
             )}
           </div>
         );
       })}
+      {cancelled.length > 0 && (
+        <div className="pt-2.5">
+          <p className="text-micro text-muted-foreground mb-1.5">Removed (no confirmation)</p>
+          {cancelled.map((s) => (
+            <div key={s.id} className="flex items-center gap-3 py-1.5 opacity-55">
+              <span className="text-caption line-through truncate flex-1">{s.prospect} · {format(toLocal(s.event_start), "EEE, MMM d · h:mm a")}</span>
+              <span className="text-micro text-danger-fg shrink-0">cancelled</span>
+              {(s.owner_id === user?.id || isAdmin) && (
+                <button onClick={() => onDelete(s.id)} className="text-muted-foreground hover:text-danger-fg shrink-0" title="Delete row">
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

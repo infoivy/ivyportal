@@ -191,3 +191,15 @@ export async function insertCalendarEvent(
   if (!res.ok) throw new Error(`Google Calendar insert failed (${res.status}): ${await res.text()}`);
   return (await res.json()) as { id: string; htmlLink?: string };
 }
+
+/** Delete an event from the user's calendar (used when a set is cancelled). */
+export async function deleteCalendarEvent(accessToken: string, calendarId: string, eventId: string) {
+  const res = await fetch(
+    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`,
+    { method: "DELETE", headers: { Authorization: `Bearer ${accessToken}` } },
+  );
+  // 404/410 = already gone — fine
+  if (!res.ok && res.status !== 404 && res.status !== 410) {
+    throw new Error(`Google Calendar delete failed (${res.status}): ${await res.text()}`);
+  }
+}

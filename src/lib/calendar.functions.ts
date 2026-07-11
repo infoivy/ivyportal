@@ -228,6 +228,9 @@ export type UpcomingSet = {
   notes: string | null;
   source: string;
   gcal_html_link: string | null;
+  reminder_log: Partial<Record<"48h" | "24h" | "3h" | "1h", "reminded" | "no_response">>;
+  confirmed_at: string | null;
+  status: "active" | "cancelled" | "completed";
 };
 
 /** Upcoming sets across the sales team, soonest first. */
@@ -386,4 +389,80 @@ export const claimSet = createServerFn({ method: "POST" })
       console.error("[claimSet] calendar event failed:", err);
       return { ok: true, calendar: false };
     }
+  });
+
+// ── Set tracking: reminder checklist, confirmation, cancellation ────────────
+
+export type ReminderWindow = "48h" | "24h" | "3h" | "1h";
+export type ReminderState = "reminded" | "no_response";
+
+/** Tick a reminder window, mark confirmed, or reopen. */
+export const updateSetTracking = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { id: string; window?: ReminderWindow; state?: ReminderState | null; confirm?: boolean }) => data)
+  .handler(async ({ context, data }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sr = context.supabase as any;
+    const { data: row, error } = await sr.from("set_reminders").select("id, reminder_log, confirmed_at").eq("id", data.id).maybeSingle();
+    if (error || !row) throw new Error("set not found");
+    const patch: Record<string, unknown> = {};
+    if (data.window) {
+      const log = { ...(row.reminder_log ?? {}) } as Record<string, string>;
+      if (data.state == null) delete log[data.window];
+      else log[data.window] = data.state;
+      patch.reminder_log = log;
+    }
+    if (data.confirm !== undefined) {
+      patch.confirmed_at = data.confirm ? new Date().toISOString() : null;
+    }
+    const { error: upErr } = await sr.from("set_reminders").update(patch).eq("id", data.id);
+    if (upErr) throw new Error(upErr.message);
+    return { ok: true };
+  });
+
+/**
+ * Cancel a set (unconfirmed by the 6-hour cutoff, or manually): marks the row
+ * cancelled and best-effort removes the claimer's Google Calendar event so
+ * the hour opens back up.
+ */
+export const cancelSet = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { id: string; reason?: string }) => data)
+  .handler(async ({ context, data }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sr = context.supabase as any;
+    const { data: row, error } = await sr.from("set_reminders").select("*").eq("id", data.id).maybeSingle();
+    if (error || !row) throw new Error("set not found");
+
+    const { error: upErr } = await sr.from("set_reminders").update({
+      status: "cancelled",
+      notes: [row.notes, data.reason ? `Cancelled: ${data.reason}` : "Cancelled — lead did not confirm"].filter(Boolean).join("\n"),
+    }).eq("id", data.id);
+    if (upErr) throw new Error(upErr.message);
+
+    // Best effort: remove from the claimer's Google Calendar
+    if (row.owner_id && row.gcal_event_id) {
+      try {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { data: conn } = await supabaseAdmin
+          .from("calendar_connections").select("*").eq("user_id", row.owner_id).maybeSingle();
+        if (conn) {
+          let accessToken = conn.access_token as string | null;
+          const exp = conn.access_token_expires_at ? new Date(conn.access_token_expires_at).getTime() : 0;
+          if (!accessToken || exp - 60_000 < Date.now()) {
+            const r = await refreshAccessToken(conn.refresh_token);
+            accessToken = r.access_token;
+            await supabaseAdmin.from("calendar_connections")
+              .update({ access_token: accessToken, access_token_expires_at: new Date(Date.now() + r.expires_in * 1000).toISOString() })
+              .eq("id", conn.id);
+          }
+          const { deleteCalendarEvent } = await import("@/lib/calendar.server");
+          await deleteCalendarEvent(accessToken!, conn.calendar_id, row.gcal_event_id);
+          return { ok: true, calendarRemoved: true };
+        }
+      } catch (err) {
+        console.error("[cancelSet] gcal delete failed:", err);
+      }
+    }
+    return { ok: true, calendarRemoved: false };
   });

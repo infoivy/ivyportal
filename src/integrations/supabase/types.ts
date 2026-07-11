@@ -1371,6 +1371,7 @@ export type Database = {
       set_reminders: {
         Row: {
           calendly_event_uri: string | null
+          confirmed_at: string | null
           created_at: string
           duration_min: number
           event_start: string
@@ -1380,10 +1381,13 @@ export type Database = {
           notes: string | null
           owner_id: string | null
           prospect: string
+          reminder_log: Json
           source: string
+          status: string
         }
         Insert: {
           calendly_event_uri?: string | null
+          confirmed_at?: string | null
           created_at?: string
           duration_min?: number
           event_start: string
@@ -1393,10 +1397,13 @@ export type Database = {
           notes?: string | null
           owner_id?: string | null
           prospect: string
+          reminder_log?: Json
           source?: string
+          status?: string
         }
         Update: {
           calendly_event_uri?: string | null
+          confirmed_at?: string | null
           created_at?: string
           duration_min?: number
           event_start?: string
@@ -1406,7 +1413,9 @@ export type Database = {
           notes?: string | null
           owner_id?: string | null
           prospect?: string
+          reminder_log?: Json
           source?: string
+          status?: string
         }
         Relationships: []
       }
