@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { ListSkeleton } from "@/components/ui/skeletons";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { Card } from "@/components/ui/card";
@@ -107,7 +108,7 @@ function CloserResources() {
       ) : undefined}
     >
       {loading ? (
-        <div className="text-sm text-muted-foreground">Loading…</div>
+        <ListSkeleton rows={5} />
       ) : editing && isAdmin ? (
         <EditTable rows={rows} reload={load} />
       ) : (

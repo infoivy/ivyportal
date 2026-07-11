@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { PageSkeleton } from "@/components/ui/skeletons";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { CATEGORY_LABEL, type DocCategory } from "@/lib/knowledge";
@@ -83,7 +84,7 @@ function KnowledgeDoc() {
     navigate({ to: "/knowledge" as string });
   };
 
-  if (loading) return <div className="p-6 text-sm text-muted-foreground">Loading…</div>;
+  if (loading) return <PageSkeleton />;
   if (notFound || !doc) {
     return (
       <div className="p-6 max-w-3xl mx-auto space-y-4">

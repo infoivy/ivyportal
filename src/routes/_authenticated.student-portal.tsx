@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
+import { PageSkeleton } from "@/components/ui/skeletons";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -283,7 +284,7 @@ function StudentPortal() {
     if (error) { toast.error(error.message); load(); }
   };
 
-  if (loading) return <div className="p-6 text-sm text-muted-foreground">Loading…</div>;
+  if (loading) return <PageSkeleton />;
 
   if (!student) {
     return (

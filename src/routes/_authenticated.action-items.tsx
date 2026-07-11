@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { TableSkeleton } from "@/components/ui/skeletons";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -275,7 +276,7 @@ function ActionItemsHub() {
         </div>
       </div>
 
-      {loading && <div className="card-surface p-8 text-center text-xs text-muted-foreground">Loading…</div>}
+      {loading && <TableSkeleton rows={8} />}
       {!loading && filtered.length === 0 && (
         <div className="card-surface p-8 text-center text-xs text-muted-foreground">Nothing here. Nice.</div>
       )}

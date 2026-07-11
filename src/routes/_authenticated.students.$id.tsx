@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { PageSkeleton } from "@/components/ui/skeletons";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -211,7 +212,7 @@ function StudentDetail() {
   ] : [], [student]);
   const graduationDone = graduationSteps.filter(s => s.done).length;
 
-  if (!student) return <div className="p-6 text-sm text-muted-foreground">Loading…</div>;
+  if (!student) return <PageSkeleton />;
 
   const coachName = (uid: string | null) => uid ? (coaches.find(c => c.id === uid)?.display_name ?? uid.slice(0, 8)) : "Unassigned";
   const paymentMeta = PAYMENT_STATES.find(p => p.key === student.payment_state);

@@ -171,9 +171,12 @@ function EODsPage() {
     try { const raw = localStorage.getItem(draftKey); if (raw) { setForm(f => ({ ...f, ...JSON.parse(raw) })); toast.message("Draft restored"); } } catch {}
     hydratedDraft.current = true;
   }, [draftKey, existingId]);
+  const [draftSavedAt, setDraftSavedAt] = useState<Date | null>(null);
   useEffect(() => {
     if (!draftKey || existingId) return;
-    const t = setTimeout(() => { try { localStorage.setItem(draftKey, JSON.stringify(form)); } catch {} }, 400);
+    const t = setTimeout(() => {
+      try { localStorage.setItem(draftKey, JSON.stringify(form)); setDraftSavedAt(new Date()); } catch {}
+    }, 400);
     return () => clearTimeout(t);
   }, [form, draftKey, existingId]);
 
@@ -334,7 +337,11 @@ function EODsPage() {
             <div className="lg:col-span-2 border border-[var(--border)] bg-[var(--card)] rounded-sm p-5 space-y-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-sm font-semibold">{existingId ? "Update today's numbers" : "Submit today's numbers"}</h2>
+                  <h2 className="text-sm font-semibold">{existingId ? "Update today's numbers" : "Submit today's numbers"}
+                    {!existingId && draftSavedAt && (
+                      <span className="ml-2 text-[10px] font-normal text-muted-foreground">Draft saved ✓</span>
+                    )}
+                  </h2>
                   <p className="text-[11px] text-muted-foreground">Zero is a valid answer.</p>
                 </div>
               </div>

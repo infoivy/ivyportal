@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { ListSkeleton } from "@/components/ui/skeletons";
 import { useAuth } from "@/lib/auth-context";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -69,6 +70,7 @@ function Crm() {
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
+  const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
   const refresh = async (query = "") => {
     setLoading(true);
     try {
@@ -91,6 +93,7 @@ function Crm() {
         setLeads([]);
         setNoteCounts({});
       }
+      setLastSyncedAt(new Date());
     } finally {
       setLoading(false);
     }
@@ -147,6 +150,9 @@ function Crm() {
             <h1 className="text-base font-semibold leading-tight">CRM Pipeline</h1>
             <p className="text-[10px] text-muted-foreground mt-0.5">
               {connected === null ? "Loading…" : connected ? `Close CRM · ${leads.length} leads` : "Close CRM sync · not connected"}
+              {connected && lastSyncedAt && (
+                <span className="ml-1.5">· synced {lastSyncedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+              )}
             </p>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
@@ -581,7 +587,7 @@ function LeadDetailDrawer({
             History · {notes.length} {notes.length === 1 ? "note" : "notes"}
           </div>
           {loading ? (
-            <div className="text-xs text-muted-foreground py-6 text-center">Loading…</div>
+            <ListSkeleton rows={4} />
           ) : notes.length === 0 ? (
             <div className="text-xs text-muted-foreground py-6 text-center border border-dashed border-border rounded-sm">
               No notes yet. Log the first one above.

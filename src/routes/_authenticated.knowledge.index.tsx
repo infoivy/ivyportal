@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { ListSkeleton } from "@/components/ui/skeletons";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { DOC_CATEGORIES, CATEGORY_LABEL, type DocCategory } from "@/lib/knowledge";
@@ -112,7 +113,7 @@ function KnowledgeIndex() {
 
 
       {loading ? (
-        <div className="text-sm text-muted-foreground">Loading…</div>
+        <ListSkeleton rows={6} />
       ) : docs.length === 0 && !(roles.includes("admin") || roles.includes("setter")) ? (
         <Card className="p-8 text-center">
           <BookOpen className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
