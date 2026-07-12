@@ -106,7 +106,7 @@ export const listCloseLeads = createServerFn({ method: "GET" })
       const leads = (json.data ?? []).map((l: any) => {
         const opps: any[] = Array.isArray(l.opportunities) ? l.opportunities : [];
         // Close stores opportunity values in cents — $5,000 arrives as 500000.
-        const value = opps.reduce((a, o) => a + Number(o.value ?? 0), 0) / 100;
+        const value = Math.round(opps.reduce((a, o) => a + Number(o.value ?? 0), 0)) / 100;
         const activeOpp = opps.find((o) => o.status_type === "active") ?? opps[0];
         return {
           id: String(l.id ?? ""),
@@ -238,4 +238,60 @@ export const getCloseCallStats = createServerFn({ method: "GET" })
       avgDurationSec: totalAnswered > 0 ? Math.round(durationSum / totalAnswered) : null,
       perUser,
     };
+  });
+
+export type CloseLeadDetail = {
+  notes: { note: string; user: string; date: string }[];
+  calls: { user: string; duration: number; disposition: string; date: string }[];
+};
+
+/** Notes + call history for one Close lead — who called, what they wrote. */
+export const getCloseLeadDetail = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { leadId: string }) => {
+    if (!/^lead_[A-Za-z0-9]+$/.test(input?.leadId ?? "")) throw new Error("Invalid lead id");
+    return { leadId: input.leadId };
+  })
+  .handler(async ({ context, data }): Promise<CloseLeadDetail> => {
+    const key = await readCloseKey(context);
+    if (!key) return { notes: [], calls: [] };
+    const basic = Buffer.from(`${key}:`).toString("base64");
+    const H = { headers: { Authorization: `Basic ${basic}` } };
+    try {
+      const [notesRes, callsRes] = await Promise.all([
+        fetch(`https://api.close.com/api/v1/activity/note/?lead_id=${data.leadId}&_limit=20&_fields=note,user_name,date_created`, H),
+        fetch(`https://api.close.com/api/v1/activity/call/?lead_id=${data.leadId}&_limit=20&_fields=user_name,duration,disposition,direction,date_created`, H),
+      ]);
+      const notes = notesRes.ok ? ((await notesRes.json()).data ?? []) : [];
+      const calls = callsRes.ok ? ((await callsRes.json()).data ?? []) : [];
+      return {
+        notes: notes.map((n: any) => ({ note: n.note ?? "", user: n.user_name ?? "?", date: n.date_created ?? "" })),
+        calls: calls
+          .filter((c: any) => c.direction === "outbound")
+          .map((c: any) => ({ user: c.user_name ?? "?", duration: c.duration ?? 0, disposition: c.disposition ?? "", date: c.date_created ?? "" })),
+      };
+    } catch {
+      return { notes: [], calls: [] };
+    }
+  });
+
+/** How many leads sit in BOOKED APPOINTMENT right now — a CRM-sourced count,
+ *  shown alongside (never summed into) EOD-reported sets. */
+export const getCloseBookedCount = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const key = await readCloseKey(context);
+    if (!key) return { configured: false, booked: 0 };
+    const basic = Buffer.from(`${key}:`).toString("base64");
+    try {
+      const res = await fetch(
+        `https://api.close.com/api/v1/lead/?query=${encodeURIComponent('status:"BOOKED APPOINTMENT"')}&_limit=1&_fields=id`,
+        { headers: { Authorization: `Basic ${basic}` } },
+      );
+      if (!res.ok) return { configured: true, booked: 0 };
+      const json = (await res.json()) as { total_results?: number };
+      return { configured: true, booked: json.total_results ?? 0 };
+    } catch {
+      return { configured: true, booked: 0 };
+    }
   });

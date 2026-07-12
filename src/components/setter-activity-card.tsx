@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { PhoneCall } from "lucide-react";
-import { getCloseCallStats } from "@/lib/close-crm.functions";
+import { getCloseBookedCount, getCloseCallStats } from "@/lib/close-crm.functions";
 import { getMochiDashboard } from "@/lib/mochi.functions";
 
 const PERIODS = [
@@ -25,6 +25,13 @@ export function SetterActivityCard() {
   const close = useQuery({
     queryKey: ["close-call-stats", days],
     queryFn: () => getCloseCallStats({ data: { days } }),
+    staleTime: 2 * 60_000,
+    refetchInterval: 5 * 60_000,
+    retry: 1,
+  });
+  const booked = useQuery({
+    queryKey: ["close-booked-count"],
+    queryFn: () => getCloseBookedCount(),
     staleTime: 2 * 60_000,
     refetchInterval: 5 * 60_000,
     retry: 1,
@@ -64,11 +71,13 @@ export function SetterActivityCard() {
       </div>
 
       {/* Totals strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3 mb-3">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-x-4 gap-y-3 mb-3">
         <Total label="Dials" value={c?.totalDials} loading={close.isLoading} />
         <Total label="Answered" value={c?.totalAnswered} loading={close.isLoading} />
         <Total label="Avg call" text={c ? fmtDur(c.avgDurationSec) : undefined} loading={close.isLoading} />
         <Total label="DMs out" value={mochi.data?.messages?.outbound} loading={mochi.isLoading} />
+        {/* CRM census, not summed into EOD sets — same booking must never count twice */}
+        <Total label="Booked · in CRM now" value={booked.data?.booked} loading={booked.isLoading} />
       </div>
 
       {/* Per-rep rows */}

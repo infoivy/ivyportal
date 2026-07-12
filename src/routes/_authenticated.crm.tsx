@@ -10,6 +10,9 @@ import {
 import {
   getCloseStatus, saveCloseApiKey, testCloseConnection, listCloseLeads, deleteCloseApiKey,
 } from "@/lib/close-crm.functions";
+import { getCloseLeadDetail, type CloseLeadDetail } from "@/lib/close-crm.functions";
+import { MochiCrmInner } from "@/components/mochi-crm";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
   listLeadNotes, createLeadNote, updateLeadNote, deleteLeadNote, countLeadNotes,
   type LeadNote,
@@ -23,7 +26,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 export const Route = createFileRoute("/_authenticated/crm")({
   head: () => ({ meta: [{ title: "CRM — ISA Team" }] }),
-  component: Crm,
+  component: CrmTabs,
 });
 
 type Lead = {
@@ -52,6 +55,32 @@ function relTime(iso: string) {
   if (s < 3600) return `${Math.floor(s / 60)}m ago`;
   if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
   return `${Math.floor(s / 86400)}d ago`;
+}
+
+function CrmTabs() {
+  const { roles } = useAuth();
+  const canMochi = roles.includes("admin") || roles.includes("founder");
+  const [tab, setTab] = useState<"close" | "mochi">(() => {
+    try { return (localStorage.getItem("isa-crm-tab") as "close" | "mochi") ?? "close"; } catch { return "close"; }
+  });
+  const change = (t: "close" | "mochi") => {
+    setTab(t);
+    try { localStorage.setItem("isa-crm-tab", t); } catch { /* ignore */ }
+  };
+  return (
+    <div className="min-h-full">
+      <div className="max-w-[1400px] mx-auto p-3 sm:p-4 space-y-3">
+        {canMochi && (
+          <SegmentedControl
+            segments={[{ label: "Close", value: "close" }, { label: "Instagram", value: "mochi" }] as const}
+            value={tab}
+            onChange={(t) => change(t as "close" | "mochi")}
+          />
+        )}
+        {tab === "mochi" && canMochi ? <MochiCrmInner embedded /> : <Crm />}
+      </div>
+    </div>
+  );
 }
 
 function Crm() {
@@ -143,11 +172,10 @@ function Crm() {
   const closeRate = filtered.length ? ((wonCount / filtered.length) * 100).toFixed(1) + "%" : "—";
 
   return (
-    <div className="min-h-full">
-      <div className="max-w-[1400px] mx-auto p-3 sm:p-4 space-y-3">
+    <div className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="min-w-0">
-            <h1 className="text-base font-semibold leading-tight">CRM Pipeline</h1>
+            <h1 className="text-base font-semibold leading-tight">Close CRM</h1>
             <p className="text-[10px] text-muted-foreground mt-0.5">
               {connected === null ? "Loading…" : connected ? `Close CRM · ${leads.length} leads` : "Close CRM sync · not connected"}
               {connected && lastSyncedAt && (
@@ -320,7 +348,6 @@ function Crm() {
             </div>
           )}
         </div>
-      </div>
 
       {isAdmin && (
         <CloseKeyDialog open={openDialog} onOpenChange={setOpenDialog} connected={!!connected} onChanged={() => refresh(q)} />
@@ -479,10 +506,16 @@ function LeadDetailDrawer({
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editBody, setEditBody] = useState("");
+  const [closeDetail, setCloseDetail] = useState<CloseLeadDetail | null>(null);
+  const detailFn = useServerFn(getCloseLeadDetail);
 
   useEffect(() => {
     if (!lead) return;
     let alive = true;
+    setCloseDetail(null);
+    detailFn({ data: { leadId: lead.id } })
+      .then((d) => { if (alive) setCloseDetail(d); })
+      .catch(() => { /* Close history is best-effort */ });
     setLoading(true);
     list({ data: { leadId: lead.id } })
       .then((rows) => { if (alive) setNotes(rows ?? []); })
@@ -551,6 +584,9 @@ function LeadDetailDrawer({
             <div className="text-sm font-semibold truncate">{lead.name}</div>
             <div className="flex items-center gap-2 mt-0.5">
               <span className="text-[10px]" style={{ color: c }}>{lead.status}</span>
+              {/booked/i.test(lead.status) && (
+                <span className="text-[9px] font-semibold px-1.5 py-px rounded-full bg-success-bg text-success-fg border border-success/25">SET BOOKED</span>
+              )}
               <span className="text-[10px] text-muted-foreground">·</span>
               <span className="text-[10px] text-success-fg">{lead.value > 0 ? currency(lead.value) : "—"}</span>
               <span className="text-[10px] text-muted-foreground">·</span>
@@ -581,6 +617,44 @@ function LeadDetailDrawer({
             </Button>
           </div>
         </div>
+
+        {closeDetail && (closeDetail.notes.length > 0 || closeDetail.calls.length > 0) && (
+          <div className="p-4 space-y-3 border-b border-border">
+            {closeDetail.calls.length > 0 && (
+              <div>
+                <div className="text-[10px] text-muted-foreground font-semibold mb-1.5">
+                  Calls · from Close · {closeDetail.calls.length}
+                </div>
+                <div className="space-y-1">
+                  {closeDetail.calls.slice(0, 8).map((cl, i) => (
+                    <div key={i} className="flex items-baseline justify-between gap-2 text-[11px] rounded-sm bg-muted px-2 py-1.5">
+                      <span className="truncate">{cl.user} <span className={cl.disposition === "answered" ? "text-success-fg" : "text-muted-foreground"}>· {cl.disposition}</span></span>
+                      <span className="tabular-nums text-muted-foreground shrink-0">{cl.duration > 0 ? `${Math.floor(cl.duration / 60)}m ${cl.duration % 60}s` : "—"} · {relTime(cl.date)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {closeDetail.notes.length > 0 && (
+              <div>
+                <div className="text-[10px] text-muted-foreground font-semibold mb-1.5">
+                  Notes · from Close · {closeDetail.notes.length}
+                </div>
+                <div className="space-y-1.5">
+                  {closeDetail.notes.slice(0, 8).map((n, i) => (
+                    <div key={i} className="rounded-sm border border-border/60 bg-muted/60 p-2">
+                      <div className="flex items-center justify-between gap-2 mb-0.5">
+                        <span className="text-[11px] font-medium">{n.user}</span>
+                        <span className="text-[10px] text-muted-foreground">{relTime(n.date)}</span>
+                      </div>
+                      <p className="text-[11px] text-foreground whitespace-pre-wrap break-words">{n.note}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="flex-1 p-4">
           <div className="text-[10px] text-muted-foreground font-semibold mb-2">

@@ -6,7 +6,7 @@ import {
   LayoutDashboard, FileText, BookOpen, Calendar, GraduationCap,
   Database, Users, StickyNote, Shield, UserCircle, School, HeartHandshake, Phone, DollarSign, Armchair,
   ListChecks, TrendingUp, Quote, Building2, HeartPulse, Sparkles, Clapperboard, Wallet, Megaphone,
-  MessagesSquare, Instagram,
+  MessagesSquare,
 } from "lucide-react";
 
 import {
@@ -36,8 +36,7 @@ const salesItems: Item[] = [
   { title: "Closer Resources", url: "/closer-resources", icon: DollarSign,    roles: ["admin", "closer"] },
   { title: "Training",         url: "/training",         icon: GraduationCap, roles: ["admin", "founder", "closer", "setter", "coach"] },
   { title: "Calendar",         url: "/calendar",         icon: Calendar },
-  { title: "CRM",              url: "/crm",              icon: Database,      roles: ["admin"] },
-  { title: "Instagram CRM",    url: "/mochi",            icon: Instagram,     roles: ["admin", "founder"] },
+  { title: "CRM",              url: "/crm",              icon: Database,      roles: ["admin", "founder"] },
 ];
 
 const studentsItems: Item[] = [

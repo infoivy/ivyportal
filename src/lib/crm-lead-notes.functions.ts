@@ -104,7 +104,8 @@ export const deleteLeadNote = createServerFn({ method: "POST" })
   });
 
 /** Count notes across many lead ids in one call, for badges on the list. */
-export const countLeadNotes = createServerFn({ method: "GET" })
+// POST: the id list for a full lead book overflows a GET URL (431s at ~200 leads).
+export const countLeadNotes = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { leadIds: string[] }) => ({
     leadIds: Array.isArray(input?.leadIds) ? input.leadIds.filter(Boolean).slice(0, 500) : [],
