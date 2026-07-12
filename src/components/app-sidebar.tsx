@@ -23,6 +23,8 @@ type Item = {
   url: string;
   icon: React.ComponentType<{ className?: string }>;
   roles?: string[];
+  /** Extra path prefixes that keep this entry highlighted (tabbed sections). */
+  match?: string[];
 };
 
 const todayItems: Item[] = [
@@ -34,7 +36,7 @@ const todayItems: Item[] = [
 ];
 
 const salesItems = (roles: string[]): Item[] => [
-  { title: "Sales",            url: firstSalesTab(roles), icon: Building2, roles: ["admin", "closer", "coach", "founder", "cofounder"] },
+  { title: "Sales",            url: firstSalesTab(roles), icon: Building2, roles: ["admin", "closer", "coach", "founder", "cofounder"], match: ["/sales", "/revenue", "/installments", "/payouts", "/finance"] },
   { title: "CRM",              url: "/crm",              icon: Database,   roles: ["admin", "founder", "cofounder", "closer"] },
   { title: "Closer Resources", url: "/closer-resources", icon: DollarSign, roles: ["admin", "closer"] },
 ];
@@ -46,6 +48,7 @@ const studentsEntry = (roles: string[]): Item[] => [{
   url: firstStudentsTab(roles),
   icon: School,
   roles: ["admin", "closer", "csm", "coach", "founder", "cofounder", "setter"],
+  match: ["/students", "/csm", "/calls", "/testimonials"],
 }];
 
 const libraryItems: Item[] = [
@@ -87,8 +90,10 @@ export function AppSidebar({ roles }: { roles: string[] }) {
     });
   }, []);
 
-  const isActive = (url: string) =>
-    url === "/dashboard" ? currentPath === url : currentPath.startsWith(url);
+  const isActive = (item: Item) => {
+    if (item.match) return item.match.some((m) => currentPath.startsWith(m));
+    return item.url === "/dashboard" ? currentPath === item.url : currentPath.startsWith(item.url);
+  };
 
   const renderGroup = (label: string, items: Item[]) => {
     const filtered = items.filter(i => {
@@ -107,7 +112,7 @@ export function AppSidebar({ roles }: { roles: string[] }) {
         <SidebarGroupContent>
           <SidebarMenu className="gap-px">
             {filtered.map(item => {
-              const active = isActive(item.url);
+              const active = isActive(item);
               return (
                 <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton

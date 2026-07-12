@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import { RevenueTabBar } from "@/components/revenue-tab-bar";
 import { exportToCsv } from "@/lib/csv";
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ComposedChart, Line } from "recharts";
 import { StatCard } from "@/components/ui/stat-card";
 import { BreakdownBar } from "@/components/ui/breakdown-bar";
 import { FilterToolbar } from "@/components/ui/filter-toolbar";
@@ -374,7 +374,7 @@ function RevenueInner() {
       </div>
 
       <div className="grid lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 space-y-4">
           <Card className="p-5">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold">Sales trend</h3>
@@ -403,6 +403,30 @@ function RevenueInner() {
                   <Bar dataKey="booked" fill="var(--chart-1)" radius={[3, 3, 0, 0]} isAnimationActive={false} />
                   <Bar dataKey="cash" fill="var(--chart-2)" radius={[3, 3, 0, 0]} isAnimationActive={false} />
                 </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+
+          {/* Same buckets, different lens — fills the column beside the taller leaderboards */}
+          <Card className="p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold">Deals & average size</h3>
+              <span className="text-[12px] text-muted-foreground">{trendMode === "monthly" ? "6mo" : trendMode === "weekly" ? "8wk" : "30d"}</span>
+            </div>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={trend.map((t) => ({ ...t, avg: t.deals ? Math.round(t.booked / t.deals) : 0 }))}>
+                  <CartesianGrid strokeDasharray="2 4" stroke="var(--color-border)" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }} interval="preserveStartEnd" tickLine={false} axisLine={false} />
+                  <YAxis yAxisId="deals" tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }} tickLine={false} axisLine={false} allowDecimals={false} />
+                  <YAxis yAxisId="avg" orientation="right" tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }} tickLine={false} axisLine={false} tickFormatter={(v: number) => (v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v))} />
+                  <Tooltip
+                    contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: 10, fontSize: 12, boxShadow: "var(--shadow-overlay)" }}
+                    formatter={(v: number, k: string) => (k === "deals" ? [v, "deals"] : [money(v), "avg deal size"])}
+                  />
+                  <Bar yAxisId="deals" dataKey="deals" fill="var(--chart-4)" radius={[3, 3, 0, 0]} isAnimationActive={false} />
+                  <Line yAxisId="avg" dataKey="avg" stroke="var(--chart-3)" strokeWidth={2} dot={false} isAnimationActive={false} />
+                </ComposedChart>
               </ResponsiveContainer>
             </div>
           </Card>

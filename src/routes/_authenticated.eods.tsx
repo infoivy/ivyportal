@@ -790,6 +790,20 @@ function buildDayList(days: number): string[] {
   return list.reverse();
 }
 
+/**
+ * Drop leading days from before anyone was on the team — a 30-day window
+ * when everyone joined this week reads as a wall of empty squares. Keeps a
+ * minimum of 7 columns so the widgets stay readable.
+ */
+function trimToTeamStart(dayList: string[], roster: RosterEntry[]): string[] {
+  const joins = roster.map((r) => r.joined_at).filter(Boolean) as string[];
+  if (!joins.length || joins.length < roster.length) return dayList;
+  const first = joins.reduce((a, b) => (a < b ? a : b));
+  const trimmed = dayList.filter((d) => d >= first);
+  if (trimmed.length === dayList.length) return dayList;
+  return trimmed.length >= 7 ? trimmed : dayList.slice(-7);
+}
+
 function ComplianceMatrix({ eods, roster }: { eods: GridEod[]; roster: RosterEntry[] }) {
   const [days, setDays] = useState<7 | 14 | 30 | 90>(14);
   const dayList = useMemo(() => buildDayList(days), [days]);
@@ -900,15 +914,16 @@ function ComplianceGraphs({ eods, roster }: { eods: GridEod[]; roster: RosterEnt
   const [days, setDays] = useState<7 | 30 | 90>(30);
   const [compare, setCompare] = useState(false);
   const [personFilter, setPersonFilter] = useState<string>("all");
-  const dayList = useMemo(() => buildDayList(days), [days]);
+  const rawDayList = useMemo(() => buildDayList(days), [days]);
+  const dayList = useMemo(() => trimToTeamStart(rawDayList, roster), [rawDayList, roster]);
   const filteredEods = useMemo(() => personFilter === "all" ? eods : eods.filter(e => e.user_id === personFilter), [eods, personFilter]);
   const filteredRoster = useMemo(() => personFilter === "all" ? roster : roster.filter(r => r.user_id === personFilter), [roster, personFilter]);
 
-  // Previous period day list (aligned by day-index)
-  const prevDayList = useMemo(() => {
-    const anchor = new Date(); anchor.setDate(anchor.getDate() - days);
-    return buildDayListFrom(days, anchor);
-  }, [days]);
+  const prevDay = (d: string) => {
+    const dt = new Date(d + "T00:00:00");
+    dt.setDate(dt.getDate() - days);
+    return isoDate(dt);
+  };
 
   const submissionsData = useMemo(() => dayList.map(d => {
     const submitted = filteredEods.filter(e => e.report_date === d).length;
@@ -916,10 +931,9 @@ function ComplianceGraphs({ eods, roster }: { eods: GridEod[]; roster: RosterEnt
     return { date: d, label: fmtDayShort(new Date(d + "T00:00:00")), submitted, expected };
   }), [dayList, filteredEods, roster, personFilter]);
 
-  const funnelData = useMemo(() => dayList.map((d, i) => {
+  const funnelData = useMemo(() => dayList.map(d => {
     const dayEods = filteredEods.filter(e => e.report_date === d);
-    const pd = prevDayList[i];
-    const prevEods = compare ? filteredEods.filter(e => e.report_date === pd) : [];
+    const prevEods = compare ? filteredEods.filter(e => e.report_date === prevDay(d)) : [];
     return {
       date: d, label: fmtDayShort(new Date(d + "T00:00:00")),
       dms: dayEods.reduce((a, e) => a + (e.dms_sent ?? 0), 0),
@@ -931,7 +945,7 @@ function ComplianceGraphs({ eods, roster }: { eods: GridEod[]; roster: RosterEnt
       prev_booked: prevEods.reduce((a, e) => a + (e.calls_booked ?? 0), 0),
       prev_shows: prevEods.reduce((a, e) => a + (e.shows ?? 0), 0),
     };
-  }), [dayList, prevDayList, filteredEods, compare]);
+  }), [dayList, filteredEods, compare]);
 
   const totalReports = filteredEods.filter(e => dayList.includes(e.report_date)).length;
 

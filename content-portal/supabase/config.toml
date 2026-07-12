@@ -1,0 +1,26 @@
+project_id = "ivy-content"
+
+[api]
+enabled = true
+port = 55321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 55322
+shadow_port = 55320
+major_version = 17
+
+[studio]
+enabled = true
+port = 55323
+
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:4174"
+additional_redirect_urls = ["https://content.ivysalesacademy.com"]
+enable_signup = false
+
+[functions.content-operator]
+verify_jwt = true
