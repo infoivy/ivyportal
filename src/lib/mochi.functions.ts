@@ -586,3 +586,73 @@ export const getFinanceRevenue = createServerFn({ method: "GET" })
       unmatchedLogged: logged.filter((l) => !l.matched).map(({ matched: _m, ...rest }) => rest),
     };
   });
+
+export type MochiHomePeriod = "today" | "this_week" | "last_30_days";
+
+export type MochiHome = {
+  connected: boolean;
+  period: MochiHomePeriod;
+  totalRevenue: number | null;
+  cashCollected: number | null;
+  cashPending: number | null;
+  /** MTD vs previous month same-day, from the Whop series. */
+  prevMonthPct: number | null;
+  recent: { customer: string; product: string; amount: number; date: string }[];
+  upcoming: { customer: string; product: string; amount: number; date: string }[];
+};
+
+/** The Mochi-dashboard replica data: revenue KPIs + collections. Founder/admin/cofounder. */
+export const getMochiHome = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { period?: MochiHomePeriod }) => ({
+    period: (["today", "this_week", "last_30_days"].includes(input?.period ?? "") ? input.period : "this_week") as MochiHomePeriod,
+  }))
+  .handler(async ({ context, data }): Promise<MochiHome> => {
+    const ctx = context as Ctx;
+    await requireFinanceAccess(ctx).catch(async () => { await requireFounderOrAdmin(ctx); });
+    const empty: MochiHome = {
+      connected: false, period: data.period,
+      totalRevenue: null, cashCollected: null, cashPending: null, prevMonthPct: null,
+      recent: [], upcoming: [],
+    };
+    const creds = await readCreds(ctx);
+    if (!creds.access) return empty;
+
+    const txnMap = (t: WhopTxn & { customer_name?: string; product_name?: string }) => ({
+      customer: t.customer_name || "Unknown",
+      product: t.product_name ?? "",
+      amount: Number(t.amount),
+      date: t.occurred_at.slice(0, 10),
+    });
+
+    const [overview, series90, recentRes, pendingRes] = await Promise.all([
+      callTool<PaymentOverview>(ctx, "get_payment_overview", { time_period: data.period }),
+      callTool<PaymentOverview>(ctx, "get_payment_overview", { time_period: "last_90_days" }),
+      callTool<{ results?: WhopTxn[] }>(ctx, "get_payment_transactions", { time_period: "last_30_days", status: "SUCCEEDED", kind: "CHARGE", limit: 6 }),
+      callTool<{ results?: WhopTxn[] }>(ctx, "get_payment_transactions", { time_period: "last_30_days", status: "PENDING", limit: 6 }),
+    ]);
+
+    // Prev-month compare from the daily series (Mochi's "+82.75%" style)
+    const series = series90.gross_volume_series ?? [];
+    const now = new Date();
+    const monthStart = now.toISOString().slice(0, 8) + "01";
+    const dayOfMonth = now.getDate();
+    const prevStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().slice(0, 10);
+    const prevSameDay = new Date(now.getFullYear(), now.getMonth() - 1, dayOfMonth).toISOString().slice(0, 10);
+    const sum = (from: string, to: string) => series.filter((s) => s.date >= from && s.date <= to).reduce((a, s) => a + Number(s.volume), 0);
+    const mtd = sum(monthStart, now.toISOString().slice(0, 10));
+    const prevMtd = sum(prevStart, prevSameDay);
+    const prevMonthPct = prevMtd > 0 ? Math.round(((mtd - prevMtd) / prevMtd) * 10000) / 100 : null;
+
+    const pending = (pendingRes.results ?? []).map(txnMap);
+    return {
+      connected: true,
+      period: data.period,
+      totalRevenue: overview.gross_volume != null ? Math.round(Number(overview.gross_volume)) : null,
+      cashCollected: overview.you_keep != null ? Math.round(Number(overview.you_keep)) : overview.net_revenue != null ? Math.round(Number(overview.net_revenue)) : null,
+      cashPending: pending.reduce((a, t) => a + t.amount, 0),
+      prevMonthPct,
+      recent: (recentRes.results ?? []).map(txnMap),
+      upcoming: pending,
+    };
+  });

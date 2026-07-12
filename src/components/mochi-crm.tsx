@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Instagram, ArrowUpRight } from "lucide-react";
-import { getMochiDashboard, getMochiDetail, type MochiPeriod } from "@/lib/mochi.functions";
+import { getMochiDashboard, getMochiDetail, getMochiHome, type MochiHomePeriod, type MochiPeriod } from "@/lib/mochi.functions";
 import { ResponsiveContainer, ComposedChart, Area, Bar, BarChart, Line, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, Legend } from "recharts";
 import { MochiFunnel } from "@/components/mochi-funnel";
 import { format, subDays } from "date-fns";
@@ -24,6 +24,16 @@ export function MochiCrmInner({ embedded = false }: { embedded?: boolean }) {
     refetchInterval: 5 * 60_000,
     retry: 1,
   });
+  const homePeriod: MochiHomePeriod = period === "today" ? "today" : period === "last_30_days" ? "last_30_days" : "this_week";
+  const home = useQuery({
+    queryKey: ["mochi-home", homePeriod],
+    queryFn: () => getMochiHome({ data: { period: homePeriod } }),
+    staleTime: 2 * 60_000,
+    refetchInterval: 5 * 60_000,
+    retry: 1,
+  });
+  const h = home.data;
+
   const dash = useQuery({
     queryKey: ["mochi-dashboard", period === "today" ? "last_7_days" : period],
     queryFn: () => getMochiDashboard({ data: { period: period === "today" ? "last_7_days" : period } }),
@@ -90,6 +100,19 @@ export function MochiCrmInner({ embedded = false }: { embedded?: boolean }) {
         </div>
       )}
 
+      {/* ── Mochi dashboard replica: revenue KPIs ─────────────────── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <Stat label="Total revenue" money value={h?.totalRevenue ?? undefined} />
+        <Stat label="Cash collected" money value={h?.cashCollected ?? undefined} />
+        <Stat label="Cash to be collected" money value={h?.cashPending ?? undefined} />
+        <div className="card-surface px-4 py-3">
+          <div className="text-[11px] text-muted-foreground">Compared to prev month</div>
+          <div className={`text-[22px] font-medium tabular-nums leading-tight ${h?.prevMonthPct != null && h.prevMonthPct >= 0 ? "text-success-fg" : "text-danger-fg"}`}>
+            {h?.prevMonthPct != null ? `${h.prevMonthPct >= 0 ? "+" : ""}${h.prevMonthPct}%` : "—"}
+          </div>
+        </div>
+      </div>
+
       {/* Headline stats */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <Stat label="New leads" value={dash.data?.totals.newLeads} />
@@ -103,9 +126,43 @@ export function MochiCrmInner({ embedded = false }: { embedded?: boolean }) {
       {/* Pipeline funnel — Mochi's dashboard look */}
       <div className="card-surface p-1">
         <div className="px-3 pt-3 pb-1">
-          <SectionTitle title="The funnel" sub="every lead's current stage" />
+          <SectionTitle title="Default Funnel" sub="every lead's current stage" />
         </div>
         <MochiFunnel pipeline={d?.pipelineNow ?? []} />
+      </div>
+
+      {/* Upcoming payments / recent collections — the Mochi pair */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="card-surface p-4">
+          <SectionTitle title="Upcoming Payments" sub={`total pending · $${(h?.cashPending ?? 0).toLocaleString()}`} />
+          {(h?.upcoming.length ?? 0) === 0 ? (
+            <p className="text-[13px] text-muted-foreground py-4 text-center">Nothing pending.</p>
+          ) : (
+            <div className="space-y-1">
+              {h!.upcoming.map((t, i) => (
+                <div key={i} className="flex items-baseline justify-between gap-3 text-[13px] rounded-md bg-muted/50 px-2.5 py-1.5">
+                  <span className="truncate">{t.customer}{t.product && <span className="text-muted-foreground"> · {t.product}</span>}</span>
+                  <span className="tabular-nums shrink-0">${t.amount.toLocaleString()} <span className="text-muted-foreground">{t.date.slice(5)}</span></span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="card-surface p-4">
+          <SectionTitle title="Recent Collections" sub="latest successful charges" />
+          {(h?.recent.length ?? 0) === 0 ? (
+            <p className="text-[13px] text-muted-foreground py-4 text-center">No collections yet.</p>
+          ) : (
+            <div className="space-y-1">
+              {h!.recent.map((t, i) => (
+                <div key={i} className="flex items-baseline justify-between gap-3 text-[13px] rounded-md bg-muted/50 px-2.5 py-1.5">
+                  <span className="truncate">{t.customer}{t.product && <span className="text-muted-foreground"> · {t.product}</span>}</span>
+                  <span className="tabular-nums shrink-0 text-success-fg">${t.amount.toLocaleString()} <span className="text-muted-foreground">{t.date.slice(5)}</span></span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Conversion rates */}
@@ -174,12 +231,12 @@ export function MochiCrmInner({ embedded = false }: { embedded?: boolean }) {
   );
 }
 
-function Stat({ label, value, sub }: { label: string; value?: number | null; sub?: string }) {
+function Stat({ label, value, sub, money }: { label: string; value?: number | null; sub?: string; money?: boolean }) {
   return (
     <div className="card-surface px-4 py-3">
       <div className="text-[11px] text-muted-foreground">{label}</div>
       <div className="text-[22px] font-medium tabular-nums text-foreground leading-tight">
-        {value != null ? value.toLocaleString() : "…"}
+        {value != null ? `${money ? "$" : ""}${value.toLocaleString()}` : "…"}
       </div>
       {sub && <div className="text-[10px] text-muted-foreground">{sub}</div>}
     </div>
