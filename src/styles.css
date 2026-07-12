@@ -215,8 +215,8 @@
   --shadow-raised:  0 0 0 1px rgba(255,255,255,0.07), 0 8px 32px rgba(0,0,0,0.5);
   --shadow-overlay: 0 20px 60px rgba(0,0,0,0.85);
 
-  /* Sidebar — slightly distinct from background */
-  --sidebar:              #060710;
+  /* Sidebar — same neutral family as the background (no blue cast) */
+  --sidebar:              #0A0B0F;
   --sidebar-foreground:   #EDEDF0;
   --sidebar-primary:      #22C55E;
   --sidebar-primary-foreground: #071810;

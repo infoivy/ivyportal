@@ -4,15 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Calendar as CalIcon } from "lucide-react";
 import { format, subDays } from "date-fns";
 
-export type DateRange = { from: Date; to: Date; preset: "7d" | "30d" | "90d" | "custom" };
+export type DateRange = { from: Date; to: Date; preset: "24h" | "7d" | "30d" | "90d" | "custom" };
 
-const PRESETS: { key: "7d" | "30d" | "90d"; label: string; days: number }[] = [
+const PRESETS: { key: "24h" | "7d" | "30d" | "90d"; label: string; days: number }[] = [
+  { key: "24h", label: "24H", days: 1 },
   { key: "7d", label: "7D", days: 7 },
   { key: "30d", label: "30D", days: 30 },
   { key: "90d", label: "90D", days: 90 },
 ];
 
-export function rangeFor(preset: "7d" | "30d" | "90d"): DateRange {
+export function rangeFor(preset: "24h" | "7d" | "30d" | "90d"): DateRange {
   const days = PRESETS.find((p) => p.key === preset)!.days;
   const to = new Date();
   return { from: subDays(to, days - 1), to, preset };

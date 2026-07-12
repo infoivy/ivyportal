@@ -259,14 +259,14 @@ function PendingApproval({ email, onSignOut }: { email: string; onSignOut: () =>
 }
 
 const PAGE_LABELS: Array<[string, string]> = [
-  ["/dashboard", "Dashboard"], ["/eods", "EOD Reports"], ["/action-items", "Action Items"], ["/chat", "Team Chat"],
+  ["/dashboard", "Overview"], ["/eods", "Performance"], ["/action-items", "Action Items"], ["/chat", "Team Chat"],
   ["/sales", "Sales"], ["/revenue", "Revenue"], ["/installments", "Revenue"],
   ["/payouts", "Revenue"], ["/closer-resources", "Closer Resources"], ["/training", "Training"],
   ["/calendar", "Calendar"], ["/crm", "CRM"], ["/mochi", "Instagram CRM"], ["/students", "Students"], ["/calls", "1-on-1 Calls"],
   ["/coaches", "Coaches"], ["/student-success", "Student Success"], ["/csm", "CSM"],
   ["/testimonials", "Testimonials"], ["/knowledge", "Knowledge"], ["/policies", "Knowledge"],
   ["/sops", "Knowledge"], ["/command", "Gathering Hub"], ["/content", "Content"], ["/admin", "Admin"],
-  ["/team", "Team"], ["/profile", "Profile"], ["/student-portal", "My Portal"],
+  ["/team", "Team"], ["/profile", "Profile"], ["/settings", "Settings"], ["/student-portal", "My Portal"],
 ];
 
 function PageContextLabel() {

@@ -6,7 +6,7 @@ import {
   LayoutDashboard, FileText, BookOpen, Calendar, GraduationCap,
   Database, Users, Shield, UserCircle, School, HeartHandshake, Phone, DollarSign, Armchair,
   ListChecks, Quote, Building2, Sparkles, Clapperboard, Wallet,
-  MessagesSquare,
+  MessagesSquare, Settings,
 } from "lucide-react";
 
 import {
@@ -24,18 +24,17 @@ type Item = {
 };
 
 const todayItems: Item[] = [
-  { title: "Dashboard",    url: "/dashboard",    icon: LayoutDashboard, roles: ["admin", "founder", "closer", "setter", "coach"] },
-  { title: "EOD Reports",  url: "/eods",         icon: FileText },
+  { title: "Overview",     url: "/dashboard",    icon: LayoutDashboard, roles: ["admin", "founder", "closer", "setter", "coach"] },
+  { title: "Performance",  url: "/eods",         icon: FileText },
   { title: "Action Items", url: "/action-items", icon: ListChecks },
+  { title: "Calendar",     url: "/calendar",     icon: Calendar },
   { title: "Team Chat",    url: "/chat",         icon: MessagesSquare },
 ];
 
 const salesItems: Item[] = [
-  { title: "Sales",            url: "/sales",            icon: Building2,     roles: ["admin", "closer", "coach"] },
-  { title: "Closer Resources", url: "/closer-resources", icon: DollarSign,    roles: ["admin", "closer"] },
-  { title: "Training",         url: "/training",         icon: GraduationCap, roles: ["admin", "founder", "closer", "setter", "coach"] },
-  { title: "Calendar",         url: "/calendar",         icon: Calendar },
-  { title: "CRM",              url: "/crm",              icon: Database,      roles: ["admin", "founder", "cofounder", "closer"] },
+  { title: "Sales",            url: "/sales",            icon: Building2,  roles: ["admin", "closer", "coach"] },
+  { title: "CRM",              url: "/crm",              icon: Database,   roles: ["admin", "founder", "cofounder", "closer"] },
+  { title: "Closer Resources", url: "/closer-resources", icon: DollarSign, roles: ["admin", "closer"] },
 ];
 
 const studentsItems: Item[] = [
@@ -47,6 +46,7 @@ const studentsItems: Item[] = [
 
 const libraryItems: Item[] = [
   { title: "Knowledge", url: "/knowledge", icon: BookOpen },
+  { title: "Training",  url: "/training",  icon: GraduationCap, roles: ["admin", "founder", "closer", "setter", "coach"] },
 ];
 
 const founderItems: Item[] = [
@@ -74,10 +74,14 @@ export function AppSidebar({ roles }: { roles: string[] }) {
   const isStudent = roles.includes("student");
   const isTeam = roles.some(r => ["admin", "coach", "closer", "setter", "csm"].includes(r));
   const [crmEnabled, setCrmEnabled] = useState(false);
+  const [org, setOrg] = useState<{ name: string; logo: string | null }>({ name: "Ivy Portal", logo: null });
 
   useEffect(() => {
     supabase.from("founder_settings").select("crm_enabled").maybeSingle().then(({ data }) => {
       setCrmEnabled(!!(data as any)?.crm_enabled);
+    });
+    supabase.from("org_settings").select("org_name, logo_url").maybeSingle().then(({ data }) => {
+      if (data) setOrg({ name: data.org_name, logo: data.logo_url });
     });
   }, []);
 
@@ -92,7 +96,7 @@ export function AppSidebar({ roles }: { roles: string[] }) {
     });
     if (filtered.length === 0) return null;
     return (
-      <SidebarGroup className="px-2 py-1.5">
+      <SidebarGroup className={"px-2 py-2.5 " + (collapsed ? "border-t border-sidebar-border/60 first:border-t-0 py-2" : "")}>
         {!collapsed && (
           <SidebarGroupLabel className="px-2 mb-1 h-auto text-micro font-medium uppercase tracking-[0.08em] text-muted-foreground/70">
             {label}
@@ -130,14 +134,14 @@ export function AppSidebar({ roles }: { roles: string[] }) {
   };
 
   const header = (label: string) => (
-    <SidebarHeader className="border-b border-sidebar-border px-2 py-2.5">
+    <SidebarHeader className="h-[52px] justify-center border-b border-sidebar-border px-2 py-0">
       <div className="flex items-center gap-2.5 px-1">
         <div className="h-7 w-7 rounded-lg flex items-center justify-center shrink-0 overflow-hidden">
-          <img src={isaLogo.url} alt="ISA" className="h-full w-full object-contain" />
+          <img src={org.logo ?? isaLogo.url} alt={org.name} className="h-full w-full object-contain" />
         </div>
         {!collapsed && (
           <div className="flex flex-col leading-tight min-w-0">
-            <span className="font-semibold text-body text-foreground truncate">Ivy Portal</span>
+            <span className="font-semibold text-body text-foreground truncate">{org.name}</span>
             <span className="text-micro text-muted-foreground">{label}</span>
           </div>
         )}
@@ -167,7 +171,10 @@ export function AppSidebar({ roles }: { roles: string[] }) {
         {renderGroup("Library", libraryItems)}
         {roles.includes("founder") && renderGroup("Founder", founderItems)}
         {isAdmin && renderGroup("Admin", adminItems)}
-        {renderGroup("Account", [{ title: "Profile", url: "/profile", icon: UserCircle }])}
+        {renderGroup("Account", [
+          { title: "Profile", url: "/profile", icon: UserCircle },
+          { title: "Settings", url: "/settings", icon: Settings },
+        ])}
       </SidebarContent>
     </Sidebar>
   );

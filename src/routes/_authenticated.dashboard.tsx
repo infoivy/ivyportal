@@ -292,7 +292,8 @@ function Dashboard() {
   ];
 
   const rangeLabel =
-    dateRange.preset === "7d" ? "Last 7 days"
+    dateRange.preset === "24h" ? "Last 24 hours"
+    : dateRange.preset === "7d" ? "Last 7 days"
     : dateRange.preset === "30d" ? "Last 30 days"
     : dateRange.preset === "90d" ? `Last 90 days · ${currentQuarterLabel()}`
     : `${format(dateRange.from, "MMM d")} → ${format(dateRange.to, "MMM d, yyyy")}`;

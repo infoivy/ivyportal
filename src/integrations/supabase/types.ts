@@ -1242,6 +1242,30 @@ export type Database = {
         }
         Relationships: []
       }
+      org_settings: {
+        Row: {
+          id: string
+          logo_url: string | null
+          org_name: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          logo_url?: string | null
+          org_name?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          logo_url?: string | null
+          org_name?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       payment_links: {
         Row: {
           active: boolean

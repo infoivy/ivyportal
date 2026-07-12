@@ -147,6 +147,18 @@ export function AuthPage() {
                 disabled={loading}
                 className="w-full text-[12px] font-semibold px-3 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.99] motion-safe:transition-[background-color,transform] disabled:opacity-40"
               >{loading ? "Signing in…" : "Sign in →"}</button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!email.trim()) return toast.error("Type your email above first");
+                  const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+                    redirectTo: `${window.location.origin}/settings`,
+                  });
+                  if (error) return toast.error(error.message);
+                  toast.success("Reset link sent — check your inbox");
+                }}
+                className="w-full text-[11px] text-muted-foreground hover:text-foreground motion-safe:transition-colors"
+              >Forgot password?</button>
             </form>
           ) : (
             <form onSubmit={handleSignUp} className="space-y-3">

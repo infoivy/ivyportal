@@ -26,8 +26,8 @@ let paletteCache: {
 } | null = null;
 
 const PAGES: PageItem[] = [
-  { kind: "page", title: "Dashboard", to: "/dashboard", icon: LayoutDashboard, roles: ["admin", "founder", "closer", "setter", "coach"] },
-  { kind: "page", title: "EOD Reports", to: "/eods", icon: FileText },
+  { kind: "page", title: "Overview", to: "/dashboard", icon: LayoutDashboard, roles: ["admin", "founder", "closer", "setter", "coach"] },
+  { kind: "page", title: "Performance", to: "/eods", icon: FileText },
   { kind: "page", title: "Action Items", to: "/action-items", icon: ListChecks },
   { kind: "page", title: "Sales", to: "/sales", icon: BarChart3, roles: ["admin", "closer", "setter"] },
   { kind: "page", title: "Sales Trends", to: "/sales?tab=trends", icon: BarChart3, roles: ["admin", "closer", "setter"] },

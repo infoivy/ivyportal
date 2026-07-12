@@ -6,6 +6,7 @@ import { getMochiDashboard, type MochiPeriod } from "@/lib/mochi.functions";
 import { ResponsiveContainer, AreaChart, Area } from "recharts";
 
 const PERIODS: { label: string; value: MochiPeriod }[] = [
+  { label: "24H", value: "today" },
   { label: "7D", value: "last_7_days" },
   { label: "30D", value: "last_30_days" },
 ];

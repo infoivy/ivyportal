@@ -31,6 +31,8 @@ type Member = {
   setter_type: SetterType;
 };
 // Every role needs a visibly distinct "on" state — a muted "on" reads as off.
+const roleLabel = (k: string) => (k === "cofounder" ? "co-founder" : k);
+
 const ROLES: { key: AppRole; icon: React.ComponentType<{ className?: string }>; color: string }[] = [
   { key: "admin", icon: Shield, color: "text-danger-fg border-danger/25 bg-danger-bg" },
   { key: "closer", icon: Phone, color: "text-chart-1 border-chart-1/25 bg-chart-1/10" },
@@ -301,7 +303,7 @@ function TeamPage() {
                     className={`inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-sm border ${r.color}`}
                   >
                     <Icon className="h-3 w-3" />
-                    {r.key}
+                    {roleLabel(r.key)}
                   </span>
                 );
               })}
@@ -458,7 +460,7 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
                     has ? r.color : "text-muted-foreground border-[var(--border)] bg-transparent hover:border-[#2a3140]"
                   }`}
                 >
-                  <Icon className="h-3 w-3" /> {r.key}
+                  <Icon className="h-3 w-3" /> {roleLabel(r.key)}
                 </button>
               );
             })}
@@ -589,7 +591,7 @@ function InviteModal({ onClose, invitedBy }: { onClose: () => void; invitedBy: s
                         has ? r.color : "text-muted-foreground border-[var(--border)] hover:border-[#2a3140]"
                       }`}
                     >
-                      <Icon className="h-3 w-3" /> {r.key}
+                      <Icon className="h-3 w-3" /> {roleLabel(r.key)}
                     </button>
                   );
                 })}
