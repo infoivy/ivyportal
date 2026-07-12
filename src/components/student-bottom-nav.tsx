@@ -1,8 +1,9 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { FileText, UserCircle, ListChecks, Trophy, Calendar } from "lucide-react";
+import { FileText, UserCircle, ListChecks, Trophy, Calendar, Briefcase } from "lucide-react";
 
 const items: { tab: string; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { tab: "eod", label: "EOD", icon: FileText },
+  { tab: "placements", label: "Placements", icon: Briefcase },
   { tab: "actions", label: "Actions", icon: ListChecks },
   { tab: "coaching", label: "Coaching", icon: Calendar },
   { tab: "milestones", label: "Goals", icon: Trophy },

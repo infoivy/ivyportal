@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { PageSkeleton } from "@/components/ui/skeletons";
+import { PlacementsSection } from "@/components/student-placements";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -393,6 +394,9 @@ function StudentDetail() {
           icon={<FileText className="h-3 w-3" />}
         />
       </div>
+
+      {/* Placements — the outcome, so it leads */}
+      <PlacementsSection studentId={student.id} />
 
       {/* Graduation checklist */}
       <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-4">

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { PlacementsSection } from "@/components/student-placements";
 import { Link } from "@tanstack/react-router";
 import { PageSkeleton } from "@/components/ui/skeletons";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -8,8 +9,7 @@ import { toast } from "sonner";
 import {
   Trash2, CheckCircle2, Clock, Award, Briefcase, MessageSquare, Users, ListChecks,
   Calendar, Trophy, TrendingUp, Flame, BookOpen, PartyPopper, ChevronRight, Lock,
-  Sparkles, AlertCircle, PlayCircle,
-} from "lucide-react";
+  Sparkles, AlertCircle, PlayCircle, FileText } from "lucide-react";
 import { computeStreak } from "@/lib/streak";
 import { setStudentPortalTab, onStudentPortalTab, getStudentPortalTab } from "@/lib/student-portal-bus";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -49,7 +49,7 @@ const empty = {
   wins: "", blockers: "", tomorrow_focus: "", summary: "",
 };
 
-type Tab = "eod" | "actions" | "coaching" | "milestones";
+type Tab = "eod" | "placements" | "actions" | "coaching" | "milestones";
 
 const PHASES: { key: string; label: string }[] = [
   { key: "onboarding", label: "Onboarding" },
@@ -429,7 +429,8 @@ function StudentPortal() {
 
       {/* TABS */}
       <nav className="flex flex-wrap gap-1 border-b border-[var(--border)] -mb-px">
-        <TabButton active={tab === "eod"} onClick={() => setTab("eod")} icon={<Briefcase className="h-3.5 w-3.5" />} label="My EOD" />
+        <TabButton active={tab === "eod"} onClick={() => setTab("eod")} icon={<FileText className="h-3.5 w-3.5" />} label="My EOD" />
+        <TabButton active={tab === "placements"} onClick={() => setTab("placements")} icon={<Briefcase className="h-3.5 w-3.5" />} label="Placements" />
         <TabButton active={tab === "actions"} onClick={() => setTab("actions")} icon={<ListChecks className="h-3.5 w-3.5" />} label="Action items" badge={openItems.length} urgent={overdue.length > 0 || dueToday.length > 0} />
         <TabButton active={tab === "coaching"} onClick={() => setTab("coaching")} icon={<Calendar className="h-3.5 w-3.5" />} label="My coaching" />
         <TabButton active={tab === "milestones"} onClick={() => setTab("milestones")} icon={<Trophy className="h-3.5 w-3.5" />} label="Milestones" />
@@ -648,6 +649,15 @@ function StudentPortal() {
               ))}
             </div>
           </div>
+        </div>
+      )}
+
+      {tab === "placements" && student && (
+        <div className="space-y-4">
+          <PlacementsSection studentId={student.id} />
+          <p className="text-caption text-muted-foreground">
+            Add every business you're talking to about a setter role and keep the stage current — your coach and CSM work from this list.
+          </p>
         </div>
       )}
 

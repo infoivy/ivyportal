@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { CsmOverview } from "@/components/csm-overview";
+import { PlacementBoard } from "@/components/student-placements";
 import { StudentSuccessInner } from "./_authenticated.student-success";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -317,6 +318,7 @@ function CsmPage() {
 
   return (
     <div className="space-y-5">
+      <PlacementBoard />
       <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--border)] pb-4">
         <div>
           <div className="flex items-center gap-2 text-[10px] text-warning-fg mb-1">

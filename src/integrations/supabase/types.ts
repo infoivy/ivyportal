@@ -1716,6 +1716,65 @@ export type Database = {
         }
         Relationships: []
       }
+      student_placements: {
+        Row: {
+          business_name: string
+          created_at: string
+          created_by: string | null
+          ended_at: string | null
+          id: string
+          interview_at: string | null
+          notes: string | null
+          pay_notes: string | null
+          role_title: string
+          source: string
+          stage: string
+          started_at: string | null
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          business_name: string
+          created_at?: string
+          created_by?: string | null
+          ended_at?: string | null
+          id?: string
+          interview_at?: string | null
+          notes?: string | null
+          pay_notes?: string | null
+          role_title?: string
+          source?: string
+          stage?: string
+          started_at?: string | null
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          business_name?: string
+          created_at?: string
+          created_by?: string | null
+          ended_at?: string | null
+          id?: string
+          interview_at?: string | null
+          notes?: string | null
+          pay_notes?: string | null
+          role_title?: string
+          source?: string
+          stage?: string
+          started_at?: string | null
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_placements_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       students: {
         Row: {
           calls_allotted: number
