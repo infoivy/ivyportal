@@ -1,3 +1,4 @@
+import { StudentsTabBar } from "@/components/students-tab-bar";
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useStudentHealth } from "@/lib/use-student-health";
 import { BAND_META } from "@/lib/student-health";
@@ -248,6 +249,7 @@ function StudentsLayout() {
 
   return (
     <div className="p-4 sm:p-6 max-w-[1500px] mx-auto space-y-5">
+      <StudentsTabBar />
       <header className="flex flex-wrap items-end justify-between gap-3 pb-5 mb-1">
         <div>
           <h1 className="text-display text-foreground">Students</h1>

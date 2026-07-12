@@ -8,7 +8,12 @@ const TABS = [
   { label: "Revenue", url: "/revenue", roles: ["admin", "closer", "coach", "founder"] },
   { label: "Installments", url: "/installments", roles: ["admin", "closer", "coach", "founder"] },
   { label: "Payouts", url: "/payouts", roles: ["admin", "cofounder"] },
+  { label: "Finance", url: "/finance", roles: ["founder", "cofounder"] },
 ] as const;
+
+export function firstSalesTab(roles: string[]) {
+  return TABS.find(t => t.roles.some(r => roles.includes(r)))?.url ?? "/sales";
+}
 
 export function RevenueTabBar() {
   const path = useRouterState({ select: s => s.location.pathname });

@@ -65,7 +65,7 @@ export function MochiCrmInner({ embedded = false }: { embedded?: boolean }) {
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-display text-foreground flex items-center gap-2.5">
-            <Instagram className="h-6 w-6 text-muted-foreground" /> Instagram CRM
+            <Instagram className="h-6 w-6 text-muted-foreground" /> Mochi
           </h1>
           <p className="text-body text-muted-foreground mt-0.5">
             Live from Mochi ·{" "}

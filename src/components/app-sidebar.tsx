@@ -4,8 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAccess } from "@/lib/use-access";
 import {
   LayoutDashboard, FileText, BookOpen, Calendar, GraduationCap,
-  Database, Users, Shield, UserCircle, School, HeartHandshake, Phone, DollarSign, Armchair,
-  ListChecks, Quote, Building2, Sparkles, Clapperboard, Wallet,
+  Database, Users, Shield, UserCircle, School, HeartHandshake, Phone, DollarSign,
+  ListChecks, Quote, Building2, Sparkles, Clapperboard,
   MessagesSquare, Settings,
 } from "lucide-react";
 
@@ -15,6 +15,8 @@ import {
   useSidebar, SidebarHeader,
 } from "@/components/ui/sidebar";
 import isaLogo from "@/assets/isa-logo.png.asset.json";
+import { firstStudentsTab } from "@/components/students-tab-bar";
+import { firstSalesTab } from "@/components/revenue-tab-bar";
 
 type Item = {
   title: string;
@@ -31,18 +33,20 @@ const todayItems: Item[] = [
   { title: "Team Chat",    url: "/chat",         icon: MessagesSquare },
 ];
 
-const salesItems: Item[] = [
-  { title: "Sales",            url: "/sales",            icon: Building2,  roles: ["admin", "closer", "coach"] },
+const salesItems = (roles: string[]): Item[] => [
+  { title: "Sales",            url: firstSalesTab(roles), icon: Building2, roles: ["admin", "closer", "coach", "founder", "cofounder"] },
   { title: "CRM",              url: "/crm",              icon: Database,   roles: ["admin", "founder", "cofounder", "closer"] },
   { title: "Closer Resources", url: "/closer-resources", icon: DollarSign, roles: ["admin", "closer"] },
 ];
 
-const studentsItems: Item[] = [
-  { title: "Students",        url: "/students",        icon: School,         roles: ["admin", "closer", "csm", "coach"] },
-  { title: "1-on-1 Calls",    url: "/calls",           icon: Phone,          roles: ["admin", "coach", "csm"] },
-  { title: "CSM",             url: "/csm",             icon: HeartHandshake, roles: ["admin", "csm", "coach", "founder", "cofounder"] },
-  { title: "Testimonials",    url: "/testimonials",    icon: Quote,          roles: ["admin", "coach", "closer", "setter", "csm"] },
-];
+// One entry — the fulfillment side (Students / CSM / 1-on-1 Calls /
+// Testimonials) is tabbed on-page, like Sales. Setters land on Testimonials.
+const studentsEntry = (roles: string[]): Item[] => [{
+  title: "Students",
+  url: firstStudentsTab(roles),
+  icon: School,
+  roles: ["admin", "closer", "csm", "coach", "founder", "cofounder", "setter"],
+}];
 
 const libraryItems: Item[] = [
   { title: "Knowledge", url: "/knowledge", icon: BookOpen },
@@ -50,8 +54,6 @@ const libraryItems: Item[] = [
 ];
 
 const founderItems: Item[] = [
-  { title: "Gathering Hub", url: "/command", icon: Armchair, roles: ["founder"] },
-  { title: "Finance", url: "/finance", icon: Wallet, roles: ["founder", "cofounder"] },
   { title: "Content", url: "/content", icon: Clapperboard, roles: ["founder"] },
 ];
 
@@ -166,8 +168,8 @@ export function AppSidebar({ roles }: { roles: string[] }) {
       {header(isAdmin ? "Admin" : "Team")}
       <SidebarContent className="gap-0 py-2">
         {renderGroup("Today", todayItems)}
-        {renderGroup("Sales", salesItems)}
-        {renderGroup("Students", studentsItems)}
+        {renderGroup("Sales", salesItems(roles))}
+        {renderGroup("Students", studentsEntry(roles))}
         {renderGroup("Library", libraryItems)}
         {roles.includes("founder") && renderGroup("Founder", founderItems)}
         {isAdmin && renderGroup("Admin", adminItems)}

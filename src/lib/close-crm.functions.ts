@@ -172,15 +172,18 @@ export type CloseCallStats = {
 /** Dials + call durations per rep from Close call activities. */
 export const getCloseCallStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { days?: number } | undefined) => ({
+  .inputValidator((input: { days?: number; date?: string } | undefined) => ({
     days: Math.min(Math.max(input?.days ?? 7, 1), 30),
+    // A specific calendar day (YYYY-MM-DD) — overrides the rolling window.
+    date: input?.date && /^\d{4}-\d{2}-\d{2}$/.test(input.date) ? input.date : undefined,
   }))
   .handler(async ({ context, data }): Promise<CloseCallStats> => {
     const empty: CloseCallStats = { configured: false, totalDials: 0, totalAnswered: 0, avgDurationSec: null, perUser: [] };
     const key = await readCloseKey(context);
     if (!key) return empty;
     const basic = Buffer.from(`${key}:`).toString("base64");
-    const since = new Date(Date.now() - data.days * 86400000).toISOString();
+    const since = data.date ? `${data.date}T00:00:00Z` : new Date(Date.now() - data.days * 86400000).toISOString();
+    const until = data.date ? `${data.date}T23:59:59Z` : null;
 
     type Call = { user_name?: string; duration?: number; disposition?: string; direction?: string };
     const calls: Call[] = [];
@@ -190,6 +193,7 @@ export const getCloseCallStats = createServerFn({ method: "GET" })
       for (let skip = 0; skip < 1000; skip += 100) {
         const params = new URLSearchParams({
           date_created__gte: since,
+          ...(until ? { date_created__lte: until } : {}),
           _limit: "100",
           _skip: String(skip),
           _fields: "id,user_name,duration,direction,disposition",

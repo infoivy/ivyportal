@@ -479,8 +479,10 @@ export const setTeamGoal = createServerFn({ method: "POST" })
   });
 
 async function requireFinanceAccess(context: Ctx) {
+  // Founder + co-founders only (founder-confirmed 2026-07-12) — admin alone
+  // does not unlock money.
   const checks = await Promise.all(
-    ["founder", "admin", "cofounder"].map((r) =>
+    ["founder", "cofounder"].map((r) =>
       context.supabase.rpc("has_role", { _user_id: context.userId, _role: r }),
     ),
   );

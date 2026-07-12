@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { money, type Deal, type CommissionRates, commissionForDeal, setterWeekBonusIds, DEFAULT_RATES, isSelfSet } from "@/lib/revenue";
+import { cofounderCappedCommission, type CommissionEvent, COFOUNDER_RATE, COFOUNDER_WEEK_CAP, COFOUNDER_MONTH_CAP } from "@/lib/payouts-calc";
 import { RevenueTabBar } from "@/components/revenue-tab-bar";
 
 export const Route = createFileRoute("/_authenticated/payouts")({
@@ -30,6 +31,8 @@ function getPeriod(offset = 0) {
   return {
     start: `${y}-${pad(m + 1)}-${pad(startD)}`,
     end: `${y}-${pad(m + 1)}-${pad(endD)}`,
+    monthStart: `${y}-${pad(m + 1)}-01`,
+    monthEnd: `${y}-${pad(m + 1)}-${pad(lastDay)}`,
     label: `${monthLabel.split(" ")[0]} ${startD}–${endD}, ${y}`,
     isSecondHalf: second,
   };
@@ -72,6 +75,7 @@ type CloserRow = {
   installmentCash: number;
   installmentCommission: number;
   total: number;
+  capNote?: string;
 };
 
 function Payouts() {
@@ -97,26 +101,30 @@ function PayoutsInner() {
   const [rates, setRates] = useState<CommissionRates>(DEFAULT_RATES);
   const [installmentPayments, setInstallmentPayments] = useState<InstallmentPayment[]>([]);
   const [installments, setInstallments] = useState<Installment[]>([]);
+  const [cofounderIds, setCofounderIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
     setLoading(true);
-    const [dealsRes, profilesRes, ratesRes, ipRes, instRes] = await Promise.all([
+    // Whole calendar month: the co-founder monthly cap needs both halves.
+    const [dealsRes, profilesRes, ratesRes, ipRes, instRes, cofRes] = await Promise.all([
       supabase
         .from("deals")
         .select("id, closer_id, setter_id, total_value, cash_collected_upfront, deal_date, payment_type")
-        .gte("deal_date", period.start)
-        .lte("deal_date", period.end),
+        .gte("deal_date", period.monthStart)
+        .lte("deal_date", period.monthEnd),
       supabase.from("profiles").select("id, display_name, commission_cap_pct, base_pay_monthly"),
       supabase.from("commission_rates").select("key, rate").eq("active", true),
       supabase
         .from("installment_payments")
         .select("id, amount, paid_at, installment_id")
-        .gte("paid_at", period.start + "T00:00:00")
-        .lte("paid_at", period.end + "T23:59:59")
+        .gte("paid_at", period.monthStart + "T00:00:00")
+        .lte("paid_at", period.monthEnd + "T23:59:59")
         .not("paid_at", "is", null),
       supabase.from("installments").select("id, setter_id, closer_id, student_name"),
+      supabase.from("user_roles").select("user_id").eq("role", "cofounder"),
     ]);
+    setCofounderIds(new Set(((cofRes.data ?? []) as { user_id: string }[]).map((r) => r.user_id)));
     setDeals((dealsRes.data ?? []) as Deal[]);
     const pm = new Map<string, Profile>();
     for (const p of (profilesRes.data ?? []) as Profile[]) pm.set(p.id, p);
@@ -141,12 +149,26 @@ function PayoutsInner() {
     return m;
   }, [installments]);
 
+  // The fetch is month-wide (co-founder caps span both halves); everything
+  // else is scoped to the visible period.
+  const periodDeals = useMemo(
+    () => deals.filter((d) => d.deal_date >= period.start && d.deal_date <= period.end),
+    [deals, period.start, period.end],
+  );
+  const periodPayments = useMemo(
+    () => installmentPayments.filter((ip) => {
+      const day = (ip.paid_at ?? "").slice(0, 10);
+      return day >= period.start && day <= period.end;
+    }),
+    [installmentPayments, period.start, period.end],
+  );
+
   // Setter rows
   const setterRows = useMemo((): SetterRow[] => {
-    const weekBonusIds = setterWeekBonusIds(deals);
+    const weekBonusIds = setterWeekBonusIds(periodDeals);
 
     const map = new Map<string, { deals: Deal[]; weekBonus: boolean }>();
-    for (const d of deals) {
+    for (const d of periodDeals) {
       if (!d.setter_id || isSelfSet(d)) continue; // self-set = closer's 15%, no setter credit
       const entry = map.get(d.setter_id) ?? { deals: [], weekBonus: false };
       entry.deals.push(d);
@@ -156,7 +178,7 @@ function PayoutsInner() {
 
     // Add installment cash to setters
     const instCash = new Map<string, number>();
-    for (const ip of installmentPayments) {
+    for (const ip of periodPayments) {
       const inst = installmentMap.get(ip.installment_id);
       if (!inst?.setter_id || inst.setter_id === inst.closer_id) continue;
       instCash.set(inst.setter_id, (instCash.get(inst.setter_id) ?? 0) + ip.amount);
@@ -182,12 +204,12 @@ function PayoutsInner() {
         total: dealCommission + iCommission,
       };
     }).sort((a, b) => b.total - a.total);
-  }, [deals, installmentPayments, installmentMap, profileMap]);
+  }, [periodDeals, periodPayments, installmentMap, profileMap, rates]);
 
   // Closer rows
   const closerRows = useMemo((): CloserRow[] => {
     const map = new Map<string, Deal[]>();
-    for (const d of deals) {
+    for (const d of periodDeals) {
       if (!d.closer_id) continue;
       const entry = map.get(d.closer_id) ?? [];
       entry.push(d);
@@ -196,11 +218,28 @@ function PayoutsInner() {
 
     const instCash = new Map<string, number>();
     const instSetSet = new Map<string, boolean>(); // closer_id → self-set installment this period (set+close rate)
-    for (const ip of installmentPayments) {
+    for (const ip of periodPayments) {
       const inst = installmentMap.get(ip.installment_id);
       if (!inst?.closer_id) continue;
       instCash.set(inst.closer_id, (instCash.get(inst.closer_id) ?? 0) + ip.amount);
       if (inst.setter_id && inst.setter_id === inst.closer_id) instSetSet.set(inst.closer_id, true);
+    }
+
+    // Co-founders: flat 10% with $1k/week + $2k/month caps, computed over
+    // the whole month so this period shows its true slice.
+    const cofounderMonthEvents = new Map<string, CommissionEvent[]>();
+    for (const d of deals) {
+      if (!d.closer_id || !cofounderIds.has(d.closer_id)) continue;
+      const arr = cofounderMonthEvents.get(d.closer_id) ?? [];
+      arr.push({ date: d.deal_date, cash: d.cash_collected_upfront ?? 0 });
+      cofounderMonthEvents.set(d.closer_id, arr);
+    }
+    for (const ip of installmentPayments) {
+      const inst = installmentMap.get(ip.installment_id);
+      if (!inst?.closer_id || !cofounderIds.has(inst.closer_id) || !ip.paid_at) continue;
+      const arr = cofounderMonthEvents.get(inst.closer_id) ?? [];
+      arr.push({ date: ip.paid_at.slice(0, 10), cash: ip.amount });
+      cofounderMonthEvents.set(inst.closer_id, arr);
     }
 
     const allCloserIds = new Set([...map.keys(), ...instCash.keys()]);
@@ -208,8 +247,25 @@ function PayoutsInner() {
       const profile = profileMap.get(cid);
       const cDeals = map.get(cid) ?? [];
       const dealsCash = cDeals.reduce((s, d) => s + (d.cash_collected_upfront ?? 0), 0);
-      const dealCommission = cDeals.reduce((s, d) => s + commissionForDeal(d, rates, profile?.commission_cap_pct), 0);
       const iCash = instCash.get(cid) ?? 0;
+
+      if (cofounderIds.has(cid)) {
+        const capped = cofounderCappedCommission(cofounderMonthEvents.get(cid) ?? []);
+        const owed = period.isSecondHalf ? capped.secondHalf : capped.firstHalf;
+        return {
+          id: cid,
+          name: profileMap.get(cid)?.display_name ?? cid.slice(0, 8),
+          deals: cDeals.length,
+          cash: dealsCash,
+          commission: owed,
+          installmentCash: iCash,
+          installmentCommission: 0,
+          total: owed,
+          capNote: `co-founder · ${(COFOUNDER_RATE * 100).toFixed(0)}% flat · capped $${COFOUNDER_WEEK_CAP / 1000}k/wk · $${COFOUNDER_MONTH_CAP / 1000}k/mo${capped.capped ? " · cap hit" : ""}`,
+        };
+      }
+
+      const dealCommission = cDeals.reduce((s, d) => s + commissionForDeal(d, rates, profile?.commission_cap_pct), 0);
       // Use set_close for installments where a setter was involved, cap applies
       const iBaseRate = instSetSet.get(cid) ? rates.set_close : rates.new_close;
       const iRate = profile?.commission_cap_pct != null ? Math.min(iBaseRate, profile.commission_cap_pct) : iBaseRate;
@@ -225,7 +281,7 @@ function PayoutsInner() {
         total: dealCommission + iCommission,
       };
     }).sort((a, b) => b.total - a.total);
-  }, [deals, installmentPayments, installmentMap, profileMap]);
+  }, [deals, periodDeals, installmentPayments, periodPayments, installmentMap, profileMap, rates, cofounderIds, period.isSecondHalf]);
 
   const totalPayouts = setterRows.reduce((s, r) => s + r.total, 0) + closerRows.reduce((s, r) => s + r.total, 0);
 
@@ -287,7 +343,7 @@ function PayoutsInner() {
           <SummaryChip label="Total payouts" value={money(totalPayouts)} accent="green" />
           <SummaryChip label="Setter payouts" value={money(setterRows.reduce((s, r) => s + r.total, 0))} />
           <SummaryChip label="Closer payouts" value={money(closerRows.reduce((s, r) => s + r.total, 0))} />
-          <SummaryChip label="Deals in period" value={deals.length} />
+          <SummaryChip label="Deals in period" value={periodDeals.length} />
         </div>
 
         {/* Setters table */}
@@ -355,7 +411,10 @@ function PayoutsInner() {
                 <tbody>
                   {closerRows.map(r => (
                     <tr key={r.id} className="border-b border-accent last:border-0">
-                      <td className="px-4 py-3 font-medium">{r.name}</td>
+                      <td className="px-4 py-3 font-medium">
+                        {r.name}
+                        {r.capNote && <div className="text-[10px] text-muted-foreground font-normal mt-0.5">{r.capNote}</div>}
+                      </td>
                       <td className="px-3 py-3 text-right tabular-nums">{r.deals}</td>
                       <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{money(r.cash)}</td>
                       <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{r.installmentCash > 0 ? money(r.installmentCash) : "—"}</td>
@@ -376,9 +435,9 @@ function PayoutsInner() {
         </section>
 
         {/* Installments context note */}
-        {installmentPayments.length > 0 && (
+        {periodPayments.length > 0 && (
           <p className="text-[10px] text-muted-foreground">
-            {installmentPayments.length} installment payment{installmentPayments.length !== 1 ? "s" : ""} collected in this period are included in commission calculations above.
+            {periodPayments.length} installment payment{periodPayments.length !== 1 ? "s" : ""} collected in this period are included in commission calculations above.
           </p>
         )}
       </div>

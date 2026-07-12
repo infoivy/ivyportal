@@ -22,11 +22,12 @@ const fmtDur = (sec: number | null) =>
  */
 export function SetterActivityCard() {
   const [days, setDays] = useState<1 | 3 | 7 | 30>(1);
+  const [day, setDay] = useState<string>(""); // specific YYYY-MM-DD overrides the rolling window
   const mochiPeriod = days === 1 ? "today" : days <= 7 ? "last_7_days" : "last_30_days";
 
   const close = useQuery({
-    queryKey: ["close-call-stats", days],
-    queryFn: () => getCloseCallStats({ data: { days } }),
+    queryKey: ["close-call-stats", day || days],
+    queryFn: () => getCloseCallStats({ data: day ? { date: day } : { days } }),
     staleTime: 2 * 60_000,
     refetchInterval: 5 * 60_000,
     retry: 1,
@@ -53,7 +54,7 @@ export function SetterActivityCard() {
   const idByName = new Map((profilesQ.data ?? []).filter((p: any) => p.display_name).map((p: any) => [String(p.display_name).toLowerCase(), p.id as string]));
 
   const c = close.data;
-  const dmByName = new Map((mochi.data?.members ?? []).map((m) => [m.name.toLowerCase(), m.outbound]));
+  const dmByName = day ? new Map<string, number>() : new Map((mochi.data?.members ?? []).map((m) => [m.name.toLowerCase(), m.outbound]));
   if (c && !c.configured && (mochi.data?.members ?? []).length === 0) return null;
 
   return (
@@ -68,14 +69,24 @@ export function SetterActivityCard() {
           {PERIODS.map((p) => (
             <button
               key={p.days}
-              onClick={() => setDays(p.days as 1 | 3 | 7 | 30)}
+              onClick={() => { setDays(p.days as 1 | 3 | 7 | 30); setDay(""); }}
               className={`text-[11px] font-medium px-2 py-1 rounded-md motion-safe:transition-colors ${
-                days === p.days ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"
+                !day && days === p.days ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {p.label}
             </button>
           ))}
+          <input
+            type="date"
+            value={day}
+            max={new Date().toISOString().slice(0, 10)}
+            onChange={(e) => setDay(e.target.value)}
+            title="A specific day — dials from Close; Mochi DMs only support preset windows"
+            className={`text-[11px] h-6 px-1.5 rounded-md border bg-transparent motion-safe:transition-colors ${
+              day ? "border-primary/40 text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          />
         </div>
       </div>
 
@@ -84,7 +95,7 @@ export function SetterActivityCard() {
         <Total label="Dials" value={c?.totalDials} loading={close.isLoading} />
         <Total label="Answered" value={c?.totalAnswered} loading={close.isLoading} />
         <Total label="Avg call" text={c ? fmtDur(c.avgDurationSec) : undefined} loading={close.isLoading} />
-        <Total label="DMs out" value={mochi.data?.messages?.outbound} loading={mochi.isLoading} />
+        <Total label="DMs out" value={day ? undefined : mochi.data?.messages?.outbound} loading={!day && mochi.isLoading} />
         {/* CRM census, not summed into EOD sets — same booking must never count twice */}
         <Total label="Booked · in CRM now" value={booked.data?.booked} loading={booked.isLoading} />
       </div>

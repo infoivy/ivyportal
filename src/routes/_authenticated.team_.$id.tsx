@@ -8,7 +8,7 @@ import { getMochiDashboard } from "@/lib/mochi.functions";
 import { computeStreak } from "@/lib/streak";
 import { signAvatars } from "@/lib/avatars";
 import { format, subDays } from "date-fns";
-import { ArrowLeft, Flame, PhoneCall, Sparkles, Target } from "lucide-react";
+import { ArrowLeft, Flame, GraduationCap, PhoneCall, Sparkles, Target } from "lucide-react";
 import { ResponsiveContainer, ComposedChart, Area, Line, XAxis, YAxis, Tooltip } from "recharts";
 
 export const Route = createFileRoute("/_authenticated/team_/$id")({
@@ -76,6 +76,43 @@ function MemberPage() {
 
   const d = q.data;
   const name = d?.profile?.display_name ?? "Team member";
+  const isCoach = (d?.memberRoles ?? []).includes("coach");
+
+  // Coach capacity — was its own Coaches tab; lives on the profile now.
+  const coachQ = useQuery({
+    queryKey: ["member", id, "coaching"],
+    enabled: canView && isCoach,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const [students, calls] = await Promise.all([
+        supabase.from("students").select("id, status, phase").eq("coach_id", id),
+        supabase.from("student_calls").select("student_id, status, call_date, progress_rating").eq("coach_id", id).limit(5000),
+      ]);
+      const roster = (students.data ?? []) as { id: string; status: string; phase: string }[];
+      const rows = (calls.data ?? []) as { student_id: string; status: string; call_date: string; progress_rating: number | null }[];
+      const completed = rows.filter((c) => c.status === "completed");
+      const ratings = completed.filter((c) => c.progress_rating != null).map((c) => c.progress_rating!);
+      const lastByStudent = new Map<string, string>();
+      for (const c of completed) {
+        const prev = lastByStudent.get(c.student_id);
+        if (!prev || prev < c.call_date) lastByStudent.set(c.student_id, c.call_date);
+      }
+      const now = Date.now();
+      const stale = roster.filter((st) => {
+        if (st.status !== "active" || st.phase !== "coaching_1on1") return false;
+        const last = lastByStudent.get(st.id);
+        return !last || (now - new Date(last).getTime()) / 86400000 > 14;
+      }).length;
+      return {
+        active: roster.filter((st) => st.status === "active").length,
+        roster: roster.length,
+        done: completed.length,
+        avgRating: ratings.length ? ratings.reduce((a, b) => a + b, 0) / ratings.length : null,
+        rated: ratings.length,
+        stale,
+      };
+    },
+  });
 
   const analysis = useMemo(() => {
     if (!d) return null;
@@ -211,6 +248,32 @@ function MemberPage() {
           {closeRep && <Stat inline label="Dials (Close)" value={closeRep.dials} />}
           {closeRep && <Stat inline label="Answered" value={closeRep.answered} />}
           {mochiRep && <Stat inline label="DMs out (Mochi)" value={mochiRep.outbound} />}
+        </div>
+      )}
+
+      {/* Coach capacity — roster load + 1:1 quality (coach role only) */}
+      {isCoach && coachQ.data && (
+        <div className="card-surface px-4 py-3.5 flex flex-wrap items-center gap-x-8 gap-y-2">
+          <div className="flex items-center gap-2 text-[13px] font-medium text-foreground">
+            <GraduationCap className="h-3.5 w-3.5 text-muted-foreground" /> Coaching
+            <span className="text-[11px] text-muted-foreground font-normal">roster load · lower + high rating = green light</span>
+          </div>
+          <Stat inline label="Active students" value={coachQ.data.active} />
+          <Stat inline label="On roster" value={coachQ.data.roster} />
+          <Stat inline label="1:1s done" value={coachQ.data.done} />
+          <div>
+            <div className="text-[11px] text-muted-foreground">Avg rating</div>
+            <div className="text-[18px] font-medium tabular-nums text-foreground leading-tight">
+              {coachQ.data.avgRating != null ? coachQ.data.avgRating.toFixed(1) : "—"}
+              <span className="text-[11px] text-muted-foreground font-normal"> · {coachQ.data.rated} rated</span>
+            </div>
+          </div>
+          {coachQ.data.stale > 0 && (
+            <div>
+              <div className="text-[11px] text-muted-foreground">No 1:1 in 14d</div>
+              <div className="text-[18px] font-medium tabular-nums text-warning-fg leading-tight">{coachQ.data.stale}</div>
+            </div>
+          )}
         </div>
       )}
 

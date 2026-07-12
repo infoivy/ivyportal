@@ -4,6 +4,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { getFinanceRevenue } from "@/lib/mochi.functions";
+import { calcMonthPayouts } from "@/lib/payouts-calc";
+import { RevenueTabBar } from "@/components/revenue-tab-bar";
+import { DEFAULT_RATES } from "@/lib/revenue";
 import { money } from "@/lib/revenue";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -68,19 +71,34 @@ function FinanceInner() {
     queryKey: ["page", "finance", iso(monthStart)],
     queryFn: async () => {
       const in6mo = new Date(now.getFullYear(), now.getMonth() + 6, 0);
-      const [expensesRes, dealsRes, paysRes, futurePaysRes, settingsRes] = await Promise.all([
+      const [expensesRes, dealsRes, paysRes, futurePaysRes, settingsRes, paidRes, instRes, profRes, ratesRes, cofRes] = await Promise.all([
         supabase.from("business_expenses").select("*").order("recurring", { ascending: false }).order("due_day"),
-        supabase.from("deals").select("cash_collected_upfront, deal_date").gte("deal_date", iso(monthStart)).lte("deal_date", iso(monthEnd)),
+        supabase.from("deals").select("id, closer_id, setter_id, cash_collected_upfront, deal_date").gte("deal_date", iso(monthStart)).lte("deal_date", iso(monthEnd)),
         supabase.from("installment_payments").select("amount, due_date, status").gte("due_date", iso(monthStart)).lte("due_date", iso(monthEnd)),
         supabase.from("installment_payments").select("amount, due_date, status").eq("status", "upcoming").gte("due_date", iso(new Date(now.getFullYear(), now.getMonth(), 1))).lte("due_date", iso(in6mo)),
-        supabase.from("founder_settings").select("id, processor_balance, processor_balance_updated_at").maybeSingle(),
+        supabase.from("founder_settings").select("id, processor_balance, processor_balance_updated_at, monthly_cash_goal").maybeSingle(),
+        supabase.from("installment_payments").select("amount, paid_at, installment_id").gte("paid_at", iso(monthStart) + "T00:00:00").lte("paid_at", iso(monthEnd) + "T23:59:59").not("paid_at", "is", null),
+        supabase.from("installments").select("id, setter_id, closer_id"),
+        supabase.from("profiles").select("id, commission_cap_pct, base_pay_monthly"),
+        supabase.from("commission_rates").select("key, rate").eq("active", true),
+        supabase.from("user_roles").select("user_id").eq("role", "cofounder"),
       ]);
+      const rates = { ...DEFAULT_RATES };
+      for (const row of ratesRes.data ?? []) {
+        const k = row.key as keyof typeof rates;
+        if (k in rates) (rates as Record<string, number>)[k] = Number(row.rate);
+      }
       return {
         expenses: (expensesRes.data ?? []) as Expense[],
-        deals: (dealsRes.data ?? []) as { cash_collected_upfront: number; deal_date: string }[],
+        deals: (dealsRes.data ?? []) as { id: string; closer_id: string | null; setter_id: string | null; cash_collected_upfront: number; deal_date: string }[],
         monthPays: (paysRes.data ?? []) as Payment[],
         futurePays: (futurePaysRes.data ?? []) as Payment[],
-        settings: settingsRes.data as { id: string; processor_balance: number | null; processor_balance_updated_at: string | null } | null,
+        settings: settingsRes.data as { id: string; processor_balance: number | null; processor_balance_updated_at: string | null; monthly_cash_goal: number | null } | null,
+        paidPays: (paidRes.data ?? []) as { amount: number; paid_at: string | null; installment_id: string }[],
+        installments: (instRes.data ?? []) as { id: string; setter_id: string | null; closer_id: string | null }[],
+        profiles: (profRes.data ?? []) as { id: string; commission_cap_pct: number | null; base_pay_monthly: number | null }[],
+        rates,
+        cofounderIds: new Set(((cofRes.data ?? []) as { user_id: string }[]).map((r) => r.user_id)),
       };
     },
   });
@@ -164,11 +182,26 @@ function FinanceInner() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [d, monthOffset]);
+  // Team payouts for the month — commissions (incl. co-founder caps) + base
+  // pay. Profit is what's left AFTER these, not just after expenses.
+  const payouts = useMemo(() => {
+    if (!d) return null;
+    return calcMonthPayouts({
+      deals: d.deals as never,
+      installmentPayments: d.paidPays,
+      installments: d.installments,
+      profiles: d.profiles,
+      rates: d.rates,
+      cofounderIds: d.cofounderIds,
+    });
+  }, [d]);
+
   // Whop is the cash-in source of truth — profit must be built on it, not on
   // logged deals (which lag or double elsewhere).
   const cashIn = rev?.connected ? rev.whopGross : calc?.collected ?? 0;
-  const profitSoFar = cashIn - (calc?.expensesTotal ?? 0);
-  const profitProjected = cashIn + (calc?.expectedRest ?? 0) - (calc?.expensesTotal ?? 0);
+  const payoutsTotal = payouts?.total ?? 0;
+  const profitSoFar = cashIn - (calc?.expensesTotal ?? 0) - payoutsTotal;
+  const profitProjected = cashIn + (calc?.expectedRest ?? 0) - (calc?.expensesTotal ?? 0) - payoutsTotal;
 
   const saveBalance = async () => {
     const val = Number(balanceDraft);
@@ -194,6 +227,7 @@ function FinanceInner() {
 
   return (
     <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-5">
+      <RevenueTabBar />
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <div className="flex items-center gap-2 text-[10px] text-muted-foreground mb-1">
@@ -214,9 +248,20 @@ function FinanceInner() {
 
       {/* Top strip */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-        <StatCard label="Cash in · Whop" value={rev?.connected ? money(rev.whopGross) : calc ? money(calc.collected) : "—"} sub={rev?.connected ? `${rev.whopCount} payments · ${money(rev.whopNet)} net` : undefined} icon={<ArrowDownRight className="h-3.5 w-3.5" />} />
-        <StatCard label="Expenses" value={calc ? money(calc.expensesTotal) : "—"} sub={calc ? `${calc.monthExpenses.length} items` : undefined} icon={<ArrowUpRight className="h-3.5 w-3.5" />} />
-        <StatCard label="Profit (projected)" value={calc ? money(profitProjected) : "—"} sub={calc ? `${money(profitSoFar)} banked so far` : undefined} icon={<TrendingUp className="h-3.5 w-3.5" />} tone={calc && profitProjected < 0 ? "danger" : "default"} />
+        <StatCard
+          label="Cash in · Whop"
+          value={rev?.connected ? money(rev.whopGross) : calc ? money(calc.collected) : "—"}
+          sub={(() => {
+            const goal = d?.settings?.monthly_cash_goal;
+            if (!goal || !isCurrentMonth) return rev?.connected ? `${rev.whopCount} payments · ${money(rev.whopNet)} net` : undefined;
+            const dayOfMonth = now.getDate();
+            const pace = dayOfMonth > 0 ? (cashIn / dayOfMonth) * monthEnd.getDate() : 0;
+            return `goal ${money(goal)} · pace ${money(Math.round(pace))}`;
+          })()}
+          icon={<ArrowDownRight className="h-3.5 w-3.5" />}
+        />
+        <StatCard label="Expenses + payouts" value={calc ? money(calc.expensesTotal + payoutsTotal) : "—"} sub={calc ? `${money(calc.expensesTotal)} expenses · ${money(payoutsTotal)} team pay` : undefined} icon={<ArrowUpRight className="h-3.5 w-3.5" />} />
+        <StatCard label="Profit (projected)" value={calc ? money(profitProjected) : "—"} sub={calc ? `${money(profitSoFar)} so far · after expenses & payouts` : undefined} icon={<TrendingUp className="h-3.5 w-3.5" />} tone={calc && profitProjected < 0 ? "danger" : "default"} />
         <StatCard label="MRR (scheduled)" value={calc ? money(calc.mrrNow) : "—"} sub="installments due this month" icon={<PiggyBank className="h-3.5 w-3.5" />} />
       </div>
 
@@ -309,7 +354,7 @@ function FinanceInner() {
         <div className="card-surface p-5">
           <div className="flex items-baseline justify-between mb-1">
             <h2 className="text-sm font-semibold">Profit split</h2>
-            <span className="text-caption text-muted-foreground">after expenses · {monthLabel}</span>
+            <span className="text-caption text-muted-foreground">after expenses & payouts · {monthLabel}</span>
           </div>
           <div className="text-[28px] font-medium tabular-nums tracking-[-0.02em] mb-4">
             {calc ? money(Math.max(0, profitProjected)) : "—"}
