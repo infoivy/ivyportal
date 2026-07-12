@@ -20,7 +20,6 @@ import { Route as AuthenticatedStudentsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedStudentSuccessRouteImport } from './routes/_authenticated.student-success'
 import { Route as AuthenticatedStudentPortalRouteImport } from './routes/_authenticated.student-portal'
 import { Route as AuthenticatedSopsRouteImport } from './routes/_authenticated.sops'
-import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated.settings'
 import { Route as AuthenticatedSalesHqRouteImport } from './routes/_authenticated.sales-hq'
 import { Route as AuthenticatedSalesRouteImport } from './routes/_authenticated.sales'
 import { Route as AuthenticatedRevenueRouteImport } from './routes/_authenticated.revenue'
@@ -112,11 +111,6 @@ const AuthenticatedStudentPortalRoute =
 const AuthenticatedSopsRoute = AuthenticatedSopsRouteImport.update({
   id: '/sops',
   path: '/sops',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedSalesHqRoute = AuthenticatedSalesHqRouteImport.update({
@@ -335,7 +329,6 @@ export interface FileRoutesByFullPath {
   '/revenue': typeof AuthenticatedRevenueRoute
   '/sales': typeof AuthenticatedSalesRoute
   '/sales-hq': typeof AuthenticatedSalesHqRoute
-  '/settings': typeof AuthenticatedSettingsRoute
   '/sops': typeof AuthenticatedSopsRouteWithChildren
   '/student-portal': typeof AuthenticatedStudentPortalRoute
   '/student-success': typeof AuthenticatedStudentSuccessRoute
@@ -381,7 +374,6 @@ export interface FileRoutesByTo {
   '/revenue': typeof AuthenticatedRevenueRoute
   '/sales': typeof AuthenticatedSalesRoute
   '/sales-hq': typeof AuthenticatedSalesHqRoute
-  '/settings': typeof AuthenticatedSettingsRoute
   '/sops': typeof AuthenticatedSopsRouteWithChildren
   '/student-portal': typeof AuthenticatedStudentPortalRoute
   '/student-success': typeof AuthenticatedStudentSuccessRoute
@@ -431,7 +423,6 @@ export interface FileRoutesById {
   '/_authenticated/revenue': typeof AuthenticatedRevenueRoute
   '/_authenticated/sales': typeof AuthenticatedSalesRoute
   '/_authenticated/sales-hq': typeof AuthenticatedSalesHqRoute
-  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/sops': typeof AuthenticatedSopsRouteWithChildren
   '/_authenticated/student-portal': typeof AuthenticatedStudentPortalRoute
   '/_authenticated/student-success': typeof AuthenticatedStudentSuccessRoute
@@ -481,7 +472,6 @@ export interface FileRouteTypes {
     | '/revenue'
     | '/sales'
     | '/sales-hq'
-    | '/settings'
     | '/sops'
     | '/student-portal'
     | '/student-success'
@@ -527,7 +517,6 @@ export interface FileRouteTypes {
     | '/revenue'
     | '/sales'
     | '/sales-hq'
-    | '/settings'
     | '/sops'
     | '/student-portal'
     | '/student-success'
@@ -576,7 +565,6 @@ export interface FileRouteTypes {
     | '/_authenticated/revenue'
     | '/_authenticated/sales'
     | '/_authenticated/sales-hq'
-    | '/_authenticated/settings'
     | '/_authenticated/sops'
     | '/_authenticated/student-portal'
     | '/_authenticated/student-success'
@@ -682,13 +670,6 @@ declare module '@tanstack/react-router' {
       path: '/sops'
       fullPath: '/sops'
       preLoaderRoute: typeof AuthenticatedSopsRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/settings': {
-      id: '/_authenticated/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/sales-hq': {
@@ -1039,7 +1020,6 @@ interface AuthenticatedRouteChildren {
   AuthenticatedRevenueRoute: typeof AuthenticatedRevenueRoute
   AuthenticatedSalesRoute: typeof AuthenticatedSalesRoute
   AuthenticatedSalesHqRoute: typeof AuthenticatedSalesHqRoute
-  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedSopsRoute: typeof AuthenticatedSopsRouteWithChildren
   AuthenticatedStudentPortalRoute: typeof AuthenticatedStudentPortalRoute
   AuthenticatedStudentSuccessRoute: typeof AuthenticatedStudentSuccessRoute
@@ -1075,7 +1055,6 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedRevenueRoute: AuthenticatedRevenueRoute,
   AuthenticatedSalesRoute: AuthenticatedSalesRoute,
   AuthenticatedSalesHqRoute: AuthenticatedSalesHqRoute,
-  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedSopsRoute: AuthenticatedSopsRouteWithChildren,
   AuthenticatedStudentPortalRoute: AuthenticatedStudentPortalRoute,
   AuthenticatedStudentSuccessRoute: AuthenticatedStudentSuccessRoute,

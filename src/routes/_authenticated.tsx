@@ -266,7 +266,7 @@ const PAGE_LABELS: Array<[string, string]> = [
   ["/student-success", "Student Success"], ["/csm", "CSM"],
   ["/testimonials", "Testimonials"], ["/knowledge", "Knowledge"], ["/policies", "Knowledge"],
   ["/sops", "Knowledge"], ["/content", "Content"], ["/admin", "Admin"],
-  ["/team", "Team"], ["/profile", "Profile"], ["/settings", "Settings"], ["/student-portal", "My Portal"],
+  ["/team", "Team"], ["/profile", "Profile"], ["/student-portal", "My Portal"],
 ];
 
 function PageContextLabel() {

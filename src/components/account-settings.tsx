@@ -1,36 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { KeyRound, Mail, Building2, ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-export const Route = createFileRoute("/_authenticated/settings")({
-  head: () => ({ meta: [{ title: "Settings — ISA Portal" }] }),
-  component: SettingsPage,
-});
-
-function SettingsPage() {
-  const { user, roles } = useAuth();
-  const canOrg = roles.some((r) => ["admin", "founder"].includes(r));
-
-  return (
-    <div className="p-4 sm:p-6 max-w-2xl mx-auto space-y-4">
-      <div>
-        <h1 className="text-xl font-semibold text-foreground">Settings</h1>
-        <p className="text-[13px] text-muted-foreground mt-0.5">Your account{canOrg ? " and the organization" : ""}.</p>
-      </div>
-      <EmailCard currentEmail={user?.email ?? ""} />
-      <PasswordCard />
-      {canOrg && <OrgCard userId={user?.id ?? null} />}
-    </div>
-  );
-}
-
-function EmailCard({ currentEmail }: { currentEmail: string }) {
+export function EmailCard({ currentEmail }: { currentEmail: string }) {
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -63,7 +39,7 @@ function EmailCard({ currentEmail }: { currentEmail: string }) {
   );
 }
 
-function PasswordCard() {
+export function PasswordCard() {
   const [pw, setPw] = useState("");
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
@@ -103,7 +79,7 @@ function PasswordCard() {
   );
 }
 
-function OrgCard({ userId }: { userId: string | null }) {
+export function OrgCard({ userId }: { userId: string | null }) {
   const qc = useQueryClient();
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);

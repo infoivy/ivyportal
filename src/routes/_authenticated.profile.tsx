@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { EmailCard, PasswordCard, OrgCard } from "@/components/account-settings";
 import { toast } from "sonner";
 import { UserCircle, Save, Camera, Upload, Trash2 } from "lucide-react";
 import { signAvatar, uploadAvatar } from "@/lib/avatars";
@@ -137,6 +138,11 @@ function ProfilePage() {
           </button>
         </div>
       </div>
+
+      {/* Account + org management — absorbed from the removed Settings page */}
+      <EmailCard currentEmail={user?.email ?? ""} />
+      <PasswordCard />
+      {roles.some((r) => ["admin", "founder"].includes(r)) && <OrgCard userId={user?.id ?? null} />}
     </div>
   );
 }

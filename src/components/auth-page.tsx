@@ -152,7 +152,7 @@ export function AuthPage() {
                 onClick={async () => {
                   if (!email.trim()) return toast.error("Type your email above first");
                   const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-                    redirectTo: `${window.location.origin}/settings`,
+                    redirectTo: `${window.location.origin}/profile`,
                   });
                   if (error) return toast.error(error.message);
                   toast.success("Reset link sent — check your inbox");

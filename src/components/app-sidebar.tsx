@@ -6,7 +6,7 @@ import {
   LayoutDashboard, FileText, BookOpen, Calendar, GraduationCap,
   Database, Users, Shield, UserCircle, School, HeartHandshake, Phone, DollarSign,
   ListChecks, Quote, Building2, Sparkles, Clapperboard,
-  MessagesSquare, Settings,
+  MessagesSquare,
 } from "lucide-react";
 
 import {
@@ -178,10 +178,7 @@ export function AppSidebar({ roles }: { roles: string[] }) {
         {renderGroup("Library", libraryItems)}
         {roles.includes("founder") && renderGroup("Founder", founderItems)}
         {isAdmin && renderGroup("Admin", adminItems)}
-        {renderGroup("Account", [
-          { title: "Profile", url: "/profile", icon: UserCircle },
-          { title: "Settings", url: "/settings", icon: Settings },
-        ])}
+        {renderGroup("Account", [{ title: "Profile", url: "/profile", icon: UserCircle }])}
       </SidebarContent>
     </Sidebar>
   );
