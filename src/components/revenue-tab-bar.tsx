@@ -7,7 +7,7 @@ const TABS = [
   { label: "Sales", url: "/sales", roles: ["admin", "closer"] },
   { label: "Revenue", url: "/revenue", roles: ["admin", "closer", "coach", "founder"] },
   { label: "Installments", url: "/installments", roles: ["admin", "closer", "coach", "founder"] },
-  { label: "Payouts", url: "/payouts", roles: ["admin"] },
+  { label: "Payouts", url: "/payouts", roles: ["admin", "cofounder"] },
 ] as const;
 
 export function RevenueTabBar() {

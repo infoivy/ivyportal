@@ -76,11 +76,11 @@ type CloserRow = {
 
 function Payouts() {
   const { roles } = useAuth();
-  if (!roles.includes("admin")) {
+  if (!roles.some((r) => ["admin", "cofounder"].includes(r))) {
     return (
       <div className="p-8 max-w-2xl mx-auto">
         <div className="border border-border bg-card rounded-sm p-8 text-center text-sm text-muted-foreground">
-          Admin access required.
+          Admin or co-founder access required.
         </div>
       </div>
     );

@@ -189,16 +189,6 @@ export function CsmOverview() {
           ) : (
             <BreakdownBar segments={phaseSegments} />
           )}
-          <div className="mt-3 space-y-1.5">
-            {phaseSegments.map((p) => (
-              <div key={p.label} className="flex items-center justify-between text-[13px]">
-                <span className="flex items-center gap-2 text-muted-foreground">
-                  <span className="h-2 w-2 rounded-full" style={{ background: p.color }} /> {p.label}
-                </span>
-                <span className="tabular-nums font-medium">{p.value}</span>
-              </div>
-            ))}
-          </div>
         </div>
 
         {/* Fulfillment output per week */}

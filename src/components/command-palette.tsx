@@ -33,7 +33,7 @@ const PAGES: PageItem[] = [
   { kind: "page", title: "Sales Trends", to: "/sales?tab=trends", icon: BarChart3, roles: ["admin", "closer", "setter"] },
   { kind: "page", title: "Revenue", to: "/revenue", icon: DollarSign, roles: ["admin", "closer", "setter", "coach"] },
   { kind: "page", title: "Installments", to: "/installments", icon: DollarSign, roles: ["admin", "closer", "coach"] },
-  { kind: "page", title: "Payouts", to: "/payouts", icon: DollarSign, roles: ["admin"] },
+  { kind: "page", title: "Payouts", to: "/payouts", icon: DollarSign, roles: ["admin", "cofounder"] },
   { kind: "page", title: "Students", to: "/students", icon: School },
   { kind: "page", title: "1-on-1 Calls", to: "/calls", icon: Phone, roles: ["admin", "coach", "csm"] },
   { kind: "page", title: "Coaches", to: "/coaches", icon: Trophy, roles: ["admin", "coach", "csm"] },
