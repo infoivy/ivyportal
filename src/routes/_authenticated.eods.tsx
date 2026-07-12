@@ -980,7 +980,7 @@ function ComplianceGraphs({ eods, roster }: { eods: GridEod[]; roster: RosterEnt
         {totalReports === 0 ? <NoData /> : <FunnelChart data={funnelData} compare={compare} />}
       </GraphCard>
 
-      <GraphCard title="EOD submissions per person" subtitle="One square per day — green = submitted + hit KPI, amber = submitted only, red = missed">
+      <GraphCard title="EOD submissions per person" subtitle="One square per day — green = submitted + hit KPI, amber = submitted only, red = missed" auto>
         <SubmissionsGrid dayList={dayList} roster={filteredRoster} eods={eods} />
       </GraphCard>
     </div>
@@ -1018,14 +1018,15 @@ function SubmissionsGrid({ dayList, roster, eods }: { dayList: string[]; roster:
 
 function NoData() { return <div className="h-full flex items-center justify-center text-[11px] text-muted-foreground">No reports in this period.</div>; }
 
-function GraphCard({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
+function GraphCard({ title, subtitle, children, auto }: { title: string; subtitle?: string; children: React.ReactNode; auto?: boolean }) {
   return (
     <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-4">
       <div className="mb-3">
         <div className="text-xs font-semibold text-foreground">{title}</div>
         {subtitle && <div className="text-[10px] text-muted-foreground mt-0.5">{subtitle}</div>}
       </div>
-      <div className="h-64">{children}</div>
+      {/* Charts want a fixed drawing height; the per-person grid grows with the roster. */}
+      <div className={auto ? "" : "h-64"}>{children}</div>
     </div>
   );
 }
