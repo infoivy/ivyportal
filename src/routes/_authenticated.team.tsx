@@ -25,6 +25,7 @@ type Member = {
   display_name: string | null;
   avatar_path: string | null;
   phone: string | null;
+  base_pay_monthly: number | null;
   active: boolean;
   roles: string[];
   setter_type: SetterType;
@@ -59,7 +60,7 @@ function TeamPage() {
 
   const fetchPage = async () => {
     const [{ data: profs }, { data: rolesData }, tpls, { data: progressRows }] = await Promise.all([
-      supabase.from("profiles").select("id, display_name, avatar_path, active, phone, setter_type" as any),
+      supabase.from("profiles").select("id, display_name, avatar_path, active, phone, setter_type, base_pay_monthly" as any),
       supabase.from("user_roles").select("user_id, role"),
       fetchAllTemplates(),
       supabase.from("onboarding_progress").select("user_id, role, step_id"),
@@ -75,6 +76,7 @@ function TeamPage() {
       display_name: p.display_name,
       avatar_path: p.avatar_path ?? null,
       phone: p.phone ?? null,
+      base_pay_monthly: p.base_pay_monthly ?? null,
       active: p.active ?? true,
       roles: rolesByUser.get(p.id) ?? [],
       setter_type: (p.setter_type ?? null) as SetterType,
@@ -361,6 +363,7 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
 }) {
   const [displayName, setDisplayName] = useState(member.display_name ?? "");
   const [phone, setPhone] = useState(member.phone ?? "");
+  const [basePay, setBasePay] = useState(member.base_pay_monthly != null ? String(member.base_pay_monthly) : "");
   const [setterType, setSetterType] = useState<SetterType>(member.setter_type);
   const [avatarPath, setAvatarPath] = useState<string | null>(member.avatar_path);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(initialUrl);
@@ -396,6 +399,7 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
       avatar_path: avatarPath,
       phone: phone.trim() || null,
       setter_type: setterType,
+      base_pay_monthly: basePay.trim() ? Number(basePay) : null,
     } as any).eq("id", member.id);
     setSaving(false);
     if (error) return toast.error(error.message);
@@ -434,6 +438,11 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
           <label className="text-[12px] text-muted-foreground">Phone (optional)</label>
           <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="+1 555 123 4567" inputMode="tel"
                  className="w-full h-9 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-sm" />
+        </div>
+        <div className="space-y-1">
+          <label className="text-[12px] text-muted-foreground">Base pay · $/month (optional)</label>
+          <input value={basePay} onChange={e => setBasePay(e.target.value.replace(/[^0-9.]/g, ""))} placeholder="500" inputMode="decimal"
+            className="w-full h-9 px-3 rounded-sm border border-[var(--border)] bg-[var(--background)] text-sm outline-none focus:border-ring" />
         </div>
         <div className="space-y-1.5">
           <label className="text-[12px] text-muted-foreground">Roles</label>

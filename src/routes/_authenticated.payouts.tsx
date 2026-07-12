@@ -11,46 +11,31 @@ export const Route = createFileRoute("/_authenticated/payouts")({
   component: Payouts,
 });
 
-// Period: 11th → 11th
+// Pay periods: semi-monthly halves — 1st–15th and 16th–end of month.
+// Commissions are paid twice a month (founder-confirmed 2026-07-12);
+// monthly base pay is shown separately.
 function getPeriod(offset = 0) {
   const now = new Date();
-  const y = now.getFullYear();
-  const m = now.getMonth(); // 0-indexed
-  const d = now.getDate();
-
-  let startY: number, startM: number, endY: number, endM: number;
-  if (d < 11) {
-    // period = 11th last month → 11th this month
-    startM = m - 1;
-    startY = y;
-    if (startM < 0) { startM = 11; startY = y - 1; }
-    endM = m; endY = y;
-  } else {
-    // period = 11th this month → 11th next month
-    startM = m; startY = y;
-    endM = m + 1; endY = y;
-    if (endM > 11) { endM = 0; endY = y + 1; }
-  }
-
-  // Apply offset (negative = go back)
-  let sm = startM + offset;
-  let sy = startY;
-  while (sm < 0) { sm += 12; sy--; }
-  while (sm > 11) { sm -= 12; sy++; }
-  let em = endM + offset;
-  let ey = endY;
-  while (em < 0) { em += 12; ey--; }
-  while (em > 11) { em -= 12; ey++; }
-
+  // Index halves absolutely: monthIndex * 2 + (0 for 1st–15th, 1 for 16th–end)
+  let half = (now.getFullYear() * 12 + now.getMonth()) * 2 + (now.getDate() <= 15 ? 0 : 1) + offset;
+  const monthAbs = Math.floor(half / 2);
+  const y = Math.floor(monthAbs / 12);
+  const m = monthAbs % 12;
+  const second = half % 2 !== 0;
+  const lastDay = new Date(y, m + 1, 0).getDate();
   const pad = (n: number) => String(n).padStart(2, "0");
+  const startD = second ? 16 : 1;
+  const endD = second ? lastDay : 15;
+  const monthLabel = new Date(y, m, 1).toLocaleString("default", { month: "short", year: "numeric" });
   return {
-    start: `${sy}-${pad(sm + 1)}-11`,
-    end: `${ey}-${pad(em + 1)}-11`,
-    label: `${new Date(sy, sm, 11).toLocaleString("default", { month: "short" })} 11 – ${new Date(ey, em, 11).toLocaleString("default", { month: "short", year: "numeric" })} 11`,
+    start: `${y}-${pad(m + 1)}-${pad(startD)}`,
+    end: `${y}-${pad(m + 1)}-${pad(endD)}`,
+    label: `${monthLabel.split(" ")[0]} ${startD}–${endD}, ${y}`,
+    isSecondHalf: second,
   };
 }
 
-type Profile = { id: string; display_name: string; commission_cap_pct?: number | null };
+type Profile = { id: string; display_name: string; commission_cap_pct?: number | null; base_pay_monthly?: number | null };
 
 type InstallmentPayment = {
   id: string;
@@ -121,14 +106,14 @@ function PayoutsInner() {
         .from("deals")
         .select("id, closer_id, setter_id, total_value, cash_collected_upfront, deal_date, payment_type")
         .gte("deal_date", period.start)
-        .lt("deal_date", period.end),
-      supabase.from("profiles").select("id, display_name, commission_cap_pct"),
+        .lte("deal_date", period.end),
+      supabase.from("profiles").select("id, display_name, commission_cap_pct, base_pay_monthly"),
       supabase.from("commission_rates").select("key, rate").eq("active", true),
       supabase
         .from("installment_payments")
         .select("id, amount, paid_at, installment_id")
         .gte("paid_at", period.start + "T00:00:00")
-        .lt("paid_at", period.end + "T00:00:00")
+        .lte("paid_at", period.end + "T23:59:59")
         .not("paid_at", "is", null),
       supabase.from("installments").select("id, setter_id, closer_id, student_name"),
     ]);
@@ -272,6 +257,28 @@ function PayoutsInner() {
             </button>
           </div>
         </div>
+
+        {/* Base pay — monthly, alongside per-period commissions */}
+        {(() => {
+          const withBase = [...profileMap.values()].filter((p) => (p.base_pay_monthly ?? 0) > 0);
+          if (withBase.length === 0) return null;
+          return (
+            <div className="card-surface px-4 py-3.5">
+              <div className="flex items-baseline justify-between gap-3 mb-2">
+                <span className="text-[13px] font-medium text-foreground">Base pay</span>
+                <span className="text-[11px] text-muted-foreground">monthly · paid with the 2nd half{period.isSecondHalf ? " (this period)" : ""}</span>
+              </div>
+              <div className="space-y-1">
+                {withBase.map((p) => (
+                  <div key={p.id} className="flex items-baseline justify-between text-[13px] rounded-md px-2 py-1.5 hover:bg-muted/60 motion-safe:transition-colors">
+                    <span className="text-foreground">{p.display_name}</span>
+                    <span className="tabular-nums font-medium">${Number(p.base_pay_monthly).toLocaleString()}<span className="text-muted-foreground font-normal"> / month</span></span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
 
         <RevenueTabBar />
 

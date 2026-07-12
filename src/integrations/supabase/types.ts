@@ -1289,6 +1289,7 @@ export type Database = {
           active: boolean
           avatar_path: string | null
           avatar_url: string | null
+          base_pay_monthly: number | null
           commission_cap_pct: number | null
           created_at: string
           dashboard_prefs: Json
@@ -1302,6 +1303,7 @@ export type Database = {
           active?: boolean
           avatar_path?: string | null
           avatar_url?: string | null
+          base_pay_monthly?: number | null
           commission_cap_pct?: number | null
           created_at?: string
           dashboard_prefs?: Json
@@ -1315,6 +1317,7 @@ export type Database = {
           active?: boolean
           avatar_path?: string | null
           avatar_url?: string | null
+          base_pay_monthly?: number | null
           commission_cap_pct?: number | null
           created_at?: string
           dashboard_prefs?: Json
