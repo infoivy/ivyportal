@@ -1,4 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { useStudentHealth } from "@/lib/use-student-health";
+import { BAND_META } from "@/lib/student-health";
 import { useEffect, useMemo, useState } from "react";
 import { PageSkeleton } from "@/components/ui/skeletons";
 import { PlacementsSection } from "@/components/student-placements";
@@ -90,6 +92,7 @@ function StudentDetail() {
   const [milestoneProgress, setMilestoneProgress] = useState<Set<string>>(new Set());
   const [callFormOpen, setCallFormOpen] = useState(false);
   const [tab, setTab] = useState<Tab>("timeline");
+  const { data: healthMap } = useStudentHealth();
 
   const milestonesQ = useQuery({
     queryKey: ["page", "student", id, "milestones"],
@@ -277,7 +280,20 @@ function StudentDetail() {
           </div>
           <div className="flex-1 min-w-[240px]">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl font-semibold">{student.full_name}</h1>
+              <h1 className="text-xl font-semibold flex items-center gap-2.5">
+                {student.full_name}
+                {(() => {
+                  const h = healthMap?.get(student.id);
+                  return h ? (
+                    <span
+                      className={`text-[11px] font-medium tabular-nums px-2 py-0.5 rounded-full border ${BAND_META[h.band].chip}`}
+                      title={h.reasons.join(" · ") || "All signals healthy"}
+                    >
+                      {BAND_META[h.band].label} · {h.score}
+                    </span>
+                  ) : null;
+                })()}
+              </h1>
               {student.user_id ? (
                 <span className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-success-fg border border-success/25 bg-success-bg px-1.5 py-0.5 rounded-sm">
                   <Link2 className="h-2.5 w-2.5" /> Portal linked

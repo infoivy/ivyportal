@@ -1,4 +1,6 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { useStudentHealth } from "@/lib/use-student-health";
+import { BAND_META } from "@/lib/student-health";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -61,10 +63,11 @@ const PAYMENT_META: Record<PaymentState, { label: string; color: string }> = {
 const phaseMeta = (p: Phase) => PHASES.find(x => x.key === p) ?? PHASES[0];
 const statusMeta = (s: Status) => STATUSES.find(x => x.key === s)!;
 
-type ColKey = "student" | "grade" | "phase" | "status" | "coach" | "payment" | "calls_remaining" | "last_call" | "last_eod" | "next_action" | "badges";
+type ColKey = "student" | "health" | "grade" | "phase" | "status" | "coach" | "payment" | "calls_remaining" | "last_call" | "last_eod" | "next_action" | "badges";
 type ColDef = { key: ColKey; label: string; default: boolean };
 const COLUMNS: ColDef[] = [
   { key: "student",         label: "Student",         default: true },
+  { key: "health",          label: "Health",          default: true },
   { key: "grade",           label: "Grade",           default: false },
   { key: "phase",           label: "Phase",           default: true },
   { key: "status",          label: "Status",          default: true },
@@ -94,6 +97,7 @@ function StudentsLayout() {
   const callsUsedByStudent = callAgg?.callsUsed ?? {};
   const apps7dByStudent = eodAgg?.apps7d ?? {};
 
+  const { data: healthMap } = useStudentHealth();
   const [qRaw, setQ] = useState("");
   const q = useDebouncedValue(qRaw, 250);
   const [phaseFilter, setPhaseFilter] = useState<Phase | "all" | "at_risk">("all");
@@ -396,6 +400,7 @@ function StudentsLayout() {
             <thead className="text-[11px] text-muted-foreground bg-card sticky top-0">
               <tr className="border-b border-[var(--border)]">
                 <th className="text-left px-4 py-2 font-normal">Student</th>
+                {visibleCols.has("health") && <th className="text-left px-2 py-2 font-normal">Health</th>}
                 {visibleCols.has("grade") && <th className="text-left px-2 py-2 font-normal">Grade</th>}
                 {visibleCols.has("phase") && <th className="text-left px-2 py-2 font-normal">Phase</th>}
                 {visibleCols.has("status") && <th className="text-left px-2 py-2 font-normal">Status</th>}
@@ -440,6 +445,22 @@ function StudentsLayout() {
                         </div>
                       </Link>
                     </td>
+                    {visibleCols.has("health") && (
+                      <td className="px-2 py-3">
+                        {(() => {
+                          const h = healthMap?.get(s.id);
+                          if (!h) return <span className="text-[11px] text-muted-foreground">…</span>;
+                          return (
+                            <span
+                              className={`text-[11px] font-medium tabular-nums px-1.5 py-0.5 rounded-full border ${BAND_META[h.band].chip}`}
+                              title={h.reasons.join(" · ") || "All signals healthy"}
+                            >
+                              {h.score}
+                            </span>
+                          );
+                        })()}
+                      </td>
+                    )}
                     {visibleCols.has("grade") && (
                       <td className="px-2 py-3">
                         <span className={`text-[11px] px-1.5 py-0.5 rounded-md ${s.student_grade ? "bg-warning-bg text-warning-fg" : "bg-muted text-muted-foreground"}`}>

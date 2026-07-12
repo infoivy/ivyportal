@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, subDays } from "date-fns";
 import { Target, Trophy, HeartPulse, AlertTriangle, Video, Users } from "lucide-react";
 import { BreakdownBar } from "@/components/ui/breakdown-bar";
+import { useStudentHealth } from "@/lib/use-student-health";
 import { ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis, Tooltip } from "recharts";
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
@@ -24,23 +25,26 @@ const SUCCESS_TARGET = 95;
  * and how much CSM work is actually happening week to week.
  */
 export function CsmOverview() {
+  const { data: healthMap } = useStudentHealth();
   const q = useQuery({
     queryKey: ["csm-overview"],
     staleTime: 2 * 60_000,
     queryFn: async () => {
       const eightWeeksAgo = new Date(Date.now() - 8 * 7 * 86400000).toISOString();
       const twoWeeksAgo = iso(subDays(new Date(), 13));
-      const [studentsRes, tallyRes, callsRes, eodsRes] = await Promise.all([
+      const [studentsRes, tallyRes, callsRes, eodsRes, placementsRes] = await Promise.all([
         supabase.from("students").select("id, phase, status, offer_landed_at, first_win_at"),
         supabase.from("csm_tally").select("kind, created_at").gte("created_at", eightWeeksAgo),
         supabase.from("student_calls").select("id, call_date, status").gte("call_date", iso(subDays(new Date(), 8 * 7))),
         supabase.from("student_eods").select("student_id, report_date").gte("report_date", twoWeeksAgo),
+        supabase.from("student_placements").select("stage"),
       ]);
       return {
         students: studentsRes.data ?? [],
         tally: tallyRes.data ?? [],
         calls: callsRes.data ?? [],
         eods: eodsRes.data ?? [],
+        placements: placementsRes.data ?? [],
       };
     },
   });
@@ -128,6 +132,49 @@ export function CsmOverview() {
             ? "At target — keep every student moving."
             : `${SUCCESS_TARGET}% target · every landed role moves this ${stats.total > 0 ? Math.round(100 / stats.total) : 0} points.`}
         </p>
+      </div>
+
+      {/* Health + placement pulse */}
+      <div className="card-surface px-5 py-4 flex flex-wrap items-center gap-x-10 gap-y-3">
+        {(() => {
+          const bands = { green: 0, amber: 0, red: 0 };
+          for (const h of healthMap?.values() ?? []) bands[h.band] += 1;
+          const total = bands.green + bands.amber + bands.red || 1;
+          return (
+            <>
+              <div>
+                <div className="text-[11px] text-muted-foreground mb-1.5">Student health</div>
+                <div className="flex items-center gap-3 text-[13px] tabular-nums">
+                  <span className="text-success-fg font-medium">{bands.green} healthy</span>
+                  <span className="text-warning-fg font-medium">{bands.amber} watch</span>
+                  <span className="text-danger-fg font-medium">{bands.red} at risk</span>
+                </div>
+              </div>
+              <div className="flex-1 min-w-[160px] h-2 rounded-full overflow-hidden flex">
+                <div className="h-full bg-success" style={{ width: `${(bands.green / total) * 100}%` }} />
+                <div className="h-full bg-warning" style={{ width: `${(bands.amber / total) * 100}%` }} />
+                <div className="h-full bg-danger" style={{ width: `${(bands.red / total) * 100}%` }} />
+              </div>
+            </>
+          );
+        })()}
+        {(() => {
+          const counts = { lead: 0, interviewing: 0, trial: 0, placed: 0 };
+          for (const p of (d?.placements ?? []) as { stage: string }[]) {
+            if (p.stage in counts) counts[p.stage as keyof typeof counts] += 1;
+          }
+          return (
+            <div>
+              <div className="text-[11px] text-muted-foreground mb-1.5">Placement funnel</div>
+              <div className="flex items-center gap-3 text-[13px] tabular-nums text-muted-foreground">
+                <span><span className="text-foreground font-medium">{counts.lead}</span> leads</span>
+                <span><span className="text-foreground font-medium">{counts.interviewing}</span> interviewing</span>
+                <span><span className="text-foreground font-medium">{counts.trial}</span> trial</span>
+                <span><span className="text-success-fg font-medium">{counts.placed}</span> placed</span>
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
