@@ -15,8 +15,7 @@ import {
   ArrowLeft, Video, Trash2, Plus, Save, Calendar as CalIcon,
   Phone, FileText, User, Pencil, ExternalLink, CheckCircle2, Circle,
   Star, HeartHandshake, DollarSign, Trophy, Award, MessageSquare, Link2,
-  AlertTriangle, MessageCircle, GraduationCap, Activity,
-} from "lucide-react";
+  AlertTriangle, MessageCircle, GraduationCap, Activity, Briefcase } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/students/$id")({
   head: () => ({ meta: [{ title: "Student — ISA" }] }),
@@ -843,10 +842,15 @@ function CallForm({ studentId, onCancel, onDone }: { studentId: string; onCancel
   );
 }
 
+type PlacementRow = {
+  id: string; business_name: string; stage: string; pay_notes: string | null;
+  started_at: string | null; created_at: string; updated_at: string;
+};
+
 type TimelineEvent = {
   key: string;
   ts: string;
-  kind: "call" | "eod" | "csm" | "payment" | "milestone";
+  kind: "call" | "eod" | "csm" | "payment" | "milestone" | "placement";
   title: string;
   detail?: string;
   meta?: string;
@@ -861,7 +865,31 @@ function TimelineFeed({ student, calls, eods, csmNotes, csmAuthors, coachName, p
   coachName: (uid: string | null) => string;
   payments: Payment[];
 }) {
+  // Shared cache key with PlacementsSection — no extra request when both mount.
+  const placementsQ = useQuery({
+    queryKey: ["placements", student.id],
+    staleTime: 60_000,
+    queryFn: async () =>
+      ((await supabase.from("student_placements").select("*").eq("student_id", student.id).order("created_at", { ascending: false })).data ?? []) as PlacementRow[],
+  });
   const events: TimelineEvent[] = [];
+  for (const pl of placementsQ.data ?? []) {
+    events.push({
+      key: `pl-${pl.id}`,
+      ts: pl.created_at.slice(0, 10),
+      kind: "placement",
+      title: `Opportunity added · ${pl.business_name}`,
+    });
+    if (pl.stage === "placed") {
+      events.push({
+        key: `pl-${pl.id}-won`,
+        ts: (pl.started_at ?? pl.updated_at).slice(0, 10),
+        kind: "placement",
+        title: `🎉 Placed at ${pl.business_name}`,
+        detail: pl.pay_notes ?? undefined,
+      });
+    }
+  }
   calls.forEach(c => events.push({
     key: `c-${c.id}`,
     ts: c.call_date,
@@ -900,6 +928,7 @@ function TimelineFeed({ student, calls, eods, csmNotes, csmAuthors, coachName, p
     csm:       { icon: HeartHandshake, color: "text-warning-fg border-warning/25 bg-warning-bg" },
     payment:   { icon: DollarSign, color: "text-success-fg border-success/25 bg-success-bg" },
     milestone: { icon: Trophy,     color: "text-warning-fg border-warning/25 bg-warning-bg" },
+    placement: { icon: Briefcase,  color: "text-chart-1 border-chart-1/25 bg-chart-1/10" },
   };
 
   return (
