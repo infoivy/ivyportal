@@ -5,6 +5,8 @@ import { getCloseCallStats } from "@/lib/close-crm.functions";
 import { getMochiDashboard } from "@/lib/mochi.functions";
 
 const PERIODS = [
+  { label: "24H", days: 1 },
+  { label: "3D", days: 3 },
   { label: "7D", days: 7 },
   { label: "30D", days: 30 },
 ] as const;
@@ -17,7 +19,8 @@ const fmtDur = (sec: number | null) =>
  * outbound DMs from Mochi. Admin/founder dashboard section.
  */
 export function SetterActivityCard() {
-  const [days, setDays] = useState<7 | 30>(7);
+  const [days, setDays] = useState<1 | 3 | 7 | 30>(1);
+  const mochiPeriod = days === 1 ? "today" : days <= 7 ? "last_7_days" : "last_30_days";
 
   const close = useQuery({
     queryKey: ["close-call-stats", days],
@@ -27,8 +30,8 @@ export function SetterActivityCard() {
     retry: 1,
   });
   const mochi = useQuery({
-    queryKey: ["mochi-dashboard", days === 7 ? "last_7_days" : "last_30_days"],
-    queryFn: () => getMochiDashboard({ data: { period: days === 7 ? "last_7_days" : "last_30_days" } }),
+    queryKey: ["mochi-dashboard", mochiPeriod],
+    queryFn: () => getMochiDashboard({ data: { period: mochiPeriod } }),
     staleTime: 2 * 60_000,
     retry: 1,
   });
@@ -49,7 +52,7 @@ export function SetterActivityCard() {
           {PERIODS.map((p) => (
             <button
               key={p.days}
-              onClick={() => setDays(p.days)}
+              onClick={() => setDays(p.days as 1 | 3 | 7 | 30)}
               className={`text-[11px] font-medium px-2 py-1 rounded-md motion-safe:transition-colors ${
                 days === p.days ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"
               }`}

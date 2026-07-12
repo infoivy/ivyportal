@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import { format, isToday, isYesterday } from "date-fns";
 import { MessagesSquare, Send, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { MentionTextarea, type MentionPerson } from "@/components/mention-textarea";
 
 export const Route = createFileRoute("/_authenticated/chat")({
   head: () => ({ meta: [{ title: "Team Chat — ISA Team" }] }),
@@ -54,13 +54,18 @@ function ChatInner({ userId, isAdmin }: { userId: string; isAdmin: boolean }) {
     queryKey: ["page", "chat"],
     refetchInterval: 20_000, // channel stays fresh without realtime plumbing
     queryFn: async () => {
-      const [msgsRes, profsRes] = await Promise.all([
+      const [msgsRes, profsRes, studentsRes] = await Promise.all([
         supabase.from("team_chat").select("*").order("created_at", { ascending: true }).limit(500),
         supabase.from("profiles").select("id, display_name"),
+        supabase.from("students").select("id, full_name").order("full_name"),
       ]);
       const names: Record<string, string> = {};
       (profsRes.data ?? []).forEach((p: { id: string; display_name: string | null }) => { names[p.id] = p.display_name ?? "Teammate"; });
-      return { messages: (msgsRes.data ?? []) as Message[], names };
+      const people: MentionPerson[] = [
+        ...(profsRes.data ?? []).filter((p: any) => p.display_name).map((p: any) => ({ id: p.id, name: p.display_name as string, kind: "member" as const })),
+        ...((studentsRes.data ?? []) as { id: string; full_name: string }[]).map((s) => ({ id: s.id, name: s.full_name, kind: "student" as const })),
+      ];
+      return { messages: (msgsRes.data ?? []) as Message[], names, people };
     },
   });
   const d = pageQ.data;
@@ -176,18 +181,22 @@ function ChatInner({ userId, isAdmin }: { userId: string; isAdmin: boolean }) {
             </button>
           ))}
         </div>
-        <div className="flex items-end gap-2">
-          <textarea
+        <div className="relative">
+          <MentionTextarea
             value={body}
-            onChange={e => setBody(e.target.value)}
-            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
-            placeholder={kind === "general" ? "Write a message… (Enter to send)" : `Report ${kind === "tip" ? "a tip" : `a${kind === "issue" ? "n issue" : " bug"}`}…`}
-            rows={2}
-            className="flex-1 resize-none rounded-md border border-border bg-card px-3 py-2 text-[13px] outline-none focus:border-ring"
+            onChange={setBody}
+            onSubmit={send}
+            people={d?.people ?? []}
+            placeholder={kind === "general" ? "Write a message… (@ to mention, Enter to send)" : `Report ${kind === "tip" ? "a tip" : `a${kind === "issue" ? "n issue" : " bug"}`}…`}
           />
-          <Button onClick={send} disabled={sending || !body.trim()} className="h-10 shrink-0">
-            <Send className="h-4 w-4" />
-          </Button>
+          <button
+            onClick={send}
+            disabled={sending || !body.trim()}
+            className="absolute right-2 bottom-2 grid h-8 w-8 place-items-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 motion-safe:transition-colors"
+            title="Send"
+          >
+            <Send className="h-3.5 w-3.5" />
+          </button>
         </div>
       </div>
     </div>

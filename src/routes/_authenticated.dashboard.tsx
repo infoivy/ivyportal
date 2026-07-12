@@ -23,9 +23,11 @@ import { RangePicker, type DateRange, rangeFor, daysBetween } from "@/components
 import { StatDrilldown, type MetricKey } from "@/components/stat-drilldown";
 import { DashboardSettingsSheet } from "@/components/dashboard-settings-sheet";
 import { useDashboardPrefs } from "@/lib/dashboard-prefs";
+import { humanDue } from "@/lib/dates";
 import { VolumeAreaChart, VolumeLegend } from "@/components/ui/volume-area-chart";
 import { OnboardingPanel } from "@/components/onboarding-panel";
 import { MochiIgSection } from "@/components/mochi-ig-section";
+import { TeamGoalCard } from "@/components/team-goal-card";
 import { SetterActivityCard } from "@/components/setter-activity-card";
 import { DeltaChip } from "@/components/ui/delta-chip";
 
@@ -346,6 +348,9 @@ function Dashboard() {
 
         {/* Set reminders due — same urgency treatment */}
         <MySetNudges />
+
+        {/* The collective goal — whole team sees the same bar */}
+        <TeamGoalCard />
 
         {/* IG monthly log reminder */}
         {roles.includes("founder") && !igLoggedThisMonth && !igReminderDismissed && (
@@ -1219,7 +1224,7 @@ function MyAssignedItems() {
                 <span className="text-foreground">{it.text}</span>
                 <span className="text-muted-foreground"> · from {it.from}</span>
                 {it.due_date && (
-                  <span className={overdue ? "text-danger-fg" : "text-muted-foreground"}> · due {it.due_date}{overdue ? " (overdue)" : ""}</span>
+                  <span className={overdue ? "text-danger-fg" : "text-muted-foreground"} title={it.due_date}> · {humanDue(it.due_date)}</span>
                 )}
               </div>
             </div>

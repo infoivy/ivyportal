@@ -9,6 +9,7 @@ import { Megaphone, Send, AtSign, X, Trash2, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { MentionTextarea, type MentionPerson } from "@/components/mention-textarea";
 
 export const Route = createFileRoute("/_authenticated/alerts")({
   head: () => ({ meta: [{ title: "Student Alerts — ISA Team" }] }),
@@ -58,7 +59,11 @@ function AlertsInner({ userId, isAdmin }: { userId: string; isAdmin: boolean }) 
       const students = (studentsRes.data ?? []) as { id: string; full_name: string }[];
       const studentNames: Record<string, string> = {};
       students.forEach(st => { studentNames[st.id] = st.full_name; });
-      return { alerts: (alertsRes.data ?? []) as Alert[], names, students, studentNames };
+      const people: MentionPerson[] = [
+        ...(profsRes.data ?? []).filter((p: { display_name: string | null }) => p.display_name).map((p: { id: string; display_name: string | null }) => ({ id: p.id, name: p.display_name as string, kind: "member" as const })),
+        ...students.map((s) => ({ id: s.id, name: s.full_name, kind: "student" as const })),
+      ];
+      return { alerts: (alertsRes.data ?? []) as Alert[], names, students, studentNames, people };
     },
   });
   const d = pageQ.data;
@@ -202,13 +207,14 @@ function AlertsInner({ userId, isAdmin }: { userId: string; isAdmin: boolean }) 
               </Command>
             </PopoverContent>
           </Popover>
-          <textarea
+          <MentionTextarea
             value={body}
-            onChange={e => setBody(e.target.value)}
-            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
-            placeholder={taggedStudent ? `Alert about ${taggedStudent.name}…` : "Write an alert… (@ to tag a student, Enter to send)"}
-            rows={2}
-            className="flex-1 resize-none rounded-md border border-border bg-card px-3 py-2 text-[13px] outline-none focus:border-ring"
+            onChange={setBody}
+            onSubmit={send}
+            people={d?.people ?? []}
+            onPick={(p) => { if (p.kind === "student") setTaggedStudent({ id: p.id, name: p.name }); }}
+            placeholder={taggedStudent ? `Alert about ${taggedStudent.name}…` : "Write an alert… (@ to tag, Enter to send)"}
+            className="w-full resize-none rounded-md border border-border bg-card px-3 py-2 text-[13px] outline-none focus:border-ring"
           />
           <Button onClick={send} disabled={sending || !body.trim()} className="h-10 shrink-0">
             <Send className="h-4 w-4" />

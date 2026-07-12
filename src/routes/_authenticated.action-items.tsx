@@ -4,6 +4,7 @@ import { TableSkeleton } from "@/components/ui/skeletons";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { humanDue } from "@/lib/dates";
 import { useServerFn } from "@tanstack/react-start";
 import { listTeamMembers } from "@/lib/team-admin.functions";
 import { toast } from "sonner";
@@ -346,7 +347,7 @@ function ActionItemsHub() {
               )}
               <span className="hidden sm:block text-xs text-muted-foreground truncate" title={r.ownerLabel}>{r.ownerName}</span>
               <span className={`hidden sm:block text-[11px] text-right ${overdue ? "text-danger-fg" : r.due ? "text-muted-foreground" : "text-[#2a3140]"}`}>
-                {r.due ? (overdue ? <span className="inline-flex items-center gap-1"><AlertTriangle className="h-3 w-3" />{r.due}</span> : r.due) : "—"}
+                {r.due ? (overdue ? <span className="inline-flex items-center gap-1" title={r.due}><AlertTriangle className="h-3 w-3" />{humanDue(r.due)}</span> : <span title={r.due}>{humanDue(r.due)}</span>) : "—"}
               </span>
               <span className="flex justify-end">
                 {r.canDelete && r.adhocId && (

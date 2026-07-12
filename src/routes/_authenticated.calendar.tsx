@@ -16,6 +16,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -396,14 +398,7 @@ function CalendarPage() {
                   </button>
                 ))}
               </div>
-              <select
-                value={tz}
-                onChange={(e) => changeTz(e.target.value)}
-                title="Times shown in this timezone"
-                className="text-caption h-7 px-1.5 rounded-md border border-border bg-card text-muted-foreground mr-1"
-              >
-                {TZ_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
+              <TzPicker value={tz} onChange={changeTz} />
               <Button size="icon" variant="ghost" onClick={() => setWeekStart((w) => (daySpan === 7 ? subWeeks(w, 1) : addDays(w, -daySpan)))}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -1053,5 +1048,42 @@ function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, o
         </div>
       )}
     </div>
+  );
+}
+
+/** Searchable timezone picker — 600 IANA zones need a combobox, not a native select. */
+function TzPicker({ value, onChange }: { value: string; onChange: (tz: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const current = TZ_OPTIONS.find((o) => o.value === value)?.label ?? "Device time";
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          title="Times shown in this timezone"
+          className="text-caption h-7 px-2 rounded-md border border-border bg-card text-muted-foreground hover:text-foreground mr-1 max-w-40 truncate"
+        >
+          {current}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="p-0 w-72">
+        <Command className="h-72">
+          <CommandInput placeholder="Search timezones…" />
+          <CommandList className="flex-1">
+            <CommandEmpty>No timezone found.</CommandEmpty>
+            <CommandGroup>
+              {TZ_OPTIONS.map((o) => (
+                <CommandItem
+                  key={o.value || "device"}
+                  value={o.label}
+                  onSelect={() => { onChange(o.value); setOpen(false); }}
+                >
+                  {o.label}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }

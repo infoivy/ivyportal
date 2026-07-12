@@ -7,7 +7,6 @@ import { getCloseLeadStats } from "@/lib/close-crm.functions";
 import { BlurMoney } from "@/components/blur-money";
 import { DitherFireplace } from "@/components/founder/dither-fireplace";
 import { MochiFunnelPanel } from "@/components/mochi-funnel";
-import { Area, AreaChart, Bar, BarChart, Legend, Pie, PieChart, Tooltip, XAxis } from "@/components/dither-kit";
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 
@@ -67,34 +66,12 @@ export function TheRoomInner() {
   // Cash: purely Whop (via Mochi's provider-synced payments)
   const whopByDay = new Map((payments.data?.series ?? []).map((s) => [s.date, s.volume]));
 
-  const cashWeekly = (() => {
-    const weeks = new Map<string, number>();
-    for (let i = 7; i >= 0; i--) weeks.set(iso(startOfWeekMon(subDays(today, i * 7))), 0);
-    for (const [date, volume] of whopByDay) {
-      const wk = isoDay(startOfWeekMon(new Date(date)));
-      if (weeks.has(wk)) weeks.set(wk, (weeks.get(wk) ?? 0) + volume);
-    }
-    return [...weeks.entries()].map(([wk, cash]) => ({ week: format(new Date(wk), "MMM d"), cash: Math.round(cash) }));
-  })();
 
   const whopMtd = [...whopByDay.entries()]
     .filter(([date]) => date >= monthStart)
     .reduce((s, [, v]) => s + v, 0);
 
-  // Leads per day from both CRMs
-  const mochiLeadsByDay = new Map((mochi.data?.funnel ?? []).map((f) => [f.day, f.new_leads]));
-  const closeLeadsByDay = new Map((closeLeads.data?.daily ?? []).map((d) => [d.date, d.count]));
 
-  const outputDaily = (() => {
-    const days = new Map<string, { dials: number; dms: number; leads: number }>();
-    for (let i = 13; i >= 0; i--) days.set(iso(subDays(today, i)), { dials: 0, dms: 0, leads: 0 });
-    for (const e of portal.data?.eods ?? []) {
-      const row = days.get(e.report_date);
-      if (row) { row.dials += e.dials ?? 0; row.dms += e.dms_sent ?? 0; }
-    }
-    for (const [d, row] of days) row.leads = (mochiLeadsByDay.get(d) ?? 0) + (closeLeadsByDay.get(d) ?? 0);
-    return [...days.entries()].map(([d, v]) => ({ day: format(new Date(d), "d MMM"), ...v }));
-  })();
 
   const contentWeekly = (() => {
     const weeks = new Map<string, number>();
@@ -106,21 +83,7 @@ export function TheRoomInner() {
     return [...weeks.entries()].map(([wk, posts]) => ({ week: format(new Date(wk), "MMM d"), posts }));
   })();
 
-  // Mochi's trend only includes days with activity — pad the window with zeros
-  const igDaily = (() => {
-    const byDay = new Map((mochi.data?.funnel ?? []).map((f) => [f.day, f]));
-    const days: { day: string; leads: number; booked: number }[] = [];
-    for (let i = 29; i >= 0; i--) {
-      const d = iso(subDays(today, i));
-      const f = byDay.get(d);
-      days.push({ day: format(new Date(d), "d MMM"), leads: f?.new_leads ?? 0, booked: f?.booked ?? 0 });
-    }
-    return days;
-  })();
 
-  const igSources = (mochi.data?.sources ?? [])
-    .filter((s) => s.lead_count > 0)
-    .map((s) => ({ name: s.source.toLowerCase(), leads: s.lead_count }));
 
   const contentThisCycle = contentWeekly.slice(-2).reduce((s, w) => s + w.posts, 0);
   const totalLeads30 = (mochi.data?.totals.newLeads ?? 0) + (closeLeads.data?.total ?? 0);
@@ -137,7 +100,7 @@ export function TheRoomInner() {
           <DitherFireplace className="absolute inset-x-0 bottom-0 h-[55%]" />
           <div className="relative p-5 flex items-start justify-between pointer-events-none">
             <div>
-              <div className="text-[13px] font-medium text-foreground">The hearth</div>
+              <div className="text-[13px] font-medium text-foreground">Hearth</div>
               <div className="text-[11px] text-muted-foreground">Everything the company did, in one warm place.</div>
             </div>
             <div className="text-[11px] text-muted-foreground font-mono text-right">
@@ -176,88 +139,6 @@ export function TheRoomInner() {
         </div>
       </div>
 
-      {/* ── The charts ──────────────────────────────────────────────── */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <RoomChart title="Cash collected" sub="weekly · last 8 weeks · Whop">
-          <BarChart data={cashWeekly} config={{ cash: { label: "Cash", color: "green" } }}>
-            <XAxis dataKey="week" maxTicks={4} />
-            <Tooltip labelKey="week" />
-            <Bar dataKey="cash" variant="gradient" />
-          </BarChart>
-        </RoomChart>
-
-        <RoomChart title="Instagram leads" sub="daily · last 30 days · Mochi">
-          <AreaChart
-            data={igDaily}
-            config={{ leads: { label: "New leads", color: "green" }, booked: { label: "Booked", color: "blue" } }}
-          >
-            <XAxis dataKey="day" maxTicks={5} />
-            <Tooltip labelKey="day" />
-            <Area dataKey="leads" variant="gradient" />
-            <Area dataKey="booked" variant="dotted" />
-          </AreaChart>
-        </RoomChart>
-
-        <RoomChart title="Team output" sub="daily · dials, DMs & leads (IG + Close) · last 14 days">
-          <AreaChart
-            data={outputDaily}
-            config={{
-              dials: { label: "Dials", color: "blue" },
-              dms: { label: "DMs", color: "purple" },
-              leads: { label: "Leads", color: "green" },
-            }}
-          >
-            <XAxis dataKey="day" maxTicks={5} />
-            <Legend />
-            <Tooltip labelKey="day" />
-            <Area dataKey="dials" variant="gradient" />
-            <Area dataKey="dms" variant="hatched" />
-            <Area dataKey="leads" variant="dotted" />
-          </AreaChart>
-        </RoomChart>
-
-        {igSources.length > 0 ? (
-          <RoomChart title="Where leads come from" sub="last 30 days · Mochi">
-            <PieChart
-              data={igSources}
-              dataKey="leads"
-              nameKey="name"
-              innerRadius={0.55}
-              config={{
-                dm: { label: "DM", color: "green" },
-                comment: { label: "Comment", color: "blue" },
-                story: { label: "Story", color: "purple" },
-                outbound: { label: "Outbound", color: "orange" },
-              }}
-            >
-              <Legend align="center" />
-              <Tooltip />
-              <Pie variant="gradient" />
-            </PieChart>
-          </RoomChart>
-        ) : (
-          <RoomChart title="Content posted" sub="weekly · last 6 weeks">
-            <BarChart data={contentWeekly} config={{ posts: { label: "Posts", color: "orange" } }}>
-              <XAxis dataKey="week" maxTicks={6} />
-              <Tooltip labelKey="week" />
-              <Bar dataKey="posts" variant="gradient" />
-            </BarChart>
-          </RoomChart>
-        )}
-      </div>
-
-      {/* Content chart still shows when the pie takes its slot */}
-      {igSources.length > 0 && (
-        <div className="grid gap-4 md:grid-cols-2">
-          <RoomChart title="Content posted" sub="weekly · last 6 weeks">
-            <BarChart data={contentWeekly} config={{ posts: { label: "Posts", color: "orange" } }}>
-              <XAxis dataKey="week" maxTicks={6} />
-              <Tooltip labelKey="week" />
-              <Bar dataKey="posts" variant="gradient" />
-            </BarChart>
-          </RoomChart>
-        </div>
-      )}
     </div>
   );
 }
@@ -271,14 +152,3 @@ function RoomStat({ label, children }: { label: string; children: React.ReactNod
   );
 }
 
-function RoomChart({ title, sub, children }: { title: string; sub: string; children: React.ReactNode }) {
-  return (
-    <div className="card-surface p-4">
-      <div className="mb-3">
-        <div className="text-[13px] font-medium text-foreground">{title}</div>
-        <div className="text-[11px] text-muted-foreground">{sub}</div>
-      </div>
-      <div className="h-48">{children}</div>
-    </div>
-  );
-}

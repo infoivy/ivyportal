@@ -399,3 +399,81 @@ export const getMochiDetail = createServerFn({ method: "GET" })
       replyRate: reply.reply_rate ?? null,
     };
   });
+
+export type TeamGoal = {
+  active: boolean;
+  amount: number | null;
+  deadline: string | null;
+  started: string | null;
+  note: string | null;
+  /** Whop gross collected since `started` — the collective progress number. */
+  progress: number;
+};
+
+const TEAM_ROLES = ["admin", "founder", "closer", "setter", "coach", "csm"];
+
+/** The collective goal — visible to the whole team (aggregate progress only). */
+export const getTeamGoal = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<TeamGoal> => {
+    const ctx = context as Ctx;
+    const none: TeamGoal = { active: false, amount: null, deadline: null, started: null, note: null, progress: 0 };
+
+    // Any team role may see the goal; student-only accounts don't.
+    const { data: myRoles } = await ctx.supabase.from("user_roles").select("role").eq("user_id", ctx.userId);
+    if (!(myRoles ?? []).some((r: { role: string }) => TEAM_ROLES.includes(r.role))) return none;
+
+    const { data: settings } = await supabaseAdmin
+      .from("founder_settings")
+      .select("team_goal_amount, team_goal_deadline, team_goal_started, team_goal_note")
+      .limit(1)
+      .maybeSingle();
+    if (!settings?.team_goal_amount || !settings.team_goal_deadline) return none;
+
+    let progress = 0;
+    try {
+      const creds = await readCreds(ctx);
+      if (creds.access) {
+        const pay = await callTool<PaymentOverview>(ctx, "get_payment_overview", { time_period: "last_90_days" });
+        const started = settings.team_goal_started ?? new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+        progress = (pay.gross_volume_series ?? [])
+          .filter((s) => s.date >= started)
+          .reduce((sum, s) => sum + Number(s.volume), 0);
+      }
+    } catch { /* goal still shows without progress */ }
+
+    return {
+      active: true,
+      amount: Number(settings.team_goal_amount),
+      deadline: settings.team_goal_deadline,
+      started: settings.team_goal_started,
+      note: settings.team_goal_note,
+      progress: Math.round(progress),
+    };
+  });
+
+/** Set or clear the collective goal. Admin/founder only. */
+export const setTeamGoal = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { amount: number | null; deadline: string | null; note?: string | null }) => ({
+    amount: input.amount != null && input.amount > 0 ? input.amount : null,
+    deadline: input.deadline || null,
+    note: input.note?.trim() || null,
+  }))
+  .handler(async ({ context, data }) => {
+    const ctx = context as Ctx;
+    await requireFounderOrAdmin(ctx);
+    const { data: existing } = await supabaseAdmin.from("founder_settings").select("id").limit(1).maybeSingle();
+    const row = {
+      team_goal_amount: data.amount,
+      team_goal_deadline: data.deadline,
+      team_goal_started: data.amount ? new Date().toISOString().slice(0, 10) : null,
+      team_goal_note: data.note,
+      updated_by: ctx.userId,
+    };
+    const { error } = existing
+      ? await supabaseAdmin.from("founder_settings").update(row).eq("id", existing.id)
+      : await supabaseAdmin.from("founder_settings").insert(row);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });

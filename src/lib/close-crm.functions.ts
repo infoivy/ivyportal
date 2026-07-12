@@ -105,7 +105,8 @@ export const listCloseLeads = createServerFn({ method: "GET" })
       const json = (await res.json()) as { data?: any[] };
       const leads = (json.data ?? []).map((l: any) => {
         const opps: any[] = Array.isArray(l.opportunities) ? l.opportunities : [];
-        const value = opps.reduce((a, o) => a + Number(o.value ?? 0), 0);
+        // Close stores opportunity values in cents — $5,000 arrives as 500000.
+        const value = opps.reduce((a, o) => a + Number(o.value ?? 0), 0) / 100;
         const activeOpp = opps.find((o) => o.status_type === "active") ?? opps[0];
         return {
           id: String(l.id ?? ""),

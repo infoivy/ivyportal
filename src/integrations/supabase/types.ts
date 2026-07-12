@@ -766,6 +766,10 @@ export type Database = {
           processor_balance_updated_at: string | null
           quarterly_goals: Json | null
           recording_day_of_week: number
+          team_goal_amount: number | null
+          team_goal_deadline: string | null
+          team_goal_note: string | null
+          team_goal_started: string | null
           top_setter_bonus_pct: number
           updated_at: string
           updated_by: string | null
@@ -781,6 +785,10 @@ export type Database = {
           processor_balance_updated_at?: string | null
           quarterly_goals?: Json | null
           recording_day_of_week?: number
+          team_goal_amount?: number | null
+          team_goal_deadline?: string | null
+          team_goal_note?: string | null
+          team_goal_started?: string | null
           top_setter_bonus_pct?: number
           updated_at?: string
           updated_by?: string | null
@@ -796,6 +804,10 @@ export type Database = {
           processor_balance_updated_at?: string | null
           quarterly_goals?: Json | null
           recording_day_of_week?: number
+          team_goal_amount?: number | null
+          team_goal_deadline?: string | null
+          team_goal_note?: string | null
+          team_goal_started?: string | null
           top_setter_bonus_pct?: number
           updated_at?: string
           updated_by?: string | null

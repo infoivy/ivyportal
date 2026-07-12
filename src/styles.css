@@ -346,6 +346,26 @@
   .page-enter { animation: none; }
 }
 
+/* Thin themed scrollbars everywhere — fat native bars read as unstyled.
+   Matches the shadcn ScrollArea thumb (rounded, border-colored, no track). */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+*::-webkit-scrollbar { width: 9px; height: 9px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-corner { background: transparent; }
+
 /* Hide native scrollbars */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { scrollbar-width: none; }
