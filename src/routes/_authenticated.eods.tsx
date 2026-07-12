@@ -323,7 +323,7 @@ function EODsPage() {
       )}
 
       <Tabs defaultValue={defaultTab} className="space-y-4">
-        <TabsList className="bg-[var(--card)] border border-[var(--border)] rounded-sm h-9 p-0.5 flex-wrap">
+        <TabsList className="bg-[var(--card)] border border-[var(--border)] rounded-sm h-auto min-h-9 p-0.5 flex-wrap">
           {canViewTeam && <TabsTrigger value="overview" className="text-xs h-8 rounded-sm data-[state=active]:bg-[var(--accent)]">Team Overview</TabsTrigger>}
           {!isFounder && <TabsTrigger value="submit" className="text-xs h-8 rounded-sm data-[state=active]:bg-[var(--accent)]">My EOD</TabsTrigger>}
           {!isFounder && <TabsTrigger value="mine" className="text-xs h-8 rounded-sm data-[state=active]:bg-[var(--accent)]">My history</TabsTrigger>}

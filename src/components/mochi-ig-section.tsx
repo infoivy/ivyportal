@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, Instagram } from "lucide-react";
 import { getMochiDashboard, type MochiPeriod } from "@/lib/mochi.functions";
-import { Sparkline } from "@/components/dither-kit";
+import { ResponsiveContainer, AreaChart, Area } from "recharts";
 
 const PERIODS: { label: string; value: MochiPeriod }[] = [
   { label: "7D", value: "last_7_days" },
@@ -69,7 +69,11 @@ export function MochiIgSection() {
         </div>
         {spark.length > 1 && (
           <div className="h-10 w-full sm:w-36 shrink-0" title="New leads per day">
-            <Sparkline data={spark} color="green" />
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={spark.map((v) => ({ v }))} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
+                <Area dataKey="v" fill="var(--chart-2)" fillOpacity={0.3} stroke="var(--chart-2)" strokeWidth={1.5} isAnimationActive={false} />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         )}
       </div>

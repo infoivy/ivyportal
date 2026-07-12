@@ -91,3 +91,13 @@ Probed the MCP with curl (401 → `.well-known/oauth-protected-resource` → aut
 - **Sales section merged**: one sidebar entry; RevenueTabBar became a role-aware section bar (Sales | Revenue | Installments | Payouts) mounted across all four routes; coaches/founders hitting /sales redirect to /revenue. Stale "125 leads / 50 outreached" copy updated to DMs.
 - **Member performance pages** (`/team/$id`, un-nested via `team_` — the /team route has no Outlet): 7d numbers, EOD streak, KPI-hit rate, Hunger score (consistency 40 + KPI 35 + momentum 25 — deterministic signals, honestly labeled; an LLM can replace the same shape later), rule-based coaching suggestions, CRM ground truth (Close dials + Mochi DMs by name match), 30-day output chart. Entry points: team page names + setter-activity rows.
 - **Native sweep**: all remaining native `<select>`s → SelectField (sales setter-type, calendar assign-set, IG month + pillar). Number/date inputs verified themed; popover-calendar conversion deliberately deferred.
+
+## Addendum 8 — 2026-07-12: Whop-first money, de-dither, notes removal, calendar fixes
+
+- Finance profit built on Whop cash-in (was deals-based → showed -$4,837 instead of -$1,182); profit split section uses the same numbers. Dashboard cash hero reads Whop MTD (loading state, never flashes the deals figure), with prev-month same-day delta from the Whop series.
+- Team goal reads "an extra $X" and "new since goal set"; his live goal's start date reset to today (test data had backdated it).
+- The Room: "My share · projected month end · 70%" — MTD run-rate × days in month − active monthly expenses, × 70 % split.
+- All dither charts replaced with recharts (Mochi CRM trend/response/donut, dashboard sparkline); dither-kit vendored folder + motion/d3 deps removed. Hearth (custom canvas) and the Mochi funnel (custom SVG) stay.
+- Notes page removed (sidebar, palette, route; table untouched).
+- Calendar: overlapping events cluster correctly (raw-instant comparison — tz-shifted math broke lane widths) and shared meetings dedupe to one chip per (title, start, end). Tabs lists no longer sprout scrollbars (wrap needs h-auto; base list hides bars).
+- Demo data re-seeded on request (48 deals, $148.5k) — `npm run demo:remove` clears it.

@@ -260,7 +260,7 @@ function PendingApproval({ email, onSignOut }: { email: string; onSignOut: () =>
 
 const PAGE_LABELS: Array<[string, string]> = [
   ["/dashboard", "Dashboard"], ["/eods", "EOD Reports"], ["/action-items", "Action Items"], ["/chat", "Team Chat"],
-  ["/notes", "Notes"], ["/sales", "Sales"], ["/revenue", "Revenue"], ["/installments", "Revenue"],
+  ["/sales", "Sales"], ["/revenue", "Revenue"], ["/installments", "Revenue"],
   ["/payouts", "Revenue"], ["/closer-resources", "Closer Resources"], ["/training", "Training"],
   ["/calendar", "Calendar"], ["/crm", "CRM"], ["/mochi", "Instagram CRM"], ["/students", "Students"], ["/calls", "1-on-1 Calls"],
   ["/coaches", "Coaches"], ["/student-success", "Student Success"], ["/csm", "CSM"],

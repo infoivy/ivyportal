@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAccess } from "@/lib/use-access";
 import {
   LayoutDashboard, FileText, BookOpen, Calendar, GraduationCap,
-  Database, Users, StickyNote, Shield, UserCircle, School, HeartHandshake, Phone, DollarSign, Armchair,
+  Database, Users, Shield, UserCircle, School, HeartHandshake, Phone, DollarSign, Armchair,
   ListChecks, Quote, Building2, Sparkles, Clapperboard, Wallet, Megaphone,
   MessagesSquare,
 } from "lucide-react";
@@ -48,7 +48,6 @@ const studentsItems: Item[] = [
 
 const libraryItems: Item[] = [
   { title: "Knowledge", url: "/knowledge", icon: BookOpen },
-  { title: "Notes",     url: "/notes",     icon: StickyNote },
 ];
 
 const founderItems: Item[] = [

@@ -53,12 +53,12 @@ export function TeamGoalCard() {
         <div className="flex items-center gap-2">
           <Flag className="h-4 w-4 text-primary" />
           <span className="text-[14px] font-medium text-foreground">
-            Team goal — ${g.amount!.toLocaleString()} {g.deadline && <span className="text-muted-foreground font-normal">{humanDue(g.deadline).replace("due", "by").replace("was by", "was due")}</span>}
+            Team goal — an extra ${g.amount!.toLocaleString()} {g.deadline && <span className="text-muted-foreground font-normal">{humanDue(g.deadline).replace("due", "by").replace("was by", "was due")}</span>}
           </span>
         </div>
         <div className="flex items-center gap-3">
           <span className="text-[13px] tabular-nums text-muted-foreground">
-            <span className="text-foreground font-medium">${g.progress.toLocaleString()}</span> collected · {pct}%
+            <span className="text-foreground font-medium">${g.progress.toLocaleString()}</span> new since goal set · {pct}%
             {daysLeft != null && <> · {daysLeft === 0 ? "today" : `${daysLeft}d left`}</>}
           </span>
           {canEdit && <GoalEditor current={g} onSaved={() => qc.invalidateQueries({ queryKey: ["team-goal"] })} />}

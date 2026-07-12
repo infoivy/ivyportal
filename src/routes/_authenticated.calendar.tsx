@@ -649,8 +649,17 @@ function DayColumn({ day, events, onSelect, toLocal, hourStart, hourRows }: { da
         </div>
       )}
       {(() => {
+        // A shared meeting appears once per connected member calendar —
+        // collapse identical (title, start, end) copies into one chip.
+        const seen = new Set<string>();
+        const deduped = dayEvents.filter((e) => {
+          const k = `${e.summary}|${e.start}|${e.end}`;
+          if (seen.has(k)) return false;
+          seen.add(k);
+          return true;
+        });
         // Lane layout: overlapping events share the width instead of stacking
-        const sorted = [...dayEvents].sort((a, b) => a.start.localeCompare(b.start));
+        const sorted = [...deduped].sort((a, b) => a.start.localeCompare(b.start));
         const lanes: { end: number }[] = [];
         const placed = sorted.map((e) => {
           const startMs = new Date(e.start).getTime();
@@ -664,8 +673,13 @@ function DayColumn({ day, events, onSelect, toLocal, hourStart, hourRows }: { da
         return placed.map(({ e, lane }) => {
           const s = toLocal(e.start);
           const en = toLocal(e.end);
+          // Overlap must compare RAW instants — mixing the tz-shifted display
+          // date with raw dates broke clustering whenever a timezone was set,
+          // which stacked concurrent events at full width.
+          const sRaw = new Date(e.start).getTime();
+          const enRaw = new Date(e.end).getTime();
           const overlapping = placed.filter(({ e: o }) =>
-            new Date(o.start).getTime() < en.getTime() && new Date(o.end).getTime() > s.getTime());
+            new Date(o.start).getTime() < enRaw && new Date(o.end).getTime() > sRaw);
           const cols = Math.max(1, ...overlapping.map((o) => o.lane + 1));
           const startMin = s.getHours() * 60 + s.getMinutes();
           const endMin = en.getHours() * 60 + en.getMinutes();

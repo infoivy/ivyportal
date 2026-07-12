@@ -28,6 +28,7 @@ import { VolumeAreaChart, VolumeLegend } from "@/components/ui/volume-area-chart
 import { OnboardingPanel } from "@/components/onboarding-panel";
 import { MochiIgSection } from "@/components/mochi-ig-section";
 import { TeamGoalCard } from "@/components/team-goal-card";
+import { getMochiPayments } from "@/lib/mochi.functions";
 import { SetterActivityCard } from "@/components/setter-activity-card";
 import { DeltaChip } from "@/components/ui/delta-chip";
 
@@ -227,6 +228,26 @@ function Dashboard() {
   });
   useEffect(() => { if (igQ.data != null) setIgLoggedThisMonth(igQ.data); }, [igQ.data]);
 
+  // Whop is the revenue source of truth — the cash hero reads it directly.
+  const whopQ = useQuery({
+    queryKey: ["dashboard-whop"],
+    queryFn: () => getMochiPayments(),
+    staleTime: 5 * 60_000,
+    enabled: roles.includes("admin") || roles.includes("founder"),
+    retry: 1,
+  });
+  const whopHero = useMemo(() => {
+    const series = whopQ.data?.series ?? [];
+    if (!whopQ.data?.connected || series.length === 0) return null;
+    const now = new Date();
+    const monthStart = now.toISOString().slice(0, 8) + "01";
+    const dayOfMonth = now.getDate();
+    const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().slice(0, 10);
+    const prevSameDay = new Date(now.getFullYear(), now.getMonth() - 1, dayOfMonth).toISOString().slice(0, 10);
+    const sum = (from: string, to: string) => series.filter((x) => x.date >= from && x.date <= to).reduce((a, x) => a + x.volume, 0);
+    return { mtd: Math.round(sum(monthStart, now.toISOString().slice(0, 10))), prevMtd: Math.round(sum(prevMonthStart, prevSameDay)) };
+  }, [whopQ.data]);
+
   // Non-admin team members can flip between the team's collective numbers
   // (default) and just their own — revenue widgets stay role-gated regardless.
   const canScope = !roles.includes("admin") && !roles.includes("founder");
@@ -380,7 +401,7 @@ function Dashboard() {
                     <span className={up ? "text-success-fg" : "text-danger-fg"}>
                       {up ? "↑" : "↓"} {Math.abs(pct).toFixed(0)}%
                     </span>
-                    {" "}vs {prevMonthName} same day · <BlurMoney>{money(cashPrevMtd)}</BlurMoney>
+                    {" "}vs {prevMonthName} same day · <BlurMoney>{money(whopHero ? whopHero.prevMtd : (cashPrevMtd ?? 0))}</BlurMoney>
                   </div>
                 );
               })()}

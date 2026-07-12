@@ -98,6 +98,7 @@ function FinanceInner() {
     if (d?.settings?.processor_balance != null) setBalanceDraft(String(d.settings.processor_balance));
   }, [d?.settings?.processor_balance]);
 
+
   // ── month math ──────────────────────────────────────────────────────────
   const calc = useMemo(() => {
     if (!d) return null;
@@ -163,6 +164,11 @@ function FinanceInner() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [d, monthOffset]);
+  // Whop is the cash-in source of truth — profit must be built on it, not on
+  // logged deals (which lag or double elsewhere).
+  const cashIn = rev?.connected ? rev.whopGross : calc?.collected ?? 0;
+  const profitSoFar = cashIn - (calc?.expensesTotal ?? 0);
+  const profitProjected = cashIn + (calc?.expectedRest ?? 0) - (calc?.expensesTotal ?? 0);
 
   const saveBalance = async () => {
     const val = Number(balanceDraft);
@@ -210,7 +216,7 @@ function FinanceInner() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
         <StatCard label="Cash in · Whop" value={rev?.connected ? money(rev.whopGross) : calc ? money(calc.collected) : "—"} sub={rev?.connected ? `${rev.whopCount} payments · ${money(rev.whopNet)} net` : undefined} icon={<ArrowDownRight className="h-3.5 w-3.5" />} />
         <StatCard label="Expenses" value={calc ? money(calc.expensesTotal) : "—"} sub={calc ? `${calc.monthExpenses.length} items` : undefined} icon={<ArrowUpRight className="h-3.5 w-3.5" />} />
-        <StatCard label="Profit (projected)" value={calc ? money(calc.profitProjected) : "—"} sub={calc ? `${money(calc.profitSoFar)} banked so far` : undefined} icon={<TrendingUp className="h-3.5 w-3.5" />} tone={calc && calc.profitProjected < 0 ? "danger" : "default"} />
+        <StatCard label="Profit (projected)" value={calc ? money(profitProjected) : "—"} sub={calc ? `${money(profitSoFar)} banked so far` : undefined} icon={<TrendingUp className="h-3.5 w-3.5" />} tone={calc && profitProjected < 0 ? "danger" : "default"} />
         <StatCard label="MRR (scheduled)" value={calc ? money(calc.mrrNow) : "—"} sub="installments due this month" icon={<PiggyBank className="h-3.5 w-3.5" />} />
       </div>
 
@@ -306,7 +312,7 @@ function FinanceInner() {
             <span className="text-caption text-muted-foreground">after expenses · {monthLabel}</span>
           </div>
           <div className="text-[28px] font-medium tabular-nums tracking-[-0.02em] mb-4">
-            {calc ? money(Math.max(0, calc.profitProjected)) : "—"}
+            {calc ? money(Math.max(0, profitProjected)) : "—"}
             <span className="text-[13px] text-muted-foreground font-normal ml-2">projected profit</span>
           </div>
           <div className="space-y-2.5">
@@ -318,14 +324,14 @@ function FinanceInner() {
                 </div>
                 <span className="text-caption text-muted-foreground w-8 text-right">{p.pct}%</span>
                 <span className="text-[13px] tabular-nums font-medium w-24 text-right">
-                  {calc ? money(Math.max(0, calc.profitProjected) * (p.pct / 100)) : "—"}
+                  {calc ? money(Math.max(0, profitProjected) * (p.pct / 100)) : "—"}
                 </span>
               </div>
             ))}
           </div>
-          {calc && calc.profitSoFar !== calc.profitProjected && (
+          {calc && profitSoFar !== profitProjected && (
             <p className="text-caption text-muted-foreground mt-4">
-              On banked cash only: {SPLIT.map(p => `${p.name} ${money(Math.max(0, calc.profitSoFar) * (p.pct / 100))}`).join(" · ")}
+              On banked cash only: {SPLIT.map(p => `${p.name} ${money(Math.max(0, profitSoFar) * (p.pct / 100))}`).join(" · ")}
             </p>
           )}
         </div>

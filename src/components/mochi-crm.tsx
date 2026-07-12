@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Instagram, ArrowUpRight } from "lucide-react";
 import { getMochiDashboard, getMochiDetail, type MochiPeriod } from "@/lib/mochi.functions";
-import { Area, AreaChart, Bar, BarChart, Legend, Pie, PieChart, Tooltip, XAxis } from "@/components/dither-kit";
+import { ResponsiveContainer, ComposedChart, Area, Bar, BarChart, Line, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, Legend } from "recharts";
 import { MochiFunnel } from "@/components/mochi-funnel";
 import { format, subDays } from "date-fns";
 
@@ -126,44 +126,41 @@ export function MochiCrmInner({ embedded = false }: { embedded?: boolean }) {
       {/* Charts */}
       <div className="grid gap-4 md:grid-cols-2">
         <ChartCard title="Leads & bookings" sub="daily">
-          <AreaChart
-            data={trend}
-            config={{ leads: { label: "New leads", color: "green" }, booked: { label: "Booked", color: "blue" } }}
-          >
-            <XAxis dataKey="day" maxTicks={6} />
-            <Legend />
-            <Tooltip labelKey="day" />
-            <Area dataKey="leads" variant="gradient" />
-            <Area dataKey="booked" variant="dotted" />
-          </AreaChart>
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={trend} margin={{ top: 4, right: 4, bottom: 0, left: -22 }}>
+              <XAxis dataKey="day" tick={{ fontSize: 10 }} stroke="var(--muted-foreground)" tickLine={false} axisLine={false} minTickGap={24} />
+              <YAxis tick={{ fontSize: 10 }} stroke="var(--muted-foreground)" tickLine={false} axisLine={false} allowDecimals={false} />
+              <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }} labelStyle={{ color: "var(--foreground)" }} />
+              <Area dataKey="leads" name="New leads" fill="var(--chart-2)" fillOpacity={0.25} stroke="var(--chart-2)" strokeWidth={1.5} />
+              <Line dataKey="booked" name="Booked" stroke="var(--chart-1)" strokeWidth={2} dot={false} />
+            </ComposedChart>
+          </ResponsiveContainer>
         </ChartCard>
 
         <ChartCard title="Setter response time" sub="how fast DMs get answered">
-          <BarChart data={d?.responseBuckets ?? []} config={{ count: { label: "Replies", color: "purple" } }}>
-            <XAxis dataKey="label" maxTicks={8} />
-            <Tooltip labelKey="label" />
-            <Bar dataKey="count" variant="gradient" />
-          </BarChart>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={d?.responseBuckets ?? []} margin={{ top: 4, right: 4, bottom: 0, left: -22 }}>
+              <XAxis dataKey="label" tick={{ fontSize: 10 }} stroke="var(--muted-foreground)" tickLine={false} axisLine={false} interval={0} />
+              <YAxis tick={{ fontSize: 10 }} stroke="var(--muted-foreground)" tickLine={false} axisLine={false} allowDecimals={false} />
+              <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }} labelStyle={{ color: "var(--foreground)" }} />
+              <Bar dataKey="count" name="Replies" fill="var(--chart-4)" radius={[3, 3, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </ChartCard>
 
         {sources.length > 0 && (
           <ChartCard title="Where leads come from" sub="by Instagram touchpoint">
-            <PieChart
-              data={sources}
-              dataKey="leads"
-              nameKey="name"
-              innerRadius={0.55}
-              config={{
-                dm: { label: "DM", color: "green" },
-                comment: { label: "Comment", color: "blue" },
-                story: { label: "Story", color: "purple" },
-                outbound: { label: "Outbound", color: "orange" },
-              }}
-            >
-              <Legend align="center" />
-              <Tooltip />
-              <Pie variant="gradient" />
-            </PieChart>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Pie data={sources} dataKey="leads" nameKey="name" innerRadius="55%" outerRadius="80%" strokeWidth={0} paddingAngle={2}>
+                  {sources.map((entry, i) => (
+                    <Cell key={entry.name} fill={["var(--chart-2)", "var(--chart-1)", "var(--chart-4)", "var(--chart-3)"][i % 4]} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
           </ChartCard>
         )}
       </div>

@@ -25,17 +25,19 @@ export function TheRoomInner() {
     queryKey: ["the-room", iso(today)],
     staleTime: 2 * 60_000,
     queryFn: async () => {
-      const [eods, content, students, landed] = await Promise.all([
+      const [eods, content, students, landed, expenses] = await Promise.all([
         supabase.from("eods").select("report_date, dials, dms_sent").gte("report_date", fourteenDaysAgo),
         supabase.from("content_items").select("posted_at, status").not("posted_at", "is", null).gte("posted_at", sixWeeksAgo),
         supabase.from("students").select("id", { count: "exact", head: true }),
         supabase.from("students").select("id", { count: "exact", head: true }).not("offer_landed_at", "is", null),
+        supabase.from("business_expenses").select("amount, recurring, one_off_date, active").eq("active", true),
       ]);
       return {
         eods: eods.data ?? [],
         content: content.data ?? [],
         studentCount: students.count ?? 0,
         landedCount: landed.count ?? 0,
+        expenses: expenses.data ?? [],
       };
     },
   });
@@ -70,6 +72,20 @@ export function TheRoomInner() {
   const whopMtd = [...whopByDay.entries()]
     .filter(([date]) => date >= monthStart)
     .reduce((s, [, v]) => s + v, 0);
+
+  // End-of-month projection: current run-rate carried to month end, minus this
+  // month's expenses, then the founder's 70% of what's left.
+  const myShareProjected = (() => {
+    if (!payments.data?.connected || !portal.data) return null;
+    const dayOfMonth = today.getDate();
+    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    const projectedCash = dayOfMonth > 0 ? (whopMtd / dayOfMonth) * daysInMonth : whopMtd;
+    const monthExpenses = (portal.data.expenses as { amount: number; recurring: boolean; one_off_date: string | null }[])
+      .filter((e) => e.recurring || (e.one_off_date ?? "").startsWith(monthStart.slice(0, 7)))
+      .reduce((s, e) => s + Number(e.amount), 0);
+    const profit = projectedCash - monthExpenses;
+    return { profit: Math.round(profit), mine: Math.round(Math.max(0, profit) * 0.7) };
+  })();
 
 
 
@@ -120,6 +136,15 @@ export function TheRoomInner() {
             {mochi.data || closeLeads.data ? totalLeads30.toLocaleString() : "…"}
           </RoomStat>
           <RoomStat label="Content posted · this cycle">{portal.data ? contentThisCycle : "…"}</RoomStat>
+          {myShareProjected && (
+            <RoomStat label="My share · projected month end · 70%">
+              <BlurMoney>
+                {myShareProjected.profit >= 0
+                  ? money(myShareProjected.mine)
+                  : `${money(0)} (profit ${money(myShareProjected.profit)})`}
+              </BlurMoney>
+            </RoomStat>
+          )}
         </div>
       </div>
 
