@@ -5,7 +5,7 @@ import { useAccess } from "@/lib/use-access";
 import {
   LayoutDashboard, FileText, BookOpen, Calendar, GraduationCap,
   Database, Users, StickyNote, Shield, UserCircle, School, HeartHandshake, Phone, DollarSign, Armchair,
-  ListChecks, TrendingUp, Quote, Building2, Sparkles, Clapperboard, Wallet, Megaphone,
+  ListChecks, Quote, Building2, Sparkles, Clapperboard, Wallet, Megaphone,
   MessagesSquare,
 } from "lucide-react";
 
@@ -31,8 +31,7 @@ const todayItems: Item[] = [
 ];
 
 const salesItems: Item[] = [
-  { title: "Sales",            url: "/sales",            icon: Building2,     roles: ["admin", "closer"] },
-  { title: "Revenue",          url: "/revenue",          icon: TrendingUp,    roles: ["admin", "closer", "coach"] },
+  { title: "Sales",            url: "/sales",            icon: Building2,     roles: ["admin", "closer", "coach"] },
   { title: "Closer Resources", url: "/closer-resources", icon: DollarSign,    roles: ["admin", "closer"] },
   { title: "Training",         url: "/training",         icon: GraduationCap, roles: ["admin", "founder", "closer", "setter", "coach"] },
   { title: "Calendar",         url: "/calendar",         icon: Calendar },

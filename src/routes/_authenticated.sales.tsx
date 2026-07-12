@@ -1,8 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { RevenueTabBar } from "@/components/revenue-tab-bar";
+import { SelectField } from "@/components/ui/select-field";
 import { toast } from "sonner";
 import { todayBiz } from "@/lib/dates";
 import { format, subDays } from "date-fns";
@@ -44,8 +46,16 @@ function kpiHit(eod: EODRow, setterType: "phone" | "dm" | "full_cycle" | null) {
 
 function Sales() {
   const { roles } = useAuth();
+  const navigate = useNavigate();
   const isAllowed = roles.includes("admin") || roles.includes("closer");
+  const canRevenue = roles.includes("coach") || roles.includes("founder");
+  useEffect(() => {
+    // The Sales section is one sidebar entry — coaches/founders own the
+    // Revenue tab of it, not closer operations.
+    if (!isAllowed && canRevenue) navigate({ to: "/revenue", replace: true });
+  }, [isAllowed, canRevenue, navigate]);
   if (!isAllowed) {
+    if (canRevenue) return null;
     return (
       <div className="p-8 max-w-2xl mx-auto">
         <div className="card-surface p-8 text-center text-[13px] text-muted-foreground">
@@ -60,6 +70,7 @@ function Sales() {
 function SalesInner() {
   return (
     <div className="max-w-[1400px] mx-auto p-4 sm:p-5 space-y-5">
+      <RevenueTabBar />
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-display text-foreground">Sales</h1>
@@ -207,20 +218,22 @@ function OperationsTab() {
                         <div className="text-[14px] font-medium">{s.display_name}</div>
                         {s.setter_type ? (
                           <div className="text-[12px] text-muted-foreground">
-                            {s.setter_type === "phone" ? "Phone · 100 dials" : s.setter_type === "full_cycle" ? "Full cycle · 100 dials + 50 outreached" : "DM · 125 leads"}
+                            {s.setter_type === "phone" ? "Phone · 100 dials" : s.setter_type === "full_cycle" ? "Full cycle · 100 dials + 50 DMs" : "DM · 125 DMs"}
                           </div>
                         ) : canEditSetterType ? (
-                          <select
-                            defaultValue=""
-                            onChange={e => { if (e.target.value) updateSetterType(s.id, e.target.value as "phone" | "dm" | "full_cycle"); }}
-                            onClick={e => e.stopPropagation()}
-                            className="text-[11px] h-5 px-1 rounded-md bg-warning-bg text-warning-fg cursor-pointer border-0"
-                          >
-                            <option value="" disabled>Set type…</option>
-                            <option value="phone">Phone</option>
-                            <option value="dm">DM</option>
-                            <option value="full_cycle">Full cycle</option>
-                          </select>
+                          <span onClick={e => e.stopPropagation()}>
+                            <SelectField
+                              value=""
+                              onChange={(v) => { if (v) updateSetterType(s.id, v as "phone" | "dm" | "full_cycle"); }}
+                              placeholder="Set type…"
+                              className="h-5 w-24 text-[11px] bg-warning-bg text-warning-fg border-warning/25"
+                              options={[
+                                { value: "phone", label: "Phone" },
+                                { value: "dm", label: "DM" },
+                                { value: "full_cycle", label: "Full cycle" },
+                              ]}
+                            />
+                          </span>
                         ) : (
                           <div className="text-[12px] text-warning-fg">Type not set</div>
                         )}

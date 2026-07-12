@@ -53,6 +53,7 @@ import { Route as AuthenticatedActionItemsRouteImport } from './routes/_authenti
 import { Route as AuthenticatedPoliciesIndexRouteImport } from './routes/_authenticated.policies.index'
 import { Route as AuthenticatedKnowledgeIndexRouteImport } from './routes/_authenticated.knowledge.index'
 import { Route as ApiPublicGoogleOauthCallbackRouteImport } from './routes/api/public/google-oauth-callback'
+import { Route as AuthenticatedTeamIdRouteImport } from './routes/_authenticated.team_.$id'
 import { Route as AuthenticatedStudentsIdRouteImport } from './routes/_authenticated.students.$id'
 import { Route as AuthenticatedSopsIsaSettingProcessRouteImport } from './routes/_authenticated.sops.isa-setting-process'
 import { Route as AuthenticatedPoliciesEodHygieneRouteImport } from './routes/_authenticated.policies.eod-hygiene'
@@ -290,6 +291,11 @@ const ApiPublicGoogleOauthCallbackRoute =
     path: '/api/public/google-oauth-callback',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AuthenticatedTeamIdRoute = AuthenticatedTeamIdRouteImport.update({
+  id: '/team_/$id',
+  path: '/team/$id',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedStudentsIdRoute = AuthenticatedStudentsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -379,6 +385,7 @@ export interface FileRoutesByFullPath {
   '/policies/eod-hygiene': typeof AuthenticatedPoliciesEodHygieneRoute
   '/sops/isa-setting-process': typeof AuthenticatedSopsIsaSettingProcessRoute
   '/students/$id': typeof AuthenticatedStudentsIdRoute
+  '/team/$id': typeof AuthenticatedTeamIdRoute
   '/api/public/google-oauth-callback': typeof ApiPublicGoogleOauthCallbackRoute
   '/knowledge/': typeof AuthenticatedKnowledgeIndexRoute
   '/policies/': typeof AuthenticatedPoliciesIndexRoute
@@ -429,6 +436,7 @@ export interface FileRoutesByTo {
   '/policies/eod-hygiene': typeof AuthenticatedPoliciesEodHygieneRoute
   '/sops/isa-setting-process': typeof AuthenticatedSopsIsaSettingProcessRoute
   '/students/$id': typeof AuthenticatedStudentsIdRoute
+  '/team/$id': typeof AuthenticatedTeamIdRoute
   '/api/public/google-oauth-callback': typeof ApiPublicGoogleOauthCallbackRoute
   '/knowledge': typeof AuthenticatedKnowledgeIndexRoute
   '/policies': typeof AuthenticatedPoliciesIndexRoute
@@ -483,6 +491,7 @@ export interface FileRoutesById {
   '/_authenticated/policies/eod-hygiene': typeof AuthenticatedPoliciesEodHygieneRoute
   '/_authenticated/sops/isa-setting-process': typeof AuthenticatedSopsIsaSettingProcessRoute
   '/_authenticated/students/$id': typeof AuthenticatedStudentsIdRoute
+  '/_authenticated/team_/$id': typeof AuthenticatedTeamIdRoute
   '/api/public/google-oauth-callback': typeof ApiPublicGoogleOauthCallbackRoute
   '/_authenticated/knowledge/': typeof AuthenticatedKnowledgeIndexRoute
   '/_authenticated/policies/': typeof AuthenticatedPoliciesIndexRoute
@@ -537,6 +546,7 @@ export interface FileRouteTypes {
     | '/policies/eod-hygiene'
     | '/sops/isa-setting-process'
     | '/students/$id'
+    | '/team/$id'
     | '/api/public/google-oauth-callback'
     | '/knowledge/'
     | '/policies/'
@@ -587,6 +597,7 @@ export interface FileRouteTypes {
     | '/policies/eod-hygiene'
     | '/sops/isa-setting-process'
     | '/students/$id'
+    | '/team/$id'
     | '/api/public/google-oauth-callback'
     | '/knowledge'
     | '/policies'
@@ -640,6 +651,7 @@ export interface FileRouteTypes {
     | '/_authenticated/policies/eod-hygiene'
     | '/_authenticated/sops/isa-setting-process'
     | '/_authenticated/students/$id'
+    | '/_authenticated/team_/$id'
     | '/api/public/google-oauth-callback'
     | '/_authenticated/knowledge/'
     | '/_authenticated/policies/'
@@ -964,6 +976,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicGoogleOauthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/team_/$id': {
+      id: '/_authenticated/team_/$id'
+      path: '/team/$id'
+      fullPath: '/team/$id'
+      preLoaderRoute: typeof AuthenticatedTeamIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/students/$id': {
       id: '/_authenticated/students/$id'
       path: '/$id'
@@ -1129,6 +1148,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedTestimonialsRoute: typeof AuthenticatedTestimonialsRoute
   AuthenticatedTrainingRoute: typeof AuthenticatedTrainingRoute
   AuthenticatedWeeklyReviewRoute: typeof AuthenticatedWeeklyReviewRoute
+  AuthenticatedTeamIdRoute: typeof AuthenticatedTeamIdRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -1169,6 +1189,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedTestimonialsRoute: AuthenticatedTestimonialsRoute,
   AuthenticatedTrainingRoute: AuthenticatedTrainingRoute,
   AuthenticatedWeeklyReviewRoute: AuthenticatedWeeklyReviewRoute,
+  AuthenticatedTeamIdRoute: AuthenticatedTeamIdRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

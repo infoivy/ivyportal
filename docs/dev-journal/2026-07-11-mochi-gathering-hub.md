@@ -84,3 +84,10 @@ Probed the MCP with curl (401 → `.well-known/oauth-protected-resource` → aut
 - **CSM hub**: /csm tabs Overview | Workspace | Student Success. Overview = fulfillment dept view for Faizan: success rate vs 95% target bar, students by phase, quiet-students count, weekly output (calls/looms/roleplays/check-ins, recharts). /student-success redirects. Access: admin/csm/coach/founder/cofounder.
 - Close opportunity values: cents → dollars, rounded.
 - Remaining queued: member performance pages w/ AI read (#19), Sales+Revenue merge (#20), native-controls sweep (#16).
+
+## Addendum 7 — 2026-07-12: final three + EOD local-day fix
+
+- **EOD day boundary** → submitter's own timezone (`todayLocal()`): Aalian's Saturday EOD from Canada no longer lands on the business calendar's Sunday. Top-bar chip uses the same date.
+- **Sales section merged**: one sidebar entry; RevenueTabBar became a role-aware section bar (Sales | Revenue | Installments | Payouts) mounted across all four routes; coaches/founders hitting /sales redirect to /revenue. Stale "125 leads / 50 outreached" copy updated to DMs.
+- **Member performance pages** (`/team/$id`, un-nested via `team_` — the /team route has no Outlet): 7d numbers, EOD streak, KPI-hit rate, Hunger score (consistency 40 + KPI 35 + momentum 25 — deterministic signals, honestly labeled; an LLM can replace the same shape later), rule-based coaching suggestions, CRM ground truth (Close dials + Mochi DMs by name match), 30-day output chart. Entry points: team page names + setter-activity rows.
+- **Native sweep**: all remaining native `<select>`s → SelectField (sales setter-type, calendar assign-set, IG month + pillar). Number/date inputs verified themed; popover-calendar conversion deliberately deferred.

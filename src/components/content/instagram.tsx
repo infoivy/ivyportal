@@ -1,3 +1,4 @@
+import { SelectField } from "@/components/ui/select-field";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -180,16 +181,14 @@ export function InstagramInner() {
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <select
+          <SelectField
             value={selectedMonth}
-            onChange={e => setSelectedMonth(e.target.value)}
-            className="h-9 px-3 rounded-lg border border-[var(--border)] bg-card text-[13px]"
-          >
-            {snapshots.length === 0 && <option value={selectedMonth}>{monthLabel}</option>}
-            {snapshots.map(s => (
-              <option key={s.month} value={s.month}>{format(parseISO(s.month), "MMMM yyyy")}</option>
-            ))}
-          </select>
+            onChange={setSelectedMonth}
+            className="h-9 w-40 text-[13px]"
+            options={snapshots.length === 0
+              ? [{ value: selectedMonth, label: monthLabel }]
+              : snapshots.map(s => ({ value: s.month, label: new Date(s.month + "T00:00:00").toLocaleDateString("en", { month: "long", year: "numeric" }) }))}
+          />
           {selected && (
             <div className="inline-flex items-center gap-1.5 h-9 px-2.5 rounded-lg border border-[var(--border)] bg-card text-[12px] text-muted-foreground" title={`Last updated ${format(parseISO(selected.updated_at), "MMM d, yyyy")}`}>
               <Clock className="h-3 w-3" /> {format(parseISO(selected.updated_at), "MMM d")}
@@ -628,10 +627,14 @@ function LogMonthDialog({ userId, month, existing, existingReels, onClose, onSav
                 <div key={i} className="border border-[var(--border)] bg-[var(--background)] rounded-sm p-2 space-y-1.5">
                   <div className="flex gap-1.5">
                     <input value={r.topic ?? ""} onChange={e => updReel(i, { topic: e.target.value })} placeholder="Topic / hook" className="flex-1 h-7 px-2 rounded-sm border border-[var(--border)] bg-[var(--card)] text-xs outline-none focus:border-ring" />
-                    <select value={r.pillar ?? ""} onChange={e => updReel(i, { pillar: e.target.value || null })} className="h-7 px-1.5 rounded-sm border border-[var(--border)] bg-[var(--card)] text-[11px]">
-                      <option value="">Pillar…</option>
-                      {Object.keys(PILLAR_COLORS).map(p => <option key={p} value={p}>{p}</option>)}
-                    </select>
+                    <SelectField
+                      value={r.pillar ?? ""}
+                      onChange={(v) => updReel(i, { pillar: v || null })}
+                      placeholder="Pillar…"
+                      allowEmpty
+                      className="h-7 w-28 text-[11px]"
+                      options={Object.keys(PILLAR_COLORS).map(p => ({ value: p, label: p }))}
+                    />
                     <button onClick={() => rmReel(i)} className="h-7 w-7 grid place-items-center rounded-sm border border-[var(--border)] text-muted-foreground hover:text-danger-fg hover:border-danger/25">
                       <Trash2 className="h-3 w-3" />
                     </button>

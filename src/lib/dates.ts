@@ -6,6 +6,13 @@ export function todayBiz(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: BUSINESS_TZ }).format(new Date());
 }
 
+/** Today in the USER'S own timezone — EODs belong to the day the rep lived
+ *  (founder-confirmed 2026-07-12: Aalian's Saturday EOD from Canada must not
+ *  land on the business calendar's Sunday). */
+export function todayLocal(): string {
+  return new Intl.DateTimeFormat("en-CA").format(new Date());
+}
+
 /** Returns a Date representing midnight (start of day) in the business timezone. */
 export function startOfDayBiz(isoDate?: string): Date {
   const base = isoDate ?? todayBiz();

@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -260,7 +260,9 @@ function TeamPage() {
               </div>
               <div className="min-w-0">
                 <div className="text-sm font-medium truncate flex items-center gap-2">
-                  {m.display_name ?? "Unnamed"}
+                  <Link to="/team/$id" params={{ id: m.id }} className="hover:underline underline-offset-4 decoration-border hover:decoration-foreground" title="Open performance page">
+                    {m.display_name ?? "Unnamed"}
+                  </Link>
                   {!m.active && <span className="text-[9px] text-danger-fg border border-danger/25 bg-danger-bg px-1.5 py-0.5 rounded-sm">Inactive</span>}
                   <button onClick={() => setEditing(m)} className="text-muted-foreground hover:text-foreground"><Pencil className="h-3 w-3" /></button>
                 </div>

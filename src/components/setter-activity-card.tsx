@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Link } from "@tanstack/react-router";
+import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { PhoneCall } from "lucide-react";
 import { getCloseBookedCount, getCloseCallStats } from "@/lib/close-crm.functions";
@@ -43,6 +45,13 @@ export function SetterActivityCard() {
     retry: 1,
   });
 
+  const profilesQ = useQuery({
+    queryKey: ["profiles-lite"],
+    staleTime: 10 * 60_000,
+    queryFn: async () => (await supabase.from("profiles").select("id, display_name")).data ?? [],
+  });
+  const idByName = new Map((profilesQ.data ?? []).filter((p: any) => p.display_name).map((p: any) => [String(p.display_name).toLowerCase(), p.id as string]));
+
   const c = close.data;
   const dmByName = new Map((mochi.data?.members ?? []).map((m) => [m.name.toLowerCase(), m.outbound]));
   if (c && !c.configured && (mochi.data?.members ?? []).length === 0) return null;
@@ -86,15 +95,24 @@ export function SetterActivityCard() {
           <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-4 text-[10px] uppercase tracking-wide text-muted-foreground/70 px-2 pb-1">
             <span>Rep</span><span className="text-right w-12">Dials</span><span className="text-right w-14">Answered</span><span className="text-right w-16">Avg call</span><span className="text-right w-12">DMs</span>
           </div>
-          {c!.perUser.map((u) => (
-            <div key={u.name} className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-4 items-baseline rounded-md px-2 py-1.5 hover:bg-muted/60 motion-safe:transition-colors text-[13px]">
-              <span className="truncate text-foreground">{u.name}</span>
-              <span className="text-right w-12 tabular-nums font-medium">{u.dials}</span>
-              <span className="text-right w-14 tabular-nums text-muted-foreground">{u.answered}</span>
-              <span className="text-right w-16 tabular-nums text-muted-foreground">{fmtDur(u.avgDurationSec)}</span>
-              <span className="text-right w-12 tabular-nums text-muted-foreground">{dmByName.get(u.name.toLowerCase()) ?? "—"}</span>
-            </div>
-          ))}
+          {c!.perUser.map((u) => {
+            const pid = idByName.get(u.name.toLowerCase());
+            const rowClass = "grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-4 items-baseline rounded-md px-2 py-1.5 hover:bg-muted/60 motion-safe:transition-colors text-[13px]";
+            const cells = (
+              <>
+                <span className={`truncate ${pid ? "text-foreground underline decoration-border underline-offset-4 hover:decoration-foreground" : "text-foreground"}`}>{u.name}</span>
+                <span className="text-right w-12 tabular-nums font-medium">{u.dials}</span>
+                <span className="text-right w-14 tabular-nums text-muted-foreground">{u.answered}</span>
+                <span className="text-right w-16 tabular-nums text-muted-foreground">{fmtDur(u.avgDurationSec)}</span>
+                <span className="text-right w-12 tabular-nums text-muted-foreground">{dmByName.get(u.name.toLowerCase()) ?? "—"}</span>
+              </>
+            );
+            return pid ? (
+              <Link key={u.name} to="/team/$id" params={{ id: pid }} className={rowClass} title="Open performance page">{cells}</Link>
+            ) : (
+              <div key={u.name} className={rowClass}>{cells}</div>
+            );
+          })}
         </div>
       )}
       {c && c.configured && c.perUser.length === 0 && (

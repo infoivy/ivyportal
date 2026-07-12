@@ -22,6 +22,7 @@ import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DateField } from "@/components/ui/date-field";
+import { SelectField } from "@/components/ui/select-field";
 import {
   disconnectMyCalendar, getMyCalendarConnection, getTeamCalendarEvents, createSetReminder,
   listUpcomingSets, deleteSetReminder, syncCalendlySets, claimSet, type UpcomingSet,
@@ -934,17 +935,13 @@ function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, o
                 </Button>
               )}
               {onAssign && (isAdmin || roles.includes("founder") || mine) && team.length > 0 && (
-                <select
+                <SelectField
                   value=""
-                  onChange={(e) => { if (e.target.value) onAssign(s.id, e.target.value); }}
-                  className="h-7 text-caption px-1.5 rounded-md border border-border bg-card text-muted-foreground shrink-0"
-                  title="Assign this set to a setter"
-                >
-                  <option value="">{s.owner_id ? "Reassign…" : "Assign…"}</option>
-                  {team.filter(t => t.id !== s.owner_id).map(t => (
-                    <option key={t.id} value={t.id}>{t.display_name ?? t.id.slice(0, 8)}</option>
-                  ))}
-                </select>
+                  onChange={(v) => { if (v) onAssign(s.id, v); }}
+                  placeholder={s.owner_id ? "Reassign…" : "Assign…"}
+                  className="h-7 w-28 text-caption shrink-0"
+                  options={team.map((t) => ({ value: t.id, label: t.display_name ?? "Teammate" }))}
+                />
               )}
               {s.owner_id && onUnclaim && (mine || isAdmin || roles.includes("founder")) && (
                 <button onClick={() => onUnclaim(s.id)} className="text-micro text-muted-foreground hover:text-foreground shrink-0" title="Give this set back to the pool">

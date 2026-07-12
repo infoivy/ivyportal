@@ -18,7 +18,7 @@ import { NotificationsBell } from "@/components/notifications-bell";
 import { CommandPalette } from "@/components/command-palette";
 import { StudentBottomNav } from "@/components/student-bottom-nav";
 import { setStudentPortalTab, getStudentPortalTab, onStudentPortalTab } from "@/lib/student-portal-bus";
-import { todayBiz } from "@/lib/dates";
+import { todayLocal } from "@/lib/dates";
 import { PageSkeleton } from "@/components/ui/skeletons";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -37,9 +37,9 @@ function AuthedLayout() {
   const [eodSubmitted, setEodSubmitted] = useState<boolean | null>(null);
 
   const checkEod = async (userId: string) => {
-    // Business-timezone "today" — UTC flips a day late for GMT+ users, which
-    // made the chip reappear on refresh after a post-midnight submit.
-    const today = todayBiz();
+    // The rep's own calendar day — EODs belong to the day they lived,
+    // wherever they are (must match the EOD form's date exactly).
+    const today = todayLocal();
     const { data } = await supabase.from("eods").select("id").eq("user_id", userId).eq("report_date", today).maybeSingle();
     setEodSubmitted(!!data);
   };
