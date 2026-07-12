@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { getMochiPayments } from "@/lib/mochi.functions";
 import { useEffect, useMemo, useState } from "react";
 import { PageSkeleton } from "@/components/ui/skeletons";
 import { useQuery } from "@tanstack/react-query";
@@ -148,6 +149,20 @@ function RevenueInner() {
     const pt = prevTo.toISOString().slice(0, 10);
     return deals.filter((d) => d.deal_date >= pf && d.deal_date <= pt);
   }, [deals, compare, dateRange.from, days]);
+
+  // Whop is the cash-in source of truth; deals stay as the logged-attribution view.
+  const whopQ = useQuery({
+    queryKey: ["revenue-whop"],
+    queryFn: () => getMochiPayments(),
+    staleTime: 5 * 60_000,
+    retry: 1,
+  });
+  const whopCash = useMemo(() => {
+    if (!whopQ.data?.connected) return null;
+    const from = dateRange.from.toISOString().slice(0, 10);
+    const to = dateRange.to.toISOString().slice(0, 10);
+    return Math.round(whopQ.data.series.filter((x) => x.date >= from && x.date <= to).reduce((a, x) => a + x.volume, 0));
+  }, [whopQ.data, dateRange.from, dateRange.to]);
 
   const stats = useMemo(() => {
     const cash = rangeDeals.reduce((a, d) => a + Number(d.cash_collected_upfront), 0);
@@ -323,8 +338,8 @@ function RevenueInner() {
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard
-          label="Cash collected"
-          value={<BlurMoney>{money(stats.cash)}</BlurMoney>}
+          label={whopCash != null ? "Cash collected · Whop" : "Cash collected"}
+          value={<BlurMoney>{whopQ.isLoading ? "…" : money(whopCash ?? stats.cash)}</BlurMoney>}
           icon={<DollarSign className="h-3.5 w-3.5" />}
           accent
           sparkData={cashSparkData}

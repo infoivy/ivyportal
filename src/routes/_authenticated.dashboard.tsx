@@ -61,8 +61,6 @@ const RANGES = [
 ] as const;
 type RangeKey = typeof RANGES[number]["key"];
 
-const DEFAULT_GOALS = { dms: 20000, convos: 3000, calls: 500, shows: 350, showRate: 75, viral: 3 };
-type QuarterGoals = typeof DEFAULT_GOALS;
 
 type OpsCounts = {
   atRisk: number;
@@ -93,15 +91,6 @@ function Dashboard() {
   const [eodsTodayCount, setEodsTodayCount] = useState(0);
   const [cashMtd, setCashMtd] = useState(0);
   const [nextDue, setNextDue] = useState<{ date: string; amount: number; currency: string; studentName: string } | null>(null);
-  const [goals, setGoals] = useState<QuarterGoals>(DEFAULT_GOALS);
-  const goalsQ = useQuery({
-    queryKey: ["page", "dashboard", "goals"],
-    queryFn: async () => (await supabase.from("founder_settings").select("quarterly_goals").maybeSingle()).data,
-  });
-  useEffect(() => {
-    const g = (goalsQ.data as { quarterly_goals?: Partial<QuarterGoals> } | null)?.quarterly_goals;
-    if (g) setGoals({ ...DEFAULT_GOALS, ...g });
-  }, [goalsQ.data]);
 
   const days = daysBetween(dateRange);
 
@@ -307,7 +296,6 @@ function Dashboard() {
     : dateRange.preset === "30d" ? "Last 30 days"
     : dateRange.preset === "90d" ? `Last 90 days · ${currentQuarterLabel()}`
     : `${format(dateRange.from, "MMM d")} → ${format(dateRange.to, "MMM d, yyyy")}`;
-  const goalsLabel = `${currentQuarterLabel()} Goals`;
 
   return (
     <div className="min-h-full">
@@ -572,44 +560,6 @@ function Dashboard() {
           <UnifiedLeaderboard profiles={profiles} eods={eods} canSeeCash={roles.includes("admin") || roles.includes("founder") || roles.includes("closer")} />
         )}
 
-        {/* Row 3: Goals + Team Comp (top setters merged into UnifiedLeaderboard above) */}
-        {((prefs.showGoals && (roles.includes("admin") || roles.includes("founder"))) || prefs.showTeamComp) && (
-          <div className="grid gap-3 lg:grid-cols-2">
-            {prefs.showGoals && (roles.includes("admin") || roles.includes("founder")) && (
-              <Panel>
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="grid h-6 w-6 place-items-center rounded-[6px] bg-primary/10">
-                    <Target className="h-3 w-3 text-primary" />
-                  </div>
-                  <h3 className="text-sm font-semibold">{goalsLabel}</h3>
-                </div>
-                <div className="space-y-3">
-                  <Goal label="DMs Sent"     value={totals.dms_sent}       target={goals.dms}     color="var(--color-primary)" />
-                  <Goal label="Convos"       value={totals.convos_started} target={goals.convos}  color="var(--color-primary)" />
-                  <Goal label="Calls Booked" value={totals.calls_booked}   target={goals.calls}   color="var(--color-primary)" />
-                  <Goal label="Shows"        value={totals.shows}          target={goals.shows}   color="var(--color-primary)" warn={totals.shows < goals.shows * 0.5 && days >= 30} />
-                  <Goal label="Show Rate"    value={showRate}              target={goals.showRate} suffix="%" color="var(--color-primary)" />
-                </div>
-              </Panel>
-            )}
-
-            {prefs.showTeamComp && (
-              <Panel>
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="grid h-6 w-6 place-items-center rounded-[6px] bg-primary/10">
-                    <Globe className="h-3 w-3 text-primary" />
-                  </div>
-                  <h3 className="text-sm font-semibold">Team Composition</h3>
-                </div>
-                <div className="space-y-2">
-                  <AudienceRow label="Active this period" value={activeSetters} total={Math.max(activeSetters, 1)} color="var(--color-primary)" />
-                  <AudienceRow label="EODs / setter"      value={activeSetters > 0 ? Math.round(totalEods / activeSetters) : 0} total={days} color="var(--color-primary)" suffix={` / ${days}`} />
-                  <AudienceRow label="Avg calls / setter" value={activeSetters > 0 ? Math.round(totals.calls_booked / activeSetters) : 0} total={goals.calls / Math.max(activeSetters, 1)} color="var(--color-primary)" />
-                </div>
-              </Panel>
-            )}
-          </div>
-        )}
 
 
 
@@ -788,39 +738,6 @@ function Transform({ label, prev, curr, suffix }: { label: string; prev: number;
     </div>
   );
 }
-function Goal({ label, value, target, suffix, color, warn }: { label: string; value: number; target: number; suffix?: string; color: string; warn?: boolean }) {
-  const pct = Math.min(100, Math.round((value / target) * 100));
-  return (
-    <div>
-      <div className="flex items-center justify-between text-xs mb-1">
-        <span className="inline-flex items-center gap-1.5">
-          {label}
-          {warn ? <AlertTriangle className="h-3 w-3 text-danger-fg" /> : pct >= 100 ? <CheckCircle2 className="h-3 w-3 text-success-fg" /> : null}
-        </span>
-        <span className="tabular-nums text-[11px] text-muted-foreground">
-          <span className="font-medium text-foreground">{value.toLocaleString()}{suffix}</span> / {target.toLocaleString()}{suffix}
-        </span>
-      </div>
-      <div className="h-1 rounded-full bg-white/5 overflow-hidden">
-        <div className="h-full rounded-full motion-safe:transition-[width] duration-500 ease-(--ease-out)" style={{ width: `${pct}%`, background: warn ? "#ef4444" : color }} />
-      </div>
-    </div>
-  );
-}
-function AudienceRow({ label, value, total, color, suffix }: { label: string; value: number; total: number; color: string; suffix?: string }) {
-  const pct = total > 0 ? Math.min(100, Math.round((value / total) * 100)) : 0;
-  return (
-    <div>
-      <div className="flex items-center justify-between text-xs mb-1">
-        <span className="text-muted-foreground">{label}</span>
-        <span className="tabular-nums text-[11px] font-semibold text-foreground">{value.toLocaleString()}{suffix ?? ""}</span>
-      </div>
-      <div className="h-1 rounded-full bg-white/5 overflow-hidden">
-        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
-      </div>
-    </div>
-  );
-}
 function QuickAction({ to, search, icon: Icon, label }: { to: string; search?: Record<string, string>; icon: React.ComponentType<{ className?: string }>; label: string }) {
   return (
     <Link to={to} search={search} className="rounded-md border border-border bg-card p-3 hover:bg-muted/50 motion-safe:transition-colors flex items-center gap-2">
@@ -992,7 +909,7 @@ function MyDayBlock({ roles }: { roles: string[] }) {
         const eodRow = await supabase.from("eods").select("dms_sent, convos_started, calls_booked, shows").eq("user_id", user.id).eq("report_date", today).maybeSingle();
         parts.push({ label: "Today EOD", value: eodRow.data ? "Submitted" : "Pending", tone: eodRow.data ? "emerald" : "amber", to: "/eods" });
         const booked = (eodRow.data as any)?.calls_booked ?? 0;
-        const goal = Math.round(DEFAULT_GOALS.calls / 90);
+        const goal = 3; // daily sets KPI (business rule)
         parts.push({ label: "Booked today", value: `${booked}/${goal}`, tone: booked >= goal ? "emerald" : "amber" });
       }
 

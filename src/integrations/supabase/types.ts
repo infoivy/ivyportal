@@ -1807,6 +1807,7 @@ export type Database = {
           created_by: string
           id: string
           kind: string
+          student_id: string | null
         }
         Insert: {
           body: string
@@ -1814,6 +1815,7 @@ export type Database = {
           created_by: string
           id?: string
           kind?: string
+          student_id?: string | null
         }
         Update: {
           body?: string
@@ -1821,8 +1823,17 @@ export type Database = {
           created_by?: string
           id?: string
           kind?: string
+          student_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "team_chat_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       testimonials: {
         Row: {

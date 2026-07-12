@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +21,7 @@ type Message = {
   kind: Kind;
   created_by: string;
   created_at: string;
+  student_id: string | null;
 };
 
 const KIND_META: Record<Kind, { label: string; badge: string | null }> = {
@@ -47,6 +48,7 @@ function ChatInner({ userId, isAdmin }: { userId: string; isAdmin: boolean }) {
   const qc = useQueryClient();
   const [body, setBody] = useState("");
   const [kind, setKind] = useState<Kind>("general");
+  const [taggedStudent, setTaggedStudent] = useState<{ id: string; name: string } | null>(null);
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -61,11 +63,13 @@ function ChatInner({ userId, isAdmin }: { userId: string; isAdmin: boolean }) {
       ]);
       const names: Record<string, string> = {};
       (profsRes.data ?? []).forEach((p: { id: string; display_name: string | null }) => { names[p.id] = p.display_name ?? "Teammate"; });
+      const studentNames: Record<string, string> = {};
+      ((studentsRes.data ?? []) as { id: string; full_name: string }[]).forEach((st) => { studentNames[st.id] = st.full_name; });
       const people: MentionPerson[] = [
         ...(profsRes.data ?? []).filter((p: any) => p.display_name).map((p: any) => ({ id: p.id, name: p.display_name as string, kind: "member" as const })),
         ...((studentsRes.data ?? []) as { id: string; full_name: string }[]).map((s) => ({ id: s.id, name: s.full_name, kind: "student" as const })),
       ];
-      return { messages: (msgsRes.data ?? []) as Message[], names, people };
+      return { messages: (msgsRes.data ?? []) as Message[], names, studentNames, people };
     },
   });
   const d = pageQ.data;
@@ -92,11 +96,12 @@ function ChatInner({ userId, isAdmin }: { userId: string; isAdmin: boolean }) {
     const text = body.trim();
     if (!text) return;
     setSending(true);
-    const { error } = await supabase.from("team_chat").insert({ body: text, kind, created_by: userId });
+    const { error } = await supabase.from("team_chat").insert({ body: text, kind, created_by: userId, student_id: taggedStudent?.id ?? null });
     setSending(false);
     if (error) return toast.error(error.message);
     setBody("");
     setKind("general");
+    setTaggedStudent(null);
     qc.invalidateQueries({ queryKey: ["page", "chat"] });
   };
 
@@ -155,6 +160,15 @@ function ChatInner({ userId, isAdmin }: { userId: string; isAdmin: boolean }) {
                         </button>
                       )}
                     </div>
+                    {m.student_id && (
+                      <Link
+                        to="/students/$id"
+                        params={{ id: m.student_id }}
+                        className="inline-flex items-center gap-1 text-[11px] font-medium text-warning-fg bg-warning-bg border border-warning/25 rounded-full px-2 py-0.5 mt-1 hover:opacity-80"
+                      >
+                        {d?.studentNames[m.student_id] ?? "Student"}
+                      </Link>
+                    )}
                     <p className="text-[13px] text-foreground leading-relaxed mt-1 whitespace-pre-wrap break-words">{m.body}</p>
                   </div>
                 </div>
@@ -165,7 +179,7 @@ function ChatInner({ userId, isAdmin }: { userId: string; isAdmin: boolean }) {
       </div>
 
       {/* Composer */}
-      <div className="shrink-0 pt-3">
+      <div className="shrink-0 pt-3 relative">
         <div className="flex gap-1.5 mb-2">
           {(Object.keys(KIND_META) as Kind[]).map(k => (
             <button
@@ -182,10 +196,17 @@ function ChatInner({ userId, isAdmin }: { userId: string; isAdmin: boolean }) {
           ))}
         </div>
         <div className="relative">
+          {taggedStudent && (
+            <span className="absolute -top-7 left-0 inline-flex items-center gap-1.5 text-[11px] font-medium text-warning-fg bg-warning-bg border border-warning/25 rounded-full px-2 py-0.5">
+              {taggedStudent.name}
+              <button onClick={() => setTaggedStudent(null)} className="hover:opacity-70">×</button>
+            </span>
+          )}
           <MentionTextarea
             value={body}
             onChange={setBody}
             onSubmit={send}
+            onPick={(p) => { if (p.kind === "student") setTaggedStudent({ id: p.id, name: p.name }); }}
             people={d?.people ?? []}
             placeholder={kind === "general" ? "Write a message… (@ to mention, Enter to send)" : `Report ${kind === "tip" ? "a tip" : `a${kind === "issue" ? "n issue" : " bug"}`}…`}
           />

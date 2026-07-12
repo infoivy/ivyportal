@@ -13,8 +13,6 @@ const SECTIONS: { key: keyof DashboardPrefs; label: string; description: string 
   { key: "showFunnel", label: "Funnel performance", description: "Volume by stage" },
   { key: "showCashLeaderboard", label: "Weekly cash leaderboard", description: "Top closer by cash this week" },
   { key: "showTopSetters", label: "Top performing setters", description: "Sorted by booked calls" },
-  { key: "showGoals", label: "Quarterly goals", description: "Progress toward targets" },
-  { key: "showTeamComp", label: "Team composition", description: "Active setters, EOD averages" },
   { key: "showWeeklyLeaderboard", label: "Setter weekly leaderboard", description: "This-week rollup by setter" },
   { key: "showQuickActions", label: "Quick actions", description: "Shortcut buttons at the bottom" },
 ];

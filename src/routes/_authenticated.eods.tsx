@@ -1237,9 +1237,17 @@ function NumField({ label, value, onChange }: { label: string; value: number; on
   return (
     <div className="space-y-1">
       <Label className="text-[13px] text-muted-foreground">{label}</Label>
-      <div className="flex items-center gap-1">
-        <button type="button" onClick={() => bump(-1)} className="h-9 w-8 rounded-sm border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--accent)] text-lg leading-none">−</button>
-        <Input
+      {/* One joined control — floating −/+ buttons read as clutter */}
+      <div className="flex h-9 items-stretch rounded-md border border-input bg-[var(--background)] overflow-hidden focus-within:border-ring">
+        <button
+          type="button"
+          onClick={() => bump(-1)}
+          aria-label={`Decrease ${label}`}
+          className="w-9 shrink-0 grid place-items-center text-sm text-muted-foreground hover:text-foreground hover:bg-muted motion-safe:transition-colors border-r border-input/60"
+        >
+          −
+        </button>
+        <input
           type="text"
           inputMode="numeric"
           pattern="[0-9]*"
@@ -1253,9 +1261,16 @@ function NumField({ label, value, onChange }: { label: string; value: number; on
           }}
           onBlur={() => setDraft(String(value))}
           onFocus={e => e.currentTarget.select()}
-          className="bg-[var(--background)] border-[var(--border)] rounded-sm h-9 text-sm text-center"
+          className="min-w-0 flex-1 bg-transparent text-sm text-center tabular-nums outline-none"
         />
-        <button type="button" onClick={() => bump(1)} className="h-9 w-8 rounded-sm border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--accent)] text-lg leading-none">+</button>
+        <button
+          type="button"
+          onClick={() => bump(1)}
+          aria-label={`Increase ${label}`}
+          className="w-9 shrink-0 grid place-items-center text-sm text-muted-foreground hover:text-foreground hover:bg-muted motion-safe:transition-colors border-l border-input/60"
+        >
+          +
+        </button>
       </div>
     </div>
   );

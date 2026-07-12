@@ -46,7 +46,6 @@ import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated.c
 import { Route as AuthenticatedCallsRouteImport } from './routes/_authenticated.calls'
 import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticated.calendar'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated.analytics'
-import { Route as AuthenticatedAlertsRouteImport } from './routes/_authenticated.alerts'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated.admin'
 import { Route as AuthenticatedActionItemsRouteImport } from './routes/_authenticated.action-items'
 import { Route as AuthenticatedPoliciesIndexRouteImport } from './routes/_authenticated.policies.index'
@@ -251,11 +250,6 @@ const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedAlertsRoute = AuthenticatedAlertsRouteImport.update({
-  id: '/alerts',
-  path: '/alerts',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -338,7 +332,6 @@ export interface FileRoutesByFullPath {
   '/print': typeof PrintRoute
   '/action-items': typeof AuthenticatedActionItemsRoute
   '/admin': typeof AuthenticatedAdminRoute
-  '/alerts': typeof AuthenticatedAlertsRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/calendar': typeof AuthenticatedCalendarRoute
   '/calls': typeof AuthenticatedCallsRoute
@@ -390,7 +383,6 @@ export interface FileRoutesByTo {
   '/print': typeof PrintRoute
   '/action-items': typeof AuthenticatedActionItemsRoute
   '/admin': typeof AuthenticatedAdminRoute
-  '/alerts': typeof AuthenticatedAlertsRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/calendar': typeof AuthenticatedCalendarRoute
   '/calls': typeof AuthenticatedCallsRoute
@@ -442,7 +434,6 @@ export interface FileRoutesById {
   '/print': typeof PrintRoute
   '/_authenticated/action-items': typeof AuthenticatedActionItemsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
-  '/_authenticated/alerts': typeof AuthenticatedAlertsRoute
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
   '/_authenticated/calendar': typeof AuthenticatedCalendarRoute
   '/_authenticated/calls': typeof AuthenticatedCallsRoute
@@ -496,7 +487,6 @@ export interface FileRouteTypes {
     | '/print'
     | '/action-items'
     | '/admin'
-    | '/alerts'
     | '/analytics'
     | '/calendar'
     | '/calls'
@@ -548,7 +538,6 @@ export interface FileRouteTypes {
     | '/print'
     | '/action-items'
     | '/admin'
-    | '/alerts'
     | '/analytics'
     | '/calendar'
     | '/calls'
@@ -599,7 +588,6 @@ export interface FileRouteTypes {
     | '/print'
     | '/_authenticated/action-items'
     | '/_authenticated/admin'
-    | '/_authenticated/alerts'
     | '/_authenticated/analytics'
     | '/_authenticated/calendar'
     | '/_authenticated/calls'
@@ -915,13 +903,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAnalyticsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/alerts': {
-      id: '/_authenticated/alerts'
-      path: '/alerts'
-      fullPath: '/alerts'
-      preLoaderRoute: typeof AuthenticatedAlertsRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/admin': {
       id: '/_authenticated/admin'
       path: '/admin'
@@ -1094,7 +1075,6 @@ const AuthenticatedStudentsRouteWithChildren =
 interface AuthenticatedRouteChildren {
   AuthenticatedActionItemsRoute: typeof AuthenticatedActionItemsRoute
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
-  AuthenticatedAlertsRoute: typeof AuthenticatedAlertsRoute
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
   AuthenticatedCalendarRoute: typeof AuthenticatedCalendarRoute
   AuthenticatedCallsRoute: typeof AuthenticatedCallsRoute
@@ -1134,7 +1114,6 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedActionItemsRoute: AuthenticatedActionItemsRoute,
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
-  AuthenticatedAlertsRoute: AuthenticatedAlertsRoute,
   AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
   AuthenticatedCalendarRoute: AuthenticatedCalendarRoute,
   AuthenticatedCallsRoute: AuthenticatedCallsRoute,

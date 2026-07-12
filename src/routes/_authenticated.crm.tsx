@@ -59,7 +59,8 @@ function relTime(iso: string) {
 
 function CrmTabs() {
   const { roles } = useAuth();
-  const canMochi = roles.includes("admin") || roles.includes("founder");
+  const canMochi = roles.includes("admin") || roles.includes("founder") || roles.includes("cofounder");
+  const canClose = roles.includes("admin") || roles.includes("closer") || roles.includes("cofounder");
   const [tab, setTab] = useState<"close" | "mochi">(() => {
     try { return (localStorage.getItem("isa-crm-tab") as "close" | "mochi") ?? "close"; } catch { return "close"; }
   });
@@ -70,14 +71,14 @@ function CrmTabs() {
   return (
     <div className="min-h-full">
       <div className="max-w-[1400px] mx-auto p-3 sm:p-4 space-y-3">
-        {canMochi && (
+        {canMochi && canClose && (
           <SegmentedControl
-            segments={[{ label: "Close", value: "close" }, { label: "Instagram", value: "mochi" }] as const}
+            segments={[...(canClose ? [{ label: "Close", value: "close" }] : []), ...(canMochi ? [{ label: "Mochi", value: "mochi" }] : [])] as { label: string; value: string }[]}
             value={tab}
             onChange={(t) => change(t as "close" | "mochi")}
           />
         )}
-        {tab === "mochi" && canMochi ? <MochiCrmInner embedded /> : <Crm />}
+        {(tab === "mochi" && canMochi) || !canClose ? <MochiCrmInner embedded /> : <Crm />}
       </div>
     </div>
   );

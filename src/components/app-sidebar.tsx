@@ -5,7 +5,7 @@ import { useAccess } from "@/lib/use-access";
 import {
   LayoutDashboard, FileText, BookOpen, Calendar, GraduationCap,
   Database, Users, Shield, UserCircle, School, HeartHandshake, Phone, DollarSign, Armchair,
-  ListChecks, Quote, Building2, Sparkles, Clapperboard, Wallet, Megaphone,
+  ListChecks, Quote, Building2, Sparkles, Clapperboard, Wallet,
   MessagesSquare,
 } from "lucide-react";
 
@@ -35,14 +35,13 @@ const salesItems: Item[] = [
   { title: "Closer Resources", url: "/closer-resources", icon: DollarSign,    roles: ["admin", "closer"] },
   { title: "Training",         url: "/training",         icon: GraduationCap, roles: ["admin", "founder", "closer", "setter", "coach"] },
   { title: "Calendar",         url: "/calendar",         icon: Calendar },
-  { title: "CRM",              url: "/crm",              icon: Database,      roles: ["admin", "founder"] },
+  { title: "CRM",              url: "/crm",              icon: Database,      roles: ["admin", "founder", "cofounder", "closer"] },
 ];
 
 const studentsItems: Item[] = [
   { title: "Students",        url: "/students",        icon: School,         roles: ["admin", "closer", "csm", "coach"] },
   { title: "1-on-1 Calls",    url: "/calls",           icon: Phone,          roles: ["admin", "coach", "csm"] },
   { title: "CSM",             url: "/csm",             icon: HeartHandshake, roles: ["admin", "csm", "coach", "founder", "cofounder"] },
-  { title: "Student Alerts",  url: "/alerts",          icon: Megaphone,      roles: ["admin", "founder", "coach", "closer", "setter", "csm"] },
   { title: "Testimonials",    url: "/testimonials",    icon: Quote,          roles: ["admin", "coach", "closer", "setter", "csm"] },
 ];
 

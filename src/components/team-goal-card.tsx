@@ -30,9 +30,12 @@ export function TeamGoalCard() {
   if (!g?.active && !canEdit) return null;
 
   const pct = g?.active && g.amount ? Math.min(100, Math.round((g.progress / g.amount) * 100)) : 0;
-  const remaining = g?.active && g.amount ? Math.max(0, g.amount - g.progress) : 0;
   const daysLeft = g?.deadline
     ? Math.max(0, Math.ceil((new Date(g.deadline + "T23:59:59").getTime() - Date.now()) / 86400000))
+    : null;
+  // humanDue says "due by Thursday" / "due tomorrow" — reword for a goal.
+  const deadlineLabel = g?.deadline
+    ? humanDue(g.deadline).replace(/^was due/, "was due").replace(/^due by/, "by").replace(/^due/, "by")
     : null;
 
   if (!g?.active) {
@@ -53,7 +56,7 @@ export function TeamGoalCard() {
         <div className="flex items-center gap-2">
           <Flag className="h-4 w-4 text-primary" />
           <span className="text-[14px] font-medium text-foreground">
-            Team goal — an extra ${g.amount!.toLocaleString()} {g.deadline && <span className="text-muted-foreground font-normal">{humanDue(g.deadline).replace("due", "by").replace("was by", "was due")}</span>}
+            Team goal — ${g.amount!.toLocaleString()} {deadlineLabel && <span className="text-muted-foreground font-normal">{deadlineLabel}</span>}
           </span>
         </div>
         <div className="flex items-center gap-3">
@@ -71,11 +74,7 @@ export function TeamGoalCard() {
         />
       </div>
       {g.note && <p className="text-[12px] text-muted-foreground mt-2">{g.note}</p>}
-      {!g.note && remaining > 0 && (
-        <p className="text-[12px] text-muted-foreground mt-2">
-          ${remaining.toLocaleString()} to go — every set and close counts.
-        </p>
-      )}
+
     </div>
   );
 }

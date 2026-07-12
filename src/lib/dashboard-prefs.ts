@@ -10,8 +10,6 @@ export type DashboardPrefs = {
   showFunnel: boolean;
   showCashLeaderboard: boolean;
   showTopSetters: boolean;
-  showGoals: boolean;
-  showTeamComp: boolean;
   showWeeklyLeaderboard: boolean;
   showQuickActions: boolean;
 };
@@ -25,8 +23,6 @@ export const DEFAULT_PREFS: DashboardPrefs = {
   showFunnel: true,
   showCashLeaderboard: true,
   showTopSetters: true,
-  showGoals: true,
-  showTeamComp: true,
   showWeeklyLeaderboard: true,
   showQuickActions: true,
 };
