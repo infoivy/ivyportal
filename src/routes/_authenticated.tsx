@@ -85,7 +85,7 @@ function AuthedLayout() {
         } else if (!rolesArr.includes("admin") && !rolesArr.includes("founder")) {
           if (rolesArr.includes("setter")) navigate({ to: "/eods", replace: true });
           else if (rolesArr.includes("closer")) navigate({ to: "/sales", search: { tab: "operations" }, replace: true });
-          else if (rolesArr.includes("csm")) navigate({ to: "/csm", replace: true });
+          else if (rolesArr.includes("csm")) navigate({ to: "/csm", search: { tab: "overview" }, replace: true });
           else if (rolesArr.includes("coach")) navigate({ to: "/calls", replace: true });
         }
       } else {
@@ -96,7 +96,7 @@ function AuthedLayout() {
         // CSMs without another dashboard-holding role land on their own board
         const canDashboard = rolesArr.some(r => ["admin", "founder", "closer", "setter", "coach"].includes(r));
         if (!canDashboard && rolesArr.includes("csm") && path === "/dashboard") {
-          navigate({ to: "/csm", replace: true });
+          navigate({ to: "/csm", search: { tab: "overview" }, replace: true });
         }
       }
     };

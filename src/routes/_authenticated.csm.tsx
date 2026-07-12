@@ -1,4 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { SegmentedControl } from "@/components/ui/segmented-control";
+import { CsmOverview } from "@/components/csm-overview";
+import { StudentSuccessInner } from "./_authenticated.student-success";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,7 +18,8 @@ import { SelectField } from "@/components/ui/select-field";
 
 export const Route = createFileRoute("/_authenticated/csm")({
   head: () => ({ meta: [{ title: "CSM — ISA Portal" }] }),
-  component: CsmPage,
+  validateSearch: (s: Record<string, unknown>) => ({ tab: (s.tab as string) ?? "overview" }),
+  component: CsmHub,
 });
 
 type Student = { id: string; full_name: string; email: string | null; phase: string; status: string; coach_id: string | null };
@@ -49,9 +53,50 @@ const KIND_META: Record<TallyKind, { label: string; icon: typeof Video; color: s
 
 const isToday = (iso: string) => iso.slice(0, 10) === todayBiz();
 
+const CSM_TABS = [
+  { label: "Overview", value: "overview" },
+  { label: "Workspace", value: "workspace" },
+  { label: "Student Success", value: "success" },
+] as const;
+
+function CsmHub() {
+  const { roles } = useAuth();
+  const canView = roles.some(r => ["admin", "csm", "coach", "founder", "cofounder"].includes(r));
+  const { tab } = Route.useSearch();
+  const navigate = useNavigate({ from: "/csm" });
+
+  if (!canView) {
+    return (
+      <div className="p-8 max-w-2xl mx-auto">
+        <div className="card-surface p-8 text-center text-sm text-muted-foreground">
+          Admin, CSM, coach, founder, or co-founder access required.
+        </div>
+      </div>
+    );
+  }
+
+  const active = tab === "workspace" ? "workspace" : tab === "success" ? "success" : "overview";
+  return (
+    <div className="p-4 sm:p-6 max-w-[1400px] mx-auto space-y-5">
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-display text-foreground">CSM</h1>
+          <p className="text-body text-muted-foreground mt-0.5">Fulfillment — every student to a landed role.</p>
+        </div>
+        <SegmentedControl
+          segments={CSM_TABS}
+          value={active}
+          onChange={(t) => navigate({ search: { tab: t }, replace: true })}
+        />
+      </header>
+      {active === "overview" ? <CsmOverview /> : active === "success" ? <StudentSuccessInner /> : <CsmPage />}
+    </div>
+  );
+}
+
 function CsmPage() {
   const { user, roles } = useAuth();
-  const canUse = roles.includes("admin") || roles.includes("csm");
+  const canUse = roles.some(r => ["admin", "csm", "coach", "founder", "cofounder"].includes(r));
   const [students, setStudents] = useState<Student[]>([]);
   const [notes, setNotes] = useState<CsmNote[]>([]);
   const [tally, setTally] = useState<TallyRow[]>([]);
@@ -271,7 +316,7 @@ function CsmPage() {
   if (!canUse) return <div className="p-6 text-sm text-muted-foreground">CSM access required.</div>;
 
   return (
-    <div className="p-4 sm:p-6 max-w-[1400px] mx-auto space-y-5">
+    <div className="space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--border)] pb-4">
         <div>
           <div className="flex items-center gap-2 text-[10px] text-warning-fg mb-1">

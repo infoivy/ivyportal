@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -34,23 +34,13 @@ type CsmNote = { student_id: string; created_at: string };
 const isoDate = (d: Date) => d.toISOString().slice(0, 10);
 
 function StudentSuccessHQ() {
-  const { roles } = useAuth();
-  const canView = roles.some(r => ["admin", "csm", "coach", "founder"].includes(r));
-
-  if (!canView) {
-    return (
-      <div className="p-8 max-w-2xl mx-auto">
-        <div className="border border-border bg-card rounded-sm p-8 text-center text-sm text-muted-foreground">
-          Admin, CSM, coach, or founder access required.
-        </div>
-      </div>
-    );
-  }
-
-  return <StudentSuccessInner />;
+  // Folded into the CSM hub — keep old links working.
+  const navigate = useNavigate();
+  useEffect(() => { navigate({ to: "/csm", search: { tab: "success" } as any, replace: true }); }, [navigate]);
+  return null;
 }
 
-function StudentSuccessInner() {
+export function StudentSuccessInner() {
   const today = isoDate(new Date());
   const sevenDaysAgo = isoDate(new Date(Date.now() - 7 * 86400000));
   const fourteenDaysAgo = isoDate(new Date(Date.now() - 14 * 86400000));
