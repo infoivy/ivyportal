@@ -76,3 +76,11 @@ Probed the MCP with curl (401 → `.well-known/oauth-protected-resource` → aut
 - **Whop reconciliation** (`getFinanceRevenue`): Whop charges vs logged deals + paid installments, amount±$1/±3d matching, gap + both unmatched lists on the Finance page. Whop txn window is Mochi's last_90_days — months older than that show logged-only.
 - **8 SOPs imported** to Knowledge Hub via Google Docs export endpoint (4 content→Founder Hub, 2 closing, 1 CSM, + Abu Bilal's phone discovery framework cleaned into markdown → setting). All editable in-portal.
 - Aalian's "10 booked" mystery: his own test EOD (10s across the board) — data layer working as intended.
+
+## Addendum 6 — 2026-07-12 ~5am: CRM combine, CSM hub, 431 fix
+
+- **/crm combined**: Close | Instagram tabs (Mochi view extracted to `mochi-crm.tsx`, shared with /mochi). Lead drawer now shows Close's own calls (who called, disposition, duration) and Close notes above the portal's internal notes; BOOKED APPOINTMENT badge; "Booked · in CRM now" census on the dashboard activity card (labeled, never summed with EOD sets). Sidebar: one CRM entry (admin+founder).
+- **431 root cause**: countLeadNotes passed ~200 lead ids in a GET query string — request line overflowed at real data volume. Moved to POST.
+- **CSM hub**: /csm tabs Overview | Workspace | Student Success. Overview = fulfillment dept view for Faizan: success rate vs 95% target bar, students by phase, quiet-students count, weekly output (calls/looms/roleplays/check-ins, recharts). /student-success redirects. Access: admin/csm/coach/founder/cofounder.
+- Close opportunity values: cents → dollars, rounded.
+- Remaining queued: member performance pages w/ AI read (#19), Sales+Revenue merge (#20), native-controls sweep (#16).
