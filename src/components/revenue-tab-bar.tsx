@@ -4,8 +4,8 @@ import { useAuth } from "@/lib/auth-context";
 // One Sales section: operations + money live behind a single sidebar entry,
 // tabbed here. Each tab only shows for roles its route admits.
 const TABS = [
-  { label: "Sales", url: "/sales", roles: ["admin", "closer"] },
-  { label: "Revenue", url: "/revenue", roles: ["admin", "closer", "coach", "founder"] },
+  { label: "Activity", url: "/sales", roles: ["admin", "closer"] },
+  { label: "Deals", url: "/revenue", roles: ["admin", "closer", "coach", "founder"] },
   { label: "Installments", url: "/installments", roles: ["admin", "closer", "coach", "founder"] },
   { label: "Payouts", url: "/payouts", roles: ["admin", "cofounder"] },
   { label: "Finance", url: "/finance", roles: ["founder", "cofounder"] },

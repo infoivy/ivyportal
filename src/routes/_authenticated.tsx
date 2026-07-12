@@ -205,7 +205,7 @@ function AuthedLayout() {
               </div>
             </header>
 
-            <main className={`flex-1 min-w-0 overflow-auto relative ${studentOnly ? "pb-16 sm:pb-0" : ""}`}>
+            <main className={`flex-1 min-w-0 overflow-x-clip relative ${studentOnly ? "pb-16 sm:pb-0" : ""}`}>
               {/* relative + min-h-full: full-viewport pages (SOP canvas) position
                   against this wrapper even while the enter animation holds a transform */}
               <div className="page-enter relative min-h-full">
@@ -260,8 +260,8 @@ function PendingApproval({ email, onSignOut }: { email: string; onSignOut: () =>
 
 const PAGE_LABELS: Array<[string, string]> = [
   ["/dashboard", "Overview"], ["/eods", "Performance"], ["/action-items", "Action Items"], ["/chat", "Team Chat"],
-  ["/sales", "Sales"], ["/revenue", "Revenue"], ["/installments", "Revenue"],
-  ["/payouts", "Revenue"], ["/closer-resources", "Closer Resources"], ["/training", "Training"],
+  ["/sales", "Sales"], ["/revenue", "Deals"], ["/installments", "Installments"],
+  ["/payouts", "Payouts"], ["/closer-resources", "Closer Resources"], ["/training", "Training"],
   ["/calendar", "Calendar"], ["/crm", "CRM"], ["/finance", "Finance"], ["/mochi", "Mochi"], ["/students", "Students"], ["/calls", "1-on-1 Calls"],
   ["/student-success", "Student Success"], ["/csm", "CSM"],
   ["/testimonials", "Testimonials"], ["/knowledge", "Knowledge"], ["/policies", "Knowledge"],

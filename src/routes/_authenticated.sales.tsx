@@ -73,7 +73,7 @@ function SalesInner() {
       <RevenueTabBar />
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-display text-foreground">Sales</h1>
+          <h1 className="text-display text-foreground">Activity</h1>
           <p className="text-body text-muted-foreground mt-1">Today's compliance, full-funnel trends, and scorecards — one view.</p>
         </div>
       </div>

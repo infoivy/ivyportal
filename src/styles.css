@@ -157,6 +157,20 @@
   /* Functional highlight (search matches) */
   --highlight: rgba(250, 204, 21, 0.45);
 
+  /* ISA setting-process canvas — section category colors (both themes).
+     These are content identity colors, not UI chrome; the decolorize pass
+     must leave them alone. */
+  --tab-stages:   #6366F1;
+  --tab-inbound:  #0EA5E9;
+  --tab-outbound: #16A34A;
+  --tab-story:    #D946EF;
+  --tab-conv:     #F59E0B;
+  --tab-dmclose:  #EF4444;
+  --tab-followup: #14B8A6;
+  --tab-psych:    #8B5CF6;
+  --tab-engage:   #EC4899;
+  --tab-pacing:   #64748B;
+
   /* Motion */
   --duration-fast: 150ms;
   --duration-base: 200ms;

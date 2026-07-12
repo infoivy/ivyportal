@@ -320,7 +320,7 @@ function RevenueInner() {
     <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3 pb-5 mb-1">
         <div>
-          <h1 className="text-display text-foreground">Revenue</h1>
+          <h1 className="text-display text-foreground">Deals</h1>
           <p className="text-body text-muted-foreground mt-1">Deals, commissions, and cash performance</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">

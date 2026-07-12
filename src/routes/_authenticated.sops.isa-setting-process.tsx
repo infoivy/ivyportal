@@ -41,10 +41,10 @@ const SUGGESTIONS = ["objections", "budget", "halal", "hijrah", "mindset", "fami
 
 // Constraint filter chips (one-tap during a live convo)
 const CONSTRAINT_CHIPS: { label: string; query: string; color: string }[] = [
-  { label: "Money", query: "money", color: "var(--muted-foreground)" },
-  { label: "Time", query: "time", color: "var(--muted-foreground)" },
-  { label: "Belief", query: "belief", color: "var(--muted-foreground)" },
-  { label: "Deen", query: "deen", color: "var(--muted-foreground)" },
+  { label: "Money", query: "money", color: "var(--tab-outbound)" },
+  { label: "Time", query: "time", color: "var(--tab-conv)" },
+  { label: "Belief", query: "belief", color: "var(--tab-psych)" },
+  { label: "Deen", query: "deen", color: "var(--tab-inbound)" },
 ];
 
 const SEARCH_TAGS: Record<TabId, string[]> = {

@@ -791,14 +791,20 @@ function buildDayList(days: number): string[] {
 }
 
 /**
- * Drop leading days from before anyone was on the team — a 30-day window
- * when everyone joined this week reads as a wall of empty squares. Keeps a
- * minimum of 7 columns so the widgets stay readable.
+ * Drop leading days from before there was any signal — a 30-day window when
+ * everyone joined this week reads as a wall of empty squares. "Signal"
+ * means the earliest of: first submitted EOD in the window, or the earliest
+ * join date. Keeps a minimum of 7 columns so the widgets stay readable.
  */
-function trimToTeamStart(dayList: string[], roster: RosterEntry[]): string[] {
+function trimToTeamStart(dayList: string[], roster: RosterEntry[], eods: GridEod[]): string[] {
+  const windowStart = dayList[0];
+  const signals: string[] = [];
   const joins = roster.map((r) => r.joined_at).filter(Boolean) as string[];
-  if (!joins.length || joins.length < roster.length) return dayList;
-  const first = joins.reduce((a, b) => (a < b ? a : b));
+  if (joins.length === roster.length && joins.length > 0) signals.push(joins.reduce((a, b) => (a < b ? a : b)));
+  else return dayList; // someone has no join date — don't guess
+  const eodDates = eods.map((e) => e.report_date).filter((d) => d >= windowStart);
+  if (eodDates.length) signals.push(eodDates.reduce((a, b) => (a < b ? a : b)));
+  const first = signals.reduce((a, b) => (a < b ? a : b));
   const trimmed = dayList.filter((d) => d >= first);
   if (trimmed.length === dayList.length) return dayList;
   return trimmed.length >= 7 ? trimmed : dayList.slice(-7);
@@ -915,7 +921,7 @@ function ComplianceGraphs({ eods, roster }: { eods: GridEod[]; roster: RosterEnt
   const [compare, setCompare] = useState(false);
   const [personFilter, setPersonFilter] = useState<string>("all");
   const rawDayList = useMemo(() => buildDayList(days), [days]);
-  const dayList = useMemo(() => trimToTeamStart(rawDayList, roster), [rawDayList, roster]);
+  const dayList = useMemo(() => trimToTeamStart(rawDayList, roster, eods), [rawDayList, roster, eods]);
   const filteredEods = useMemo(() => personFilter === "all" ? eods : eods.filter(e => e.user_id === personFilter), [eods, personFilter]);
   const filteredRoster = useMemo(() => personFilter === "all" ? roster : roster.filter(r => r.user_id === personFilter), [roster, personFilter]);
 
@@ -994,9 +1000,11 @@ function SubmissionsGrid({ dayList, roster, eods }: { dayList: string[]; roster:
               <div className="text-[11px] text-muted-foreground w-28 shrink-0 truncate">{r.display_name}</div>
               <div className="flex gap-0.5">
                 {dayList.map(d => {
-                  const beforeJoin = r.joined_at && d < r.joined_at;
                   const eod = byUserDate.get(`${r.user_id}::${d}`);
-                  const bg = beforeJoin ? "bg-muted" : !eod ? "bg-danger/25" : st ? (didHitKpi(eod, st) ? "bg-success/35" : "bg-warning/30") : "bg-success/35";
+                  const beforeJoin = !eod && r.joined_at && d < r.joined_at;
+                  const bg = eod
+                    ? (st ? (didHitKpi(eod, st) ? "bg-success/35" : "bg-warning/30") : "bg-success/35")
+                    : beforeJoin ? "bg-muted" : "bg-danger/25";
                   return <div key={d} className={`h-3 w-3 rounded-[2px] ${bg}`} title={`${r.display_name} · ${fmtLong(d)} · ${!eod ? "missed" : "submitted"}`} />;
                 })}
               </div>
