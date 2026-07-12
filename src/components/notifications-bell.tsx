@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Bell, DollarSign } from "lucide-react";
+import { Bell, DollarSign, HeartHandshake } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -17,6 +17,80 @@ type Reminder = {
 
 import { fetchSetNudges, type SetNudge } from "@/lib/set-nudges";
 
+type StudentAlert = {
+  key: string;
+  student_id: string;
+  student_name: string;
+  text: string;
+  tone: string;
+};
+
+const DAY = 86400000;
+
+/**
+ * Computed fulfillment alerts — no table, same pattern as installment
+ * reminders. Flags: no student EOD in 3+ days, payment behind, no 1-on-1 in
+ * 14+ days (coaching phase), placement interview inside the next 48h.
+ */
+async function fetchStudentAlerts(): Promise<StudentAlert[]> {
+  const now = Date.now();
+  const thirty = new Date(now - 30 * DAY).toISOString().slice(0, 10);
+  const sixty = new Date(now - 60 * DAY).toISOString().slice(0, 10);
+  const [students, eods, calls, placements] = await Promise.all([
+    supabase.from("students").select("id, full_name, phase, payment_state").eq("status", "active"),
+    supabase.from("student_eods").select("student_id, report_date").gte("report_date", thirty),
+    supabase.from("student_calls").select("student_id, call_date").eq("status", "completed").gte("call_date", sixty),
+    supabase.from("student_placements").select("student_id, business_name, interview_at").not("interview_at", "is", null),
+  ]);
+
+  const lastEod = new Map<string, string>();
+  for (const e of (eods.data ?? []) as { student_id: string; report_date: string }[]) {
+    if (e.report_date > (lastEod.get(e.student_id) ?? "")) lastEod.set(e.student_id, e.report_date);
+  }
+  const lastCall = new Map<string, string>();
+  for (const c of (calls.data ?? []) as { student_id: string; call_date: string }[]) {
+    if (c.call_date > (lastCall.get(c.student_id) ?? "")) lastCall.set(c.student_id, c.call_date);
+  }
+
+  const alerts: StudentAlert[] = [];
+  for (const st of (students.data ?? []) as { id: string; full_name: string; phase: string; payment_state: string | null }[]) {
+    const eodDate = lastEod.get(st.id);
+    const eodDays = eodDate ? Math.floor((now - new Date(eodDate).getTime()) / DAY) : null;
+    if (eodDays == null) {
+      alerts.push({ key: `eod-${st.id}`, student_id: st.id, student_name: st.full_name, text: "No EOD in the last 30 days", tone: "text-danger-fg" });
+    } else if (eodDays >= 3) {
+      alerts.push({ key: `eod-${st.id}`, student_id: st.id, student_name: st.full_name, text: `No EOD in ${eodDays} days`, tone: eodDays >= 5 ? "text-danger-fg" : "text-warning-fg" });
+    }
+    if (st.payment_state === "behind") {
+      alerts.push({ key: `pay-${st.id}`, student_id: st.id, student_name: st.full_name, text: "Payment behind", tone: "text-danger-fg" });
+    }
+    if (["coaching_1on1", "applying"].includes(st.phase)) {
+      const callDate = lastCall.get(st.id);
+      const callDays = callDate ? Math.floor((now - new Date(callDate).getTime()) / DAY) : null;
+      if (callDays == null || callDays > 14) {
+        alerts.push({ key: `call-${st.id}`, student_id: st.id, student_name: st.full_name, text: callDays == null ? "No 1-on-1 on record" : `No 1-on-1 in ${callDays} days`, tone: "text-warning-fg" });
+      }
+    }
+  }
+  const nameById = new Map(((students.data ?? []) as { id: string; full_name: string }[]).map((s) => [s.id, s.full_name]));
+  for (const pl of (placements.data ?? []) as { student_id: string; business_name: string; interview_at: string }[]) {
+    const t = new Date(pl.interview_at).getTime();
+    if (t > now && t - now <= 48 * 3600_000) {
+      const hours = Math.max(1, Math.round((t - now) / 3600_000));
+      alerts.push({
+        key: `int-${pl.student_id}-${pl.interview_at}`,
+        student_id: pl.student_id,
+        student_name: nameById.get(pl.student_id) ?? "Student",
+        text: `Interview at ${pl.business_name} in ${hours}h`,
+        tone: "text-success-fg",
+      });
+    }
+  }
+  // Worst first: red tones ahead of amber, interviews (positive prep) on top.
+  const rank = (a: StudentAlert) => (a.key.startsWith("int-") ? 0 : a.tone.includes("danger") ? 1 : 2);
+  return alerts.sort((a, b) => rank(a) - rank(b)).slice(0, 30);
+}
+
 function bucketLabel(days: number) {
   if (days < 0) return { text: `Overdue ${Math.abs(days)}d`, tone: "text-danger-fg" };
   if (days === 0) return { text: "Due today", tone: "text-warning-fg" };
@@ -28,6 +102,7 @@ export function NotificationsBell() {
   const { user, roles } = useAuth();
   const isAdmin = roles.includes("admin");
   const isCoach = roles.includes("coach");
+  const isFulfillment = ["admin", "csm", "coach", "cofounder"].some((r) => roles.includes(r));
 
   const fetchReminders = async (): Promise<Reminder[]> => {
     const today = new Date();
@@ -85,12 +160,21 @@ export function NotificationsBell() {
   });
   const setNudges = setsQ.data ?? [];
 
-  if (!isAdmin && !isCoach && setNudges.length === 0) return null;
+  const alertsQ = useQuery({
+    queryKey: ["notifications", "students"],
+    enabled: !!user && isFulfillment,
+    refetchInterval: 5 * 60_000,
+    staleTime: 60_000,
+    queryFn: fetchStudentAlerts,
+  });
+  const studentAlerts = alertsQ.data ?? [];
+
+  if (!isAdmin && !isCoach && !isFulfillment && setNudges.length === 0) return null;
 
   const overdue = items.filter(i => i.days < 0).length;
   const dueSoon = items.length - overdue;
-  const badgeCount = items.length + setNudges.length;
-  const badgeTone = overdue > 0 || setNudges.length > 0 ? "bg-danger" : dueSoon > 0 ? "bg-warning" : "";
+  const badgeCount = items.length + setNudges.length + studentAlerts.length;
+  const badgeTone = overdue > 0 || setNudges.length > 0 || studentAlerts.some(a => a.tone.includes("danger")) ? "bg-danger" : dueSoon > 0 || studentAlerts.length > 0 ? "bg-warning" : "";
 
   return (
     <Popover>
@@ -134,7 +218,22 @@ export function NotificationsBell() {
               ))}
             </div>
           )}
-          {items.length === 0 && setNudges.length === 0 ? (
+          {studentAlerts.length > 0 && (
+            <div className="border-b border-[var(--border)]">
+              {studentAlerts.map(a => (
+                <Link key={a.key} to="/students/$id" params={{ id: a.student_id }} className="flex items-start gap-2 px-3 py-2 hover:bg-muted/50 transition">
+                  <div className="mt-0.5 h-6 w-6 rounded-sm bg-muted flex items-center justify-center">
+                    <HeartHandshake className="h-3 w-3 text-muted-foreground" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs text-foreground truncate">{a.student_name}</div>
+                    <div className={`text-[10px] ${a.tone}`}>{a.text}</div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+          {items.length === 0 && setNudges.length === 0 && studentAlerts.length === 0 ? (
             <div className="px-3 py-8 text-center text-xs text-muted-foreground">Nothing needs you right now</div>
           ) : (
             items.map(item => {
