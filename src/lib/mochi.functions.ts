@@ -477,3 +477,112 @@ export const setTeamGoal = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+async function requireFinanceAccess(context: Ctx) {
+  const checks = await Promise.all(
+    ["founder", "admin", "cofounder"].map((r) =>
+      context.supabase.rpc("has_role", { _user_id: context.userId, _role: r }),
+    ),
+  );
+  if (!checks.some((c: { data: boolean }) => c.data)) throw new Error("Forbidden: finance access only");
+}
+
+export type FinanceRevenue = {
+  connected: boolean;
+  from: string;
+  to: string;
+  whopGross: number;
+  whopNet: number;
+  whopCount: number;
+  loggedTotal: number;
+  matchedTotal: number;
+  /** Whop cash the portal has no logged close/installment for (and vice versa). */
+  gap: number;
+  unmatchedWhop: { date: string; amount: number; customer: string; product: string }[];
+  unmatchedLogged: { date: string; amount: number; student: string; kind: "deal" | "installment" }[];
+};
+
+type WhopTxn = { occurred_at: string; amount: string; net: string; status: string; kind: string; customer_name?: string; customer_email?: string; product_name?: string };
+
+/**
+ * Whop is the source of truth for cash in. This reconciles the window's Whop
+ * charges against logged deals + paid installments: same amount within ±3
+ * days = the same money (never double-counted). What's left on either side
+ * is the gap to investigate (e.g. Wise money forwarded into Whop manually,
+ * or a close nobody logged).
+ */
+export const getFinanceRevenue = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { from: string; to: string }) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(input?.from ?? "") || !/^\d{4}-\d{2}-\d{2}$/.test(input?.to ?? "")) {
+      throw new Error("from/to must be YYYY-MM-DD");
+    }
+    return { from: input.from, to: input.to };
+  })
+  .handler(async ({ context, data }): Promise<FinanceRevenue> => {
+    const ctx = context as Ctx;
+    await requireFinanceAccess(ctx);
+    const empty: FinanceRevenue = {
+      connected: false, from: data.from, to: data.to,
+      whopGross: 0, whopNet: 0, whopCount: 0, loggedTotal: 0, matchedTotal: 0, gap: 0,
+      unmatchedWhop: [], unmatchedLogged: [],
+    };
+
+    const [dealsRes, paysRes] = await Promise.all([
+      supabaseAdmin.from("deals")
+        .select("deal_date, cash_collected_upfront, student_name")
+        .gte("deal_date", data.from).lte("deal_date", data.to)
+        .gt("cash_collected_upfront", 0),
+      supabaseAdmin.from("installment_payments")
+        .select("due_date, amount, status, installments(students(full_name))")
+        .eq("status", "paid")
+        .gte("due_date", data.from).lte("due_date", data.to),
+    ]);
+    const logged = [
+      ...(dealsRes.data ?? []).map((d: any) => ({
+        date: d.deal_date as string, amount: Number(d.cash_collected_upfront),
+        student: (d.student_name as string) ?? "Unknown", kind: "deal" as const, matched: false,
+      })),
+      ...(paysRes.data ?? []).map((p: any) => ({
+        date: p.due_date as string, amount: Number(p.amount),
+        student: p.installments?.students?.full_name ?? "Unknown", kind: "installment" as const, matched: false,
+      })),
+    ];
+    const loggedTotal = logged.reduce((s, l) => s + l.amount, 0);
+
+    const creds = await readCreds(ctx);
+    if (!creds.access) return { ...empty, loggedTotal, gap: -loggedTotal, unmatchedLogged: logged };
+
+    let txns: WhopTxn[] = [];
+    try {
+      const res = await callTool<{ results?: WhopTxn[] }>(ctx, "get_payment_transactions", {
+        time_period: "last_90_days", kind: "CHARGE", status: "SUCCEEDED", limit: 200,
+      });
+      txns = (res.results ?? []).filter((t) => {
+        const d = t.occurred_at.slice(0, 10);
+        return d >= data.from && d <= data.to;
+      });
+    } catch { /* provider not synced — logged side still returns */ }
+
+    const dayDiff = (a: string, b: string) => Math.abs((new Date(a).getTime() - new Date(b).getTime()) / 86400000);
+    const unmatchedWhop: FinanceRevenue["unmatchedWhop"] = [];
+    let matchedTotal = 0;
+    for (const t of txns) {
+      const amount = Number(t.amount);
+      const date = t.occurred_at.slice(0, 10);
+      const hit = logged.find((l) => !l.matched && Math.abs(l.amount - amount) <= 1 && dayDiff(l.date, date) <= 3);
+      if (hit) { hit.matched = true; matchedTotal += amount; }
+      else unmatchedWhop.push({ date, amount, customer: t.customer_name || t.customer_email || "Unknown", product: t.product_name ?? "" });
+    }
+
+    const whopGross = txns.reduce((s, t) => s + Number(t.amount), 0);
+    const whopNet = txns.reduce((s, t) => s + Number(t.net || t.amount), 0);
+    return {
+      connected: true, from: data.from, to: data.to,
+      whopGross: Math.round(whopGross), whopNet: Math.round(whopNet), whopCount: txns.length,
+      loggedTotal: Math.round(loggedTotal), matchedTotal: Math.round(matchedTotal),
+      gap: Math.round(whopGross - loggedTotal),
+      unmatchedWhop,
+      unmatchedLogged: logged.filter((l) => !l.matched).map(({ matched: _m, ...rest }) => rest),
+    };
+  });

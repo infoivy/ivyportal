@@ -18,7 +18,7 @@ export const Route = createFileRoute("/_authenticated/team")({
   component: TeamPage,
 });
 
-type AppRole = "admin" | "closer" | "setter" | "coach" | "csm" | "founder" | "student";
+type AppRole = "admin" | "closer" | "setter" | "coach" | "csm" | "founder" | "cofounder" | "student";
 type SetterType = "phone" | "dm" | "full_cycle" | null;
 type Member = {
   id: string;
@@ -37,6 +37,7 @@ const ROLES: { key: AppRole; icon: React.ComponentType<{ className?: string }>; 
   { key: "coach", icon: GraduationCap, color: "text-chart-4 border-chart-4/25 bg-chart-4/10" },
   { key: "csm", icon: HeartHandshake, color: "text-warning-fg border-warning/25 bg-warning-bg" },
   { key: "founder", icon: Sparkles, color: "text-chart-6 border-chart-6/25 bg-chart-6/10" },
+  { key: "cofounder", icon: Sparkles, color: "text-chart-2 border-chart-2/25 bg-chart-2/10" },
   { key: "student", icon: School, color: "text-foreground border-foreground/30 bg-muted" },
 ];
 

@@ -25,7 +25,7 @@ export const CATEGORY_LABEL: Record<DocCategory, string> = {
   content: "Content",
 };
 
-export const ALL_ROLES = ["admin", "closer", "setter", "coach", "csm", "student", "founder"] as const;
+export const ALL_ROLES = ["admin", "closer", "setter", "coach", "csm", "student", "founder", "cofounder"] as const;
 export type AppRole = (typeof ALL_ROLES)[number];
 
 export function slugify(input: string): string {

@@ -56,7 +56,7 @@ const libraryItems: Item[] = [
 
 const founderItems: Item[] = [
   { title: "Gathering Hub", url: "/command", icon: Armchair, roles: ["founder"] },
-  { title: "Finance", url: "/finance", icon: Wallet, roles: ["founder"] },
+  { title: "Finance", url: "/finance", icon: Wallet, roles: ["founder", "cofounder"] },
   { title: "Content", url: "/content", icon: Clapperboard, roles: ["founder"] },
 ];
 

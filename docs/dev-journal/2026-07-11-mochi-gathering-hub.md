@@ -67,3 +67,12 @@ Probed the MCP with curl (401 → `.well-known/oauth-protected-resource` → aut
 - **NumField** now `type="text" inputMode="numeric"` with digit/leading-zero stripping — `type="number"` caused the "030"-style caret jams. Verified by scripted typing/backspace.
 - **"EOD due" chip** used UTC today while the form used business-timezone today — post-midnight GMT+3 the two disagreed and the chip returned on refresh. Both use `todayBiz()` now.
 - **Team page role chips**: closer/coach/founder/student had a muted "selected" color identical to unselected — toggles looked like no-ops. Every role now has a distinct on-state color.
+
+## Addendum 5 — 2026-07-12 late night: goal bar, mentions, finance/Whop, privacy, SOPs
+
+- Team goal bar (Whop-driven progress, admin-editable, whole team sees it), inline @-mentions in chat+alerts (MentionTextarea), EOD auto-fill continuous (manual edits win), Room de-dithered ("Hearth"), humanized due dates, setter activity 24H default, global themed scrollbars, calendar tz combobox, Close cents fix.
+- **Action-item privacy** (migration): non-admins see only student items + own (assigned/created); admins/founders see all.
+- **cofounder role** (enum + policies, two-step migration — enum values can't be used in the same transaction): Finance opens to Faizan & Abu Bilal via the Team page chip; founder-only surfaces untouched.
+- **Whop reconciliation** (`getFinanceRevenue`): Whop charges vs logged deals + paid installments, amount±$1/±3d matching, gap + both unmatched lists on the Finance page. Whop txn window is Mochi's last_90_days — months older than that show logged-only.
+- **8 SOPs imported** to Knowledge Hub via Google Docs export endpoint (4 content→Founder Hub, 2 closing, 1 CSM, + Abu Bilal's phone discovery framework cleaned into markdown → setting). All editable in-portal.
+- Aalian's "10 booked" mystery: his own test EOD (10s across the board) — data layer working as intended.

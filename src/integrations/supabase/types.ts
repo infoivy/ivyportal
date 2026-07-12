@@ -2021,6 +2021,7 @@ export type Database = {
         | "student"
         | "csm"
         | "founder"
+        | "cofounder"
       content_platform:
         | "instagram"
         | "tiktok"
@@ -2204,6 +2205,7 @@ export const Constants = {
         "student",
         "csm",
         "founder",
+        "cofounder",
       ],
       content_platform: [
         "instagram",

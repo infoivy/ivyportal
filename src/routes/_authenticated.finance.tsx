@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { getFinanceRevenue } from "@/lib/mochi.functions";
 import { money } from "@/lib/revenue";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -41,10 +42,10 @@ const iso = (d: Date) => format(d, "yyyy-MM-dd"); // local, not UTC — month bo
 
 function FinancePage() {
   const { roles } = useAuth();
-  if (!roles.includes("founder")) {
+  if (!roles.includes("founder") && !roles.includes("cofounder")) {
     return (
       <div className="p-8 max-w-2xl mx-auto">
-        <div className="card-surface p-8 text-center text-[13px] text-muted-foreground">Founder access required.</div>
+        <div className="card-surface p-8 text-center text-[13px] text-muted-foreground">Founder or co-founder access required.</div>
       </div>
     );
   }
@@ -84,6 +85,14 @@ function FinanceInner() {
     },
   });
   const d = pageQ.data;
+
+  const revQ = useQuery({
+    queryKey: ["finance-revenue", iso(monthStart)],
+    queryFn: () => getFinanceRevenue({ data: { from: iso(monthStart), to: iso(monthEnd) } }),
+    staleTime: 5 * 60_000,
+    retry: 1,
+  });
+  const rev = revQ.data;
 
   useEffect(() => {
     if (d?.settings?.processor_balance != null) setBalanceDraft(String(d.settings.processor_balance));
@@ -199,11 +208,66 @@ function FinanceInner() {
 
       {/* Top strip */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-        <StatCard label="Cash in (collected)" value={calc ? money(calc.collected) : "—"} sub={calc && calc.expectedRest > 0 ? `+ ${money(calc.expectedRest)} scheduled` : undefined} icon={<ArrowDownRight className="h-3.5 w-3.5" />} />
+        <StatCard label="Cash in · Whop" value={rev?.connected ? money(rev.whopGross) : calc ? money(calc.collected) : "—"} sub={rev?.connected ? `${rev.whopCount} payments · ${money(rev.whopNet)} net` : undefined} icon={<ArrowDownRight className="h-3.5 w-3.5" />} />
         <StatCard label="Expenses" value={calc ? money(calc.expensesTotal) : "—"} sub={calc ? `${calc.monthExpenses.length} items` : undefined} icon={<ArrowUpRight className="h-3.5 w-3.5" />} />
         <StatCard label="Profit (projected)" value={calc ? money(calc.profitProjected) : "—"} sub={calc ? `${money(calc.profitSoFar)} banked so far` : undefined} icon={<TrendingUp className="h-3.5 w-3.5" />} tone={calc && calc.profitProjected < 0 ? "danger" : "default"} />
         <StatCard label="MRR (scheduled)" value={calc ? money(calc.mrrNow) : "—"} sub="installments due this month" icon={<PiggyBank className="h-3.5 w-3.5" />} />
       </div>
+
+      {/* ── Reconciliation: Whop vs what the team logged ──────────────── */}
+      {rev?.connected && (
+        <div className="card-surface p-5">
+          <div className="flex flex-wrap items-baseline justify-between gap-2 mb-3">
+            <h2 className="text-sm font-semibold">Revenue reconciliation</h2>
+            <span className="text-caption text-muted-foreground">
+              Whop {money(rev.whopGross)} · logged {money(rev.loggedTotal)} ·{" "}
+              <span className={rev.gap === 0 ? "text-success-fg" : "text-warning-fg"}>
+                gap {rev.gap >= 0 ? "+" : "−"}{money(Math.abs(rev.gap))}
+              </span>
+            </span>
+          </div>
+          {rev.gap === 0 && rev.unmatchedWhop.length === 0 && rev.unmatchedLogged.length === 0 ? (
+            <p className="text-[13px] text-muted-foreground">Every Whop payment matches a logged close or installment. Clean month.</p>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5">
+                  In Whop, not logged ({rev.unmatchedWhop.length})
+                </div>
+                {rev.unmatchedWhop.length === 0 && <p className="text-[12px] text-muted-foreground">Nothing — all Whop money is accounted for.</p>}
+                <div className="space-y-1">
+                  {rev.unmatchedWhop.map((t, i) => (
+                    <div key={i} className="flex items-baseline justify-between gap-3 text-[13px] rounded-md bg-muted/50 px-2.5 py-1.5">
+                      <span className="truncate">{t.customer}{t.product ? <span className="text-muted-foreground"> · {t.product}</span> : null}</span>
+                      <span className="tabular-nums shrink-0">{money(t.amount)} <span className="text-muted-foreground">{t.date.slice(5)}</span></span>
+                    </div>
+                  ))}
+                </div>
+                {rev.unmatchedWhop.length > 0 && (
+                  <p className="text-[11px] text-muted-foreground mt-1.5">Money that arrived without a logged close — e.g. sent in from Wise, or a close nobody logged.</p>
+                )}
+              </div>
+              <div>
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5">
+                  Logged, not in Whop ({rev.unmatchedLogged.length})
+                </div>
+                {rev.unmatchedLogged.length === 0 && <p className="text-[12px] text-muted-foreground">Nothing — every logged close has Whop money behind it.</p>}
+                <div className="space-y-1">
+                  {rev.unmatchedLogged.map((l, i) => (
+                    <div key={i} className="flex items-baseline justify-between gap-3 text-[13px] rounded-md bg-muted/50 px-2.5 py-1.5">
+                      <span className="truncate">{l.student} <span className="text-muted-foreground">· {l.kind}</span></span>
+                      <span className="tabular-nums shrink-0">{money(l.amount)} <span className="text-muted-foreground">{l.date.slice(5)}</span></span>
+                    </div>
+                  ))}
+                </div>
+                {rev.unmatchedLogged.length > 0 && (
+                  <p className="text-[11px] text-muted-foreground mt-1.5">Logged revenue with no Whop payment — collected elsewhere (Wise/bank) or double-logged.</p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-2">
         {/* MRR chart */}
