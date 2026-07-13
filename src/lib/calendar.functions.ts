@@ -228,7 +228,7 @@ export type UpcomingSet = {
   notes: string | null;
   source: string;
   gcal_html_link: string | null;
-  reminder_log: Partial<Record<"48h" | "24h" | "3h" | "1h", "reminded" | "no_response">>;
+  reminder_log: Partial<Record<"48h" | "24h" | "3h" | "1h", "reminded" | "confirmed" | "no_response">>;
   confirmed_at: string | null;
   status: "active" | "cancelled" | "completed";
 };
