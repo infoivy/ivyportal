@@ -49,3 +49,15 @@ User asked to "disable fake data". Ran `npm run demo:remove` — removed 48 demo
 **Team pending badge (deployed).** Red count badge on the Team sidebar entry (red dot when collapsed) while signups with no role are waiting to be placed. Count = active profiles minus anyone in user_roles; refreshes on navigation.
 
 **Sets view (deployed).** Summary stat tiles (upcoming/unclaimed/reminder due/unconfirmed/confirmed), day-grouped list (Today/Tomorrow/weekday), and a per-set "N/4 reminders sent · 24h due now / next opens in Xh" line. Perf: gated the team Google Calendar fan-out on `pageView === "calendar"` so the Sets view doesn't pay for it, and made reminder/confirm ticks optimistic (instant chip flip, background reconcile) instead of a server round-trip + full list refetch.
+
+---
+
+## Update 2026-07-14 (second wave): money truth, portal overhaul, compliance
+
+**Whop net cash (deployed).** Finance cash-in/profit/split, dashboard hero, and Revenue tile all read Whop NET (fees ~3.5% are real) via new getWhopCashWindow; auto-refresh 5min. Installment mark-paid checks Whop for a matching charge (findWhopMatch, ±$1/±3d) and warns; leaving paid clears paid_at; collected windowed by paid_at; payout queries require status=paid. **Blocker for founder: Whop is DISCONNECTED inside Mochi (last sync Jul 11) — reconnect at Mochi → Settings → Integrations.** The expected 2k (hishamkhan89) FAILED twice on Jul 10.
+
+**Date-integrity sweep (deployed).** Audit found 3 more copies of the EOD-overwrite class: student portal EODs (UTC), CSM quick-EOD (Dubai tz), SOPs counter (UTC + stale localStorage date + partial payload wiping narrative — now merges). All use the rep's local day now. computeStreak was UTC-shifted for Dubai users — fixed. EOD delete confirms. Only one historical overwrite existed (Aalian Jul 12, pre-fix).
+
+**Student portal (deployed).** Arabic salam, program-aware views (group = no coach/1:1), Start Here checklist (student_guide_steps table), leaderboard (server fn), KPI rework (outreach removed; 3 roleplays+3 looms pre-approval, 5 apps post), sidebar Journey/Library groups, new bottom nav.
+
+**Also deployed:** per-student EOD-exempt toggle + student header spacing; CSM daily target (profiles.csm_daily_target, Team editor, EOD bar); sets-vs-expected graph + lighter expected bars; 24H defaults + 3D preset + shadcn DateField everywhere; setter claim-your-set bell pings + inline set notes; Close outreach-compliance sweep (per Lead Score tier; verified live: 229 leads, A-tier fully contacted, 17/40 B-tier uncontacted, 178 leads unscored).
