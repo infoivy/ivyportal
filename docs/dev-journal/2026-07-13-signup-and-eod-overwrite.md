@@ -39,3 +39,13 @@ User asked to "disable fake data". Ran `npm run demo:remove` — removed 48 demo
 **Tab refocus → /eods redirect.** supabase-js re-emits `SIGNED_IN` whenever a tab regains visibility; `_authenticated.tsx` treated every such event as a fresh login and re-ran role-based landing, so returning to the portal tab from another tab shoved setters to /eods (closers → /sales, CSMs → /csm) no matter what page they were on. Fixed by tracking the already-loaded user id in the layout — a SIGNED_IN for the same user is demoted to a plain state refresh. Genuine sign-ins still land correctly via the one-shot `isa-landing-pending` sessionStorage flag, which is checked after the demotion.
 
 **24h default ranges.** Founder asked for every graph to default to 24 hours. Changed defaults from 30d → 24h in dashboard, sales, revenue, and admin (all already had a 24H preset in the RangePicker), and Mochi CRM period from last_7_days → today. Fake-data removal re-verified: 0 demo users, 0 is_demo rows.
+
+---
+
+## Update 2026-07-14: scholarship, Team badge, Sets view rework
+
+**Scholarship (deployed).** Founder was blocked placing a free student — the payment modal required total > 0. Added `scholarship` to the `payment_state` enum (migration `20260714080000`, applied live), a "Scholarship (free)" option in both the Set up payment modal and Add Student modal (no deal, no installment plan, full program access), a Scholarship badge in students list/detail, and updated the generated Supabase types by hand (two enum lines, avoiding a full-file regen).
+
+**Team pending badge (deployed).** Red count badge on the Team sidebar entry (red dot when collapsed) while signups with no role are waiting to be placed. Count = active profiles minus anyone in user_roles; refreshes on navigation.
+
+**Sets view (deployed).** Summary stat tiles (upcoming/unclaimed/reminder due/unconfirmed/confirmed), day-grouped list (Today/Tomorrow/weekday), and a per-set "N/4 reminders sent · 24h due now / next opens in Xh" line. Perf: gated the team Google Calendar fan-out on `pageView === "calendar"` so the Sets view doesn't pay for it, and made reminder/confirm ticks optimistic (instant chip flip, background reconcile) instead of a server round-trip + full list refetch.
