@@ -485,7 +485,7 @@ function CalendarPage() {
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
               <h2 className="text-title text-foreground">Set reminders</h2>
-              <p className="text-caption text-muted-foreground">Track every set: tick each reminder window as you send it, confirm the lead, and unconfirmed sets auto-drop 6h before the call.</p>
+              <p className="text-caption text-muted-foreground">Closing calls booked through the 1-on-1 Pathway Onboarding link land here automatically. Tick each reminder as you send it, confirm the lead, and unconfirmed sets auto-drop 6h before the call.</p>
             </div>
             <div className="flex gap-1">
               {(["all", "mine"] as const).map((f) => (
@@ -902,11 +902,11 @@ function SetReminderDialog({ onClose, onCreate }: {
   );
 }
 
-const WINDOWS: { key: "48h" | "24h" | "3h" | "1h"; label: string; minutes: number }[] = [
-  { key: "48h", label: "48h", minutes: 48 * 60 },
-  { key: "24h", label: "24h", minutes: 24 * 60 },
-  { key: "3h", label: "3h", minutes: 3 * 60 },
-  { key: "1h", label: "1h", minutes: 60 },
+const WINDOWS: { key: "48h" | "24h" | "3h" | "1h"; label: string; full: string; minutes: number }[] = [
+  { key: "48h", label: "48h", full: "2 days before", minutes: 48 * 60 },
+  { key: "24h", label: "24h", full: "1 day before", minutes: 24 * 60 },
+  { key: "3h", label: "3h", full: "3 hours before", minutes: 3 * 60 },
+  { key: "1h", label: "1h", full: "1 hour before", minutes: 60 },
 ];
 
 function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, onConfirm, onCancel, onRestore, onUnclaim, onAssign, team = [], toLocal, big = false }: {
@@ -1046,8 +1046,84 @@ function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, o
               </div>
             )}
 
-            {/* Reminder tracker: tick each window as you send it */}
-            {s.owner_id && (
+            {/* Reminder tracker — big view gets a per-window checklist, small view keeps chips */}
+            {s.owner_id && big && (
+              <div className="space-y-2">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                  {WINDOWS.map((w) => {
+                    const state = log?.[w.key];
+                    const windowOpen = msLeft > 0 && msLeft <= w.minutes * 60_000;
+                    const opensAt = new Date(new Date(s.event_start).getTime() - w.minutes * 60_000);
+                    const next: ReminderState | null = state === "reminded" ? "no_response" : state === "no_response" ? null : "reminded";
+                    return (
+                      <button
+                        key={w.key}
+                        disabled={!canTrack}
+                        onClick={() => onTrack(s.id, w.key, next)}
+                        aria-pressed={state === "reminded"}
+                        aria-label={`${w.full} reminder for ${s.prospect}`}
+                        className={`text-left rounded-md border px-3 py-2 motion-safe:transition-colors disabled:cursor-default ${
+                          state === "reminded"
+                            ? "border-success/25 bg-success-bg"
+                            : state === "no_response"
+                              ? "border-warning/25 bg-warning-bg"
+                              : windowOpen
+                                ? "border-danger/25 bg-danger-bg"
+                                : "border-border bg-[var(--background)] hover:bg-muted/60"
+                        }`}
+                      >
+                        <div className={`text-caption font-medium ${state === "reminded" ? "text-success-fg" : state === "no_response" ? "text-warning-fg" : windowOpen ? "text-danger-fg" : "text-foreground"}`}>
+                          {w.full}{state === "reminded" ? " · sent ✓" : state === "no_response" ? " · no reply" : ""}
+                        </div>
+                        <div className="text-micro text-muted-foreground mt-0.5">
+                          {state === "reminded"
+                            ? "tap if they didn't reply"
+                            : state === "no_response"
+                              ? "tap to clear"
+                              : windowOpen
+                                ? "due now — tap once sent"
+                                : msLeft <= 0 ? "call has started" : `opens ${format(toLocal(opensAt), "EEE h:mm a")}`}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="flex flex-wrap items-center gap-2.5">
+                  {farOut && (
+                    <button
+                      disabled={!canTrack}
+                      onClick={() => onTrack(s.id, todayWarmKey, warmToday ? null : "reminded")}
+                      title={warmToday ? "Warm touch logged today — click to undo" : "Booked days out — send one warm touch per day so the lead stays engaged"}
+                      className={`text-caption font-medium rounded-md px-3 py-1.5 border motion-safe:transition-colors disabled:cursor-default ${
+                        warmToday
+                          ? "text-success-fg bg-success-bg border-success/25"
+                          : "text-warning-fg bg-warning-bg border-warning/25 animate-pulse"
+                      }`}
+                    >
+                      {warmToday ? "Kept warm today ✓" : "Keep warm today"}
+                    </button>
+                  )}
+                  {canTrack && (confirmed ? (
+                    <button onClick={() => onConfirm(s.id, false)} className="text-caption text-muted-foreground hover:text-foreground" title="Undo confirmation">
+                      Confirmed {format(toLocal(s.confirmed_at!), "MMM d, h:mm a")} · undo
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => onConfirm(s.id, true)}
+                        className="text-caption font-medium rounded-md px-3 py-1.5 border border-success/25 text-success-fg hover:bg-success-bg motion-safe:transition-colors"
+                      >
+                        Lead confirmed ✓
+                      </button>
+                      <button onClick={() => onCancel(s.id)} className="text-caption text-muted-foreground hover:text-danger-fg motion-safe:transition-colors">
+                        Didn't confirm — remove from calendar
+                      </button>
+                    </>
+                  ))}
+                </div>
+              </div>
+            )}
+            {s.owner_id && !big && (
               <div className="flex flex-wrap items-center gap-1.5 pl-0.5">
                 <span className="text-micro text-muted-foreground mr-0.5">Reminders:</span>
                 {WINDOWS.map((w) => {
@@ -1074,34 +1150,14 @@ function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, o
                     </button>
                   );
                 })}
-                {farOut && (
-                  <button
-                    disabled={!canTrack}
-                    onClick={() => onTrack(s.id, todayWarmKey, warmToday ? null : "reminded")}
-                    title={warmToday ? "Warm touch logged today — click to undo" : "Booked days out — send one warm touch per day so the lead stays engaged"}
-                    className={`text-micro font-medium rounded-full px-2 py-0.5 border motion-safe:transition-colors disabled:cursor-default ${
-                      warmToday
-                        ? "text-success-fg bg-success-bg border-success/25"
-                        : "text-warning-fg bg-warning-bg border-warning/25 animate-pulse"
-                    }`}
-                  >
-                    {warmToday ? "kept warm today ✓" : "keep warm today"}
-                  </button>
-                )}
-                <span className="mx-1 h-3 w-px bg-border" />
                 {canTrack && (confirmed ? (
                   <button onClick={() => onConfirm(s.id, false)} className="text-micro text-muted-foreground hover:text-foreground" title="Undo confirmation">
-                    confirmed {format(toLocal(s.confirmed_at!), "MMM d, h:mm a")} · undo
+                    confirmed · undo
                   </button>
                 ) : (
-                  <>
-                    <button onClick={() => onConfirm(s.id, true)} className="text-micro font-medium text-success-fg hover:opacity-80">
-                      Lead confirmed ✓
-                    </button>
-                    <button onClick={() => onCancel(s.id)} className="text-micro text-muted-foreground hover:text-danger-fg">
-                      remove from calendar
-                    </button>
-                  </>
+                  <button onClick={() => onConfirm(s.id, true)} className="text-micro font-medium text-success-fg hover:opacity-80">
+                    Lead confirmed ✓
+                  </button>
                 ))}
               </div>
             )}

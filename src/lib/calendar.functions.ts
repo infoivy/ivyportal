@@ -270,8 +270,17 @@ export const deleteSetReminder = createServerFn({ method: "POST" })
 // ── Calendly ────────────────────────────────────────────────────────────────
 
 /**
- * Pull upcoming Calendly bookings into set_reminders as UNCLAIMED sets.
- * No-ops quietly when CALENDLY_API_KEY is absent. Dedupes on the event URI.
+ * Only bookings made through the closing-call link are sets (founder-confirmed
+ * 2026-07-14): the shared link resolves to the "1-on-1 Pathway Onboarding"
+ * event type, one per host. Coaching/advisor/application calls never import.
+ */
+const CLOSING_CALL_LINK = "https://calendly.com/d/d3f3-7pm-z9r/1-on-1-pathway-onboarding";
+
+/**
+ * Pull upcoming Calendly CLOSING-CALL bookings into set_reminders as
+ * UNCLAIMED sets. No-ops quietly when CALENDLY_API_KEY is absent. Dedupes on
+ * the event URI. Fails closed: if the closing event type can't be resolved
+ * (renamed/deleted), nothing imports rather than importing coaching calls.
  */
 export const syncCalendlySets = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -284,6 +293,23 @@ export const syncCalendlySets = createServerFn({ method: "POST" })
     if (!meRes.ok) return { ok: false, imported: 0, reason: `calendly-auth-${meRes.status}` };
     const me = (await meRes.json()) as { resource: { uri: string; current_organization: string } };
 
+    // Resolve which event types count as closing calls: the type the shared
+    // link points at (matched by URL or slug), plus same-named types on the
+    // other hosts' calendars.
+    const etParams = new URLSearchParams({ organization: me.resource.current_organization, count: "100" });
+    const etRes = await fetch(`https://api.calendly.com/event_types?${etParams}`, { headers: H });
+    if (!etRes.ok) return { ok: false, imported: 0, reason: `calendly-types-${etRes.status}` };
+    const etJson = (await etRes.json()) as { collection: { uri: string; name: string; scheduling_url: string }[] };
+    const slug = CLOSING_CALL_LINK.split("/").filter(Boolean).pop()!;
+    const direct = etJson.collection.filter(
+      (t) => t.scheduling_url === CLOSING_CALL_LINK || t.scheduling_url.split("/").filter(Boolean).pop() === slug,
+    );
+    const closingNames = new Set(direct.map((t) => t.name));
+    const closingTypes = new Set(
+      etJson.collection.filter((t) => closingNames.has(t.name)).map((t) => t.uri),
+    );
+    if (closingTypes.size === 0) return { ok: false, imported: 0, reason: "closing-type-not-found" };
+
     const params = new URLSearchParams({
       organization: me.resource.current_organization,
       status: "active",
@@ -293,9 +319,10 @@ export const syncCalendlySets = createServerFn({ method: "POST" })
     });
     const evRes = await fetch(`https://api.calendly.com/scheduled_events?${params}`, { headers: H });
     if (!evRes.ok) return { ok: false, imported: 0, reason: `calendly-events-${evRes.status}` };
-    const evJson = (await evRes.json()) as {
-      collection: { uri: string; name: string; start_time: string; end_time: string }[];
+    const evAll = (await evRes.json()) as {
+      collection: { uri: string; name: string; start_time: string; end_time: string; event_type: string }[];
     };
+    const evJson = { collection: evAll.collection.filter((ev) => closingTypes.has(ev.event_type)) };
 
     // Invitee names, one call per event, in parallel
     const events = await Promise.all(evJson.collection.map(async (ev) => {
