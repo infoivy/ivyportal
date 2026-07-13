@@ -8,6 +8,7 @@ import { humanDue } from "@/lib/dates";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DateField } from "@/components/ui/date-field";
 
 /**
  * The collective goal — one bar the whole team pushes together.
@@ -122,7 +123,7 @@ function GoalEditor({ current, onSaved, label }: { current: { amount: number | n
         </div>
         <div className="space-y-1">
           <label className="text-[12px] text-muted-foreground">Deadline</label>
-          <Input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
+          <DateField value={deadline} onChange={setDeadline} clearable={false} className="h-9" />
         </div>
         <div className="space-y-1">
           <label className="text-[12px] text-muted-foreground">Note to the team (optional)</label>

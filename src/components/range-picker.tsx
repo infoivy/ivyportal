@@ -3,17 +3,19 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/button";
 import { Calendar as CalIcon } from "lucide-react";
 import { format, subDays } from "date-fns";
+import { DateField } from "@/components/ui/date-field";
 
-export type DateRange = { from: Date; to: Date; preset: "24h" | "7d" | "30d" | "90d" | "custom" };
+export type DateRange = { from: Date; to: Date; preset: "24h" | "3d" | "7d" | "30d" | "90d" | "custom" };
 
-const PRESETS: { key: "24h" | "7d" | "30d" | "90d"; label: string; days: number }[] = [
+const PRESETS: { key: "24h" | "3d" | "7d" | "30d" | "90d"; label: string; days: number }[] = [
   { key: "24h", label: "24H", days: 1 },
+  { key: "3d", label: "3D", days: 3 },
   { key: "7d", label: "7D", days: 7 },
   { key: "30d", label: "30D", days: 30 },
   { key: "90d", label: "90D", days: 90 },
 ];
 
-export function rangeFor(preset: "24h" | "7d" | "30d" | "90d"): DateRange {
+export function rangeFor(preset: "24h" | "3d" | "7d" | "30d" | "90d"): DateRange {
   const days = PRESETS.find((p) => p.key === preset)!.days;
   const to = new Date();
   return { from: subDays(to, days - 1), to, preset };
@@ -75,21 +77,11 @@ export function RangePicker({ value, onChange }: { value: DateRange; onChange: (
           <div className="space-y-2">
             <div>
               <label className="text-[10px] text-muted-foreground">From</label>
-              <input
-                type="date"
-                value={fromDraft}
-                onChange={(e) => setFromDraft(e.target.value)}
-                className="w-full h-8 rounded-sm border border-input bg-background px-2 text-xs"
-              />
+              <DateField value={fromDraft} onChange={setFromDraft} clearable={false} className="h-8" />
             </div>
             <div>
               <label className="text-[10px] text-muted-foreground">To</label>
-              <input
-                type="date"
-                value={toDraft}
-                onChange={(e) => setToDraft(e.target.value)}
-                className="w-full h-8 rounded-sm border border-input bg-background px-2 text-xs"
-              />
+              <DateField value={toDraft} onChange={setToDraft} clearable={false} className="h-8" />
             </div>
             <div className="flex gap-2 pt-1">
               <Button size="sm" variant="outline" className="flex-1" onClick={() => setOpen(false)}>Cancel</Button>

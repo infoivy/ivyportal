@@ -1314,6 +1314,7 @@ export type Database = {
           avatar_path: string | null
           avatar_url: string | null
           base_pay_monthly: number | null
+          csm_daily_target: number
           commission_cap_pct: number | null
           created_at: string
           dashboard_prefs: Json
@@ -1328,6 +1329,7 @@ export type Database = {
           avatar_path?: string | null
           avatar_url?: string | null
           base_pay_monthly?: number | null
+          csm_daily_target?: number
           commission_cap_pct?: number | null
           created_at?: string
           dashboard_prefs?: Json
@@ -1342,6 +1344,7 @@ export type Database = {
           avatar_path?: string | null
           avatar_url?: string | null
           base_pay_monthly?: number | null
+          csm_daily_target?: number
           commission_cap_pct?: number | null
           created_at?: string
           dashboard_prefs?: Json

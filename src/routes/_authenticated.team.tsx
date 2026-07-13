@@ -26,6 +26,7 @@ type Member = {
   avatar_path: string | null;
   phone: string | null;
   base_pay_monthly: number | null;
+  csm_daily_target: number | null;
   active: boolean;
   roles: string[];
   setter_type: SetterType;
@@ -62,7 +63,7 @@ function TeamPage() {
 
   const fetchPage = async () => {
     const [{ data: profs }, { data: rolesData }, tpls, { data: progressRows }] = await Promise.all([
-      supabase.from("profiles").select("id, display_name, avatar_path, active, phone, setter_type, base_pay_monthly" as any),
+      supabase.from("profiles").select("id, display_name, avatar_path, active, phone, setter_type, base_pay_monthly, csm_daily_target" as any),
       supabase.from("user_roles").select("user_id, role"),
       fetchAllTemplates(),
       supabase.from("onboarding_progress").select("user_id, role, step_id"),
@@ -79,6 +80,7 @@ function TeamPage() {
       avatar_path: p.avatar_path ?? null,
       phone: p.phone ?? null,
       base_pay_monthly: p.base_pay_monthly ?? null,
+      csm_daily_target: (p as any).csm_daily_target ?? null,
       active: p.active ?? true,
       roles: rolesByUser.get(p.id) ?? [],
       setter_type: (p.setter_type ?? null) as SetterType,
@@ -366,6 +368,7 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
   const [displayName, setDisplayName] = useState(member.display_name ?? "");
   const [phone, setPhone] = useState(member.phone ?? "");
   const [basePay, setBasePay] = useState(member.base_pay_monthly != null ? String(member.base_pay_monthly) : "");
+  const [csmTarget, setCsmTarget] = useState(String((member as any).csm_daily_target ?? 10));
   const [setterType, setSetterType] = useState<SetterType>(member.setter_type);
   const [avatarPath, setAvatarPath] = useState<string | null>(member.avatar_path);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(initialUrl);
@@ -402,6 +405,7 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
       phone: phone.trim() || null,
       setter_type: setterType,
       base_pay_monthly: basePay.trim() ? Number(basePay) : null,
+      csm_daily_target: Math.max(1, Number(csmTarget) || 10),
     } as any).eq("id", member.id);
     setSaving(false);
     if (error) return toast.error(error.message);
@@ -466,6 +470,13 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
             })}
           </div>
         </div>
+        {localRoles.includes("csm") && (
+          <div className="space-y-1">
+            <label className="text-[12px] text-muted-foreground">CSM daily target · students reached (10 full-time, 5 part-time)</label>
+            <input value={csmTarget} onChange={e => setCsmTarget(e.target.value.replace(/[^0-9]/g, ""))} placeholder="10" inputMode="numeric"
+              className="w-full h-9 px-3 rounded-sm border border-[var(--border)] bg-[var(--background)] text-sm outline-none focus:border-ring" />
+          </div>
+        )}
         {showSetterType && (
           <div className="space-y-1">
             <label className="text-[12px] text-muted-foreground">Setter type</label>

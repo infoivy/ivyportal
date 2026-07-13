@@ -99,15 +99,17 @@ function EODsPage() {
   const [teamEods, setTeamEods] = useState<GridEod[]>([]);
   const [teamRoster, setTeamRoster] = useState<RosterEntry[]>([]);
   const [mySetterType, setMySetterType] = useState<SetterType>(null);
+  const [csmTarget, setCsmTarget] = useState(10);
   const [saving, setSaving] = useState(false);
 
   const loadMine = async () => {
     if (!user) return;
     const [{ data }, { data: prof }] = await Promise.all([
       supabase.from("eods").select("*").eq("user_id", user.id).order("report_date", { ascending: false }).limit(120),
-      supabase.from("profiles").select("setter_type").eq("id", user.id).maybeSingle(),
+      supabase.from("profiles").select("setter_type, csm_daily_target" as never).eq("id", user.id).maybeSingle(),
     ]);
     setMySetterType(((prof as { setter_type?: string } | null)?.setter_type ?? null) as SetterType);
+    setCsmTarget(Number((prof as { csm_daily_target?: number } | null)?.csm_daily_target) || 10);
     const rows = (data ?? []) as EOD[];
     setMyEods(rows);
     const target = rows.find(e => e.report_date === reportDate);
@@ -431,6 +433,10 @@ function EODsPage() {
               {isCsm && (
                 <div className="space-y-3">
                   <SectionLabel>CSM reviews</SectionLabel>
+                  <div className="rounded-sm border border-[var(--border)] bg-[var(--background)] p-3">
+                    <div className="text-[11px] text-muted-foreground mb-2">Today's KPI — students reached</div>
+                    <KpiBar label="Student check-ins" value={form.student_checkins} target={csmTarget} />
+                  </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <NumField label="Looms reviewed" value={form.looms_reviewed} onChange={setNum("looms_reviewed")} />
                     <NumField label="Roleplays reviewed" value={form.roleplays_reviewed} onChange={setNum("roleplays_reviewed")} />
@@ -966,6 +972,18 @@ function ComplianceGraphs({ eods, roster }: { eods: GridEod[]; roster: RosterEnt
     return { date: d, label: fmtDayShort(new Date(d + "T00:00:00")), submitted, expected };
   }), [dayList, filteredEods, roster, personFilter]);
 
+  // Sets vs expected: every setter owes 3 sets a day
+  const setsData = useMemo(() => dayList.map(d => {
+    const dayEods = filteredEods.filter(e => e.report_date === d);
+    const setters = (personFilter === "all" ? roster : filteredRoster)
+      .filter(r => r.primary_role === "setter" && (!r.joined_at || d >= r.joined_at));
+    return {
+      date: d, label: fmtDayShort(new Date(d + "T00:00:00")),
+      submitted: dayEods.reduce((a, e) => a + (e.calls_booked ?? 0), 0),
+      expected: setters.length * 3,
+    };
+  }), [dayList, filteredEods, roster, filteredRoster, personFilter]);
+
   const funnelData = useMemo(() => dayList.map(d => {
     const dayEods = filteredEods.filter(e => e.report_date === d);
     const prevEods = compare ? filteredEods.filter(e => e.report_date === prevDay(d)) : [];
@@ -1003,6 +1021,10 @@ function ComplianceGraphs({ eods, roster }: { eods: GridEod[]; roster: RosterEnt
 
       <GraphCard title="Reports submitted vs expected" subtitle="Green = submitted, gray = expected total">
         {totalReports === 0 ? <NoData /> : <SubmissionsChart data={submissionsData} />}
+      </GraphCard>
+
+      <GraphCard title="Sets booked vs expected" subtitle="Green = sets booked, gray = target (3 per setter per day)">
+        {totalReports === 0 ? <NoData /> : <SubmissionsChart data={setsData} />}
       </GraphCard>
 
       <GraphCard title="Funnel volume — daily totals" subtitle={`DMs · convos · booked · shows${compare ? " (ghost = prev period)" : ""}`}>
@@ -1069,7 +1091,8 @@ function SubmissionsChart({ data }: { data: { label: string; submitted: number; 
         <YAxis tick={{ fontSize: 10, fill: "var(--color-muted-foreground)" }} allowDecimals={false} />
         <ReTooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, fontSize: 11 }} />
         <Legend wrapperStyle={{ fontSize: 10 }} />
-        <Bar dataKey="expected" fill="var(--border)" name="Expected" isAnimationActive={false} />
+        {/* muted-foreground at low opacity stays visible on the dark theme where --border vanished */}
+        <Bar dataKey="expected" fill="var(--muted-foreground)" fillOpacity={0.35} name="Expected" isAnimationActive={false} />
         <Bar dataKey="submitted" fill="var(--chart-2)" name="Submitted" isAnimationActive={false} />
       </BarChart>
     </ResponsiveContainer>

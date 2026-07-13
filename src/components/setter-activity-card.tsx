@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { PhoneCall } from "lucide-react";
+import { DateField } from "@/components/ui/date-field";
 import { getCloseBookedCount, getCloseCallStats } from "@/lib/close-crm.functions";
 import { getMochiDashboard } from "@/lib/mochi.functions";
 
@@ -77,15 +78,11 @@ export function SetterActivityCard() {
               {p.label}
             </button>
           ))}
-          <input
-            type="date"
+          <DateField
             value={day}
-            max={new Date().toISOString().slice(0, 10)}
-            onChange={(e) => setDay(e.target.value)}
-            title="A specific day — dials from Close; Mochi DMs only support preset windows"
-            className={`text-[11px] h-6 px-1.5 rounded-md border bg-transparent motion-safe:transition-colors ${
-              day ? "border-primary/40 text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
+            onChange={(v) => setDay(v)}
+            placeholder="Pick a day"
+            className={`h-6 w-[118px] text-[11px] ${day ? "border-primary/40" : ""}`}
           />
         </div>
       </div>
