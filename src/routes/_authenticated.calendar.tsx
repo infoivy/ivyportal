@@ -153,7 +153,24 @@ function CalendarPage() {
   const listSetsFn = useServerFn(listUpcomingSets);
   const deleteSetFn = useServerFn(deleteSetReminder);
   const [setOpen, setSetOpen] = useState(false);
-  const [setsFilter, setSetsFilter] = useState<"all" | "mine">("all");
+  const { roles: myRoles } = useAuth();
+  // Setters open on THEIR sets — Aalian saw the whole pool and thought a set
+  // was someone else's. An explicit choice (either button) is remembered.
+  const [setsFilter, setSetsFilterRaw] = useState<"all" | "mine">(() => {
+    try {
+      const s = localStorage.getItem("isa-sets-filter");
+      if (s === "all" || s === "mine") return s;
+    } catch { /* ignore */ }
+    return "all";
+  });
+  useEffect(() => {
+    try { if (localStorage.getItem("isa-sets-filter")) return; } catch { /* ignore */ }
+    if (myRoles.includes("setter") && !myRoles.includes("admin") && !myRoles.includes("founder")) setSetsFilterRaw("mine");
+  }, [myRoles]);
+  const setSetsFilter = (f: "all" | "mine") => {
+    setSetsFilterRaw(f);
+    try { localStorage.setItem("isa-sets-filter", f); } catch { /* ignore */ }
+  };
   const [pageView, setPageView] = useState<"calendar" | "sets">(() => {
     try { return (localStorage.getItem("isa-cal-view") as "calendar" | "sets") ?? "calendar"; } catch { return "calendar"; }
   });
@@ -990,7 +1007,8 @@ function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, o
         const openDue = WINDOWS.filter((w) => msLeft > 0 && msLeft <= w.minutes * 60_000 && !log?.[w.key]);
         const nextToOpen = WINDOWS.find((w) => msLeft > w.minutes * 60_000);
         return (
-          <div key={s.id} className={big ? "py-4 space-y-2.5" : "py-2.5 space-y-1.5"}>
+          // Your own sets get a rail + tint so ownership is never a guess
+          <div key={s.id} className={`${big ? "py-4 space-y-2.5" : "py-2.5 space-y-1.5"} ${mine && big ? "border-l-2 border-primary/40 bg-primary/5 rounded-sm -mx-2 px-2 pl-3" : ""}`}>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
               <div className="min-w-[55%] flex-1">
                 <div className={`${big ? "text-[15px]" : "text-body"} font-medium text-foreground truncate`}>
@@ -998,12 +1016,22 @@ function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, o
                   {s.source === "calendly" && <span className="ml-2 text-micro text-muted-foreground">calendly</span>}
                 </div>
                 <div className="text-caption truncate">
-                  <span className="text-muted-foreground">{format(start, "EEE, MMM d · h:mm a")} · </span>
-                  {s.owner_id
-                    ? <span className="text-muted-foreground">{s.owner_name}{mine ? " (you)" : ""}</span>
-                    : <span className="text-warning-fg">Unclaimed — needs a setter</span>}
+                  <span className="text-muted-foreground">{format(start, "EEE, MMM d · h:mm a")}</span>
                 </div>
               </div>
+              {/* Who owns this set — loud and first, so nobody works someone else's lead */}
+              {s.owner_id ? (
+                <span className={`inline-flex items-center gap-1.5 text-micro font-medium rounded-full pl-1 pr-2 py-0.5 border shrink-0 ${mine ? "text-primary border-primary/25 bg-primary/10" : "text-muted-foreground border-border bg-muted"}`}>
+                  <span className={`h-4 w-4 rounded-full flex items-center justify-center text-[8px] font-semibold ${mine ? "bg-primary text-primary-foreground" : "bg-muted-foreground/20 text-foreground"}`}>
+                    {(s.owner_name || "?").slice(0, 1).toUpperCase()}
+                  </span>
+                  {mine ? "Your set" : s.owner_name}
+                </span>
+              ) : (
+                <span className="text-micro font-medium text-warning-fg bg-warning-bg border border-warning/25 rounded-full px-2 py-0.5 shrink-0">
+                  Unclaimed — needs a setter
+                </span>
+              )}
               {confirmed ? (
                 <span className="text-micro font-medium text-success-fg bg-success-bg border border-success/25 rounded-full px-2 py-0.5 shrink-0">Confirmed</span>
               ) : (
