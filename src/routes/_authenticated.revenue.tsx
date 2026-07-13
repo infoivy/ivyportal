@@ -162,7 +162,8 @@ function RevenueInner() {
     refetchInterval: 5 * 60_000,
     retry: 1,
   });
-  const whopCash = whopQ.data?.connected ? whopQ.data.net : null;
+  // Incomplete Whop read (txn cap / window past the 90d feed) → fall back to logged cash
+  const whopCash = whopQ.data?.connected && !whopQ.data.incomplete ? whopQ.data.net : null;
 
   const stats = useMemo(() => {
     const cash = rangeDeals.reduce((a, d) => a + Number(d.cash_collected_upfront), 0);
@@ -1081,12 +1082,17 @@ function LogDealDialog({
                   ) : (
                     <div className="space-y-2">
                       {customRows.map((r, i) => (
-                        <div key={r.id} className="grid grid-cols-12 gap-2 items-center">
-                          <span className="col-span-1 text-caption text-muted-foreground">#{i + 1}</span>
-                          <Input type="number" min="0" step="0.01" value={r.amount} onChange={(e) => updateCustomRow(r.id, { amount: e.target.value })} placeholder="Amount" className="col-span-3 h-9" />
-                          <DateField value={r.due_date} onChange={(v) => updateCustomRow(r.id, { due_date: v })} clearable={false} className="col-span-4 h-9" />
-                          <Input value={r.payment_method} onChange={(e) => updateCustomRow(r.id, { payment_method: e.target.value })} placeholder="Method" className="col-span-3 h-9" />
-                          <button onClick={() => removeCustomRow(r.id)} className="col-span-1 p-1 rounded hover:bg-danger-bg text-danger-fg justify-self-end">
+                        <div key={r.id} className="grid grid-cols-2 sm:grid-cols-12 gap-2 items-center">
+                          <div className="col-span-2 sm:col-span-1 flex items-center justify-between sm:block">
+                            <span className="text-caption text-muted-foreground">#{i + 1}</span>
+                            <button onClick={() => removeCustomRow(r.id)} className="sm:hidden p-1.5 rounded hover:bg-danger-bg text-danger-fg">
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                          <Input type="number" min="0" step="0.01" value={r.amount} onChange={(e) => updateCustomRow(r.id, { amount: e.target.value })} placeholder="Amount" className="col-span-1 sm:col-span-3 h-9" />
+                          <DateField value={r.due_date} onChange={(v) => updateCustomRow(r.id, { due_date: v })} clearable={false} className="col-span-1 sm:col-span-4 h-9" />
+                          <Input value={r.payment_method} onChange={(e) => updateCustomRow(r.id, { payment_method: e.target.value })} placeholder="Method" className="col-span-2 sm:col-span-3 h-9" />
+                          <button onClick={() => removeCustomRow(r.id)} className="hidden sm:block sm:col-span-1 p-1.5 rounded hover:bg-danger-bg text-danger-fg justify-self-end">
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         </div>

@@ -23,7 +23,11 @@ export function rangeFor(preset: "24h" | "3d" | "7d" | "30d" | "90d"): DateRange
 }
 
 export function daysBetween(r: DateRange) {
-  return Math.round((r.to.getTime() - r.from.getTime()) / 86_400_000) + 1;
+  // Compare calendar days, not raw ms — custom ranges span 00:00 → 23:59:59,
+  // which the old ms math counted as an extra day (single day read as 2).
+  const a = new Date(r.from); a.setHours(0, 0, 0, 0);
+  const b = new Date(r.to); b.setHours(0, 0, 0, 0);
+  return Math.round((b.getTime() - a.getTime()) / 86_400_000) + 1;
 }
 
 export function RangePicker({ value, onChange }: { value: DateRange; onChange: (r: DateRange) => void }) {

@@ -269,13 +269,13 @@ function StudentsLayout() {
             />
           </div>
           <div className="flex items-center border border-[var(--border)] bg-[var(--card)] rounded-sm p-0.5">
-            <button onClick={() => setView("table")} className={`px-2 py-1 rounded-sm transition ${view === "table" ? "bg-[var(--accent)] text-foreground" : "text-muted-foreground"}`} title="Table">
+            <button onClick={() => setView("table")} className={`px-2.5 py-1.5 rounded-sm transition ${view === "table" ? "bg-[var(--accent)] text-foreground" : "text-muted-foreground"}`} title="Table">
               <TableIcon className="h-3.5 w-3.5" />
             </button>
-            <button onClick={() => setView("kanban")} className={`px-2 py-1 rounded-sm transition ${view === "kanban" ? "bg-[var(--accent)] text-foreground" : "text-muted-foreground"}`} title="Kanban">
+            <button onClick={() => setView("kanban")} className={`px-2.5 py-1.5 rounded-sm transition ${view === "kanban" ? "bg-[var(--accent)] text-foreground" : "text-muted-foreground"}`} title="Kanban">
               <LayoutGrid className="h-3.5 w-3.5" />
             </button>
-            <button onClick={() => setView("graduation")} className={`px-2 py-1 rounded-sm transition ${view === "graduation" ? "bg-[var(--accent)] text-warning-fg" : "text-muted-foreground"}`} title="Graduation pipeline">
+            <button onClick={() => setView("graduation")} className={`px-2.5 py-1.5 rounded-sm transition ${view === "graduation" ? "bg-[var(--accent)] text-warning-fg" : "text-muted-foreground"}`} title="Graduation pipeline">
               <Trophy className="h-3.5 w-3.5" />
             </button>
           </div>

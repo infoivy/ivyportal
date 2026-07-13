@@ -249,6 +249,11 @@ function StudentPortal() {
 
   // Program type drives the whole view: group students have no coach, no 1:1s.
   const isOneOnOne = ((student?.calls_allotted ?? student?.calls_included) ?? 0) > 0;
+  // Stale/persisted tab state can still say "coaching" (e.g. moved to group) —
+  // never render the 1:1 panel for group students.
+  useEffect(() => {
+    if (student && !isOneOnOne && tab === "coaching") setTab("start");
+  }, [student, isOneOnOne, tab]);
   // Loom approved ≈ moved past training/coaching into applying
   const loomApproved = ["applying", "offer_won", "testimonial"].includes(student?.phase ?? "");
 

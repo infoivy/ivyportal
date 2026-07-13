@@ -236,7 +236,10 @@ function Dashboard() {
     enabled: roles.includes("admin") || roles.includes("founder"),
     retry: 1,
   });
-  const whopHero = whopQ.data?.connected ? { mtd: whopQ.data.net, prevMtd: whopQ.data.prevNet, gross: whopQ.data.gross, count: whopQ.data.count } : null;
+  // A capped/partial Whop read must fall back to logged cash — never show a wrong number
+  const whopHero = whopQ.data?.connected && !whopQ.data.incomplete
+    ? { mtd: whopQ.data.net, prevMtd: whopQ.data.prevNet, gross: whopQ.data.gross, count: whopQ.data.count }
+    : null;
 
   // Non-admin team members can flip between the team's collective numbers
   // (default) and just their own — revenue widgets stay role-gated regardless.

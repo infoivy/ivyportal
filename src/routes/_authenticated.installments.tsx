@@ -484,20 +484,23 @@ function PlanEditor({
           </Field>
 
           <div className="pt-2 border-t border-border">
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
               <h4 className="text-sm font-medium">Scheduled payments</h4>
-              <button onClick={generateMonthly} className="text-xs px-2 py-1 rounded border border-border hover:bg-accent">Split evenly, monthly</button>
-              <button onClick={addDraft} className="ml-auto text-xs px-2 py-1 rounded border border-border hover:bg-accent inline-flex items-center gap-1"><Plus className="h-3 w-3" /> Add payment</button>
+              <button onClick={generateMonthly} className="text-xs px-2 py-1.5 rounded border border-border hover:bg-accent">Split evenly, monthly</button>
+              <button onClick={addDraft} className="ml-auto text-xs px-2 py-1.5 rounded border border-border hover:bg-accent inline-flex items-center gap-1"><Plus className="h-3 w-3" /> Add payment</button>
             </div>
             <div className="space-y-2">
               {drafts.map((d, i) => (
-                <div key={i} className="grid grid-cols-12 gap-2 items-center">
-                  <span className="col-span-1 text-xs text-muted-foreground">#{i+1}</span>
-                  <input type="number" min="0" step="0.01" value={d.amount} onChange={e => setDrafts(list => list.map((r,idx) => idx === i ? { ...r, amount: e.target.value } : r))} placeholder="Amount" className="col-span-3 px-2 py-1.5 rounded border border-border bg-background text-sm" />
-                  <DateField value={d.due_date} onChange={v => setDrafts(list => list.map((r,idx) => idx === i ? { ...r, due_date: v } : r))} clearable={false} className="col-span-3 h-9 text-sm" />
-                  <SelectField value={d.status} onChange={v => setDrafts(list => list.map((r,idx) => idx === i ? { ...r, status: v as PayStatus } : r))} options={(Object.keys(STATUS_META) as PayStatus[]).map(s => ({ value: s, label: STATUS_META[s].label }))} className="col-span-2 h-9 text-sm" />
-                  <input value={d.payment_method} onChange={e => setDrafts(list => list.map((r,idx) => idx === i ? { ...r, payment_method: e.target.value } : r))} placeholder="Method" className="col-span-2 px-2 py-1.5 rounded border border-border bg-background text-sm" />
-                  <button onClick={() => removeDraft(i)} className="col-span-1 p-1 rounded hover:bg-accent text-danger-fg justify-self-end"><Trash2 className="h-3.5 w-3.5" /></button>
+                <div key={i} className="grid grid-cols-2 sm:grid-cols-12 gap-2 items-center">
+                  <div className="col-span-2 sm:col-span-1 flex items-center justify-between sm:block">
+                    <span className="text-xs text-muted-foreground">#{i+1}</span>
+                    <button onClick={() => removeDraft(i)} className="sm:hidden p-1.5 rounded hover:bg-accent text-danger-fg"><Trash2 className="h-3.5 w-3.5" /></button>
+                  </div>
+                  <input type="number" min="0" step="0.01" value={d.amount} onChange={e => setDrafts(list => list.map((r,idx) => idx === i ? { ...r, amount: e.target.value } : r))} placeholder="Amount" className="col-span-1 sm:col-span-3 px-2 py-1.5 rounded border border-border bg-background text-sm" />
+                  <DateField value={d.due_date} onChange={v => setDrafts(list => list.map((r,idx) => idx === i ? { ...r, due_date: v } : r))} clearable={false} className="col-span-1 sm:col-span-3 h-9 text-sm" />
+                  <SelectField value={d.status} onChange={v => setDrafts(list => list.map((r,idx) => idx === i ? { ...r, status: v as PayStatus } : r))} options={(Object.keys(STATUS_META) as PayStatus[]).map(s => ({ value: s, label: STATUS_META[s].label }))} className="col-span-1 sm:col-span-2 h-9 text-sm" />
+                  <input value={d.payment_method} onChange={e => setDrafts(list => list.map((r,idx) => idx === i ? { ...r, payment_method: e.target.value } : r))} placeholder="Method" className="col-span-1 sm:col-span-2 px-2 py-1.5 rounded border border-border bg-background text-sm" />
+                  <button onClick={() => removeDraft(i)} className="hidden sm:block sm:col-span-1 p-1.5 rounded hover:bg-accent text-danger-fg justify-self-end"><Trash2 className="h-3.5 w-3.5" /></button>
                 </div>
               ))}
             </div>

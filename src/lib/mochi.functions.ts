@@ -611,6 +611,10 @@ export type WhopCashWindow = {
   prevGross: number;
   prevNet: number;
   prevCount: number;
+  /** True when the numbers can't be trusted: the 200-txn source cap was hit
+   *  or the requested window reaches past the 90-day source. Callers must
+   *  fall back rather than show a wrong number. */
+  incomplete: boolean;
 };
 
 /**
@@ -633,7 +637,7 @@ export const getWhopCashWindow = createServerFn({ method: "GET" })
     await requireMoneyAccess(ctx);
     const empty: WhopCashWindow = {
       connected: false, from: data.from, to: data.to,
-      gross: 0, net: 0, count: 0, prevGross: 0, prevNet: 0, prevCount: 0,
+      gross: 0, net: 0, count: 0, prevGross: 0, prevNet: 0, prevCount: 0, incomplete: false,
     };
     const creds = await readCreds(ctx);
     if (!creds.access) return empty;
@@ -644,6 +648,11 @@ export const getWhopCashWindow = createServerFn({ method: "GET" })
       });
       txns = res.results ?? [];
     } catch { return empty; }
+    // Wrong numbers are worse than no numbers: flag when the source can't
+    // cover the ask (txn cap hit, or window predates the 90-day feed).
+    const horizon = new Date(Date.now() - 89 * 86400000).toISOString().slice(0, 10);
+    const earliestAsked = [data.from, data.prevFrom].filter(Boolean).sort()[0]!;
+    const incomplete = txns.length >= 200 || earliestAsked < horizon;
     const sum = (from: string, to: string) => {
       let gross = 0, net = 0, count = 0;
       for (const t of txns) {
@@ -661,6 +670,7 @@ export const getWhopCashWindow = createServerFn({ method: "GET" })
       connected: true, from: data.from, to: data.to,
       gross: cur.gross, net: cur.net, count: cur.count,
       prevGross: prev.gross, prevNet: prev.net, prevCount: prev.count,
+      incomplete,
     };
   });
 

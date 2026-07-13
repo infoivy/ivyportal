@@ -391,7 +391,10 @@ export const getCloseContactCompliance = createServerFn({ method: "GET" })
         page<Call>("call", "id,lead_id,direction,disposition,duration,date_created", 5000, calls),
         page<Email>("email", "id,lead_id,direction,date_created", 3000, emails),
       ]);
-    } catch { /* partial data still useful; truncated stays true via cap */ }
+    } catch {
+      // A mid-sweep network failure means partial data — say so
+      truncated = true;
+    }
 
     // "Today" is the business day (Asia/Dubai) — this report is the founder's morning scan
     const bizToday = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Dubai" }).format(new Date());

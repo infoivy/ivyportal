@@ -365,7 +365,7 @@ function TestimonialCard({
             </SelectContent>
           </Select>
           {isAdmin && (
-            <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => onDelete(t)}>
+            <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => onDelete(t)}>
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
           )}

@@ -726,8 +726,8 @@ function KanbanView({
 // -- List view --
 function ListView({ items, onOpen }: { items: ContentItem[]; onOpen: (i: ContentItem) => void }) {
   return (
-    <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm overflow-hidden">
-      <table className="w-full text-xs">
+    <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm overflow-x-auto">
+      <table className="w-full min-w-[560px] text-xs">
         <thead className="bg-[var(--background)] border-b border-[var(--border)] text-muted-foreground uppercase tracking-wider text-[10px]">
           <tr>
             <th className="text-left p-2 font-medium">Date</th>
