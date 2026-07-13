@@ -5,22 +5,46 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import {
-  Sparkles, Calendar as CalendarIcon, Columns3, List as ListIcon, Lightbulb,
-  Plus, ExternalLink, Trash2, X, ArrowRight, Loader2, Instagram, LayoutGrid,
-  BookOpen, Video, Zap,
+  Sparkles,
+  Calendar as CalendarIcon,
+  Columns3,
+  List as ListIcon,
+  Lightbulb,
+  Plus,
+  ExternalLink,
+  Trash2,
+  X,
+  ArrowRight,
+  Loader2,
+  Instagram,
+  LayoutGrid,
+  BookOpen,
+  Video,
+  Zap,
 } from "lucide-react";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, parseISO } from "date-fns";
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  isSameDay,
+  addMonths,
+  subMonths,
+  parseISO,
+} from "date-fns";
 import { WeeklyPlan } from "@/components/weekly-plan";
 import { FounderSops } from "@/components/founder-sops";
 import { RecordingDay } from "@/components/recording-day";
 import { HookLibrary } from "@/components/hook-library";
+import { GrowthOperatorHome } from "@/components/content/growth-operator-home";
 import { DateField } from "@/components/ui/date-field";
 import { SelectField } from "@/components/ui/select-field";
 import { Checkbox } from "@/components/ui/checkbox";
-
+import { startOfWeek, format as fmtDate } from "date-fns";
 
 type Platform = "instagram" | "tiktok" | "youtube" | "twitter" | "linkedin" | "threads" | "other";
-type Status = "idea" | "scripted" | "approved" | "recorded" | "filmed" | "edited" | "scheduled" | "posted";
+type Status =
+  "idea" | "scripted" | "approved" | "recorded" | "filmed" | "edited" | "scheduled" | "posted";
 
 // Shared creative-type vocabulary. Must stay in sync with src/components/weekly-plan.tsx.
 export const CREATIVE_TYPES = [
@@ -54,6 +78,8 @@ type ContentItem = {
   duration_sec: number | null;
   platforms: string[];
   reedit_flag: boolean;
+  week_start: string | null;
+  funnel_stage: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -72,39 +98,61 @@ type Idea = {
 };
 
 export const TRIGGERS: { value: string; label: string; hint: string }[] = [
-  { value: "student_win",   label: "Student win",     hint: "A student result / breakthrough" },
-  { value: "client_call",   label: "Client call",     hint: "Something said on a call today" },
-  { value: "objection",     label: "Objection",       hint: "A repeated pushback / doubt" },
-  { value: "market_signal", label: "Market signal",   hint: "Something happening in the niche" },
+  { value: "student_win", label: "Student win", hint: "A student result / breakthrough" },
+  { value: "client_call", label: "Client call", hint: "Something said on a call today" },
+  { value: "objection", label: "Objection", hint: "A repeated pushback / doubt" },
+  { value: "market_signal", label: "Market signal", hint: "Something happening in the niche" },
 ];
 
 const PLATFORMS: { value: Platform; label: string; color: string }[] = [
-  { value: "instagram", label: "IG",       color: "bg-muted text-muted-foreground border-border" },
-  { value: "tiktok",    label: "TikTok",   color: "bg-muted text-muted-foreground border-border" },
-  { value: "youtube",   label: "YT",       color: "bg-danger-bg text-danger-fg border-danger/25" },
-  { value: "twitter",   label: "X",        color: "bg-slate-500/10 text-muted-foreground border-border" },
-  { value: "linkedin",  label: "LinkedIn", color: "bg-muted text-muted-foreground border-border" },
-  { value: "threads",   label: "Threads",  color: "bg-muted text-muted-foreground border-border" },
-  { value: "other",     label: "Other",    color: "bg-neutral-500/10 text-neutral-300 border-neutral-500/30" },
+  { value: "instagram", label: "IG", color: "bg-muted text-muted-foreground border-border" },
+  { value: "tiktok", label: "TikTok", color: "bg-muted text-muted-foreground border-border" },
+  { value: "youtube", label: "YT", color: "bg-danger-bg text-danger-fg border-danger/25" },
+  { value: "twitter", label: "X", color: "bg-slate-500/10 text-muted-foreground border-border" },
+  { value: "linkedin", label: "LinkedIn", color: "bg-muted text-muted-foreground border-border" },
+  { value: "threads", label: "Threads", color: "bg-muted text-muted-foreground border-border" },
+  {
+    value: "other",
+    label: "Other",
+    color: "bg-neutral-500/10 text-neutral-300 border-neutral-500/30",
+  },
 ];
-const PLATFORM_META = Object.fromEntries(PLATFORMS.map(p => [p.value, p])) as Record<Platform, typeof PLATFORMS[number]>;
+const PLATFORM_META = Object.fromEntries(PLATFORMS.map((p) => [p.value, p])) as Record<
+  Platform,
+  (typeof PLATFORMS)[number]
+>;
 
 const STATUSES: { value: Status; label: string; color: string }[] = [
-  { value: "idea",      label: "Idea",      color: "bg-neutral-500/10 text-neutral-300 border-neutral-500/30" },
-  { value: "scripted",  label: "Scripted",  color: "bg-warning-bg text-warning-fg border-warning/25" },
-  { value: "approved",  label: "Approved",  color: "bg-warning-bg text-warning-fg border-warning/25" },
-  { value: "recorded",  label: "Recorded",  color: "bg-muted text-muted-foreground border-border" },
-  { value: "filmed",    label: "Filmed",    color: "bg-muted text-muted-foreground border-border" }, // legacy alias
-  { value: "edited",    label: "Edited",    color: "bg-muted text-muted-foreground border-border" },
+  {
+    value: "idea",
+    label: "Idea",
+    color: "bg-neutral-500/10 text-neutral-300 border-neutral-500/30",
+  },
+  {
+    value: "scripted",
+    label: "Scripted",
+    color: "bg-warning-bg text-warning-fg border-warning/25",
+  },
+  {
+    value: "approved",
+    label: "Approved",
+    color: "bg-warning-bg text-warning-fg border-warning/25",
+  },
+  { value: "recorded", label: "Recorded", color: "bg-muted text-muted-foreground border-border" },
+  { value: "filmed", label: "Filmed", color: "bg-muted text-muted-foreground border-border" }, // legacy alias
+  { value: "edited", label: "Edited", color: "bg-muted text-muted-foreground border-border" },
   { value: "scheduled", label: "Scheduled", color: "bg-muted text-muted-foreground border-border" },
-  { value: "posted",    label: "Posted",    color: "bg-success-bg text-success-fg border-success/25" },
+  { value: "posted", label: "Posted", color: "bg-success-bg text-success-fg border-success/25" },
 ];
-const STATUS_META = Object.fromEntries(STATUSES.map(s => [s.value, s])) as Record<Status, typeof STATUSES[number]>;
+const STATUS_META = Object.fromEntries(STATUSES.map((s) => [s.value, s])) as Record<
+  Status,
+  (typeof STATUSES)[number]
+>;
 
 const MULTI_PLATFORMS: { value: string; label: string }[] = [
   { value: "instagram", label: "Instagram" },
-  { value: "tiktok",    label: "TikTok" },
-  { value: "youtube",   label: "YouTube" },
+  { value: "tiktok", label: "TikTok" },
+  { value: "youtube", label: "YouTube" },
 ];
 
 export function FounderPageContent() {
@@ -112,7 +160,9 @@ export function FounderPageContent() {
 
   const [items, setItems] = useState<ContentItem[]>([]);
   const [ideas, setIdeas] = useState<Idea[]>([]);
-  const [view, setView] = useState<"weekly" | "recording" | "hooks" | "calendar" | "kanban" | "list" | "sops">("weekly");
+  const [view, setView] = useState<
+    "weekly" | "recording" | "hooks" | "calendar" | "kanban" | "list" | "sops"
+  >("weekly");
   const [monthCursor, setMonthCursor] = useState(new Date());
   const [editing, setEditing] = useState<ContentItem | null>(null);
   const [creating, setCreating] = useState(false);
@@ -123,7 +173,10 @@ export function FounderPageContent() {
     queryKey: ["page", "content-planner"],
     queryFn: async () => {
       const [ci, ii] = await Promise.all([
-        supabase.from("content_items").select("*").order("scheduled_date", { ascending: true, nullsFirst: false }),
+        supabase
+          .from("content_items")
+          .select("*")
+          .order("scheduled_date", { ascending: true, nullsFirst: false }),
         supabase.from("content_ideas").select("*").order("created_at", { ascending: false }),
       ]);
       return { items: (ci.data ?? []) as ContentItem[], ideas: (ii.data ?? []) as Idea[] };
@@ -136,6 +189,24 @@ export function FounderPageContent() {
     setLoading(false);
   }, [pageQ.data]);
   const load = () => pageQ.refetch();
+
+  const thisWeekStart = fmtDate(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd");
+  const filledThisWeek = items.filter((it) => {
+    if (it.week_start && it.week_start !== thisWeekStart) return false;
+    if (!it.week_start && it.scheduled_date) {
+      // fallback: only count if scheduled_date falls in this week (string compare ISO dates)
+      if (it.scheduled_date < thisWeekStart) return false;
+    }
+    if (!it.hook) return false;
+    if (/^(TOF|MOF)\s·\s\d of \d$/.test(it.hook)) return false;
+    if (
+      it.week_start === thisWeekStart ||
+      (it.scheduled_date && it.scheduled_date >= thisWeekStart)
+    ) {
+      return true;
+    }
+    return false;
+  }).length;
 
   return (
     <div className="space-y-4">
@@ -160,18 +231,63 @@ export function FounderPageContent() {
         </div>
       </header>
 
+      <GrowthOperatorHome
+        filledSlotCount={filledThisWeek}
+        totalSlots={7}
+        onSeeded={() => {
+          load();
+          setView("weekly");
+        }}
+        onOpenPlaybooks={() => setView("sops")}
+      />
+
       {/* Content pipeline health strip */}
       <ContentHealthStrip items={items} />
 
       {/* View switcher */}
       <div className="flex items-center gap-0.5 border-b border-[var(--border)] overflow-x-auto">
-        <ViewTab active={view === "weekly"}    onClick={() => setView("weekly")}    icon={LayoutGrid}   label="Weekly plan" />
-        <ViewTab active={view === "recording"} onClick={() => setView("recording")} icon={Video}        label="Recording day" />
-        <ViewTab active={view === "hooks"}     onClick={() => setView("hooks")}     icon={Zap}          label="Hook library" />
-        <ViewTab active={view === "calendar"}  onClick={() => setView("calendar")}  icon={CalendarIcon} label="Calendar" />
-        <ViewTab active={view === "kanban"}    onClick={() => setView("kanban")}    icon={Columns3}     label="Kanban" />
-        <ViewTab active={view === "list"}      onClick={() => setView("list")}      icon={ListIcon}     label="List" />
-        <ViewTab active={view === "sops"}      onClick={() => setView("sops")}      icon={BookOpen}     label="SOPs & Playbooks" />
+        <ViewTab
+          active={view === "weekly"}
+          onClick={() => setView("weekly")}
+          icon={LayoutGrid}
+          label="Weekly plan"
+        />
+        <ViewTab
+          active={view === "recording"}
+          onClick={() => setView("recording")}
+          icon={Video}
+          label="Recording day"
+        />
+        <ViewTab
+          active={view === "hooks"}
+          onClick={() => setView("hooks")}
+          icon={Zap}
+          label="Hook library"
+        />
+        <ViewTab
+          active={view === "calendar"}
+          onClick={() => setView("calendar")}
+          icon={CalendarIcon}
+          label="Calendar"
+        />
+        <ViewTab
+          active={view === "kanban"}
+          onClick={() => setView("kanban")}
+          icon={Columns3}
+          label="Kanban"
+        />
+        <ViewTab
+          active={view === "list"}
+          onClick={() => setView("list")}
+          icon={ListIcon}
+          label="List"
+        />
+        <ViewTab
+          active={view === "sops"}
+          onClick={() => setView("sops")}
+          icon={BookOpen}
+          label="SOPs & Playbooks"
+        />
       </div>
 
       {view === "sops" ? (
@@ -181,32 +297,54 @@ export function FounderPageContent() {
       ) : view === "recording" ? (
         <RecordingDay
           onOpenItem={(id) => {
-            const it = items.find(i => i.id === id);
+            const it = items.find((i) => i.id === id);
             if (it) setEditing(it);
-            else supabase.from("content_items").select("*").eq("id", id).maybeSingle().then(({ data }) => { if (data) setEditing(data as ContentItem); });
+            else
+              supabase
+                .from("content_items")
+                .select("*")
+                .eq("id", id)
+                .maybeSingle()
+                .then(({ data }) => {
+                  if (data) setEditing(data as ContentItem);
+                });
           }}
         />
       ) : view === "weekly" ? (
         <WeeklyPlan
           onOpenItem={(id) => {
-            const it = items.find(i => i.id === id);
+            const it = items.find((i) => i.id === id);
             if (it) setEditing(it);
             else {
               // item may have just been provisioned server-side; refetch and open after
-              supabase.from("content_items").select("*").eq("id", id).maybeSingle().then(({ data }) => {
-                if (data) setEditing(data as ContentItem);
-              });
+              supabase
+                .from("content_items")
+                .select("*")
+                .eq("id", id)
+                .maybeSingle()
+                .then(({ data }) => {
+                  if (data) setEditing(data as ContentItem);
+                });
             }
           }}
         />
       ) : loading ? (
-        <div className="flex items-center gap-2 text-muted-foreground p-6"><Loader2 className="h-4 w-4 animate-spin" /> Loading…</div>
+        <div className="flex items-center gap-2 text-muted-foreground p-6">
+          <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+        </div>
       ) : (
         <div className="grid lg:grid-cols-[minmax(0,1fr)_320px] gap-4">
           <div>
-            {view === "calendar" && <CalendarView items={items} monthCursor={monthCursor} setMonthCursor={setMonthCursor} onOpen={setEditing} />}
-            {view === "kanban"   && <KanbanView items={items} onOpen={setEditing} onUpdate={load} />}
-            {view === "list"     && <ListView items={items} onOpen={setEditing} />}
+            {view === "calendar" && (
+              <CalendarView
+                items={items}
+                monthCursor={monthCursor}
+                setMonthCursor={setMonthCursor}
+                onOpen={setEditing}
+              />
+            )}
+            {view === "kanban" && <KanbanView items={items} onOpen={setEditing} onUpdate={load} />}
+            {view === "list" && <ListView items={items} onOpen={setEditing} />}
           </div>
 
           {/* Idea inbox */}
@@ -215,7 +353,10 @@ export function FounderPageContent() {
               ideas={ideas}
               userId={user?.id ?? null}
               onChange={load}
-              onPromote={(idea) => { setPromotingIdea(idea); setCreating(true); }}
+              onPromote={(idea) => {
+                setPromotingIdea(idea);
+                setCreating(true);
+              }}
             />
           </aside>
         </div>
@@ -225,14 +366,17 @@ export function FounderPageContent() {
         <ItemDialog
           initial={editing}
           userId={user?.id ?? null}
-          onClose={() => { setCreating(false); setEditing(null); setPromotingIdea(null); }}
+          onClose={() => {
+            setCreating(false);
+            setEditing(null);
+            setPromotingIdea(null);
+          }}
           onSaved={load}
           promotingIdea={promotingIdea}
         />
       )}
     </div>
   );
-
 }
 
 // -- View tabs --
@@ -261,33 +405,56 @@ function ContentHealthStrip({ items }: { items: ContentItem[] }) {
   nextThursday.setDate(today.getDate() + daysUntilThu);
   const thuStr = nextThursday.toISOString().slice(0, 8) + nextThursday.getDate();
 
-  const cycleItems = items.filter(i =>
-    i.scheduled_date && i.scheduled_date >= cycleStartStr && i.scheduled_date <= cycleEndStr
+  const cycleItems = items.filter(
+    (i) => i.scheduled_date && i.scheduled_date >= cycleStartStr && i.scheduled_date <= cycleEndStr,
   );
   const counts = {
     total: cycleItems.length,
-    scripted: cycleItems.filter(i => ["scripted", "approved", "recorded", "filmed", "edited", "scheduled", "posted"].includes(i.status)).length,
-    recorded: cycleItems.filter(i => ["recorded", "filmed", "edited", "scheduled", "posted"].includes(i.status)).length,
-    posted: cycleItems.filter(i => i.status === "posted").length,
+    scripted: cycleItems.filter((i) =>
+      ["scripted", "approved", "recorded", "filmed", "edited", "scheduled", "posted"].includes(
+        i.status,
+      ),
+    ).length,
+    recorded: cycleItems.filter((i) =>
+      ["recorded", "filmed", "edited", "scheduled", "posted"].includes(i.status),
+    ).length,
+    posted: cycleItems.filter((i) => i.status === "posted").length,
   };
 
   const chips: { label: string; val: number | string; ok: boolean }[] = [
-    { label: "scripted", val: `${counts.scripted}/${counts.total}`, ok: counts.scripted >= counts.total && counts.total > 0 },
-    { label: "recorded", val: counts.recorded, ok: counts.recorded >= counts.total && counts.total > 0 },
+    {
+      label: "scripted",
+      val: `${counts.scripted}/${counts.total}`,
+      ok: counts.scripted >= counts.total && counts.total > 0,
+    },
+    {
+      label: "recorded",
+      val: counts.recorded,
+      ok: counts.recorded >= counts.total && counts.total > 0,
+    },
     { label: "posted", val: counts.posted, ok: counts.posted >= counts.total && counts.total > 0 },
-    { label: "Recording day", val: `Thu ${nextThursday.toLocaleDateString("en", { month: "short", day: "numeric" })}`, ok: true },
+    {
+      label: "Recording day",
+      val: `Thu ${nextThursday.toLocaleDateString("en", { month: "short", day: "numeric" })}`,
+      ok: true,
+    },
   ];
 
   return (
     <div className="card-surface flex flex-wrap items-center gap-2 px-3 py-2.5">
       <span className="text-[12px] text-muted-foreground shrink-0 font-medium">This cycle</span>
       {counts.total === 0 ? (
-        <span className="text-[13px] text-muted-foreground">No content scheduled for this 2-week window ({cycleStartStr} – {cycleEndStr}).</span>
+        <span className="text-[13px] text-muted-foreground">
+          No content scheduled for this 2-week window ({cycleStartStr} – {cycleEndStr}).
+        </span>
       ) : (
-        chips.map(c => (
-          <span key={c.label} className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[12px] ${
-            c.ok ? "bg-success-bg text-success-fg" : "bg-muted text-muted-foreground"
-          }`}>
+        chips.map((c) => (
+          <span
+            key={c.label}
+            className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[12px] ${
+              c.ok ? "bg-success-bg text-success-fg" : "bg-muted text-muted-foreground"
+            }`}
+          >
             <span className="font-medium">{c.val}</span> {c.label}
           </span>
         ))
@@ -296,13 +463,25 @@ function ContentHealthStrip({ items }: { items: ContentItem[] }) {
   );
 }
 
-function ViewTab({ active, onClick, icon: Icon, label }: { active: boolean; onClick: () => void; icon: typeof CalendarIcon; label: string }) {
+function ViewTab({
+  active,
+  onClick,
+  icon: Icon,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: typeof CalendarIcon;
+  label: string;
+}) {
   return (
     <button
       onClick={onClick}
       className={
         "flex items-center gap-1.5 h-9 px-3 text-[13px] font-medium border-b-2 -mb-px motion-safe:transition-colors " +
-        (active ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground")
+        (active
+          ? "border-primary text-foreground"
+          : "border-transparent text-muted-foreground hover:text-foreground")
       }
     >
       <Icon className="h-3.5 w-3.5" /> {label}
@@ -311,12 +490,20 @@ function ViewTab({ active, onClick, icon: Icon, label }: { active: boolean; onCl
 }
 
 // -- Calendar view --
-function CalendarView({ items, monthCursor, setMonthCursor, onOpen }: {
-  items: ContentItem[]; monthCursor: Date; setMonthCursor: (d: Date) => void; onOpen: (i: ContentItem) => void;
+function CalendarView({
+  items,
+  monthCursor,
+  setMonthCursor,
+  onOpen,
+}: {
+  items: ContentItem[];
+  monthCursor: Date;
+  setMonthCursor: (d: Date) => void;
+  onOpen: (i: ContentItem) => void;
 }) {
   const start = startOfMonth(monthCursor);
-  const end   = endOfMonth(monthCursor);
-  const days  = eachDayOfInterval({ start, end });
+  const end = endOfMonth(monthCursor);
+  const days = eachDayOfInterval({ start, end });
   const leading = (start.getDay() + 6) % 7; // Mon-start
   const grid: (Date | null)[] = [...Array(leading).fill(null), ...days];
 
@@ -324,26 +511,54 @@ function CalendarView({ items, monthCursor, setMonthCursor, onOpen }: {
     <div className="card-surface overflow-hidden">
       <div className="flex items-center justify-between p-3 border-b border-[var(--border)]">
         <div className="flex items-center gap-2">
-          <button onClick={() => setMonthCursor(subMonths(monthCursor, 1))} className="h-7 px-2 rounded-lg border border-[var(--border)] text-[13px] hover:bg-muted motion-safe:transition-colors">←</button>
+          <button
+            onClick={() => setMonthCursor(subMonths(monthCursor, 1))}
+            className="h-7 px-2 rounded-lg border border-[var(--border)] text-[13px] hover:bg-muted motion-safe:transition-colors"
+          >
+            ←
+          </button>
           <div className="text-[15px] font-semibold">{format(monthCursor, "MMMM yyyy")}</div>
-          <button onClick={() => setMonthCursor(addMonths(monthCursor, 1))} className="h-7 px-2 rounded-lg border border-[var(--border)] text-[13px] hover:bg-muted motion-safe:transition-colors">→</button>
+          <button
+            onClick={() => setMonthCursor(addMonths(monthCursor, 1))}
+            className="h-7 px-2 rounded-lg border border-[var(--border)] text-[13px] hover:bg-muted motion-safe:transition-colors"
+          >
+            →
+          </button>
         </div>
-        <button onClick={() => setMonthCursor(new Date())} className="h-7 px-2 rounded-lg border border-[var(--border)] text-[13px] hover:bg-muted motion-safe:transition-colors">Today</button>
+        <button
+          onClick={() => setMonthCursor(new Date())}
+          className="h-7 px-2 rounded-lg border border-[var(--border)] text-[13px] hover:bg-muted motion-safe:transition-colors"
+        >
+          Today
+        </button>
       </div>
       <div className="grid grid-cols-7 border-b border-[var(--border)] text-[11px] text-muted-foreground">
-        {["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map(d => <div key={d} className="p-2 border-r border-[var(--border)] last:border-r-0">{d}</div>)}
+        {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
+          <div key={d} className="p-2 border-r border-[var(--border)] last:border-r-0">
+            {d}
+          </div>
+        ))}
       </div>
       <div className="grid grid-cols-7">
         {grid.map((day, idx) => {
-          const dayItems = day ? items.filter(i => i.scheduled_date && isSameDay(parseISO(i.scheduled_date), day)) : [];
+          const dayItems = day
+            ? items.filter((i) => i.scheduled_date && isSameDay(parseISO(i.scheduled_date), day))
+            : [];
           const isToday = day && isSameDay(day, new Date());
           return (
-            <div key={idx} className={`min-h-[96px] p-1.5 border-r border-b border-[var(--border)] last:border-r-0 ${isToday ? "bg-primary/5" : ""}`}>
+            <div
+              key={idx}
+              className={`min-h-[96px] p-1.5 border-r border-b border-[var(--border)] last:border-r-0 ${isToday ? "bg-primary/5" : ""}`}
+            >
               {day && (
                 <>
-                  <div className={`text-[11px] ${isToday ? "text-primary font-semibold" : "text-muted-foreground"} mb-1`}>{format(day, "d")}</div>
+                  <div
+                    className={`text-[11px] ${isToday ? "text-primary font-semibold" : "text-muted-foreground"} mb-1`}
+                  >
+                    {format(day, "d")}
+                  </div>
                   <div className="space-y-0.5">
-                    {dayItems.slice(0, 3).map(i => (
+                    {dayItems.slice(0, 3).map((i) => (
                       <button
                         key={i.id}
                         onClick={() => onOpen(i)}
@@ -353,7 +568,11 @@ function CalendarView({ items, monthCursor, setMonthCursor, onOpen }: {
                         {PLATFORM_META[i.platform].label}: {i.hook}
                       </button>
                     ))}
-                    {dayItems.length > 3 && <div className="text-[9px] text-muted-foreground px-1">+{dayItems.length - 3} more</div>}
+                    {dayItems.length > 3 && (
+                      <div className="text-[9px] text-muted-foreground px-1">
+                        +{dayItems.length - 3} more
+                      </div>
+                    )}
                   </div>
                 </>
               )}
@@ -366,49 +585,81 @@ function CalendarView({ items, monthCursor, setMonthCursor, onOpen }: {
 }
 
 // -- Kanban view --
-function KanbanView({ items, onOpen, onUpdate }: { items: ContentItem[]; onOpen: (i: ContentItem) => void; onUpdate: () => void }) {
+function KanbanView({
+  items,
+  onOpen,
+  onUpdate,
+}: {
+  items: ContentItem[];
+  onOpen: (i: ContentItem) => void;
+  onUpdate: () => void;
+}) {
   const setStatus = async (id: string, status: Status) => {
     const patch: Partial<ContentItem> = { status };
     if (status === "posted") (patch as { posted_at?: string }).posted_at = new Date().toISOString();
     const { error } = await supabase.from("content_items").update(patch).eq("id", id);
-    if (error) toast.error(error.message); else onUpdate();
+    if (error) toast.error(error.message);
+    else onUpdate();
   };
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-2">
-      {STATUSES.filter(s => s.value !== "filmed").map(s => {
-        const col = items.filter(i => i.status === s.value || (s.value === "recorded" && i.status === "filmed"));
+      {STATUSES.filter((s) => s.value !== "filmed").map((s) => {
+        const col = items.filter(
+          (i) => i.status === s.value || (s.value === "recorded" && i.status === "filmed"),
+        );
         return (
-          <div key={s.value} className="border border-[var(--border)] bg-[var(--card)] rounded-sm flex flex-col min-h-[400px]">
-            <div className={`p-2 border-b border-[var(--border)] flex items-center justify-between ${s.color}`}>
+          <div
+            key={s.value}
+            className="border border-[var(--border)] bg-[var(--card)] rounded-sm flex flex-col min-h-[400px]"
+          >
+            <div
+              className={`p-2 border-b border-[var(--border)] flex items-center justify-between ${s.color}`}
+            >
               <span className="text-[10px] font-semibold uppercase tracking-wider">{s.label}</span>
               <span className="text-[10px]">{col.length}</span>
             </div>
             <div className="p-1.5 flex-1 space-y-1.5 overflow-auto">
-              {col.map(i => (
-                <div key={i.id} className="border border-[var(--border)] bg-[var(--background)] rounded-sm p-2 hover:border-border group">
+              {col.map((i) => (
+                <div
+                  key={i.id}
+                  className="border border-[var(--border)] bg-[var(--background)] rounded-sm p-2 hover:border-border group"
+                >
                   <button onClick={() => onOpen(i)} className="w-full text-left space-y-1.5">
                     <div className="flex items-center justify-between gap-1">
-                      <span className={`text-[9px] px-1.5 py-0.5 rounded-sm border ${PLATFORM_META[i.platform].color}`}>{PLATFORM_META[i.platform].label}</span>
-                      {i.scheduled_date && <span className="text-[9px] text-muted-foreground">{format(parseISO(i.scheduled_date), "MMM d")}</span>}
+                      <span
+                        className={`text-[9px] px-1.5 py-0.5 rounded-sm border ${PLATFORM_META[i.platform].color}`}
+                      >
+                        {PLATFORM_META[i.platform].label}
+                      </span>
+                      {i.scheduled_date && (
+                        <span className="text-[9px] text-muted-foreground">
+                          {format(parseISO(i.scheduled_date), "MMM d")}
+                        </span>
+                      )}
                     </div>
                     <div className="text-xs font-medium line-clamp-3">{i.hook}</div>
                   </button>
                   <div className="mt-1.5 flex gap-0.5 opacity-0 group-hover:opacity-100 transition">
-                    {STATUSES.filter(t => t.value !== "filmed").map(target => target.value !== i.status && (
-                      <button
-                        key={target.value}
-                        onClick={() => setStatus(i.id, target.value)}
-                        className="text-[9px] px-1 py-0.5 rounded-sm border border-[var(--border)] hover:border-border text-muted-foreground hover:text-foreground"
-                        title={`Move to ${target.label}`}
-                      >
-                        {target.label[0]}
-                      </button>
-                    ))}
+                    {STATUSES.filter((t) => t.value !== "filmed").map(
+                      (target) =>
+                        target.value !== i.status && (
+                          <button
+                            key={target.value}
+                            onClick={() => setStatus(i.id, target.value)}
+                            className="text-[9px] px-1 py-0.5 rounded-sm border border-[var(--border)] hover:border-border text-muted-foreground hover:text-foreground"
+                            title={`Move to ${target.label}`}
+                          >
+                            {target.label[0]}
+                          </button>
+                        ),
+                    )}
                   </div>
                 </div>
               ))}
-              {col.length === 0 && <div className="text-[10px] text-muted-foreground text-center py-4">Empty</div>}
+              {col.length === 0 && (
+                <div className="text-[10px] text-muted-foreground text-center py-4">Empty</div>
+              )}
             </div>
           </div>
         );
@@ -433,15 +684,51 @@ function ListView({ items, onOpen }: { items: ContentItem[]; onOpen: (i: Content
           </tr>
         </thead>
         <tbody className="divide-y divide-[var(--accent)]">
-          {items.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">No content items yet.</td></tr>}
-          {items.map(i => (
-            <tr key={i.id} className="hover:bg-[var(--muted)] cursor-pointer" onClick={() => onOpen(i)}>
+          {items.length === 0 && (
+            <tr>
+              <td colSpan={6} className="p-6 text-center text-muted-foreground">
+                No content items yet.
+              </td>
+            </tr>
+          )}
+          {items.map((i) => (
+            <tr
+              key={i.id}
+              className="hover:bg-[var(--muted)] cursor-pointer"
+              onClick={() => onOpen(i)}
+            >
               <td className="p-2">{i.scheduled_date ?? "—"}</td>
-              <td className="p-2"><span className={`text-[10px] px-1.5 py-0.5 rounded-sm border ${PLATFORM_META[i.platform].color}`}>{PLATFORM_META[i.platform].label}</span></td>
+              <td className="p-2">
+                <span
+                  className={`text-[10px] px-1.5 py-0.5 rounded-sm border ${PLATFORM_META[i.platform].color}`}
+                >
+                  {PLATFORM_META[i.platform].label}
+                </span>
+              </td>
               <td className="p-2 max-w-md truncate">{i.hook}</td>
               <td className="p-2 text-muted-foreground">{i.format ?? "—"}</td>
-              <td className="p-2"><span className={`text-[10px] px-1.5 py-0.5 rounded-sm border ${STATUS_META[i.status].color}`}>{STATUS_META[i.status].label}</span></td>
-              <td className="p-2">{i.link_when_posted ? <a href={i.link_when_posted} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="text-muted-foreground hover:text-muted-foreground"><ExternalLink className="h-3 w-3 inline" /></a> : <span className="text-muted-foreground">—</span>}</td>
+              <td className="p-2">
+                <span
+                  className={`text-[10px] px-1.5 py-0.5 rounded-sm border ${STATUS_META[i.status].color}`}
+                >
+                  {STATUS_META[i.status].label}
+                </span>
+              </td>
+              <td className="p-2">
+                {i.link_when_posted ? (
+                  <a
+                    href={i.link_when_posted}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-muted-foreground hover:text-muted-foreground"
+                  >
+                    <ExternalLink className="h-3 w-3 inline" />
+                  </a>
+                ) : (
+                  <span className="text-muted-foreground">—</span>
+                )}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -451,8 +738,15 @@ function ListView({ items, onOpen }: { items: ContentItem[]; onOpen: (i: Content
 }
 
 // -- Idea inbox --
-function IdeaInbox({ ideas, userId, onChange, onPromote }: {
-  ideas: Idea[]; userId: string | null; onChange: () => void;
+function IdeaInbox({
+  ideas,
+  userId,
+  onChange,
+  onPromote,
+}: {
+  ideas: Idea[];
+  userId: string | null;
+  onChange: () => void;
   onPromote: (i: Idea) => void;
 }) {
   const [text, setText] = useState("");
@@ -477,31 +771,47 @@ function IdeaInbox({ ideas, userId, onChange, onPromote }: {
     });
     setSaving(false);
     if (error) return toast.error(error.message);
-    setText(""); setLink(""); setExplanation(""); setTriggerType(""); setFunnelGuess("");
+    setText("");
+    setLink("");
+    setExplanation("");
+    setTriggerType("");
+    setFunnelGuess("");
     onChange();
   };
 
   const del = async (id: string) => {
     const { error } = await supabase.from("content_ideas").delete().eq("id", id);
-    if (error) toast.error(error.message); else onChange();
+    if (error) toast.error(error.message);
+    else onChange();
   };
 
   const monthlyReset = async () => {
-    const unpromoted = ideas.filter(i => !i.promoted_item_id && !i.harvested);
-    if (unpromoted.length === 0) { toast.info("Nothing to archive"); setShowReset(false); return; }
-    const { error } = await supabase.from("content_ideas").update({ harvested: true }).in("id", unpromoted.map(i => i.id));
+    const unpromoted = ideas.filter((i) => !i.promoted_item_id && !i.harvested);
+    if (unpromoted.length === 0) {
+      toast.info("Nothing to archive");
+      setShowReset(false);
+      return;
+    }
+    const { error } = await supabase
+      .from("content_ideas")
+      .update({ harvested: true })
+      .in(
+        "id",
+        unpromoted.map((i) => i.id),
+      );
     if (error) return toast.error(error.message);
     toast.success(`Archived ${unpromoted.length} idea${unpromoted.length === 1 ? "" : "s"}`);
-    setShowReset(false); onChange();
+    setShowReset(false);
+    onChange();
   };
 
-  const visible = ideas.filter(i => {
+  const visible = ideas.filter((i) => {
     if (i.harvested) return filter === "archived";
     if (filter === "all") return true;
     if (filter === "archived") return false;
     return i.trigger_type === filter;
   });
-  const activeCount = ideas.filter(i => !i.harvested).length;
+  const activeCount = ideas.filter((i) => !i.harvested).length;
 
   return (
     <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm">
@@ -509,11 +819,16 @@ function IdeaInbox({ ideas, userId, onChange, onPromote }: {
         <Lightbulb className="h-3.5 w-3.5 text-warning-fg" />
         <div className="text-sm font-semibold">Idea inbox</div>
         <span className="ml-auto text-[10px] text-muted-foreground">{activeCount} active</span>
-        <button onClick={() => setShowReset(true)} className="text-[10px] text-muted-foreground hover:text-muted-foreground underline decoration-dotted">Monthly reset</button>
+        <button
+          onClick={() => setShowReset(true)}
+          className="text-[10px] text-muted-foreground hover:text-muted-foreground underline decoration-dotted"
+        >
+          Monthly reset
+        </button>
       </div>
       <div className="p-3 space-y-2 border-b border-[var(--border)]">
         <div className="flex flex-wrap gap-1">
-          {TRIGGERS.map(t => (
+          {TRIGGERS.map((t) => (
             <button
               key={t.value}
               onClick={() => setTriggerType(triggerType === t.value ? "" : t.value)}
@@ -525,24 +840,42 @@ function IdeaInbox({ ideas, userId, onChange, onPromote }: {
           ))}
         </div>
         <textarea
-          value={text} onChange={e => setText(e.target.value)}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
           placeholder="What triggered this? Raw idea, hook, angle…"
           rows={2}
           className="w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-xs resize-none focus:outline-none focus:border-border"
         />
         <textarea
-          value={explanation} onChange={e => setExplanation(e.target.value)}
+          value={explanation}
+          onChange={(e) => setExplanation(e.target.value)}
           placeholder="How I'd explain it to a friend (voice memo in text)…"
           rows={2}
           className="w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-xs resize-none focus:outline-none focus:border-border"
         />
         <div className="flex gap-2">
-          <SelectField value={funnelGuess} onChange={(v) => setFunnelGuess(v)} options={[{ value: "tof", label: "TOF" }, { value: "mof", label: "MOF" }]} allowEmpty emptyLabel="Funnel?" placeholder="Funnel?" />
+          <SelectField
+            value={funnelGuess}
+            onChange={(v) => setFunnelGuess(v)}
+            options={[
+              { value: "tof", label: "TOF" },
+              { value: "mof", label: "MOF" },
+            ]}
+            allowEmpty
+            emptyLabel="Funnel?"
+            placeholder="Funnel?"
+          />
           <input
-            value={link} onChange={e => setLink(e.target.value)} placeholder="Optional link"
+            value={link}
+            onChange={(e) => setLink(e.target.value)}
+            placeholder="Optional link"
             className="flex-1 h-7 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border"
           />
-          <button onClick={add} disabled={saving || !text.trim()} className="h-7 px-3 rounded-sm bg-muted hover:bg-muted text-muted-foreground text-xs font-medium disabled:opacity-40">
+          <button
+            onClick={add}
+            disabled={saving || !text.trim()}
+            className="h-7 px-3 rounded-sm bg-muted hover:bg-muted text-muted-foreground text-xs font-medium disabled:opacity-40"
+          >
             <Plus className="h-3 w-3 inline" /> Add
           </button>
         </div>
@@ -550,30 +883,72 @@ function IdeaInbox({ ideas, userId, onChange, onPromote }: {
 
       {/* Filter chips */}
       <div className="p-2 border-b border-[var(--border)] flex flex-wrap gap-1">
-        <button onClick={() => setFilter("all")} className={`h-6 px-2 rounded-sm text-[10px] border ${filter === "all" ? "bg-muted border-border text-muted-foreground" : "border-[var(--border)] text-muted-foreground"}`}>All</button>
-        {TRIGGERS.map(t => (
-          <button key={t.value} onClick={() => setFilter(t.value)} className={`h-6 px-2 rounded-sm text-[10px] border ${filter === t.value ? "bg-muted border-border text-muted-foreground" : "border-[var(--border)] text-muted-foreground"}`}>{t.label}</button>
+        <button
+          onClick={() => setFilter("all")}
+          className={`h-6 px-2 rounded-sm text-[10px] border ${filter === "all" ? "bg-muted border-border text-muted-foreground" : "border-[var(--border)] text-muted-foreground"}`}
+        >
+          All
+        </button>
+        {TRIGGERS.map((t) => (
+          <button
+            key={t.value}
+            onClick={() => setFilter(t.value)}
+            className={`h-6 px-2 rounded-sm text-[10px] border ${filter === t.value ? "bg-muted border-border text-muted-foreground" : "border-[var(--border)] text-muted-foreground"}`}
+          >
+            {t.label}
+          </button>
         ))}
-        <button onClick={() => setFilter("archived")} className={`h-6 px-2 rounded-sm text-[10px] border ${filter === "archived" ? "bg-neutral-500/15 border-neutral-500/50 text-neutral-200" : "border-[var(--border)] text-muted-foreground"}`}>Archived</button>
+        <button
+          onClick={() => setFilter("archived")}
+          className={`h-6 px-2 rounded-sm text-[10px] border ${filter === "archived" ? "bg-neutral-500/15 border-neutral-500/50 text-neutral-200" : "border-[var(--border)] text-muted-foreground"}`}
+        >
+          Archived
+        </button>
       </div>
 
       <div className="max-h-[560px] overflow-auto divide-y divide-[var(--accent)]">
-        {visible.length === 0 && <div className="text-xs text-muted-foreground text-center p-6">Empty.</div>}
-        {visible.map(i => {
-          const trig = TRIGGERS.find(t => t.value === i.trigger_type);
+        {visible.length === 0 && (
+          <div className="text-xs text-muted-foreground text-center p-6">Empty.</div>
+        )}
+        {visible.map((i) => {
+          const trig = TRIGGERS.find((t) => t.value === i.trigger_type);
           return (
-            <div key={i.id} className={`p-2.5 group ${i.promoted_item_id || i.harvested ? "opacity-60" : ""}`}>
+            <div
+              key={i.id}
+              className={`p-2.5 group ${i.promoted_item_id || i.harvested ? "opacity-60" : ""}`}
+            >
               <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                {trig && <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm border border-border text-muted-foreground">{trig.label}</span>}
-                {i.funnel_guess && <span className={`text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm border ${i.funnel_guess === "tof" ? "border-border text-muted-foreground" : "border-success/25 text-success-fg"}`}>{i.funnel_guess}</span>}
-                {i.harvested && <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm border border-neutral-500/30 text-neutral-400">Archived</span>}
+                {trig && (
+                  <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm border border-border text-muted-foreground">
+                    {trig.label}
+                  </span>
+                )}
+                {i.funnel_guess && (
+                  <span
+                    className={`text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm border ${i.funnel_guess === "tof" ? "border-border text-muted-foreground" : "border-success/25 text-success-fg"}`}
+                  >
+                    {i.funnel_guess}
+                  </span>
+                )}
+                {i.harvested && (
+                  <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm border border-neutral-500/30 text-neutral-400">
+                    Archived
+                  </span>
+                )}
               </div>
               <p className="text-xs leading-relaxed whitespace-pre-wrap break-words">{i.text}</p>
               {i.explanation && (
-                <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground italic whitespace-pre-wrap break-words">{i.explanation}</p>
+                <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground italic whitespace-pre-wrap break-words">
+                  {i.explanation}
+                </p>
               )}
               {i.link && (
-                <a href={i.link} target="_blank" rel="noreferrer" className="mt-1 text-[10px] text-muted-foreground hover:text-muted-foreground inline-flex items-center gap-1 truncate max-w-full">
+                <a
+                  href={i.link}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-1 text-[10px] text-muted-foreground hover:text-muted-foreground inline-flex items-center gap-1 truncate max-w-full"
+                >
                   <ExternalLink className="h-2.5 w-2.5" /> {i.link}
                 </a>
               )}
@@ -583,12 +958,18 @@ function IdeaInbox({ ideas, userId, onChange, onPromote }: {
                 ) : i.harvested ? (
                   <span className="text-neutral-500">archived</span>
                 ) : (
-                  <button onClick={() => onPromote(i)} className="text-muted-foreground hover:text-muted-foreground inline-flex items-center gap-0.5">
+                  <button
+                    onClick={() => onPromote(i)}
+                    className="text-muted-foreground hover:text-muted-foreground inline-flex items-center gap-0.5"
+                  >
                     Harvest → content <ArrowRight className="h-2.5 w-2.5" />
                   </button>
                 )}
                 <span className="ml-auto">{format(parseISO(i.created_at), "MMM d")}</span>
-                <button onClick={() => del(i.id)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-danger-fg">
+                <button
+                  onClick={() => del(i.id)}
+                  className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-danger-fg"
+                >
                   <Trash2 className="h-3 w-3" />
                 </button>
               </div>
@@ -598,24 +979,42 @@ function IdeaInbox({ ideas, userId, onChange, onPromote }: {
       </div>
 
       {showReset && (
-        <div className="fixed inset-0 z-50 bg-black/70 grid place-items-center p-4" onClick={() => setShowReset(false)}>
-          <div className="w-full max-w-md bg-[var(--card)] border border-border rounded-sm" onClick={e => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-50 bg-black/70 grid place-items-center p-4"
+          onClick={() => setShowReset(false)}
+        >
+          <div
+            className="w-full max-w-md bg-[var(--card)] border border-border rounded-sm"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="p-4 border-b border-[var(--border)]">
               <div className="text-sm font-semibold">Monthly reset</div>
               <div className="text-[11px] text-muted-foreground mt-1">
-                Archive all un-harvested ideas so next month starts clean.
-                Nothing is deleted — you can filter by "Archived" to review later.
+                Archive all un-harvested ideas so next month starts clean. Nothing is deleted — you
+                can filter by "Archived" to review later.
               </div>
             </div>
             <div className="p-4 text-xs">
               <div className="border border-[var(--border)] bg-[var(--background)] rounded-sm p-2.5">
-                <span className="text-2xl font-semibold text-muted-foreground">{ideas.filter(i => !i.promoted_item_id && !i.harvested).length}</span>
+                <span className="text-2xl font-semibold text-muted-foreground">
+                  {ideas.filter((i) => !i.promoted_item_id && !i.harvested).length}
+                </span>
                 <span className="text-muted-foreground text-[11px]"> ideas will be archived</span>
               </div>
             </div>
             <div className="p-3 border-t border-[var(--border)] flex justify-end gap-2">
-              <button onClick={() => setShowReset(false)} className="h-8 px-3 rounded-sm border border-[var(--border)] text-xs">Cancel</button>
-              <button onClick={monthlyReset} className="h-8 px-3 rounded-sm bg-muted hover:bg-muted text-muted-foreground text-xs font-medium">Archive</button>
+              <button
+                onClick={() => setShowReset(false)}
+                className="h-8 px-3 rounded-sm border border-[var(--border)] text-xs"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={monthlyReset}
+                className="h-8 px-3 rounded-sm bg-muted hover:bg-muted text-muted-foreground text-xs font-medium"
+              >
+                Archive
+              </button>
             </div>
           </div>
         </div>
@@ -625,7 +1024,13 @@ function IdeaInbox({ ideas, userId, onChange, onPromote }: {
 }
 
 // -- Create/edit dialog --
-function ItemDialog({ initial, userId, onClose, onSaved, promotingIdea: pIdea }: {
+function ItemDialog({
+  initial,
+  userId,
+  onClose,
+  onSaved,
+  promotingIdea: pIdea,
+}: {
   initial: ContentItem | null;
   userId: string | null;
   onClose: () => void;
@@ -638,56 +1043,95 @@ function ItemDialog({ initial, userId, onClose, onSaved, promotingIdea: pIdea }:
   const [format, setFormat] = useState(initial?.format ?? "");
   const [title, setTitle] = useState(initial?.title ?? "");
   const [hook, setHook] = useState(initial?.hook ?? pIdea?.text ?? "");
-  const [script, setScript] = useState(initial?.script ?? (pIdea?.link ? `Source: ${pIdea.link}` : ""));
+  const [script, setScript] = useState(
+    initial?.script ?? (pIdea?.link ? `Source: ${pIdea.link}` : ""),
+  );
   const [status, setStatus] = useState<Status>(initial?.status ?? "idea");
   const [link, setLink] = useState(initial?.link_when_posted ?? "");
   const [tagsStr, setTagsStr] = useState(initial?.tags.join(", ") ?? "");
   const [rawVideo, setRawVideo] = useState(initial?.raw_video_url ?? "");
   const [editedReel, setEditedReel] = useState(initial?.edited_reel_url ?? "");
   const [source, setSource] = useState(initial?.source ?? "");
-  const [duration, setDuration] = useState<string>(initial?.duration_sec ? String(initial.duration_sec) : "");
-  const [platformsMulti, setPlatformsMulti] = useState<string[]>(initial?.platforms ?? ["instagram"]);
+  const [duration, setDuration] = useState<string>(
+    initial?.duration_sec ? String(initial.duration_sec) : "",
+  );
+  const [platformsMulti, setPlatformsMulti] = useState<string[]>(
+    initial?.platforms ?? ["instagram"],
+  );
   const [reedit, setReedit] = useState<boolean>(initial?.reedit_flag ?? false);
   const [busy, setBusy] = useState(false);
 
   const togglePlatform = (v: string) =>
-    setPlatformsMulti(prev => prev.includes(v) ? prev.filter(x => x !== v) : [...prev, v]);
+    setPlatformsMulti((prev) => (prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v]));
 
   const save = async () => {
-    if (!userId || !hook.trim()) { toast.error("Hook required"); return; }
+    if (!userId || !hook.trim()) {
+      toast.error("Hook required");
+      return;
+    }
     setBusy(true);
-    const tags = tagsStr.split(",").map(t => t.trim()).filter(Boolean);
+    const tags = tagsStr
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
     const durNum = duration.trim() ? parseInt(duration, 10) : null;
     const payload = {
       created_by: userId,
       scheduled_date: scheduled || null,
-      platform, format: format || null, hook: hook.trim(),
+      platform,
+      format: format || null,
+      hook: hook.trim(),
       title: title.trim() || null,
-      script: script || null, status,
-      link_when_posted: link || null, tags,
+      script: script || null,
+      status,
+      link_when_posted: link || null,
+      tags,
       raw_video_url: rawVideo.trim() || null,
       edited_reel_url: editedReel.trim() || null,
       source: source.trim() || null,
       duration_sec: durNum && !Number.isNaN(durNum) ? durNum : null,
       platforms: platformsMulti.length ? platformsMulti : ["instagram"],
       reedit_flag: reedit,
-      posted_at: status === "posted" ? (initial?.posted_at ?? new Date().toISOString()) : (initial?.posted_at ?? null),
-      recorded_at: (status === "recorded" || status === "filmed") ? (initial?.recorded_at ?? new Date().toISOString()) : initial?.recorded_at ?? null,
-      edited_at: status === "edited" ? (initial?.edited_at ?? new Date().toISOString()) : initial?.edited_at ?? null,
+      posted_at:
+        status === "posted"
+          ? (initial?.posted_at ?? new Date().toISOString())
+          : (initial?.posted_at ?? null),
+      recorded_at:
+        status === "recorded" || status === "filmed"
+          ? (initial?.recorded_at ?? new Date().toISOString())
+          : (initial?.recorded_at ?? null),
+      edited_at:
+        status === "edited"
+          ? (initial?.edited_at ?? new Date().toISOString())
+          : (initial?.edited_at ?? null),
     };
     if (isNew) {
-      const { data, error } = await supabase.from("content_items").insert(payload).select().single();
-      if (error) { setBusy(false); return toast.error(error.message); }
+      const { data, error } = await supabase
+        .from("content_items")
+        .insert(payload)
+        .select()
+        .single();
+      if (error) {
+        setBusy(false);
+        return toast.error(error.message);
+      }
       if (pIdea) {
-        await supabase.from("content_ideas").update({ promoted_item_id: (data as ContentItem).id }).eq("id", pIdea.id);
+        await supabase
+          .from("content_ideas")
+          .update({ promoted_item_id: (data as ContentItem).id })
+          .eq("id", pIdea.id);
       }
     } else {
       const { error } = await supabase.from("content_items").update(payload).eq("id", initial!.id);
-      if (error) { setBusy(false); return toast.error(error.message); }
+      if (error) {
+        setBusy(false);
+        return toast.error(error.message);
+      }
     }
     setBusy(false);
     toast.success(isNew ? "Content added" : "Saved");
-    onSaved(); onClose();
+    onSaved();
+    onClose();
   };
 
   const del = async () => {
@@ -696,45 +1140,88 @@ function ItemDialog({ initial, userId, onClose, onSaved, promotingIdea: pIdea }:
     const { error } = await supabase.from("content_items").delete().eq("id", initial.id);
     if (error) return toast.error(error.message);
     toast.success("Deleted");
-    onSaved(); onClose();
+    onSaved();
+    onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 flex items-start justify-center p-4 overflow-auto" onClick={onClose}>
-      <div className="w-full max-w-3xl my-8 bg-[var(--card)] border border-[var(--border)] rounded-sm" onClick={e => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 z-50 bg-black/70 flex items-start justify-center p-4 overflow-auto"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-3xl my-8 bg-[var(--card)] border border-[var(--border)] rounded-sm"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="p-4 border-b border-[var(--border)] flex items-center justify-between">
           <div>
             <div className="text-sm font-semibold">{isNew ? "New content" : "Edit content"}</div>
-            {pIdea && <div className="text-[10px] text-muted-foreground">Promoting from idea inbox</div>}
+            {pIdea && (
+              <div className="text-[10px] text-muted-foreground">Promoting from idea inbox</div>
+            )}
           </div>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+            <X className="h-4 w-4" />
+          </button>
         </div>
         <div className="p-4 space-y-3">
           <Field label="Title (short label — for the record)">
-            <input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g., How I hire closers" className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-sm outline-none focus:border-border" />
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g., How I hire closers"
+              className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-sm outline-none focus:border-border"
+            />
           </Field>
           <Field label="Hook / opening line *">
-            <textarea value={hook} onChange={e => setHook(e.target.value)} rows={2} className="w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-sm resize-none focus:outline-none focus:border-border" placeholder="First 3 seconds. Pattern break, promise, identity claim…" />
+            <textarea
+              value={hook}
+              onChange={(e) => setHook(e.target.value)}
+              rows={2}
+              className="w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-sm resize-none focus:outline-none focus:border-border"
+              placeholder="First 3 seconds. Pattern break, promise, identity claim…"
+            />
           </Field>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <Field label="Status">
-              <SelectField value={status} onChange={v => setStatus(v as Status)} options={STATUSES.filter(s => s.value !== "filmed").map(s => ({ value: s.value, label: s.label }))} />
+              <SelectField
+                value={status}
+                onChange={(v) => setStatus(v as Status)}
+                options={STATUSES.filter((s) => s.value !== "filmed").map((s) => ({
+                  value: s.value,
+                  label: s.label,
+                }))}
+              />
             </Field>
             <Field label="Scheduled date">
               <DateField value={scheduled} onChange={setScheduled} placeholder="Not scheduled" />
             </Field>
             <Field label="Format / creative type">
-              <SelectField value={format} onChange={(v) => setFormat(v)} options={CREATIVE_TYPES.map((c) => ({ value: c, label: c }))} allowEmpty emptyLabel="—" placeholder="—" />
+              <SelectField
+                value={format}
+                onChange={(v) => setFormat(v)}
+                options={CREATIVE_TYPES.map((c) => ({ value: c, label: c }))}
+                allowEmpty
+                emptyLabel="—"
+                placeholder="—"
+              />
             </Field>
             <Field label="Duration (sec)">
-              <input type="number" min={0} value={duration} onChange={e => setDuration(e.target.value)} placeholder="e.g., 45" className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border" />
+              <input
+                type="number"
+                min={0}
+                value={duration}
+                onChange={(e) => setDuration(e.target.value)}
+                placeholder="e.g., 45"
+                className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border"
+              />
             </Field>
           </div>
 
           <Field label="Platforms (where this will post)">
             <div className="flex flex-wrap gap-1.5">
-              {MULTI_PLATFORMS.map(p => {
+              {MULTI_PLATFORMS.map((p) => {
                 const on = platformsMulti.includes(p.value);
                 return (
                   <button
@@ -751,53 +1238,99 @@ function ItemDialog({ initial, userId, onClose, onSaved, promotingIdea: pIdea }:
           </Field>
 
           <Field label="Script (markdown supported)">
-            <textarea value={script} onChange={e => setScript(e.target.value)} rows={10} className="w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-sm resize-y focus:outline-none focus:border-border" placeholder={"Write the reel here.\n\n- Hook line\n- Body / points\n- CTA / close"} />
+            <textarea
+              value={script}
+              onChange={(e) => setScript(e.target.value)}
+              rows={10}
+              className="w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-2 text-sm resize-y focus:outline-none focus:border-border"
+              placeholder={"Write the reel here.\n\n- Hook line\n- Body / points\n- CTA / close"}
+            />
           </Field>
 
           <div className="grid grid-cols-2 gap-2">
             <Field label="Raw video URL">
-              <input value={rawVideo} onChange={e => setRawVideo(e.target.value)} placeholder="Drive / Frame.io link" className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border" />
+              <input
+                value={rawVideo}
+                onChange={(e) => setRawVideo(e.target.value)}
+                placeholder="Drive / Frame.io link"
+                className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border"
+              />
             </Field>
             <Field label="Edited reel URL">
-              <input value={editedReel} onChange={e => setEditedReel(e.target.value)} placeholder="Editor delivery link" className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border" />
+              <input
+                value={editedReel}
+                onChange={(e) => setEditedReel(e.target.value)}
+                placeholder="Editor delivery link"
+                className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border"
+              />
             </Field>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
             <Field label="Source (where the idea came from)">
-              <input value={source} onChange={e => setSource(e.target.value)} placeholder="e.g., client call, Notion note, viral reel" className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border" />
+              <input
+                value={source}
+                onChange={(e) => setSource(e.target.value)}
+                placeholder="e.g., client call, Notion note, viral reel"
+                className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border"
+              />
             </Field>
             <Field label="Primary platform (for icon color)">
-              <SelectField value={platform} onChange={(v) => setPlatform(v as Platform)} options={PLATFORMS.map((p) => ({ value: p.value, label: p.label }))} />
+              <SelectField
+                value={platform}
+                onChange={(v) => setPlatform(v as Platform)}
+                options={PLATFORMS.map((p) => ({ value: p.value, label: p.label }))}
+              />
             </Field>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
             <Field label="Link when posted">
-              <input value={link} onChange={e => setLink(e.target.value)} placeholder="https://…" className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border" />
+              <input
+                value={link}
+                onChange={(e) => setLink(e.target.value)}
+                placeholder="https://…"
+                className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border"
+              />
             </Field>
             <Field label="Tags (comma separated)">
-              <input value={tagsStr} onChange={e => setTagsStr(e.target.value)} className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border" />
+              <input
+                value={tagsStr}
+                onChange={(e) => setTagsStr(e.target.value)}
+                className="w-full h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs outline-none focus:border-border"
+              />
             </Field>
           </div>
 
           <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
-            <Checkbox checked={reedit} onCheckedChange={v => setReedit(v === true)} />
+            <Checkbox checked={reedit} onCheckedChange={(v) => setReedit(v === true)} />
             Needs re-edit (send back to editor)
           </label>
         </div>
         <div className="p-4 border-t border-[var(--border)] flex items-center justify-between">
           <div>
             {!isNew && (
-              <button onClick={del} className="h-8 px-3 rounded-sm border border-danger/25 text-danger-fg hover:bg-danger-bg text-xs">
+              <button
+                onClick={del}
+                className="h-8 px-3 rounded-sm border border-danger/25 text-danger-fg hover:bg-danger-bg text-xs"
+              >
                 <Trash2 className="h-3 w-3 inline mr-1" /> Delete
               </button>
             )}
           </div>
           <div className="flex gap-2">
-            <button onClick={onClose} className="h-8 px-3 rounded-sm border border-[var(--border)] text-xs">Cancel</button>
-            <button onClick={save} disabled={busy || !hook.trim()} className="h-8 px-3 rounded-sm bg-muted hover:bg-muted text-muted-foreground text-xs font-medium disabled:opacity-40">
-              {busy ? "Saving…" : (isNew ? "Create" : "Save")}
+            <button
+              onClick={onClose}
+              className="h-8 px-3 rounded-sm border border-[var(--border)] text-xs"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={save}
+              disabled={busy || !hook.trim()}
+              className="h-8 px-3 rounded-sm bg-muted hover:bg-muted text-muted-foreground text-xs font-medium disabled:opacity-40"
+            >
+              {busy ? "Saving…" : isNew ? "Create" : "Save"}
             </button>
           </div>
         </div>
