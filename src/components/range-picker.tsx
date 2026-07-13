@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import { Calendar as CalIcon } from "lucide-react";
 import { format, subDays } from "date-fns";
-import { DateField } from "@/components/ui/date-field";
+import type { DateRange as DayPickerRange } from "react-day-picker";
 
 export type DateRange = { from: Date; to: Date; preset: "24h" | "3d" | "7d" | "30d" | "90d" | "custom" };
 
@@ -27,21 +28,23 @@ export function daysBetween(r: DateRange) {
 
 export function RangePicker({ value, onChange }: { value: DateRange; onChange: (r: DateRange) => void }) {
   const [open, setOpen] = useState(false);
-  const [fromDraft, setFromDraft] = useState(format(value.from, "yyyy-MM-dd"));
-  const [toDraft, setToDraft] = useState(format(value.to, "yyyy-MM-dd"));
+  // One click = that single day; a second click stretches it into a range.
+  const [draft, setDraft] = useState<DayPickerRange | undefined>({ from: value.from, to: value.to });
 
-  const applyCustom = () => {
-    const f = new Date(fromDraft + "T00:00:00");
-    const t = new Date(toDraft + "T23:59:59");
-    if (isNaN(f.getTime()) || isNaN(t.getTime()) || f > t) return;
-    onChange({ from: f, to: t, preset: "custom" });
+  const apply = () => {
+    if (!draft?.from) return;
+    const from = new Date(draft.from); from.setHours(0, 0, 0, 0);
+    const to = new Date(draft.to ?? draft.from); to.setHours(23, 59, 59, 999);
+    onChange({ from, to, preset: "custom" });
     setOpen(false);
   };
 
   const label =
-    value.preset === "custom"
-      ? `${format(value.from, "MMM d")} → ${format(value.to, "MMM d")}`
-      : `${format(value.from, "MMM d")} → ${format(value.to, "MMM d, yyyy")}`;
+    value.preset === "custom" && format(value.from, "yyyy-MM-dd") === format(value.to, "yyyy-MM-dd")
+      ? format(value.from, "EEE, MMM d")
+      : value.preset === "custom"
+        ? `${format(value.from, "MMM d")} → ${format(value.to, "MMM d")}`
+        : `${format(value.from, "MMM d")} → ${format(value.to, "MMM d, yyyy")}`;
 
   return (
     <div className="flex items-center gap-2">
@@ -58,7 +61,13 @@ export function RangePicker({ value, onChange }: { value: DateRange; onChange: (
           </button>
         ))}
       </div>
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover
+        open={open}
+        onOpenChange={(v) => {
+          setOpen(v);
+          if (v) setDraft({ from: value.from, to: value.to });
+        }}
+      >
         <PopoverTrigger asChild>
           <button
             className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1.5 rounded-sm border transition ${
@@ -72,20 +81,26 @@ export function RangePicker({ value, onChange }: { value: DateRange; onChange: (
             <span className="sm:hidden">Custom</span>
           </button>
         </PopoverTrigger>
-        <PopoverContent className="w-72 p-3" align="end">
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">Custom range</div>
-          <div className="space-y-2">
-            <div>
-              <label className="text-[10px] text-muted-foreground">From</label>
-              <DateField value={fromDraft} onChange={setFromDraft} clearable={false} className="h-8" />
-            </div>
-            <div>
-              <label className="text-[10px] text-muted-foreground">To</label>
-              <DateField value={toDraft} onChange={setToDraft} clearable={false} className="h-8" />
-            </div>
-            <div className="flex gap-2 pt-1">
-              <Button size="sm" variant="outline" className="flex-1" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button size="sm" className="flex-1" onClick={applyCustom}>Apply</Button>
+        <PopoverContent className="w-auto p-0" align="end">
+          <Calendar
+            mode="range"
+            selected={draft}
+            onSelect={setDraft}
+            defaultMonth={draft?.from ?? new Date()}
+            disabled={{ after: new Date() }}
+            numberOfMonths={1}
+          />
+          <div className="flex items-center justify-between gap-2 border-t border-border p-2.5">
+            <span className="text-[11px] text-muted-foreground tabular-nums">
+              {draft?.from
+                ? draft.to && format(draft.to, "yyyy-MM-dd") !== format(draft.from, "yyyy-MM-dd")
+                  ? `${format(draft.from, "MMM d")} → ${format(draft.to, "MMM d")}`
+                  : `${format(draft.from, "EEE, MMM d")} · one day`
+                : "Pick a day — tap again for a range"}
+            </span>
+            <div className="flex gap-1.5">
+              <Button size="sm" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button size="sm" onClick={apply} disabled={!draft?.from}>Apply</Button>
             </div>
           </div>
         </PopoverContent>
