@@ -63,14 +63,19 @@ export function AuthPage() {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { emailRedirectTo: window.location.origin, data: { full_name: name } },
     });
     setLoading(false);
     if (error) toast.error(error.message);
-    else {
+    else if (!data.session) {
+      // Email confirmation is on: no session yet, and signing in fails until
+      // the link in the inbox is clicked.
+      toast.message("Account created — confirm via the link in your inbox, then sign in.");
+      setTab("signin");
+    } else {
       applyRememberChoice();
       toast.success("Account created — you're in.");
     }

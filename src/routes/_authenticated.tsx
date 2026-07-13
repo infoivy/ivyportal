@@ -47,11 +47,17 @@ function AuthedLayout() {
   useEffect(() => {
     const cleanupSessionOnly = installSessionOnlyCleanup();
     let alive = true;
+    // supabase-js re-emits SIGNED_IN every time the tab regains focus; only
+    // the first event for a given user is an actual sign-in.
+    let loadedUserId: string | null = null;
     const load = async (userId: string | null, fromSignIn = false) => {
       if (!userId) {
+        loadedUserId = null;
         if (alive) setState({ user: null, roles: [], displayName: null, loading: false });
         return;
       }
+      if (fromSignIn && userId === loadedUserId) fromSignIn = false;
+      loadedUserId = userId;
       const [rolesRes, profileRes, userRes] = await Promise.all([
         supabase.from("user_roles").select("role").eq("user_id", userId),
         supabase.from("profiles").select("display_name").eq("id", userId).maybeSingle(),
