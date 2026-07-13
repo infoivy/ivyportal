@@ -37,7 +37,7 @@ async function fetchStudentAlerts(): Promise<StudentAlert[]> {
   const thirty = new Date(now - 30 * DAY).toISOString().slice(0, 10);
   const sixty = new Date(now - 60 * DAY).toISOString().slice(0, 10);
   const [students, eods, calls, placements] = await Promise.all([
-    supabase.from("students").select("id, full_name, phase, payment_state").eq("status", "active"),
+    supabase.from("students").select("id, full_name, phase, payment_state, eod_exempt").eq("status", "active"),
     supabase.from("student_eods").select("student_id, report_date").gte("report_date", thirty),
     supabase.from("student_calls").select("student_id, call_date").eq("status", "completed").gte("call_date", sixty),
     supabase.from("student_placements").select("student_id, business_name, interview_at").not("interview_at", "is", null),
@@ -53,10 +53,12 @@ async function fetchStudentAlerts(): Promise<StudentAlert[]> {
   }
 
   const alerts: StudentAlert[] = [];
-  for (const st of (students.data ?? []) as { id: string; full_name: string; phase: string; payment_state: string | null }[]) {
+  for (const st of (students.data ?? []) as { id: string; full_name: string; phase: string; payment_state: string | null; eod_exempt?: boolean }[]) {
     const eodDate = lastEod.get(st.id);
     const eodDays = eodDate ? Math.floor((now - new Date(eodDate).getTime()) / DAY) : null;
-    if (eodDays == null) {
+    if (st.eod_exempt) {
+      // EOD tracking switched off for this student — no missed-EOD alerts
+    } else if (eodDays == null) {
       alerts.push({ key: `eod-${st.id}`, student_id: st.id, student_name: st.full_name, text: "No EOD in the last 30 days", tone: "text-danger-fg" });
     } else if (eodDays >= 3) {
       alerts.push({ key: `eod-${st.id}`, student_id: st.id, student_name: st.full_name, text: `No EOD in ${eodDays} days`, tone: eodDays >= 5 ? "text-danger-fg" : "text-warning-fg" });

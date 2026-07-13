@@ -32,6 +32,7 @@ type Student = {
   phase: Phase; status: Status; coach_id: string | null;
   join_date: string; calls_included: number; notes: string | null;
   student_grade: string | null; whatsapp: string | null; next_action: string | null;
+  eod_exempt: boolean | null;
   calls_allotted: number; payment_state: PaymentState | null;
   first_win_at: string | null; offers_landed_count: number; offer_landed_at: string | null;
   testimonial_collected: boolean; trustpilot_collected: boolean; testimonial_requested?: boolean;
@@ -319,13 +320,13 @@ function StudentDetail() {
                 Set up payment — PIF or installments
               </button>
             )}
-            <div className="text-xs text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+            <div className="text-xs text-muted-foreground mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
               <span>{student.email ?? "no email"}</span>
               {student.whatsapp && <span className="flex items-center gap-1"><MessageCircle className="h-3 w-3 text-success-fg" /> {student.whatsapp}</span>}
               <span>joined {student.join_date}</span>
             </div>
 
-            <div className="flex flex-wrap gap-2 mt-3 items-center">
+            <div className="flex flex-wrap gap-2 mt-4 items-center">
               {canManage ? (
                 <>
                   <SelectChip value={student.phase} onChange={v => update({ phase: v as Phase })} options={PHASES.map(p => ({ v: p, l: p.replace("_", " ") }))} color="fuchsia" />
@@ -344,6 +345,13 @@ function StudentDetail() {
                     color={student.payment_state === "behind" ? "rose" : student.payment_state === "paid_in_full" ? "emerald" : "sky"}
                     prefix="Pay: "
                   />
+                  <SelectChip
+                    value={student.eod_exempt ? "off" : "on"}
+                    onChange={v => update({ eod_exempt: v === "off" } as never)}
+                    options={[{ v: "on", l: "tracked" }, { v: "off", l: "off — no alerts" }]}
+                    color={student.eod_exempt ? "zinc" : "emerald"}
+                    prefix="EODs: "
+                  />
                 </>
               ) : (
                 <>
@@ -357,8 +365,8 @@ function StudentDetail() {
             </div>
 
             {/* Next action */}
-            <div className="mt-3 flex items-center gap-2">
-              <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Next action</span>
+            <div className="mt-4 flex items-center gap-3">
+              <span className="text-[10px] uppercase tracking-widest text-muted-foreground shrink-0">Next action</span>
               <input
                 disabled={!canManage}
                 defaultValue={student.next_action ?? ""}

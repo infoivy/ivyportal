@@ -40,6 +40,8 @@ export type HealthInputs = {
   placementStages: string[];
   placementActivity14: boolean;
   interviewUpcoming: boolean;
+  /** Founder-set switch: this student's EODs aren't tracked — no missed-EOD or volume penalties. */
+  eodExempt?: boolean;
 };
 
 const DAY = 86400000;
@@ -49,17 +51,22 @@ const daysSince = (iso: string | null | undefined) =>
 export function computeStudentHealth(i: HealthInputs): StudentHealth {
   const reasons: string[] = [];
 
-  // EOD consistency (35)
+  // EOD consistency (35) — exempt students get full credit, no nagging
   const recent = i.eodDates.map((d) => d.slice(0, 10)).sort().reverse();
   const lastEodDays = recent.length ? daysSince(recent[0])! : null;
-  const cutoff14 = new Date(Date.now() - 13 * DAY).toISOString().slice(0, 10);
-  const submitted14 = new Set(recent.filter((d) => d >= cutoff14)).size;
-  let eodScore = (submitted14 / 14) * 25;
-  if (lastEodDays == null) { eodScore = 0; reasons.push("Never submitted an EOD"); }
-  else if (lastEodDays >= 5) { eodScore = Math.min(eodScore, 5); reasons.push(`No EOD in ${lastEodDays} days`); }
-  else if (lastEodDays >= 3) { eodScore = Math.min(eodScore, 12); reasons.push(`No EOD in ${lastEodDays} days`); }
-  else eodScore += 10; // recent = full recency credit
-  eodScore = Math.min(35, eodScore);
+  let eodScore: number;
+  if (i.eodExempt) {
+    eodScore = 35;
+  } else {
+    const cutoff14 = new Date(Date.now() - 13 * DAY).toISOString().slice(0, 10);
+    const submitted14 = new Set(recent.filter((d) => d >= cutoff14)).size;
+    eodScore = (submitted14 / 14) * 25;
+    if (lastEodDays == null) { eodScore = 0; reasons.push("Never submitted an EOD"); }
+    else if (lastEodDays >= 5) { eodScore = Math.min(eodScore, 5); reasons.push(`No EOD in ${lastEodDays} days`); }
+    else if (lastEodDays >= 3) { eodScore = Math.min(eodScore, 12); reasons.push(`No EOD in ${lastEodDays} days`); }
+    else eodScore += 10; // recent = full recency credit
+    eodScore = Math.min(35, eodScore);
+  }
 
   // Action items (15)
   let itemScore = 15;
@@ -77,13 +84,17 @@ export function computeStudentHealth(i: HealthInputs): StudentHealth {
     else if (callDays > 9) callScore = 10;
   }
 
-  // Work volume (15): targets are 3 roleplays + 5 looms per day
-  const targetRoleplays = 3 * 14;
-  const targetLooms = 5 * 14;
-  const volumeRatio = Math.min(1, (i.roleplays14 / targetRoleplays + i.looms14 / targetLooms) / 2);
-  const volumeScore = Math.round(volumeRatio * 15);
-  if (volumeRatio < 0.3 && lastEodDays != null && lastEodDays < 5) {
-    reasons.push("Roleplay/loom volume far below target");
+  // Work volume (15): targets are 3 roleplays + 5 looms per day.
+  // Volume comes from EODs, so exempt students get full credit here too.
+  let volumeScore = 15;
+  if (!i.eodExempt) {
+    const targetRoleplays = 3 * 14;
+    const targetLooms = 5 * 14;
+    const volumeRatio = Math.min(1, (i.roleplays14 / targetRoleplays + i.looms14 / targetLooms) / 2);
+    volumeScore = Math.round(volumeRatio * 15);
+    if (volumeRatio < 0.3 && lastEodDays != null && lastEodDays < 5) {
+      reasons.push("Roleplay/loom volume far below target");
+    }
   }
 
   // Placement momentum (20)

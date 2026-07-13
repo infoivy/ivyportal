@@ -1817,6 +1817,7 @@ export type Database = {
           offer_landed_at: string | null
           offers_landed_count: number
           payment_state: Database["public"]["Enums"]["payment_state"] | null
+          eod_exempt: boolean
           phase: Database["public"]["Enums"]["student_phase"]
           source: string | null
           status: Database["public"]["Enums"]["student_status"]
@@ -1845,6 +1846,7 @@ export type Database = {
           offer_landed_at?: string | null
           offers_landed_count?: number
           payment_state?: Database["public"]["Enums"]["payment_state"] | null
+          eod_exempt?: boolean
           phase?: Database["public"]["Enums"]["student_phase"]
           source?: string | null
           status?: Database["public"]["Enums"]["student_status"]
@@ -1873,6 +1875,7 @@ export type Database = {
           offer_landed_at?: string | null
           offers_landed_count?: number
           payment_state?: Database["public"]["Enums"]["payment_state"] | null
+          eod_exempt?: boolean
           phase?: Database["public"]["Enums"]["student_phase"]
           source?: string | null
           status?: Database["public"]["Enums"]["student_status"]

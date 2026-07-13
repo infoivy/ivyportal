@@ -114,7 +114,7 @@ function Dashboard() {
           ? supabase.from("eods_activity").select("id, user_id, report_date, dms_sent, convos_started, calls_booked, calls_scheduled, shows, no_shows, closes").gte("report_date", prevFrom).lte("report_date", prevTo)
           : Promise.resolve({ data: [] as EodRow[] }),
         supabase.from("profiles").select("id, display_name"),
-        supabase.from("students").select("id, status, phase").eq("status", "active"),
+        supabase.from("students").select("id, status, phase, eod_exempt").eq("status", "active"),
         supabase.from("student_calls").select("id", { count: "exact", head: true }).eq("status", "scheduled").gte("call_date", today).lte("call_date", in7),
         supabase.from("student_calls").select("student_id, call_date").eq("status", "completed").gte("call_date", callRisk),
         supabase.from("student_eods").select("student_id, report_date").gte("report_date", eodRisk),
@@ -131,11 +131,12 @@ function Dashboard() {
 
       const eodByStudent = new Set((eodsRecent.data as { student_id: string }[] | null ?? []).map(r => r.student_id));
       const callByStudent = new Set((callsRecent.data as { student_id: string }[] | null ?? []).map(r => r.student_id));
-      const activeStudents = (students.data as { id: string; status: string; phase: string }[] | null) ?? [];
-      // At-risk only while in the active journey; missed-1:1 only applies in coaching.
+      const activeStudents = (students.data as { id: string; status: string; phase: string; eod_exempt?: boolean }[] | null) ?? [];
+      // At-risk only while in the active journey; missed-1:1 only applies in
+      // coaching. EOD-exempt students never trip the missed-EOD condition.
       const atRisk = activeStudents.filter(s =>
         ["onboarding", "coaching_1on1", "applying"].includes(s.phase) &&
-        (!eodByStudent.has(s.id) || (s.phase === "coaching_1on1" && !callByStudent.has(s.id)))
+        ((!s.eod_exempt && !eodByStudent.has(s.id)) || (s.phase === "coaching_1on1" && !callByStudent.has(s.id)))
       ).length;
 
       const eodsToday = (todayEods.data as any[])?.length ?? 0;

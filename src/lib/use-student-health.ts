@@ -18,7 +18,7 @@ export function useStudentHealth() {
       const sixty = iso(new Date(Date.now() - 59 * 86400000));
       const fourteen = iso(new Date(Date.now() - 13 * 86400000));
       const [students, eods, items, calls, placements] = await Promise.all([
-        supabase.from("students").select("id, status, phase, payment_state"),
+        supabase.from("students").select("id, status, phase, payment_state, eod_exempt"),
         supabase.from("student_eods").select("student_id, report_date, roleplays, looms_sent").gte("report_date", sixty),
         supabase.from("student_action_items").select("student_id, due_date, done").eq("done", false),
         supabase.from("student_calls").select("student_id, call_date, status").eq("status", "completed").gte("call_date", sixty),
@@ -72,6 +72,7 @@ export function useStudentHealth() {
           placementStages: pls.map((p) => p.stage),
           placementActivity14: pls.some((p) => p.updated_at >= fourteen),
           interviewUpcoming: pls.some((p) => p.interview_at && p.interview_at > new Date().toISOString()),
+          eodExempt: !!s.eod_exempt,
         }));
       }
       return map;
