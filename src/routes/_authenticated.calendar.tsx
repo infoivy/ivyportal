@@ -1003,9 +1003,12 @@ function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, o
         const warmToday = !!(s.reminder_log as Record<string, string> | undefined)?.[todayWarmKey];
         const farOut = msLeft > 48 * 3_600_000;
         const log = s.reminder_log as Record<string, string> | null | undefined;
-        const sentCount = WINDOWS.filter((w) => log?.[w.key] === "reminded").length;
+        const sentCount = WINDOWS.filter((w) => log?.[w.key] === "reminded" || log?.[w.key] === "confirmed").length;
         const openDue = WINDOWS.filter((w) => msLeft > 0 && msLeft <= w.minutes * 60_000 && !log?.[w.key]);
         const nextToOpen = WINDOWS.find((w) => msLeft > w.minutes * 60_000);
+        // The freshest window the lead confirmed at (WINDOWS runs 48h → 1h)
+        const confirmedWins = WINDOWS.filter((w) => log?.[w.key] === "confirmed");
+        const freshestConfirm = confirmedWins[confirmedWins.length - 1] ?? null;
         return (
           // Your own sets get a rail + tint so ownership is never a guess
           <div key={s.id} className={`${big ? "py-4 space-y-2.5" : "py-2.5 space-y-1.5"} ${mine && big ? "border-l-2 border-primary/40 bg-primary/5 rounded-sm -mx-2 px-2 pl-3" : ""}`}>
@@ -1033,7 +1036,9 @@ function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, o
                 </span>
               )}
               {confirmed ? (
-                <span className="text-micro font-medium text-success-fg bg-success-bg border border-success/25 rounded-full px-2 py-0.5 shrink-0">Confirmed</span>
+                <span className="text-micro font-medium text-success-fg bg-success-bg border border-success/25 rounded-full px-2 py-0.5 shrink-0">
+                  {freshestConfirm ? `Confirmed at ${freshestConfirm.label}` : "Confirmed"}
+                </span>
               ) : (
                 <span className={`text-micro font-medium rounded-full px-2 py-0.5 border shrink-0 ${inDanger ? "text-danger-fg bg-danger-bg border-danger/25" : "text-warning-fg bg-warning-bg border-warning/25"}`}>
                   {inDanger ? "Unconfirmed — drops 6h before" : "Unconfirmed"}
@@ -1080,7 +1085,11 @@ function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, o
                 ) : nextToOpen ? (
                   <span> · next ({nextToOpen.label}) opens in {durLabel(msLeft - nextToOpen.minutes * 60_000)}</span>
                 ) : null}
-                {!confirmed && <span> · not confirmed by the lead yet</span>}
+                {freshestConfirm
+                  ? <span className="text-success-fg"> · lead confirmed at the {freshestConfirm.label} reminder</span>
+                  : confirmed
+                    ? <span className="text-success-fg"> · confirmed (not tied to a reminder)</span>
+                    : <span> · not confirmed by the lead yet</span>}
               </div>
             )}
 
@@ -1092,35 +1101,45 @@ function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, o
                     const state = log?.[w.key];
                     const windowOpen = msLeft > 0 && msLeft <= w.minutes * 60_000;
                     const opensAt = new Date(new Date(s.event_start).getTime() - w.minutes * 60_000);
-                    const next: ReminderState | null = state === "reminded" ? "no_response" : state === "no_response" ? null : "reminded";
+                    // Cycle: sent → lead confirmed → no reply → clear
+                    const next: ReminderState | null =
+                      state === "reminded" ? "confirmed"
+                      : state === "confirmed" ? "no_response"
+                      : state === "no_response" ? null
+                      : "reminded";
                     return (
                       <button
                         key={w.key}
                         disabled={!canTrack}
                         onClick={() => onTrack(s.id, w.key, next)}
-                        aria-pressed={state === "reminded"}
+                        aria-pressed={state === "reminded" || state === "confirmed"}
                         aria-label={`${w.full} reminder for ${s.prospect}`}
                         className={`text-left rounded-md border px-3 py-2 motion-safe:transition-colors disabled:cursor-default ${
-                          state === "reminded"
-                            ? "border-success/25 bg-success-bg"
-                            : state === "no_response"
-                              ? "border-warning/25 bg-warning-bg"
-                              : windowOpen
-                                ? "border-danger/25 bg-danger-bg"
-                                : "border-border bg-[var(--background)] hover:bg-muted/60"
+                          state === "confirmed"
+                            ? "border-success/40 bg-success-bg"
+                            : state === "reminded"
+                              ? "border-primary/25 bg-primary/10"
+                              : state === "no_response"
+                                ? "border-warning/25 bg-warning-bg"
+                                : windowOpen
+                                  ? "border-danger/25 bg-danger-bg"
+                                  : "border-border bg-[var(--background)] hover:bg-muted/60"
                         }`}
                       >
-                        <div className={`text-caption font-medium ${state === "reminded" ? "text-success-fg" : state === "no_response" ? "text-warning-fg" : windowOpen ? "text-danger-fg" : "text-foreground"}`}>
-                          {w.full}{state === "reminded" ? " · sent ✓" : state === "no_response" ? " · no reply" : ""}
+                        <div className={`text-caption font-medium ${state === "confirmed" ? "text-success-fg" : state === "reminded" ? "text-primary" : state === "no_response" ? "text-warning-fg" : windowOpen ? "text-danger-fg" : "text-foreground"}`}>
+                          {w.full}
+                          {state === "confirmed" ? " · confirmed ✓" : state === "reminded" ? " · sent" : state === "no_response" ? " · no reply" : ""}
                         </div>
                         <div className="text-micro text-muted-foreground mt-0.5">
-                          {state === "reminded"
-                            ? "tap if they didn't reply"
-                            : state === "no_response"
-                              ? "tap to clear"
-                              : windowOpen
-                                ? "due now — tap once sent"
-                                : msLeft <= 0 ? "call has started" : `opens ${format(toLocal(opensAt), "EEE h:mm a")}`}
+                          {state === "confirmed"
+                            ? "lead confirmed at this reminder"
+                            : state === "reminded"
+                              ? "tap when they confirm · tap twice for no reply"
+                              : state === "no_response"
+                                ? "tap to clear"
+                                : windowOpen
+                                  ? "due now — tap once sent"
+                                  : msLeft <= 0 ? "call has started" : `opens ${format(toLocal(opensAt), "EEE h:mm a")}`}
                         </div>
                       </button>
                     );
@@ -1172,24 +1191,30 @@ function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, o
                 {WINDOWS.map((w) => {
                   const state = s.reminder_log?.[w.key];
                   const windowOpen = msLeft <= w.minutes * 60_000;
-                  const next: ReminderState | null = state === "reminded" ? "no_response" : state === "no_response" ? null : "reminded";
+                  const next: ReminderState | null =
+                    state === "reminded" ? "confirmed"
+                    : state === "confirmed" ? "no_response"
+                    : state === "no_response" ? null
+                    : "reminded";
                   return (
                     <button
                       key={w.key}
                       disabled={!canTrack}
                       onClick={() => onTrack(s.id, w.key, next)}
-                      title={state === "reminded" ? `${w.label}: reminded — click for 'no response'` : state === "no_response" ? `${w.label}: reached out, no response — click to clear` : windowOpen ? `${w.label} window open — click when you've sent the reminder` : `${w.label} before the call`}
+                      title={state === "reminded" ? `${w.label}: sent — click when the lead confirms` : state === "confirmed" ? `${w.label}: lead confirmed — click for 'no response'` : state === "no_response" ? `${w.label}: reached out, no response — click to clear` : windowOpen ? `${w.label} window open — click when you've sent the reminder` : `${w.label} before the call`}
                       className={`text-micro font-medium rounded-full px-2 py-0.5 border motion-safe:transition-colors disabled:cursor-default ${
-                        state === "reminded"
-                          ? "text-success-fg bg-success-bg border-success/25"
-                          : state === "no_response"
-                            ? "text-warning-fg bg-warning-bg border-warning/25"
-                            : windowOpen
-                              ? "text-foreground bg-muted border-border animate-pulse"
-                              : "text-muted-foreground bg-transparent border-border"
+                        state === "confirmed"
+                          ? "text-success-fg bg-success-bg border-success/40"
+                          : state === "reminded"
+                            ? "text-primary bg-primary/10 border-primary/25"
+                            : state === "no_response"
+                              ? "text-warning-fg bg-warning-bg border-warning/25"
+                              : windowOpen
+                                ? "text-foreground bg-muted border-border animate-pulse"
+                                : "text-muted-foreground bg-transparent border-border"
                       }`}
                     >
-                      {w.label}{state === "reminded" ? " ✓" : state === "no_response" ? " · no reply" : ""}
+                      {w.label}{state === "confirmed" ? " ✓✓" : state === "reminded" ? " ✓" : state === "no_response" ? " · no reply" : ""}
                     </button>
                   );
                 })}

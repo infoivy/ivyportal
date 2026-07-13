@@ -78,6 +78,7 @@ const studentTabItems: { tab: string; title: string; icon: React.ComponentType<{
 
 function StudentJourneyGroup({ collapsed, currentPath }: { collapsed: boolean; currentPath: string }) {
   const [activeTab, setActiveTab] = useState(getStudentPortalTab());
+  const { isMobile, setOpenMobile } = useSidebar();
   useEffect(() => { const off = onStudentPortalTab(t => setActiveTab(t)); return () => { off(); }; }, []);
   const onPortal = currentPath.startsWith("/student-portal");
   return (
@@ -102,7 +103,7 @@ function StudentJourneyGroup({ collapsed, currentPath }: { collapsed: boolean; c
                     (active ? "bg-muted text-foreground font-medium" : "text-muted-foreground hover:text-foreground hover:bg-muted/60")
                   }
                 >
-                  <Link to="/student-portal" onClick={() => setStudentPortalTab(item.tab)} className="flex items-center gap-2.5">
+                  <Link to="/student-portal" onClick={() => { setStudentPortalTab(item.tab); if (isMobile) setOpenMobile(false); }} className="flex items-center gap-2.5">
                     <item.icon className={"h-4 w-4 shrink-0 " + (active ? "text-foreground" : "text-muted-foreground")} />
                     {!collapsed && <span className="text-body leading-none">{item.title}</span>}
                   </Link>
@@ -118,8 +119,11 @@ function StudentJourneyGroup({ collapsed, currentPath }: { collapsed: boolean; c
 
 export function AppSidebar({ roles }: { roles: string[] }) {
   const { pageHidden } = useAccess();
-  const { state } = useSidebar();
+  const { state, isMobile, setOpenMobile } = useSidebar();
   const collapsed = state === "collapsed";
+  // On mobile the sidebar is a sheet — navigating should slide it away, not
+  // leave it covering the page you just picked.
+  const closeMobileNav = () => { if (isMobile) setOpenMobile(false); };
   const currentPath = useRouterState({ select: s => s.location.pathname });
   const isAdmin = roles.includes("admin");
   const isStudent = roles.includes("student");
@@ -192,7 +196,7 @@ export function AppSidebar({ roles }: { roles: string[] }) {
                         : "text-muted-foreground hover:text-foreground hover:bg-muted/60")
                     }
                   >
-                    <Link to={item.url} preload="intent" className="flex items-center gap-2.5">
+                    <Link to={item.url} preload="intent" onClick={closeMobileNav} className="flex items-center gap-2.5">
                       <span className="relative shrink-0 flex">
                         <item.icon className={"h-4 w-4 " + (active ? "text-foreground" : "text-muted-foreground")} />
                         {collapsed && (item.badge ?? 0) > 0 && (

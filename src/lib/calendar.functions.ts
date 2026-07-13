@@ -421,7 +421,9 @@ export const claimSet = createServerFn({ method: "POST" })
 // ── Set tracking: reminder checklist, confirmation, cancellation ────────────
 
 export type ReminderWindow = "48h" | "24h" | "3h" | "1h";
-export type ReminderState = "reminded" | "no_response";
+// Per-window states: the reminder went out; the lead CONFIRMED at that
+// window (closers need to know how fresh the confirmation is); or no reply.
+export type ReminderState = "reminded" | "confirmed" | "no_response";
 
 /** Tick a reminder window, mark confirmed/reopen, or update the set's notes. */
 export const updateSetTracking = createServerFn({ method: "POST" })
@@ -438,6 +440,10 @@ export const updateSetTracking = createServerFn({ method: "POST" })
       if (data.state == null) delete log[data.window];
       else log[data.window] = data.state;
       patch.reminder_log = log;
+      // A window-level confirmation locks the slot in (keeps the 6h auto-drop away)
+      if (data.state === "confirmed" && !row.confirmed_at) {
+        patch.confirmed_at = new Date().toISOString();
+      }
     }
     if (data.confirm !== undefined) {
       patch.confirmed_at = data.confirm ? new Date().toISOString() : null;
