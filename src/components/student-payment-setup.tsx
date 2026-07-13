@@ -33,7 +33,7 @@ export function StudentPaymentSetup({
 
   const [pkg, setPkg] = useState<"one_on_one" | "group_only">("one_on_one");
   const [totalAmount, setTotalAmount] = useState<string>("");
-  const [payMode, setPayMode] = useState<"pif" | "installments">("pif");
+  const [payMode, setPayMode] = useState<"pif" | "installments" | "scholarship">("pif");
   const [closerId, setCloserId] = useState<string>("");
   const [setterId, setSetterId] = useState<string>("");
   const [dealDate, setDealDate] = useState(new Date().toISOString().slice(0, 10));
@@ -81,6 +81,27 @@ export function StudentPaymentSetup({
   const customDelta = tv - dep - customTotal;
 
   const submit = async () => {
+    // Scholarship: no money, no deal — just mark the student and unlock the flow.
+    if (payMode === "scholarship") {
+      setSaving(true);
+      try {
+        const callsAllotted = pkg === "one_on_one" ? 10 : 0;
+        const { error: stuErr } = await supabase.from("students").update({
+          payment_state: "scholarship",
+          calls_included: callsAllotted,
+          calls_allotted: callsAllotted,
+        } as never).eq("id", student.id);
+        if (stuErr) throw new Error("Student: " + stuErr.message);
+        toast.success("Scholarship set — no deal or installments created");
+        onDone();
+      } catch (e) {
+        toast.error(String((e as Error).message ?? e));
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+
     if (tv <= 0) return toast.error("Total amount must be > 0");
     if (!closerId) return toast.error("Pick who closed this deal");
     if (payMode === "installments") {
@@ -226,12 +247,18 @@ export function StudentPaymentSetup({
               options={[
                 { value: "pif", label: "PIF (paid in full)" },
                 { value: "installments", label: "Installments" },
+                { value: "scholarship", label: "Scholarship (free)" },
               ]}
               className="h-9 text-sm"
             />
           </div>
         </div>
 
+        {payMode === "scholarship" ? (
+          <div className="rounded-lg border border-primary/25 bg-primary/10 px-3 py-2.5 text-caption text-primary">
+            Free placement — no deal, revenue, or installment plan is created. The student is marked Scholarship and gets full program access.
+          </div>
+        ) : (<>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label className="text-caption text-muted-foreground">Total value ($)</Label>
@@ -253,6 +280,7 @@ export function StudentPaymentSetup({
             <SelectField value={setterId} onChange={setSetterId} options={personOpts(setters)} allowEmpty emptyLabel="— None —" placeholder="— None —" className="h-9 text-sm" />
           </div>
         </div>
+        </>)}
 
         {payMode === "installments" && (
           <div className="rounded-lg border border-border p-3 space-y-3">
@@ -332,8 +360,8 @@ export function StudentPaymentSetup({
 
         <DialogFooter>
           <Button variant="outline" size="sm" onClick={onClose} disabled={saving}>Cancel</Button>
-          <Button size="sm" onClick={submit} disabled={saving || tv <= 0 || !closerId}>
-            {saving ? "Saving…" : "Create deal & plan"}
+          <Button size="sm" onClick={submit} disabled={saving || (payMode !== "scholarship" && (tv <= 0 || !closerId))}>
+            {saving ? "Saving…" : payMode === "scholarship" ? "Place on scholarship" : "Create deal & plan"}
           </Button>
         </DialogFooter>
       </DialogContent>

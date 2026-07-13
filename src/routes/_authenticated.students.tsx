@@ -28,7 +28,7 @@ export const Route = createFileRoute("/_authenticated/students")({
 
 type Phase = "uncategorized" | "onboarding" | "coaching_1on1" | "applying" | "offer_won" | "testimonial" | "training" | "graduated" | "paused";
 type Status = "active" | "inactive" | "ghosting";
-type PaymentState = "paid_in_full" | "installments" | "behind";
+type PaymentState = "paid_in_full" | "installments" | "behind" | "scholarship";
 type Student = {
   id: string; user_id: string | null; full_name: string; email: string | null;
   phase: Phase; status: Status; coach_id: string | null;
@@ -59,6 +59,7 @@ const PAYMENT_META: Record<PaymentState, { label: string; color: string }> = {
   paid_in_full: { label: "Paid", color: "text-success-fg border-success/25 bg-success-bg" },
   installments: { label: "Installments", color: "text-muted-foreground border-border bg-muted" },
   behind: { label: "Behind", color: "text-danger-fg border-danger/25 bg-danger-bg" },
+  scholarship: { label: "Scholarship", color: "text-primary border-primary/25 bg-primary/10" },
 };
 
 const phaseMeta = (p: Phase) => PHASES.find(x => x.key === p) ?? PHASES[0];
@@ -704,7 +705,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
 
   // Payment
   const [totalAmount, setTotalAmount] = useState<string>("");
-  const [payMode, setPayMode] = useState<"pif" | "installments" | "none">("pif");
+  const [payMode, setPayMode] = useState<"pif" | "installments" | "scholarship" | "none">("pif");
   const [closerId, setCloserId] = useState<string>("");
   const [setterId, setSetterId] = useState<string>("");
   const [dealDate, setDealDate] = useState(new Date().toISOString().slice(0, 10));
@@ -758,7 +759,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
     if (!fullName.trim()) return toast.error("Name required");
     const emailNorm = email.trim().toLowerCase();
     if (!emailNorm || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailNorm)) return toast.error("Valid email required");
-    if (payMode !== "none") {
+    if (payMode !== "none" && payMode !== "scholarship") {
       if (tv <= 0) return toast.error("Total amount must be > 0");
       if (!closerId) return toast.error("Pick who closed this deal");
       if (payMode === "installments") {
@@ -775,7 +776,10 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
     setSaving(true);
     try {
       const paymentState: PaymentState | null =
-        payMode === "pif" ? "paid_in_full" : payMode === "installments" ? "installments" : null;
+        payMode === "pif" ? "paid_in_full"
+        : payMode === "installments" ? "installments"
+        : payMode === "scholarship" ? "scholarship"
+        : null;
       const callsAllotted = pkg === "one_on_one" ? 10 : 0;
 
       const { data: newStu, error: stuErr } = await supabase.from("students").insert({
@@ -795,8 +799,8 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
       if (stuErr) throw new Error("Student: " + stuErr.message);
       const studentId = newStu.id;
 
-      // Deal
-      if (payMode !== "none") {
+      // Deal — scholarships create no deal or plan
+      if (payMode !== "none" && payMode !== "scholarship") {
         const cashUpfront = payMode === "pif" ? tv : dep;
         const paymentType = payMode === "pif" ? "pif" : dep > 0 ? "deposit" : "split";
         const { error: dealErr } = await supabase.from("deals").insert({
@@ -941,20 +945,20 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
 
         {/* Section 3: Payment */}
         <Section title="3 · Payment">
-          <div className="grid grid-cols-3 gap-2 mb-3">
-            {(["pif", "installments", "none"] as const).map(m => (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+            {(["pif", "installments", "scholarship", "none"] as const).map(m => (
               <button
                 key={m}
                 type="button"
                 onClick={() => setPayMode(m)}
                 className={`p-2 rounded-sm border text-xs transition ${payMode === m ? "border-success/25 bg-success-bg text-success-fg" : "border-[var(--border)] text-muted-foreground hover:border-[#2a3140]"}`}
               >
-                {m === "pif" ? "Paid in full" : m === "installments" ? "Installments" : "Skip for now"}
+                {m === "pif" ? "Paid in full" : m === "installments" ? "Installments" : m === "scholarship" ? "Scholarship" : "Skip for now"}
               </button>
             ))}
           </div>
 
-          {payMode !== "none" && (
+          {payMode !== "none" && payMode !== "scholarship" && (
             <div className="grid grid-cols-2 gap-3">
               <Field label="Total amount ($)">
                 <input type="number" min="0" value={totalAmount} onChange={e => setTotalAmount(e.target.value)} className={inputCls} placeholder="e.g. 5000" />

@@ -2153,7 +2153,7 @@ export type Database = {
         | "missed"
         | "waived"
       payment_method: "whop" | "stripe" | "wise" | "paypal" | "bank" | "other"
-      payment_state: "paid_in_full" | "installments" | "behind"
+      payment_state: "paid_in_full" | "installments" | "behind" | "scholarship"
       student_phase:
         | "uncategorized"
         | "onboarding"
@@ -2342,7 +2342,7 @@ export const Constants = {
         "waived",
       ],
       payment_method: ["whop", "stripe", "wise", "paypal", "bank", "other"],
-      payment_state: ["paid_in_full", "installments", "behind"],
+      payment_state: ["paid_in_full", "installments", "behind", "scholarship"],
       student_phase: [
         "uncategorized",
         "onboarding",

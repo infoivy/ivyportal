@@ -26,7 +26,7 @@ export const Route = createFileRoute("/_authenticated/students/$id")({
 
 type Phase = "uncategorized" | "onboarding" | "coaching_1on1" | "applying" | "offer_won" | "testimonial" | "training" | "graduated" | "paused";
 type Status = "active" | "inactive" | "ghosting";
-type PaymentState = "paid_in_full" | "installments" | "behind";
+type PaymentState = "paid_in_full" | "installments" | "behind" | "scholarship";
 type Student = {
   id: string; user_id: string | null; full_name: string; email: string | null;
   phase: Phase; status: Status; coach_id: string | null;
@@ -61,6 +61,7 @@ const PAYMENT_STATES: { key: PaymentState; label: string; color: string }[] = [
   { key: "paid_in_full", label: "Paid in full", color: "text-success-fg border-success/25 bg-success-bg" },
   { key: "installments", label: "Installments", color: "text-muted-foreground border-border bg-muted" },
   { key: "behind", label: "Behind", color: "text-danger-fg border-danger/25 bg-danger-bg" },
+  { key: "scholarship", label: "Scholarship", color: "text-primary border-primary/25 bg-primary/10" },
 ];
 
 type Milestone = { id: string; name: string; sort_order: number };

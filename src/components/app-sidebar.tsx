@@ -25,6 +25,8 @@ type Item = {
   roles?: string[];
   /** Extra path prefixes that keep this entry highlighted (tabbed sections). */
   match?: string[];
+  /** Red notification count shown on the entry (e.g. signups awaiting approval). */
+  badge?: number;
 };
 
 const todayItems: Item[] = [
@@ -60,9 +62,9 @@ const founderItems: Item[] = [
   { title: "Content", url: "/content", icon: Clapperboard, roles: ["founder"] },
 ];
 
-const adminItems: Item[] = [
+const adminItems = (pendingApprovals: number): Item[] => [
   { title: "Admin", url: "/admin", icon: Shield, roles: ["admin"] },
-  { title: "Team",  url: "/team",  icon: Users,  roles: ["admin"] },
+  { title: "Team",  url: "/team",  icon: Users,  roles: ["admin"], badge: pendingApprovals },
 ];
 
 const studentOnlyItems: Item[] = [
@@ -80,6 +82,7 @@ export function AppSidebar({ roles }: { roles: string[] }) {
   const isTeam = roles.some(r => ["admin", "coach", "closer", "setter", "csm"].includes(r));
   const [crmEnabled, setCrmEnabled] = useState(false);
   const [org, setOrg] = useState<{ name: string; logo: string | null }>({ name: "Ivy Portal", logo: null });
+  const [pendingApprovals, setPendingApprovals] = useState(0);
 
   useEffect(() => {
     supabase.from("founder_settings").select("crm_enabled").maybeSingle().then(({ data }) => {
@@ -89,6 +92,25 @@ export function AppSidebar({ roles }: { roles: string[] }) {
       if (data) setOrg({ name: data.org_name, logo: data.logo_url });
     });
   }, []);
+
+  // Signups with no role yet are locked out until an admin places them —
+  // refreshed on navigation so approving on /team clears the badge.
+  useEffect(() => {
+    if (!isAdmin) return;
+    let alive = true;
+    (async () => {
+      const [{ data: profs }, { data: roleRows }] = await Promise.all([
+        supabase.from("profiles").select("id, active"),
+        supabase.from("user_roles").select("user_id"),
+      ]);
+      if (!alive) return;
+      const placed = new Set((roleRows ?? []).map(r => r.user_id));
+      setPendingApprovals(
+        (profs ?? []).filter(p => (p as { active?: boolean }).active !== false && !placed.has(p.id)).length,
+      );
+    })();
+    return () => { alive = false; };
+  }, [isAdmin, currentPath]);
 
   const isActive = (item: Item) => {
     if (item.match) return item.match.some((m) => currentPath.startsWith(m));
@@ -127,8 +149,18 @@ export function AppSidebar({ roles }: { roles: string[] }) {
                     }
                   >
                     <Link to={item.url} preload="intent" className="flex items-center gap-2.5">
-                      <item.icon className={"h-4 w-4 shrink-0 " + (active ? "text-foreground" : "text-muted-foreground")} />
+                      <span className="relative shrink-0 flex">
+                        <item.icon className={"h-4 w-4 " + (active ? "text-foreground" : "text-muted-foreground")} />
+                        {collapsed && (item.badge ?? 0) > 0 && (
+                          <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-destructive" />
+                        )}
+                      </span>
                       {!collapsed && <span className="text-body leading-none">{item.title}</span>}
+                      {!collapsed && (item.badge ?? 0) > 0 && (
+                        <span className="ml-auto min-w-[16px] h-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-semibold leading-4 text-center">
+                          {item.badge}
+                        </span>
+                      )}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -177,7 +209,7 @@ export function AppSidebar({ roles }: { roles: string[] }) {
         {renderGroup("Students", studentsEntry(roles))}
         {renderGroup("Library", libraryItems)}
         {roles.includes("founder") && renderGroup("Founder", founderItems)}
-        {isAdmin && renderGroup("Admin", adminItems)}
+        {isAdmin && renderGroup("Admin", adminItems(pendingApprovals))}
         {renderGroup("Account", [{ title: "Profile", url: "/profile", icon: UserCircle }])}
       </SidebarContent>
     </Sidebar>
