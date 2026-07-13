@@ -76,7 +76,7 @@ function RevenueInner() {
   const [loading, setLoading] = useState(true);
   const [logOpen, setLogOpen] = useState(false);
   const [editing, setEditing] = useState<Deal | null>(null);
-  const [dateRange, setDateRange] = useState<DateRange>(() => rangeFor("30d"));
+  const [dateRange, setDateRange] = useState<DateRange>(() => rangeFor("24h"));
   const [compare, setCompare] = useState(false);
 
   const fetchPage = async () => {

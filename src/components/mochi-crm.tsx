@@ -15,7 +15,7 @@ const PERIODS: { label: string; value: MochiPeriod }[] = [
 
 /** The full Instagram CRM view — used by the /mochi route and the CRM page's Instagram tab. */
 export function MochiCrmInner({ embedded = false }: { embedded?: boolean }) {
-  const [period, setPeriod] = useState<MochiPeriod>("last_7_days");
+  const [period, setPeriod] = useState<MochiPeriod>("today");
 
   const detail = useQuery({
     queryKey: ["mochi-detail", period],

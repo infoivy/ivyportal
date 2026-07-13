@@ -329,7 +329,7 @@ function OperationsTab() {
 // ─── TRENDS TAB ─────────────────────────────────────────────────────────────
 
 function TrendsTab() {
-  const [dateRange, setDateRange] = useState<DateRange>(() => rangeFor("30d"));
+  const [dateRange, setDateRange] = useState<DateRange>(() => rangeFor("24h"));
   const [compare, setCompare] = useState(false);
   const [rows, setRows] = useState<TrendsRow[]>([]);
   const [prevRows, setPrevRows] = useState<TrendsRow[]>([]);

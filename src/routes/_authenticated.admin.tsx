@@ -42,7 +42,7 @@ type RangeKey = typeof RANGES[number]["key"];
 function AdminConsole() {
   const { roles } = useAuth();
   const isAdmin = roles.includes("admin");
-  const [range, setRange] = useState<RangeKey>("30d");
+  const [range, setRange] = useState<RangeKey>("24h");
   const [eods, setEods] = useState<EodRow[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [userRoles, setUserRoles] = useState<UserRole[]>([]);

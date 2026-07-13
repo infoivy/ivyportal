@@ -76,7 +76,7 @@ function Dashboard() {
   const { user, displayName, roles } = useAuth();
   const navigate = useNavigate();
   const isFounder = roles.includes("admin") && !roles.includes("setter") && !roles.includes("closer") && !roles.includes("coach") && !roles.includes("csm");
-  const [dateRange, setDateRange] = useState<DateRange>(() => rangeFor("30d"));
+  const [dateRange, setDateRange] = useState<DateRange>(() => rangeFor("24h"));
   const [compare, setCompare] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [drilldown, setDrilldown] = useState<MetricKey | null>(null);
