@@ -34,10 +34,13 @@ for (const u of list.users) {
   if (u.email?.endsWith("@isa.demo")) {
     await sb.from("csm_tally").delete().eq("user_id", u.id);
     await sb.from("set_reminders").delete().eq("owner_id", u.id);
+    await sb.from("team_chat").delete().eq("created_by", u.id);
+    await sb.from("student_alerts").delete().eq("created_by", u.id);
     await sb.from("user_roles").delete().eq("user_id", u.id);
     await sb.from("profiles").delete().eq("id", u.id);
-    await sb.auth.admin.deleteUser(u.id);
-    console.log("removed user", u.email);
+    const { error } = await sb.auth.admin.deleteUser(u.id);
+    if (error) console.error("FAILED to remove user", u.email, "-", error.message);
+    else console.log("removed user", u.email);
   }
 }
 console.log("✅ demo removed");
