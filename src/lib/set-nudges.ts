@@ -40,3 +40,18 @@ export async function fetchSetNudges(userId: string): Promise<SetNudge[]> {
   }
   return out;
 }
+
+export type UnclaimedSet = { id: string; prospect: string; event_start: string };
+
+/** Closing calls nobody has claimed yet — every setter gets pinged until one takes it. */
+export async function fetchUnclaimedSets(): Promise<UnclaimedSet[]> {
+  const { data } = await supabase
+    .from("set_reminders")
+    .select("id, prospect, event_start")
+    .is("owner_id", null)
+    .eq("status", "active")
+    .gte("event_start", new Date().toISOString())
+    .order("event_start")
+    .limit(20);
+  return ((data ?? []) as UnclaimedSet[]);
+}

@@ -15,7 +15,7 @@ type Reminder = {
   days: number; // negative = overdue
 };
 
-import { fetchSetNudges, type SetNudge } from "@/lib/set-nudges";
+import { fetchSetNudges, fetchUnclaimedSets, type SetNudge, type UnclaimedSet } from "@/lib/set-nudges";
 
 type StudentAlert = {
   key: string;
@@ -171,12 +171,23 @@ export function NotificationsBell() {
   });
   const studentAlerts = alertsQ.data ?? [];
 
-  if (!isAdmin && !isCoach && !isFulfillment && setNudges.length === 0) return null;
+  // Every setter gets pinged about unclaimed closing calls until someone takes them
+  const isSetter = roles.includes("setter");
+  const unclaimedQ = useQuery({
+    queryKey: ["notifications", "unclaimed-sets"],
+    enabled: !!user && isSetter,
+    refetchInterval: 2 * 60_000,
+    staleTime: 60_000,
+    queryFn: fetchUnclaimedSets,
+  });
+  const unclaimedSets = unclaimedQ.data ?? [];
+
+  if (!isAdmin && !isCoach && !isFulfillment && !isSetter && setNudges.length === 0) return null;
 
   const overdue = items.filter(i => i.days < 0).length;
   const dueSoon = items.length - overdue;
-  const badgeCount = items.length + setNudges.length + studentAlerts.length;
-  const badgeTone = overdue > 0 || setNudges.length > 0 || studentAlerts.some(a => a.tone.includes("danger")) ? "bg-danger" : dueSoon > 0 || studentAlerts.length > 0 ? "bg-warning" : "";
+  const badgeCount = items.length + setNudges.length + studentAlerts.length + unclaimedSets.length;
+  const badgeTone = overdue > 0 || setNudges.length > 0 || unclaimedSets.length > 0 || studentAlerts.some(a => a.tone.includes("danger")) ? "bg-danger" : dueSoon > 0 || studentAlerts.length > 0 ? "bg-warning" : "";
 
   return (
     <Popover>
@@ -202,6 +213,24 @@ export function NotificationsBell() {
           </span>
         </div>
         <div className="max-h-96 overflow-auto">
+          {unclaimedSets.length > 0 && (
+            <div className="border-b border-[var(--border)]">
+              {unclaimedSets.map(s => (
+                <Link key={s.id} to="/calendar" search={{} as never} className="flex items-start gap-2 px-3 py-2 hover:bg-muted/50 transition">
+                  <div className="mt-0.5 h-6 w-6 rounded-sm bg-danger-bg flex items-center justify-center">
+                    <Bell className="h-3 w-3 text-danger-fg" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs text-foreground truncate">New set — {s.prospect}</div>
+                    <div className="text-[10px] text-muted-foreground">
+                      {new Date(s.event_start).toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })} · nobody owns it yet
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-medium text-danger-fg whitespace-nowrap">claim it →</span>
+                </Link>
+              ))}
+            </div>
+          )}
           {setNudges.length > 0 && (
             <div className="border-b border-[var(--border)]">
               {setNudges.map(n => (

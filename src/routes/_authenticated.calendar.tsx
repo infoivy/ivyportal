@@ -567,6 +567,15 @@ function CalendarPage() {
                 qc.invalidateQueries({ queryKey: ["cal", "sets"] });
               });
             }}
+            onNotes={(id, notes) => {
+              qc.setQueryData<UpcomingSet[]>(["cal", "sets"], (old) => (old ?? []).map((r) =>
+                r.id === id ? { ...r, notes: notes.trim() || null } : r,
+              ));
+              trackSetFn({ data: { id, notes } }).then(() => toast.success("Notes saved")).catch((err) => {
+                toast.error(String((err as Error).message ?? err));
+                qc.invalidateQueries({ queryKey: ["cal", "sets"] });
+              });
+            }}
             onCancel={async (id) => {
               try {
                 const r = await cancelSetFn({ data: { id, reason: "removed manually" } });
@@ -909,7 +918,7 @@ const WINDOWS: { key: "48h" | "24h" | "3h" | "1h"; label: string; full: string; 
   { key: "1h", label: "1h", full: "1 hour before", minutes: 60 },
 ];
 
-function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, onConfirm, onCancel, onRestore, onUnclaim, onAssign, team = [], toLocal, big = false }: {
+function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, onConfirm, onCancel, onRestore, onUnclaim, onAssign, onNotes, team = [], toLocal, big = false }: {
   sets: UpcomingSet[];
   loading: boolean;
   filter: "all" | "mine";
@@ -921,6 +930,7 @@ function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, o
   onRestore: (id: string) => void;
   onUnclaim?: (id: string) => void;
   onAssign?: (id: string, userId: string) => void;
+  onNotes?: (id: string, notes: string) => void;
   team?: { id: string; display_name: string | null }[];
   toLocal: (iso: string | Date) => Date;
   big?: boolean;
@@ -1123,6 +1133,11 @@ function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, o
                 </div>
               </div>
             )}
+            {/* Notes — CRM context for the person working this set */}
+            {big && onNotes && s.status === "active" && (canTrack || !s.owner_id) && (
+              <SetNotes id={s.id} initial={s.notes ?? ""} onSave={onNotes} />
+            )}
+
             {s.owner_id && !big && (
               <div className="flex flex-wrap items-center gap-1.5 pl-0.5">
                 <span className="text-micro text-muted-foreground mr-0.5">Reminders:</span>
@@ -1200,6 +1215,37 @@ function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, o
         </div>
       )}
     </div>
+  );
+}
+
+/** Inline CRM-style notes on a set: click to expand, saves on blur. */
+function SetNotes({ id, initial, onSave }: { id: string; initial: string; onSave: (id: string, notes: string) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(initial);
+  useEffect(() => { setDraft(initial); }, [initial]);
+  if (!editing) {
+    return (
+      <button
+        onClick={() => setEditing(true)}
+        className="block w-full text-left text-[12px] rounded-md border border-transparent hover:border-border px-2 py-1 -mx-2 motion-safe:transition-colors"
+        title="Click to edit notes"
+      >
+        {initial
+          ? <span className="text-muted-foreground whitespace-pre-wrap">{initial}</span>
+          : <span className="text-muted-foreground/60 italic">Add notes — objections, context, CRM info…</span>}
+      </button>
+    );
+  }
+  return (
+    <textarea
+      autoFocus
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={() => { setEditing(false); if (draft !== initial) onSave(id, draft); }}
+      rows={3}
+      placeholder="Objections, context, CRM info…"
+      className="w-full bg-[var(--background)] border border-border rounded-md px-2 py-1.5 text-[12px] resize-none focus:outline-none focus:border-ring"
+    />
   );
 }
 

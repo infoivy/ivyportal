@@ -423,10 +423,10 @@ export const claimSet = createServerFn({ method: "POST" })
 export type ReminderWindow = "48h" | "24h" | "3h" | "1h";
 export type ReminderState = "reminded" | "no_response";
 
-/** Tick a reminder window, mark confirmed, or reopen. */
+/** Tick a reminder window, mark confirmed/reopen, or update the set's notes. */
 export const updateSetTracking = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { id: string; window?: ReminderWindow | string; state?: ReminderState | null; confirm?: boolean }) => data)
+  .inputValidator((data: { id: string; window?: ReminderWindow | string; state?: ReminderState | null; confirm?: boolean; notes?: string }) => data)
   .handler(async ({ context, data }) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sr = context.supabase as any;
@@ -441,6 +441,9 @@ export const updateSetTracking = createServerFn({ method: "POST" })
     }
     if (data.confirm !== undefined) {
       patch.confirmed_at = data.confirm ? new Date().toISOString() : null;
+    }
+    if (data.notes !== undefined) {
+      patch.notes = data.notes.trim() || null;
     }
     const { error: upErr } = await sr.from("set_reminders").update(patch).eq("id", data.id);
     if (upErr) throw new Error(upErr.message);
