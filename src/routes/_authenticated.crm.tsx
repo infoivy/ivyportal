@@ -7,7 +7,9 @@ import {
 } from "lucide-react";
 import {
   getCloseStatus, saveCloseApiKey, testCloseConnection, listCloseLeads, deleteCloseApiKey,
+  getCloseContactCompliance,
 } from "@/lib/close-crm.functions";
+import { useQuery } from "@tanstack/react-query";
 import { MochiCrmInner } from "@/components/mochi-crm";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -184,7 +186,74 @@ function ClosePipelineSummary() {
         </div>
       )}
 
+      {connected && <ContactComplianceCard />}
+
       <CloseKeyDialog open={openDialog} onOpenChange={setOpenDialog} connected={!!connected} onChanged={refresh} />
+    </div>
+  );
+}
+
+/**
+ * Outreach SOP compliance across the whole Close CRM: uncontacted leads,
+ * today's touches, and where the "no pickup → double dial → email" chain
+ * broke — per lead tier (Lead Score) and overall.
+ */
+function ContactComplianceCard() {
+  const complianceFn = useServerFn(getCloseContactCompliance);
+  const q = useQuery({
+    queryKey: ["close-compliance"],
+    queryFn: () => complianceFn(),
+    staleTime: 4 * 60_000,
+    refetchInterval: 5 * 60_000,
+    retry: 1,
+  });
+  const d = q.data;
+  if (q.isLoading) return <div className="text-[11px] text-muted-foreground py-2">Sweeping the CRM for outreach compliance…</div>;
+  if (!d?.configured || d.error) return null;
+
+  const rows = [...d.tiers, d.overall];
+  const cell = (n: number, danger = false, warn = false) => (
+    <span className={`tabular-nums ${n === 0 ? "text-muted-foreground/50" : danger ? "text-danger-fg font-medium" : warn ? "text-warning-fg font-medium" : "text-foreground"}`}>{n}</span>
+  );
+
+  return (
+    <div className="pt-3 border-t border-border space-y-2">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <div className="text-[12px] font-medium text-foreground">Outreach compliance</div>
+        <span className="text-[10px] text-muted-foreground">
+          SOP: no pickup → double dial → email · {d.totalLeads} leads swept{d.truncated ? " (oldest activity truncated)" : ""}
+        </span>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[560px] text-[11px]">
+          <thead>
+            <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground">
+              <th className="py-1 pr-2 font-medium">Tier</th>
+              <th className="py-1 px-2 font-medium text-right">Leads</th>
+              <th className="py-1 px-2 font-medium text-right">Uncontacted</th>
+              <th className="py-1 px-2 font-medium text-right">Touched today</th>
+              <th className="py-1 px-2 font-medium text-right">Called once</th>
+              <th className="py-1 px-2 font-medium text-right">Double-dialed</th>
+              <th className="py-1 px-2 font-medium text-right" title="Dialed once, no pickup, never re-dialed">No 2nd dial</th>
+              <th className="py-1 pl-2 font-medium text-right" title="Double-dialed, still no pickup, no email sent">No email after</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((t) => (
+              <tr key={t.tier} className={`border-t border-border/60 ${t.tier === "All" ? "bg-muted/30 font-medium" : ""}`}>
+                <td className="py-1.5 pr-2">{t.tier === "All" ? "All leads" : t.tier === "Unscored" ? "Unscored" : `${t.tier}-tier`}</td>
+                <td className="py-1.5 px-2 text-right tabular-nums">{t.total}</td>
+                <td className="py-1.5 px-2 text-right">{cell(t.uncontacted, t.tier === "A" && t.uncontacted > 0, t.uncontacted > 0)}</td>
+                <td className="py-1.5 px-2 text-right">{cell(t.contactedToday)}</td>
+                <td className="py-1.5 px-2 text-right">{cell(t.calledOnce)}</td>
+                <td className="py-1.5 px-2 text-right">{cell(t.doubleDialed)}</td>
+                <td className="py-1.5 px-2 text-right">{cell(t.singleDialNoRetry, t.singleDialNoRetry > 0)}</td>
+                <td className="py-1.5 pl-2 text-right">{cell(t.doubleDialNoEmail, t.doubleDialNoEmail > 0)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

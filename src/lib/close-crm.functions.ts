@@ -299,3 +299,156 @@ export const getCloseBookedCount = createServerFn({ method: "GET" })
       return { configured: true, booked: 0 };
     }
   });
+
+// ── Contact compliance: is the outreach SOP actually being followed? ────────
+// SOP: dial every lead; no pickup → double dial (second call same day);
+// still no pickup → send an email. This sweeps the whole CRM and reports,
+// per lead tier (Lead Score custom field) and overall, who's uncontacted,
+// who was touched today, and where the double-dial/email chain broke.
+
+const LEAD_SCORE_FIELD = "custom.cf_wYEMFv3XLO6cvMuykIgGzvpHFPUtSobVIdwiKF6gBQR";
+
+export type ComplianceTier = {
+  tier: string;
+  total: number;
+  uncontacted: number;
+  contactedToday: number;
+  calledOnce: number;
+  doubleDialed: number;
+  /** Dialed once, never answered, never re-dialed same day — SOP step 2 missed. */
+  singleDialNoRetry: number;
+  /** Double-dialed, still no answer, and no email followed — SOP step 3 missed. */
+  doubleDialNoEmail: number;
+};
+
+export type ContactCompliance = {
+  configured: boolean;
+  error?: string;
+  truncated: boolean;
+  totalLeads: number;
+  tiers: ComplianceTier[];
+  overall: ComplianceTier;
+};
+
+export const getCloseContactCompliance = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<ContactCompliance> => {
+    const emptyTier = (tier: string): ComplianceTier => ({
+      tier, total: 0, uncontacted: 0, contactedToday: 0, calledOnce: 0,
+      doubleDialed: 0, singleDialNoRetry: 0, doubleDialNoEmail: 0,
+    });
+    const empty: ContactCompliance = {
+      configured: false, truncated: false, totalLeads: 0, tiers: [], overall: emptyTier("All"),
+    };
+    const key = await readCloseKey(context);
+    if (!key) return empty;
+    const basic = Buffer.from(`${key}:`).toString("base64");
+    const H = { headers: { Authorization: `Basic ${basic}` } };
+    let truncated = false;
+
+    // 1. Every lead with its tier (Lead Score choices field)
+    type Lead = { id: string; tier: string };
+    const leads: Lead[] = [];
+    try {
+      for (let skip = 0; skip < 2000; skip += 200) {
+        const params = new URLSearchParams({
+          _limit: "200", _skip: String(skip), _fields: `id,${LEAD_SCORE_FIELD}`,
+        });
+        const res = await fetch(`https://api.close.com/api/v1/lead/?${params}`, H);
+        if (!res.ok) return { ...empty, configured: true, error: `Close API ${res.status}` };
+        const json = (await res.json()) as { data?: Record<string, unknown>[]; has_more?: boolean };
+        for (const l of json.data ?? []) {
+          const raw = l[LEAD_SCORE_FIELD];
+          const label = Array.isArray(raw) ? String(raw[0] ?? "") : String(raw ?? "");
+          const tier = /^A/i.test(label) ? "A" : /^B/i.test(label) ? "B" : /^C/i.test(label) ? "C" : "Unscored";
+          leads.push({ id: String(l.id), tier });
+        }
+        if (!json.has_more) break;
+        if (skip + 200 >= 2000) truncated = true;
+      }
+    } catch (e) {
+      return { ...empty, configured: true, error: (e as Error).message };
+    }
+
+    // 2. All outbound calls + sent emails (paged; the CRM is young enough to sweep)
+    type Call = { lead_id?: string; direction?: string; disposition?: string; duration?: number; date_created?: string };
+    type Email = { lead_id?: string; direction?: string; date_created?: string };
+    const calls: Call[] = [];
+    const emails: Email[] = [];
+    const page = async <T,>(path: string, fields: string, cap: number, sink: T[]) => {
+      for (let skip = 0; skip < cap; skip += 100) {
+        const params = new URLSearchParams({ _limit: "100", _skip: String(skip), _fields: fields });
+        const res = await fetch(`https://api.close.com/api/v1/activity/${path}/?${params}`, H);
+        if (!res.ok) break;
+        const json = (await res.json()) as { data?: T[]; has_more?: boolean };
+        sink.push(...(json.data ?? []));
+        if (!json.has_more) return;
+      }
+      truncated = true;
+    };
+    try {
+      await Promise.all([
+        page<Call>("call", "id,lead_id,direction,disposition,duration,date_created", 5000, calls),
+        page<Email>("email", "id,lead_id,direction,date_created", 3000, emails),
+      ]);
+    } catch { /* partial data still useful; truncated stays true via cap */ }
+
+    // "Today" is the business day (Asia/Dubai) — this report is the founder's morning scan
+    const bizToday = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Dubai" }).format(new Date());
+    const bizDay = (iso?: string) => iso ? new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Dubai" }).format(new Date(iso)) : "";
+
+    type LeadTouch = { dials: number; answered: boolean; emailsSent: number; touchedToday: boolean; maxDialsOneDay: number; lastEmailAt: string };
+    const touch = new Map<string, LeadTouch>();
+    const get = (id?: string) => {
+      if (!id) return null;
+      let t = touch.get(id);
+      if (!t) { t = { dials: 0, answered: false, emailsSent: 0, touchedToday: false, maxDialsOneDay: 0, lastEmailAt: "" }; touch.set(id, t); }
+      return t;
+    };
+    const dialsByLeadDay = new Map<string, number>();
+    for (const c of calls) {
+      if (c.direction !== "outbound") continue;
+      const t = get(c.lead_id);
+      if (!t) continue;
+      t.dials += 1;
+      if (c.disposition === "answered" || (c.duration ?? 0) > 0) t.answered = true;
+      const day = bizDay(c.date_created);
+      if (day === bizToday) t.touchedToday = true;
+      const k = `${c.lead_id}::${day}`;
+      const n = (dialsByLeadDay.get(k) ?? 0) + 1;
+      dialsByLeadDay.set(k, n);
+      if (n > t.maxDialsOneDay) t.maxDialsOneDay = n;
+    }
+    for (const e of emails) {
+      if (e.direction !== "outgoing") continue;
+      const t = get(e.lead_id);
+      if (!t) continue;
+      t.emailsSent += 1;
+      if (bizDay(e.date_created) === bizToday) t.touchedToday = true;
+    }
+
+    const tiers = new Map<string, ComplianceTier>([["A", emptyTier("A")], ["B", emptyTier("B")], ["C", emptyTier("C")], ["Unscored", emptyTier("Unscored")]]);
+    const overall = emptyTier("All");
+    const bump = (row: ComplianceTier, t: LeadTouch | undefined) => {
+      row.total += 1;
+      if (!t || (t.dials === 0 && t.emailsSent === 0)) { row.uncontacted += 1; return; }
+      if (t.touchedToday) row.contactedToday += 1;
+      if (t.dials === 1) row.calledOnce += 1;
+      if (t.maxDialsOneDay >= 2) row.doubleDialed += 1;
+      if (!t.answered && t.dials === 1) row.singleDialNoRetry += 1;
+      if (!t.answered && t.maxDialsOneDay >= 2 && t.emailsSent === 0) row.doubleDialNoEmail += 1;
+    };
+    for (const l of leads) {
+      const t = touch.get(l.id);
+      bump(tiers.get(l.tier)!, t);
+      bump(overall, t);
+    }
+
+    return {
+      configured: true,
+      truncated,
+      totalLeads: leads.length,
+      tiers: [...tiers.values()].filter((t) => t.total > 0),
+      overall,
+    };
+  });
