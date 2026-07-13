@@ -13,6 +13,9 @@ import {
 import { computeStreak } from "@/lib/streak";
 import { setStudentPortalTab, onStudentPortalTab, getStudentPortalTab } from "@/lib/student-portal-bus";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { getStudentLeaderboard } from "@/lib/student-portal.functions";
 
 export const Route = createFileRoute("/_authenticated/student-portal")({
   head: () => ({ meta: [{ title: "Student Portal — ISA" }] }),
@@ -49,11 +52,11 @@ const empty = {
   wins: "", blockers: "", tomorrow_focus: "", summary: "",
 };
 
-type Tab = "eod" | "placements" | "actions" | "coaching" | "milestones";
+type Tab = "start" | "eod" | "placements" | "actions" | "coaching" | "milestones" | "leaderboard";
 
-const PHASES: { key: string; label: string }[] = [
+const phasesFor = (oneOnOne: boolean): { key: string; label: string }[] => [
   { key: "onboarding", label: "Onboarding" },
-  { key: "coaching_1on1", label: "1:1 Coaching" },
+  { key: "coaching_1on1", label: oneOnOne ? "1:1 Coaching" : "Group Coaching" },
   { key: "applying", label: "Applying" },
   { key: "offer_won", label: "Offer Won" },
   { key: "testimonial", label: "Testimonial" },
@@ -74,6 +77,7 @@ function StudentPortal() {
   useEffect(() => { const off = onStudentPortalTab(t => setTab(t as Tab)); return () => { off(); }; }, []);
 
   const [student, setStudent] = useState<Student | null>(null);
+  const [guideDone, setGuideDone] = useState<Set<string>>(new Set());
   const [coach, setCoach] = useState<Coach | null>(null);
   const [eods, setEods] = useState<SEod[]>([]);
   const [calls, setCalls] = useState<Call[]>([]);
@@ -98,13 +102,17 @@ function StudentPortal() {
     if (!s) { setLoading(false); return; }
     const st = s as Student;
 
-    const [{ data: e }, { data: c }, { data: ah }, coachRes, docsRes] = await Promise.all([
+    const [{ data: e }, { data: c }, { data: ah }, coachRes, docsRes, guideRes] = await Promise.all([
       supabase.from("student_eods").select("*").eq("student_id", st.id).order("report_date", { ascending: false }).limit(60),
       supabase.from("student_calls").select("id, call_date, status, progress_rating, next_call_date, action_items_json").eq("student_id", st.id).order("call_date", { ascending: false }),
       supabase.from("student_action_items").select("id, student_id, text, done, due_date, created_at, source_call_id").eq("student_id", st.id).order("created_at", { ascending: false }),
       st.coach_id ? supabase.from("profiles").select("id, display_name, avatar_url").eq("id", st.coach_id).maybeSingle() : Promise.resolve({ data: null }),
       supabase.from("docs").select("slug, title, category").contains("role_visibility", ["student"]).order("pinned", { ascending: false }).order("sort_order").limit(8),
+      (supabase as any).from("student_guide_steps").select("step_key").eq("student_id", st.id),
     ]);
+    setGuideDone(new Set(((guideRes.data ?? []) as { step_key: string }[]).map(r => r.step_key)));
+    // Brand-new student, nothing ticked yet → land on Start Here, not the EOD form
+    if ((e ?? []).length === 0 && (guideRes.data ?? []).length === 0) setTab(t => (t === "eod" ? "start" : t));
     setEods((e ?? []) as SEod[]);
     setCalls((c ?? []) as Call[]);
     setAdhocItems((ah ?? []) as AdhocItem[]);
@@ -159,13 +167,13 @@ function StudentPortal() {
   const sumOf = (arr: SEod[], k: keyof SEod) => arr.reduce((a, e) => a + ((e[k] as number) || 0), 0);
   const totals7 = {
     apps: sumOf(last7, "applications_submitted"),
-    outreach: sumOf(last7, "outreach_sent"),
+    looms: sumOf(last7, "looms_sent"),
     replies: sumOf(last7, "replies"),
     interviews: sumOf(last7, "interviews"),
   };
   const totalsPrev = {
     apps: sumOf(prev7, "applications_submitted"),
-    outreach: sumOf(prev7, "outreach_sent"),
+    looms: sumOf(prev7, "looms_sent"),
     replies: sumOf(prev7, "replies"),
     interviews: sumOf(prev7, "interviews"),
   };
@@ -239,7 +247,10 @@ function StudentPortal() {
     [completedCalls]
   );
 
-  const isTraining = student?.phase === "onboarding";
+  // Program type drives the whole view: group students have no coach, no 1:1s.
+  const isOneOnOne = ((student?.calls_allotted ?? student?.calls_included) ?? 0) > 0;
+  // Loom approved ≈ moved past training/coaching into applying
+  const loomApproved = ["applying", "offer_won", "testimonial"].includes(student?.phase ?? "");
 
   const submit = async () => {
     if (!student) return;
@@ -265,6 +276,19 @@ function StudentPortal() {
     if (error) return toast.error(error.message);
     toast.success("Deleted");
     load();
+  };
+
+  const toggleGuideStep = async (key: string, done: boolean) => {
+    if (!student) return;
+    setGuideDone(prev => { const n = new Set(prev); if (done) n.add(key); else n.delete(key); return n; });
+    const q = done
+      ? (supabase as any).from("student_guide_steps").insert({ student_id: student.id, step_key: key })
+      : (supabase as any).from("student_guide_steps").delete().eq("student_id", student.id).eq("step_key", key);
+    const { error } = await q;
+    if (error) {
+      toast.error(error.message);
+      setGuideDone(prev => { const n = new Set(prev); if (done) n.delete(key); else n.add(key); return n; });
+    }
   };
 
   const toggleItem = async (callId: string, index: number, done: boolean) => {
@@ -319,10 +343,10 @@ function StudentPortal() {
           <div className="min-w-0">
             <div className="text-[10px] text-muted-foreground mb-1">Student portal</div>
             <h1 className="text-2xl font-semibold tracking-tight">
-              Salaam, {first} <span className="inline-block">👋</span>
+              <span dir="rtl">السلام عليكم</span>, {first} <span className="inline-block">👋</span>
             </h1>
             <p className="text-xs text-muted-foreground mt-1">
-              {student.phase.replace("_", " ")} · {student.status}
+              {student.phase.replace("_", " ")} · {student.status} · {isOneOnOne ? "1:1 Pathway" : "Group Expertise Pathway"}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -373,53 +397,81 @@ function StudentPortal() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-5">
-          {/* Coach card */}
-          <div className="border border-[var(--border)] rounded-sm bg-[var(--background)] p-3 flex items-center gap-3">
-            {coach ? (
-              <>
-                {coach.avatar_url ? (
-                  <img src={coach.avatar_url} alt="" className="h-10 w-10 rounded-full object-cover border border-[var(--border)]" />
+          {isOneOnOne ? (
+            <>
+              {/* Coach card — 1:1 students only; group students have CSM support instead */}
+              <div className="border border-[var(--border)] rounded-sm bg-[var(--background)] p-3 flex items-center gap-3">
+                {coach ? (
+                  <>
+                    {coach.avatar_url ? (
+                      <img src={coach.avatar_url} alt="" className="h-10 w-10 rounded-full object-cover border border-[var(--border)]" />
+                    ) : (
+                      <div className="h-10 w-10 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-xs font-semibold">
+                        {(coach.display_name ?? "C").slice(0, 1).toUpperCase()}
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[9px] text-muted-foreground">Your coach</div>
+                      <div className="text-sm font-medium truncate">{coach.display_name ?? "Coach"}</div>
+                    </div>
+                  </>
                 ) : (
-                  <div className="h-10 w-10 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-xs font-semibold">
-                    {(coach.display_name ?? "C").slice(0, 1).toUpperCase()}
-                  </div>
+                  <>
+                    <div className="h-10 w-10 rounded-full border border-dashed border-[#2b3240] text-muted-foreground flex items-center justify-center">
+                      <Users className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[9px] text-muted-foreground">Your coach</div>
+                      <div className="text-xs text-muted-foreground">Will be assigned soon</div>
+                    </div>
+                  </>
                 )}
-                <div className="min-w-0 flex-1">
-                  <div className="text-[9px] text-muted-foreground">Your coach</div>
-                  <div className="text-sm font-medium truncate">{coach.display_name ?? "Coach"}</div>
+              </div>
+              {/* Next call */}
+              <div className="border border-[var(--border)] rounded-sm bg-[var(--background)] p-3 flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-success-bg text-success-fg flex items-center justify-center">
+                  <Calendar className="h-4 w-4" />
                 </div>
-              </>
-            ) : (
-              <>
-                <div className="h-10 w-10 rounded-full border border-dashed border-[#2b3240] text-muted-foreground flex items-center justify-center">
+                <div className="min-w-0 flex-1">
+                  <div className="text-[9px] text-muted-foreground">Next 1:1</div>
+                  {nextCallDate ? (
+                    <div className="text-sm font-medium">
+                      {nextCallDate}
+                      <span className="text-muted-foreground text-[11px] ml-2">
+                        {nextCallInDays === 0 ? "today" : nextCallInDays === 1 ? "tomorrow" : `in ${nextCallInDays}d`}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="text-xs text-muted-foreground">Not scheduled — book your next call</div>
+                  )}
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Group Expertise Pathway: group calls + CSM support, no coach */}
+              <div className="border border-[var(--border)] rounded-sm bg-[var(--background)] p-3 flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-success-bg text-success-fg flex items-center justify-center">
                   <Users className="h-4 w-4" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-[9px] text-muted-foreground">Your coach</div>
-                  <div className="text-xs text-muted-foreground">Will be assigned soon</div>
+                  <div className="text-[9px] text-muted-foreground">Group coaching</div>
+                  <div className="text-sm font-medium">7 calls a week</div>
+                  <div className="text-[10px] text-muted-foreground">Attend them all — take notes, ask smart questions</div>
                 </div>
-              </>
-            )}
-          </div>
-          {/* Next call */}
-          <div className="border border-[var(--border)] rounded-sm bg-[var(--background)] p-3 flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-success-bg text-success-fg flex items-center justify-center">
-              <Calendar className="h-4 w-4" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-[9px] text-muted-foreground">Next 1:1</div>
-              {nextCallDate ? (
-                <div className="text-sm font-medium">
-                  {nextCallDate}
-                  <span className="text-muted-foreground text-[11px] ml-2">
-                    {nextCallInDays === 0 ? "today" : nextCallInDays === 1 ? "tomorrow" : `in ${nextCallInDays}d`}
-                  </span>
+              </div>
+              <div className="border border-[var(--border)] rounded-sm bg-[var(--background)] p-3 flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                  <MessageSquare className="h-4 w-4" />
                 </div>
-              ) : (
-                <div className="text-xs text-muted-foreground">Not scheduled yet</div>
-              )}
-            </div>
-          </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[9px] text-muted-foreground">Your success team</div>
+                  <div className="text-sm font-medium">CSM check-ins</div>
+                  <div className="text-[10px] text-muted-foreground">Loom feedback, action items, and regular calls to keep you moving</div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* This week — 7 day-dots build streak pressure at a glance */}
@@ -427,32 +479,45 @@ function StudentPortal() {
 
         {/* Journey stepper */}
         <div className="mt-5 pt-5 border-t border-[var(--border)]">
-          <JourneyStepper current={student.phase} />
+          <JourneyStepper current={student.phase} oneOnOne={isOneOnOne} />
         </div>
       </section>
 
-      {/* TABS */}
+      {/* TABS — group students have no 1:1 coaching tab */}
       <nav className="flex flex-wrap gap-1 border-b border-[var(--border)] -mb-px">
+        <TabButton active={tab === "start"} onClick={() => setTab("start")} icon={<PlayCircle className="h-3.5 w-3.5" />} label="Start Here" />
         <TabButton active={tab === "eod"} onClick={() => setTab("eod")} icon={<FileText className="h-3.5 w-3.5" />} label="My EOD" />
         <TabButton active={tab === "placements"} onClick={() => setTab("placements")} icon={<Briefcase className="h-3.5 w-3.5" />} label="Placements" />
         <TabButton active={tab === "actions"} onClick={() => setTab("actions")} icon={<ListChecks className="h-3.5 w-3.5" />} label="Action items" badge={openItems.length} urgent={overdue.length > 0 || dueToday.length > 0} />
-        <TabButton active={tab === "coaching"} onClick={() => setTab("coaching")} icon={<Calendar className="h-3.5 w-3.5" />} label="My coaching" />
+        {isOneOnOne && <TabButton active={tab === "coaching"} onClick={() => setTab("coaching")} icon={<Calendar className="h-3.5 w-3.5" />} label="My coaching" />}
         <TabButton active={tab === "milestones"} onClick={() => setTab("milestones")} icon={<Trophy className="h-3.5 w-3.5" />} label="Milestones" />
+        <TabButton active={tab === "leaderboard"} onClick={() => setTab("leaderboard")} icon={<Trophy className="h-3.5 w-3.5" />} label="Leaderboard" />
       </nav>
+
+      {tab === "start" && (
+        <StartHereGuide
+          oneOnOne={isOneOnOne}
+          done={guideDone}
+          loomApproved={loomApproved}
+          onToggle={toggleGuideStep}
+        />
+      )}
+
+      {tab === "leaderboard" && <LeaderboardPanel />}
 
       {tab === "eod" && (
         <div className="space-y-5">
-          {/* KPI cards last 7 */}
+          {/* KPI cards last 7 — a loom application IS the outreach, no separate count */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            <StatCard label="Apps · 7d" value={totals7.apps} prev={totalsPrev.apps} series={spark("applications_submitted")} accent brandNew={brandNew} icon={<Briefcase className="h-3 w-3" />} />
-            <StatCard label="Outreach · 7d" value={totals7.outreach} prev={totalsPrev.outreach} series={spark("outreach_sent")} brandNew={brandNew} icon={<Users className="h-3 w-3" />} />
+            <StatCard label="Loom apps · 7d" value={totals7.apps} prev={totalsPrev.apps} series={spark("applications_submitted")} accent brandNew={brandNew} icon={<Briefcase className="h-3 w-3" />} />
+            <StatCard label="Looms · 7d" value={totals7.looms} prev={totalsPrev.looms} series={spark("looms_sent")} brandNew={brandNew} icon={<Users className="h-3 w-3" />} />
             <StatCard label="Replies · 7d" value={totals7.replies} prev={totalsPrev.replies} series={spark("replies")} brandNew={brandNew} icon={<MessageSquare className="h-3 w-3" />} />
             <StatCard label="Interviews · 7d" value={totals7.interviews} prev={totalsPrev.interviews} series={spark("interviews")} accent brandNew={brandNew} icon={<Award className="h-3 w-3" />} />
           </div>
 
           {/* Weekly recap (Mondays) */}
-          {isMonday && (totalsPrev.apps || totalsPrev.outreach || totalsPrev.replies || totalsPrev.interviews) > 0 && (
-            <WeeklyRecap prev={totalsPrev} evenPrior={{ apps: 0, outreach: 0, replies: 0, interviews: 0 }} totals={totals7} />
+          {isMonday && (totalsPrev.apps || totalsPrev.looms || totalsPrev.replies || totalsPrev.interviews) > 0 && (
+            <WeeklyRecap prev={totalsPrev} evenPrior={{ apps: 0, looms: 0, replies: 0, interviews: 0 }} totals={totals7} />
           )}
 
           {/* Form / Recap */}
@@ -475,22 +540,32 @@ function StudentPortal() {
                   )}
                 </div>
 
-                {/* Daily targets — every student: 3 roleplays + 5 loom applications;
-                    training students also send 3 looms to the review channel */}
+                {/* Daily targets (founder-set 2026-07-14):
+                    before loom approval — 3 roleplays + 3 looms for review;
+                    after approval — 5 loom applications a day. */}
                 <div className="rounded-lg border border-border bg-background p-3">
-                  <div className="text-[11px] text-muted-foreground mb-2">Today's targets</div>
-                  <div className={`grid gap-3 ${isTraining ? "grid-cols-3" : "grid-cols-2"}`}>
-                    <TargetBar label="Roleplays" value={form.roleplays} target={3} />
-                    <TargetBar label="Loom applications" value={form.applications_submitted} target={5} />
-                    {isTraining && <TargetBar label="Looms for review" value={form.looms_sent} target={3} />}
+                  <div className="text-[11px] text-muted-foreground mb-2">
+                    Today's targets{loomApproved ? " — looms approved, you're applying now" : " — get your looms approved first"}
+                  </div>
+                  <div className={`grid gap-3 ${loomApproved ? "grid-cols-2" : "grid-cols-2"}`}>
+                    {loomApproved ? (
+                      <>
+                        <TargetBar label="Loom applications" value={form.applications_submitted} target={5} />
+                        <TargetBar label="Roleplays" value={form.roleplays} target={3} />
+                      </>
+                    ) : (
+                      <>
+                        <TargetBar label="Roleplays" value={form.roleplays} target={3} />
+                        <TargetBar label="Looms for review" value={form.looms_sent} target={3} />
+                      </>
+                    )}
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   <Counter label="Roleplays" value={form.roleplays} onBump={d => bump("roleplays", d)} />
+                  <Counter label="Looms for review" value={form.looms_sent} onBump={d => bump("looms_sent", d)} />
                   <Counter label="Loom applications" value={form.applications_submitted} onBump={d => bump("applications_submitted", d)} />
-                  {isTraining && <Counter label="Looms for review" value={form.looms_sent} onBump={d => bump("looms_sent", d)} />}
-                  <Counter label="Outreach sent" value={form.outreach_sent} onBump={d => bump("outreach_sent", d)} />
                   <Counter label="Replies" value={form.replies} onBump={d => bump("replies", d)} />
                   <Counter label="Interviews" value={form.interviews} onBump={d => bump("interviews", d)} />
                 </div>
@@ -548,7 +623,7 @@ function StudentPortal() {
                   <span className="text-muted-foreground">{e.report_date}</span>
                   <div className="flex gap-3 text-[11px] text-muted-foreground flex-wrap">
                     <span>Apps <span className="text-success-fg">{e.applications_submitted}</span></span>
-                    <span>Out <span className="text-foreground">{e.outreach_sent}</span></span>
+                    <span>Looms <span className="text-foreground">{e.looms_sent ?? 0}</span></span>
                     <span>Repl <span className="text-foreground">{e.replies}</span></span>
                     <span>Int <span className="text-foreground">{e.interviews}</span></span>
                   </div>
@@ -680,6 +755,157 @@ function StudentPortal() {
   );
 }
 
+/* ---------- Start Here ---------- */
+
+type GuideStep = { key: string; title: string; body: string; auto?: "loomApproved"; link?: { to: string; label: string } };
+
+const guideStepsFor = (oneOnOne: boolean): GuideStep[] => [
+  {
+    key: "typeform",
+    title: "Fill out your onboarding form",
+    body: "You received a Typeform right after payment — fill it out first so the team knows exactly where you're starting from. Check your email/WhatsApp if you can't find it.",
+  },
+  ...(oneOnOne ? [{
+    key: "book_1on1",
+    title: "Book your 1:1 coaching calls",
+    body: "You have 10 one-on-one calls with your coach. Book the first one now — don't sit on them, they're the fastest way to level up.",
+  } satisfies GuideStep] : []),
+  {
+    key: "skool_training",
+    title: "Go through ALL the training videos in Skool",
+    body: "Every video, in order, before anything else. This is your foundation — the group calls and looms only click once you've seen the full system.",
+    link: { to: "/training", label: "Open training" },
+  },
+  {
+    key: "offer_board",
+    title: "Join the offer board",
+    body: "The offer board is where the live setter positions are. Join it now so you can see what you're working towards.",
+  },
+  {
+    key: "group_calls",
+    title: oneOnOne ? "Attend the group coaching calls" : "Attend the group coaching calls — 7 a week",
+    body: "Show up to every call you can. Take notes, ask smart, specific questions (\"here's what I tried, here's what happened, what would you change?\") — not \"what should I do?\".",
+  },
+  {
+    key: "looms",
+    title: "Send 3 looms a day for review",
+    body: "Once training is done: record looms and drop them in the loom review channel — at least 3 a day. The CSMs review every one and give feedback. Apply the feedback, send again, repeat until they approve you.",
+  },
+  {
+    key: "apply",
+    title: "Approved? 5 loom applications a day",
+    body: "The moment your looms are approved, you switch to applying: 5 loom applications a day, tracked in your EOD. Log every business you talk to under Placements.",
+    auto: "loomApproved",
+  },
+];
+
+function StartHereGuide({ oneOnOne, done, loomApproved, onToggle }: {
+  oneOnOne: boolean;
+  done: Set<string>;
+  loomApproved: boolean;
+  onToggle: (key: string, done: boolean) => void;
+}) {
+  const steps = guideStepsFor(oneOnOne);
+  const isDone = (s: GuideStep) => s.auto === "loomApproved" ? loomApproved || done.has(s.key) : done.has(s.key);
+  const doneCount = steps.filter(isDone).length;
+  return (
+    <div className="space-y-4">
+      <div className="card-surface p-4">
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <div className="text-sm font-semibold">Your path, start to finish</div>
+            <div className="text-[11px] text-muted-foreground">
+              {oneOnOne ? "1:1 Pathway" : "Group Expertise Pathway"} · tick each step off as you complete it — your CSM sees your progress
+            </div>
+          </div>
+          <span className={`text-caption font-medium tabular-nums ${doneCount === steps.length ? "text-success-fg" : "text-foreground"}`}>
+            {doneCount}/{steps.length} done
+          </span>
+        </div>
+        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+          <div className="h-full rounded-full bg-primary motion-safe:transition-[width]" style={{ width: `${(doneCount / steps.length) * 100}%` }} />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        {steps.map((s, i) => {
+          const checked = isDone(s);
+          const autoLocked = s.auto === "loomApproved" && !loomApproved && !done.has(s.key);
+          return (
+            <div key={s.key} className={`border rounded-sm p-4 flex items-start gap-3 ${checked ? "border-success/25 bg-success-bg/40" : "border-[var(--border)] bg-[var(--card)]"}`}>
+              <div className="flex flex-col items-center gap-1 shrink-0">
+                <span className={`h-6 w-6 rounded-full flex items-center justify-center text-[11px] font-semibold ${checked ? "bg-success text-success-fg" : "border border-border text-muted-foreground"}`}>
+                  {checked ? <CheckCircle2 className="h-3.5 w-3.5" /> : i + 1}
+                </span>
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className={`text-sm font-medium ${checked ? "text-success-fg" : "text-foreground"}`}>{s.title}</div>
+                <p className="text-[12px] text-muted-foreground mt-1 leading-relaxed">{s.body}</p>
+                <div className="flex items-center gap-3 mt-2">
+                  {s.link && (
+                    <Link to={s.link.to} className="text-[11px] font-medium text-primary hover:underline">{s.link.label} →</Link>
+                  )}
+                  {autoLocked ? (
+                    <span className="text-[11px] text-muted-foreground flex items-center gap-1"><Lock className="h-3 w-3" /> unlocks when your looms are approved</span>
+                  ) : (
+                    <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
+                      <Checkbox checked={checked} onCheckedChange={(v) => onToggle(s.key, v === true)} className="h-3.5 w-3.5" />
+                      {checked ? "Done" : "Mark done"}
+                    </label>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Leaderboard ---------- */
+
+function LeaderboardPanel() {
+  const leaderboardFn = useServerFn(getStudentLeaderboard);
+  const q = useQuery({ queryKey: ["student-leaderboard"], queryFn: () => leaderboardFn(), staleTime: 5 * 60_000 });
+  if (q.isLoading) return <div className="text-xs text-muted-foreground py-8 text-center">Loading leaderboard…</div>;
+  const data = q.data;
+  if (!data || data.rows.length === 0) {
+    return <div className="text-xs text-muted-foreground py-8 text-center">No activity yet this week — first log tops the board.</div>;
+  }
+  return (
+    <div className="space-y-4">
+      <div className="text-xs text-muted-foreground">
+        Last 7 days across every active student. Applications count most — looms keep you on the board while you're still in training.
+      </div>
+      {data.you && data.you.rank > data.rows.length && (
+        <div className="card-surface px-4 py-3 text-xs">
+          You're <span className="font-semibold text-foreground">#{data.you.rank}</span> of {data.totalStudents} — log today's numbers to climb.
+        </div>
+      )}
+      <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm overflow-hidden">
+        <div className="grid grid-cols-[44px_1fr_auto_auto_auto] gap-2 px-4 py-2 border-b border-[var(--border)] text-[10px] uppercase tracking-wider text-muted-foreground">
+          <span>#</span><span>Student</span><span className="text-right">Apps</span><span className="text-right">Looms</span><span className="text-right">Int.</span>
+        </div>
+        {data.rows.map((r) => (
+          <div
+            key={r.rank}
+            className={`grid grid-cols-[44px_1fr_auto_auto_auto] gap-2 px-4 py-2.5 text-xs items-center border-b border-[var(--accent)] last:border-0 ${r.isYou ? "bg-primary/5" : ""}`}
+          >
+            <span className={`font-semibold tabular-nums ${r.rank === 1 ? "text-warning-fg" : r.rank <= 3 ? "text-foreground" : "text-muted-foreground"}`}>
+              {r.rank === 1 ? "🥇" : r.rank === 2 ? "🥈" : r.rank === 3 ? "🥉" : r.rank}
+            </span>
+            <span className={`truncate ${r.isYou ? "font-semibold text-foreground" : ""}`}>{r.name}{r.isYou ? " (you)" : ""}</span>
+            <span className="text-right tabular-nums text-success-fg font-medium">{r.apps7}</span>
+            <span className="text-right tabular-nums">{r.looms7}</span>
+            <span className="text-right tabular-nums">{r.interviews7}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ---------- sub-components ---------- */
 
 function TabButton({ active, onClick, icon, label, badge, urgent }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string; badge?: number; urgent?: boolean }) {
@@ -693,7 +919,8 @@ function TabButton({ active, onClick, icon, label, badge, urgent }: { active: bo
   );
 }
 
-function JourneyStepper({ current }: { current: string }) {
+function JourneyStepper({ current, oneOnOne }: { current: string; oneOnOne: boolean }) {
+  const PHASES = phasesFor(oneOnOne);
   const currentIndex = PHASES.findIndex(p => p.key === current);
   return (
     <div className="flex items-center gap-2 overflow-x-auto">
@@ -787,7 +1014,7 @@ function SubmittedRecap({ form, streak, onEdit }: { form: typeof empty; streak: 
       </div>
       <div className="flex justify-center gap-6 text-xs flex-wrap">
         <span><span className="text-success-fg text-lg font-semibold">{form.applications_submitted}</span> <span className="text-muted-foreground">apps</span></span>
-        <span><span className="text-foreground text-lg font-semibold">{form.outreach_sent}</span> <span className="text-muted-foreground">outreach</span></span>
+        <span><span className="text-foreground text-lg font-semibold">{form.looms_sent}</span> <span className="text-muted-foreground">looms</span></span>
         <span><span className="text-foreground text-lg font-semibold">{form.replies}</span> <span className="text-muted-foreground">replies</span></span>
         <span><span className="text-success-fg text-lg font-semibold">{form.interviews}</span> <span className="text-muted-foreground">int.</span></span>
       </div>

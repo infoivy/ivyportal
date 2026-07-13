@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/sidebar";
 import isaLogo from "@/assets/isa-logo.png.asset.json";
 import { firstStudentsTab } from "@/components/students-tab-bar";
+import { setStudentPortalTab, getStudentPortalTab, onStudentPortalTab } from "@/lib/student-portal-bus";
 import { firstSalesTab } from "@/components/revenue-tab-bar";
 
 type Item = {
@@ -67,10 +68,53 @@ const adminItems = (pendingApprovals: number): Item[] => [
   { title: "Team",  url: "/team",  icon: Users,  roles: ["admin"], badge: pendingApprovals },
 ];
 
-const studentOnlyItems: Item[] = [
-  { title: "My Portal", url: "/student-portal", icon: FileText },
-  { title: "Profile",   url: "/profile",        icon: UserCircle },
+// Student sidebar: portal tabs (via the tab bus) + library + profile, so the
+// nav doesn't feel empty and the journey is one click away.
+const studentTabItems: { tab: string; title: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { tab: "start", title: "Start Here", icon: Sparkles },
+  { tab: "eod", title: "My Portal", icon: FileText },
+  { tab: "leaderboard", title: "Leaderboard", icon: Users },
 ];
+
+function StudentJourneyGroup({ collapsed, currentPath }: { collapsed: boolean; currentPath: string }) {
+  const [activeTab, setActiveTab] = useState(getStudentPortalTab());
+  useEffect(() => { const off = onStudentPortalTab(t => setActiveTab(t)); return () => { off(); }; }, []);
+  const onPortal = currentPath.startsWith("/student-portal");
+  return (
+    <SidebarGroup className={"px-2 py-2.5 " + (collapsed ? "border-t border-sidebar-border/60 first:border-t-0 py-2" : "")}>
+      {!collapsed && (
+        <SidebarGroupLabel className="px-2 mb-1 h-auto text-micro font-medium uppercase tracking-[0.08em] text-muted-foreground/70">
+          Journey
+        </SidebarGroupLabel>
+      )}
+      <SidebarGroupContent>
+        <SidebarMenu className="gap-px">
+          {studentTabItems.map(item => {
+            const active = onPortal && (item.tab === activeTab || (item.tab === "eod" && !studentTabItems.some(i => i.tab === activeTab)));
+            return (
+              <SidebarMenuItem key={item.tab}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={active}
+                  tooltip={collapsed ? item.title : undefined}
+                  className={
+                    "h-8 rounded-md px-2 motion-safe:transition-colors motion-safe:duration-150 " +
+                    (active ? "bg-muted text-foreground font-medium" : "text-muted-foreground hover:text-foreground hover:bg-muted/60")
+                  }
+                >
+                  <Link to="/student-portal" onClick={() => setStudentPortalTab(item.tab)} className="flex items-center gap-2.5">
+                    <item.icon className={"h-4 w-4 shrink-0 " + (active ? "text-foreground" : "text-muted-foreground")} />
+                    {!collapsed && <span className="text-body leading-none">{item.title}</span>}
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          })}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  );
+}
 
 export function AppSidebar({ roles }: { roles: string[] }) {
   const { pageHidden } = useAccess();
@@ -188,13 +232,18 @@ export function AppSidebar({ roles }: { roles: string[] }) {
     </SidebarHeader>
   );
 
-  // Student-only view: minimal nav
+  // Student-only view: journey tabs + library + profile
   if (isStudent && !isTeam) {
     return (
       <Sidebar collapsible="icon" className="border-r border-sidebar-border">
         {header("Student")}
         <SidebarContent className="gap-0 py-2">
-          {renderGroup("You", studentOnlyItems)}
+          <StudentJourneyGroup collapsed={collapsed} currentPath={currentPath} />
+          {renderGroup("Library", [
+            { title: "Knowledge", url: "/knowledge", icon: BookOpen },
+            { title: "Training", url: "/training", icon: GraduationCap },
+          ])}
+          {renderGroup("You", [{ title: "Profile", url: "/profile", icon: UserCircle }])}
         </SidebarContent>
       </Sidebar>
     );
