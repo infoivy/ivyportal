@@ -94,13 +94,7 @@ export type PlaybookSurface = "live" | "next" | "hermes";
 
 /** Where the founder should operate this doctrine */
 export type AppAction =
-  | "weekly"
-  | "recording"
-  | "hooks"
-  | "calendar"
-  | "seed"
-  | "operator"
-  | "none";
+  "weekly" | "recording" | "hooks" | "calendar" | "seed" | "operator" | "none";
 
 export type Playbook = {
   id: string;
@@ -145,7 +139,8 @@ export const GROW_PLAYBOOKS: Playbook[] = [
     id: "hooks-7",
     title: "7 hook frameworks",
     module: "Hooks",
-    summary: "Call-out, pattern break, failed expectations, transformation, mechanism, cultural, one-liners.",
+    summary:
+      "Call-out, pattern break, failed expectations, transformation, mechanism, cultural, one-liners.",
     localFile: "fathom/training-session-1.txt",
     phase: "content",
     surface: "live",

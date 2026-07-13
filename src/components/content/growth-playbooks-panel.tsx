@@ -39,11 +39,13 @@ export function GrowthPlaybooksPanel({
             <Rocket className="h-4 w-4" />
           </div>
           <div>
-            <h3 className="text-[15px] font-semibold text-foreground">Not SOPs. Operating system.</h3>
+            <h3 className="text-[15px] font-semibold text-foreground">
+              Not SOPs. Operating system.
+            </h3>
             <p className="text-[12px] text-muted-foreground mt-1 max-w-2xl">
-              Grow doctrine is baked into how you work here. If it can be a calendar, checklist, queue, or
-              scoreboard, it lives in the dashboard. If it’s judgment and craft, Hermes runs it with you in
-              chat. Raw PDFs are last resort.
+              Grow doctrine is baked into how you work here. If it can be a calendar, checklist,
+              queue, or scoreboard, it lives in the dashboard. If it’s judgment and craft, Hermes
+              runs it with you in chat. Raw PDFs are last resort.
             </p>
           </div>
         </div>
@@ -120,7 +122,9 @@ function PlaybookCard({
           </a>
         )}
         {p.surface === "hermes" && (
-          <span className="text-[10px] text-muted-foreground">Say the title to Hermes in Telegram</span>
+          <span className="text-[10px] text-muted-foreground">
+            Say the title to Hermes in Telegram
+          </span>
         )}
       </div>
     </article>
@@ -135,7 +139,9 @@ function SurfacePill({ surface }: { surface: PlaybookSurface }) {
         ? "bg-warning-bg text-warning-fg border-warning/25"
         : "bg-muted text-muted-foreground border-border";
   return (
-    <span className={`shrink-0 text-[9px] uppercase tracking-wide px-1.5 py-0.5 rounded border ${styles}`}>
+    <span
+      className={`shrink-0 text-[9px] uppercase tracking-wide px-1.5 py-0.5 rounded border ${styles}`}
+    >
       {surface}
     </span>
   );

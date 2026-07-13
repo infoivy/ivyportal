@@ -209,28 +209,30 @@ export function GrowthOperatorHome({
               Full Grow list (live / next / Hermes) is under the Playbooks tab. Not a PDF library.
             </p>
             <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1">
-              {(["profile", "content", "conversations", "ads", "leadership"] as const).map((phase) => {
-                const list = playbooksByPhase.get(phase) ?? [];
-                if (!list.length) return null;
-                return (
-                  <div key={phase}>
-                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
-                      {phase}
+              {(["profile", "content", "conversations", "ads", "leadership"] as const).map(
+                (phase) => {
+                  const list = playbooksByPhase.get(phase) ?? [];
+                  if (!list.length) return null;
+                  return (
+                    <div key={phase}>
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+                        {phase}
+                      </div>
+                      <ul className="space-y-1">
+                        {list.map((p) => (
+                          <li
+                            key={p.id}
+                            className="rounded-lg border border-[var(--border)] px-2.5 py-2 hover:bg-muted/20"
+                          >
+                            <div className="text-[12px] font-medium text-foreground">{p.title}</div>
+                            <div className="text-[11px] text-muted-foreground mt-0.5">{p.dfy}</div>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
-                    <ul className="space-y-1">
-                      {list.map((p) => (
-                        <li
-                          key={p.id}
-                          className="rounded-lg border border-[var(--border)] px-2.5 py-2 hover:bg-muted/20"
-                        >
-                          <div className="text-[12px] font-medium text-foreground">{p.title}</div>
-                          <div className="text-[11px] text-muted-foreground mt-0.5">{p.dfy}</div>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                );
-              })}
+                  );
+                },
+              )}
             </div>
             <a
               href={CONTENT_PLAN_URL}

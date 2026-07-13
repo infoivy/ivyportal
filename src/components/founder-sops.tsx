@@ -97,7 +97,11 @@ export function FounderSops({ onNavigate }: { onNavigate?: (action: AppAction) =
     const title = prompt("New note title:")?.trim();
     if (!title) return;
     const slug =
-      title.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").slice(0, 80) +
+      title
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, "")
+        .replace(/\s+/g, "-")
+        .slice(0, 80) +
       "-" +
       Math.random().toString(36).slice(2, 6);
     setCreating(true);
@@ -161,7 +165,11 @@ export function FounderSops({ onNavigate }: { onNavigate?: (action: AppAction) =
                   className="h-6 w-6 grid place-items-center rounded-sm border border-[var(--border)] hover:border-border"
                   title="New note"
                 >
-                  {creating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+                  {creating ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Plus className="h-3 w-3" />
+                  )}
                 </button>
               </div>
               {loading ? (
@@ -185,7 +193,9 @@ export function FounderSops({ onNavigate }: { onNavigate?: (action: AppAction) =
                           }}
                           className={`w-full text-left px-3 py-2.5 hover:bg-muted/30 ${active ? "bg-muted/40" : ""}`}
                         >
-                          <div className="text-[13px] font-medium text-foreground truncate">{d.title}</div>
+                          <div className="text-[13px] font-medium text-foreground truncate">
+                            {d.title}
+                          </div>
                           <div
                             className={`text-[10px] mt-0.5 flex items-center gap-1 ${rev.stale ? "text-warning-fg" : "text-muted-foreground"}`}
                           >
@@ -251,12 +261,21 @@ export function FounderSops({ onNavigate }: { onNavigate?: (action: AppAction) =
                         disabled={saving}
                         className="h-8 px-3 rounded-sm bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium inline-flex items-center gap-1 disabled:opacity-50"
                       >
-                        {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />} Save
+                        {saving ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Check className="h-3 w-3" />
+                        )}{" "}
+                        Save
                       </button>
                     </div>
                   </div>
                   <div className="p-4">
-                    <MarkdownEditor value={draftContent} onChange={setDraftContent} minHeight={500} />
+                    <MarkdownEditor
+                      value={draftContent}
+                      onChange={setDraftContent}
+                      minHeight={500}
+                    />
                   </div>
                 </div>
               )}
