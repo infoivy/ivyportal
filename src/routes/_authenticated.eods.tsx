@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -72,6 +72,8 @@ const priorityRoles = ["csm", "closer", "coach", "setter", "admin"];
 const isoDate = (d: Date) => d.toISOString().slice(0, 10);
 const fmtDayShort = (d: Date) => `${WEEKDAY[d.getDay()]} ${d.getDate()}`;
 const fmtLong = (iso: string) => { const d = new Date(iso + "T00:00:00"); return `${WEEKDAY[d.getDay()]}, ${MONTH[d.getMonth()]} ${d.getDate()}`; };
+// Noon anchor so the local calendar date survives UTC conversion in any timezone
+const shiftDay = (iso: string, delta: number) => { const d = new Date(iso + "T12:00:00"); d.setDate(d.getDate() + delta); return new Intl.DateTimeFormat("en-CA").format(d); };
 const startOfWeek = (iso: string) => { const d = new Date(iso + "T00:00:00"); const day = d.getDay(); const diff = day === 0 ? -6 : 1 - day; d.setDate(d.getDate() + diff); return isoDate(d); }; // Monday-start
 
 function EODsPage() {
@@ -84,6 +86,12 @@ function EODsPage() {
   const filesEods = isSetter || isCloser || isCsm;
   const isFounder = isAdmin && !filesEods;
   const today = todayLocal();
+  const yesterday = shiftDay(today, -1);
+
+  // Which day this report is FOR. Reps who finish after midnight (or whose
+  // device clock is off) were silently filing onto the next day's date, and
+  // the upsert then wiped that day's real EOD.
+  const [reportDate, setReportDate] = useState(today);
 
   const [form, setForm] = useState(emptyForm);
   const [existingId, setExistingId] = useState<string | null>(null);
@@ -102,22 +110,27 @@ function EODsPage() {
     setMySetterType(((prof as { setter_type?: string } | null)?.setter_type ?? null) as SetterType);
     const rows = (data ?? []) as EOD[];
     setMyEods(rows);
-    const todayEod = rows.find(e => e.report_date === today);
-    if (todayEod) {
-      setExistingId(todayEod.id);
+    const target = rows.find(e => e.report_date === reportDate);
+    if (target) {
+      setExistingId(target.id);
       setForm({
-        dms_sent: todayEod.dms_sent, convos_started: todayEod.convos_started,
-        calls_booked: todayEod.calls_booked, calls_scheduled: todayEod.calls_scheduled,
-        shows: todayEod.shows, no_shows: todayEod.no_shows,
-        looms_reviewed: todayEod.looms_reviewed ?? 0, roleplays_reviewed: todayEod.roleplays_reviewed ?? 0,
-        student_checkins: todayEod.student_checkins ?? 0, escalations_resolved: todayEod.escalations_resolved ?? 0,
-        calls_taken: todayEod.calls_taken ?? 0, closes: todayEod.closes ?? 0, deposits: todayEod.deposits ?? 0,
-        cash_collected: Number(todayEod.cash_collected ?? 0), deferred_cash: Number(todayEod.deferred_cash ?? 0),
-        follow_ups_done: todayEod.follow_ups_done ?? 0,
-        dials: todayEod.dials ?? 0, leads_contacted: todayEod.leads_contacted ?? 0,
-        wins: todayEod.wins ?? "", blockers: todayEod.blockers ?? "",
-        tomorrow_focus: todayEod.tomorrow_focus ?? "", summary: todayEod.summary ?? "",
+        dms_sent: target.dms_sent, convos_started: target.convos_started,
+        calls_booked: target.calls_booked, calls_scheduled: target.calls_scheduled,
+        shows: target.shows, no_shows: target.no_shows,
+        looms_reviewed: target.looms_reviewed ?? 0, roleplays_reviewed: target.roleplays_reviewed ?? 0,
+        student_checkins: target.student_checkins ?? 0, escalations_resolved: target.escalations_resolved ?? 0,
+        calls_taken: target.calls_taken ?? 0, closes: target.closes ?? 0, deposits: target.deposits ?? 0,
+        cash_collected: Number(target.cash_collected ?? 0), deferred_cash: Number(target.deferred_cash ?? 0),
+        follow_ups_done: target.follow_ups_done ?? 0,
+        dials: target.dials ?? 0, leads_contacted: target.leads_contacted ?? 0,
+        wins: target.wins ?? "", blockers: target.blockers ?? "",
+        tomorrow_focus: target.tomorrow_focus ?? "", summary: target.summary ?? "",
       });
+    } else {
+      setExistingId(null);
+      let next = emptyForm;
+      try { const raw = localStorage.getItem(`eod-draft:${user.id}:${reportDate}`); if (raw) next = { ...emptyForm, ...JSON.parse(raw) }; } catch {}
+      setForm(next);
     }
   };
 
@@ -165,16 +178,16 @@ function EODsPage() {
   }, [teamQ.data]);
   const loadTeam = () => teamQ.refetch();
 
-  useEffect(() => { loadMine(); /* eslint-disable-next-line */ }, [user]);
+  useEffect(() => { loadMine(); /* eslint-disable-next-line */ }, [user, reportDate]);
 
-  // Autosave draft
-  const draftKey = user ? `eod-draft:${user.id}:${today}` : null;
-  const hydratedDraft = useRef(false);
+  // A tab left open across midnight would otherwise keep a date that is no
+  // longer offered by the Today/Yesterday toggle.
   useEffect(() => {
-    if (!draftKey || hydratedDraft.current || existingId) return;
-    try { const raw = localStorage.getItem(draftKey); if (raw) { setForm(f => ({ ...f, ...JSON.parse(raw) })); toast.message("Draft restored"); } } catch {}
-    hydratedDraft.current = true;
-  }, [draftKey, existingId]);
+    if (reportDate !== today && reportDate !== yesterday) setReportDate(today);
+  }, [reportDate, today, yesterday]);
+
+  // Autosave draft (restore happens in loadMine when no row exists for the date)
+  const draftKey = user ? `eod-draft:${user.id}:${reportDate}` : null;
   const [draftSavedAt, setDraftSavedAt] = useState<Date | null>(null);
   useEffect(() => {
     if (!draftKey || existingId) return;
@@ -207,13 +220,13 @@ function EODsPage() {
 
     setSaving(true);
     const wasNew = !existingId;
-    const payload = { user_id: user.id, report_date: today, ...cleaned };
+    const payload = { user_id: user.id, report_date: reportDate, ...cleaned };
     const { error } = await supabase.from("eods").upsert(payload, { onConflict: "user_id,report_date" });
     setSaving(false);
     if (error) return toast.error(error.message);
-    toast.success(existingId ? "EOD updated" : "EOD submitted → Team Reports");
+    toast.success(existingId ? `EOD updated for ${fmtLong(reportDate)}` : `EOD submitted for ${fmtLong(reportDate)}`);
     // Clears the "EOD due" chip in the top bar without a reload
-    window.dispatchEvent(new CustomEvent("isa:eod-submitted"));
+    if (reportDate === today) window.dispatchEvent(new CustomEvent("isa:eod-submitted"));
     if (wasNew) {
       confetti({ particleCount: 120, spread: 80, origin: { y: 0.7 }, colors: ["#10b981", "#f59e0b", "#3b82f6", "#a855f7"] });
       if (draftKey) { try { localStorage.removeItem(draftKey); } catch {} }
@@ -270,12 +283,15 @@ function EODsPage() {
           <p className="text-body text-muted-foreground mt-1">Log your numbers. Track the funnel. Ship consistency.</p>
         </div>
         <div className="flex items-center gap-2">
-          {!isFounder && (
-            <div className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-sm border ${existingId ? "border-success/25 bg-success-bg text-success-fg" : "border-warning/25 bg-warning-bg text-warning-fg"}`}>
-              {existingId ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Clock className="h-3.5 w-3.5" />}
-              {existingId ? "Today submitted" : "Today pending"}
-            </div>
-          )}
+          {!isFounder && (() => {
+            const todaySubmitted = myEods.some(e => e.report_date === today);
+            return (
+              <div className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-sm border ${todaySubmitted ? "border-success/25 bg-success-bg text-success-fg" : "border-warning/25 bg-warning-bg text-warning-fg"}`}>
+                {todaySubmitted ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Clock className="h-3.5 w-3.5" />}
+                {todaySubmitted ? "Today submitted" : "Today pending"}
+              </div>
+            );
+          })()}
           <span className="text-[11px] text-muted-foreground">{fmtLong(today)}</span>
         </div>
       </header>
@@ -341,14 +357,26 @@ function EODsPage() {
         <TabsContent value="submit" className="space-y-4">
           <div className="grid lg:grid-cols-3 gap-4">
             <div className="lg:col-span-2 border border-[var(--border)] bg-[var(--card)] rounded-sm p-5 space-y-5">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <h2 className="text-sm font-semibold">{existingId ? "Update today's numbers" : "Submit today's numbers"}
+                  <h2 className="text-sm font-semibold">{existingId ? "Update numbers" : "Submit numbers"} — {fmtLong(reportDate)}
                     {!existingId && draftSavedAt && (
                       <span className="ml-2 text-[10px] font-normal text-muted-foreground">Draft saved ✓</span>
                     )}
                   </h2>
-                  <p className="text-[11px] text-muted-foreground">Zero is a valid answer.</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {existingId ? "Already submitted for this day — saving replaces it." : "Zero is a valid answer."}
+                  </p>
+                </div>
+                <div className="inline-flex rounded-sm border border-[var(--border)] bg-[var(--background)] p-0.5">
+                  {[{ d: today, label: "Today" }, { d: yesterday, label: "Yesterday" }].map(o => (
+                    <button
+                      key={o.d}
+                      type="button"
+                      onClick={() => setReportDate(o.d)}
+                      className={`text-[11px] font-medium px-2.5 py-1 rounded-sm motion-safe:transition-colors ${reportDate === o.d ? "bg-[var(--accent)] text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                    >{o.label}</button>
+                  ))}
                 </div>
               </div>
 
