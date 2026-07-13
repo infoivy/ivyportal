@@ -213,13 +213,16 @@ function CalendarPage() {
   }, []);
 
   const myConn = useQuery({ queryKey: ["cal", "me"], queryFn: () => myConnFn() });
-  const team = useQuery({ queryKey: ["cal", "team"], queryFn: () => teamStatusFn() });
+  // Team calendars fan out to Google per teammate — don't pay for that while
+  // the user is on the Sets view.
+  const team = useQuery({ queryKey: ["cal", "team"], queryFn: () => teamStatusFn(), enabled: pageView === "calendar" });
   const events = useQuery({
     queryKey: ["cal", "events", weekStart.toISOString(), daySpan],
     queryFn: () => teamEventsFn({
       data: { timeMin: weekStart.toISOString(), timeMax: addDays(weekEnd, 1).toISOString() },
     }),
     staleTime: 30_000,
+    enabled: pageView === "calendar",
   });
 
   const connect = useMutation({
@@ -496,6 +499,32 @@ function CalendarPage() {
               ))}
             </div>
           </div>
+          {(() => {
+            const live = (upcomingSets.data ?? []).filter((s) => s.status !== "cancelled");
+            const now = Date.now();
+            const dueNow = live.filter((s) => {
+              if (s.confirmed_at || !s.owner_id) return false;
+              const msLeft = new Date(s.event_start).getTime() - now;
+              return WINDOWS.some((w) => msLeft > 0 && msLeft <= w.minutes * 60_000 && !(s.reminder_log as Record<string, string> | null | undefined)?.[w.key]);
+            }).length;
+            const stats = [
+              { label: "Upcoming", value: live.length, cls: "text-foreground" },
+              { label: "Unclaimed", value: live.filter((s) => !s.owner_id).length, cls: live.some((s) => !s.owner_id) ? "text-warning-fg" : "text-foreground" },
+              { label: "Reminder due", value: dueNow, cls: dueNow ? "text-danger-fg" : "text-foreground" },
+              { label: "Unconfirmed", value: live.filter((s) => !s.confirmed_at).length, cls: live.some((s) => !s.confirmed_at) ? "text-warning-fg" : "text-foreground" },
+              { label: "Confirmed", value: live.filter((s) => !!s.confirmed_at).length, cls: "text-success-fg" },
+            ];
+            return (
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                {stats.map((c) => (
+                  <div key={c.label} className="rounded-md border border-border bg-[var(--background)] px-3 py-2">
+                    <div className={`text-lg font-medium tabular-nums leading-none ${c.cls}`}>{c.value}</div>
+                    <div className="text-micro text-muted-foreground mt-1">{c.label}</div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
           <UpcomingSetsList
             big
             sets={upcomingSets.data ?? []}
@@ -515,18 +544,28 @@ function CalendarPage() {
                 toast.success(r.calendar ? "Assigned — it's on their calendar with reminders." : "Assigned. They should connect Google Calendar for the reminders.");
               } catch (err) { toast.error(String((err as Error).message ?? err)); }
             }}
-            onTrack={async (id, window, state) => {
-              try {
-                await trackSetFn({ data: { id, window, state } });
+            onTrack={(id, window, state) => {
+              // Optimistic: flip the chip instantly, reconcile in the background
+              qc.setQueryData<UpcomingSet[]>(["cal", "sets"], (old) => (old ?? []).map((r) => {
+                if (r.id !== id) return r;
+                const log = { ...((r.reminder_log ?? {}) as Record<string, string>) };
+                if (state == null) delete log[window]; else log[window] = state;
+                return { ...r, reminder_log: log };
+              }));
+              trackSetFn({ data: { id, window, state } }).catch((err) => {
+                toast.error(String((err as Error).message ?? err));
                 qc.invalidateQueries({ queryKey: ["cal", "sets"] });
-              } catch (err) { toast.error(String((err as Error).message ?? err)); }
+              });
             }}
-            onConfirm={async (id, confirm) => {
-              try {
-                await trackSetFn({ data: { id, confirm } });
+            onConfirm={(id, confirm) => {
+              qc.setQueryData<UpcomingSet[]>(["cal", "sets"], (old) => (old ?? []).map((r) =>
+                r.id === id ? { ...r, confirmed_at: confirm ? new Date().toISOString() : null } : r,
+              ));
+              if (confirm) toast.success("Confirmed — the slot is locked in.");
+              trackSetFn({ data: { id, confirm } }).catch((err) => {
+                toast.error(String((err as Error).message ?? err));
                 qc.invalidateQueries({ queryKey: ["cal", "sets"] });
-                if (confirm) toast.success("Confirmed — the slot is locked in.");
-              } catch (err) { toast.error(String((err as Error).message ?? err)); }
+              });
             }}
             onCancel={async (id) => {
               try {
@@ -909,9 +948,24 @@ function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, o
       </div>
     );
   }
-  return (
-    <div className="divide-y divide-border/60">
-      {visible.map((s) => {
+  const todayKey = format(toLocal(new Date()), "yyyy-MM-dd");
+  const tomorrowKey = format(addDays(toLocal(new Date()), 1), "yyyy-MM-dd");
+  const dayLabel = (k: string) =>
+    k === todayKey ? "Today" : k === tomorrowKey ? "Tomorrow" : format(new Date(k + "T00:00:00"), "EEEE, MMM d");
+  const groups: [string, UpcomingSet[]][] = [];
+  for (const s of visible) {
+    const k = format(toLocal(s.event_start), "yyyy-MM-dd");
+    const last = groups[groups.length - 1];
+    if (last && last[0] === k) last[1].push(s); else groups.push([k, [s]]);
+  }
+  const durLabel = (ms: number) => {
+    const h = Math.floor(ms / 3_600_000);
+    if (h < 1) return `${Math.max(1, Math.floor(ms / 60_000))}m`;
+    if (h < 48) return `${h}h`;
+    return `${Math.floor(h / 24)}d`;
+  };
+
+  const renderSet = (s: UpcomingSet) => {
         const start = toLocal(s.event_start);
         const mine = s.owner_id === user?.id;
         const msLeft = new Date(s.event_start).getTime() - Date.now();
@@ -921,6 +975,10 @@ function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, o
         const todayWarmKey = "warm:" + new Date().toISOString().slice(0, 10);
         const warmToday = !!(s.reminder_log as Record<string, string> | undefined)?.[todayWarmKey];
         const farOut = msLeft > 48 * 3_600_000;
+        const log = s.reminder_log as Record<string, string> | null | undefined;
+        const sentCount = WINDOWS.filter((w) => log?.[w.key] === "reminded").length;
+        const openDue = WINDOWS.filter((w) => msLeft > 0 && msLeft <= w.minutes * 60_000 && !log?.[w.key]);
+        const nextToOpen = WINDOWS.find((w) => msLeft > w.minutes * 60_000);
         return (
           <div key={s.id} className={big ? "py-4 space-y-2.5" : "py-2.5 space-y-1.5"}>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -974,6 +1032,19 @@ function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, o
                 </button>
               )}
             </div>
+
+            {/* What's done and what's next — at a glance, no chip-reading needed */}
+            {big && s.owner_id && s.status === "active" && (
+              <div className="text-micro text-muted-foreground pl-0.5">
+                <span className={sentCount === WINDOWS.length ? "text-success-fg" : ""}>{sentCount}/{WINDOWS.length} reminders sent</span>
+                {openDue.length > 0 ? (
+                  <span className="text-danger-fg font-medium"> · {openDue[0].label} reminder due now — send it</span>
+                ) : nextToOpen ? (
+                  <span> · next ({nextToOpen.label}) opens in {durLabel(msLeft - nextToOpen.minutes * 60_000)}</span>
+                ) : null}
+                {!confirmed && <span> · not confirmed by the lead yet</span>}
+              </div>
+            )}
 
             {/* Reminder tracker: tick each window as you send it */}
             {s.owner_id && (
@@ -1036,7 +1107,21 @@ function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, o
             )}
           </div>
         );
-      })}
+  };
+
+  return (
+    <div className={big ? "space-y-3" : "divide-y divide-border/60"}>
+      {big
+        ? groups.map(([k, list]) => (
+            <div key={k}>
+              <div className="flex items-baseline gap-2 pb-1 border-b border-border/60">
+                <span className="text-caption font-semibold text-foreground">{dayLabel(k)}</span>
+                <span className="text-micro text-muted-foreground">{list.length === 1 ? "1 set" : `${list.length} sets`}</span>
+              </div>
+              <div className="divide-y divide-border/60">{list.map(renderSet)}</div>
+            </div>
+          ))
+        : visible.map(renderSet)}
       {cancelled.length > 0 && (
         <div className="pt-2.5">
           <p className="text-micro text-muted-foreground mb-1.5">Removed (no confirmation)</p>
