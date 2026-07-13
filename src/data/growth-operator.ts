@@ -90,6 +90,18 @@ export const IVY_SEED_WEEK: SeedSlot[] = [
   },
 ];
 
+export type PlaybookSurface = "live" | "next" | "hermes";
+
+/** Where the founder should operate this doctrine */
+export type AppAction =
+  | "weekly"
+  | "recording"
+  | "hooks"
+  | "calendar"
+  | "seed"
+  | "operator"
+  | "none";
+
 export type Playbook = {
   id: string;
   title: string;
@@ -98,43 +110,104 @@ export type Playbook = {
   localFile?: string;
   externalUrl?: string;
   phase: "profile" | "content" | "conversations" | "ads" | "leadership";
+  /** live = already a dashboard workflow; next = building into UI; hermes = partner via chat */
+  surface: PlaybookSurface;
+  /** Content tab view to open when live */
+  appAction: AppAction;
+  /** Short DFY outcome the founder feels */
+  dfy: string;
 };
 
 export const GROW_PLAYBOOKS: Playbook[] = [
   {
+    id: "weekly-tof-mof",
+    title: "TOF / MOF weekly calendar",
+    module: "Planning",
+    summary: "Mon–Thu top of funnel, Fri–Sun middle. 4 TOF + 3 MOF reels.",
+    phase: "content",
+    surface: "live",
+    appAction: "weekly",
+    dfy: "Open Weekly plan. Seed fills empty slots with real hooks + scripts.",
+  },
+  {
+    id: "recording-day",
+    title: "Recording day / batch film",
+    module: "Publishing",
+    summary: "Batch-record the 2-week horizon in one sitting (Grow reel SOP).",
+    localFile: "loom/reel-sop.txt",
+    externalUrl: "https://www.loom.com/share/a17c270a8e1c4274846fa55e6d76a1a6",
+    phase: "content",
+    surface: "live",
+    appAction: "recording",
+    dfy: "Open Recording day. Film what’s scripted, mark done in the pipeline.",
+  },
+  {
+    id: "hooks-7",
+    title: "7 hook frameworks",
+    module: "Hooks",
+    summary: "Call-out, pattern break, failed expectations, transformation, mechanism, cultural, one-liners.",
+    localFile: "fathom/training-session-1.txt",
+    phase: "content",
+    surface: "live",
+    appAction: "hooks",
+    dfy: "Open Hook library. Save winners; Hermes can generate more on demand.",
+  },
+  {
+    id: "ideation",
+    title: "Ideation → pad → promote",
+    module: "Planning",
+    summary: "Turn calls, objections, wins into the ideation pad, then promote to slots.",
+    localFile: "fathom/ideation-training.txt",
+    phase: "content",
+    surface: "live",
+    appAction: "weekly",
+    dfy: "Use ideation pad on Weekly plan. Promote MOF/TOF ideas into empty slots.",
+  },
+  {
     id: "exec-summary",
-    title: "Exec summary / order of ops",
+    title: "Order of ops (profile funnel stages)",
     module: "Onboarding",
     summary: "Profile → content system → open conversations → ads. Linear. No skipping.",
     localFile: "sops/1uzRtWjO-Mz6H86I2b6Ue1OzLDYW6xpmQfxRvG-4MQgo.txt",
     phase: "profile",
+    surface: "live",
+    appAction: "operator",
+    dfy: "Use Growth Operator checklist. Stages are the product spine.",
   },
   {
     id: "start-here",
-    title: "Start Here highlight SOP",
+    title: "Start Here highlight builder",
     module: "Profile assets",
-    summary:
-      "10–25 slides: accolades → proof → backstory → bridge → after → CTA + carousel repost.",
+    summary: "10–25 slides: accolades → proof → backstory → bridge → after → CTA.",
     localFile: "loom/start-here-sop.txt",
     externalUrl: "https://www.loom.com/share/8458b430c3d94534bb32c39a63a8877b",
     phase: "profile",
+    surface: "next",
+    appAction: "none",
+    dfy: "Coming: slide checklist wizard in-app. Until then Hermes drafts slides with you.",
   },
   {
     id: "carousel",
-    title: "Carousel framework",
+    title: "Pinned carousel builder",
     module: "Profile assets",
     summary: "Pinned carousel structure for the profile funnel.",
     localFile: "loom/carousel-framework-sop.txt",
     externalUrl: "https://www.loom.com/share/e713161a32c541c2a43ab7e7902082cb",
     phase: "profile",
+    surface: "next",
+    appAction: "none",
+    dfy: "Coming: carousel slide builder. Hermes can draft frame-by-frame now.",
   },
   {
     id: "bio",
-    title: "Bio optimisation (Isaiah)",
+    title: "Bio lab (PATH)",
     module: "Profile assets",
-    summary: "Approved Ivy bio pattern: 3–5K claim + DM PATH. Revise ~every 1.5 months.",
+    summary: "Approved Ivy bio: 3–5K claim + DM PATH. Revise ~every 1.5 months.",
     localFile: "loom/ig-bio-feedback-and-next-steps.txt",
     phase: "profile",
+    surface: "next",
+    appAction: "operator",
+    dfy: "Checklist tracks bio. Next: in-app bio variants + approve.",
   },
   {
     id: "brand-kit",
@@ -144,15 +217,9 @@ export const GROW_PLAYBOOKS: Playbook[] = [
     localFile: "sops/14afWu5IN0OGOo8wv-8SeLU7aYrYdNN94TlmiBu0_c5Q.txt",
     externalUrl: "https://fathom.video/share/aABYEi8LyJLVMMmKZnNDjT--w7scXq6t",
     phase: "content",
-  },
-  {
-    id: "hooks-7",
-    title: "7 hook frameworks",
-    module: "Hooks",
-    summary:
-      "Call-out, pattern break, failed expectations, transformation, mechanism, cultural, one-liners.",
-    localFile: "fathom/training-session-1.txt",
-    phase: "content",
+    surface: "next",
+    appAction: "none",
+    dfy: "Coming: brand tokens in founder settings driving creative defaults.",
   },
   {
     id: "hook-diagnostic",
@@ -161,40 +228,44 @@ export const GROW_PLAYBOOKS: Playbook[] = [
     summary: "Diagnose weak hooks; documented vs undocumented content slides.",
     localFile: "fathom/hook-diagnostic-training.txt",
     phase: "content",
+    surface: "next",
+    appAction: "hooks",
+    dfy: "Hook library is live; diagnostic scoring lands next on each hook card.",
   },
   {
     id: "reel-sop",
-    title: "Reel distribution SOP",
+    title: "Post checklist (Stories + Mochi)",
     module: "Publishing",
-    summary: "Batch record, post, Stories in 5–10 min, recycle winners, track metrics.",
+    summary: "Post feed → Stories in 5–10 min → log Mochi → recycle winners.",
     localFile: "loom/reel-sop.txt",
     externalUrl: "https://www.loom.com/share/a17c270a8e1c4274846fa55e6d76a1a6",
     phase: "content",
+    surface: "next",
+    appAction: "recording",
+    dfy: "Coming: one-click post checklist on each content item.",
   },
   {
     id: "creative-formats",
     title: "Creative / visual formats",
     module: "Creative",
-    summary: "Choose camera angles and formats (talking head, Miro, vlog, etc.).",
+    summary: "Camera angles and formats (talking head, Miro, vlog, etc.).",
     localFile: "loom/creative-sop-choose-your-visual-formats.txt",
     phase: "content",
+    surface: "live",
+    appAction: "weekly",
+    dfy: "Creative types already on Weekly plan promote flow.",
   },
   {
     id: "story-sequences",
-    title: "Story sequences",
+    title: "Story sequence studio",
     module: "Nurture",
-    summary: "In-depth story sequence systems for profile funnel nurture.",
+    summary: "Multi-day story sequences for profile funnel nurture.",
     localFile: "fathom/story-sequences-training.txt",
     externalUrl: "https://gamma.app/docs/Story-Sequences-SOP-q9xt40t9z0a3cw2?mode=doc",
     phase: "content",
-  },
-  {
-    id: "ideation",
-    title: "Ideation training",
-    module: "Planning",
-    summary: "Turn calls, objections, and wins into a content engine.",
-    localFile: "fathom/ideation-training.txt",
-    phase: "content",
+    surface: "next",
+    appAction: "none",
+    dfy: "Coming: sequence builder. Hermes runs sequences with you in chat for now.",
   },
   {
     id: "core-8020",
@@ -203,6 +274,9 @@ export const GROW_PLAYBOOKS: Playbook[] = [
     summary: "Lead with the outcome the market wants; mechanism second.",
     localFile: "fathom/core-message-8020.txt",
     phase: "content",
+    surface: "hermes",
+    appAction: "none",
+    dfy: "Ask Hermes: strategist mode. Doctrine is in Operating Bible.",
   },
   {
     id: "formats-angles",
@@ -211,22 +285,31 @@ export const GROW_PLAYBOOKS: Playbook[] = [
     summary: "Visual aspects and angle library for reels and carousels.",
     localFile: "fathom/content-formats-angles.txt",
     phase: "content",
+    surface: "hermes",
+    appAction: "none",
+    dfy: "Hermes applies angles when scripting; angle library UI later.",
   },
   {
     id: "follower-ads-p1",
-    title: "Follower ads part 1 — structure",
-    module: "Ads (later)",
-    summary: "Campaign structure and decision framework. Unlock after organic works.",
+    title: "Follower ads structure",
+    module: "Ads (gated)",
+    summary: "Campaign structure only after organic proof / asset threshold.",
     localFile: "sops/1XSZWIqMbwAl1MhpHioKJ1-3VdiFDozTcOIiY2qQDTLA.txt",
     phase: "ads",
+    surface: "next",
+    appAction: "none",
+    dfy: "Locked until Growth Operator ads-gate is green. Hermes advises, doesn’t push spend.",
   },
   {
     id: "systems",
-    title: "How to think in systems",
+    title: "Think in systems",
     module: "Leadership",
     summary: "Funnels, backend, metrics: become a systemiser.",
     localFile: "fathom/systems-thinking.txt",
     phase: "leadership",
+    surface: "hermes",
+    appAction: "none",
+    dfy: "Partner topic in chat. Dashboard already encodes systems (EOD, plan, CRM).",
   },
   {
     id: "bad-month",
@@ -235,8 +318,28 @@ export const GROW_PLAYBOOKS: Playbook[] = [
     summary: "Team motivation, EOM review, backend saving a weak frontend month.",
     localFile: "fathom/bad-month-leadership.txt",
     phase: "leadership",
+    surface: "hermes",
+    appAction: "none",
+    dfy: "Use Portal EODs + Hermes ops brief. Full EOM wizard later on Overview.",
+  },
+  {
+    id: "setter-ops",
+    title: "Setter performance (real EODs)",
+    module: "Conversations / sales",
+    summary: "Who hit KPI, who missed EOD. Not Overview prop tiles.",
+    phase: "conversations",
+    surface: "live",
+    appAction: "none",
+    dfy: "Hermes Portal Ops every morning 06:05 + EODs page in Portal for the team.",
+    externalUrl: "https://portal.ivysalesacademy.com/eods",
   },
 ];
+
+export const SURFACE_LABEL: Record<PlaybookSurface, string> = {
+  live: "In the dashboard now",
+  next: "Becoming a product view",
+  hermes: "Hermes partner (chat)",
+};
 
 export type ExampleLink = {
   label: string;

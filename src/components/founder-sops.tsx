@@ -3,18 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { MarkdownView } from "@/components/markdown-view";
 import { MarkdownEditor } from "@/components/markdown-editor";
 import { toast } from "sonner";
-import {
-  BookOpen,
-  Pencil,
-  Check,
-  X,
-  Plus,
-  Loader2,
-  CalendarClock,
-  ExternalLink,
-} from "lucide-react";
+import { BookOpen, Pencil, Check, X, Plus, Loader2, CalendarClock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { GROW_PLAYBOOKS } from "@/data/growth-operator";
+import { GrowthPlaybooksPanel } from "@/components/content/growth-playbooks-panel";
+import type { AppAction } from "@/data/growth-operator";
 
 type FounderDoc = {
   id: string;
@@ -26,7 +18,7 @@ type FounderDoc = {
   pinned: boolean;
 };
 
-export function FounderSops() {
+export function FounderSops({ onNavigate }: { onNavigate?: (action: AppAction) => void }) {
   const [docs, setDocs] = useState<FounderDoc[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -35,6 +27,7 @@ export function FounderSops() {
   const [draftContent, setDraftContent] = useState("");
   const [saving, setSaving] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [showNotes, setShowNotes] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -101,14 +94,10 @@ export function FounderSops() {
   };
 
   const createDoc = async () => {
-    const title = prompt("New SOP title:")?.trim();
+    const title = prompt("New note title:")?.trim();
     if (!title) return;
     const slug =
-      title
-        .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, "")
-        .replace(/\s+/g, "-")
-        .slice(0, 80) +
+      title.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").slice(0, 80) +
       "-" +
       Math.random().toString(36).slice(2, 6);
     setCreating(true);
@@ -142,177 +131,138 @@ export function FounderSops() {
 
   return (
     <div className="space-y-4">
-      {/* Grow doctrine catalog — always visible, even when DB docs empty */}
-      <div className="rounded-xl border border-[var(--border)] bg-card p-4 space-y-3">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-muted-foreground">
-            <BookOpen className="h-3.5 w-3.5" /> Grow Acquisition playbooks
+      <GrowthPlaybooksPanel onNavigate={onNavigate} />
+
+      <div className="rounded-xl border border-[var(--border)] bg-card overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setShowNotes((v) => !v)}
+          className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-muted/20"
+        >
+          <div>
+            <div className="text-[13px] font-medium text-foreground">Optional founder notes</div>
+            <div className="text-[11px] text-muted-foreground">
+              Scratchpad only. Grow doctrine is in the playbooks above, not here.
+            </div>
           </div>
-          <span className="text-[10px] text-muted-foreground font-mono">
-            knowledge/ + GA catalog
-          </span>
-        </div>
-        <p className="text-[12px] text-muted-foreground">
-          Source SOPs live on disk for Hermes. Editable founder notes below are optional Portal
-          docs.
-        </p>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
-          {GROW_PLAYBOOKS.map((p) => (
-            <div
-              key={p.id}
-              className="rounded-lg border border-[var(--border)] px-3 py-2 bg-muted/10"
-            >
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                {p.phase} · {p.module}
-              </div>
-              <div className="text-[13px] font-medium text-foreground mt-0.5">{p.title}</div>
-              <div className="text-[11px] text-muted-foreground mt-1 line-clamp-2">{p.summary}</div>
-              {p.externalUrl && (
-                <a
-                  href={p.externalUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1 text-[10px] text-primary mt-1.5 hover:underline"
+          <span className="text-[11px] text-primary">{showNotes ? "Hide" : "Show"}</span>
+        </button>
+
+        {showNotes && (
+          <div className="grid lg:grid-cols-[280px_minmax(0,1fr)] gap-0 border-t border-[var(--border)]">
+            <aside className="border-r border-[var(--border)] bg-[var(--card)]">
+              <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--border)]">
+                <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <BookOpen className="h-3 w-3" /> Notes
+                </div>
+                <button
+                  onClick={createDoc}
+                  disabled={creating}
+                  className="h-6 w-6 grid place-items-center rounded-sm border border-[var(--border)] hover:border-border"
+                  title="New note"
                 >
-                  Open source <ExternalLink className="h-2.5 w-2.5" />
-                </a>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="grid lg:grid-cols-[280px_minmax(0,1fr)] gap-4">
-        <aside className="border border-[var(--border)] bg-[var(--card)] rounded-sm">
-          <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--border)]">
-            <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
-              <BookOpen className="h-3 w-3" /> SOPs & Playbooks
-            </div>
-            <button
-              onClick={createDoc}
-              disabled={creating}
-              className="h-6 w-6 grid place-items-center rounded-sm border border-[var(--border)] hover:border-border"
-              title="New SOP"
-            >
-              {creating ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
+                  {creating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+                </button>
+              </div>
+              {loading ? (
+                <div className="p-4 text-xs text-muted-foreground flex items-center gap-2">
+                  <Loader2 className="h-3 w-3 animate-spin" /> Loading…
+                </div>
+              ) : docs.length === 0 ? (
+                <div className="p-4 text-xs text-muted-foreground">No notes yet.</div>
               ) : (
-                <Plus className="h-3 w-3" />
+                <ul className="divide-y divide-[var(--accent)]">
+                  {docs.map((d) => {
+                    const active = d.id === selectedId;
+                    const rev = reviewedStaleness(d);
+                    return (
+                      <li key={d.id}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedId(d.id);
+                            setMode("view");
+                          }}
+                          className={`w-full text-left px-3 py-2.5 hover:bg-muted/30 ${active ? "bg-muted/40" : ""}`}
+                        >
+                          <div className="text-[13px] font-medium text-foreground truncate">{d.title}</div>
+                          <div
+                            className={`text-[10px] mt-0.5 flex items-center gap-1 ${rev.stale ? "text-warning-fg" : "text-muted-foreground"}`}
+                          >
+                            <CalendarClock className="h-3 w-3" /> {rev.label}
+                          </div>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
               )}
-            </button>
-          </div>
-          {loading ? (
-            <div className="p-4 text-xs text-muted-foreground flex items-center gap-2">
-              <Loader2 className="h-3 w-3 animate-spin" /> Loading…
-            </div>
-          ) : docs.length === 0 ? (
-            <div className="p-4 text-xs text-muted-foreground">
-              No SOPs yet. Click <span className="text-muted-foreground">+</span> to create one.
-            </div>
-          ) : (
-            <ul className="divide-y divide-[var(--accent)]">
-              {docs.map((d) => {
-                const active = d.id === selectedId;
-                const rev = reviewedStaleness(d);
-                return (
-                  <li key={d.id}>
-                    <button
-                      onClick={() => {
-                        setSelectedId(d.id);
-                        setMode("view");
-                      }}
-                      className={`w-full text-left px-3 py-2 hover:bg-[var(--muted)] ${active ? "bg-muted border-l-2 border-border" : ""}`}
-                    >
-                      <div className="text-xs font-medium line-clamp-2">{d.title}</div>
-                      <div className="flex items-center gap-1 mt-1 text-[10px] text-muted-foreground">
-                        <CalendarClock className="h-2.5 w-2.5" />
-                        <span className={rev.stale ? "text-warning-fg" : ""}>{rev.label}</span>
-                        {rev.stale && <span className="text-warning-fg">· stale</span>}
-                      </div>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </aside>
+            </aside>
 
-        <section className="border border-[var(--border)] bg-[var(--card)] rounded-sm min-h-[400px]">
-          {!selected ? (
-            <div className="p-8 text-sm text-muted-foreground text-center">
-              {loading ? "Loading…" : "Select an SOP from the left, or create a new one."}
-            </div>
-          ) : mode === "view" ? (
-            <div>
-              <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-[var(--border)]">
+            <section className="min-w-0">
+              {!selected ? (
+                <div className="p-6 text-sm text-muted-foreground">Select a note</div>
+              ) : mode === "view" ? (
                 <div>
-                  <h2 className="text-lg font-semibold">{selected.title}</h2>
-                  <div className="text-[10px] text-muted-foreground mt-0.5">
-                    Last reviewed {reviewedStaleness(selected).label}
+                  <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-[var(--border)]">
+                    <h3 className="text-lg font-semibold text-foreground">{selected.title}</h3>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={markReviewed}
+                        className="h-8 px-3 rounded-sm border border-[var(--border)] hover:border-success/25 text-xs text-success-fg"
+                      >
+                        Mark reviewed
+                      </button>
+                      <button
+                        onClick={startEdit}
+                        className="h-8 px-3 rounded-sm bg-muted hover:bg-muted text-muted-foreground text-xs font-medium inline-flex items-center gap-1"
+                      >
+                        <Pencil className="h-3 w-3" /> Edit
+                      </button>
+                    </div>
                   </div>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={markReviewed}
-                    className="h-8 px-3 rounded-sm border border-[var(--border)] hover:border-success/25 text-xs text-success-fg"
-                  >
-                    Mark reviewed
-                  </button>
-                  <button
-                    onClick={startEdit}
-                    className="h-8 px-3 rounded-sm bg-muted hover:bg-muted text-muted-foreground text-xs font-medium inline-flex items-center gap-1"
-                  >
-                    <Pencil className="h-3 w-3" /> Edit
-                  </button>
-                </div>
-              </div>
-              <div className="p-4 sm:p-6">
-                {selected.content?.trim() ? (
-                  <MarkdownView content={selected.content} />
-                ) : (
-                  <div className="rounded-sm border border-warning/25 bg-warning-bg px-4 py-3 text-sm text-warning-fg">
-                    <strong className="font-semibold">Content missing</strong> — the original body
-                    did not survive migration. Click{" "}
-                    <span className="text-muted-foreground">Edit</span> to paste it in.
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div>
-              <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-[var(--border)]">
-                <input
-                  value={draftTitle}
-                  onChange={(e) => setDraftTitle(e.target.value)}
-                  className="text-lg font-semibold bg-transparent border-none outline-none focus:ring-0 flex-1 min-w-0"
-                />
-                <div className="flex gap-2">
-                  <button
-                    onClick={cancelEdit}
-                    className="h-8 px-3 rounded-sm border border-[var(--border)] hover:border-danger/25 text-xs inline-flex items-center gap-1"
-                  >
-                    <X className="h-3 w-3" /> Cancel
-                  </button>
-                  <button
-                    onClick={save}
-                    disabled={saving}
-                    className="h-8 px-3 rounded-sm bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium inline-flex items-center gap-1 disabled:opacity-50"
-                  >
-                    {saving ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
+                  <div className="p-4 sm:p-6">
+                    {selected.content?.trim() ? (
+                      <MarkdownView content={selected.content} />
                     ) : (
-                      <Check className="h-3 w-3" />
-                    )}{" "}
-                    Save
-                  </button>
+                      <div className="rounded-sm border border-warning/25 bg-warning-bg px-4 py-3 text-sm text-warning-fg">
+                        Empty note. Click Edit to write.
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-              <div className="p-4">
-                <MarkdownEditor value={draftContent} onChange={setDraftContent} minHeight={500} />
-              </div>
-            </div>
-          )}
-        </section>
+              ) : (
+                <div>
+                  <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-[var(--border)]">
+                    <input
+                      value={draftTitle}
+                      onChange={(e) => setDraftTitle(e.target.value)}
+                      className="text-lg font-semibold bg-transparent border-none outline-none focus:ring-0 flex-1 min-w-0"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={cancelEdit}
+                        className="h-8 px-3 rounded-sm border border-[var(--border)] text-xs inline-flex items-center gap-1"
+                      >
+                        <X className="h-3 w-3" /> Cancel
+                      </button>
+                      <button
+                        onClick={save}
+                        disabled={saving}
+                        className="h-8 px-3 rounded-sm bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium inline-flex items-center gap-1 disabled:opacity-50"
+                      >
+                        {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />} Save
+                      </button>
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <MarkdownEditor value={draftContent} onChange={setDraftContent} minHeight={500} />
+                  </div>
+                </div>
+              )}
+            </section>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -286,12 +286,23 @@ export function FounderPageContent() {
           active={view === "sops"}
           onClick={() => setView("sops")}
           icon={BookOpen}
-          label="SOPs & Playbooks"
+          label="Playbooks"
         />
       </div>
 
       {view === "sops" ? (
-        <FounderSops />
+        <FounderSops
+          onNavigate={(action) => {
+            if (action === "weekly") setView("weekly");
+            else if (action === "recording") setView("recording");
+            else if (action === "hooks") setView("hooks");
+            else if (action === "calendar") setView("calendar");
+            else if (action === "operator") {
+              window.scrollTo({ top: 0, behavior: "smooth" });
+              setView("weekly");
+            }
+          }}
+        />
       ) : view === "hooks" ? (
         <HookLibrary />
       ) : view === "recording" ? (

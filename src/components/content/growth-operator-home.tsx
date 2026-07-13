@@ -63,7 +63,7 @@ export function GrowthOperatorHome({
 
   const playbooksByPhase = useMemo(() => {
     const map = new Map<string, Playbook[]>();
-    for (const p of GROW_PLAYBOOKS) {
+    for (const p of GROW_PLAYBOOKS.filter((x) => x.surface === "live")) {
       const list = map.get(p.phase) ?? [];
       list.push(p);
       map.set(p.phase, list);
@@ -193,7 +193,7 @@ export function GrowthOperatorHome({
           <div className="rounded-xl border border-[var(--border)] bg-card p-4 space-y-3">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-muted-foreground">
-                <BookOpen className="h-3.5 w-3.5" /> Grow playbooks
+                <BookOpen className="h-3.5 w-3.5" /> Live in dashboard
               </div>
               {onOpenPlaybooks && (
                 <button
@@ -201,12 +201,15 @@ export function GrowthOperatorHome({
                   onClick={onOpenPlaybooks}
                   className="text-[11px] text-primary hover:underline inline-flex items-center gap-1"
                 >
-                  Full SOPs tab <LayoutGrid className="h-3 w-3" />
+                  All playbooks <LayoutGrid className="h-3 w-3" />
                 </button>
               )}
             </div>
+            <p className="text-[11px] text-muted-foreground -mt-1">
+              Full Grow list (live / next / Hermes) is under the Playbooks tab. Not a PDF library.
+            </p>
             <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1">
-              {(["profile", "content", "ads", "leadership"] as const).map((phase) => {
+              {(["profile", "content", "conversations", "ads", "leadership"] as const).map((phase) => {
                 const list = playbooksByPhase.get(phase) ?? [];
                 if (!list.length) return null;
                 return (
@@ -221,24 +224,7 @@ export function GrowthOperatorHome({
                           className="rounded-lg border border-[var(--border)] px-2.5 py-2 hover:bg-muted/20"
                         >
                           <div className="text-[12px] font-medium text-foreground">{p.title}</div>
-                          <div className="text-[11px] text-muted-foreground mt-0.5">
-                            {p.summary}
-                          </div>
-                          {p.externalUrl && (
-                            <a
-                              href={p.externalUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex items-center gap-1 text-[10px] text-primary mt-1 hover:underline"
-                            >
-                              Source <ExternalLink className="h-2.5 w-2.5" />
-                            </a>
-                          )}
-                          {p.localFile && (
-                            <div className="text-[10px] font-mono text-muted-foreground/70 mt-0.5">
-                              knowledge/{p.localFile}
-                            </div>
-                          )}
+                          <div className="text-[11px] text-muted-foreground mt-0.5">{p.dfy}</div>
                         </li>
                       ))}
                     </ul>
