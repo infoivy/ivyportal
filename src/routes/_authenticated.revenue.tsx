@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { getMochiPayments } from "@/lib/mochi.functions";
+import { getWhopCashWindow } from "@/lib/mochi.functions";
 import { useEffect, useMemo, useState } from "react";
 import { PageSkeleton } from "@/components/ui/skeletons";
 import { useQuery } from "@tanstack/react-query";
@@ -150,19 +150,19 @@ function RevenueInner() {
     return deals.filter((d) => d.deal_date >= pf && d.deal_date <= pt);
   }, [deals, compare, dateRange.from, days]);
 
-  // Whop is the cash-in source of truth; deals stay as the logged-attribution view.
+  // Whop is the cash-in source of truth — NET of fees; deals stay as the
+  // logged-attribution view. Auto-refreshes so the number is never stale.
+  const localIso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const whopFrom = localIso(dateRange.from);
+  const whopTo = localIso(dateRange.to);
   const whopQ = useQuery({
-    queryKey: ["revenue-whop"],
-    queryFn: () => getMochiPayments(),
-    staleTime: 5 * 60_000,
+    queryKey: ["revenue-whop", whopFrom, whopTo],
+    queryFn: () => getWhopCashWindow({ data: { from: whopFrom, to: whopTo } }),
+    staleTime: 4 * 60_000,
+    refetchInterval: 5 * 60_000,
     retry: 1,
   });
-  const whopCash = useMemo(() => {
-    if (!whopQ.data?.connected) return null;
-    const from = dateRange.from.toISOString().slice(0, 10);
-    const to = dateRange.to.toISOString().slice(0, 10);
-    return Math.round(whopQ.data.series.filter((x) => x.date >= from && x.date <= to).reduce((a, x) => a + x.volume, 0));
-  }, [whopQ.data, dateRange.from, dateRange.to]);
+  const whopCash = whopQ.data?.connected ? whopQ.data.net : null;
 
   const stats = useMemo(() => {
     const cash = rangeDeals.reduce((a, d) => a + Number(d.cash_collected_upfront), 0);
@@ -338,7 +338,7 @@ function RevenueInner() {
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard
-          label={whopCash != null ? "Cash collected · Whop" : "Cash collected"}
+          label={whopCash != null ? "Cash collected · Whop net" : "Cash collected"}
           value={<BlurMoney>{whopQ.isLoading ? "…" : money(whopCash ?? stats.cash)}</BlurMoney>}
           icon={<DollarSign className="h-3.5 w-3.5" />}
           accent

@@ -336,6 +336,216 @@ export const SURFACE_LABEL: Record<PlaybookSurface, string> = {
   hermes: "Hermes partner (chat)",
 };
 
+/** 7 hook frameworks (Grow training-session-1) + Ivy-flavored starters */
+export const HOOK_FRAMEWORKS: {
+  id: string;
+  name: string;
+  blurb: string;
+  examples: { stage: "tof" | "mof"; text: string }[];
+}[] = [
+  {
+    id: "callout",
+    name: "Call-out & identity",
+    blurb: "Speak to Muslim men / remote skill seekers by pain or mechanism.",
+    examples: [
+      { stage: "tof", text: "If you're a Muslim man still applying to random remote jobs at 2am…" },
+      { stage: "tof", text: "For brothers who want skill-based income, not guru fantasies…" },
+    ],
+  },
+  {
+    id: "pattern",
+    name: "Pattern break / contrarian",
+    blurb: "Break a belief the market holds.",
+    examples: [
+      { stage: "tof", text: "You'd think sales is for loud extroverts. Wrong." },
+      { stage: "tof", text: "Degree first, then money? That's the slowest path for most of us." },
+    ],
+  },
+  {
+    id: "failed",
+    name: "Failed expectations",
+    blurb: "They tried something else and got burned.",
+    examples: [
+      {
+        stage: "tof",
+        text: "I thought another free YouTube course would fix my income. It didn't.",
+      },
+      {
+        stage: "mof",
+        text: "I thought appointment setting was just spam DMs. Then I learned the system.",
+      },
+    ],
+  },
+  {
+    id: "transform",
+    name: "Mini transformation",
+    blurb: "Only real numbers. Soft if early-stage.",
+    examples: [
+      { stage: "tof", text: 'From "I need any remote job" to "I have a real skill path."' },
+      { stage: "mof", text: "What changed when I treated setting like reps, not vibes." },
+    ],
+  },
+  {
+    id: "mechanism",
+    name: "Unique mechanism",
+    blurb: "Profile funnel / skill path in plain language.",
+    examples: [
+      {
+        stage: "tof",
+        text: "There's a skill companies pay for that most Muslim men never hear about.",
+      },
+      {
+        stage: "mof",
+        text: "The profile funnel in one sentence: content → profile → DMs → calls.",
+      },
+    ],
+  },
+  {
+    id: "cultural",
+    name: "Cultural / scene",
+    blurb: "Relevant to deen-conscious remote builders (stay clean).",
+    examples: [
+      {
+        stage: "tof",
+        text: "Building a company from Medina hits different when the mission is clear.",
+      },
+      {
+        stage: "tof",
+        text: "Your circle doesn't get online skills. That doesn't mean you're crazy.",
+      },
+    ],
+  },
+  {
+    id: "oneliner",
+    name: "One-liner",
+    blurb: "3–7 second insight + intrigue.",
+    examples: [
+      { stage: "tof", text: "Skill beats vibes. Every time." },
+      { stage: "tof", text: "Consistency is the real flex in appointment setting." },
+    ],
+  },
+];
+
+/** Flat list of starter hooks for one-click seed into content_hooks */
+export function ivyStarterHooks(): {
+  text: string;
+  funnel_stage: "tof" | "mof";
+  category: string;
+}[] {
+  const out: { text: string; funnel_stage: "tof" | "mof"; category: string }[] = [];
+  for (const f of HOOK_FRAMEWORKS) {
+    for (const ex of f.examples) {
+      out.push({ text: ex.text, funnel_stage: ex.stage, category: f.id });
+    }
+  }
+  return out;
+}
+
+/** Extra doctrine titles so Playbooks shows the full Grow corpus feel */
+export const EXTRA_DOCTRINE: Playbook[] = [
+  {
+    id: "ads-p2",
+    title: "Follower ads part 2 — winners",
+    module: "Ads",
+    summary: "What to do when a creative wins.",
+    localFile: "sops/1B-pvOfhEGCqETuT5Jw0Lk96Ys1-fzCxpXXYdutnutIc.txt",
+    phase: "ads",
+    surface: "hermes",
+    appAction: "none",
+    dfy: "Ask Hermes when you're ads-ready. Not the priority before organic is tight.",
+  },
+  {
+    id: "ads-p3",
+    title: "Follower ads part 3 — advanced",
+    module: "Ads",
+    summary: "Advanced follower ads strategy.",
+    localFile: "sops/1_418lCYEz-dRcxbAe1gjBZi7MDc_CKwGVagvlVbsqdc.txt",
+    phase: "ads",
+    surface: "hermes",
+    appAction: "none",
+    dfy: "Hermes walks you through when gate opens.",
+  },
+  {
+    id: "sales-script",
+    title: "Sales / setting frameworks",
+    module: "Sales",
+    summary: "Sales session + DFY agency script patterns from GA packet.",
+    localFile: "sops/1L-Naz6sPK1BQ2ImigKVbwafXG7sa5CbS7hs2YWinx8E.txt",
+    phase: "conversations",
+    surface: "hermes",
+    appAction: "none",
+    dfy: "Partner with Hermes + Abu Bilal on sales process; EODs track reality.",
+  },
+  {
+    id: "testimonials",
+    title: "Video testimonial questions",
+    module: "Proof",
+    summary: "Where were you / biggest shift / where now.",
+    localFile: "sops/1gg-iqimQvwkwshRKT9E-9de4rK5khYt6p21ho6DZuhs.txt",
+    phase: "content",
+    surface: "hermes",
+    appAction: "none",
+    dfy: "Hermes drafts ask scripts; you record real students only with permission.",
+  },
+  {
+    id: "client-success",
+    title: "Client success & onboarding",
+    module: "Fulfillment",
+    summary: "Onboarding framework for clients after close.",
+    localFile: "sops/1h8Ib0VjWKttqhSCHbe0RrpOAoXC1ToWTepxKZHj4i00.txt",
+    phase: "leadership",
+    surface: "hermes",
+    appAction: "none",
+    dfy: "Faizan lane + Hermes SOPs. Portal students surface is team ops.",
+  },
+  {
+    id: "nik-strategy",
+    title: "Business strategy with Nik",
+    module: "Strategy",
+    summary: "Content, mindset, and business strategy training.",
+    localFile: "fathom/business-strategy-nik.txt",
+    phase: "leadership",
+    surface: "hermes",
+    appAction: "none",
+    dfy: "Strategy sessions with Hermes using this doctrine.",
+  },
+  {
+    id: "differentiation",
+    title: "Differentiation & unique style",
+    module: "Positioning",
+    summary: "How to differentiate and find your unique style.",
+    localFile: "fathom/differentiation-training.txt",
+    phase: "content",
+    surface: "hermes",
+    appAction: "none",
+    dfy: "Ask Hermes strategist mode before a brand refresh.",
+  },
+  {
+    id: "drop-in-qa",
+    title: "Drop-in Q&A",
+    module: "Training",
+    summary: "Group Q&A themes from GA calls.",
+    localFile: "fathom/drop-in-qa.txt",
+    phase: "content",
+    surface: "hermes",
+    appAction: "none",
+    dfy: "Hermes mines Q&A for content angles when you ask.",
+  },
+];
+
+export function allPlaybooks(): Playbook[] {
+  const seen = new Set<string>();
+  const out: Playbook[] = [];
+  for (const p of [...GROW_PLAYBOOKS, ...EXTRA_DOCTRINE]) {
+    if (seen.has(p.id)) continue;
+    seen.add(p.id);
+    out.push(p);
+  }
+  return out;
+}
+
+export const CHECKLIST_STORAGE_KEY = "ivy-funnel-checklist-v1";
+
 export type ExampleLink = {
   label: string;
   url: string;

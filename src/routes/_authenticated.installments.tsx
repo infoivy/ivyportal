@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { findWhopMatch } from "@/lib/mochi.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
@@ -115,15 +117,39 @@ function InstallmentsPage() {
     .filter(p => p.status === "paid" && p.paid_at && new Date(p.paid_at).getMonth() === new Date().getMonth() && new Date(p.paid_at).getFullYear() === new Date().getFullYear())
     .reduce((s, p) => s + Number(p.amount || 0), 0);
 
+  const findWhopMatchFn = useServerFn(findWhopMatch);
+
   const setStatus = async (id: string, status: PayStatus) => {
     const patch: any = { status };
-    if (status === "paid") patch.paid_at = new Date().toISOString().slice(0,10);
+    if (status === "paid") {
+      // Cash only counts once it's actually in Whop (founder rule 2026-07-14).
+      // Check for a matching charge before letting the row flip to paid.
+      const row = payments.find(p => p.id === id);
+      if (row) {
+        try {
+          const m = await findWhopMatchFn({ data: { amount: Number(row.amount) } });
+          if (m.connected && !m.matched) {
+            const go = confirm(
+              `No Whop payment of ~$${Number(row.amount).toLocaleString()} found in the last few days.\n\n` +
+              `Money only counts once it's in Whop. Mark paid anyway? (Only do this for verified off-Whop money, e.g. a Wise transfer.)`,
+            );
+            if (!go) return;
+          }
+        } catch { /* verification unavailable — proceed, reconciliation will flag it */ }
+      }
+      patch.paid_at = new Date().toISOString();
+    } else {
+      // Leaving "paid" must clear paid_at, or the money keeps counting as
+      // collected and keeps paying commission.
+      patch.paid_at = null;
+    }
     const { error } = await (supabase.from("installment_payments" as any).update(patch).eq("id", id) as any);
     if (error) return toast.error(error.message);
     setPayments(prev => prev.map(p => p.id === id ? { ...p, ...patch } : p));
   };
 
   const removePayment = async (id: string) => {
+    if (!confirm("Delete this payment row? This can't be undone.")) return;
     const { error } = await (supabase.from("installment_payments" as any).delete().eq("id", id) as any);
     if (error) return toast.error(error.message);
     setPayments(prev => prev.filter(p => p.id !== id));

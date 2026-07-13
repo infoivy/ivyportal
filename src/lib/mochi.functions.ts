@@ -31,6 +31,16 @@ async function requireFounderOrAdmin(context: Ctx) {
   if (!admin && !founder) throw new Error("Forbidden: admin or founder only");
 }
 
+/** Roles allowed to see money totals (matches revenue/installments access). */
+async function requireMoneyAccess(context: Ctx) {
+  const checks = await Promise.all(
+    ["admin", "founder", "cofounder", "closer"].map((r) =>
+      context.supabase.rpc("has_role", { _user_id: context.userId, _role: r }),
+    ),
+  );
+  if (!checks.some((c) => c.data)) throw new Error("Forbidden: money access only");
+}
+
 /* Tokens are read/written with the service-role client: callers (setters
    included) never see the credentials, only derived numbers — and the RLS
    admin-only policy on service_credentials stays intact for direct access. */
@@ -535,10 +545,12 @@ export const getFinanceRevenue = createServerFn({ method: "GET" })
         .select("deal_date, cash_collected_upfront, student_name")
         .gte("deal_date", data.from).lte("deal_date", data.to)
         .gt("cash_collected_upfront", 0),
+      // Paid installments belong to the day the money ARRIVED (paid_at), not
+      // the day it was due — a payment due in June but paid in July is July cash.
       supabaseAdmin.from("installment_payments")
-        .select("due_date, amount, status, installments(students(full_name))")
+        .select("due_date, paid_at, amount, status, installments(students(full_name))")
         .eq("status", "paid")
-        .gte("due_date", data.from).lte("due_date", data.to),
+        .gte("paid_at", data.from + "T00:00:00").lte("paid_at", data.to + "T23:59:59"),
     ]);
     const logged = [
       ...(dealsRes.data ?? []).map((d: any) => ({
@@ -546,7 +558,7 @@ export const getFinanceRevenue = createServerFn({ method: "GET" })
         student: (d.student_name as string) ?? "Unknown", kind: "deal" as const, matched: false,
       })),
       ...(paysRes.data ?? []).map((p: any) => ({
-        date: p.due_date as string, amount: Number(p.amount),
+        date: ((p.paid_at as string | null)?.slice(0, 10)) ?? (p.due_date as string), amount: Number(p.amount),
         student: p.installments?.students?.full_name ?? "Unknown", kind: "installment" as const, matched: false,
       })),
     ];
@@ -587,6 +599,103 @@ export const getFinanceRevenue = createServerFn({ method: "GET" })
       unmatchedWhop,
       unmatchedLogged: logged.filter((l) => !l.matched).map(({ matched: _m, ...rest }) => rest),
     };
+  });
+
+export type WhopCashWindow = {
+  connected: boolean;
+  from: string;
+  to: string;
+  gross: number;
+  net: number;
+  count: number;
+  prevGross: number;
+  prevNet: number;
+  prevCount: number;
+};
+
+/**
+ * Whop cash for an arbitrary window (and an optional comparison window),
+ * summed from SUCCEEDED charges — gross AND net of fees. This is the number
+ * the founder wants on every cash headline: money that actually landed in
+ * Whop, after fees. Source data covers the last 90 days.
+ */
+export const getWhopCashWindow = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { from: string; to: string; prevFrom?: string; prevTo?: string }) => {
+    const ok = (s?: string) => s == null || /^\d{4}-\d{2}-\d{2}$/.test(s);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(input?.from ?? "") || !/^\d{4}-\d{2}-\d{2}$/.test(input?.to ?? "") || !ok(input.prevFrom) || !ok(input.prevTo)) {
+      throw new Error("dates must be YYYY-MM-DD");
+    }
+    return input;
+  })
+  .handler(async ({ context, data }): Promise<WhopCashWindow> => {
+    const ctx = context as Ctx;
+    await requireMoneyAccess(ctx);
+    const empty: WhopCashWindow = {
+      connected: false, from: data.from, to: data.to,
+      gross: 0, net: 0, count: 0, prevGross: 0, prevNet: 0, prevCount: 0,
+    };
+    const creds = await readCreds(ctx);
+    if (!creds.access) return empty;
+    let txns: WhopTxn[] = [];
+    try {
+      const res = await callTool<{ results?: WhopTxn[] }>(ctx, "get_payment_transactions", {
+        time_period: "last_90_days", kind: "CHARGE", status: "SUCCEEDED", limit: 200,
+      });
+      txns = res.results ?? [];
+    } catch { return empty; }
+    const sum = (from: string, to: string) => {
+      let gross = 0, net = 0, count = 0;
+      for (const t of txns) {
+        const d = t.occurred_at.slice(0, 10);
+        if (d < from || d > to) continue;
+        gross += Number(t.amount);
+        net += Number(t.net || t.amount);
+        count += 1;
+      }
+      return { gross: Math.round(gross), net: Math.round(net), count };
+    };
+    const cur = sum(data.from, data.to);
+    const prev = data.prevFrom && data.prevTo ? sum(data.prevFrom, data.prevTo) : { gross: 0, net: 0, count: 0 };
+    return {
+      connected: true, from: data.from, to: data.to,
+      gross: cur.gross, net: cur.net, count: cur.count,
+      prevGross: prev.gross, prevNet: prev.net, prevCount: prev.count,
+    };
+  });
+
+/**
+ * Is there a Whop charge matching this amount near this date? Used as a guard
+ * when someone marks an installment paid: cash only counts once it's actually
+ * in Whop (founder rule 2026-07-14). ±$1 and ±3 days, same as reconciliation.
+ */
+export const findWhopMatch = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { amount: number; date?: string }) => {
+    if (!(Number(input?.amount) > 0)) throw new Error("amount required");
+    if (input.date != null && !/^\d{4}-\d{2}-\d{2}$/.test(input.date)) throw new Error("date must be YYYY-MM-DD");
+    return { amount: Number(input.amount), date: input.date };
+  })
+  .handler(async ({ context, data }) => {
+    const ctx = context as Ctx;
+    await requireMoneyAccess(ctx);
+    const creds = await readCreds(ctx);
+    if (!creds.access) return { connected: false, matched: false as const };
+    let txns: WhopTxn[] = [];
+    try {
+      const res = await callTool<{ results?: WhopTxn[] }>(ctx, "get_payment_transactions", {
+        time_period: "last_90_days", kind: "CHARGE", status: "SUCCEEDED", limit: 200,
+      });
+      txns = res.results ?? [];
+    } catch { return { connected: false, matched: false as const }; }
+    const anchor = data.date ?? new Date().toISOString().slice(0, 10);
+    const dayDiff = (a: string, b: string) => Math.abs((new Date(a).getTime() - new Date(b).getTime()) / 86400000);
+    const hit = txns.find((t) =>
+      Math.abs(Number(t.amount) - data.amount) <= 1 && dayDiff(t.occurred_at.slice(0, 10), anchor) <= 3,
+    );
+    return hit
+      ? { connected: true, matched: true as const, txn: { date: hit.occurred_at.slice(0, 10), amount: Number(hit.amount), customer: hit.customer_name || hit.customer_email || "Unknown" } }
+      : { connected: true, matched: false as const };
   });
 
 export type MochiHomePeriod = "today" | "this_week" | "last_30_days";

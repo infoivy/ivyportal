@@ -75,7 +75,9 @@ function matchSections(query: string): Set<TabId> | null {
 
 // ---------- Session Counter (aligned with EOD report format) ----------
 type Counter = { contacted: number; dials: number; sets: number; convos: number; date: string };
-const todayKey = () => new Date().toISOString().slice(0, 10);
+// The rep's LOCAL day — must match the EOD form's report_date basis exactly,
+// or a sync after midnight UTC lands on (and overwrites) the wrong day.
+const todayKey = () => new Intl.DateTimeFormat("en-CA").format(new Date());
 const emptyCounter = (): Counter => ({ contacted: 0, dials: 0, sets: 0, convos: 0, date: todayKey() });
 const saveCounter = (c: Counter) => { try { localStorage.setItem("isa:counter", JSON.stringify(c)); } catch { /* ignore */ } };
 
@@ -506,22 +508,27 @@ function NotesModal({ open, onClose, counter, setCounter }: { open: boolean; onC
       return (m?.[1] ?? "").trim() || null;
     };
 
+    // Merge with any EOD already filed for this day — the counter only knows
+    // outreach numbers, and a blind upsert would zero shows/no-shows and wipe
+    // the narrative the rep already wrote.
+    const { data: existing } = await supabase.from("eods")
+      .select("*").eq("user_id", userId).eq("report_date", counter.date).maybeSingle();
+    const ex = (existing ?? {}) as Record<string, unknown>;
+
     const payload = {
+      ...ex,
       user_id: userId,
       report_date: counter.date,
-      dms_sent: counter.contacted,
-      convos_started: counter.convos,
-      calls_booked: counter.sets,
-      calls_scheduled: counter.sets,
-      shows: 0,
-      no_shows: 0,
-      wins: grab("Wins"),
-      blockers: grab("Losses / lessons") ?? grab("Losses") ?? grab("Objections seen today"),
-      tomorrow_focus: grab("Tomorrow's focus") ?? grab("Tomorrow"),
-      summary: null,
+      dms_sent: Math.max(counter.contacted, Number(ex.dms_sent) || 0),
+      convos_started: Math.max(counter.convos, Number(ex.convos_started) || 0),
+      calls_booked: Math.max(counter.sets, Number(ex.calls_booked) || 0),
+      calls_scheduled: Math.max(counter.sets, Number(ex.calls_scheduled) || 0),
+      wins: grab("Wins") ?? (ex.wins as string | null) ?? null,
+      blockers: grab("Losses / lessons") ?? grab("Losses") ?? grab("Objections seen today") ?? (ex.blockers as string | null) ?? null,
+      tomorrow_focus: grab("Tomorrow's focus") ?? grab("Tomorrow") ?? (ex.tomorrow_focus as string | null) ?? null,
     };
 
-    const { error } = await supabase.from("eods").upsert(payload, { onConflict: "user_id,report_date" });
+    const { error } = await supabase.from("eods").upsert(payload as never, { onConflict: "user_id,report_date" });
     setSyncing(false);
     if (error) toast.error(error.message);
     else toast.success("Synced to EOD Reports");

@@ -15,7 +15,7 @@ import {
   PhoneCall, AlertTriangle, Undo2, CheckCircle2, Circle, Clock, X,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { todayBiz } from "@/lib/dates";
+import { todayLocal } from "@/lib/dates";
 import { DateField } from "@/components/ui/date-field";
 import { SelectField } from "@/components/ui/select-field";
 
@@ -54,7 +54,9 @@ const KIND_META: Record<TallyKind, { label: string; icon: typeof Video; color: s
   escalation: { label: "Escalation",        icon: AlertTriangle,  color: "bg-danger-bg text-danger-fg hover:bg-danger/20 border-danger/25",         ring: "focus:ring-ring" },
 };
 
-const isToday = (iso: string) => iso.slice(0, 10) === todayBiz();
+// EODs belong to the CSM's own local day (founder rule) — the tally counts
+// that feed the quick-EOD must use the same basis as its report_date.
+const isToday = (iso: string) => iso.slice(0, 10) === todayLocal();
 
 const CSM_TABS = [
   { label: "Overview", value: "overview" },
@@ -274,7 +276,7 @@ function CsmPage() {
 
   const submitCsmEod = async () => {
     if (!user) return;
-    const today = todayBiz();
+    const today = todayLocal();
     const payload = {
       user_id: user.id,
       report_date: today,

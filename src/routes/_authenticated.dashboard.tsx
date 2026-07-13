@@ -28,7 +28,7 @@ import { VolumeAreaChart, VolumeLegend } from "@/components/ui/volume-area-chart
 import { OnboardingPanel } from "@/components/onboarding-panel";
 import { MochiIgSection } from "@/components/mochi-ig-section";
 import { TeamGoalCard } from "@/components/team-goal-card";
-import { getMochiPayments } from "@/lib/mochi.functions";
+import { getWhopCashWindow } from "@/lib/mochi.functions";
 import { SetterActivityCard } from "@/components/setter-activity-card";
 import { DeltaChip } from "@/components/ui/delta-chip";
 
@@ -218,25 +218,25 @@ function Dashboard() {
   });
   useEffect(() => { if (igQ.data != null) setIgLoggedThisMonth(igQ.data); }, [igQ.data]);
 
-  // Whop is the revenue source of truth — the cash hero reads it directly.
+  // Whop is the revenue source of truth — the cash hero reads it directly,
+  // NET of fees, and refreshes itself (founder rule 2026-07-14).
   const whopQ = useQuery({
-    queryKey: ["dashboard-whop"],
-    queryFn: () => getMochiPayments(),
-    staleTime: 5 * 60_000,
+    queryKey: ["dashboard-whop-window"],
+    queryFn: () => {
+      const now = new Date();
+      const pad = (n: number) => String(n).padStart(2, "0");
+      const iso = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const prevStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const prevSameDay = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+      return getWhopCashWindow({ data: { from: iso(monthStart), to: iso(now), prevFrom: iso(prevStart), prevTo: iso(prevSameDay) } });
+    },
+    staleTime: 4 * 60_000,
+    refetchInterval: 5 * 60_000,
     enabled: roles.includes("admin") || roles.includes("founder"),
     retry: 1,
   });
-  const whopHero = useMemo(() => {
-    const series = whopQ.data?.series ?? [];
-    if (!whopQ.data?.connected || series.length === 0) return null;
-    const now = new Date();
-    const monthStart = now.toISOString().slice(0, 8) + "01";
-    const dayOfMonth = now.getDate();
-    const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().slice(0, 10);
-    const prevSameDay = new Date(now.getFullYear(), now.getMonth() - 1, dayOfMonth).toISOString().slice(0, 10);
-    const sum = (from: string, to: string) => series.filter((x) => x.date >= from && x.date <= to).reduce((a, x) => a + x.volume, 0);
-    return { mtd: Math.round(sum(monthStart, now.toISOString().slice(0, 10))), prevMtd: Math.round(sum(prevMonthStart, prevSameDay)) };
-  }, [whopQ.data]);
+  const whopHero = whopQ.data?.connected ? { mtd: whopQ.data.net, prevMtd: whopQ.data.prevNet, gross: whopQ.data.gross, count: whopQ.data.count } : null;
 
   // Non-admin team members can flip between the team's collective numbers
   // (default) and just their own — revenue widgets stay role-gated regardless.
@@ -378,21 +378,38 @@ function Dashboard() {
         {(roles.includes("admin") || roles.includes("founder")) && (
           <div className="card-surface px-6 py-5 flex items-end justify-between">
             <div>
-              <div className="text-[12px] text-muted-foreground mb-3">Cash collected this month</div>
-              <div className="text-[36px] font-medium tabular-nums text-foreground tracking-[-0.025em] leading-none">
-                <BlurMoney>{cashMtd > 0 ? money(cashMtd) : "—"}</BlurMoney>
+              <div className="text-[12px] text-muted-foreground mb-3">
+                Cash collected this month{whopHero ? " · Whop net" : ""}
               </div>
-              {cashPrevMtd != null && cashPrevMtd > 0 && cashMtd > 0 && (() => {
-                const pct = ((cashMtd - cashPrevMtd) / cashPrevMtd) * 100;
-                const up = pct >= 0;
+              {(() => {
+                // Whop net is the truth; logged deals only as a fallback when
+                // Whop isn't connected. Never mix sources in one comparison.
+                const heroVal = whopHero ? whopHero.mtd : cashMtd;
+                const prevVal = whopHero ? whopHero.prevMtd : (cashPrevMtd ?? 0);
                 const prevMonthName = new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1).toLocaleString("en", { month: "long" });
                 return (
-                  <div className="mt-3 text-[12px] text-muted-foreground tabular-nums">
-                    <span className={up ? "text-success-fg" : "text-danger-fg"}>
-                      {up ? "↑" : "↓"} {Math.abs(pct).toFixed(0)}%
-                    </span>
-                    {" "}vs {prevMonthName} same day · <BlurMoney>{money(whopHero ? whopHero.prevMtd : (cashPrevMtd ?? 0))}</BlurMoney>
-                  </div>
+                  <>
+                    <div className="text-[36px] font-medium tabular-nums text-foreground tracking-[-0.025em] leading-none">
+                      <BlurMoney>{heroVal > 0 ? money(heroVal) : "—"}</BlurMoney>
+                    </div>
+                    {prevVal > 0 && heroVal > 0 && (() => {
+                      const pct = ((heroVal - prevVal) / prevVal) * 100;
+                      const up = pct >= 0;
+                      return (
+                        <div className="mt-3 text-[12px] text-muted-foreground tabular-nums">
+                          <span className={up ? "text-success-fg" : "text-danger-fg"}>
+                            {up ? "↑" : "↓"} {Math.abs(pct).toFixed(0)}%
+                          </span>
+                          {" "}vs {prevMonthName} same day · <BlurMoney>{money(prevVal)}</BlurMoney>
+                        </div>
+                      );
+                    })()}
+                    {whopHero && (
+                      <div className="mt-1.5 text-[11px] text-muted-foreground tabular-nums">
+                        {whopHero.count} payments · <BlurMoney>{money(whopHero.gross)}</BlurMoney> gross
+                      </div>
+                    )}
+                  </>
                 );
               })()}
             </div>

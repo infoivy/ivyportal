@@ -24,7 +24,7 @@ export async function fetchSetNudges(userId: string): Promise<SetNudge[]> {
     .order("event_start")
     .limit(30);
   const now = Date.now();
-  const todayKey = "warm:" + new Date().toISOString().slice(0, 10);
+  const todayKey = "warm:" + new Intl.DateTimeFormat("en-CA").format(new Date());
   const out: SetNudge[] = [];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   for (const r of (data ?? []) as any[]) {

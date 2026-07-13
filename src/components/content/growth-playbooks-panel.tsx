@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { ExternalLink, Rocket, MessageCircle, Construction, Play } from "lucide-react";
 import {
-  GROW_PLAYBOOKS,
+  allPlaybooks,
   SURFACE_LABEL,
   type AppAction,
   type Playbook,
@@ -25,7 +25,7 @@ export function GrowthPlaybooksPanel({
   const grouped = useMemo(() => {
     const map = new Map<PlaybookSurface, Playbook[]>();
     for (const s of SURFACE_ORDER) map.set(s, []);
-    for (const p of GROW_PLAYBOOKS) {
+    for (const p of allPlaybooks()) {
       map.get(p.surface)?.push(p);
     }
     return map;

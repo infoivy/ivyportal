@@ -605,71 +605,115 @@ function KanbanView({
   onOpen: (i: ContentItem) => void;
   onUpdate: () => void;
 }) {
+  const cols = STATUSES.filter((s) => s.value !== "filmed");
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overStatus, setOverStatus] = useState<Status | null>(null);
+
   const setStatus = async (id: string, status: Status) => {
-    const patch: Partial<ContentItem> = { status };
-    if (status === "posted") (patch as { posted_at?: string }).posted_at = new Date().toISOString();
+    const patch: {
+      status: Status;
+      posted_at?: string;
+      recorded_at?: string;
+    } = { status };
+    if (status === "posted") patch.posted_at = new Date().toISOString();
+    if (status === "recorded") patch.recorded_at = new Date().toISOString();
     const { error } = await supabase.from("content_items").update(patch).eq("id", id);
     if (error) toast.error(error.message);
     else onUpdate();
   };
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-2">
-      {STATUSES.filter((s) => s.value !== "filmed").map((s) => {
+    <div className="flex gap-3 overflow-x-auto pb-2 min-h-[480px]">
+      {cols.map((s) => {
         const col = items.filter(
           (i) => i.status === s.value || (s.value === "recorded" && i.status === "filmed"),
         );
+        const isOver = overStatus === s.value;
         return (
           <div
             key={s.value}
-            className="border border-[var(--border)] bg-[var(--card)] rounded-sm flex flex-col min-h-[400px]"
+            className={`flex flex-col w-[220px] shrink-0 rounded-xl border bg-card ${
+              isOver ? "border-primary ring-1 ring-primary/40" : "border-[var(--border)]"
+            }`}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setOverStatus(s.value);
+            }}
+            onDragLeave={() => setOverStatus((cur) => (cur === s.value ? null : cur))}
+            onDrop={async (e) => {
+              e.preventDefault();
+              const id = e.dataTransfer.getData("text/content-id") || dragId;
+              setOverStatus(null);
+              setDragId(null);
+              if (id) await setStatus(id, s.value);
+            }}
           >
             <div
-              className={`p-2 border-b border-[var(--border)] flex items-center justify-between ${s.color}`}
+              className={`px-3 py-2.5 border-b border-[var(--border)] flex items-center justify-between ${s.color}`}
             >
-              <span className="text-[10px] font-semibold uppercase tracking-wider">{s.label}</span>
-              <span className="text-[10px]">{col.length}</span>
+              <span className="text-[11px] font-semibold uppercase tracking-wider">{s.label}</span>
+              <span className="text-[11px] tabular-nums opacity-80">{col.length}</span>
             </div>
-            <div className="p-1.5 flex-1 space-y-1.5 overflow-auto">
+            <div className="p-2.5 flex-1 space-y-2 overflow-y-auto max-h-[calc(100vh-280px)]">
               {col.map((i) => (
                 <div
                   key={i.id}
-                  className="border border-[var(--border)] bg-[var(--background)] rounded-sm p-2 hover:border-border group"
+                  draggable
+                  onDragStart={(e) => {
+                    setDragId(i.id);
+                    e.dataTransfer.setData("text/content-id", i.id);
+                    e.dataTransfer.effectAllowed = "move";
+                  }}
+                  onDragEnd={() => {
+                    setDragId(null);
+                    setOverStatus(null);
+                  }}
+                  className={`rounded-lg border border-[var(--border)] bg-[var(--background)] p-3 cursor-grab active:cursor-grabbing hover:border-border/80 ${
+                    dragId === i.id ? "opacity-50" : ""
+                  }`}
                 >
-                  <button onClick={() => onOpen(i)} className="w-full text-left space-y-1.5">
-                    <div className="flex items-center justify-between gap-1">
+                  <button
+                    type="button"
+                    onClick={() => onOpen(i)}
+                    className="w-full text-left space-y-2"
+                  >
+                    <div className="flex items-center justify-between gap-2">
                       <span
-                        className={`text-[9px] px-1.5 py-0.5 rounded-sm border ${PLATFORM_META[i.platform].color}`}
+                        className={`text-[10px] px-1.5 py-0.5 rounded-md border ${PLATFORM_META[i.platform].color}`}
                       >
                         {PLATFORM_META[i.platform].label}
                       </span>
                       {i.scheduled_date && (
-                        <span className="text-[9px] text-muted-foreground">
+                        <span className="text-[10px] text-muted-foreground">
                           {format(parseISO(i.scheduled_date), "MMM d")}
                         </span>
                       )}
                     </div>
-                    <div className="text-xs font-medium line-clamp-3">{i.hook}</div>
+                    <div className="text-[13px] font-medium leading-snug line-clamp-4">
+                      {i.hook}
+                    </div>
                   </button>
-                  <div className="mt-1.5 flex gap-0.5 opacity-0 group-hover:opacity-100 transition">
-                    {STATUSES.filter((t) => t.value !== "filmed").map(
-                      (target) =>
-                        target.value !== i.status && (
-                          <button
-                            key={target.value}
-                            onClick={() => setStatus(i.id, target.value)}
-                            className="text-[9px] px-1 py-0.5 rounded-sm border border-[var(--border)] hover:border-border text-muted-foreground hover:text-foreground"
-                            title={`Move to ${target.label}`}
-                          >
-                            {target.label[0]}
-                          </button>
-                        ),
-                    )}
-                  </div>
+                  <label className="mt-2 block">
+                    <span className="sr-only">Status</span>
+                    <select
+                      value={i.status === "filmed" ? "recorded" : i.status}
+                      onChange={(e) => setStatus(i.id, e.target.value as Status)}
+                      className="w-full h-8 mt-1 rounded-md border border-[var(--border)] bg-card text-[11px] px-2 text-foreground"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {cols.map((t) => (
+                        <option key={t.value} value={t.value}>
+                          {t.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                 </div>
               ))}
               {col.length === 0 && (
-                <div className="text-[10px] text-muted-foreground text-center py-4">Empty</div>
+                <div className="text-[11px] text-muted-foreground text-center py-8 px-2 border border-dashed border-[var(--border)] rounded-lg">
+                  Drop here
+                </div>
               )}
             </div>
           </div>

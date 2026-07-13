@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { format, startOfWeek, parseISO, addDays } from "date-fns";
 import {
@@ -11,9 +11,11 @@ import {
   BookOpen,
   Instagram,
   LayoutGrid,
+  ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
+  CHECKLIST_STORAGE_KEY,
   CONTENT_PLAN_URL,
   DOCTRINE_NOTE,
   FUNNEL_STAGE_CHECKS,
@@ -41,8 +43,43 @@ export function GrowthOperatorHome({
   const seedFn = useServerFn(seedIvyDoctrineWeek);
   const [seeding, setSeeding] = useState(false);
   const [force, setForce] = useState(false);
+  const [checks, setChecks] = useState<Record<string, boolean>>({});
+  const [showDoneChecklist, setShowDoneChecklist] = useState(false);
   const weekStart = useMemo(() => mondayYmd(), []);
   const weekEnd = useMemo(() => format(addDays(parseISO(weekStart), 6), "MMM d"), [weekStart]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(CHECKLIST_STORAGE_KEY);
+      if (raw) setChecks(JSON.parse(raw) as Record<string, boolean>);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const persistChecks = (next: Record<string, boolean>) => {
+    setChecks(next);
+    try {
+      localStorage.setItem(CHECKLIST_STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const toggleCheck = (id: string) => {
+    const next = { ...checks, [id]: !checks[id] };
+    persistChecks(next);
+  };
+
+  const doneCount = FUNNEL_STAGE_CHECKS.filter((c) => checks[c.id]).length;
+  const allDone = doneCount === FUNNEL_STAGE_CHECKS.length;
+  const openChecks = FUNNEL_STAGE_CHECKS.filter((c) => !checks[c.id]);
+  const visibleChecks =
+    allDone && !showDoneChecklist
+      ? []
+      : showDoneChecklist || !allDone
+        ? FUNNEL_STAGE_CHECKS
+        : openChecks;
 
   const emptySlots = Math.max(0, totalSlots - (filledSlotCount ?? 0));
 
@@ -139,30 +176,80 @@ export function GrowthOperatorHome({
       <div className="grid lg:grid-cols-2 gap-3">
         {/* Stage checklist */}
         <div className="rounded-xl border border-[var(--border)] bg-card p-4 space-y-3">
-          <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-muted-foreground">
-            <CheckCircle2 className="h-3.5 w-3.5" /> Profile funnel checklist
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-muted-foreground">
+              <CheckCircle2 className="h-3.5 w-3.5" /> Profile funnel checklist
+            </div>
+            <span className="text-[11px] tabular-nums text-muted-foreground">
+              {doneCount}/{FUNNEL_STAGE_CHECKS.length}
+            </span>
           </div>
-          <ul className="space-y-2">
-            {FUNNEL_STAGE_CHECKS.map((c) => (
-              <li key={c.id} className="flex items-start gap-2 text-[13px]">
-                <Circle className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
-                <div className="min-w-0">
-                  <div className="text-foreground font-medium">{c.label}</div>
-                  <div className="text-[11px] text-muted-foreground">{c.detail}</div>
-                  {c.href && (
-                    <a
-                      href={c.href}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1 text-[11px] text-primary mt-0.5 hover:underline"
-                    >
-                      Open <ExternalLink className="h-3 w-3" />
-                    </a>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
+          {allDone && !showDoneChecklist ? (
+            <div className="rounded-lg border border-success/25 bg-success-bg/30 px-3 py-3 text-[12px] text-success-fg space-y-2">
+              <p className="font-medium">Profile funnel checklist complete.</p>
+              <p className="text-success-fg/80">
+                Hidden so it doesn’t clutter the operator. Reopen anytime if something regresses.
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowDoneChecklist(true)}
+                className="text-[11px] underline underline-offset-2"
+              >
+                Show checklist again
+              </button>
+            </div>
+          ) : (
+            <>
+              {allDone && (
+                <button
+                  type="button"
+                  onClick={() => setShowDoneChecklist(false)}
+                  className="text-[11px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+                >
+                  <ChevronDown className="h-3 w-3" /> Hide completed checklist
+                </button>
+              )}
+              <ul className="space-y-2">
+                {visibleChecks.map((c) => {
+                  const done = !!checks[c.id];
+                  return (
+                    <li key={c.id} className="flex items-start gap-2 text-[13px]">
+                      <button
+                        type="button"
+                        onClick={() => toggleCheck(c.id)}
+                        className="mt-0.5 shrink-0"
+                        aria-label={done ? "Mark incomplete" : "Mark complete"}
+                      >
+                        {done ? (
+                          <CheckCircle2 className="h-4 w-4 text-success-fg" />
+                        ) : (
+                          <Circle className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </button>
+                      <div className={`min-w-0 ${done ? "opacity-50" : ""}`}>
+                        <div
+                          className={`text-foreground font-medium ${done ? "line-through" : ""}`}
+                        >
+                          {c.label}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground">{c.detail}</div>
+                        {c.href && (
+                          <a
+                            href={c.href}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 text-[11px] text-primary mt-0.5 hover:underline"
+                          >
+                            Open <ExternalLink className="h-3 w-3" />
+                          </a>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
+          )}
         </div>
 
         {/* Examples + quick playbooks */}

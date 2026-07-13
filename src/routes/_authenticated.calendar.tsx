@@ -972,7 +972,7 @@ function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, o
         const confirmed = !!s.confirmed_at;
         const inDanger = !confirmed && msLeft > 0 && msLeft <= 12 * 3_600_000;
         const canTrack = mine || isAdmin || roles.includes("closer");
-        const todayWarmKey = "warm:" + new Date().toISOString().slice(0, 10);
+        const todayWarmKey = "warm:" + new Intl.DateTimeFormat("en-CA").format(new Date());
         const warmToday = !!(s.reminder_log as Record<string, string> | undefined)?.[todayWarmKey];
         const farOut = msLeft > 48 * 3_600_000;
         const log = s.reminder_log as Record<string, string> | null | undefined;

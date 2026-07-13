@@ -236,6 +236,7 @@ function EODsPage() {
   };
 
   const deleteEod = async (id: string) => {
+    if (!confirm("Delete this EOD? This can't be undone.")) return;
     const { error } = await supabase.from("eods").delete().eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("EOD deleted");

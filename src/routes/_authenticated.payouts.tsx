@@ -118,6 +118,7 @@ function PayoutsInner() {
       supabase
         .from("installment_payments")
         .select("id, amount, paid_at, installment_id")
+        .eq("status", "paid")
         .gte("paid_at", period.monthStart + "T00:00:00")
         .lte("paid_at", period.monthEnd + "T23:59:59")
         .not("paid_at", "is", null),

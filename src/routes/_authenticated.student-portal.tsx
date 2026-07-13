@@ -59,8 +59,12 @@ const PHASES: { key: string; label: string }[] = [
   { key: "testimonial", label: "Testimonial" },
 ];
 
-const todayStr = () => new Date().toISOString().slice(0, 10);
-const daysAgoStr = (n: number) => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
+// The student's LOCAL day — same rule as team EODs. toISOString() is UTC and
+// files evening submissions onto tomorrow for western timezones, which then
+// get overwritten by tomorrow's real log.
+const localFmt = new Intl.DateTimeFormat("en-CA");
+const todayStr = () => localFmt.format(new Date());
+const daysAgoStr = (n: number) => localFmt.format(new Date(Date.now() - n * 86400000));
 
 function StudentPortal() {
   const { user, displayName } = useAuth();
@@ -965,7 +969,7 @@ function WeekDots({ eodDates, today, hasToday }: { eodDates: string[]; today: st
   const logged = new Set(eodDates);
   const days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(Date.now() - (6 - i) * 86400000);
-    return { key: d.toISOString().slice(0, 10), letter: "SMTWTFS"[d.getDay()] };
+    return { key: new Intl.DateTimeFormat("en-CA").format(d), letter: "SMTWTFS"[d.getDay()] };
   });
   const count = days.filter(d => logged.has(d.key) || (d.key === today && hasToday)).length;
   return (

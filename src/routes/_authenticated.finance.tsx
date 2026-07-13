@@ -77,7 +77,7 @@ function FinanceInner() {
         supabase.from("installment_payments").select("amount, due_date, status").gte("due_date", iso(monthStart)).lte("due_date", iso(monthEnd)),
         supabase.from("installment_payments").select("amount, due_date, status").eq("status", "upcoming").gte("due_date", iso(new Date(now.getFullYear(), now.getMonth(), 1))).lte("due_date", iso(in6mo)),
         supabase.from("founder_settings").select("id, processor_balance, processor_balance_updated_at, monthly_cash_goal").maybeSingle(),
-        supabase.from("installment_payments").select("amount, paid_at, installment_id").gte("paid_at", iso(monthStart) + "T00:00:00").lte("paid_at", iso(monthEnd) + "T23:59:59").not("paid_at", "is", null),
+        supabase.from("installment_payments").select("amount, paid_at, installment_id").eq("status", "paid").gte("paid_at", iso(monthStart) + "T00:00:00").lte("paid_at", iso(monthEnd) + "T23:59:59").not("paid_at", "is", null),
         supabase.from("installments").select("id, setter_id, closer_id"),
         supabase.from("profiles").select("id, commission_cap_pct, base_pay_monthly"),
         supabase.from("commission_rates").select("key, rate").eq("active", true),
@@ -107,7 +107,8 @@ function FinanceInner() {
   const revQ = useQuery({
     queryKey: ["finance-revenue", iso(monthStart)],
     queryFn: () => getFinanceRevenue({ data: { from: iso(monthStart), to: iso(monthEnd) } }),
-    staleTime: 5 * 60_000,
+    staleTime: 4 * 60_000,
+    refetchInterval: 5 * 60_000, // founder: cash must update on its own
     retry: 1,
   });
   const rev = revQ.data;
@@ -135,8 +136,10 @@ function FinanceInner() {
     }).sort((a, b) => a.date.localeCompare(b.date));
 
     const expensesTotal = monthExpenses.reduce((a, e) => a + Number(e.amount), 0);
+    // Collected = upfronts logged this month + installments PAID this month
+    // (by paid_at — a payment due in May but paid in June is June cash).
     const collected = d.deals.reduce((a, x) => a + (Number(x.cash_collected_upfront) || 0), 0)
-      + d.monthPays.filter(p => p.status === "paid").reduce((a, p) => a + Number(p.amount), 0);
+      + d.paidPays.reduce((a, p) => a + Number(p.amount), 0);
     const expectedRest = d.monthPays
       .filter(p => p.status === "upcoming" && (!isCurrentMonth || p.due_date >= today))
       .reduce((a, p) => a + Number(p.amount), 0);
@@ -196,9 +199,10 @@ function FinanceInner() {
     });
   }, [d]);
 
-  // Whop is the cash-in source of truth — profit must be built on it, not on
-  // logged deals (which lag or double elsewhere).
-  const cashIn = rev?.connected ? rev.whopGross : calc?.collected ?? 0;
+  // Whop is the cash-in source of truth, and NET is the real number — gross
+  // includes processor fees we never receive (founder rule 2026-07-14).
+  // Profit and the split are built on net.
+  const cashIn = rev?.connected ? rev.whopNet : calc?.collected ?? 0;
   const payoutsTotal = payouts?.total ?? 0;
   const profitSoFar = cashIn - (calc?.expensesTotal ?? 0) - payoutsTotal;
   const profitProjected = cashIn + (calc?.expectedRest ?? 0) - (calc?.expensesTotal ?? 0) - payoutsTotal;
@@ -249,14 +253,14 @@ function FinanceInner() {
       {/* Top strip */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
         <StatCard
-          label="Cash in · Whop"
-          value={rev?.connected ? money(rev.whopGross) : calc ? money(calc.collected) : "—"}
+          label="Cash in · Whop net"
+          value={rev?.connected ? money(rev.whopNet) : calc ? money(calc.collected) : "—"}
           sub={(() => {
             const goal = d?.settings?.monthly_cash_goal;
-            if (!goal || !isCurrentMonth) return rev?.connected ? `${rev.whopCount} payments · ${money(rev.whopNet)} net` : undefined;
+            if (!goal || !isCurrentMonth) return rev?.connected ? `${rev.whopCount} payments · ${money(rev.whopGross)} gross` : undefined;
             const dayOfMonth = now.getDate();
             const pace = dayOfMonth > 0 ? (cashIn / dayOfMonth) * monthEnd.getDate() : 0;
-            return `goal ${money(goal)} · pace ${money(Math.round(pace))}`;
+            return `goal ${money(goal)} · pace ${money(Math.round(pace))} · ${money(rev?.whopGross ?? 0)} gross`;
           })()}
           icon={<ArrowDownRight className="h-3.5 w-3.5" />}
         />
