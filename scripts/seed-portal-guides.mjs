@@ -102,7 +102,7 @@ Click **Overview** in the sidebar. The funnel cards (DMs, Booked, Shows) open on
 
 ${img("set-tracker", "The Set reminders tracker — windows, confirmation, and the 6-hour rule")}
 
-1. Click **Calendar** in the sidebar, then the **Sets** toggle at the top. Only **closing calls** land here — bookings made through the 1-on-1 Pathway Onboarding link appear automatically as **Unclaimed**. Coaching calls never show up in Sets.
+1. Click **Calendar** in the sidebar, then the **Sets** toggle at the top. Only **closing calls** land here — bookings through the Pathway Onboarding and ISA Call links appear automatically as **Unclaimed**. Coaching calls never show up in Sets.
 2. **When a new set appears, every setter gets a red bell notification: "New set — claim it."** First to press **Claim** owns it. Claiming puts the call on your Google Calendar (connect it once with the button at the top) with popup reminders **48h, 24h, 3h, and 1h** before.
 3. **You open on "My sets" by default** — the ones with the **"Your set"** badge and the highlighted rail are yours; switch to **All sets** to see the whole pool and who owns what. Never work a set that carries someone else's name.
 4. The list is grouped by day (**Today / Tomorrow / weekday**), and the tiles at the top tell you instantly what needs action: **Reminder due** in red means a window is open and unsent.

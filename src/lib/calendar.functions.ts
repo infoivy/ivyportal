@@ -270,11 +270,14 @@ export const deleteSetReminder = createServerFn({ method: "POST" })
 // ── Calendly ────────────────────────────────────────────────────────────────
 
 /**
- * Only bookings made through the closing-call link are sets (founder-confirmed
- * 2026-07-14): the shared link resolves to the "1-on-1 Pathway Onboarding"
- * event type, one per host. Coaching/advisor/application calls never import.
+ * Only closing-call bookings are sets (founder-confirmed 2026-07-14):
+ * the shared Pathway Onboarding link plus the "45-60min ISA Call" type the
+ * team books through in practice (verified against live Calendly 2026-07-14).
+ * Coaching/advisor/application calls never import. Name-matching covers new
+ * per-host copies of the same event type.
  */
 const CLOSING_CALL_LINK = "https://calendly.com/d/d3f3-7pm-z9r/1-on-1-pathway-onboarding";
+const CLOSING_CALL_NAMES = ["45-60min ISA Call"];
 
 /**
  * Pull upcoming Calendly CLOSING-CALL bookings into set_reminders as
@@ -304,11 +307,11 @@ export const syncCalendlySets = createServerFn({ method: "POST" })
     const direct = etJson.collection.filter(
       (t) => t.scheduling_url === CLOSING_CALL_LINK || t.scheduling_url.split("/").filter(Boolean).pop() === slug,
     );
-    const closingNames = new Set(direct.map((t) => t.name));
+    const closingNames = new Set([...direct.map((t) => t.name), ...CLOSING_CALL_NAMES]);
     const closingTypes = new Set(
       etJson.collection.filter((t) => closingNames.has(t.name)).map((t) => t.uri),
     );
-    if (closingTypes.size === 0) return { ok: false, imported: 0, reason: "closing-type-not-found" };
+    if (closingNames.size === 0) return { ok: false, imported: 0, reason: "closing-type-not-found" };
 
     const params = new URLSearchParams({
       organization: me.resource.current_organization,
@@ -322,7 +325,9 @@ export const syncCalendlySets = createServerFn({ method: "POST" })
     const evAll = (await evRes.json()) as {
       collection: { uri: string; name: string; start_time: string; end_time: string; event_type: string }[];
     };
-    const evJson = { collection: evAll.collection.filter((ev) => closingTypes.has(ev.event_type)) };
+    // Match by type URI AND by event name — shared/round-robin event types
+    // don't appear in the org event-type listing, so the URI set misses them.
+    const evJson = { collection: evAll.collection.filter((ev) => closingTypes.has(ev.event_type) || closingNames.has(ev.name)) };
 
     // Invitee names, one call per event, in parallel
     const events = await Promise.all(evJson.collection.map(async (ev) => {

@@ -502,7 +502,7 @@ function CalendarPage() {
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
               <h2 className="text-title text-foreground">Set reminders</h2>
-              <p className="text-caption text-muted-foreground">Closing calls booked through the 1-on-1 Pathway Onboarding link land here automatically. Tick each reminder as you send it, confirm the lead, and unconfirmed sets auto-drop 6h before the call.</p>
+              <p className="text-caption text-muted-foreground">Closing-call bookings (Pathway Onboarding + ISA Call links) land here automatically — coaching calls never do. Tick each reminder as you send it, confirm the lead, and unconfirmed sets auto-drop 6h before the call.</p>
             </div>
             <div className="flex gap-1">
               {(["all", "mine"] as const).map((f) => (
