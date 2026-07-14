@@ -143,10 +143,12 @@ export function AppSidebar({ roles }: { roles: string[] }) {
     });
   }, []);
 
-  // Signups with no role yet are locked out until an admin places them —
-  // refreshed on navigation so approving on /team clears the badge.
+  // Signups with no role yet are locked out until someone places them —
+  // admins, closers, and CSMs can all approve (Requests tab). Refreshed on
+  // navigation so approving clears the badge.
+  const canApproveRequests = isAdmin || roles.includes("closer") || roles.includes("csm");
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!canApproveRequests) return;
     let alive = true;
     (async () => {
       const [{ data: profs }, { data: roleRows }] = await Promise.all([
@@ -160,7 +162,7 @@ export function AppSidebar({ roles }: { roles: string[] }) {
       );
     })();
     return () => { alive = false; };
-  }, [isAdmin, currentPath]);
+  }, [canApproveRequests, currentPath]);
 
   const isActive = (item: Item) => {
     if (item.match) return item.match.some((m) => currentPath.startsWith(m));
@@ -261,7 +263,7 @@ export function AppSidebar({ roles }: { roles: string[] }) {
       <SidebarContent className="gap-0 py-2">
         {renderGroup("Today", todayItems)}
         {renderGroup("Sales", salesItems(roles))}
-        {renderGroup("Students", studentsEntry(roles, isAdmin ? pendingApprovals : 0))}
+        {renderGroup("Students", studentsEntry(roles, canApproveRequests ? pendingApprovals : 0))}
         {renderGroup("Library", libraryItems)}
         {roles.includes("founder") && renderGroup("Founder", founderItems)}
         {isAdmin && renderGroup("Admin", adminItems)}

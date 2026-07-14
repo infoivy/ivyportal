@@ -80,9 +80,13 @@ export const approveAsStudent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: { userId: string }) => data)
   .handler(async ({ context, data }) => {
+    // Closers onboard the students they close; CSMs onboard the ones they
+    // support (founder-confirmed 2026-07-14).
     const { data: myRoles } = await context.supabase
       .from("user_roles").select("role").eq("user_id", context.userId);
-    if (!(myRoles ?? []).some((r) => r.role === "admin")) throw new Error("admin only");
+    if (!(myRoles ?? []).some((r) => ["admin", "closer", "csm"].includes(r.role))) {
+      throw new Error("admin, closer, or CSM only");
+    }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: au } = await supabaseAdmin.auth.admin.getUserById(data.userId);

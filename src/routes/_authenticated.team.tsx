@@ -203,7 +203,7 @@ function TeamPage() {
         <div className="rounded-lg border border-border bg-card px-4 py-3 flex flex-wrap items-center gap-3">
           <div className="text-body text-muted-foreground flex-1 min-w-[200px]">
             <span className="font-semibold text-foreground">{members.filter(m => m.roles.length === 0 && m.active).length} access request{members.filter(m => m.roles.length === 0 && m.active).length === 1 ? "" : "s"}</span>
-            {" "}waiting on the Students page. Hiring one of them as a team member instead?
+            {" "}waiting in the Requests tab. Hiring one of them as a team member instead?
             {" "}
             {members.filter(m => m.roles.length === 0 && m.active).map(m => (
               <button key={m.id} onClick={() => setEditing(m)} className="text-primary hover:underline mr-2">
@@ -211,8 +211,8 @@ function TeamPage() {
               </button>
             ))}
           </div>
-          <Link to="/students" className="text-caption font-medium px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 motion-safe:transition-colors shrink-0">
-            Review on Students
+          <Link to="/students/requests" className="text-caption font-medium px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 motion-safe:transition-colors shrink-0">
+            Open Requests
           </Link>
         </div>
       )}

@@ -15,8 +15,6 @@ import {
   ChevronRight, Users, AlertTriangle, Columns3, Award, MessageSquare, Trophy, Download,
 } from "lucide-react";
 import { exportToCsv } from "@/lib/csv";
-import { useServerFn } from "@tanstack/react-start";
-import { approveAsStudent } from "@/lib/team-admin.functions";
 import { DateField } from "@/components/ui/date-field";
 import { SelectField } from "@/components/ui/select-field";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -253,7 +251,6 @@ function StudentsLayout() {
   return (
     <div className="p-4 sm:p-6 max-w-[1500px] mx-auto space-y-5">
       <StudentsTabBar />
-      {canManage && <AccessRequestsQueue onApproved={invalidateAll} />}
       <header className="flex flex-wrap items-end justify-between gap-3 pb-5 mb-1">
         <div>
           <h1 className="text-display text-foreground">Students</h1>
@@ -1074,75 +1071,6 @@ function Section({ title, children }: { title: string; children: React.ReactNode
     <div className="space-y-2 pt-3 border-t border-[var(--border)] first:border-0 first:pt-0">
       <div className="text-[13px] font-medium text-muted-foreground">{title}</div>
       {children}
-    </div>
-  );
-}
-
-/**
- * Signups waiting for access — students who used the shared portal link.
- * Approve creates/links their student record; team hires happen on /team.
- */
-function AccessRequestsQueue({ onApproved }: { onApproved: () => void }) {
-  const navigate = Route.useNavigate();
-  const approveFn = useServerFn(approveAsStudent);
-  const qc = useQueryClient();
-  const [busy, setBusy] = useState<string | null>(null);
-  const q = useQuery({
-    queryKey: ["students", "access-requests"],
-    staleTime: 60_000,
-    queryFn: async () => {
-      const [{ data: profs }, { data: roleRows }] = await Promise.all([
-        supabase.from("profiles").select("id, display_name, active, created_at"),
-        supabase.from("user_roles").select("user_id"),
-      ]);
-      const placed = new Set((roleRows ?? []).map(r => r.user_id));
-      return ((profs ?? []) as { id: string; display_name: string | null; active: boolean | null; created_at: string }[])
-        .filter(p => p.active !== false && !placed.has(p.id))
-        .sort((a, b) => b.created_at.localeCompare(a.created_at));
-    },
-  });
-  const pending = q.data ?? [];
-  if (pending.length === 0) return null;
-  return (
-    <div className="rounded-lg border border-warning/25 bg-warning-bg p-4 space-y-2.5">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <div className="text-body font-semibold text-warning-fg">
-          Waiting for access · {pending.length}
-        </div>
-        <span className="text-caption text-muted-foreground">
-          Signed up through the portal link — approve to give them the student portal. Team hires: <Link to="/team" className="text-primary hover:underline">Team page</Link>.
-        </span>
-      </div>
-      <div className="space-y-2">
-        {pending.map(p => (
-          <div key={p.id} className="flex flex-wrap items-center gap-3 rounded-md bg-card border border-border px-3 py-2.5">
-            <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center text-micro font-semibold shrink-0">
-              {(p.display_name ?? "?").charAt(0).toUpperCase()}
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-body font-medium text-foreground truncate">{p.display_name ?? "Unnamed"}</div>
-              <div className="text-caption text-muted-foreground">requested {p.created_at.slice(0, 10)}</div>
-            </div>
-            <button
-              disabled={busy === p.id}
-              onClick={async () => {
-                setBusy(p.id);
-                try {
-                  const r = await approveFn({ data: { userId: p.id } });
-                  toast.success("Approved — set their name, payment, and package.");
-                  qc.invalidateQueries({ queryKey: ["students", "access-requests"] });
-                  onApproved();
-                  if (r.studentId) navigate({ to: "/students/$id", params: { id: r.studentId }, search: { setup: "payment" } as never });
-                } catch (e) { toast.error(String((e as Error).message ?? e)); }
-                finally { setBusy(null); }
-              }}
-              className="text-caption font-medium px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 motion-safe:transition-colors disabled:opacity-50 shrink-0"
-            >
-              {busy === p.id ? "Approving…" : "Approve as student"}
-            </button>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
