@@ -954,7 +954,9 @@ function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, o
 }) {
   const { user, roles } = useAuth();
   const isAdmin = roles.includes("admin");
-  const pool = filter === "mine" ? sets.filter((s) => s.owner_id === user?.id) : sets;
+  // "My sets" = mine + UNCLAIMED. New bookings have no owner yet — hiding
+  // them behind "All sets" made new setters think no sets were coming in.
+  const pool = filter === "mine" ? sets.filter((s) => s.owner_id === user?.id || s.owner_id === null) : sets;
   const visible = pool.filter((s) => s.status !== "cancelled");
   const cancelled = pool.filter((s) => s.status === "cancelled");
 
@@ -971,7 +973,7 @@ function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, o
   if (visible.length === 0 && cancelled.length === 0) {
     return (
       <div className="text-caption text-muted-foreground py-6 text-center">
-        {filter === "mine" ? "No upcoming sets assigned to you. Log one or claim one from the calendar above." : "No upcoming sets yet. Log a set, or click a calendar event and claim it."}
+        {filter === "mine" ? "Nothing here yet — your claimed sets and any unclaimed new bookings will show up here. Check All sets to see the whole team's." : "No upcoming sets yet. New closing-call bookings land here automatically."}
       </div>
     );
   }
