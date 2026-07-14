@@ -28,7 +28,7 @@ export const Route = createFileRoute("/_authenticated/sales")({
 });
 
 type SetterProfile = { id: string; display_name: string; setter_type: "phone" | "dm" | "full_cycle" | null };
-type EODRow = { id: string; user_id: string; report_date: string; dials: number; leads_contacted: number; calls_booked: number };
+type EODRow = { id: string; user_id: string; report_date: string; dials: number; leads_contacted: number; dms_sent: number; calls_booked: number };
 type TrendsRow = {
   id: string; user_id: string; report_date: string;
   dms_sent: number; convos_started: number; calls_booked: number;
@@ -38,10 +38,15 @@ type TrendsRow = {
 const isoDate = (d: Date) => d.toISOString().slice(0, 10);
 
 function kpiHit(eod: EODRow, setterType: "phone" | "dm" | "full_cycle" | null) {
-  if (setterType === "phone") return { primary: eod.dials >= 100, sets: eod.calls_booked >= 3 };
-  if (setterType === "dm") return { primary: eod.leads_contacted >= 125, sets: eod.calls_booked >= 3 };
-  if (setterType === "full_cycle") return { primary: eod.dials >= 100 && eod.leads_contacted >= 50, sets: eod.calls_booked >= 3 };
-  return { primary: false, sets: false };
+  // "DMs sent" absorbed leads_contacted (2026-07-11) — read the max of both
+  const outreach = Math.max(eod.dms_sent ?? 0, eod.leads_contacted ?? 0);
+  const sets = eod.calls_booked >= 3;
+  let primary = false;
+  if (setterType === "phone") primary = eod.dials >= 100;
+  else if (setterType === "dm") primary = outreach >= 125;
+  else if (setterType === "full_cycle") primary = eod.dials >= 100 && outreach >= 50;
+  // Founder rule 2026-07-14: 3+ sets = KPI met on its own; volume is the fallback
+  return { primary, sets, met: sets || primary };
 }
 
 function Sales() {
@@ -105,9 +110,9 @@ function OperationsTab() {
     const [profsRes, rolesRes, todayRes, yestRes, recentRes] = await Promise.all([
       supabase.from("profiles").select("id, display_name, setter_type, active" as any),
       supabase.from("user_roles").select("user_id, role"),
-      supabase.from("eods").select("id, user_id, report_date, dials, leads_contacted, calls_booked").eq("report_date", today),
-      supabase.from("eods").select("id, user_id, report_date, dials, leads_contacted, calls_booked").eq("report_date", yesterday),
-      supabase.from("eods").select("id, user_id, report_date, dials, leads_contacted, calls_booked").gte("report_date", thirtyDaysAgo).order("report_date", { ascending: false }),
+      supabase.from("eods").select("id, user_id, report_date, dials, leads_contacted, dms_sent, calls_booked").eq("report_date", today),
+      supabase.from("eods").select("id, user_id, report_date, dials, leads_contacted, dms_sent, calls_booked").eq("report_date", yesterday),
+      supabase.from("eods").select("id, user_id, report_date, dials, leads_contacted, dms_sent, calls_booked").gte("report_date", thirtyDaysAgo).order("report_date", { ascending: false }),
     ]);
 
     const profs: any[] = profsRes.data ?? [];
@@ -162,7 +167,7 @@ function OperationsTab() {
   if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
 
   const filedToday = setters.filter(s => todayByUser.has(s.id));
-  const filedAndHit = filedToday.filter(s => { const h = kpiHit(todayByUser.get(s.id)!, s.setter_type); return h.primary && h.sets; });
+  const filedAndHit = filedToday.filter(s => kpiHit(todayByUser.get(s.id)!, s.setter_type).met);
   const filedOnly = filedToday.length - filedAndHit.length;
   const missing = setters.length - filedToday.length;
 

@@ -54,15 +54,19 @@ const SHOTS = [
       await page.getByRole("button", { name: /add ad-hoc item/i }).click();
     } },
   { name: "testimonials", persona: "csm", path: "/testimonials" },
+  { name: "students-csm", persona: "csm", path: "/students" },
+  { name: "student-detail", persona: "csm", path: "/students", action: async (page) => {
+      await page.getByText("Ahmed Malik (Demo)", { exact: false }).first().click();
+      await page.waitForTimeout(3500);
+    } },
   { name: "calls", persona: "coach", path: "/calls" },
   { name: "log-call-modal", persona: "coach", path: "/calls", action: async (page) => {
       await page.getByRole("button", { name: /log call/i }).first().click();
     } },
   { name: "students", persona: "coach", path: "/students" },
-  { name: "student-detail", persona: "coach", path: "/students", action: async (page) => {
-      // open the first student row
-      await page.locator("a[href^='/students/']").first().click();
-      await page.waitForTimeout(3000);
+  { name: "student-detail-coach", persona: "coach", path: "/students", action: async (page) => {
+      await page.getByText("Ahmed Malik (Demo)", { exact: false }).first().click();
+      await page.waitForTimeout(3500);
     } },
   { name: "dashboard", persona: "admin", path: "/dashboard" },
   { name: "team", persona: "admin", path: "/team" },
@@ -97,6 +101,76 @@ for (const [k, p] of Object.entries(PERSONAS)) {
   p.id = id;
   console.log("account +", k, id);
 }
+
+// ── demo students so screenshots show FULL pages (flagged is_demo, removed after)
+const demoStudentIds = [];
+const iso = (d) => d.toISOString().slice(0, 10);
+const daysAgo = (n) => new Date(Date.now() - n * 86400000);
+const DEMO_STUDENTS = [
+  { full_name: "Ahmed Malik (Demo)", phase: "coaching_1on1", payment_state: "installments", grade: "B" },
+  { full_name: "Yusuf Rahman (Demo)", phase: "applying", payment_state: "paid_in_full", grade: "A" },
+  { full_name: "Ibrahim Diallo (Demo)", phase: "onboarding", payment_state: "installments", grade: null },
+  { full_name: "Zaid Hussain (Demo)", phase: "applying", payment_state: "scholarship", grade: "B" },
+  { full_name: "Hamza Ali (Demo)", phase: "coaching_1on1", payment_state: "paid_in_full", grade: "C" },
+  { full_name: "Bilal Osman (Demo)", phase: "onboarding", payment_state: "installments", grade: null },
+];
+const csmId = () => PERSONAS.csm.id;
+const coachId = () => PERSONAS.coach.id;
+async function seedDemoStudents() {
+  for (const [i, d] of DEMO_STUDENTS.entries()) {
+    const { data: stu, error } = await sb.from("students").insert({
+      full_name: d.full_name, email: null, phase: d.phase, status: "active",
+      join_date: iso(daysAgo(20 + i * 4)), calls_included: 10, calls_allotted: 10,
+      payment_state: d.payment_state, student_grade: d.grade, is_demo: true,
+      coach_id: coachId(),
+      next_action: i === 0 ? "Review his latest loom batch, then book the midpoint call" : null,
+    }).select("id").single();
+    if (error) throw new Error(`demo student: ${error.message}`);
+    demoStudentIds.push(stu.id);
+    const eods = [];
+    for (let n = 0; n < 18; n++) {
+      if ((n * 7 + i) % 5 === 0) continue; // realistic gaps
+      const applying = d.phase === "applying";
+      eods.push({
+        student_id: stu.id, report_date: iso(daysAgo(n)),
+        roleplays: 2 + ((n + i) % 3), looms_sent: applying ? 0 : 2 + ((n + i) % 2),
+        applications_submitted: applying ? 3 + ((n + i) % 4) : 0,
+        replies: (n + i) % 3, interviews: (n + i) % 7 === 0 ? 1 : 0,
+        wins: n % 4 === 0 ? "Got a reply from a fitness brand — sending my loom tonight." : null,
+      });
+    }
+    await sb.from("student_eods").insert(eods);
+    await sb.from("student_action_items").insert([
+      { student_id: stu.id, created_by: csmId(), text: "Send 3 looms to the review channel", due_date: iso(daysAgo(-1)), done: false },
+      { student_id: stu.id, created_by: csmId(), text: "Rewatch module 4 and redo the objection roleplay", due_date: iso(daysAgo(1)), done: false },
+      { student_id: stu.id, created_by: csmId(), text: "Join Thursday's group call with questions ready", done: true, done_at: daysAgo(2).toISOString() },
+    ]);
+    await sb.from("student_calls").insert([
+      { student_id: stu.id, coach_id: coachId(), call_date: iso(daysAgo(6 + i)), status: "completed", progress_rating: 3 + (i % 3), outcome: "Worked through his loom script — much tighter close.", action_items_json: [{ text: "Apply the new script in 5 applications", done: i % 2 === 0 }] },
+      { student_id: stu.id, coach_id: coachId(), call_date: iso(daysAgo(-3 - i)), status: "scheduled" },
+    ]);
+    await sb.from("csm_student_notes").insert([
+      { student_id: stu.id, user_id: csmId(), note: "Checked in on WhatsApp — motivated but stuck on loom pacing. Sent him two example looms.", tags: ["check-in"] },
+      { student_id: stu.id, user_id: csmId(), note: "Reviewed 3 looms today, feedback delivered. Second one was close to approval quality.", tags: ["progress"] },
+    ]);
+    if (d.phase === "applying") {
+      await sb.from("student_placements").insert([
+        { student_id: stu.id, business_name: "Peak Performance Coaching", role_title: "Appointment setter", stage: "interviewing", interview_at: daysAgo(-2).toISOString() },
+        { student_id: stu.id, business_name: "Elevate Fitness Co", role_title: "DM setter", stage: "applied" },
+      ]);
+    }
+  }
+  console.log(`demo students + ${demoStudentIds.length}`);
+}
+async function cleanupDemoStudents() {
+  if (!demoStudentIds.length) return;
+  for (const t of ["student_eods", "student_action_items", "student_calls", "csm_student_notes", "student_placements"]) {
+    await sb.from(t).delete().in("student_id", demoStudentIds);
+  }
+  await sb.from("students").delete().in("id", demoStudentIds);
+  console.log("demo students cleaned");
+}
+await seedDemoStudents();
 
 // ── shoot ────────────────────────────────────────────────────────────────────
 const browser = await chromium.launch({ channel: "chrome", headless: true });
@@ -135,6 +209,7 @@ try {
   }
 } finally {
   await browser.close();
+  await cleanupDemoStudents();
   // ── cleanup temp accounts ──────────────────────────────────────────────────
   for (const id of created) {
     await sb.from("user_roles").delete().eq("user_id", id);

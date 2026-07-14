@@ -111,8 +111,6 @@ function StudentPortal() {
       (supabase as any).from("student_guide_steps").select("step_key").eq("student_id", st.id),
     ]);
     setGuideDone(new Set(((guideRes.data ?? []) as { step_key: string }[]).map(r => r.step_key)));
-    // Brand-new student, nothing ticked yet → land on Start Here, not the EOD form
-    if ((e ?? []).length === 0 && (guideRes.data ?? []).length === 0) setTab(t => (t === "eod" ? "start" : t));
     setEods((e ?? []) as SEod[]);
     setCalls((c ?? []) as Call[]);
     setAdhocItems((ah ?? []) as AdhocItem[]);
@@ -355,6 +353,7 @@ function StudentPortal() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <RankChip onClick={() => setTab("leaderboard")} />
             {streak > 0 && (
               <div className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-sm border border-warning/25 bg-warning-bg text-warning-fg">
                 <Flame className="h-3.5 w-3.5" />
@@ -865,6 +864,25 @@ function StartHereGuide({ oneOnOne, done, loomApproved, onToggle }: {
         })}
       </div>
     </div>
+  );
+}
+
+/** Hero rank chip — the cheapest motivation lever there is. */
+function RankChip({ onClick }: { onClick: () => void }) {
+  const leaderboardFn = useServerFn(getStudentLeaderboard);
+  const q = useQuery({ queryKey: ["student-leaderboard"], queryFn: () => leaderboardFn(), staleTime: 5 * 60_000 });
+  const you = q.data?.you;
+  if (!you || !q.data || q.data.totalStudents < 2) return null;
+  const top3 = you.rank <= 3;
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-sm border motion-safe:transition-colors ${top3 ? "border-success/25 bg-success-bg text-success-fg" : "border-border bg-card text-muted-foreground hover:text-foreground"}`}
+      title="This week's leaderboard"
+    >
+      <Trophy className="h-3.5 w-3.5" />
+      #{you.rank} of {q.data.totalStudents} this week
+    </button>
   );
 }
 

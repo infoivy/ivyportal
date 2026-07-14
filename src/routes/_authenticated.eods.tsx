@@ -541,9 +541,13 @@ function didHitKpi(e: EOD, st: SetterType): boolean {
   if (!st) return false;
   const cfg = KPI[st];
   const read = (k: keyof EOD) => (k === "dms_sent" ? outreachOf(e) : ((e[k] ?? 0) as number));
+  // Founder rule 2026-07-14: SETS are the KPI. 3+ sets = KPI met regardless of
+  // volume. Couldn't hit sets? Full volume (100 dials / 125 DMs / both for
+  // full-cycle) still counts as a KPI day.
+  if ((e.calls_booked ?? 0) >= cfg.sets) return true;
   if (read(cfg.primary.key) < cfg.primary.target) return false;
   if (cfg.secondary && read(cfg.secondary.key) < cfg.secondary.target) return false;
-  return (e.calls_booked ?? 0) >= cfg.sets;
+  return true;
 }
 
 function dayStatus(e: EOD | undefined, st: SetterType): "green" | "amber" | "red" {

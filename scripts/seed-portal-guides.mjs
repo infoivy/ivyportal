@@ -33,14 +33,6 @@ if (ASSET_DIR) {
 const img = (name, alt) => `![${alt}](${url}/storage/v1/object/public/doc-assets/guides/${name}.png)`;
 
 // ── shared snippets ──────────────────────────────────────────────────────────
-const SIGN_IN = `## Signing in
-
-1. Go to **[portal.ivysalesacademy.com](https://portal.ivysalesacademy.com)**.
-2. Enter your work email and password, then press **Sign in**.
-3. First time here? Press **Sign up** instead — an admin then approves your account and gives you your role. Until that happens you'll see a "pending approval" screen; that's normal.
-
-> Tip: the sidebar on the left is your map. Everything in this guide lives there. On your phone, tap the ☰ button (top-left) to open it.`;
-
 const EOD_POLICY = `## The EOD rule — read once, never break it
 
 EODs are **7 days a week, for every role — you cannot miss a single one, ever.** Zero is a valid answer; silence is not.
@@ -54,11 +46,13 @@ Full policy (read it once): **[EOD & Meetings Policy](/policies/eod-hygiene)**.`
 
 const EOD_RULES = `EODs are **7 days a week — there are no off days.** Zero is a valid answer; a missed report is not.
 
-| Setter type | Daily target |
+**The KPI is 3 sets a day.** Book 3 or more sets and your day is green — full stop. Couldn't get to 3 sets? Then full volume still counts as a KPI day:
+
+| Setter type | Volume fallback (when sets < 3) |
 | --- | --- |
-| Phone setter | 100 dials **and** 3 sets |
-| DM setter | 125 DMs sent **and** 3 sets |
-| Full-cycle | 100 dials **and** 50 DMs sent **and** 3 sets |
+| Phone setter | 100 dials |
+| DM setter | 125 DMs sent |
+| Full-cycle | 100 dials **and** 50 DMs sent |
 
 Your EOD belongs to **the day you lived it, in your own timezone**. Finished after midnight? Use the **Today / Yesterday** toggle at the top of the form to file it on the right day — the form warns you before it would replace a day you already submitted.`;
 
@@ -77,7 +71,7 @@ const DOCS = [
 
 Your daily loop in the portal takes about **3 minutes**: log your EOD, check your scorecard, claim your sets. This guide walks through each step.
 
-${SIGN_IN}
+> The sidebar on the left is your map — everything in this guide lives there. On your phone, tap the ☰ button (top-left) to open it.
 
 ## 1. Submit your EOD (every day)
 
@@ -166,7 +160,7 @@ Sales and Revenue pages are closer/founder territory, but your commission math i
 
 Two things pay you: closing calls and logging them properly. This guide covers your daily EOD, logging a close (so revenue, installments, and your commission all track automatically), payment links, and chasing installments.
 
-${SIGN_IN}
+> The sidebar on the left is your map — everything in this guide lives there. On your phone, tap the ☰ button (top-left) to open it.
 
 ## 1. Submit your EOD (every day)
 
@@ -275,11 +269,19 @@ Click **Revenue → Installments** tab:
   sort_order: 1,
   content: `# Portal Guide — CSMs
 
-Your home base is the **CSM Workspace** — tally your work as you do it, keep students accountable, and log notes. This guide covers the daily loop plus the Student Success radar.
+Your job in one sentence: **make students win.** The portal is where you track it — but the work is looms reviewed the same day, real conversations, calls when they're stuck, and action items you actually follow up on. This guide covers both: the mindset and every button.
 
-${SIGN_IN}
+> The sidebar on the left is your map — everything in this guide lives there. On your phone, tap the ☰ button (top-left) to open it.
 
-## 1. Your daily loop — CSM Workspace
+## 1. How we work with students — read this first
+
+- **Care, genuinely.** These students paid to change their lives. Know where each of yours is at: what phase, what they're stuck on, when you last talked.
+- **Get on calls.** A 15-minute call beats twenty messages. If a student is stuck, slipping, or just quiet — call them. See where they're at, find the block, get them to the next point.
+- **Every touch ends with action items.** After a call or a real check-in, assign 2–3 concrete action items **due over the next two or three days** — "send 3 looms by Thursday", not "work on looms". The student sees them at the top of their portal.
+- **Follow up on every action item you set.** An action item nobody checks is a suggestion. When the due date hits, look — done? Praise it. Not done? That's your next conversation.
+- **Work as one team with Hassan and the rest of the success team.** Share what you're seeing in the CSM notes so nobody asks a student the same question twice.
+
+## 2. Your daily loop — CSM Workspace
 
 ${img("csm-workspace", "CSM Workspace — tally, student list, accountability panel")}
 
@@ -287,66 +289,83 @@ Click **CSM** in the sidebar.
 
 **a) Tally as you work.** The four cards at the top are counters: **Loom reviewed, Roleplay reviewed, Check-in done, Escalation**. Every time you finish one, tap the card once (+1). Don't batch it at the end of the day — tap as you go and the numbers stay honest.
 
-**b) Your daily KPI: students reached.** Every CSM has a personal daily target — **10 students** full-time, **5 students** part-time (set by the founder on your profile). "Reached" means a real touch: a check-in message answered, a call, loom feedback delivered. The EOD form shows your target bar so you always know where you stand; **check-ins** is the number that counts toward it.
+**b) Your daily KPI: students reached.** Full-time = **10 students a day**, part-time = **5**. "Reached" means a **real touch** — a check-in they answered, a call, loom feedback delivered. Not a broadcast, not a "how's it going" left on read. The EOD form shows your target bar so you always know where you stand; **check-ins** is the number that counts toward it.
 
-**c) Submit to Team Reports.** At the end of your day, press the green **Submit to Team Reports** button. That files your EOD using today's tallies on **your own local day** — you don't fill a separate form. This is your daily EOD and follows the same zero-miss rule as everyone else's.
+**c) Submit to Team Reports.** At the end of your day, press the green **Submit to Team Reports** button. That files your EOD from today's tallies on your own local day — you don't fill a separate form. Same zero-miss rule as everyone else.
 
-**d) Work the student list.** Search or scroll the list on the left, click a student, and the **Accountability panel** shows their open action items, last student EOD, and your review counts for them (14 days).
+**d) Work the student list.** Search or scroll the list on the left, click a student, and the **Accountability panel** shows their open action items, last student EOD, and your review counts for them (14 days). Work it top to bottom: who haven't you touched the longest?
 
-**e) Assign ad-hoc action items.** In the panel, type a task in **New action item…**, optionally pick a due date, press **Add**. The student sees it at the top of their own portal and ticks it off there — you'll see it update here.
+**e) Assign action items — the 2-3 day rhythm.** In the panel, type the task in **New action item…**, set the due date **2–3 days out**, press **Add**. The student ticks it off in their own portal and you see it update here. When the date passes unticked, that's your opening message for tomorrow.
 
-${img("action-item-new", "Adding an ad-hoc action item from the Action Items hub — multiple students or team members at once")}
+${img("action-item-new", "Adding an ad-hoc action item — multiple students at once")}
 
-For bigger sweeps, use **Action Items → + Add ad-hoc item**: pick **several students at once** (or team members — they'll see it at the top of their dashboard with your name on it), one task, one due date, done.
+For sweeps, use **Action Items → + Add ad-hoc item**: several students at once, one task, one due date.
 
-**f) Log CSM notes.** Bottom of the panel: write risk signals, follow-ups, or progress notes, tag them (e.g. \`#progress\`, \`#check-in\`), press **Save note**. Notes are visible to coaches and admins on the student's record.
+**f) Log CSM notes after every meaningful touch.** Bottom of the panel: what you saw, in their words, tagged (#check-in, #progress, #call). Notes are what make hand-offs to Hassan, the coaches, and the founders seamless.
 
-## 2. The radar — Student Success
+## 3. Calls — your highest-leverage tool
+
+Aim to get students **on a call** regularly, especially anyone stuck or drifting:
+
+1. Open their record first (⌘K → their name): last EOD, last call, open action items, your notes. Never open a call with "so what's new?".
+2. On the call: find where they actually are, what's blocking them, and agree the next 2–3 concrete steps.
+3. After the call: log the touch (Check-in +1), write the note, assign the action items with due dates.
+4. Two days later: check the action items. Done → celebrate it in the group. Not done → next call.
+
+## 4. The loom loop — how students earn "approved"
+
+Students in training owe **3 looms a day** into the review channel. Your side of the deal:
+
+- Review every loom **the same day** and tap **Loom reviewed +1** each time.
+- Feedback is specific: what to keep, one thing to fix, do it again.
+- When their looms are consistently good, tell a founder/coach to move their phase to **Applying** — that flips the student's daily target from 3 looms to **5 loom applications** automatically.
+
+## 5. The radar — Student Success
 
 ${img("student-success", "Student Success — at-risk flags and pipeline")}
 
 Click **Student Success**. This page answers "who needs me today":
 
-- **At-risk students** — each card shows *why* (No call in 14d, No EOD, Ghosting, Payment late). Only students still in the active journey (Onboarding → 1:1 Coaching → Applying) can be flagged; students who finished coaching aren't false alarms.
+- **At-risk students** — each card shows *why* (No call in 14d, No EOD, Ghosting, Payment late). Work these before anything else.
 - **This week's 1:1s** — the coaching schedule at a glance.
 - **Testimonials pipeline** — students who won but haven't given a testimonial yet. Press **Request →** to open their record.
 - **Weekly digest** — new students, offers won, calls, and notes this week.
 
-## 3. Action Items hub
+## 6. Know the student's side (so you can guide them)
+
+${img("student-detail", "A student's full record — the CSM view")}
+
+Their portal opens on **their EOD** — the single habit that matters most. Daily targets: **3 roleplays + 3 looms** before approval, **5 loom applications** after. They also have a **Start Here** checklist (Typeform → training + offer board → calls → looms → applying) and a **leaderboard** (apps, looms, interviews, last 7 days) — point a lost student at Start Here, and use the leaderboard in check-ins; climbing it is a great motivator.
+
+On your side, open any student (from **Students** or ⌘K) for the full record: timeline, their daily EODs, milestones, and your notes tab.
+
+## 7. Action Items hub
 
 ${img("action-items", "Action Items hub")}
 
-Click **Action Items** for every open item in one place — from coach calls and ad-hoc ones. Filter by **Open / All / Mine / Overdue**, or by owner. You can also add items for **multiple students at once** (or team members) with **+ Add ad-hoc item**.
+Click **Action Items** for every open item in one place. Filter by **Open / All / Mine / Overdue** — **Overdue is your follow-up list**; clear it daily.
 
-## 4. Testimonials library
+## 8. Testimonials library
 
 ${img("testimonials", "Testimonials library")}
 
-Click **Testimonials**: upload video/image/text proof, set the status (**Requested → Received → Approved → Published**), and filter by student or type. When a student sends proof in the group chat, drop it here the same day.
+Click **Testimonials**: upload video/image/text proof, set the status (**Requested → Received → Approved → Published**). When a student sends proof in the group chat, drop it here the same day.
 
 ${EOD_POLICY}
 
-## 5. The student's side — what they see (so you can guide them)
-
-Every student's portal opens on a **Start Here** checklist that walks their whole path: onboarding Typeform → all Skool training videos + offer board → group calls (or 1:1s) → **3 looms a day into the review channel until you approve them** → then **5 loom applications a day**. You can see which steps they've ticked from their record — if a student is lost, point them back to Start Here.
-
-Your part of that chain is the **loom loop**: they send looms, you review and give feedback the same day, they apply it and send again. When their looms are consistently good enough, tell a founder/coach to move their phase to **Applying** — that flips their daily target from looms to applications automatically. Students also have a **leaderboard** (apps, looms, interviews over 7 days) — use it in check-ins; climbing it is a great motivator.
-
-## 6. Escalations — the one flow that must never stall
+## 9. Escalations — the one flow that must never stall
 
 When a student is angry, stuck beyond your reach, or talking about refunds:
 
 1. Tap **Escalation +1** on the workspace (so it's counted).
 2. Write a CSM note on the student tagged **#escalation** with what happened, in their words.
-3. Message the coach (and Faizan if it's payment- or refund-related) the same hour — the note is the record, the message is the alarm.
+3. Message Faizan the same hour — the note is the record, the message is the alarm.
 
-## 7. Everything else you'll touch
+## 10. Everything else you'll touch
 
-${img("student-detail", "A student's full record — timeline, EODs, milestones, installments, CSM notes")}
-
-- **1-on-1 Calls** — read the coach's call log for any student: ratings, notes, and the action items they set. Use it before check-ins so you never ask a question the coach already answered.
-- **Students** — the full list with journey phases (Onboarding → 1:1 Coaching → Applying → Offer Won → Testimonial). Open a student for their timeline, EODs, milestones, and your CSM notes tab (pictured above).
-- **Calendar** — the team calendar in your timezone; connect your Google Calendar with one click if you take calls.
+- **1-on-1 Calls** — the coach's call log for any student: ratings, notes, action items. Read it before check-ins so you never ask a question the coach already answered.
+- **Students** — the full list with journey phases; the red **Waiting for access** queue at the top is new signups (admins approve them).
+- **Calendar** — the team calendar in your timezone.
 - **Notes** — personal scratchpad; Team tab for shared notes.
 - **Profile** — display name + avatar.
 - **⌘K / Ctrl-K** — jump to any student or page instantly.
@@ -365,7 +384,7 @@ ${img("student-detail", "A student's full record — timeline, EODs, milestones,
 
 Everything revolves around one habit: **log every 1-on-1 right after it ends.** The rating, notes, and action items you enter drive the at-risk radar, the student's portal, and your capacity view.
 
-${SIGN_IN}
+> The sidebar on the left is your map — everything in this guide lives there. On your phone, tap the ☰ button (top-left) to open it.
 
 ## 1. Log a 1-on-1 call
 
@@ -410,7 +429,7 @@ ${EOD_POLICY}
 
 ## 5. Milestones and the student's record
 
-${img("student-detail", "A student's record — timeline, EODs, milestones, installments, notes")}
+${img("student-detail-coach", "A student's record — timeline, EODs, milestones, installments, notes")}
 
 Open any student (from **Students** or ⌘K) and you get the full picture in tabs: **timeline** of every touch, their daily **EODs** (roleplays + applications — the same numbers the at-risk radar reads), **milestones** to tick off as they hit them, **installments**, and **CSM notes**. Tick milestones the moment they happen — first win especially, since it feeds the testimonial pipeline.
 
@@ -441,7 +460,7 @@ Forgot to rate a call? It shows up in **Admin's unrated calls** queue and you'll
 
 This is the full tour — written simply, one step at a time. You can't break anything by clicking around. When in doubt, press **⌘K** (Mac) or **Ctrl-K** (Windows) and type what you're looking for; the portal will take you there.
 
-${SIGN_IN}
+> The sidebar on the left is your map — everything in this guide lives there. On your phone, tap the ☰ button (top-left) to open it.
 
 ## 1. Your morning: read the Dashboard (2 minutes)
 
