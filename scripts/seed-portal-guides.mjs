@@ -350,10 +350,6 @@ ${img("student-detail", "A student's full record — timeline, EODs, milestones,
 - **Notes** — personal scratchpad; Team tab for shared notes.
 - **Profile** — display name + avatar.
 - **⌘K / Ctrl-K** — jump to any student or page instantly.
-
-## 8. What you won't see
-
-Money pages (Dashboard, Sales, Revenue, Closer Resources) are outside the CSM role on purpose — your world is students, not deals. If you need a number from those, ask Faizan.
 `,
 },
 // ═════════════════════════════ COACHES ═════════════════════════════
