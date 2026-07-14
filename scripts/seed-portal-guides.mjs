@@ -57,8 +57,10 @@ const EOD_RULES = `EODs are **7 days a week — there are no off days.** Zero is
 | Setter type | Daily target |
 | --- | --- |
 | Phone setter | 100 dials **and** 3 sets |
-| DM setter | 125 leads contacted **and** 3 sets |
-| Full-cycle | 100 dials **and** 50 leads outreached **and** 3 sets |`;
+| DM setter | 125 DMs sent **and** 3 sets |
+| Full-cycle | 100 dials **and** 50 DMs sent **and** 3 sets |
+
+Your EOD belongs to **the day you lived it, in your own timezone**. Finished after midnight? Use the **Today / Yesterday** toggle at the top of the form to file it on the right day — the form warns you before it would replace a day you already submitted.`;
 
 // ── docs ─────────────────────────────────────────────────────────────────────
 const DOCS = [
@@ -96,26 +98,25 @@ ${EOD_RULES}
 
 ${EOD_POLICY}
 
-## 2. Check where you stand — Sales page
+## 2. Check where you stand — Dashboard
 
-${img("sales-today", "Sales page — today's compliance and scorecards")}
+${img("dashboard-setter", "Dashboard — the team funnel and your numbers")}
 
-Click **Sales** in the sidebar. One scrolling page shows:
-
-- **Today's submission status** — who has filed, who hit KPI, who is missing.
-- **Trends** — the funnel over any date range: DMs → Convos → Booked → Shows → Closed Rate. Use the **7D / 30D / 90D** buttons or pick a custom range, and press **Compare** to see the previous period as a shadow line.
-- **Scorecards** — your per-setter totals and show rate. **CSV** exports the table.
+Click **Overview** in the sidebar. The funnel cards (DMs, Booked, Shows) open on **24H** — the **3D / 7D / 30D / 90D** buttons widen the window, the calendar button picks a single day, and **Compare** shows the previous period behind the current one. Flip the **Team / Me** toggle to see just your own numbers, and check the leaderboards further down — your name on that board is the goal.
 
 ## 3. Claim and track your sets — Calendar
 
 ${img("set-tracker", "The Set reminders tracker — windows, confirmation, and the 6-hour rule")}
 
-1. Click **Calendar** in the sidebar. Bookings made through Calendly appear automatically in the **Set reminders** list as **Unclaimed** — press **Claim** on the ones you booked.
-2. Claiming puts the call on your Google Calendar (connect it once with the button at the top) with popup reminders **48h, 24h, 3h, and 1h** before, and the bell in the top-right nudges you when a reminder window opens.
-3. **Tick each reminder as you send it.** Under your set are four chips — 48h / 24h / 3h / 1h. Click once when you've reminded the lead (**✓ green**); click again if you reached out and got **no reply** (amber); a pulsing chip means the window is open and you haven't acted yet. Closers and founders can see these — this is how they know a set was worked.
-4. **Get the lead to confirm.** When they reply "yes, I'll be there", press **Lead confirmed ✓**. The set gets a green Confirmed badge and the slot is locked.
-5. **The 6-hour rule:** a set that is still unconfirmed **6 hours before the call is removed automatically** — from the list and from the calendar. An unconfirmed lead is a probable no-show, and that hour goes back on the market. Don't let your sets die: remind early, confirm early.
-6. The calendar grid itself can be filtered with the **All / Closing / Coaching / Meetings** chips, and the timezone picker shows everything in your own timezone.
+1. Click **Calendar** in the sidebar, then the **Sets** toggle at the top. Only **closing calls** land here — bookings made through the 1-on-1 Pathway Onboarding link appear automatically as **Unclaimed**. Coaching calls never show up in Sets.
+2. **When a new set appears, every setter gets a red bell notification: "New set — claim it."** First to press **Claim** owns it. Claiming puts the call on your Google Calendar (connect it once with the button at the top) with popup reminders **48h, 24h, 3h, and 1h** before.
+3. **You open on "My sets" by default** — the ones with the **"Your set"** badge and the highlighted rail are yours; switch to **All sets** to see the whole pool and who owns what. Never work a set that carries someone else's name.
+4. The list is grouped by day (**Today / Tomorrow / weekday**), and the tiles at the top tell you instantly what needs action: **Reminder due** in red means a window is open and unsent.
+5. **Each reminder is a card that cycles as you tap it:** tap once when you've **sent** the reminder, tap again when the lead **confirms** at that reminder (✓✓ green), tap again for **no reply** (amber). The card itself tells you what to do next — "due now — tap once sent", "opens Sat 3:00 PM". Closers see exactly how fresh a confirmation is ("Confirmed at 24h" vs "Confirmed at 3h") — that's what tells them the lead is really coming.
+6. **The 6-hour rule:** a set that is still unconfirmed **6 hours before the call is removed automatically** — from the list and from the calendar. An unconfirmed lead is a probable no-show, and that hour goes back on the market. Don't let your sets die: remind early, confirm early.
+7. **Notes on the set** — click the notes line under any of your sets to jot objections, context, or CRM info. It saves when you click away, and whoever works the set next sees it.
+8. Booked far out? A **"Keep warm today"** button appears on sets more than 48h away — one warm touch a day until the reminder windows open.
+9. The calendar grid itself can be filtered with the **All / Closing / Coaching / Meetings** chips, and the timezone picker shows everything in your own timezone.
 
 ## 4. After you set a call
 
@@ -123,16 +124,15 @@ ${img("set-tracker", "The Set reminders tracker — windows, confirmation, and t
 2. Make sure the set shows in the Set reminders list and is claimed by you.
 3. Log the set in today's EOD under **Calls booked (sets)**.
 
-## 5. Your money — Revenue
+## 5. Your money
 
-${img("revenue-setter", "Revenue page — deals and commissions")}
+Sales and Revenue pages are closer/founder territory, but your commission math is simple and automatic:
 
-Click **Revenue** to see deals, cash collected, and your commissions:
-
-- You earn your **base setter percentage** on deals you set.
+- You earn your **base setter percentage** on deals you set (the closer attributes you when logging the close — make sure they do).
 - **+1%** for the **top setter** of each 14-day period.
 - **+1%** in any Mon–Sun week where **you personally** collect **$5,000+ cash** (individual, not team).
 - Setters don't close — if you somehow set *and* closed the same deal, that's paid as one 15% "set + close", not base + 10%.
+- Payouts run **semi-monthly** (1st–15th and 16th–end of month). Questions about a number → ask a founder.
 
 ## 6. Everything else you'll touch
 
@@ -148,8 +148,8 @@ Click **Revenue** to see deals, cash collected, and your commissions:
 
 ## If something looks wrong
 
-- A set in the Set reminders list isn't yours → leave it; only claim sets you booked.
-- You submitted wrong numbers → open **EOD Reports** and press **Update** (same day only — backfilling later days isn't allowed, see the policy).
+- A set carries someone else's **owner badge** → it's theirs; only claim unclaimed sets or ones you booked.
+- You submitted wrong numbers → open **EOD Reports** and press **Update** for today, or flip the **Yesterday** toggle if you're correcting last night's report.
 - You can't see a page you think you need → ask a founder; pages are role-gated on purpose.
 `,
 },
@@ -222,7 +222,7 @@ Some students create their portal account **before** any money changes hands (th
 
 ${img("payment-setup-dialog", "The Set up payment dialog — same pathway, PIF/installments, and custom schedule options")}
 
-3. The dialog is the same flow as Log a close: **pathway** (1:1 vs Group Expertise), total value, **PIF or installments**, and the same **even/custom schedule** builder.
+3. The dialog is the same flow as Log a close: **pathway** (1:1 vs Group Expertise), total value, **PIF, installments, or Scholarship (free)**, and the same **even/custom schedule** builder. Scholarship placements create **no deal and no plan** — the student just gets full access with a Scholarship badge.
 4. Press **Create deal & plan**. The deal, the installment schedule, and your commission are recorded exactly as if you'd used Log a close — Revenue and Installments update automatically.
 
 Rule of thumb: **already in the Students list → close from their page. Not in the list → Log a close with "New student".** Never do both — that would double-log the deal.
@@ -245,6 +245,7 @@ Click **Revenue → Installments** tab:
 
 - The cards at the top show what's **overdue** and what's **due in 1–3 days**.
 - The **Follow-up queue** lists exactly who to message today. After you reach out, press **Followed up**; when money lands, press **Mark paid**.
+- **Money only counts once it's in Whop.** When you mark a payment paid, the portal checks Whop for a matching charge — if it can't find one it asks you to double-check before counting it. A due date passing never counts as money; only a real payment does.
 
 ## 7. Fixing and finding deals
 
@@ -253,7 +254,7 @@ Click **Revenue → Installments** tab:
 
 ## 8. Everything else you'll touch
 
-- **Calendar** — connect your Google Calendar once (**Connect Google Calendar** button). Every closer's calendar shows in one grid, in your timezone. Use the **Closing** filter chip to see only sales calls. The **Set reminders** tracker below the grid shows, per set, whether the setter ticked each reminder window (48h/24h/3h/1h) and whether the **lead confirmed** — an unconfirmed set auto-drops 6 hours before the call, so your calendar only holds confirmed leads.
+- **Calendar → Sets** — the tracker every closer should read before a call day. Each set shows **who owns it** (owner badge), which reminders went out, and — the part that matters to you — **at which reminder the lead confirmed**: "Confirmed at 24h" means they committed a day out; "Confirmed at 3h" means it's fresh. An unconfirmed set auto-drops 6 hours before the call, so your calendar only holds confirmed leads. Setters also leave **notes** on their sets (objections, context) — read them before you dial in.
 - **Sales** — the funnel trends and Closed Rate for any date range; your submission status is on this page too.
 - **Students** — look up any student before a call: payment state, phase, history.
 - **Testimonials** — a client win crosses your DMs? Drop it here the same day.
@@ -286,17 +287,19 @@ Click **CSM** in the sidebar.
 
 **a) Tally as you work.** The four cards at the top are counters: **Loom reviewed, Roleplay reviewed, Check-in done, Escalation**. Every time you finish one, tap the card once (+1). Don't batch it at the end of the day — tap as you go and the numbers stay honest.
 
-**b) Submit to Team Reports.** At the end of your day, press the green **Submit to Team Reports** button. That files your EOD using today's tallies — you don't fill a separate form. This is your daily EOD and follows the same zero-miss rule as everyone else's.
+**b) Your daily KPI: students reached.** Every CSM has a personal daily target — **10 students** full-time, **5 students** part-time (set by the founder on your profile). "Reached" means a real touch: a check-in message answered, a call, loom feedback delivered. The EOD form shows your target bar so you always know where you stand; **check-ins** is the number that counts toward it.
 
-**c) Work the student list.** Search or scroll the list on the left, click a student, and the **Accountability panel** shows their open action items, last student EOD, and your review counts for them (14 days).
+**c) Submit to Team Reports.** At the end of your day, press the green **Submit to Team Reports** button. That files your EOD using today's tallies on **your own local day** — you don't fill a separate form. This is your daily EOD and follows the same zero-miss rule as everyone else's.
 
-**d) Assign ad-hoc action items.** In the panel, type a task in **New action item…**, optionally pick a due date, press **Add**. The student sees it at the top of their own portal and ticks it off there — you'll see it update here.
+**d) Work the student list.** Search or scroll the list on the left, click a student, and the **Accountability panel** shows their open action items, last student EOD, and your review counts for them (14 days).
+
+**e) Assign ad-hoc action items.** In the panel, type a task in **New action item…**, optionally pick a due date, press **Add**. The student sees it at the top of their own portal and ticks it off there — you'll see it update here.
 
 ${img("action-item-new", "Adding an ad-hoc action item from the Action Items hub — multiple students or team members at once")}
 
 For bigger sweeps, use **Action Items → + Add ad-hoc item**: pick **several students at once** (or team members — they'll see it at the top of their dashboard with your name on it), one task, one due date, done.
 
-**e) Log CSM notes.** Bottom of the panel: write risk signals, follow-ups, or progress notes, tag them (e.g. \`#progress\`, \`#check-in\`), press **Save note**. Notes are visible to coaches and admins on the student's record.
+**f) Log CSM notes.** Bottom of the panel: write risk signals, follow-ups, or progress notes, tag them (e.g. \`#progress\`, \`#check-in\`), press **Save note**. Notes are visible to coaches and admins on the student's record.
 
 ## 2. The radar — Student Success
 
@@ -323,7 +326,13 @@ Click **Testimonials**: upload video/image/text proof, set the status (**Request
 
 ${EOD_POLICY}
 
-## 5. Escalations — the one flow that must never stall
+## 5. The student's side — what they see (so you can guide them)
+
+Every student's portal opens on a **Start Here** checklist that walks their whole path: onboarding Typeform → all Skool training videos + offer board → group calls (or 1:1s) → **3 looms a day into the review channel until you approve them** → then **5 loom applications a day**. You can see which steps they've ticked from their record — if a student is lost, point them back to Start Here.
+
+Your part of that chain is the **loom loop**: they send looms, you review and give feedback the same day, they apply it and send again. When their looms are consistently good enough, tell a founder/coach to move their phase to **Applying** — that flips their daily target from looms to applications automatically. Students also have a **leaderboard** (apps, looms, interviews over 7 days) — use it in check-ins; climbing it is a great motivator.
+
+## 6. Escalations — the one flow that must never stall
 
 When a student is angry, stuck beyond your reach, or talking about refunds:
 
@@ -331,7 +340,7 @@ When a student is angry, stuck beyond your reach, or talking about refunds:
 2. Write a CSM note on the student tagged **#escalation** with what happened, in their words.
 3. Message the coach (and Faizan if it's payment- or refund-related) the same hour — the note is the record, the message is the alarm.
 
-## 6. Everything else you'll touch
+## 7. Everything else you'll touch
 
 ${img("student-detail", "A student's full record — timeline, EODs, milestones, installments, CSM notes")}
 
@@ -342,7 +351,7 @@ ${img("student-detail", "A student's full record — timeline, EODs, milestones,
 - **Profile** — display name + avatar.
 - **⌘K / Ctrl-K** — jump to any student or page instantly.
 
-## 7. What you won't see
+## 8. What you won't see
 
 Money pages (Dashboard, Sales, Revenue, Closer Resources) are outside the CSM role on purpose — your world is students, not deals. If you need a number from those, ask Faizan.
 `,
@@ -391,11 +400,9 @@ Click **Students**. Every student sits in a journey phase:
 - The **At risk** filter shows students who need attention, with the reason on each (no call in 14d, no EODs, ghosting, payment late). The "no call in 14 days" rule only applies while they're in **1:1 Coaching** — finished students won't nag you.
 - Click a student to open their full record: timeline, their daily EODs (roleplays + applications), milestones to tick off, installments, and CSM notes.
 
-## 3. Your capacity — Coaches tab
+## 3. Your capacity
 
-${img("coaches-tab", "The Coaches capacity view — load, rating, and stale students")}
-
-On the 1-on-1 Calls page, switch to the **Coaches** tab: active roster count, average rating, calls done, and a list of your students who are **>14 days since their last 1:1** — clear them first each week.
+**Student Success** shows the students who are **>14 days since their last 1:1** — clear those first each week; the coach filter chips on the 1-on-1 Calls page narrow everything to just your calls.
 
 One thing to know about pathways: **Group Expertise Pathway** students have a 1:1 allowance of **zero** — they're coached in group calls only and will never appear in your stale-1:1 list. **1:1 Pathway** students get **10 one-on-one calls**; their remaining allowance shows on their record.
 
@@ -446,7 +453,7 @@ ${img("dashboard", "The Dashboard")}
 
 Click **Dashboard** in the sidebar. Read it top to bottom:
 
-1. **The big number** = cash collected this month. The small line under it compares to **last month at the same day** (↑ green = ahead, ↓ red = behind). Click **View revenue →** to see the deals behind it.
+1. **The big number** = cash collected this month, read **straight from Whop, net of fees** — it updates itself every few minutes. The small line under it compares to **last month at the same day** (↑ green = ahead, ↓ red = behind). Click **View revenue →** to see the deals behind it.
 2. **The four cards** (DMs, Booked, Shows, Show Rate) = this period's sales activity. The **7D / 30D / 90D** buttons change the period. **Compare** shows the previous period as a faint line behind the current one.
 3. **The ops strip** = today's problems: **at-risk students, overdue payments, payments due soon, testimonials pending**. Each one is clickable and takes you to the page where you fix it.
 4. **Click any number card** to open a breakdown by person and by day.
@@ -457,7 +464,7 @@ Click **Dashboard** in the sidebar. Read it top to bottom:
 
 ## 1b. Enforcing the EOD rule (2 minutes, every morning)
 
-The team policy is simple: **nobody misses an EOD, ever** — 7 days a week, every role, zeros allowed, silence not. The portal does the policing for you:
+The team policy is simple: **nobody on the team misses an EOD, ever** — 7 days a week, zeros allowed, silence not. (**You two are the exception: co-founders don't file EODs** — the portal knows and will never nag you or count you as missing.) The portal does the policing for you:
 
 1. Open **Sales** before 10:00. The *submission status* list shows exactly who filed, who hit KPI, and who is **missing**.
 2. For anyone on the *missed yesterday* card, press **Copy nudge** — a ready-made chase message lands on your clipboard; paste it in their DM.
@@ -469,10 +476,10 @@ The team policy is simple: **nobody misses an EOD, ever** — 7 days a week, eve
 
 ${img("team", "Team page — members and pending approvals")}
 
-New sign-ups wait in a **pending approval** queue at the top of **Team**:
+Almost everyone who signs up through the shared portal link is a **student**, so requests wait on the **Students** page in a **"Waiting for access"** queue (the red badge on Students in the sidebar counts them):
 
-- **It's a student** → press **Approve as student**. The portal creates their student record and takes you straight to it, with the **payment setup** window already open — fill in what they bought (paid in full or installments) and press save. Revenue and Installments update by themselves.
-- **It's a team member** → press **Set up as team member** and tick their role(s): setter, closer, coach, CSM, admin.
+- **It's a student** → press **Approve as student**. The portal creates their student record and takes you straight to it with the **payment setup** window open — pick what they bought (PIF, installments, or **Scholarship** for free placements) and save. You can fix their display name right on their record.
+- **It's actually a team hire** → the Team page shows the same pending people with a **Set up as team member** button — tick their role(s): setter, closer, coach, CSM, admin.
 
 That's the whole flow. No one gets access until you approve them.
 
@@ -513,11 +520,7 @@ ${img("access-defaults", "Access defaults — per-role page visibility and the m
 
 ## 6. Founder-only rooms
 
-These two are visible **only to you two** — not admins, not the team:
-
-${img("gathering-hub", "Gathering Hub")}
-
-- **Gathering Hub** — the weekly command view: cash vs goal, weekly review, SOPs & playbooks.
+Visible **only to founders** — not admins, not the team:
 
 ${img("content", "Content planner")}
 
@@ -529,24 +532,29 @@ ${img("set-tracker", "Set reminders tracker — reminder windows, confirmation, 
 
 - **Calendar** shows every connected team calendar in one grid; filter it with the **All / Closing / Coaching / Meetings** chips. Press **Connect Google Calendar** once for your own.
 - Sets booked through **Calendly appear automatically** in the *Set reminders* list. Setters claim their own; claiming adds it to their Google Calendar with reminders **48h / 24h / 3h / 1h** before, and the bell nudges them when each window opens.
-- Under each set, the setter ticks the reminder chips as they send them (green = reminded, amber = no reply) and presses **Lead confirmed** when the lead commits. You and the closers can see the state of every set at a glance.
+- Under each set, the setter ticks each reminder as they send it and marks **where the lead confirmed** — so "Confirmed at 24h" vs "Confirmed at 3h" tells you exactly how fresh the commitment is. Every set carries an **owner badge**, and setters land on "My sets" so nobody works someone else's lead.
 - **The 6-hour rule (enforced automatically):** any claimed set still unconfirmed 6 hours before the call is removed from the list and the calendar — unconfirmed leads are probable no-shows and the hour goes back to the team.
 
-## 6c. Finance (founders only)
+## 6c. CRM — is the outreach SOP actually happening?
+
+The **CRM** page ends with an **Outreach compliance** table that sweeps every lead in Close: per tier (A / B / C / unscored) it shows how many were **never contacted**, **touched today**, **called once**, **double-dialed**, and the two SOP breaks — *dialed once with no second dial* and *double-dialed with no email after*. Red numbers are the ones to chase in the morning. (If most leads show "Unscored", the team isn't filling in the Lead Score field in Close.)
+
+## 6d. Finance (founders only)
 
 ${img("finance", "The Finance page — cash in/out, profit split, MRR")}
 
 **Finance** in the sidebar is only visible to you three:
 
-- **Top row** — cash collected this month (+ what's still scheduled), total expenses, projected profit, and MRR.
+- **Top row** — **cash in from Whop, net of fees** (gross shown small underneath), expenses + team payouts, projected profit, and MRR. Whop is the source of truth: a logged deal doesn't count as money until the payment is really there.
+- **Revenue reconciliation** — every Whop payment matched against logged closes and installments; anything unmatched on either side is the gap to investigate.
 - **Recurring revenue** — the installment income scheduled for the next six months, as a quiet chart.
-- **Profit split** — after expenses: **70% Abdulrahmane · 15% Faizan · 15% Abu Bilal**, calculated on both projected and banked cash.
+- **Profit split** — after expenses **and team payouts** (commissions + base pay): **70% Abdulrahmane · 15% Faizan · 15% Abu Bilal**, calculated on both projected and banked cash.
 - **Money flow** — enter today's payment-processor balance once and the list shows day-by-day what comes in (installments) and goes out (expenses) with a running balance to end of month.
 - **Business expenses** — add every recurring bill (name, amount, day of the month it hits) and one-offs; they feed the flow and the profit math automatically.
 
-## 6d. Weekly rhythm
+## 6e. Weekly rhythm
 
-- **Gathering Hub → Weekly review** — cash vs goal, funnel, EOD compliance, milestones, and testimonials for the week; read it before the team meeting.
+- **Finance** — cash vs goal and the month's money picture; read it before the team meeting.
 - **Content → Instagram** — on the 1st of each month, log the IG snapshot (followers, reach, top reels). The dashboard reminds you if it's missing.
 - **Sunday**: spot-check EOD numbers against the CRM ([CRM Hygiene Policy](/policies/crm-hygiene) has the audit steps).
 
@@ -564,7 +572,8 @@ ${img("knowledge", "Knowledge Hub")}
 | See who didn't file an EOD | **Sales** → submission status |
 | Chase a late payment | **Revenue → Installments** → follow-up queue |
 | Check on a student | **⌘K / Ctrl-K** → type their name |
-| Approve a new sign-up | **Team** → pending queue |
+| Approve a new sign-up | **Students** → Waiting for access |
+| Check outreach SOP compliance | **CRM** → Outreach compliance table |
 | Change a commission % | **Admin** → commission rates |
 | Change the cash goal | **Admin** → portal settings |
 | Assign a task | **Action Items** → + Add ad-hoc item |
@@ -572,7 +581,6 @@ ${img("knowledge", "Knowledge Hub")}
 | Plan content | **Content** (founders only) |
 | Read the EOD rules | **Knowledge → EOD & Meetings Policy** |
 | See a coach's call quality | **Admin** → unrated calls · **1-on-1 Calls** → Coaches tab |
-| Remove the demo data | **Admin** → go-live checklist → run \`npm run demo:remove\` |
 
 > One habit to keep the whole machine honest: **everything gets logged the day it happens** — closes, calls, EODs, testimonials. The dashboard is only as truthful as the logging.
 `,

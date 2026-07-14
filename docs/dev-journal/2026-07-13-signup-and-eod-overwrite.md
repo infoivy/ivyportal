@@ -61,3 +61,13 @@ User asked to "disable fake data". Ran `npm run demo:remove` — removed 48 demo
 **Student portal (deployed).** Arabic salam, program-aware views (group = no coach/1:1), Start Here checklist (student_guide_steps table), leaderboard (server fn), KPI rework (outreach removed; 3 roleplays+3 looms pre-approval, 5 apps post), sidebar Journey/Library groups, new bottom nav.
 
 **Also deployed:** per-student EOD-exempt toggle + student header spacing; CSM daily target (profiles.csm_daily_target, Team editor, EOD bar); sets-vs-expected graph + lighter expected bars; 24H defaults + 3D preset + shadcn DateField everywhere; setter claim-your-set bell pings + inline set notes; Close outreach-compliance sweep (per Lead Score tier; verified live: 229 leads, A-tier fully contacted, 17/40 B-tier uncontacted, 178 leads unscored).
+
+---
+
+## Update 2026-07-14 (third wave): access requests, cofounder EODs, fresh role guides
+
+**Access requests → Students.** Portal-link signups now queue on the Students page ("Waiting for access", red badge on Students in sidebar); Team keeps a pointer + team-hire path.
+
+**Cofounders exempt from EODs** (Faizan, Abu Bilal): no EOD-due chip, out of compliance roster and dashboard missing count.
+
+**Per-role portal guides regenerated.** scripts/shoot-guide-assets.mjs: creates temp single-role accounts (setter/closer/csm/coach/admin+founder+cofounder), Playwright+Chrome logs in as each on prod, 26 role-correct screenshots at 1440×900 dark, deletes accounts (verified 0 left). Guide content updated for: DM setter = DMs sent, EOD Today/Yesterday toggle + local-day rule, new Sets view (claim pings, My sets, owner badges, per-reminder confirm, notes, 6h rule, Pathway-Onboarding-only), 24H presets + calendar picker, Whop-net cash, CSM daily targets (10/5) + student-side Start Here/loom loop section, scholarship option, access-requests flow, CRM outreach compliance, Gathering Hub removed, setter guide no longer references Sales/Revenue (setters lack access), stale Coaches-tab section replaced. Note: log-a-close-schedule screenshot kept from previous batch (dialog unchanged); all others fresh.
