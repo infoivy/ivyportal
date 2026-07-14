@@ -36,7 +36,10 @@ function AuthedLayout() {
   const [state, setState] = useState<AuthState>({ user: null, roles: [], displayName: null, loading: true });
   const [eodSubmitted, setEodSubmitted] = useState<boolean | null>(null);
 
-  const checkEod = async (userId: string) => {
+  const checkEod = async (userId: string, rolesArr: string[]) => {
+    // Cofounders and founders don't file EODs (founder-confirmed 2026-07-14) —
+    // never show them the "EOD due" nag.
+    if (rolesArr.includes("cofounder") || rolesArr.includes("founder")) { setEodSubmitted(true); return; }
     // The rep's own calendar day — EODs belong to the day they lived,
     // wherever they are (must match the EOD form's date exactly).
     const today = todayLocal();
@@ -71,7 +74,7 @@ function AuthedLayout() {
         displayName: profileRes.data?.display_name ?? userRes.data.user?.email ?? null,
         loading: false,
       });
-      checkEod(userId);
+      checkEod(userId, rolesArr);
 
       const path = window.location.pathname;
       const isStudent = rolesArr.includes("student");

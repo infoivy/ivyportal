@@ -197,46 +197,23 @@ function TeamPage() {
         </div>
       </header>
 
-      {/* Approval queue — signups stay locked out until you place them */}
+      {/* Access requests live on the Students page — nearly all raw signups
+          are students. Team keeps a pointer plus the team-hire action. */}
       {members.some(m => m.roles.length === 0 && m.active) && (
-        <div className="rounded-lg border border-warning/25 bg-warning-bg p-4 space-y-3">
-          <div className="text-body font-semibold text-warning-fg">
-            Pending approval · {members.filter(m => m.roles.length === 0 && m.active).length}
-          </div>
-          <div className="space-y-2">
+        <div className="rounded-lg border border-border bg-card px-4 py-3 flex flex-wrap items-center gap-3">
+          <div className="text-body text-muted-foreground flex-1 min-w-[200px]">
+            <span className="font-semibold text-foreground">{members.filter(m => m.roles.length === 0 && m.active).length} access request{members.filter(m => m.roles.length === 0 && m.active).length === 1 ? "" : "s"}</span>
+            {" "}waiting on the Students page. Hiring one of them as a team member instead?
+            {" "}
             {members.filter(m => m.roles.length === 0 && m.active).map(m => (
-              <div key={m.id} className="flex flex-wrap items-center gap-3 rounded-md bg-card border border-border px-3 py-2.5">
-                <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center text-micro font-semibold shrink-0">
-                  {(m.display_name ?? "?").charAt(0).toUpperCase()}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-body font-medium text-foreground truncate">{m.display_name ?? "Unnamed"}</div>
-                  <div className="text-caption text-muted-foreground">Signed up — waiting to be placed</div>
-                </div>
-                <div className="flex gap-2 shrink-0">
-                  <button
-                    onClick={async () => {
-                      try {
-                        const r = await approveStudentFn({ data: { userId: m.id } });
-                        toast.success("Approved — now fill in their payment and package.");
-                        load();
-                        if (r.studentId) navigate({ to: "/students/$id", params: { id: r.studentId }, search: { setup: "payment" } });
-                      } catch (e) { toast.error(String((e as Error).message ?? e)); }
-                    }}
-                    className="text-caption font-medium px-3 py-1.5 rounded-md bg-muted text-foreground hover:bg-accent motion-safe:transition-colors"
-                  >
-                    Approve as student
-                  </button>
-                  <button
-                    onClick={() => setEditing(m)}
-                    className="text-caption font-medium px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 motion-safe:transition-colors"
-                  >
-                    Set up as team member…
-                  </button>
-                </div>
-              </div>
+              <button key={m.id} onClick={() => setEditing(m)} className="text-primary hover:underline mr-2">
+                {m.display_name ?? "Unnamed"} →
+              </button>
             ))}
           </div>
+          <Link to="/students" className="text-caption font-medium px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 motion-safe:transition-colors shrink-0">
+            Review on Students
+          </Link>
         </div>
       )}
 

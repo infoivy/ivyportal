@@ -107,7 +107,7 @@ function Dashboard() {
     const callRisk = format(subDays(now, 14), "yyyy-MM-dd");
 
     {
-      const [cur, prev, profs, students, callsThisWeek, callsRecent, eodsRecent, todayEods, installmentsDue, installmentsLate, testimonials, actionCalls] = await Promise.all([
+      const [cur, prev, profs, students, callsThisWeek, callsRecent, eodsRecent, todayEods, installmentsDue, installmentsLate, testimonials, actionCalls, eodExemptRoles] = await Promise.all([
         // eods_activity: whole team can read team activity (no money columns)
         supabase.from("eods_activity").select("id, user_id, report_date, dms_sent, convos_started, calls_booked, calls_scheduled, shows, no_shows, closes").gte("report_date", from).lte("report_date", to).order("report_date", { ascending: true }),
         compare
@@ -123,6 +123,7 @@ function Dashboard() {
         supabase.from("installment_payments").select("id", { count: "exact", head: true }).eq("status", "upcoming").lt("due_date", today),
         supabase.from("students").select("id", { count: "exact", head: true }).eq("status", "active").eq("testimonial_collected", false).not("first_win_at", "is", null),
         supabase.from("student_calls").select("action_items_json").not("action_items_json", "is", null).limit(2000),
+        supabase.from("user_roles").select("user_id").in("role", ["cofounder", "founder"]),
       ]);
       const eodRows = (cur.data as EodRow[]) ?? [];
       const prevRows = (prev.data as EodRow[]) ?? [];
@@ -141,7 +142,9 @@ function Dashboard() {
 
       const eodsToday = (todayEods.data as any[])?.length ?? 0;
       const filedToday = new Set(((todayEods.data as { user_id: string }[] | null) ?? []).map(r => r.user_id));
-      const recentFilers = new Set(eodRows.map(r => r.user_id));
+      // Cofounders/founders don't owe EODs even if they filed some historically
+      const eodExempt = new Set(((eodExemptRoles.data as { user_id: string }[] | null) ?? []).map(r => r.user_id));
+      const recentFilers = new Set(eodRows.map(r => r.user_id).filter(u => !eodExempt.has(u)));
       const eodsMissingToday = Array.from(recentFilers).filter(u => !filedToday.has(u)).length;
 
       let openActionItems = 0;

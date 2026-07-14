@@ -138,11 +138,15 @@ function EODsPage() {
 
   const fetchTeam = async () => {
     const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 45);
-    const [{ data }, { data: rolesData }] = await Promise.all([
+    const [{ data }, { data: rolesData }, { data: cofRows }] = await Promise.all([
       supabase.from("eods").select("*").gte("report_date", isoDate(cutoff)).order("report_date", { ascending: false }),
       supabase.from("user_roles").select("user_id, role").in("role", ["setter", "closer", "coach", "csm"]),
+      supabase.from("user_roles").select("user_id").in("role", ["cofounder", "founder"]),
     ]);
     const eods = (data ?? []) as EOD[];
+    // Cofounders/founders don't file EODs — keep them out of the roster and
+    // expected counts even when they also hold closer/csm roles.
+    const exempt = new Set((cofRows ?? []).map(r => r.user_id));
     const userIds = Array.from(new Set([...(rolesData ?? []).map(r => r.user_id), ...eods.map(e => e.user_id)]));
     const { data: profs } = await supabase.from("profiles").select("id, display_name, setter_type, created_at").in("id", userIds);
     const profMap = new Map((profs ?? []).map(p => [p.id, p as { id: string; display_name: string; setter_type: SetterType; created_at: string }]));
@@ -162,7 +166,7 @@ function EODsPage() {
         return { ...e, display_name: p?.display_name ?? "Unknown", primary_role: primaryRole(e.user_id), setter_type: p?.setter_type ?? null };
       }) as GridEod[],
       roster: userIds
-        .filter(uid => (roleMap.get(uid) ?? []).some(r => ["setter", "closer", "coach", "csm"].includes(r)))
+        .filter(uid => !exempt.has(uid) && (roleMap.get(uid) ?? []).some(r => ["setter", "closer", "coach", "csm"].includes(r)))
         .map(uid => {
           const p = profMap.get(uid);
           return { user_id: uid, display_name: p?.display_name ?? "Unknown", primary_role: primaryRole(uid), setter_type: p?.setter_type ?? null, joined_at: (p?.created_at ?? "").slice(0, 10) };

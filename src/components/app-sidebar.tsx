@@ -46,12 +46,14 @@ const salesItems = (roles: string[]): Item[] => [
 
 // One entry — the fulfillment side (Students / CSM / 1-on-1 Calls /
 // Testimonials) is tabbed on-page, like Sales. Setters land on Testimonials.
-const studentsEntry = (roles: string[]): Item[] => [{
+const studentsEntry = (roles: string[], pendingApprovals: number): Item[] => [{
   title: "Students",
   url: firstStudentsTab(roles),
   icon: School,
   roles: ["admin", "closer", "csm", "coach", "founder", "cofounder", "setter"],
   match: ["/students", "/csm", "/calls", "/testimonials"],
+  // Access requests from the shared portal link wait on the Students page
+  badge: pendingApprovals,
 }];
 
 const libraryItems: Item[] = [
@@ -63,9 +65,9 @@ const founderItems: Item[] = [
   { title: "Content", url: "/content", icon: Clapperboard, roles: ["founder"] },
 ];
 
-const adminItems = (pendingApprovals: number): Item[] => [
+const adminItems: Item[] = [
   { title: "Admin", url: "/admin", icon: Shield, roles: ["admin"] },
-  { title: "Team",  url: "/team",  icon: Users,  roles: ["admin"], badge: pendingApprovals },
+  { title: "Team",  url: "/team",  icon: Users,  roles: ["admin"] },
 ];
 
 // Student sidebar: portal tabs (via the tab bus) + library + profile, so the
@@ -259,10 +261,10 @@ export function AppSidebar({ roles }: { roles: string[] }) {
       <SidebarContent className="gap-0 py-2">
         {renderGroup("Today", todayItems)}
         {renderGroup("Sales", salesItems(roles))}
-        {renderGroup("Students", studentsEntry(roles))}
+        {renderGroup("Students", studentsEntry(roles, isAdmin ? pendingApprovals : 0))}
         {renderGroup("Library", libraryItems)}
         {roles.includes("founder") && renderGroup("Founder", founderItems)}
-        {isAdmin && renderGroup("Admin", adminItems(pendingApprovals))}
+        {isAdmin && renderGroup("Admin", adminItems)}
         {renderGroup("Account", [{ title: "Profile", url: "/profile", icon: UserCircle }])}
       </SidebarContent>
     </Sidebar>
