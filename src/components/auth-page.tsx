@@ -1,6 +1,8 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { signUpEmail } from "@/lib/auth.functions";
 import { supabase } from "@/integrations/supabase/client";
 import isaLogo from "@/assets/isa-logo.png.asset.json";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -21,6 +23,7 @@ export function installSessionOnlyCleanup() {
 
 export function AuthPage() {
   const navigate = useNavigate();
+  const signUpFn = useServerFn(signUpEmail);
   const inviteToken = typeof window !== "undefined"
     ? new URLSearchParams(window.location.search).get("invite")
     : null;
@@ -63,21 +66,18 @@ export function AuthPage() {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { emailRedirectTo: window.location.origin, data: { full_name: name } },
-    });
-    setLoading(false);
-    if (error) toast.error(error.message);
-    else if (!data.session) {
-      // Email confirmation is on: no session yet, and signing in fails until
-      // the link in the inbox is clicked.
-      toast.message("Account created — confirm via the link in your inbox, then sign in.");
-      setTab("signin");
-    } else {
+    try {
+      // Server-side signup creates the account pre-confirmed (no confirmation
+      // email needed — the portal is approval-gated), then we sign straight in.
+      await signUpFn({ data: { email: email.trim(), password, fullName: name } });
+      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      if (error) throw error;
       applyRememberChoice();
-      toast.success("Account created — you're in.");
+      toast.success("Account created — you're in. An admin will approve your access shortly.");
+    } catch (err) {
+      toast.error(String((err as Error).message ?? err));
+    } finally {
+      setLoading(false);
     }
   };
 
