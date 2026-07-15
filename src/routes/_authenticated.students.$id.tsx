@@ -251,6 +251,19 @@ function StudentDetail() {
   const saveNextAction = async (v: string) => {
     await update({ next_action: v.trim() || null });
   };
+
+  const renameStudent = async (name: string) => {
+    const clean = name.trim();
+    if (!clean || !student || clean === student.full_name) return;
+    const { error } = await supabase.from("students").update({ full_name: clean }).eq("id", student.id);
+    if (error) return toast.error(error.message);
+    // deals/installments carry a denormalized student_name — keep them in step
+    // so Revenue and Installments show the corrected name too (best effort).
+    await supabase.from("deals").update({ student_name: clean } as never).eq("student_id", student.id);
+    await (supabase.from("installments") as any).update({ student_name: clean }).eq("student_id", student.id);
+    toast.success("Name updated");
+    load();
+  };
   const saveGeneralNotes = async () => {
     const { error } = await supabase.from("students").update({ general_notes: student.general_notes } as any).eq("id", student.id);
     if (error) return toast.error(error.message);
@@ -282,7 +295,11 @@ function StudentDetail() {
           <div className="flex-1 min-w-[240px]">
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl font-semibold flex items-center gap-2.5">
-                {student.full_name}
+                <EditableName
+                  value={student.full_name}
+                  canEdit={canManage || roles.includes("closer")}
+                  onSave={renameStudent}
+                />
                 {(() => {
                   const h = healthMap?.get(student.id);
                   return h ? (
@@ -973,3 +990,36 @@ function TimelineFeed({ student, calls, eods, csmNotes, csmAuthors, coachName, p
   );
 }
 
+
+/** Click-to-edit student name — saves on blur or Enter, Escape cancels. */
+function EditableName({ value, canEdit, onSave }: { value: string; canEdit: boolean; onSave: (v: string) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  useEffect(() => { setDraft(value); }, [value]);
+  if (!canEdit) return <span>{value}</span>;
+  if (!editing) {
+    return (
+      <button
+        onClick={() => setEditing(true)}
+        title="Click to rename"
+        className="group inline-flex items-center gap-1.5 text-left rounded-sm -mx-1 px-1 hover:bg-muted/60 motion-safe:transition-colors"
+      >
+        {value}
+        <Pencil className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 motion-safe:transition-opacity" />
+      </button>
+    );
+  }
+  return (
+    <input
+      autoFocus
+      value={draft}
+      onChange={e => setDraft(e.target.value)}
+      onBlur={() => { setEditing(false); onSave(draft); }}
+      onKeyDown={e => {
+        if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+        if (e.key === "Escape") { setDraft(value); setEditing(false); }
+      }}
+      className="text-xl font-semibold bg-[var(--background)] border border-border rounded-sm px-2 py-0.5 w-[min(320px,80vw)] focus:outline-none focus:border-ring"
+    />
+  );
+}
