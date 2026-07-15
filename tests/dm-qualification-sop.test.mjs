@@ -48,6 +48,8 @@ test("the qualification lane includes exact capacity, decision, and readiness sc
     "make this decision yourself",
     "move on this month",
     "without putting yourself or your family under pressure",
+    "somewhere in the four figures",
+    "$1,000–$1,499 can be reviewed when the rest is strong",
   ]) {
     assert.match(source, new RegExp(requiredText.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }

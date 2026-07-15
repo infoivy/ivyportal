@@ -121,7 +121,7 @@ export const SECTIONS: Section[] = [
             <UL items={[
               "Age 18–35",
               "Employed or earning consistently, min $1,000/mo",
-              "Min $1,500 accessible savings",
+              "Usually $1,500 accessible; $1,000–$1,499 can be reviewed when the rest is strong",
               "Can dedicate 4–5+ hours daily",
               "Comfortable with computer, Zoom, docs, sheets",
               "Wants a career skill, not a 2-week side hustle",
@@ -491,7 +491,7 @@ export const SECTIONS: Section[] = [
             <H>When the answer is vague:</H>
             <Q>i hear you. roughly what do you have accessible right now that you could responsibly invest in yourself, without borrowing or putting your family under pressure?</Q>
             <H>When he says "I can invest":</H>
-            <Q>understood. are we talking at least $1,500 accessible right now, or would you need time to build that up?</Q>
+            <Q>got you. when you say you can invest, are you thinking somewhere in the four figures, or would that be a stretch right now?</Q>
             <H>When he avoids the question:</H>
             <Q>no pressure to share exact numbers, but i do need to know whether mentorship is realistic right now or whether the free route is smarter. which one is more honest for your situation?</Q>
             <H>Country and nationality rule:</H>
@@ -507,7 +507,7 @@ export const SECTIONS: Section[] = [
           <div className="space-y-2">
             <H><Tag tone="green">Green → Book</Tag></H>
             <UL items={[
-              "18–35, earns at least $1,000/mo, and has at least $1,500 accessible",
+              "18–35 and earns at least $1,000/mo. $1,500 accessible is clear Green; $1,000–$1,499 can be reviewed when the rest is strong",
               "Can protect 4–5+ hours daily, has a computer, and controls his decision",
               "Has a real problem, wants a career skill, and is ready this month",
             ]} />
