@@ -37,14 +37,12 @@ function RequestsPage() {
     staleTime: 60_000,
     refetchInterval: 2 * 60_000,
     queryFn: async () => {
-      const [{ data: profs }, { data: roleRows }] = await Promise.all([
-        supabase.from("profiles").select("id, display_name, active, created_at"),
-        supabase.from("user_roles").select("user_id"),
-      ]);
-      const placed = new Set((roleRows ?? []).map(r => r.user_id));
-      return ((profs ?? []) as (Pending & { active: boolean | null })[])
-        .filter(p => p.active !== false && !placed.has(p.id))
-        .sort((a, b) => b.created_at.localeCompare(a.created_at));
+      // RLS hides other users' user_roles rows from plain closers/CSMs, so
+      // "profiles minus placed" can't be computed client-side; the
+      // security-definer pending_signups() returns the queue for approver roles.
+      const { data, error } = await supabase.rpc("pending_signups");
+      if (error) throw error;
+      return (data ?? []) as Pending[];
     },
   });
   const pending = q.data ?? [];

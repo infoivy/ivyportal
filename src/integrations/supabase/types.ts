@@ -2102,6 +2102,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      pending_signups: {
+        Args: never
+        Returns: {
+          created_at: string
+          display_name: string
+          id: string
+        }[]
+      }
       student_toggle_action_item: {
         Args: { _call_id: string; _done: boolean; _index: number }
         Returns: Json

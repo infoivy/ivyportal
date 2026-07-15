@@ -23,20 +23,15 @@ export function StudentsTabBar() {
   const path = useRouterState({ select: s => s.location.pathname });
   const { roles } = useAuth();
   const visible = TABS.filter(t => t.roles.some(r => roles.includes(r)));
-  const canSeeRequests = ["admin", "closer", "csm"].some(r => roles.includes(r));
+  const canSeeRequests = ["admin", "closer", "csm", "founder", "cofounder"].some(r => roles.includes(r));
   const pendingQ = useQuery({
     queryKey: ["students", "access-requests-count"],
     enabled: canSeeRequests,
     staleTime: 60_000,
     refetchInterval: 2 * 60_000,
     queryFn: async () => {
-      const [{ data: profs }, { data: roleRows }] = await Promise.all([
-        supabase.from("profiles").select("id, active"),
-        supabase.from("user_roles").select("user_id"),
-      ]);
-      const placed = new Set((roleRows ?? []).map(r => r.user_id));
-      return ((profs ?? []) as { id: string; active: boolean | null }[])
-        .filter(p => p.active !== false && !placed.has(p.id)).length;
+      const { data } = await supabase.rpc("pending_signups");
+      return (data ?? []).length;
     },
   });
   const pending = pendingQ.data ?? 0;
