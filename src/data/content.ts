@@ -1,12 +1,13 @@
 import type { ReactNode } from "react";
 
 export type TabId =
-  | "stages" | "inbound" | "outbound" | "story" | "conv" | "dmclose"
+  | "stages" | "inbound" | "financial" | "outbound" | "story" | "conv" | "dmclose"
   | "followup" | "psych" | "engage" | "pacing";
 
 export const TABS: { id: TabId; label: string; color: string }[] = [
   { id: "stages", label: "The 8 Stages", color: "var(--tab-stages)" },
   { id: "inbound", label: "Inbound Flow", color: "var(--tab-inbound)" },
+  { id: "financial", label: "Financial Qualification", color: "var(--tab-financial)" },
   { id: "outbound", label: "Outbound Openers", color: "var(--tab-outbound)" },
   { id: "story", label: "Story Replies", color: "var(--tab-story)" },
   { id: "conv", label: "Outbound Conv. Flow", color: "var(--tab-conv)" },

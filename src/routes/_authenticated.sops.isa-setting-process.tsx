@@ -50,6 +50,7 @@ const CONSTRAINT_CHIPS: { label: string; query: string; color: string }[] = [
 const SEARCH_TAGS: Record<TabId, string[]> = {
   stages: ["stage", "process", "steps", "flow", "profile", "opener", "problem", "deep dive", "constraint", "routing", "recommendation", "close", "calendly", "exploring", "stuck", "learning", "in the game", "identity", "quick check", "icp"],
   inbound: ["inbound", "path", "keyword", "reply", "permission close", ...SYNONYMS.money, "halal", "haram", "5-minute", "five minute"],
+  financial: ["financial qualification", "qualify", "qualification", "income", "savings", "budget", "invest", "money", "green", "amber", "red", "decision authority", "readiness"],
   outbound: ["outbound", "opener", "dm", "cold", "prospect", "targeting", "who to dm", "leads", "bad lead", "green flag", "red flag", "hot", "warm", "response time"],
   story: ["story", "reply", "engagement", "reaction", "posts", "instagram", "gym", "win", "struggle", "quote", "motivation"],
   conv: ["conversation", "conv", "flow", "value drop", "youtube", "trust", "nurture", "warm", "brother", "self-identify", ...SYNONYMS.followup, "case study"],
@@ -435,6 +436,9 @@ LEAD TYPE (Exploring / Stuck / Learning / In the Game):
 CURRENT STAGE (1–8):
 PRIMARY CONSTRAINT (Money / Time / Belief):
 READINESS (This month / Next few months / Exploring):
+QUALIFICATION RESULT (Green / Amber / Red):
+ROUTE (Book / Nurture / Free community / Disqualify):
+DISQUALIFIER OR GAP (if any):
 
 Pain points (in his words):
 

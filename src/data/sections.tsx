@@ -358,6 +358,34 @@ export const SECTIONS: Section[] = [
         ),
       },
       {
+        title: "Backlog Triage: 1,000+ DMs",
+        subtitle: "Work intent first, not oldest first",
+        body: (
+          <div className="space-y-2">
+            <P>Do not treat the inbox like one queue. Clear it in priority lanes so high-intent men are handled before old reactions and dead accounts.</P>
+            <H><Tag tone="green">Priority 1</Tag></H>
+            <UL items={[
+              "Keyword DMs, offer questions, price questions, and men who asked for help",
+              "Existing conversations where the lead shared a real problem",
+              "Recent story replies that opened a business or career conversation",
+            ]} />
+            <H><Tag tone="yellow">Priority 2</Tag></H>
+            <UL items={[
+              "Recent followers with a real profile and clear Muslim male ICP signals",
+              "Old conversations that previously showed intent but went quiet",
+            ]} />
+            <H><Tag tone="red">Remove or deprioritize</Tag></H>
+            <UL items={[
+              "Bots, spam, empty accounts, obvious non-ICP accounts, and one-tap emoji reactions",
+              "Anyone who clearly said no, unless the agreed follow-up date has arrived",
+            ]} />
+            <H>Reopen an old DM:</H>
+            <Q>as-salamu alaykum man, cleaning through older messages and saw yours about [specific thing]. are you still serious about building remote sales, or has your situation changed?</Q>
+            <P>Do not qualify until he replies. One genuine reopen attempt, then move on.</P>
+          </div>
+        ),
+      },
+      {
         title: "Common Inbound Situations",
         subtitle: "Handle specific triggers",
         body: (
@@ -421,6 +449,76 @@ export const SECTIONS: Section[] = [
             <Q>thanks for being straight with me, it makes this way easier. if you give me permission i'll shoot you over the calendar.</Q>
             <H>After they agree:</H>
             <Q>ping me when booked so i can confirm everything on my end. if there's anything you need before the call, don't hesitate to ask ;)</Q>
+          </div>
+        ),
+      },
+    ],
+  },
+
+  // ===== FINANCIAL QUALIFICATION =====
+  {
+    id: "financial",
+    heading: "Financial Qualification",
+    color: "var(--tab-financial)",
+    cards: [
+      {
+        title: "The DM Qualification Lane",
+        subtitle: "Six boxes before a call",
+        body: (
+          <div className="space-y-2">
+            <P>React to his answer first, then ask one connected question. Never paste all six questions at once.</P>
+            <H>1. Situation:</H>
+            <Q>got you. what does life look like rn, working, studying, or in between?</Q>
+            <H>2. Problem and goal:</H>
+            <Q>what are you actually trying to change over the next 6 to 12 months?</Q>
+            <H>3. Time capacity:</H>
+            <Q>if you decided to take this seriously, how many hours a day could you realistically protect for this?</Q>
+            <H>4. Financial capacity:</H>
+            <Q>thanks for being straight with me. what are you working with right now, income and savings wise? i need to know so i can point you in a direction that makes sense without putting yourself or your family under pressure</Q>
+            <H>5. Decision authority:</H>
+            <Q>and if the right path made sense, can you make this decision yourself or does anyone else need to be involved?</Q>
+            <H>6. Readiness:</H>
+            <Q>if the fit was right and the path was clear, would you genuinely move on this month, or are you more preparing for later?</Q>
+            <P><b>Rule:</b> Pain earns the right to ask about capacity. Capacity earns the right to book. If he has not shared a real goal or problem yet, do not jump to money.</P>
+          </div>
+        ),
+      },
+      {
+        title: "Hard Qualification Without Burning the Lead",
+        subtitle: "Direct, respectful, and financially responsible",
+        body: (
+          <div className="space-y-2">
+            <H>When the answer is vague:</H>
+            <Q>i hear you. roughly what do you have accessible right now that you could responsibly invest in yourself, without borrowing or putting your family under pressure?</Q>
+            <H>When he says "I can invest":</H>
+            <Q>understood. are we talking at least $1,500 accessible right now, or would you need time to build that up?</Q>
+            <H>When he avoids the question:</H>
+            <Q>no pressure to share exact numbers, but i do need to know whether mentorship is realistic right now or whether the free route is smarter. which one is more honest for your situation?</Q>
+            <H>Country and nationality rule:</H>
+            <P><b>Never qualify by country, accent, name, or nationality.</b> Location can be asked for context and scheduling only. Qualification is based on age, income, accessible savings, time, equipment, decision authority, seriousness, and readiness.</P>
+            <P>Do not encourage debt, borrowing, missed bills, or family pressure. A man who cannot responsibly invest is routed to free help and nurture, not pushed.</P>
+          </div>
+        ),
+      },
+      {
+        title: "Green, Amber, Red Routing",
+        subtitle: "Every conversation gets one clear outcome",
+        body: (
+          <div className="space-y-2">
+            <H><Tag tone="green">Green → Book</Tag></H>
+            <UL items={[
+              "18–35, earns at least $1,000/mo, and has at least $1,500 accessible",
+              "Can protect 4–5+ hours daily, has a computer, and controls his decision",
+              "Has a real problem, wants a career skill, and is ready this month",
+            ]} />
+            <Q>based on what you shared, a call actually makes sense. we'll map the right path around your schedule and where you're starting. want me to send the calendar?</Q>
+            <H><Tag tone="yellow">Amber → Nurture</Tag></H>
+            <P>Good fit, but one recoverable gap: saving, timing, daily availability, or next-few-month readiness. Give the free community or one useful asset, record the gap, and set a real 30–60 day follow-up.</P>
+            <Q>honestly, i wouldn't push you into a call yet. fix [specific gap] first, use [resource] in the meantime, and i'll check back with you on [date]. fair?</Q>
+            <H><Tag tone="red">Red → Disqualify Warmly</Tag></H>
+            <P>Hard gap: under 18, no income and no savings or plan, cannot commit the time, no computer, cannot make the decision, or wants instant money without building a skill.</P>
+            <Q>i'd rather be straight with you than waste your time or take money you shouldn't spend. the mentorship isn't the right move for you rn. start with the free community, build [specific gap], and message us again when that changes insha'Allah.</Q>
+            <P><b>Disqualified is not rejected as a person.</b> Keep the relationship clean. Log the reason. Never keep pushing for a call after a Red outcome.</P>
           </div>
         ),
       },
