@@ -5,7 +5,7 @@ const P = ({ children, className = "" }: { children: React.ReactNode; className?
 );
 
 // Script block — subtle shaded background flags this as copy-pasteable
-export const Q = ({ children, label }: { children: React.ReactNode; label?: string }) => {
+export const Q = ({ children, label, copyable = true }: { children: React.ReactNode; label?: string; copyable?: boolean }) => {
   const copy = async (e: React.MouseEvent<HTMLButtonElement>) => {
     const el = (e.currentTarget.parentElement?.querySelector("[data-quote]") as HTMLElement | null);
     const txt = el?.innerText || (typeof children === "string" ? children : String(children));
@@ -37,10 +37,10 @@ export const Q = ({ children, label }: { children: React.ReactNode; label?: stri
     if (ok) setTimeout(() => { btn.innerText = prev; }, 1200);
   };
   return (
-    <div className="script-block my-1.5 relative rounded-md border-l-2 pl-3 pr-14 py-1.5" data-script>
+    <div className={`script-block my-1.5 relative rounded-md border-l-2 pl-3 ${copyable ? "pr-14" : "pr-3"} py-1.5`} data-script>
       {label && <span className="inline-block text-[9px] font-bold uppercase tracking-wider text-muted-foreground mr-1.5 align-middle">{label}</span>}
       <span data-quote className="text-[13px] leading-relaxed text-foreground/85">{children}</span>
-      <button onClick={copy} className="absolute right-1 top-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded border border-border/60 bg-background/70 opacity-70 hover:opacity-100 transition" title="Copy script">Copy</button>
+      {copyable && <button onClick={copy} className="absolute right-1 top-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded border border-border/60 bg-background/70 opacity-70 hover:opacity-100 transition" title="Copy script">Copy</button>}
     </div>
   );
 };
@@ -78,7 +78,7 @@ export const SECTIONS: Section[] = [
   // ===== STAGES =====
   {
     id: "stages",
-    heading: "The 8-Stage Setting Process",
+    heading: "Inbound Stage-by-Stage",
     color: "var(--muted-foreground)",
     cards: [
       {
@@ -89,14 +89,14 @@ export const SECTIONS: Section[] = [
             <P>Consultant, not salesperson. You diagnose, you don't pitch.</P>
             <P>The frame in every conversation: <i>"i'm figuring out if we can even take you on"</i> — not <i>"let me convince you to book."</i></P>
             <H>Before every shift:</H>
-            <Q>my job is to find the right men, not convince the wrong ones.</Q>
+            <Q copyable={false}>my job is to find the right men, not convince the wrong ones.</Q>
             <P>Care about his outcome, stay detached from whether he books. The setter who NEEDS the booking pushes too hard and reads as desperate. The setter who genuinely wants the best for him but is fine either way creates the exact energy that makes men book.</P>
           </div>
         ),
       },
       {
-        title: "The 8 Stages",
-        subtitle: "10–20 messages, same-day to 48h target",
+        title: "Inbound Conversation Map",
+        subtitle: "From profile check to booked",
         body: (
           <div className="space-y-3">
             <NumStep n={1} title="Profile Research" sub="30 sec: age, location, bio, employment, effort" />
@@ -315,7 +315,7 @@ export const SECTIONS: Section[] = [
   // ===== INBOUND =====
   {
     id: "inbound",
-    heading: "Inbound Conversation Flow",
+    heading: "Inbound Scripts and Triggers",
     color: "var(--muted-foreground)",
     cards: [
       {

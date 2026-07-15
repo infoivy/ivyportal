@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { TransformWrapper, TransformComponent, useControls, useTransformEffect, type ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
 import React, { useRef, useState, useEffect, useCallback, useMemo, useDeferredValue } from "react";
-import { TABS, type TabId } from "@/data/content";
+import { type TabId } from "@/data/content";
 import { SECTIONS } from "@/data/sections";
 import { useIsMobile } from "@/hooks/use-mobile";
 import logoAsset from "@/assets/isa-logo.png.asset.json";
@@ -153,6 +153,39 @@ const WORKFLOW_STEPS: WorkflowStep[] = [
   },
 ];
 
+const LIBRARY_GROUPS: { id: string; title: string; description: string; sections: TabId[] }[] = [
+  {
+    id: "inbound",
+    title: "1. Inbound Setting",
+    description: "Identity, ICP, inbound conversation stages, routing, and booking.",
+    sections: ["stages", "inbound"],
+  },
+  {
+    id: "financial",
+    title: "2. Financial Qualification",
+    description: "Check capacity, decision authority, and readiness before booking or nurturing.",
+    sections: ["financial"],
+  },
+  {
+    id: "outbound",
+    title: "3. Outbound Setting",
+    description: "Who to contact, how to open, story replies, and the cold-to-booked conversation flow.",
+    sections: ["outbound", "story", "conv"],
+  },
+  {
+    id: "closing",
+    title: "4. Closing and Follow-Up",
+    description: "DM closing, objection handling, follow-up ladders, no-shows, and nurture.",
+    sections: ["dmclose", "followup"],
+  },
+  {
+    id: "operations",
+    title: "5. Setter Mastery and Operations",
+    description: "Psychology, engagement, tracking, handoffs, pacing, and daily execution.",
+    sections: ["psych", "engage", "pacing"],
+  },
+];
+
 function matchSections(query: string): Set<TabId> | null {
   const q = query.trim().toLowerCase();
   if (!q) return null;
@@ -253,15 +286,15 @@ function Toolbar({ dark, setDark, onNotes, counter, setCounter, onReset, onHelp 
   );
 }
 
-function Header({ onJump, onOpenWorkflow, query, setQuery, innerRef }: { onJump: (id: TabId) => void; onOpenWorkflow: () => void; query: string; setQuery: (v: string) => void; innerRef?: React.RefObject<HTMLDivElement | null> }) {
+function Header({ onJumpGroup, onOpenWorkflow, query, setQuery, innerRef }: { onJumpGroup: (id: string) => void; onOpenWorkflow: () => void; query: string; setQuery: (v: string) => void; innerRef?: React.RefObject<HTMLDivElement | null> }) {
   return (
-    <div ref={innerRef} className="absolute top-0 left-0 right-0 z-40 px-3 sm:px-6 py-2 sm:py-3 bg-background border-b border-border shadow-sm">
+    <div ref={innerRef} className="fixed top-0 left-0 right-0 z-40 px-3 sm:px-6 py-2 sm:py-3 bg-background/95 backdrop-blur-md border-b border-border shadow-sm">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 sm:gap-3">
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <img src={logoAsset.url} alt="Ivy Sales Academy" className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 object-contain" loading="eager" />
           <div className="min-w-0">
-            <h1 className="text-base sm:text-lg font-semibold text-foreground leading-tight truncate">Ivy Sales Academy</h1>
-            <p className="hidden sm:block text-xs text-muted-foreground mt-0.5 truncate">Complete system: conversation flows, scripts, objection handling, psychology, engagement & operations</p>
+            <h1 className="text-base sm:text-lg font-semibold text-foreground leading-tight truncate">Script Library</h1>
+            <p className="hidden sm:block text-xs text-muted-foreground mt-0.5 truncate">Ordered from inbound setting to daily operations</p>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -281,13 +314,12 @@ function Header({ onJump, onOpenWorkflow, query, setQuery, innerRef }: { onJump:
         </div>
       </div>
       <div className="flex gap-2 mt-2 sm:ml-12 overflow-x-auto no-scrollbar pb-1 sm:pb-0 sm:flex-wrap items-center">
-        {TABS.map(t => (
+        {LIBRARY_GROUPS.map(group => (
           <button
-            key={t.id}
-            onClick={() => onJump(t.id)}
-            className="text-[10px] sm:text-[11px] font-semibold text-white px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full whitespace-nowrap hover:opacity-90 transition-opacity shrink-0"
-            style={{ backgroundColor: t.color }}
-          >{t.label}</button>
+            key={group.id}
+            onClick={() => onJumpGroup(group.id)}
+            className="min-h-9 text-[10px] sm:text-[11px] font-semibold text-foreground px-3 rounded-full whitespace-nowrap border border-border bg-card hover:bg-muted hover:border-foreground/25 transition shrink-0"
+          >{group.title}</button>
         ))}
         <span className="hidden sm:inline-block w-px h-4 bg-border mx-1" />
         {CONSTRAINT_CHIPS.map(c => {
@@ -337,7 +369,7 @@ function Header({ onJump, onOpenWorkflow, query, setQuery, innerRef }: { onJump:
   );
 }
 
-function WorkflowHeader({ onJump, onOpenLibrary, innerRef }: { onJump: (id: string) => void; onOpenLibrary: () => void; innerRef?: React.RefObject<HTMLDivElement | null> }) {
+function WorkflowHeader({ onJump, onOpenLibrary, guideCollapsed, onToggleGuide, innerRef }: { onJump: (id: string) => void; onOpenLibrary: () => void; guideCollapsed: boolean; onToggleGuide: () => void; innerRef?: React.RefObject<HTMLDivElement | null> }) {
   return (
     <header ref={innerRef} className="fixed top-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-md border-b border-border shadow-sm">
       <div className="px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
@@ -348,9 +380,12 @@ function WorkflowHeader({ onJump, onOpenLibrary, innerRef }: { onJump: (id: stri
             <p className="text-[11px] text-muted-foreground mt-0.5 truncate">Follow steps 1 to 7 in order</p>
           </div>
         </div>
-        <div className="flex items-center gap-1 rounded-lg border border-border bg-muted/50 p-1 shrink-0">
-          <span className="px-3 py-2 rounded-md bg-background shadow-sm text-xs font-semibold text-foreground">Workflow</span>
-          <button onClick={onOpenLibrary} className="px-3 py-2 rounded-md text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-background/70 transition" type="button">Script Library</button>
+        <div className="flex items-center gap-2 shrink-0">
+          <button onClick={onToggleGuide} className="hidden lg:block px-3 py-2 rounded-md border border-border bg-card text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition" type="button">{guideCollapsed ? "Show guide" : "Hide guide"}</button>
+          <div className="flex items-center gap-1 rounded-lg border border-border bg-muted/50 p-1">
+            <span className="px-3 py-2 rounded-md bg-background shadow-sm text-xs font-semibold text-foreground">Workflow</span>
+            <button onClick={onOpenLibrary} className="px-3 py-2 rounded-md text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-background/70 transition" type="button">Script Library</button>
+          </div>
         </div>
       </div>
       <nav aria-label="Setter workflow steps" className="px-4 sm:px-6 pb-3 flex gap-2 overflow-x-auto no-scrollbar">
@@ -384,12 +419,6 @@ const Card = React.memo(function Card({ cardId, color, title, subtitle, children
   const [matches, setMatches] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
 
-  const copyAll = () => {
-    const els = bodyRef.current?.querySelectorAll("[data-quote]");
-    if (!els || !els.length) return;
-    const txt = Array.from(els).map(e => (e as HTMLElement).innerText.trim()).join("\n\n");
-    navigator.clipboard?.writeText(txt);
-  };
 
   const copyLink = () => {
     const url = `${window.location.origin}${window.location.pathname}#${cardId}`;
@@ -476,9 +505,6 @@ const Card = React.memo(function Card({ cardId, color, title, subtitle, children
             {subtitle && <p className="text-[11px] text-muted-foreground mt-0.5">{subtitle}</p>}
           </div>
           <div className="flex flex-col gap-1 shrink-0">
-            <button onClick={copyAll} className="text-[9px] font-semibold text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded border border-border/70 bg-background/60" title="Copy all scripts in this card">
-              Copy all
-            </button>
             <button onClick={copyLink} className="text-[9px] font-semibold text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded border border-border/70 bg-background/60" title="Copy shareable link to this card">
               {linkCopied ? "Copied" : "Link"}
             </button>
@@ -497,7 +523,7 @@ function getWorkflowCard(ref: WorkflowCardRef) {
   return { card, color: section.color };
 }
 
-const WorkflowView = React.memo(function WorkflowView({ headerH }: { headerH: number }) {
+const WorkflowView = React.memo(function WorkflowView({ headerH, guideCollapsed }: { headerH: number; guideCollapsed: boolean }) {
   return (
     <main className="min-h-screen bg-background overflow-y-auto pb-28" style={{ paddingTop: headerH + 24 }}>
       <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
@@ -515,7 +541,14 @@ const WorkflowView = React.memo(function WorkflowView({ headerH }: { headerH: nu
         <div className="space-y-14">
           {WORKFLOW_STEPS.map((step, stepIndex) => (
             <section key={step.id} id={`workflow-${step.id}`} className="scroll-mt-40">
-              <div className="grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-8">
+              <div className={guideCollapsed ? "space-y-4" : "grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-8"}>
+                {guideCollapsed ? (
+                  <div className="hidden lg:flex items-center gap-3 border-b border-border pb-3">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-foreground text-xs font-bold text-background">{stepIndex + 1}</span>
+                    <h3 className="text-base font-semibold text-foreground">{step.title}</h3>
+                    <span className="text-xs text-muted-foreground">Move on when: {step.moveOnWhen}</span>
+                  </div>
+                ) : (
                 <div className="lg:sticky lg:top-40 lg:self-start">
                   <div className="flex items-center gap-3">
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-foreground text-sm font-bold text-background">{stepIndex + 1}</span>
@@ -528,6 +561,7 @@ const WorkflowView = React.memo(function WorkflowView({ headerH }: { headerH: nu
                     <p className="mt-1 text-xs leading-relaxed text-foreground/80">{step.moveOnWhen}</p>
                   </div>
                 </div>
+                )}
                 <div className="grid items-start gap-4 md:grid-cols-2">
                   {step.cards.map((ref, cardIndex) => {
                     const { card, color } = getWorkflowCard(ref);
@@ -546,6 +580,62 @@ const WorkflowView = React.memo(function WorkflowView({ headerH }: { headerH: nu
                     );
                   })}
                 </div>
+              </div>
+            </section>
+          ))}
+        </div>
+      </div>
+    </main>
+  );
+});
+
+const LibraryView = React.memo(function LibraryView({ headerH, matched, query }: { headerH: number; matched: Set<TabId> | null; query: string }) {
+  return (
+    <main className="min-h-screen bg-background pb-28" style={{ paddingTop: headerH + 24 }}>
+      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
+        <section className="mb-12 max-w-3xl">
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Live conversation reference</p>
+          <h2 className="mt-3 text-2xl sm:text-3xl font-semibold tracking-tight text-foreground">Find the stage you are in. Use only what comes next.</h2>
+          <p className="mt-3 text-sm sm:text-base leading-relaxed text-muted-foreground">Inbound comes first. Financial qualification is its own required stage. Outbound, closing, follow-up, and operations stay separated so they do not interrupt the live inbound path.</p>
+        </section>
+
+        <div className="space-y-16">
+          {LIBRARY_GROUPS.map(group => (
+            <section key={group.id} id={`library-group-${group.id}`} className="scroll-mt-44">
+              <div className="mb-7 border-b border-border pb-4">
+                <h3 className="text-xl font-semibold tracking-tight text-foreground">{group.title}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{group.description}</p>
+              </div>
+              <div className="space-y-12">
+                {group.sections.map(sectionId => {
+                  const section = SECTIONS.find(candidate => candidate.id === sectionId);
+                  if (!section) return null;
+                  const dim = matched && !matched.has(section.id);
+                  return (
+                    <section key={section.id} id={`sec-${section.id}`} data-section={section.id} className="scroll-mt-44" style={{ opacity: dim ? 0.2 : 1, transition: "opacity 200ms" }}>
+                      <div className="mb-4 flex items-center gap-3">
+                        <span className="h-3 w-1 rounded-full" style={{ backgroundColor: section.color }} />
+                        <h4 className="text-base font-semibold text-foreground">{section.heading}</h4>
+                        <span className="text-xs text-muted-foreground">{section.cards.length} cards</span>
+                      </div>
+                      <div className="grid items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
+                        {section.cards.map((card, cardIndex) => (
+                          <Card
+                            key={`${section.id}-${cardIndex}`}
+                            cardId={`card-${section.id}-${cardIndex}`}
+                            color={section.color}
+                            title={card.title}
+                            subtitle={card.subtitle}
+                            matchQuery={dim ? "" : query}
+                            wide
+                          >
+                            {card.body}
+                          </Card>
+                        ))}
+                      </div>
+                    </section>
+                  );
+                })}
               </div>
             </section>
           ))}
@@ -586,10 +676,7 @@ function HelpOverlay({ open, onClose }: { open: boolean; onClose: () => void }) 
   const rows: [string, string][] = [
     ["/", "Focus search"],
     ["?", "Toggle this help"],
-    ["R", "Reset view (100%, top-left)"],
     ["Esc", "Clear search / close modals"],
-    ["Ctrl / ⌘ + wheel", "Zoom canvas"],
-    ["Two-finger drag", "Pan canvas"],
   ];
   return (
     <div className="isa-modal fixed inset-0 overflow-y-auto z-[70] bg-black/40 backdrop-blur-sm flex p-4" onClick={onClose} data-no-canvas-scroll>
@@ -815,7 +902,7 @@ function MobileToolbar({ dark, setDark, onNotes, counter, setCounter, onHelp }: 
     setCounter({ ...counter, [k]: Math.max(0, counter[k] + d) });
   };
   return (
-    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-background border border-border rounded-full shadow-lg px-2 py-1.5 max-w-[calc(100%-16px)] overflow-x-auto no-scrollbar">
+    <div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-background border border-border rounded-full shadow-lg px-2 py-1.5 max-w-[calc(100%-16px)] overflow-x-auto no-scrollbar">
       {COUNTER_FIELDS.map(({ key, label, full }) => (
         <div key={key} className="flex items-center h-8 shrink-0 rounded-full bg-muted/60 pl-1.5 pr-1 gap-1" title={full}>
           <span className="text-[10px] text-muted-foreground font-semibold">{label}</span>
@@ -863,11 +950,11 @@ function MobileToolbar({ dark, setDark, onNotes, counter, setCounter, onHelp }: 
 
 
 function Index() {
-  const wrapperRef = useRef<ReactZoomPanPinchRef | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const headerRef = useRef<HTMLDivElement | null>(null);
   const [headerH, setHeaderH] = useState(HEADER_HEIGHT_DESKTOP);
   const [mode, setMode] = useState<PageMode>("workflow");
+  const [guideCollapsed, setGuideCollapsed] = useState(false);
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
   const [dark, setDark] = useState(true);
@@ -875,7 +962,7 @@ function Index() {
   const [helpOpen, setHelpOpen] = useState(false);
   const [counter, setCounterState] = useState<Counter>(emptyCounter);
   const matched = useMemo(() => matchSections(deferredQuery), [deferredQuery]);
-  const isMobile = useIsMobile();
+
 
   // Rehydrate persisted preferences after SSR to avoid hydration mismatches
   useEffect(() => {
@@ -904,36 +991,8 @@ function Index() {
     ro.observe(el);
     window.addEventListener("resize", update);
     return () => { ro.disconnect(); window.removeEventListener("resize", update); };
-  }, []);
+  }, [mode]);
 
-  const clampCanvasPosition = useCallback((x: number, y: number, scale: number) => {
-    const container = containerRef.current;
-    const canvas = container?.querySelector<HTMLElement>(".canvas-bg");
-    if (!container || !canvas) return { x, y };
-
-    const rect = container.getBoundingClientRect();
-    const headerEl = headerRef.current;
-    const hH = headerEl ? headerEl.getBoundingClientRect().height : (rect.width < 640 ? HEADER_HEIGHT_MOBILE : HEADER_HEIGHT_DESKTOP);
-    // Transform viewport starts BELOW the header, so gutters are viewport-relative
-    const viewportW = rect.width;
-    const viewportH = rect.height - hH;
-    const leftGutter = 8;
-    const rightGutter = 8;
-    const topGutter = 8;
-    const bottomGutter = 80;
-    const scaledW = canvas.offsetWidth * scale;
-    const scaledH = canvas.offsetHeight * scale;
-
-    const maxX = leftGutter - CANVAS_PAD_LEFT * scale;
-    const minX = Math.min(maxX, viewportW - rightGutter - scaledW);
-    const maxY = topGutter - CANVAS_PAD_TOP * scale;
-    const minY = Math.min(maxY, viewportH - bottomGutter - scaledH);
-
-    return {
-      x: Math.min(maxX, Math.max(minX, x)),
-      y: Math.min(maxY, Math.max(minY, y)),
-    };
-  }, []);
 
   const setCounter = useCallback((c: Counter) => {
     setCounterState(c);
@@ -946,20 +1005,6 @@ function Index() {
     try { localStorage.setItem("isa-theme", dark ? "dark" : "light"); } catch { /* ignore */ }
   }, [dark]);
 
-  const jumpToEl = useCallback((el: HTMLElement) => {
-    const w = wrapperRef.current;
-    if (!el || !w) return;
-    const state = w.state;
-    const scale = state.scale;
-    const elRect = el.getBoundingClientRect();
-    const hH = headerRef.current?.getBoundingClientRect().height ?? headerH;
-    const targetLeft = 20;
-    const targetTop = hH + 16;
-    const deltaX = targetLeft - elRect.left;
-    const deltaY = targetTop - elRect.top;
-    const next = clampCanvasPosition(state.positionX + deltaX, state.positionY + deltaY, scale);
-    w.setTransform(next.x, next.y, scale, 500, "easeOutCubic");
-  }, [clampCanvasPosition]);
 
   const scrollToEl = useCallback((el: HTMLElement) => {
     const hH = headerRef.current?.getBoundingClientRect().height ?? headerH;
@@ -972,12 +1017,16 @@ function Index() {
     if (el) scrollToEl(el);
   }, [scrollToEl]);
 
+  const jumpToLibraryGroup = useCallback((id: string) => {
+    const el = document.getElementById(`library-group-${id}`);
+    if (el) scrollToEl(el);
+  }, [scrollToEl]);
+
   const jumpTo = useCallback((id: TabId) => {
     const el = document.getElementById(`sec-${id}`);
     if (!el) return;
-    if (isMobile) scrollToEl(el);
-    else jumpToEl(el);
-  }, [isMobile, jumpToEl, scrollToEl]);
+    scrollToEl(el);
+  }, [scrollToEl]);
 
   useEffect(() => {
     if (mode === "library" && matched && matched.size > 0) {
@@ -994,8 +1043,7 @@ function Index() {
       const el = document.getElementById(h);
       if (el) {
         setTimeout(() => {
-          if (isMobile) scrollToEl(el);
-          else jumpToEl(el);
+          scrollToEl(el);
           el.classList.remove("card-focus-flash");
           // reflow to restart animation if same hash re-triggered
           void (el as HTMLElement).offsetWidth;
@@ -1007,92 +1055,9 @@ function Index() {
     setTimeout(handleHash, 200);
     window.addEventListener("hashchange", handleHash);
     return () => window.removeEventListener("hashchange", handleHash);
-  }, [isMobile, jumpToEl, scrollToEl]);
+  }, [scrollToEl]);
 
-  // Trackpad two-finger scroll → pan the canvas. Ctrl/Cmd/pinch → zoom (library handles).
-  // Ignore wheel events originating inside a modal or scrollable UI element.
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el || mode === "workflow") return;
-    const onWheel = (e: WheelEvent) => {
-      const target = e.target as HTMLElement | null;
-      // Let the browser handle wheel inside modals, scrollable inputs, etc.
-      if (target && target.closest("[data-no-canvas-scroll], textarea, .isa-modal")) return;
-      // Block browser page-zoom on Ctrl/Cmd+wheel — let the library zoom the canvas instead
-      if (e.ctrlKey || e.metaKey) { e.preventDefault(); return; }
-      const w = wrapperRef.current;
-      if (!w) return;
-      e.preventDefault();
-      const { positionX, positionY, scale } = w.state;
-      const next = clampCanvasPosition(positionX - e.deltaX, positionY - e.deltaY, scale);
-      w.setTransform(next.x, next.y, scale, 0);
-    };
-    el.addEventListener("wheel", onWheel, { passive: false });
-    return () => el.removeEventListener("wheel", onWheel);
-  }, [clampCanvasPosition, mode]);
-
-  // Transform viewport sits BELOW the header — positions are viewport-relative
-  const initScale = 0.55;
-  // Always start from the same top-left fallback on server and first client render.
-  // Saved view is restored after hydration to avoid mismatched SSR HTML.
-  const initialView = useMemo(() => {
-    return { scale: initScale, x: 8 - CANVAS_PAD_LEFT * initScale, y: 8 - CANVAS_PAD_TOP * initScale };
-  }, []);
-
-  useEffect(() => {
-    const w = wrapperRef.current;
-    if (!w) return;
-    try {
-      const raw = localStorage.getItem("isa:view:v2");
-      if (!raw) return;
-      const p = JSON.parse(raw) as { scale?: number; x?: number; y?: number };
-      if (typeof p.scale === "number" && typeof p.x === "number" && typeof p.y === "number") {
-        w.setTransform(p.x, p.y, p.scale, 0);
-      }
-    } catch { /* ignore */ }
-  }, []);
-
-  // Persist view (throttled) whenever the transform changes
-  const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const persistView = useCallback((ref: ReactZoomPanPinchRef) => {
-    if (persistTimer.current) clearTimeout(persistTimer.current);
-    persistTimer.current = setTimeout(() => {
-      try {
-        const { scale, positionX, positionY } = ref.state;
-        localStorage.setItem("isa:view:v2", JSON.stringify({ scale, x: positionX, y: positionY }));
-      } catch { /* ignore */ }
-    }, 250);
-  }, []);
-
-  // Reset view = 100% zoom, first card pinned to top-left of viewport
-  const resetView = useCallback(() => {
-    const w = wrapperRef.current;
-    if (!w) return;
-    const scale = 1;
-    const posY = 8 - CANVAS_PAD_TOP * scale;
-    const posX = 8 - CANVAS_PAD_LEFT * scale;
-    const next = clampCanvasPosition(posX, posY, scale);
-    w.setTransform(next.x, next.y, scale, 350, "easeOutCubic");
-  }, [clampCanvasPosition]);
-
-  // On mount (and window resize), re-clamp the current transform in case
-  // the restored view is out-of-bounds for the current viewport.
-  useEffect(() => {
-    const reclamp = () => {
-      const w = wrapperRef.current;
-      if (!w) return;
-      const { positionX, positionY, scale } = w.state;
-      const next = clampCanvasPosition(positionX, positionY, scale);
-      if (next.x !== positionX || next.y !== positionY) {
-        w.setTransform(next.x, next.y, scale, 0);
-      }
-    };
-    const t = setTimeout(reclamp, 60);
-    window.addEventListener("resize", reclamp);
-    return () => { clearTimeout(t); window.removeEventListener("resize", reclamp); };
-  }, [clampCanvasPosition]);
-
-  // Keyboard shortcuts: /, ?, R, Esc
+  // Keyboard shortcuts: /, ?, Esc
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
@@ -1106,29 +1071,17 @@ function Index() {
       if (inField) return;
       if (e.key === "/") { e.preventDefault(); (document.getElementById("isa-search") as HTMLInputElement | null)?.focus(); return; }
       if (e.key === "?" ) { e.preventDefault(); setHelpOpen(v => !v); return; }
-      if (e.key === "r" || e.key === "R") { e.preventDefault(); resetView(); return; }
+
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [helpOpen, notesOpen, query, resetView]);
+  }, [helpOpen, notesOpen, query]);
 
   if (mode === "workflow") {
     return (
       <div ref={containerRef} className="relative min-h-screen bg-background">
-        <WorkflowView headerH={headerH} />
-        <WorkflowHeader innerRef={headerRef} onJump={jumpToWorkflow} onOpenLibrary={() => setMode("library")} />
-        <NotesModal open={notesOpen} onClose={() => setNotesOpen(false)} counter={counter} setCounter={setCounter} />
-        <HelpOverlay open={helpOpen} onClose={() => setHelpOpen(false)} />
-      </div>
-    );
-  }
-
-  if (isMobile) {
-    return (
-      <div ref={containerRef} className="relative min-h-full bg-background">
-        <MobileView matched={matched} query={deferredQuery} headerH={headerH} />
-        <Header innerRef={headerRef} onJump={jumpTo} onOpenWorkflow={() => setMode("workflow")} query={query} setQuery={setQuery} />
-        <MobileToolbar dark={dark} setDark={setDark} onNotes={() => setNotesOpen(true)} counter={counter} setCounter={setCounter} onHelp={() => setHelpOpen(true)} />
+        <WorkflowView headerH={headerH} guideCollapsed={guideCollapsed} />
+        <WorkflowHeader innerRef={headerRef} onJump={jumpToWorkflow} onOpenLibrary={() => setMode("library")} guideCollapsed={guideCollapsed} onToggleGuide={() => setGuideCollapsed(value => !value)} />
         <NotesModal open={notesOpen} onClose={() => setNotesOpen(false)} counter={counter} setCounter={setCounter} />
         <HelpOverlay open={helpOpen} onClose={() => setHelpOpen(false)} />
       </div>
@@ -1136,41 +1089,10 @@ function Index() {
   }
 
   return (
-    <div ref={containerRef} className="absolute inset-0 overflow-hidden bg-background">
-      {/* Zoom/pan canvas — clipped inside a container that starts BELOW the header.
-          Header, rail, toolbar, and modals live OUTSIDE this wrapper so no
-          transform/stacking-context can trap them below the header. */}
-      <div
-        className="absolute left-0 right-0 bottom-0 overflow-hidden"
-        style={{ top: headerH + 16 }}
-      >
-        <TransformWrapper
-          ref={wrapperRef}
-          initialScale={initialView.scale}
-          initialPositionX={initialView.x}
-          initialPositionY={initialView.y}
-          minScale={0.35}
-          maxScale={2.5}
-          limitToBounds={true}
-          centerOnInit={false}
-          centerZoomedOut={false}
-          wheel={{ step: 0.06, activationKeys: ["Control", "Meta"], excluded: ["textarea", "input", "isa-modal"] }}
-          pinch={{ excluded: ["textarea", "input", "isa-modal"] }}
-          doubleClick={{ disabled: true }}
-          panning={{ velocityDisabled: true, excluded: ["textarea", "input", "isa-modal"] }}
-          onTransform={persistView}
-        >
-          <TransformComponent wrapperStyle={{ width: "100%", height: "100%", overflow: "hidden" }}>
-            <Canvas matched={matched} query={deferredQuery} />
-          </TransformComponent>
-          {/* Toolbar needs useControls() → must live inside TransformWrapper.
-              It's position:fixed so it escapes this container visually. */}
-          <Toolbar dark={dark} setDark={setDark} onNotes={() => setNotesOpen(true)} counter={counter} setCounter={setCounter} onReset={resetView} onHelp={() => setHelpOpen(true)} />
-        </TransformWrapper>
-      </div>
-
-      {/* Fixed overlays — siblings of the canvas, always on top */}
-      <Header innerRef={headerRef} onJump={jumpTo} onOpenWorkflow={() => setMode("workflow")} query={query} setQuery={setQuery} />
+    <div ref={containerRef} className="relative min-h-screen bg-background">
+      <LibraryView headerH={headerH} matched={matched} query={deferredQuery} />
+      <Header innerRef={headerRef} onJumpGroup={jumpToLibraryGroup} onOpenWorkflow={() => setMode("workflow")} query={query} setQuery={setQuery} />
+      <MobileToolbar dark={dark} setDark={setDark} onNotes={() => setNotesOpen(true)} counter={counter} setCounter={setCounter} onHelp={() => setHelpOpen(true)} />
       <NotesModal open={notesOpen} onClose={() => setNotesOpen(false)} counter={counter} setCounter={setCounter} />
       <HelpOverlay open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
