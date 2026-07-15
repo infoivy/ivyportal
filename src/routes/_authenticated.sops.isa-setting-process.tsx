@@ -61,6 +61,98 @@ const SEARCH_TAGS: Record<TabId, string[]> = {
   pacing: ["pacing", "ops", "operations", "schedule", "tracking", "crm", "targets", "kpi", "metrics", "daily", "sunday", "non-negotiable", "personality", "empathy phrases", "handoff", "closer", "benchmark", "stats", "feedback"],
 };
 
+type PageMode = "workflow" | "library";
+type WorkflowCardRef = { section: TabId; title: string; label?: string };
+type WorkflowStep = {
+  id: string;
+  short: string;
+  title: string;
+  instruction: string;
+  moveOnWhen: string;
+  cards: WorkflowCardRef[];
+};
+
+const WORKFLOW_STEPS: WorkflowStep[] = [
+  {
+    id: "identity",
+    short: "Role",
+    title: "Set your frame",
+    instruction: "Read this before the shift. Your job is to diagnose and route, not convince everyone to book.",
+    moveOnWhen: "You can enter the inbox without needing a booking.",
+    cards: [{ section: "stages", title: "The Setter's Identity" }],
+  },
+  {
+    id: "fit",
+    short: "Fit",
+    title: "Check the man before replying",
+    instruction: "Confirm basic ICP fit, research the profile, then choose the highest-intent conversation. Do not start with the oldest DM.",
+    moveOnWhen: "You know who he is, why this DM matters, and whether he is worth opening.",
+    cards: [
+      { section: "stages", title: "ICP Quick-Check" },
+      { section: "stages", title: "Stage 1: Profile Research", label: "Profile Research" },
+      { section: "inbound", title: "Backlog Triage: 1,000+ DMs" },
+    ],
+  },
+  {
+    id: "open",
+    short: "Open",
+    title: "Open the inbound conversation",
+    instruction: "Match the script to why he messaged. Send one message, then wait. Never paste the entire flow.",
+    moveOnWhen: "He replies with enough context to continue naturally.",
+    cards: [
+      { section: "inbound", title: "Common Inbound Situations" },
+      { section: "inbound", title: "The 5-Minute Rule" },
+    ],
+  },
+  {
+    id: "diagnose",
+    short: "Diagnose",
+    title: "Find the real problem",
+    instruction: "React to his words, then ask one connected question. Do not qualify money before he has shared a real goal or problem.",
+    moveOnWhen: "You can state his current situation, desired outcome, and real obstacle in his own words.",
+    cards: [
+      { section: "stages", title: "Stage 3: Problem Identification", label: "Identify the Real Problem" },
+      { section: "inbound", title: "Problem ID Responses" },
+      { section: "stages", title: "Stage 4: Situation Deep-Dive", label: "Situation Deep-Dive" },
+    ],
+  },
+  {
+    id: "qualify",
+    short: "Qualify",
+    title: "Financial Qualification",
+    instruction: "Qualify time, financial capacity, decision authority, and readiness one question at a time. This is responsible routing, not pressure.",
+    moveOnWhen: "All six qualification boxes are known and the lead is clearly Green, Amber, or Red.",
+    cards: [
+      { section: "financial", title: "The DM Qualification Lane" },
+      { section: "financial", title: "Hard Qualification Without Burning the Lead" },
+    ],
+  },
+  {
+    id: "route",
+    short: "Route",
+    title: "Choose one route and close cleanly",
+    instruction: "Book only Green leads. Give Amber leads a dated nurture plan. Route Red leads to free help and stop pushing.",
+    moveOnWhen: "The lead has one clear next action and no false expectation.",
+    cards: [
+      { section: "financial", title: "Green, Amber, Red Routing" },
+      { section: "stages", title: "Stage 6: Support Level Routing", label: "Support Level Routing" },
+      { section: "inbound", title: "Permission Close" },
+    ],
+  },
+  {
+    id: "handoff",
+    short: "Handoff",
+    title: "Confirm, hand off, and follow up",
+    instruction: "Once booked, record what the closer needs immediately. If the calendar was sent but not booked, follow the exact ladder.",
+    moveOnWhen: "The booking is confirmed, the closer has context, and the next follow-up is dated.",
+    cards: [
+      { section: "pacing", title: "The Closer Handoff" },
+      { section: "followup", title: "Calendly Sent, Not Booked (fast ladder)" },
+      { section: "followup", title: "Booked: Show-Rate Sequence" },
+    ],
+  },
+];
+
 function matchSections(query: string): Set<TabId> | null {
   const q = query.trim().toLowerCase();
   if (!q) return null;
@@ -161,7 +253,7 @@ function Toolbar({ dark, setDark, onNotes, counter, setCounter, onReset, onHelp 
   );
 }
 
-function Header({ onJump, query, setQuery, innerRef }: { onJump: (id: TabId) => void; query: string; setQuery: (v: string) => void; innerRef?: React.RefObject<HTMLDivElement | null> }) {
+function Header({ onJump, onOpenWorkflow, query, setQuery, innerRef }: { onJump: (id: TabId) => void; onOpenWorkflow: () => void; query: string; setQuery: (v: string) => void; innerRef?: React.RefObject<HTMLDivElement | null> }) {
   return (
     <div ref={innerRef} className="absolute top-0 left-0 right-0 z-40 px-3 sm:px-6 py-2 sm:py-3 bg-background border-b border-border shadow-sm">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 sm:gap-3">
@@ -172,17 +264,20 @@ function Header({ onJump, query, setQuery, innerRef }: { onJump: (id: TabId) => 
             <p className="hidden sm:block text-xs text-muted-foreground mt-0.5 truncate">Complete system: conversation flows, scripts, objection handling, psychology, engagement & operations</p>
           </div>
         </div>
-        <div className="relative shrink-0">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
-            <circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/>
-          </svg>
-          <input
-            id="isa-search"
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            placeholder="Search…  (press /)"
-            className="text-xs bg-card border border-border rounded-full pl-7 pr-3 py-1.5 w-32 sm:w-56 focus:outline-none focus:ring-2 focus:ring-ring"
-          />
+        <div className="flex items-center gap-2 shrink-0">
+          <button onClick={onOpenWorkflow} className="px-2.5 sm:px-3 py-2 rounded-md border border-border bg-card text-xs font-semibold hover:bg-muted transition" type="button">← Workflow</button>
+          <div className="relative">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
+              <circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/>
+            </svg>
+            <input
+              id="isa-search"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Search…  (press /)"
+              className="text-xs bg-card border border-border rounded-full pl-7 pr-3 py-2 w-32 sm:w-56 focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
         </div>
       </div>
       <div className="flex gap-2 mt-2 sm:ml-12 overflow-x-auto no-scrollbar pb-1 sm:pb-0 sm:flex-wrap items-center">
@@ -239,6 +334,38 @@ function Header({ onJump, query, setQuery, innerRef }: { onJump: (id: TabId) => 
         )}
       </div>
     </div>
+  );
+}
+
+function WorkflowHeader({ onJump, onOpenLibrary, innerRef }: { onJump: (id: string) => void; onOpenLibrary: () => void; innerRef?: React.RefObject<HTMLDivElement | null> }) {
+  return (
+    <header ref={innerRef} className="fixed top-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-md border-b border-border shadow-sm">
+      <div className="px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <img src={logoAsset.url} alt="Ivy Sales Academy" className="w-9 h-9 shrink-0 object-contain" loading="eager" />
+          <div className="min-w-0">
+            <h1 className="text-sm sm:text-base font-semibold text-foreground leading-tight truncate">Setter Workflow</h1>
+            <p className="text-[11px] text-muted-foreground mt-0.5 truncate">Follow steps 1 to 7 in order</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-1 rounded-lg border border-border bg-muted/50 p-1 shrink-0">
+          <span className="px-3 py-2 rounded-md bg-background shadow-sm text-xs font-semibold text-foreground">Workflow</span>
+          <button onClick={onOpenLibrary} className="px-3 py-2 rounded-md text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-background/70 transition" type="button">Script Library</button>
+        </div>
+      </div>
+      <nav aria-label="Setter workflow steps" className="px-4 sm:px-6 pb-3 flex gap-2 overflow-x-auto no-scrollbar">
+        {WORKFLOW_STEPS.map((step, index) => (
+          <button
+            key={step.id}
+            onClick={() => onJump(step.id)}
+            className="min-h-10 px-3 rounded-full border border-border bg-card hover:border-foreground/30 hover:bg-muted text-xs font-semibold whitespace-nowrap transition shrink-0"
+            type="button"
+          >
+            <span className="text-muted-foreground mr-1.5">{index + 1}</span>{step.short}
+          </button>
+        ))}
+      </nav>
+    </header>
   );
 }
 
@@ -360,6 +487,71 @@ const Card = React.memo(function Card({ cardId, color, title, subtitle, children
         <div ref={bodyRef} className="mt-3">{children}</div>
       </div>
     </div>
+  );
+});
+
+function getWorkflowCard(ref: WorkflowCardRef) {
+  const section = SECTIONS.find(candidate => candidate.id === ref.section);
+  const card = section?.cards.find(candidate => candidate.title === ref.title);
+  if (!section || !card) throw new Error(`Missing workflow card: ${ref.section} / ${ref.title}`);
+  return { card, color: section.color };
+}
+
+const WorkflowView = React.memo(function WorkflowView({ headerH }: { headerH: number }) {
+  return (
+    <main className="min-h-screen bg-background overflow-y-auto pb-28" style={{ paddingTop: headerH + 24 }}>
+      <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
+        <section className="mb-12 max-w-3xl">
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">New setter start here</p>
+          <h2 className="mt-3 text-2xl sm:text-3xl font-semibold tracking-tight text-foreground">One conversation. Seven steps. Follow them in order.</h2>
+          <p className="mt-3 text-sm sm:text-base leading-relaxed text-muted-foreground">Read the instruction, use the exact script that matches the lead, and only move forward when the condition is met.</p>
+          <div className="mt-6 grid gap-3 sm:grid-cols-3 text-sm">
+            <div className="rounded-lg border border-border bg-card px-4 py-3"><b className="block text-foreground">One question</b><span className="text-muted-foreground">Never paste a questionnaire.</span></div>
+            <div className="rounded-lg border border-border bg-card px-4 py-3"><b className="block text-foreground">React first</b><span className="text-muted-foreground">Make every next question connected.</span></div>
+            <div className="rounded-lg border border-border bg-card px-4 py-3"><b className="block text-foreground">Route honestly</b><span className="text-muted-foreground">Book, nurture, free help, or disqualify.</span></div>
+          </div>
+        </section>
+
+        <div className="space-y-14">
+          {WORKFLOW_STEPS.map((step, stepIndex) => (
+            <section key={step.id} id={`workflow-${step.id}`} className="scroll-mt-40">
+              <div className="grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-8">
+                <div className="lg:sticky lg:top-40 lg:self-start">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-foreground text-sm font-bold text-background">{stepIndex + 1}</span>
+                    <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">{step.short}</span>
+                  </div>
+                  <h3 className="mt-4 text-xl font-semibold tracking-tight text-foreground">{step.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{step.instruction}</p>
+                  <div className="mt-4 border-l-2 border-success pl-3">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-success-fg">Move on when</p>
+                    <p className="mt-1 text-xs leading-relaxed text-foreground/80">{step.moveOnWhen}</p>
+                  </div>
+                </div>
+                <div className="grid items-start gap-4 md:grid-cols-2">
+                  {step.cards.map((ref, cardIndex) => {
+                    const { card, color } = getWorkflowCard(ref);
+                    return (
+                      <Card
+                        key={`${ref.section}-${ref.title}`}
+                        cardId={`workflow-card-${step.id}-${cardIndex}`}
+                        color={color}
+                        title={ref.label ?? card.title}
+                        subtitle={card.subtitle}
+                        matchQuery=""
+                        wide
+                      >
+                        {card.body}
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
+            </section>
+          ))}
+        </div>
+      </div>
+    </main>
   );
 });
 
@@ -675,6 +867,7 @@ function Index() {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const headerRef = useRef<HTMLDivElement | null>(null);
   const [headerH, setHeaderH] = useState(HEADER_HEIGHT_DESKTOP);
+  const [mode, setMode] = useState<PageMode>("workflow");
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
   const [dark, setDark] = useState(true);
@@ -774,6 +967,11 @@ function Index() {
     window.scrollTo({ top, behavior: "smooth" });
   }, [headerH]);
 
+  const jumpToWorkflow = useCallback((id: string) => {
+    const el = document.getElementById(`workflow-${id}`);
+    if (el) scrollToEl(el);
+  }, [scrollToEl]);
+
   const jumpTo = useCallback((id: TabId) => {
     const el = document.getElementById(`sec-${id}`);
     if (!el) return;
@@ -782,11 +980,11 @@ function Index() {
   }, [isMobile, jumpToEl, scrollToEl]);
 
   useEffect(() => {
-    if (matched && matched.size > 0) {
+    if (mode === "library" && matched && matched.size > 0) {
       const first = SECTIONS.find(s => matched.has(s.id));
       if (first) setTimeout(() => jumpTo(first.id), 60);
     }
-  }, [query, matched, jumpTo]);
+  }, [mode, query, matched, jumpTo]);
 
   // Deep-link: on load & on hashchange, jump to #card-xxx or #sec-xxx
   useEffect(() => {
@@ -815,7 +1013,7 @@ function Index() {
   // Ignore wheel events originating inside a modal or scrollable UI element.
   useEffect(() => {
     const el = containerRef.current;
-    if (!el) return;
+    if (!el || mode === "workflow") return;
     const onWheel = (e: WheelEvent) => {
       const target = e.target as HTMLElement | null;
       // Let the browser handle wheel inside modals, scrollable inputs, etc.
@@ -831,7 +1029,7 @@ function Index() {
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
-  }, [clampCanvasPosition]);
+  }, [clampCanvasPosition, mode]);
 
   // Transform viewport sits BELOW the header — positions are viewport-relative
   const initScale = 0.55;
@@ -914,11 +1112,22 @@ function Index() {
     return () => window.removeEventListener("keydown", onKey);
   }, [helpOpen, notesOpen, query, resetView]);
 
+  if (mode === "workflow") {
+    return (
+      <div ref={containerRef} className="relative min-h-screen bg-background">
+        <WorkflowView headerH={headerH} />
+        <WorkflowHeader innerRef={headerRef} onJump={jumpToWorkflow} onOpenLibrary={() => setMode("library")} />
+        <NotesModal open={notesOpen} onClose={() => setNotesOpen(false)} counter={counter} setCounter={setCounter} />
+        <HelpOverlay open={helpOpen} onClose={() => setHelpOpen(false)} />
+      </div>
+    );
+  }
+
   if (isMobile) {
     return (
       <div ref={containerRef} className="relative min-h-full bg-background">
         <MobileView matched={matched} query={deferredQuery} headerH={headerH} />
-        <Header innerRef={headerRef} onJump={jumpTo} query={query} setQuery={setQuery} />
+        <Header innerRef={headerRef} onJump={jumpTo} onOpenWorkflow={() => setMode("workflow")} query={query} setQuery={setQuery} />
         <MobileToolbar dark={dark} setDark={setDark} onNotes={() => setNotesOpen(true)} counter={counter} setCounter={setCounter} onHelp={() => setHelpOpen(true)} />
         <NotesModal open={notesOpen} onClose={() => setNotesOpen(false)} counter={counter} setCounter={setCounter} />
         <HelpOverlay open={helpOpen} onClose={() => setHelpOpen(false)} />
@@ -961,7 +1170,7 @@ function Index() {
       </div>
 
       {/* Fixed overlays — siblings of the canvas, always on top */}
-      <Header innerRef={headerRef} onJump={jumpTo} query={query} setQuery={setQuery} />
+      <Header innerRef={headerRef} onJump={jumpTo} onOpenWorkflow={() => setMode("workflow")} query={query} setQuery={setQuery} />
       <NotesModal open={notesOpen} onClose={() => setNotesOpen(false)} counter={counter} setCounter={setCounter} />
       <HelpOverlay open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
