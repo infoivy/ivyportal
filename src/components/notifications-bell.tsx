@@ -37,7 +37,7 @@ async function fetchStudentAlerts(): Promise<StudentAlert[]> {
   const thirty = new Date(now - 30 * DAY).toISOString().slice(0, 10);
   const sixty = new Date(now - 60 * DAY).toISOString().slice(0, 10);
   const [students, eods, calls, placements] = await Promise.all([
-    supabase.from("students").select("id, full_name, phase, payment_state, eod_exempt, onboarding_completed_at, created_at").eq("status", "active"),
+    supabase.from("students").select("id, full_name, phase, payment_state, eod_exempt, onboarding_completed_at, created_at, calls_allotted").eq("status", "active"),
     supabase.from("student_eods").select("student_id, report_date").gte("report_date", thirty),
     supabase.from("student_calls").select("student_id, call_date").eq("status", "completed").gte("call_date", sixty),
     supabase.from("student_placements").select("student_id, business_name, interview_at").not("interview_at", "is", null),
@@ -53,7 +53,7 @@ async function fetchStudentAlerts(): Promise<StudentAlert[]> {
   }
 
   const alerts: StudentAlert[] = [];
-  for (const st of (students.data ?? []) as { id: string; full_name: string; phase: string; payment_state: string | null; eod_exempt?: boolean; onboarding_completed_at?: string | null; created_at?: string }[]) {
+  for (const st of (students.data ?? []) as { id: string; full_name: string; phase: string; payment_state: string | null; eod_exempt?: boolean; onboarding_completed_at?: string | null; created_at?: string; calls_allotted?: number | null }[]) {
     // Fresh unlock: the student finished Start Here — check in while it's
     // warm. Backfilled rows have completed_at == created_at; only alert on
     // real completions (stamped later than row creation).
@@ -74,8 +74,9 @@ async function fetchStudentAlerts(): Promise<StudentAlert[]> {
       alerts.push({ key: `pay-${st.id}`, student_id: st.id, student_name: st.full_name, text: "Payment behind", tone: "text-danger-fg" });
     }
     // 1:1 cadence only applies once they're through onboarding — the
-    // "book your calls" push starts at unlock.
-    if (st.onboarding_completed_at && ["coaching_1on1", "applying"].includes(st.phase)) {
+    // "book your calls" push starts at unlock — and only to the 1:1
+    // pathway: group-coaching students (calls_allotted 0) have no 1:1s.
+    if (st.onboarding_completed_at && (st.calls_allotted ?? 0) > 0 && ["coaching_1on1", "applying"].includes(st.phase)) {
       const callDate = lastCall.get(st.id);
       const callDays = callDate ? Math.floor((now - new Date(callDate).getTime()) / DAY) : null;
       if (callDays == null || callDays > 14) {
