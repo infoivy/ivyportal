@@ -1,5 +1,8 @@
 import { Link, useRouterState } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { FileText, UserCircle, ListChecks, Trophy, Sparkles } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth-context";
 
 const items: { tab: string; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { tab: "start", label: "Start", icon: Sparkles },
@@ -10,11 +13,29 @@ const items: { tab: string; label: string; icon: React.ComponentType<{ className
 
 export function StudentBottomNav({ activeTab, onTabChange }: { activeTab?: string; onTabChange?: (t: string) => void }) {
   const path = useRouterState({ select: s => s.location.pathname });
+  const { user } = useAuth();
+  // Until Start Here is complete the portal is Start Here only — mirror that
+  // here so the mobile nav doesn't advertise tabs the page won't render.
+  const lockedQ = useQuery({
+    queryKey: ["student-portal-locked", user?.id],
+    enabled: !!user,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("students")
+        .select("onboarding_completed_at")
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      return !!data && !data.onboarding_completed_at;
+    },
+  });
+  const locked = lockedQ.data === true;
+  const visible = locked ? items.filter(it => it.tab === "start") : items;
   const onPortal = path === "/student-portal";
   return (
     <nav className="sm:hidden fixed bottom-0 inset-x-0 z-40 border-t border-[var(--border)] bg-[var(--background)]/95 backdrop-blur">
-      <div className="grid grid-cols-5">
-        {items.map(it => {
+      <div className={`grid ${locked ? "grid-cols-2" : "grid-cols-5"}`}>
+        {visible.map(it => {
           const Icon = it.icon;
           const active = onPortal && activeTab === it.tab;
           return (

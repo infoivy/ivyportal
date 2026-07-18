@@ -2,10 +2,14 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  DEFAULT_GROUP_CALL_SCHEDULE,
   GROUP_COACHING_CALLS_PER_WEEK,
   countStudentDailyEods,
+  fromStoredCallsAttended,
   getStudentWeeklyDraftAction,
   getStudentWeeklyWindow,
+  parseGroupCallSchedule,
+  toAttendedRecords,
   validateStudentWeeklyEod,
 } from "../src/lib/student-weekly-eod.ts";
 
@@ -51,13 +55,35 @@ test("counts unique daily EODs only inside the accountability week", () => {
   assert.equal(count, 3);
 });
 
+test("schedule has one call per weekday and survives malformed settings", () => {
+  assert.equal(GROUP_COACHING_CALLS_PER_WEEK, 7);
+  assert.equal(DEFAULT_GROUP_CALL_SCHEDULE.length, 7);
+  assert.deepEqual(parseGroupCallSchedule(null), DEFAULT_GROUP_CALL_SCHEDULE);
+  assert.deepEqual(parseGroupCallSchedule([]), DEFAULT_GROUP_CALL_SCHEDULE);
+  assert.deepEqual(parseGroupCallSchedule([{ day: "Mon", name: "Drills" }, { bogus: true }]), [
+    { day: "Mon", name: "Drills" },
+  ]);
+});
+
+test("attended day keys resolve to durable {day, name} records and back", () => {
+  const records = toAttendedRecords(["Wed", "Mon"], DEFAULT_GROUP_CALL_SCHEDULE);
+  assert.deepEqual(records, [
+    { day: "Mon", name: "Off Call Drills" },
+    { day: "Wed", name: "Roleplays" },
+  ]);
+  assert.deepEqual(fromStoredCallsAttended(records), ["Mon", "Wed"]);
+  assert.deepEqual(fromStoredCallsAttended(null), []);
+  assert.deepEqual(fromStoredCallsAttended([{ nope: 1 }]), []);
+});
+
 test("does not touch a weekly draft before stored state is hydrated", () => {
   assert.equal(
     getStudentWeeklyDraftAction({
       hydrated: false,
       hasSubmission: false,
       form: {
-        groupCallsAttended: 0,
+        callsAttended: [],
+        oneOnOneCalls: 0,
         implementation: "",
         biggestWin: "",
         biggestBlocker: "",
@@ -68,30 +94,46 @@ test("does not touch a weekly draft before stored state is hydrated", () => {
   );
 });
 
-test("requires an honest 0-to-7 attendance count and concrete reflection", () => {
-  assert.equal(GROUP_COACHING_CALLS_PER_WEEK, 7);
+test("requires honest attendance against the schedule and concrete reflection", () => {
+  const schedule = DEFAULT_GROUP_CALL_SCHEDULE;
   assert.equal(
-    validateStudentWeeklyEod({
-      groupCallsAttended: 8,
-      implementation: "Applied it",
-      nextWeekCommitment: "Five applications",
-    }),
-    "Group calls attended must be between 0 and 7.",
+    validateStudentWeeklyEod(
+      { callsAttended: ["Xyz"], oneOnOneCalls: null, implementation: "Applied it", nextWeekCommitment: "Five apps" },
+      schedule,
+    ),
+    "Attended calls don't match this week's call schedule — reload and try again.",
   );
   assert.equal(
-    validateStudentWeeklyEod({
-      groupCallsAttended: 0,
-      implementation: "",
-      nextWeekCommitment: "Five applications",
-    }),
-    "Explain what you implemented or what stopped you this week.",
+    validateStudentWeeklyEod(
+      { callsAttended: ["Mon", "Mon"], oneOnOneCalls: null, implementation: "Applied it", nextWeekCommitment: "Five apps" },
+      schedule,
+    ),
+    "Attended calls don't match this week's call schedule — reload and try again.",
   );
   assert.equal(
-    validateStudentWeeklyEod({
-      groupCallsAttended: 0,
-      implementation: "I missed the calls because of work and will reschedule.",
-      nextWeekCommitment: "Attend all seven",
-    }),
+    validateStudentWeeklyEod(
+      { callsAttended: ["Mon"], oneOnOneCalls: 3.5, implementation: "Applied it", nextWeekCommitment: "Five apps" },
+      schedule,
+    ),
+    "1:1 calls this week must be a small whole number.",
+  );
+  assert.equal(
+    validateStudentWeeklyEod(
+      { callsAttended: [], oneOnOneCalls: null, implementation: "", nextWeekCommitment: "Five apps" },
+      schedule,
+    ),
+    "Explain what you implemented from the calls, or what stopped you.",
+  );
+  assert.equal(
+    validateStudentWeeklyEod(
+      {
+        callsAttended: ["Mon", "Sun"],
+        oneOnOneCalls: 2,
+        implementation: "Tightened my roleplay tonality and rebuilt my loom intro.",
+        nextWeekCommitment: "Attend all seven calls",
+      },
+      schedule,
+    ),
     null,
   );
 });

@@ -37,6 +37,7 @@ type Student = {
   first_win_at: string | null; offers_landed_count: number; offer_landed_at: string | null;
   testimonial_collected: boolean; trustpilot_collected: boolean; testimonial_requested?: boolean;
   general_notes: string | null;
+  onboarding_completed_at: string | null;
 };
 type Call = {
   id: string; student_id: string; coach_id: string | null; call_date: string;
@@ -52,6 +53,7 @@ type SEod = {
 };
 type StudentWeeklyEod = {
   id: string; student_id: string; week_start: string; group_calls_attended: number;
+  calls_attended?: { day?: string; name?: string }[] | null; one_on_one_calls?: number | null;
   implementation: string; biggest_win: string | null; biggest_blocker: string | null;
   next_week_commitment: string; submitted_at: string;
 };
@@ -77,7 +79,9 @@ function StudentDetail() {
   const { id } = Route.useParams() as { id: string };
   const nav = useNavigate();
   const { roles, user } = useAuth();
-  const canManage = roles.includes("admin") || roles.includes("coach");
+  // CSMs run fulfillment: they approve looms, unlock portals, and keep
+  // student state current (founder-directed 2026-07-18; RLS matches).
+  const canManage = roles.includes("admin") || roles.includes("coach") || roles.includes("csm");
   const isCsm = roles.includes("csm") || roles.includes("admin");
 
   const [student, setStudent] = useState<Student | null>(null);
@@ -381,6 +385,12 @@ function StudentDetail() {
                     color={student.eod_exempt ? "zinc" : "emerald"}
                     prefix="EODs: "
                   />
+                  <SelectChip
+                    value={student.calls_allotted > 0 ? "1on1" : "group"}
+                    onChange={v => update({ calls_allotted: v === "1on1" ? (student.calls_allotted > 0 ? student.calls_allotted : 10) : 0 })}
+                    options={[{ v: "1on1", l: "1:1 Pathway" }, { v: "group", l: "Group Expertise" }]}
+                    color="sky" prefix="Program: "
+                  />
                 </>
               ) : (
                 <>
@@ -392,6 +402,38 @@ function StudentDetail() {
                 </>
               )}
             </div>
+
+            {/* Onboarding + loom approval — the two gates a CSM controls */}
+            {canManage && (!student.onboarding_completed_at || !["applying", "offer_won", "testimonial", "paused"].includes(student.phase)) && (
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                {!student.onboarding_completed_at && (
+                  <>
+                    <span className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-warning-fg border border-warning/25 bg-warning-bg px-1.5 py-0.5 rounded-sm">
+                      <AlertTriangle className="h-2.5 w-2.5" /> Start Here incomplete — portal locked
+                    </span>
+                    <button
+                      onClick={() => update({ onboarding_completed_at: new Date().toISOString() })}
+                      className="text-caption font-medium px-2.5 py-1 rounded-md border border-border text-foreground hover:bg-muted motion-safe:transition-colors"
+                    >
+                      Unlock portal now
+                    </button>
+                  </>
+                )}
+                {student.onboarding_completed_at && !["applying", "offer_won", "testimonial", "paused"].includes(student.phase) && (
+                  <>
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground border border-border bg-muted px-1.5 py-0.5 rounded-sm">
+                      Loom review stage — 3/day to the review chat
+                    </span>
+                    <button
+                      onClick={() => update({ phase: "applying" })}
+                      className="text-caption font-medium px-2.5 py-1 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 motion-safe:transition-colors"
+                    >
+                      Approve looms → applying (5/day)
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
 
             {/* Next action */}
             <div className="mt-4 flex items-center gap-3">
@@ -751,9 +793,19 @@ function WeeklyStudentEodHistory({
                 <div className="text-xs font-medium">{weekly.week_start} to {weekEnd}</div>
                 <div className="flex items-center gap-3 text-[11px] tabular-nums">
                   <span className={weekly.group_calls_attended >= 5 ? "text-success-fg" : "text-warning-fg"}>Calls {weekly.group_calls_attended}/7</span>
+                  {weekly.one_on_one_calls != null && (
+                    <span className={weekly.one_on_one_calls > 0 ? "text-foreground" : "text-warning-fg"}>1:1s {weekly.one_on_one_calls}</span>
+                  )}
                   <span className={dailyCount >= 5 ? "text-success-fg" : "text-warning-fg"}>Daily EODs {dailyCount}/7</span>
                 </div>
               </div>
+              {Array.isArray(weekly.calls_attended) && weekly.calls_attended.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {weekly.calls_attended.filter(c => c && c.day && c.name).map((c) => (
+                    <span key={`${weekly.id}-${c.day}`} className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">{c.day} · {c.name}</span>
+                  ))}
+                </div>
+              )}
               <div className="grid gap-3 md:grid-cols-2">
                 <StaffWeeklyReflection label="Implemented or stopped by" value={weekly.implementation} />
                 <StaffWeeklyReflection label="Next commitment" value={weekly.next_week_commitment} />

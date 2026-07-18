@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import { CommissionRates, DEFAULT_RATES } from "@/lib/revenue";
 import { format, subDays } from "date-fns";
 import { CONFIGURABLE_ROLES, defaultPagesFor, type RoleAccess } from "@/lib/nav-pages";
+import { parseGroupCallSchedule } from "@/lib/student-weekly-eod";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -54,6 +55,8 @@ function AdminConsole() {
   const [monthlyGoal, setMonthlyGoal] = useState<string>("");
   const [founderSettingsId, setFounderSettingsId] = useState<string | null>(null);
   const [qGoals, setQGoals] = useState<Record<string, string>>({ dms: "", convos: "", calls: "", shows: "", showRate: "", viral: "" });
+  const [orgSettingsId, setOrgSettingsId] = useState<string | null>(null);
+  const [callSchedule, setCallSchedule] = useState<{ day: string; name: string }[]>([]);
   const [savingSettings, setSavingSettings] = useState(false);
   const [auditLog, setAuditLog] = useState<{ id: string; action: string; table_name: string; record_id: string | null; created_at: string; user_id: string | null }[]>([]);
   const [checklist, setChecklist] = useState<Record<string, boolean>>({});
@@ -74,6 +77,7 @@ function AdminConsole() {
 
         (supabase as any).from("audit_log").select("id, action, table_name, record_id, created_at, user_id").order("created_at", { ascending: false }).limit(100),
       ]);
+      const orgRes = await supabase.from("org_settings").select("id, group_call_schedule").limit(1).maybeSingle();
       const pmap: Record<string, Profile> = {};
       (profRes.data as Profile[] | null)?.forEach(p => { pmap[p.id] = p; });
       const rows = (ratesRes.data ?? []).map(r => ({ id: r.id, key: r.key, label: r.label, rate: Number(r.rate), active: r.active }));
@@ -115,6 +119,7 @@ function AdminConsole() {
         unratedCalls: (callsRes.data as CallRow[]) ?? [],
         rateRows: rows,
         founderSettings: (fsRes.data as any) ?? null,
+        orgSettings: (orgRes.data as { id: string; group_call_schedule: unknown } | null) ?? null,
         auditLog: (auditRes.data ?? []) as any[],
         checklist,
       };
@@ -138,6 +143,10 @@ function AdminConsole() {
       setMonthlyGoal(fs.monthly_cash_goal ? String(fs.monthly_cash_goal) : "");
       const qg = (fs as { quarterly_goals?: Record<string, number> }).quarterly_goals;
       if (qg) setQGoals(Object.fromEntries(Object.entries(qg).map(([k, v]) => [k, String(v)])));
+    }
+    if (d.orgSettings) {
+      setOrgSettingsId(d.orgSettings.id);
+      setCallSchedule(parseGroupCallSchedule(d.orgSettings.group_call_schedule));
     }
     setAuditLog(d.auditLog);
     setChecklist(d.checklist);
@@ -365,6 +374,41 @@ function AdminConsole() {
               }}
             >
               <Save className="h-3.5 w-3.5 mr-1" /> Save goals
+            </Button>
+          </div>
+
+          {/* Weekly group coaching call names — the student weekly EOD checklist */}
+          <div className="space-y-2 py-3 border-t border-border">
+            <Label className="text-xs">Group coaching calls (Mon–Sun)</Label>
+            <p className="text-[10px] text-muted-foreground">
+              Names only, no times — students tick these off in their weekly EOD. Keep them matching the Skool calendar.
+            </p>
+            <div className="grid sm:grid-cols-2 gap-2">
+              {callSchedule.map((call, i) => (
+                <div key={call.day} className="flex items-center gap-2">
+                  <span className="w-9 text-[10px] uppercase tracking-wider text-muted-foreground shrink-0">{call.day}</span>
+                  <Input
+                    value={call.name}
+                    onChange={e => setCallSchedule(cs => cs.map((c, j) => j === i ? { ...c, name: e.target.value } : c))}
+                    className="h-8 text-xs"
+                  />
+                </div>
+              ))}
+            </div>
+            <Button
+              size="sm"
+              disabled={savingSettings || !orgSettingsId || callSchedule.some(c => !c.name.trim())}
+              onClick={async () => {
+                if (!orgSettingsId) return;
+                setSavingSettings(true);
+                const payload = callSchedule.map(c => ({ day: c.day, name: c.name.trim() }));
+                const { error } = await supabase.from("org_settings")
+                  .update({ group_call_schedule: payload } as never).eq("id", orgSettingsId);
+                if (error) toast.error(error.message); else toast.success("Call names saved");
+                setSavingSettings(false);
+              }}
+            >
+              <Save className="h-3.5 w-3.5 mr-1" /> Save call names
             </Button>
           </div>
 

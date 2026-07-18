@@ -37,7 +37,7 @@ async function fetchStudentAlerts(): Promise<StudentAlert[]> {
   const thirty = new Date(now - 30 * DAY).toISOString().slice(0, 10);
   const sixty = new Date(now - 60 * DAY).toISOString().slice(0, 10);
   const [students, eods, calls, placements] = await Promise.all([
-    supabase.from("students").select("id, full_name, phase, payment_state, eod_exempt").eq("status", "active"),
+    supabase.from("students").select("id, full_name, phase, payment_state, eod_exempt, onboarding_completed_at, created_at").eq("status", "active"),
     supabase.from("student_eods").select("student_id, report_date").gte("report_date", thirty),
     supabase.from("student_calls").select("student_id, call_date").eq("status", "completed").gte("call_date", sixty),
     supabase.from("student_placements").select("student_id, business_name, interview_at").not("interview_at", "is", null),
@@ -53,7 +53,13 @@ async function fetchStudentAlerts(): Promise<StudentAlert[]> {
   }
 
   const alerts: StudentAlert[] = [];
-  for (const st of (students.data ?? []) as { id: string; full_name: string; phase: string; payment_state: string | null; eod_exempt?: boolean }[]) {
+  for (const st of (students.data ?? []) as { id: string; full_name: string; phase: string; payment_state: string | null; eod_exempt?: boolean; onboarding_completed_at?: string | null; created_at?: string }[]) {
+    // Fresh unlock: the student finished Start Here — check in while it's
+    // warm. Backfilled rows have completed_at == created_at; only alert on
+    // real completions (stamped later than row creation).
+    if (st.onboarding_completed_at && st.created_at !== st.onboarding_completed_at && Date.now() - new Date(st.onboarding_completed_at).getTime() <= 3 * DAY) {
+      alerts.push({ key: `onb-${st.id}`, student_id: st.id, student_name: st.full_name, text: "Completed Start Here onboarding — portal unlocked", tone: "text-success-fg" });
+    }
     const eodDate = lastEod.get(st.id);
     const eodDays = eodDate ? Math.floor((now - new Date(eodDate).getTime()) / DAY) : null;
     if (st.eod_exempt) {
@@ -88,8 +94,9 @@ async function fetchStudentAlerts(): Promise<StudentAlert[]> {
       });
     }
   }
-  // Worst first: red tones ahead of amber, interviews (positive prep) on top.
-  const rank = (a: StudentAlert) => (a.key.startsWith("int-") ? 0 : a.tone.includes("danger") ? 1 : 2);
+  // Worst first: red tones ahead of amber; interviews and fresh unlocks (both
+  // time-sensitive positives) on top.
+  const rank = (a: StudentAlert) => (a.key.startsWith("int-") || a.key.startsWith("onb-") ? 0 : a.tone.includes("danger") ? 1 : 2);
   return alerts.sort((a, b) => rank(a) - rank(b)).slice(0, 30);
 }
 

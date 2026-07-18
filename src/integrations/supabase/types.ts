@@ -1244,6 +1244,7 @@ export type Database = {
       }
       org_settings: {
         Row: {
+          group_call_schedule: Json
           id: string
           logo_url: string | null
           org_name: string
@@ -1251,6 +1252,7 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          group_call_schedule?: Json
           id?: string
           logo_url?: string | null
           org_name?: string
@@ -1258,6 +1260,7 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          group_call_schedule?: Json
           id?: string
           logo_url?: string | null
           org_name?: string
@@ -1683,15 +1686,43 @@ export type Database = {
           },
         ]
       }
+      student_guide_steps: {
+        Row: {
+          done_at: string
+          step_key: string
+          student_id: string
+        }
+        Insert: {
+          done_at?: string
+          step_key: string
+          student_id: string
+        }
+        Update: {
+          done_at?: string
+          step_key?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_guide_steps_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_weekly_eods: {
         Row: {
           biggest_blocker: string | null
           biggest_win: string | null
+          calls_attended: Json
           created_at: string
           group_calls_attended: number
           id: string
           implementation: string
           next_week_commitment: string
+          one_on_one_calls: number | null
           student_id: string
           submitted_at: string
           updated_at: string
@@ -1700,11 +1731,13 @@ export type Database = {
         Insert: {
           biggest_blocker?: string | null
           biggest_win?: string | null
+          calls_attended?: Json
           created_at?: string
           group_calls_attended: number
           id?: string
           implementation: string
           next_week_commitment: string
+          one_on_one_calls?: number | null
           student_id: string
           submitted_at?: string
           updated_at?: string
@@ -1713,11 +1746,13 @@ export type Database = {
         Update: {
           biggest_blocker?: string | null
           biggest_win?: string | null
+          calls_attended?: Json
           created_at?: string
           group_calls_attended?: number
           id?: string
           implementation?: string
           next_week_commitment?: string
+          one_on_one_calls?: number | null
           student_id?: string
           submitted_at?: string
           updated_at?: string
@@ -1869,6 +1904,7 @@ export type Database = {
           notes: string | null
           offer_landed_at: string | null
           offers_landed_count: number
+          onboarding_completed_at: string | null
           payment_state: Database["public"]["Enums"]["payment_state"] | null
           eod_exempt: boolean
           phase: Database["public"]["Enums"]["student_phase"]
@@ -1898,6 +1934,7 @@ export type Database = {
           notes?: string | null
           offer_landed_at?: string | null
           offers_landed_count?: number
+          onboarding_completed_at?: string | null
           payment_state?: Database["public"]["Enums"]["payment_state"] | null
           eod_exempt?: boolean
           phase?: Database["public"]["Enums"]["student_phase"]
@@ -1927,6 +1964,7 @@ export type Database = {
           notes?: string | null
           offer_landed_at?: string | null
           offers_landed_count?: number
+          onboarding_completed_at?: string | null
           payment_state?: Database["public"]["Enums"]["payment_state"] | null
           eod_exempt?: boolean
           phase?: Database["public"]["Enums"]["student_phase"]

@@ -13,15 +13,21 @@ import {
 import { computeStreak } from "@/lib/streak";
 import { setStudentPortalTab, onStudentPortalTab, getStudentPortalTab } from "@/lib/student-portal-bus";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getStudentLeaderboard } from "@/lib/student-portal.functions";
+import { completeStudentOnboarding } from "@/lib/student-onboarding.functions";
+import { START_HERE_STEPS, isStartHereComplete } from "@/lib/student-guide-steps";
 import {
-  GROUP_COACHING_CALLS_PER_WEEK,
+  DEFAULT_GROUP_CALL_SCHEDULE,
   countStudentDailyEods,
+  fromStoredCallsAttended,
   getStudentWeeklyDraftAction,
   getStudentWeeklyWindow,
+  parseGroupCallSchedule,
+  toAttendedRecords,
   validateStudentWeeklyEod,
+  type GroupCall,
 } from "@/lib/student-weekly-eod";
 
 export const Route = createFileRoute("/_authenticated/student-portal")({
@@ -34,6 +40,7 @@ type Student = {
   calls_included: number; calls_allotted: number | null; coach_id: string | null;
   first_win_at: string | null; offer_landed_at: string | null;
   testimonial_collected: boolean | null; trustpilot_collected: boolean | null;
+  onboarding_completed_at: string | null;
 };
 type Coach = { id: string; display_name: string | null; avatar_url: string | null };
 type SEod = {
@@ -47,6 +54,8 @@ type StudentWeeklyEod = {
   student_id: string;
   week_start: string;
   group_calls_attended: number;
+  calls_attended: unknown;
+  one_on_one_calls: number | null;
   implementation: string;
   biggest_win: string | null;
   biggest_blocker: string | null;
@@ -71,7 +80,8 @@ const empty = {
 };
 
 const emptyWeekly = {
-  groupCallsAttended: 0,
+  callsAttended: [] as string[],
+  oneOnOneCalls: 0 as number,
   implementation: "",
   biggestWin: "",
   biggestBlocker: "",
@@ -97,6 +107,7 @@ const daysAgoStr = (n: number) => localFmt.format(new Date(Date.now() - n * 8640
 
 function StudentPortal() {
   const { user, displayName } = useAuth();
+  const qc = useQueryClient();
   const today = todayStr();
   const weeklyWindow = useMemo(() => getStudentWeeklyWindow(today), [today]);
   const [tab, setTab] = useState<Tab>(() => (getStudentPortalTab() as Tab) || "eod");
@@ -104,6 +115,8 @@ function StudentPortal() {
   useEffect(() => { const off = onStudentPortalTab(t => setTab(t as Tab)); return () => { off(); }; }, []);
 
   const [student, setStudent] = useState<Student | null>(null);
+  const [callSchedule, setCallSchedule] = useState<GroupCall[]>(DEFAULT_GROUP_CALL_SCHEDULE);
+  const [unlocking, setUnlocking] = useState(false);
   const [guideDone, setGuideDone] = useState<Set<string>>(new Set());
   const [coach, setCoach] = useState<Coach | null>(null);
   const [eods, setEods] = useState<SEod[]>([]);
@@ -123,6 +136,7 @@ function StudentPortal() {
   const [showForm, setShowForm] = useState(false);
   const [confetti, setConfetti] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
+  const weeklyRef = useRef<HTMLDivElement>(null);
 
   const draftKey = student ? `student-eod-draft:${student.id}:${today}` : null;
   const weeklyDraftKey = student ? `student-weekly-eod-draft:${student.id}:${weeklyWindow.weekStart}` : null;
@@ -131,13 +145,13 @@ function StudentPortal() {
     if (!user) return;
     setWeeklyDraftHydrated(false);
     const { data: s } = await supabase.from("students")
-      .select("id, full_name, email, phase, status, calls_included, calls_allotted, coach_id, first_win_at, offer_landed_at, testimonial_collected, trustpilot_collected")
+      .select("id, full_name, email, phase, status, calls_included, calls_allotted, coach_id, first_win_at, offer_landed_at, testimonial_collected, trustpilot_collected, onboarding_completed_at")
       .eq("user_id", user.id).maybeSingle();
     setStudent((s as Student) ?? null);
     if (!s) { setLoading(false); return; }
     const st = s as Student;
 
-    const [{ data: e }, weeklyRes, { data: c }, { data: ah }, coachRes, docsRes, guideRes] = await Promise.all([
+    const [{ data: e }, weeklyRes, { data: c }, { data: ah }, coachRes, docsRes, guideRes, orgRes] = await Promise.all([
       supabase.from("student_eods").select("*").eq("student_id", st.id).order("report_date", { ascending: false }).limit(60),
       supabase.from("student_weekly_eods").select("*").eq("student_id", st.id).order("week_start", { ascending: false }).limit(16),
       supabase.from("student_calls").select("id, call_date, status, progress_rating, next_call_date, action_items_json").eq("student_id", st.id).order("call_date", { ascending: false }),
@@ -145,8 +159,10 @@ function StudentPortal() {
       st.coach_id ? supabase.from("profiles").select("id, display_name, avatar_url").eq("id", st.coach_id).maybeSingle() : Promise.resolve({ data: null }),
       supabase.from("docs").select("slug, title, category").contains("role_visibility", ["student"]).order("pinned", { ascending: false }).order("sort_order").limit(8),
       (supabase as any).from("student_guide_steps").select("step_key").eq("student_id", st.id),
+      supabase.from("org_settings").select("group_call_schedule").limit(1).maybeSingle(),
     ]);
     setGuideDone(new Set(((guideRes.data ?? []) as { step_key: string }[]).map(r => r.step_key)));
+    setCallSchedule(parseGroupCallSchedule(orgRes.data?.group_call_schedule));
     setEods((e ?? []) as SEod[]);
     const loadedWeekly = (weeklyRes.data ?? []) as StudentWeeklyEod[];
     setWeeklyLoadError(Boolean(weeklyRes.error));
@@ -181,7 +197,8 @@ function StudentPortal() {
     const weekly = loadedWeekly.find((row) => row.week_start === weeklyWindow.weekStart);
     if (weekly) {
       setWeeklyForm({
-        groupCallsAttended: weekly.group_calls_attended,
+        callsAttended: fromStoredCallsAttended(weekly.calls_attended),
+        oneOnOneCalls: weekly.one_on_one_calls ?? 0,
         implementation: weekly.implementation,
         biggestWin: weekly.biggest_win ?? "",
         biggestBlocker: weekly.biggest_blocker ?? "",
@@ -238,25 +255,21 @@ function StudentPortal() {
   const totals7 = {
     apps: sumOf(last7, "applications_submitted"),
     looms: sumOf(last7, "looms_sent"),
-    replies: sumOf(last7, "replies"),
+    roleplays: sumOf(last7, "roleplays"),
     interviews: sumOf(last7, "interviews"),
   };
   const totalsPrev = {
     apps: sumOf(prev7, "applications_submitted"),
     looms: sumOf(prev7, "looms_sent"),
-    replies: sumOf(prev7, "replies"),
+    roleplays: sumOf(prev7, "roleplays"),
     interviews: sumOf(prev7, "interviews"),
   };
   const weeklySubmission = weeklyEods.find((row) => row.week_start === weeklyWindow.weekStart) ?? null;
-  const weeklyDailyRows = eods.filter((row) => row.report_date >= weeklyWindow.weekStart && row.report_date <= weeklyWindow.weekEnd);
   const weeklyDailyCount = countStudentDailyEods(eods.map((row) => row.report_date), weeklyWindow);
-  const weeklyActivity = {
-    applications: sumOf(weeklyDailyRows, "applications_submitted"),
-    roleplays: sumOf(weeklyDailyRows, "roleplays"),
-    looms: sumOf(weeklyDailyRows, "looms_sent"),
-    replies: sumOf(weeklyDailyRows, "replies"),
-    interviews: sumOf(weeklyDailyRows, "interviews"),
-  };
+  // A week that ended before the student even unlocked their portal is not
+  // "overdue" — their first weekly EOD opens on their first Sunday.
+  const weeklyFirstWeek = !!student?.onboarding_completed_at
+    && weeklyWindow.weekEnd < student.onboarding_completed_at.slice(0, 10);
 
   // Weekly recap on Mondays
   const isMonday = new Date().getDay() === 1;
@@ -329,11 +342,17 @@ function StudentPortal() {
 
   // Program type drives the whole view: group students have no coach, no 1:1s.
   const isOneOnOne = ((student?.calls_allotted ?? student?.calls_included) ?? 0) > 0;
+  // Until every Start Here step is done the portal is Start Here and nothing
+  // else — a student who just paid has no use for placements/EODs/action items.
+  const locked = !!student && !student.onboarding_completed_at;
   // Stale/persisted tab state can still say "coaching" (e.g. moved to group) —
   // never render the 1:1 panel for group students.
   useEffect(() => {
     if (student && !isOneOnOne && tab === "coaching") setTab("start");
   }, [student, isOneOnOne, tab]);
+  useEffect(() => {
+    if (locked && tab !== "start") setTab("start");
+  }, [locked, tab]);
   // Loom approved ≈ moved past training/coaching into applying
   const loomApproved = ["applying", "offer_won", "testimonial"].includes(student?.phase ?? "");
 
@@ -357,13 +376,19 @@ function StudentPortal() {
 
   const submitWeeklyEod = async () => {
     if (!student || weeklyLoadError) return;
-    const validationError = validateStudentWeeklyEod(weeklyForm);
+    const validationError = validateStudentWeeklyEod(
+      { ...weeklyForm, oneOnOneCalls: isOneOnOne ? weeklyForm.oneOnOneCalls : null },
+      callSchedule,
+    );
     if (validationError) return toast.error(validationError);
     setSavingWeekly(true);
+    const attended = toAttendedRecords(weeklyForm.callsAttended, callSchedule);
     const { error } = await supabase.from("student_weekly_eods").upsert({
       student_id: student.id,
       week_start: weeklyWindow.weekStart,
-      group_calls_attended: weeklyForm.groupCallsAttended,
+      calls_attended: attended,
+      group_calls_attended: attended.length,
+      one_on_one_calls: isOneOnOne ? weeklyForm.oneOnOneCalls : null,
       implementation: weeklyForm.implementation.trim(),
       biggest_win: weeklyForm.biggestWin.trim() || null,
       biggest_blocker: weeklyForm.biggestBlocker.trim() || null,
@@ -376,9 +401,12 @@ function StudentPortal() {
     await load();
   };
 
+  const completeOnboardingFn = useServerFn(completeStudentOnboarding);
   const toggleGuideStep = async (key: string, done: boolean) => {
     if (!student) return;
-    setGuideDone(prev => { const n = new Set(prev); if (done) n.add(key); else n.delete(key); return n; });
+    const next = new Set(guideDone);
+    if (done) next.add(key); else next.delete(key);
+    setGuideDone(next);
     const q = done
       ? (supabase as any).from("student_guide_steps").insert({ student_id: student.id, step_key: key })
       : (supabase as any).from("student_guide_steps").delete().eq("student_id", student.id).eq("step_key", key);
@@ -386,6 +414,23 @@ function StudentPortal() {
     if (error) {
       toast.error(error.message);
       setGuideDone(prev => { const n = new Set(prev); if (done) n.delete(key); else n.add(key); return n; });
+      return;
+    }
+    // Last required step just ticked → unlock the rest of the portal.
+    if (locked && done && isStartHereComplete(next) && !unlocking) {
+      setUnlocking(true);
+      try {
+        await completeOnboardingFn();
+        setConfetti(true);
+        setTimeout(() => setConfetti(false), 2500);
+        toast.success("That's onboarding done — your full portal is unlocked. 🎉");
+        qc.invalidateQueries({ queryKey: ["student-portal-locked"] });
+        await load();
+      } catch (e) {
+        toast.error(String((e as Error).message ?? e));
+      } finally {
+        setUnlocking(false);
+      }
     }
   };
 
@@ -431,6 +476,25 @@ function StudentPortal() {
   const first = (displayName ?? student.full_name).split(" ")[0];
   const brandNew = eods.length === 0;
 
+  // Fresh student: Start Here is the whole portal until every step is done.
+  if (locked) {
+    return (
+      <div className="p-4 sm:p-6 max-w-3xl mx-auto space-y-5 relative">
+        {confetti && <ConfettiBurst />}
+        <section className="card-surface p-5">
+          <div className="text-[10px] text-muted-foreground mb-1">Student portal</div>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            <span dir="rtl">السلام عليكم ورحمة الله وبركاته</span>, {first} <span className="inline-block">👋</span>
+          </h1>
+          <p className="text-xs text-muted-foreground mt-1">
+            Welcome to the {isOneOnOne ? "1:1 Pathway" : "Group Expertise Pathway"}. Work through the steps below — the rest of your portal unlocks when they're all done.
+          </p>
+        </section>
+        <StartHereGuide oneOnOne={isOneOnOne} done={guideDone} locked unlocking={unlocking} onToggle={toggleGuideStep} />
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-5 relative">
       {confetti && <ConfettiBurst />}
@@ -441,7 +505,7 @@ function StudentPortal() {
           <div className="min-w-0">
             <div className="text-[10px] text-muted-foreground mb-1">Student portal</div>
             <h1 className="text-2xl font-semibold tracking-tight">
-              <span dir="rtl">السلام عليكم</span>, {first} <span className="inline-block">👋</span>
+              <span dir="rtl">السلام عليكم ورحمة الله وبركاته</span>, {first} <span className="inline-block">👋</span>
             </h1>
             <p className="text-xs text-muted-foreground mt-1">
               {student.phase.replace("_", " ")} · {student.status} · {isOneOnOne ? "1:1 Pathway" : "Group Expertise Pathway"}
@@ -594,50 +658,43 @@ function StudentPortal() {
       </nav>
 
       {tab === "start" && (
-        <StartHereGuide
-          oneOnOne={isOneOnOne}
-          done={guideDone}
-          loomApproved={loomApproved}
-          onToggle={toggleGuideStep}
-        />
+        <StartHereGuide oneOnOne={isOneOnOne} done={guideDone} onToggle={toggleGuideStep} />
       )}
 
       {tab === "leaderboard" && <LeaderboardPanel />}
 
       {tab === "eod" && (
         <div className="space-y-5">
+          {/* End of week: point at the weekly EOD until it's in */}
+          {!weeklyLoadError && !weeklySubmission && !weeklyFirstWeek && (
+            <button
+              type="button"
+              onClick={() => weeklyRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+              className={`w-full flex items-center justify-between gap-3 rounded-sm border p-3 text-left text-xs motion-safe:transition-colors ${
+                weeklyWindow.dueToday
+                  ? "border-warning/25 bg-warning-bg text-warning-fg hover:bg-warning-bg/80"
+                  : "border-danger/25 bg-danger-bg text-danger-fg hover:bg-danger-bg/80"
+              }`}
+            >
+              <span className="flex items-center gap-2">
+                <Calendar className="h-3.5 w-3.5" />
+                Weekly EOD {weeklyWindow.dueToday ? "due today" : "overdue"} — which calls did you attend this week? Takes 2 minutes.
+              </span>
+              <span className="font-medium whitespace-nowrap">Fill it out ↓</span>
+            </button>
+          )}
+
           {/* KPI cards last 7 — a loom application IS the outreach, no separate count */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             <StatCard label="Loom apps · 7d" value={totals7.apps} prev={totalsPrev.apps} series={spark("applications_submitted")} accent brandNew={brandNew} icon={<Briefcase className="h-3 w-3" />} />
             <StatCard label="Looms · 7d" value={totals7.looms} prev={totalsPrev.looms} series={spark("looms_sent")} brandNew={brandNew} icon={<Users className="h-3 w-3" />} />
-            <StatCard label="Replies · 7d" value={totals7.replies} prev={totalsPrev.replies} series={spark("replies")} brandNew={brandNew} icon={<MessageSquare className="h-3 w-3" />} />
+            <StatCard label="Roleplays · 7d" value={totals7.roleplays} prev={totalsPrev.roleplays} series={spark("roleplays")} brandNew={brandNew} icon={<MessageSquare className="h-3 w-3" />} />
             <StatCard label="Interviews · 7d" value={totals7.interviews} prev={totalsPrev.interviews} series={spark("interviews")} accent brandNew={brandNew} icon={<Award className="h-3 w-3" />} />
           </div>
 
           {/* Weekly recap (Mondays) */}
-          {isMonday && (totalsPrev.apps || totalsPrev.looms || totalsPrev.replies || totalsPrev.interviews) > 0 && (
-            <WeeklyRecap prev={totalsPrev} evenPrior={{ apps: 0, looms: 0, replies: 0, interviews: 0 }} totals={totals7} />
-          )}
-
-          {weeklyLoadError ? (
-            <div className="flex items-center justify-between gap-3 rounded-sm border border-danger/25 bg-danger-bg p-4 text-xs text-danger-fg">
-              <span>Weekly accountability could not load. Nothing has been recorded as zero.</span>
-              <button type="button" onClick={() => load()} className="font-medium underline underline-offset-4">Retry</button>
-            </div>
-          ) : (
-            <WeeklyAccountabilityCard
-              window={weeklyWindow}
-              submission={weeklySubmission}
-              dailyEods={weeklyDailyCount}
-              activity={weeklyActivity}
-              form={weeklyForm}
-              showForm={showWeeklyForm}
-              saving={savingWeekly}
-              onChange={setWeeklyForm}
-              onEdit={() => setShowWeeklyForm(true)}
-              onCollapse={() => setShowWeeklyForm(false)}
-              onSubmit={submitWeeklyEod}
-            />
+          {isMonday && (totalsPrev.apps || totalsPrev.looms || totalsPrev.roleplays || totalsPrev.interviews) > 0 && (
+            <WeeklyRecap prev={totalsPrev} evenPrior={{ apps: 0, looms: 0, roleplays: 0, interviews: 0 }} totals={totals7} />
           )}
 
           {/* Form / Recap */}
@@ -660,14 +717,17 @@ function StudentPortal() {
                   )}
                 </div>
 
-                {/* Daily targets (founder-set 2026-07-14):
-                    before loom approval — 3 roleplays + 3 looms for review;
-                    after approval — 5 loom applications a day. */}
+                {/* Two modes (founder-set 2026-07-18): until the CSMs approve
+                    your looms — 3 roleplays + 3 looms into the Inner Circle
+                    Loom Review chat; once approved — 5 loom applications a
+                    day. Never both loom fields at once. */}
                 <div className="rounded-lg border border-border bg-background p-3">
                   <div className="text-[11px] text-muted-foreground mb-2">
-                    Today's targets{loomApproved ? " — looms approved, you're applying now" : " — get your looms approved first"}
+                    {loomApproved
+                      ? "Today's targets — looms approved, you're applying now"
+                      : "Today's targets — get your looms approved first: send them to the INNER CIRCLE LOOM REVIEW chat, not to offers"}
                   </div>
-                  <div className={`grid gap-3 ${loomApproved ? "grid-cols-2" : "grid-cols-2"}`}>
+                  <div className="grid gap-3 grid-cols-2">
                     {loomApproved ? (
                       <>
                         <TargetBar label="Loom applications" value={form.applications_submitted} target={5} />
@@ -682,23 +742,57 @@ function StudentPortal() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   <Counter label="Roleplays" value={form.roleplays} onBump={d => bump("roleplays", d)} />
-                  <Counter label="Looms for review" value={form.looms_sent} onBump={d => bump("looms_sent", d)} />
-                  <Counter label="Loom applications" value={form.applications_submitted} onBump={d => bump("applications_submitted", d)} />
-                  <Counter label="Replies" value={form.replies} onBump={d => bump("replies", d)} />
+                  {loomApproved ? (
+                    <Counter label="Loom applications" value={form.applications_submitted} onBump={d => bump("applications_submitted", d)} />
+                  ) : (
+                    <Counter label="Looms for review" value={form.looms_sent} onBump={d => bump("looms_sent", d)} />
+                  )}
                   <Counter label="Interviews" value={form.interviews} onBump={d => bump("interviews", d)} />
                 </div>
+                {!loomApproved && (
+                  <p className="text-[10px] text-muted-foreground -mt-2">
+                    Looms go to the Inner Circle Loom Review chat for CSM feedback. Once you're approved, this switches to loom applications — 5 a day.
+                  </p>
+                )}
 
                 <TextField label="Wins" value={form.wins} onChange={v => setForm(f => ({ ...f, wins: v }))} />
                 <TextField label="Blockers" value={form.blockers} onChange={v => setForm(f => ({ ...f, blockers: v }))} />
                 <TextField label="Tomorrow's focus" value={form.tomorrow_focus} onChange={v => setForm(f => ({ ...f, tomorrow_focus: v }))} />
-                <TextField label="Summary" value={form.summary} onChange={v => setForm(f => ({ ...f, summary: v }))} rows={3} />
 
                 <button onClick={submit} disabled={saving} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium h-9 rounded-sm text-sm">
                   {saving ? "Saving…" : existingId ? "Update EOD" : "Submit EOD"}
                 </button>
               </div>
+            )}
+          </div>
+
+          {/* Weekly EOD lives UNDER the daily one; it only shouts at the end of the week */}
+          <div ref={weeklyRef}>
+            {weeklyLoadError ? (
+              <div className="flex items-center justify-between gap-3 rounded-sm border border-danger/25 bg-danger-bg p-4 text-xs text-danger-fg">
+                <span>Weekly accountability could not load. Nothing has been recorded as zero.</span>
+                <button type="button" onClick={() => load()} className="font-medium underline underline-offset-4">Retry</button>
+              </div>
+            ) : (
+              <WeeklyAccountabilityCard
+                window={weeklyWindow}
+                submission={weeklySubmission}
+                dailyEods={weeklyDailyCount}
+                schedule={callSchedule}
+                oneOnOne={isOneOnOne}
+                callsUsed={callsUsed}
+                callsAllotted={callsAllotted}
+                firstWeek={weeklyFirstWeek}
+                form={weeklyForm}
+                showForm={showWeeklyForm}
+                saving={savingWeekly}
+                onChange={setWeeklyForm}
+                onEdit={() => setShowWeeklyForm(true)}
+                onCollapse={() => setShowWeeklyForm(false)}
+                onSubmit={submitWeeklyEod}
+              />
             )}
           </div>
 
@@ -744,7 +838,7 @@ function StudentPortal() {
                   <div className="flex gap-3 text-[11px] text-muted-foreground flex-wrap">
                     <span>Apps <span className="text-success-fg">{e.applications_submitted}</span></span>
                     <span>Looms <span className="text-foreground">{e.looms_sent ?? 0}</span></span>
-                    <span>Repl <span className="text-foreground">{e.replies}</span></span>
+                    <span>RP <span className="text-foreground">{e.roleplays ?? 0}</span></span>
                     <span>Int <span className="text-foreground">{e.interviews}</span></span>
                   </div>
                 </div>
@@ -878,7 +972,11 @@ function WeeklyAccountabilityCard({
   window: reviewWindow,
   submission,
   dailyEods,
-  activity,
+  schedule,
+  oneOnOne,
+  callsUsed,
+  callsAllotted,
+  firstWeek,
   form,
   showForm,
   saving,
@@ -890,7 +988,11 @@ function WeeklyAccountabilityCard({
   window: ReturnType<typeof getStudentWeeklyWindow>;
   submission: StudentWeeklyEod | null;
   dailyEods: number;
-  activity: { applications: number; roleplays: number; looms: number; replies: number; interviews: number };
+  schedule: GroupCall[];
+  oneOnOne: boolean;
+  callsUsed: number;
+  callsAllotted: number;
+  firstWeek: boolean;
   form: typeof emptyWeekly;
   showForm: boolean;
   saving: boolean;
@@ -899,43 +1001,71 @@ function WeeklyAccountabilityCard({
   onCollapse: () => void;
   onSubmit: () => void;
 }) {
+  // The student's first week isn't "overdue" — nothing was due yet.
+  if (firstWeek && !submission) {
+    return (
+      <section className="rounded-sm border border-border bg-card p-4 flex items-center gap-3">
+        <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
+        <div className="text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">Weekly EOD</span> — opens Sunday. You'll tick off which of the 7 group calls you attended{oneOnOne ? " and log your 1:1s" : ""}.
+        </div>
+      </section>
+    );
+  }
+
+  const pending = !submission;
   const status = submission ? "Submitted" : reviewWindow.dueToday ? "Due today" : "Overdue";
   const statusClass = submission
     ? "border-success/25 bg-success-bg text-success-fg"
     : reviewWindow.dueToday
       ? "border-warning/25 bg-warning-bg text-warning-fg"
       : "border-danger/25 bg-danger-bg text-danger-fg";
+  // Highlighted while it needs attention; quiet once it's in.
+  const cardClass = pending
+    ? reviewWindow.dueToday ? "border-warning/40" : "border-danger/40"
+    : "border-border";
+  const storedAttended = submission && Array.isArray(submission.calls_attended)
+    ? (submission.calls_attended as { day?: string; name?: string }[]).filter(c => c && c.day && c.name)
+    : [];
 
   return (
-    <section className="rounded-sm border border-border bg-card p-5 space-y-4" aria-labelledby="weekly-eod-title">
+    <section className={`rounded-sm border bg-card p-5 space-y-4 ${cardClass}`} aria-labelledby="weekly-eod-title">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 text-muted-foreground" />
-            <h2 id="weekly-eod-title" className="text-sm font-semibold">Weekly accountability EOD</h2>
+            <h2 id="weekly-eod-title" className="text-sm font-semibold">Weekly EOD</h2>
           </div>
           <p className="mt-1 text-[11px] text-muted-foreground">
-            {reviewWindow.weekStart} to {reviewWindow.weekEnd} · Monday through Sunday
+            {reviewWindow.weekStart} to {reviewWindow.weekEnd} · daily EODs {dailyEods}/7
           </p>
         </div>
         <span className={`rounded-full border px-2.5 py-1 text-[10px] font-medium ${statusClass}`}>{status}</span>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
-        <WeeklyMetric label="Group calls" value={`${form.groupCallsAttended}/${GROUP_COACHING_CALLS_PER_WEEK}`} good={form.groupCallsAttended >= 5} />
-        <WeeklyMetric label="Daily EODs" value={`${dailyEods}/7`} good={dailyEods >= 5} />
-        <WeeklyMetric label="Applications" value={activity.applications} />
-      </div>
-
-      <div className="flex flex-wrap gap-2 text-[10px] text-muted-foreground">
-        <span className="rounded-full bg-muted px-2 py-1">Roleplays {activity.roleplays}</span>
-        <span className="rounded-full bg-muted px-2 py-1">Looms {activity.looms}</span>
-        <span className="rounded-full bg-muted px-2 py-1">Replies {activity.replies}</span>
-        <span className="rounded-full bg-muted px-2 py-1">Interviews {activity.interviews}</span>
-      </div>
-
       {submission && !showForm ? (
         <div className="space-y-3">
+          <div>
+            <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              Group calls attended · {submission.group_calls_attended}/{schedule.length}
+            </div>
+            {storedAttended.length > 0 ? (
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                {storedAttended.map((c) => (
+                  <span key={c.day} className="rounded-full bg-muted px-2 py-1 text-[10px] text-foreground">{c.day} · {c.name}</span>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-1 text-xs text-muted-foreground">Count only (logged before per-call tracking).</p>
+            )}
+          </div>
+          {oneOnOne && submission.one_on_one_calls != null && (
+            <div className="text-xs text-foreground">
+              <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">1:1 calls this week</span>{" "}
+              <span className="tabular-nums font-semibold">{submission.one_on_one_calls}</span>
+              <span className="text-muted-foreground"> · {callsUsed}/{callsAllotted} used overall</span>
+            </div>
+          )}
           <WeeklyReflection label="What I implemented or what stopped me" value={submission.implementation} />
           {submission.biggest_win && <WeeklyReflection label="Biggest win" value={submission.biggest_win} />}
           {submission.biggest_blocker && <WeeklyReflection label="Biggest blocker" value={submission.biggest_blocker} />}
@@ -946,28 +1076,59 @@ function WeeklyAccountabilityCard({
         <div className="space-y-4 border-t border-border pt-4">
           <div>
             <div className="mb-2 flex items-center justify-between gap-3">
-              <label className="text-[11px] font-medium">How many of the 7 group calls did you attend?</label>
-              <span className="text-[11px] tabular-nums text-muted-foreground">{form.groupCallsAttended}/7</span>
+              <label className="text-[11px] font-medium">Which group calls did you attend this week?</label>
+              <span className="text-[11px] tabular-nums text-muted-foreground">{form.callsAttended.length}/{schedule.length}</span>
             </div>
-            <div className="grid grid-cols-8 gap-1.5">
-              {Array.from({ length: GROUP_COACHING_CALLS_PER_WEEK + 1 }, (_, value) => (
-                <button
-                  key={value}
-                  type="button"
-                  aria-label={`${value} group calls attended`}
-                  aria-pressed={form.groupCallsAttended === value}
-                  onClick={() => onChange((current) => ({ ...current, groupCallsAttended: value }))}
-                  className={`h-8 rounded-sm border text-xs font-medium motion-safe:transition-colors ${
-                    form.groupCallsAttended === value
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border bg-background text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {value}
-                </button>
-              ))}
+            <div className="grid gap-1.5 sm:grid-cols-2">
+              {schedule.map((call) => {
+                const checked = form.callsAttended.includes(call.day);
+                return (
+                  <label
+                    key={call.day}
+                    className={`flex items-center gap-2.5 rounded-sm border px-3 py-2 cursor-pointer select-none motion-safe:transition-colors ${
+                      checked ? "border-primary/25 bg-primary/10" : "border-border bg-background hover:bg-muted/50"
+                    }`}
+                  >
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={(v) =>
+                        onChange((current) => ({
+                          ...current,
+                          callsAttended: v === true
+                            ? [...current.callsAttended, call.day]
+                            : current.callsAttended.filter((d) => d !== call.day),
+                        }))
+                      }
+                      className="h-3.5 w-3.5"
+                    />
+                    <span className="text-xs">
+                      <span className="text-muted-foreground tabular-nums">{call.day}</span>{" "}
+                      <span className={checked ? "font-medium text-foreground" : "text-foreground"}>{call.name}</span>
+                    </span>
+                  </label>
+                );
+              })}
             </div>
           </div>
+
+          {oneOnOne && (
+            <div>
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <label className="text-[11px] font-medium">How many 1:1 coaching calls did you have this week?</label>
+                <span className="text-[11px] tabular-nums text-muted-foreground">{callsUsed}/{callsAllotted} used overall</span>
+              </div>
+              <Counter
+                label="1:1 calls"
+                value={form.oneOnOneCalls}
+                onBump={(d) => onChange((current) => ({ ...current, oneOnOneCalls: Math.max(0, Math.min(20, current.oneOnOneCalls + d)) }))}
+              />
+              {form.oneOnOneCalls === 0 && callsUsed < callsAllotted && (
+                <p className="mt-1.5 text-[10px] text-warning-fg">
+                  None this week? You still have {Math.max(0, callsAllotted - callsUsed)} calls to use — book the next one, don't sit on them.
+                </p>
+              )}
+            </div>
+          )}
 
           <TextField
             label="What did you implement from the calls, or what stopped you? *"
@@ -990,7 +1151,7 @@ function WeeklyAccountabilityCard({
             </button>
             {submission && <button type="button" onClick={onCollapse} className="h-9 rounded-sm border border-border px-3 text-xs text-muted-foreground hover:text-foreground">Cancel</button>}
           </div>
-          <p className="text-[10px] text-muted-foreground">Attendance is self-reported. Daily EOD count and weekly activity are calculated from your saved logs.</p>
+          <p className="text-[10px] text-muted-foreground">Attendance is self-reported — call names come from the weekly Skool schedule. Daily EOD count is calculated from your saved logs.</p>
         </div>
       )}
     </section>
@@ -1006,76 +1167,27 @@ function WeeklyReflection({ label, value }: { label: string; value: string }) {
   );
 }
 
-function WeeklyMetric({ label, value, good = false }: { label: string; value: string | number; good?: boolean }) {
-  return (
-    <div className="rounded-sm border border-border bg-background px-3 py-2.5">
-      <div className="text-[10px] text-muted-foreground">{label}</div>
-      <div className={`mt-1 text-lg font-semibold tabular-nums ${good ? "text-success-fg" : "text-foreground"}`}>{value}</div>
-    </div>
-  );
-}
-
 /* ---------- Start Here ---------- */
 
-type GuideStep = { key: string; title: string; body: string; auto?: "loomApproved"; link?: { to: string; label: string } };
-
-const guideStepsFor = (oneOnOne: boolean): GuideStep[] => [
-  {
-    key: "typeform",
-    title: "Fill out your onboarding form",
-    body: "You received a Typeform right after payment — fill it out first so the team knows exactly where you're starting from. Check your email/WhatsApp if you can't find it.",
-  },
-  ...(oneOnOne ? [{
-    key: "book_1on1",
-    title: "Book your 1:1 coaching calls",
-    body: "You have 10 one-on-one calls with your coach. Book the first one now — don't sit on them, they're the fastest way to level up.",
-  } satisfies GuideStep] : []),
-  {
-    key: "skool_training",
-    title: "Go through ALL the training videos in Skool",
-    body: "Every video, in order, before anything else. This is your foundation — the group calls and looms only click once you've seen the full system.",
-    link: { to: "/training", label: "Open training" },
-  },
-  {
-    key: "offer_board",
-    title: "Join the offer board",
-    body: "The offer board is where the live setter positions are. Join it now so you can see what you're working towards.",
-  },
-  {
-    key: "group_calls",
-    title: oneOnOne ? "Attend the group coaching calls" : "Attend the group coaching calls — 7 a week",
-    body: "Show up to every call you can. Take notes, ask smart, specific questions (\"here's what I tried, here's what happened, what would you change?\") — not \"what should I do?\".",
-  },
-  {
-    key: "looms",
-    title: "Send 3 looms a day for review",
-    body: "Once training is done: record looms and drop them in the loom review channel — at least 3 a day. The CSMs review every one and give feedback. Apply the feedback, send again, repeat until they approve you.",
-  },
-  {
-    key: "apply",
-    title: "Approved? 5 loom applications a day",
-    body: "The moment your looms are approved, you switch to applying: 5 loom applications a day, tracked in your EOD. Log every business you talk to under Placements.",
-    auto: "loomApproved",
-  },
-];
-
-function StartHereGuide({ oneOnOne, done, loomApproved, onToggle }: {
+function StartHereGuide({ oneOnOne, done, locked = false, unlocking = false, onToggle }: {
   oneOnOne: boolean;
   done: Set<string>;
-  loomApproved: boolean;
+  locked?: boolean;
+  unlocking?: boolean;
   onToggle: (key: string, done: boolean) => void;
 }) {
-  const steps = guideStepsFor(oneOnOne);
-  const isDone = (s: GuideStep) => s.auto === "loomApproved" ? loomApproved || done.has(s.key) : done.has(s.key);
-  const doneCount = steps.filter(isDone).length;
+  const steps = START_HERE_STEPS;
+  const doneCount = steps.filter(s => done.has(s.key)).length;
   return (
     <div className="space-y-4">
       <div className="card-surface p-4">
         <div className="flex items-center justify-between mb-2">
           <div>
-            <div className="text-sm font-semibold">Your path, start to finish</div>
+            <div className="text-sm font-semibold">{locked ? "Start here — unlock your portal" : "Start Here"}</div>
             <div className="text-[11px] text-muted-foreground">
-              {oneOnOne ? "1:1 Pathway" : "Group Expertise Pathway"} · tick each step off as you complete it — your CSM sees your progress
+              {oneOnOne ? "1:1 Pathway" : "Group Expertise Pathway"} · {locked
+                ? "finish all five steps to unlock EODs, placements, action items, and the leaderboard"
+                : "your onboarding checklist — all done ✓"}
             </div>
           </div>
           <span className={`text-caption font-medium tabular-nums ${doneCount === steps.length ? "text-success-fg" : "text-foreground"}`}>
@@ -1085,12 +1197,12 @@ function StartHereGuide({ oneOnOne, done, loomApproved, onToggle }: {
         <div className="h-1.5 rounded-full bg-muted overflow-hidden">
           <div className="h-full rounded-full bg-primary motion-safe:transition-[width]" style={{ width: `${(doneCount / steps.length) * 100}%` }} />
         </div>
+        {unlocking && <div className="mt-2 text-[11px] text-muted-foreground">Unlocking your portal…</div>}
       </div>
 
       <div className="space-y-2">
         {steps.map((s, i) => {
-          const checked = isDone(s);
-          const autoLocked = s.auto === "loomApproved" && !loomApproved && !done.has(s.key);
+          const checked = done.has(s.key);
           return (
             <div key={s.key} className={`border rounded-sm p-4 flex items-start gap-3 ${checked ? "border-success/25 bg-success-bg/40" : "border-[var(--border)] bg-[var(--card)]"}`}>
               <div className="flex flex-col items-center gap-1 shrink-0">
@@ -1105,20 +1217,22 @@ function StartHereGuide({ oneOnOne, done, loomApproved, onToggle }: {
                   {s.link && (
                     <Link to={s.link.to} className="text-[11px] font-medium text-primary hover:underline">{s.link.label} →</Link>
                   )}
-                  {autoLocked ? (
-                    <span className="text-[11px] text-muted-foreground flex items-center gap-1"><Lock className="h-3 w-3" /> unlocks when your looms are approved</span>
-                  ) : (
-                    <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
-                      <Checkbox checked={checked} onCheckedChange={(v) => onToggle(s.key, v === true)} className="h-3.5 w-3.5" />
-                      {checked ? "Done" : "Mark done"}
-                    </label>
-                  )}
+                  <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
+                    <Checkbox checked={checked} disabled={unlocking} onCheckedChange={(v) => onToggle(s.key, v === true)} className="h-3.5 w-3.5" />
+                    {checked ? "Done" : "Mark done"}
+                  </label>
                 </div>
               </div>
             </div>
           );
         })}
       </div>
+
+      {locked && (
+        <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+          <Lock className="h-3 w-3" /> Placements, EODs, action items, and the leaderboard appear here the moment your last step is ticked.
+        </p>
+      )}
     </div>
   );
 }
@@ -1270,10 +1384,10 @@ function WeeklyRecap({ prev, totals }: { prev: any; evenPrior: any; totals: any 
         <div className="text-xs font-semibold text-muted-foreground">Weekly recap</div>
       </div>
       <div className="text-xs text-foreground">
-        Last week: <span className="font-semibold text-success-fg">{prev.apps}</span> applications, <span className="font-semibold">{prev.replies}</span> replies, <span className="font-semibold">{prev.interviews}</span> interviews.
+        Last week: <span className="font-semibold text-success-fg">{prev.apps}</span> applications, <span className="font-semibold">{prev.roleplays}</span> roleplays, <span className="font-semibold">{prev.interviews}</span> interviews.
       </div>
       <div className="text-[11px] text-muted-foreground mt-1">
-        Apps {pct(totals.apps, prev.apps)} · Replies {pct(totals.replies, prev.replies)} · Interviews {pct(totals.interviews, prev.interviews)} vs this week so far
+        Apps {pct(totals.apps, prev.apps)} · Roleplays {pct(totals.roleplays, prev.roleplays)} · Interviews {pct(totals.interviews, prev.interviews)} vs this week so far
       </div>
     </div>
   );
@@ -1294,7 +1408,7 @@ function SubmittedRecap({ form, streak, onEdit }: { form: typeof empty; streak: 
       <div className="flex justify-center gap-6 text-xs flex-wrap">
         <span><span className="text-success-fg text-lg font-semibold">{form.applications_submitted}</span> <span className="text-muted-foreground">apps</span></span>
         <span><span className="text-foreground text-lg font-semibold">{form.looms_sent}</span> <span className="text-muted-foreground">looms</span></span>
-        <span><span className="text-foreground text-lg font-semibold">{form.replies}</span> <span className="text-muted-foreground">replies</span></span>
+        <span><span className="text-foreground text-lg font-semibold">{form.roleplays}</span> <span className="text-muted-foreground">roleplays</span></span>
         <span><span className="text-success-fg text-lg font-semibold">{form.interviews}</span> <span className="text-muted-foreground">int.</span></span>
       </div>
       {streak > 0 && (

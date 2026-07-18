@@ -1,5 +1,31 @@
 export const GROUP_COACHING_CALLS_PER_WEEK = 7;
 
+/** One weekly group coaching call. Names only — times differ per student timezone. */
+export type GroupCall = { day: string; name: string };
+
+/**
+ * Fallback mirror of the org_settings.group_call_schedule seed, used when the
+ * settings read fails. The database row is the source of truth (admin-editable).
+ */
+export const DEFAULT_GROUP_CALL_SCHEDULE: GroupCall[] = [
+  { day: "Mon", name: "Off Call Drills" },
+  { day: "Tue", name: "Role Finding" },
+  { day: "Wed", name: "Roleplays" },
+  { day: "Thu", name: "Script Review" },
+  { day: "Fri", name: "Setting Masterclass" },
+  { day: "Sat", name: "Call Review" },
+  { day: "Sun", name: "Roleplays" },
+];
+
+export function parseGroupCallSchedule(raw: unknown): GroupCall[] {
+  if (!Array.isArray(raw)) return DEFAULT_GROUP_CALL_SCHEDULE;
+  const rows = raw
+    .filter((r): r is { day: unknown; name: unknown } => !!r && typeof r === "object")
+    .map((r) => ({ day: String(r.day ?? "").slice(0, 12), name: String(r.name ?? "").slice(0, 80) }))
+    .filter((r) => r.day && r.name);
+  return rows.length > 0 ? rows : DEFAULT_GROUP_CALL_SCHEDULE;
+}
+
 export type StudentWeeklyWindow = {
   weekStart: string;
   weekEnd: string;
@@ -7,7 +33,10 @@ export type StudentWeeklyWindow = {
 };
 
 export type StudentWeeklyEodInput = {
-  groupCallsAttended: number;
+  /** Day keys ("Mon"…"Sun") of the schedule entries the student ticked. */
+  callsAttended: string[];
+  /** Self-reported 1:1 calls this week; null for group-pathway students. */
+  oneOnOneCalls: number | null;
   implementation: string;
   nextWeekCommitment: string;
 };
@@ -60,6 +89,19 @@ export function countStudentDailyEods(
   ).size;
 }
 
+/** Resolve ticked day keys against the schedule into durable {day, name} records. */
+export function toAttendedRecords(callsAttended: string[], schedule: GroupCall[]): GroupCall[] {
+  return schedule.filter((call) => callsAttended.includes(call.day));
+}
+
+/** Read stored calls_attended jsonb back into day keys, tolerating legacy shapes. */
+export function fromStoredCallsAttended(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((r) => (r && typeof r === "object" ? String((r as { day?: unknown }).day ?? "") : ""))
+    .filter(Boolean);
+}
+
 export function getStudentWeeklyDraftAction({
   hydrated,
   hasSubmission,
@@ -72,7 +114,8 @@ export function getStudentWeeklyDraftAction({
   if (!hydrated || hasSubmission) return "skip";
 
   const isEmpty =
-    form.groupCallsAttended === 0 &&
+    form.callsAttended.length === 0 &&
+    !form.oneOnOneCalls &&
     !form.implementation &&
     !form.biggestWin &&
     !form.biggestBlocker &&
@@ -81,16 +124,20 @@ export function getStudentWeeklyDraftAction({
   return isEmpty ? "remove" : "save";
 }
 
-export function validateStudentWeeklyEod(input: StudentWeeklyEodInput): string | null {
-  if (
-    !Number.isInteger(input.groupCallsAttended) ||
-    input.groupCallsAttended < 0 ||
-    input.groupCallsAttended > GROUP_COACHING_CALLS_PER_WEEK
-  ) {
-    return "Group calls attended must be between 0 and 7.";
+export function validateStudentWeeklyEod(
+  input: StudentWeeklyEodInput,
+  schedule: GroupCall[],
+): string | null {
+  const validDays = new Set(schedule.map((call) => call.day));
+  const unique = new Set(input.callsAttended);
+  if (unique.size !== input.callsAttended.length || input.callsAttended.some((day) => !validDays.has(day))) {
+    return "Attended calls don't match this week's call schedule — reload and try again.";
+  }
+  if (input.oneOnOneCalls != null && (!Number.isInteger(input.oneOnOneCalls) || input.oneOnOneCalls < 0 || input.oneOnOneCalls > 20)) {
+    return "1:1 calls this week must be a small whole number.";
   }
   if (!input.implementation.trim()) {
-    return "Explain what you implemented or what stopped you this week.";
+    return "Explain what you implemented from the calls, or what stopped you.";
   }
   if (!input.nextWeekCommitment.trim()) {
     return "Add one concrete commitment for next week.";
