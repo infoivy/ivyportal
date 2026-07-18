@@ -1,4 +1,5 @@
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppSidebar } from "@/components/app-sidebar";
@@ -19,6 +20,11 @@ import { CommandPalette } from "@/components/command-palette";
 import { StudentBottomNav } from "@/components/student-bottom-nav";
 import { setStudentPortalTab, getStudentPortalTab, onStudentPortalTab } from "@/lib/student-portal-bus";
 import { todayLocal } from "@/lib/dates";
+import {
+  createAuthSessionLoader,
+  isolateAuthBoundaryCache,
+  signOutWithLocalFallback,
+} from "@/lib/auth-session-loader";
 import { PageSkeleton } from "@/components/ui/skeletons";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -28,106 +34,156 @@ export const Route = createFileRoute("/_authenticated")({
 
 function AuthedLayout() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [state, setState] = useState<AuthState>({ user: null, roles: [], displayName: null, loading: true });
   const [eodSubmitted, setEodSubmitted] = useState<boolean | null>(null);
-
-  const checkEod = async (userId: string, rolesArr: string[]) => {
-    // Cofounders and founders don't file EODs (founder-confirmed 2026-07-14) —
-    // never show them the "EOD due" nag.
-    if (rolesArr.includes("cofounder") || rolesArr.includes("founder")) { setEodSubmitted(true); return; }
-    // The rep's own calendar day — EODs belong to the day they lived,
-    // wherever they are (must match the EOD form's date exactly).
-    const today = todayLocal();
-    const { data } = await supabase.from("eods").select("id").eq("user_id", userId).eq("report_date", today).maybeSingle();
-    setEodSubmitted(!!data);
-  };
+  const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
     const cleanupSessionOnly = installSessionOnlyCleanup();
-    let alive = true;
-    // supabase-js re-emits SIGNED_IN every time the tab regains focus; only
-    // the first event for a given user is an actual sign-in.
-    let loadedUserId: string | null = null;
-    const load = async (userId: string | null, fromSignIn = false) => {
-      if (!userId) {
-        loadedUserId = null;
-        if (alive) {
-          setState({ user: null, roles: [], displayName: null, loading: false });
-          navigate({ to: "/auth", replace: true });
-        }
-        return;
-      }
-      if (fromSignIn && userId === loadedUserId) fromSignIn = false;
-      loadedUserId = userId;
-      const [rolesRes, profileRes, userRes] = await Promise.all([
-        supabase.from("user_roles").select("role").eq("user_id", userId),
-        supabase.from("profiles").select("display_name").eq("id", userId).maybeSingle(),
-        supabase.auth.getUser(),
-      ]);
-      if (!alive) return;
-      const rolesArr = (rolesRes.data ?? []).map(r => r.role as string);
-      setState({
-        user: userRes.data.user,
-        roles: rolesArr,
-        displayName: profileRes.data?.display_name ?? userRes.data.user?.email ?? null,
-        loading: false,
-      });
-      checkEod(userId, rolesArr);
-
-      const path = window.location.pathname;
-      const isStudent = rolesArr.includes("student");
-      const isTeam = rolesArr.some(r => ["admin", "coach", "closer", "setter"].includes(r));
-
-      // Sign-in happens on /auth before this layout mounts, so the SIGNED_IN
-      // event is missed — the auth page leaves a one-shot flag instead.
-      if (!fromSignIn && window.sessionStorage.getItem("isa-landing-pending")) {
-        window.sessionStorage.removeItem("isa-landing-pending");
-        fromSignIn = true;
-      }
-
-      if (fromSignIn) {
-        // Role-based landing: only fires on actual sign-in, not on page refresh
-        if (isStudent && !isTeam) {
-          navigate({ to: "/student-portal", replace: true });
-        } else if (!rolesArr.includes("admin") && !rolesArr.includes("founder")) {
-          if (rolesArr.includes("setter")) navigate({ to: "/eods", replace: true });
-          else if (rolesArr.includes("closer")) navigate({ to: "/sales", search: { tab: "operations" }, replace: true });
-          else if (rolesArr.includes("csm")) navigate({ to: "/csm", search: { tab: "overview" }, replace: true });
-          else if (rolesArr.includes("coach")) navigate({ to: "/calls", replace: true });
-        }
-      } else {
-        // On page refresh: still protect student-only users from team pages
-        if (isStudent && !isTeam && (path === "/dashboard" || path === "/" || path === "/auth")) {
-          navigate({ to: "/student-portal", replace: true });
-        }
-        // CSMs without another dashboard-holding role land on their own board
-        const canDashboard = rolesArr.some(r => ["admin", "founder", "closer", "setter", "coach"].includes(r));
-        if (!canDashboard && rolesArr.includes("csm") && path === "/dashboard") {
-          navigate({ to: "/csm", search: { tab: "overview" }, replace: true });
-        }
-      }
+    const clearAuthBoundaryCache = isolateAuthBoundaryCache(queryClient);
+    const clearAccountState = (loading: boolean) => {
+      queryClient.clear();
+      setEodSubmitted(null);
+      setState({ user: null, roles: [], displayName: null, loading });
     };
-    supabase.auth.getSession().then(({ data }) => load(data.session?.user.id ?? null, false));
-    const onRolesChanged = () => {
-      supabase.auth.getSession().then(({ data }) => load(data.session?.user.id ?? null, false));
+    const loader = createAuthSessionLoader({
+      getSessionUserId: async () => {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        return data.session?.user.id ?? null;
+      },
+      loadRoles: async (userId) => {
+        const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", userId);
+        if (error) throw error;
+        return (data ?? []).map(row => row.role as string);
+      },
+      loadDisplayName: async (userId) => {
+        const { data, error } = await supabase.from("profiles").select("display_name").eq("id", userId).maybeSingle();
+        if (error) throw error;
+        return data?.display_name ?? null;
+      },
+      loadUser: async () => {
+        const { data, error } = await supabase.auth.getUser();
+        if (error) throw error;
+        return data.user;
+      },
+      loadEodStatus: async (userId, roles) => {
+        // Cofounders and founders don't file EODs (founder-confirmed 2026-07-14).
+        if (roles.includes("cofounder") || roles.includes("founder")) return true;
+        const { data, error } = await supabase
+          .from("eods")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("report_date", todayLocal())
+          .maybeSingle();
+        if (error) throw error;
+        return !!data;
+      },
+      onLoading: () => {
+        setAuthError(null);
+        clearAccountState(true);
+      },
+      onSignedOut: () => {
+        setAuthError(null);
+        clearAccountState(false);
+        window.sessionStorage.removeItem("isa-landing-pending");
+        navigate({ to: "/auth", replace: true });
+      },
+      onCommit: ({ user, roles, displayName, shouldLand }) => {
+        setAuthError(null);
+        setState({ user, roles, displayName: displayName ?? user.email ?? null, loading: false });
+
+        const path = window.location.pathname;
+        const isStudent = roles.includes("student");
+        const isTeam = roles.some(role => ["admin", "coach", "closer", "setter", "csm"].includes(role));
+        if (shouldLand) window.sessionStorage.removeItem("isa-landing-pending");
+
+        if (shouldLand) {
+          if (isStudent && !isTeam) {
+            navigate({ to: "/student-portal", replace: true });
+          } else if (!roles.includes("admin") && !roles.includes("founder")) {
+            if (roles.includes("setter")) navigate({ to: "/eods", replace: true });
+            else if (roles.includes("closer")) navigate({ to: "/sales", search: { tab: "operations" }, replace: true });
+            else if (roles.includes("csm")) navigate({ to: "/csm", search: { tab: "overview" }, replace: true });
+            else if (roles.includes("coach")) navigate({ to: "/calls", replace: true });
+          }
+        } else {
+          if (isStudent && !isTeam && (path === "/dashboard" || path === "/" || path === "/auth")) {
+            navigate({ to: "/student-portal", replace: true });
+          }
+          const canDashboard = roles.some(role => ["admin", "founder", "closer", "setter", "coach"].includes(role));
+          if (!canDashboard && roles.includes("csm") && path === "/dashboard") {
+            navigate({ to: "/csm", search: { tab: "overview" }, replace: true });
+          }
+        }
+      },
+      onEodStatus: (_userId, submitted) => setEodSubmitted(submitted),
+      onAuthError: () => {
+        clearAccountState(false);
+        setAuthError("We couldn't verify this session. Try again or sign out.");
+      },
+      onEodError: () => setEodSubmitted(null),
+    });
+
+    const refreshSession = () => loader.refresh();
+    loader.refresh({ wantsLanding: window.sessionStorage.getItem("isa-landing-pending") === "1" });
+    const onRolesChanged = refreshSession;
+    const onAuthRetry = () => {
+      setAuthError(null);
+      setState({ user: null, roles: [], displayName: null, loading: true });
+      loader.refresh({ wantsLanding: window.sessionStorage.getItem("isa-landing-pending") === "1" });
     };
     window.addEventListener("isa:roles-changed", onRolesChanged);
-    const onEodSubmitted = () => setEodSubmitted(true);
+    window.addEventListener("isa:auth-retry", onAuthRetry);
+    const onEodSubmitted = (event: Event) => {
+      const userId = (event as CustomEvent<{ userId?: string }>).detail?.userId;
+      if (userId) loader.recordEodSubmitted(userId);
+    };
     window.addEventListener("isa:eod-submitted", onEodSubmitted);
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT") {
-        setState({ user: null, roles: [], displayName: null, loading: false });
-        navigate({ to: "/auth", replace: true });
-      } else if (event === "SIGNED_IN" || event === "USER_UPDATED") {
-        load(session?.user.id ?? null, true);
+        loader.transition(null);
+      } else if (event === "SIGNED_IN") {
+        loader.transition(session?.user.id ?? null, { wantsLanding: true });
+      } else if (event === "USER_UPDATED") {
+        loader.transition(session?.user.id ?? null);
       }
     });
-    return () => { alive = false; sub.subscription.unsubscribe(); cleanupSessionOnly(); window.removeEventListener("isa:roles-changed", onRolesChanged); window.removeEventListener("isa:eod-submitted", onEodSubmitted); };
-  }, [navigate]);
+    return () => {
+      loader.dispose();
+      sub.subscription.unsubscribe();
+      clearAuthBoundaryCache();
+      cleanupSessionOnly();
+      window.removeEventListener("isa:roles-changed", onRolesChanged);
+      window.removeEventListener("isa:auth-retry", onAuthRetry);
+      window.removeEventListener("isa:eod-submitted", onEodSubmitted);
+    };
+  }, [navigate, queryClient]);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    const error = await signOutWithLocalFallback(options => supabase.auth.signOut(options));
+    if (error) setAuthError("We couldn't sign out this browser. Try again.");
   };
+
+  if (authError) {
+    return (
+      <div className="dashboard-dark min-h-screen flex items-center justify-center bg-[var(--background)] px-4">
+        <div className="card-surface max-w-md p-6 text-center">
+          <h1 className="text-lg font-semibold text-foreground">Session verification failed</h1>
+          <p className="mt-2 text-sm text-muted-foreground">{authError}</p>
+          <div className="mt-5 flex justify-center gap-2">
+            <Button onClick={() => window.dispatchEvent(new Event("isa:auth-retry"))}>
+              Try again
+            </Button>
+            <Button variant="outline" onClick={signOut}>
+              Sign out
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (state.loading || !state.user) {
     return (

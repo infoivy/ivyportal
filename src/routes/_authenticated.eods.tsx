@@ -237,7 +237,9 @@ function EODsPage() {
     if (error) return toast.error(error.message);
     toast.success(existingId ? `EOD updated for ${fmtLong(reportDate)}` : `EOD submitted for ${fmtLong(reportDate)}`);
     // Clears the "EOD due" chip in the top bar without a reload
-    if (reportDate === today) window.dispatchEvent(new CustomEvent("isa:eod-submitted"));
+    if (reportDate === today) {
+      window.dispatchEvent(new CustomEvent("isa:eod-submitted", { detail: { userId: user.id } }));
+    }
     if (wasNew) {
       confetti({ particleCount: 120, spread: 80, origin: { y: 0.7 }, colors: ["#10b981", "#f59e0b", "#3b82f6", "#a855f7"] });
       if (draftKey) { try { localStorage.removeItem(draftKey); } catch {} }
