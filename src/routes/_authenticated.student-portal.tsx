@@ -495,10 +495,10 @@ function StudentPortal() {
             <span dir="rtl">السلام عليكم ورحمة الله وبركاته</span>, {first} <span className="inline-block">👋</span>
           </h1>
           <p className="text-xs text-muted-foreground mt-1">
-            Welcome to the {isOneOnOne ? "1:1 Pathway" : "Group Expertise Pathway"}. Work through the steps below — the rest of your portal unlocks when they're all done.
+            Welcome to Ivy Sales Academy. Work through the steps below — the rest of your portal unlocks when they're all done.
           </p>
         </section>
-        <StartHereGuide oneOnOne={isOneOnOne} done={guideDone} locked unlocking={unlocking} onToggle={toggleGuideStep} />
+        <StartHereGuide done={guideDone} locked unlocking={unlocking} onToggle={toggleGuideStep} />
       </div>
     );
   }
@@ -516,7 +516,7 @@ function StudentPortal() {
               <span dir="rtl">السلام عليكم ورحمة الله وبركاته</span>, {first} <span className="inline-block">👋</span>
             </h1>
             <p className="text-xs text-muted-foreground mt-1">
-              {(phasesFor(isOneOnOne).find(p => p.key === student.phase)?.label ?? student.phase.replace("_", " "))} · {student.status} · {isOneOnOne ? "1:1 Pathway" : "Group Expertise Pathway"}
+              {(phasesFor(isOneOnOne).find(p => p.key === student.phase)?.label ?? student.phase.replace("_", " "))} · {student.status}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -670,7 +670,7 @@ function StudentPortal() {
       </nav>
 
       {tab === "start" && (
-        <StartHereGuide oneOnOne={isOneOnOne} done={guideDone} onToggle={toggleGuideStep} />
+        <StartHereGuide done={guideDone} onToggle={toggleGuideStep} />
       )}
 
       {tab === "leaderboard" && <LeaderboardPanel />}
@@ -1182,8 +1182,7 @@ function WeeklyReflection({ label, value }: { label: string; value: string }) {
 
 /* ---------- Start Here ---------- */
 
-function StartHereGuide({ oneOnOne, done, locked = false, unlocking = false, onToggle }: {
-  oneOnOne: boolean;
+function StartHereGuide({ done, locked = false, unlocking = false, onToggle }: {
   done: Set<string>;
   locked?: boolean;
   unlocking?: boolean;
@@ -1198,7 +1197,7 @@ function StartHereGuide({ oneOnOne, done, locked = false, unlocking = false, onT
           <div>
             <div className="text-sm font-semibold">{locked ? "Start here — unlock your portal" : "Start Here"}</div>
             <div className="text-[11px] text-muted-foreground">
-              {oneOnOne ? "1:1 Pathway" : "Group Expertise Pathway"} · {locked
+              {locked
                 ? "finish all five steps to unlock EODs, placements, action items, and the leaderboard"
                 : "your onboarding checklist — all done ✓"}
             </div>
