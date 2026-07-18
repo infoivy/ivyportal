@@ -30,10 +30,10 @@ The application database lives in Supabase `public`. The migration history in `s
 
 | Table | Purpose | RLS in plain language |
 | --- | --- | --- |
-| `students` | Student profile, phase, status, coach, and programme information. | Team can read; students can read their own record; admins/coaches create and update; only admins delete. |
+| `students` | Student profile, phase, status, coach, and programme information. `onboarding_completed_at` gates the student portal: NULL locks it to Start Here; the completion server fn (or a staff override) stamps it. | Team can read; students can read their own record; admins/coaches/closers create; admins/coaches/closers/CSMs update (CSMs approve looms and unlock portals); only admins delete. |
 | `student_calls` | Scheduled and completed coaching calls. | Team can read; students can read their own calls; admins/coaches create, update, and delete. |
 | `student_eods` | Student daily self-reports. | Team can read; students submit and correct their own metrics; admins/coaches may insert or correct. Authenticated deletion is revoked, and row ID, student, report date, and creation time are immutable. |
-| `student_weekly_eods` | Weekly student accountability: group-call attendance, implementation, blockers, wins, and next commitment. | Students read/submit/update only their own; fulfillment roles read; admins may correct. No student delete policy. |
+| `student_weekly_eods` | Weekly student accountability: which group calls were attended (`calls_attended` {day,name} array, names from `org_settings.group_call_schedule`; `group_calls_attended` mirrors the count), self-reported 1:1 calls (`one_on_one_calls`, 1:1 pathway only), implementation, blockers, wins, and next commitment. | Students read/submit/update only their own; fulfillment roles read; admins may correct. No student delete policy. |
 | `student_action_items` | Action items derived from student calls. | Staff manage items for the student workflow; the secure toggle function supports a student changing an allowed item. |
 | `csm_student_notes` | CSM observations and follow-ups. | CSM/admin team can read; CSMs create their own; authors may update/delete their own and admins can manage all. |
 | `csm_tally` | CSM activity counts (loom, roleplay, check-in, escalation). | CSMs/admins can read; CSMs add their own rows; owners/admins update and delete. |
