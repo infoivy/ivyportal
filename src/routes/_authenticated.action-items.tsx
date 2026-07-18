@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { TableSkeleton } from "@/components/ui/skeletons";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -147,7 +147,7 @@ function ActionItemsHub() {
     return out;
   }, [calls, adhoc, students, profiles, user, roles]);
 
-  const isOverdue = (r: Row) => !r.done && r.due && r.due < today;
+  const isOverdue = useCallback((r: Row) => !r.done && r.due && r.due < today, [today]);
 
   const filtered = useMemo(() => {
     return rows.filter(r => {
@@ -163,7 +163,7 @@ function ActionItemsHub() {
       if (ad !== bd) return ad.localeCompare(bd);
       return b.refDate.localeCompare(a.refDate);
     });
-  }, [rows, filt, ownerFilter, user, today]);
+  }, [rows, filt, ownerFilter, user, isOverdue]);
 
   const uniqueOwners = useMemo(() => {
     const map = new Map<string, string>();
@@ -176,7 +176,7 @@ function ActionItemsHub() {
     mine: rows.filter(r => !r.done && r.ownerId === user?.id).length,
     overdue: rows.filter(r => isOverdue(r)).length,
     all: rows.length,
-  }), [rows, user, today]);
+  }), [rows, user, isOverdue]);
 
   const submitAdhoc = async () => {
     if (!user || newTargets.size === 0 || !newText.trim()) return;

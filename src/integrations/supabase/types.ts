@@ -1683,6 +1683,56 @@ export type Database = {
           },
         ]
       }
+      student_weekly_eods: {
+        Row: {
+          biggest_blocker: string | null
+          biggest_win: string | null
+          created_at: string
+          group_calls_attended: number
+          id: string
+          implementation: string
+          next_week_commitment: string
+          student_id: string
+          submitted_at: string
+          updated_at: string
+          week_start: string
+        }
+        Insert: {
+          biggest_blocker?: string | null
+          biggest_win?: string | null
+          created_at?: string
+          group_calls_attended: number
+          id?: string
+          implementation: string
+          next_week_commitment: string
+          student_id: string
+          submitted_at?: string
+          updated_at?: string
+          week_start: string
+        }
+        Update: {
+          biggest_blocker?: string | null
+          biggest_win?: string | null
+          created_at?: string
+          group_calls_attended?: number
+          id?: string
+          implementation?: string
+          next_week_commitment?: string
+          student_id?: string
+          submitted_at?: string
+          updated_at?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_weekly_eods_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_milestone_progress: {
         Row: {
           achieved_at: string

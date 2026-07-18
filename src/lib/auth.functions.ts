@@ -11,7 +11,7 @@ import { createServerFn } from "@tanstack/react-start";
  * API; the client signs in with the password immediately after.
  */
 export const signUpEmail = createServerFn({ method: "POST" })
-  .inputValidator((input: { email: string; password: string; fullName?: string }) => {
+  .validator((input: { email: string; password: string; fullName?: string }) => {
     const email = String(input?.email ?? "").trim().toLowerCase();
     const password = String(input?.password ?? "");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Enter a valid email address");

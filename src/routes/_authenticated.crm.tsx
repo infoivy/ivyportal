@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -79,7 +79,7 @@ function ClosePipelineSummary() {
   const [openDialog, setOpenDialog] = useState(false);
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     setLoading(true);
     try {
       const s = await getStatus();
@@ -95,8 +95,8 @@ function ClosePipelineSummary() {
     } finally {
       setLoading(false);
     }
-  };
-  useEffect(() => { refresh(); }, []);
+  }, [getStatus, listLeads]);
+  useEffect(() => { void refresh(); }, [refresh]);
 
   const stages = useMemo(() => {
     const groups = new Map<string, { count: number; value: number; color: string }>();

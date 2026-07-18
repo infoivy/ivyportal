@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/_authenticated/payouts")({
 function getPeriod(offset = 0) {
   const now = new Date();
   // Index halves absolutely: monthIndex * 2 + (0 for 1st–15th, 1 for 16th–end)
-  let half = (now.getFullYear() * 12 + now.getMonth()) * 2 + (now.getDate() <= 15 ? 0 : 1) + offset;
+  const half = (now.getFullYear() * 12 + now.getMonth()) * 2 + (now.getDate() <= 15 ? 0 : 1) + offset;
   const monthAbs = Math.floor(half / 2);
   const y = Math.floor(monthAbs / 12);
   const m = monthAbs % 12;
@@ -104,7 +104,7 @@ function PayoutsInner() {
   const [cofounderIds, setCofounderIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     // Whole calendar month: the co-founder monthly cap needs both halves.
     const [dealsRes, profilesRes, ratesRes, ipRes, instRes, cofRes] = await Promise.all([
@@ -139,9 +139,9 @@ function PayoutsInner() {
     setInstallmentPayments((ipRes.data ?? []) as InstallmentPayment[]);
     setInstallments((instRes.data ?? []) as Installment[]);
     setLoading(false);
-  };
+  }, [period.monthStart, period.monthEnd]);
 
-  useEffect(() => { load(); }, [period.start]);
+  useEffect(() => { void load(); }, [load]);
 
   // Build installment map: id → installment
   const installmentMap = useMemo(() => {

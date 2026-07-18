@@ -89,7 +89,7 @@ export type TeamEvent = {
 /** Fetch team calendar events across all connected users for a time range. */
 export const getTeamCalendarEvents = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { timeMin: string; timeMax: string }) => data)
+  .validator((data: { timeMin: string; timeMax: string }) => data)
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: conns, error } = await supabaseAdmin
@@ -165,7 +165,7 @@ export const SET_REMINDER_MINUTES = [2 * 24 * 60, 24 * 60, 3 * 60, 60];
  */
 export const createSetReminder = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: {
+  .validator((data: {
     prospect: string; startISO: string; durationMin: number; notes?: string;
     source?: "manual" | "claimed";
   }) => data)
@@ -202,7 +202,7 @@ export const createSetReminder = createServerFn({ method: "POST" })
     });
 
     // Track it for the upcoming-sets list (RLS: owner must be the caller)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const { error: insErr } = await (context.supabase as any).from("set_reminders").insert({
       owner_id: context.userId,
       prospect: data.prospect,
@@ -237,7 +237,7 @@ export type UpcomingSet = {
 export const listUpcomingSets = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const { data: rows, error } = await (context.supabase as any)
       .from("set_reminders")
       .select("*")
@@ -259,9 +259,9 @@ export const listUpcomingSets = createServerFn({ method: "GET" })
 /** Remove a set reminder row (own or admin; the calendar event stays). */
 export const deleteSetReminder = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { id: string }) => data)
+  .validator((data: { id: string }) => data)
   .handler(async ({ context, data }) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const { error } = await (context.supabase as any).from("set_reminders").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -346,7 +346,7 @@ export const syncCalendlySets = createServerFn({ method: "POST" })
     let imported = 0;
     for (const ev of events) {
       const durationMin = Math.max(15, Math.round((new Date(ev.end_time).getTime() - new Date(ev.start_time).getTime()) / 60000));
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const { error, data } = await (supabaseAdmin as any)
         .from("set_reminders")
         .upsert({
@@ -369,9 +369,9 @@ export const syncCalendlySets = createServerFn({ method: "POST" })
  */
 export const claimSet = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { id: string }) => data)
+  .validator((data: { id: string }) => data)
   .handler(async ({ context, data }) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const sr = context.supabase as any;
     const { data: row, error } = await sr.from("set_reminders").select("*").eq("id", data.id).maybeSingle();
     if (error || !row) throw new Error("set not found");
@@ -411,7 +411,7 @@ export const claimSet = createServerFn({ method: "POST" })
       });
       {
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         await (supabaseAdmin as any).from("set_reminders")
           .update({ gcal_event_id: event.id, gcal_html_link: event.htmlLink ?? null })
           .eq("id", data.id);
@@ -433,9 +433,9 @@ export type ReminderState = "reminded" | "confirmed" | "no_response";
 /** Tick a reminder window, mark confirmed/reopen, or update the set's notes. */
 export const updateSetTracking = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { id: string; window?: ReminderWindow | string; state?: ReminderState | null; confirm?: boolean; notes?: string }) => data)
+  .validator((data: { id: string; window?: ReminderWindow | string; state?: ReminderState | null; confirm?: boolean; notes?: string }) => data)
   .handler(async ({ context, data }) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const sr = context.supabase as any;
     const { data: row, error } = await sr.from("set_reminders").select("id, reminder_log, confirmed_at").eq("id", data.id).maybeSingle();
     if (error || !row) throw new Error("set not found");
@@ -468,9 +468,9 @@ export const updateSetTracking = createServerFn({ method: "POST" })
  */
 export const cancelSet = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { id: string; reason?: string }) => data)
+  .validator((data: { id: string; reason?: string }) => data)
   .handler(async ({ context, data }) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const sr = context.supabase as any;
     const { data: row, error } = await sr.from("set_reminders").select("*").eq("id", data.id).maybeSingle();
     if (error || !row) throw new Error("set not found");
@@ -512,9 +512,9 @@ export const cancelSet = createServerFn({ method: "POST" })
  *  Google Calendar event (with the standard reminder schedule). */
 export const restoreSet = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { id: string }) => data)
+  .validator((data: { id: string }) => data)
   .handler(async ({ context, data }) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const sr = context.supabase as any;
     const { data: row, error } = await sr.from("set_reminders").select("*").eq("id", data.id).maybeSingle();
     if (error || !row) throw new Error("set not found");
@@ -588,9 +588,9 @@ async function withUserCalendar<T>(
  *  previous owner's calendar event. */
 export const unclaimSet = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { id: string }) => data)
+  .validator((data: { id: string }) => data)
   .handler(async ({ context, data }) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const sr = context.supabase as any;
     const { data: row, error } = await sr.from("set_reminders").select("*").eq("id", data.id).maybeSingle();
     if (error || !row) throw new Error("set not found");
@@ -606,7 +606,7 @@ export const unclaimSet = createServerFn({ method: "POST" })
       } catch (err) { console.error("[unclaimSet] gcal delete failed:", err); }
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const { error: upErr } = await (supabaseAdmin as any).from("set_reminders")
       .update({ owner_id: null, gcal_event_id: null, gcal_html_link: null })
       .eq("id", data.id);
@@ -618,9 +618,9 @@ export const unclaimSet = createServerFn({ method: "POST" })
  *  handing it off). Moves the calendar event to the new owner. */
 export const assignSet = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { id: string; userId: string }) => data)
+  .validator((data: { id: string; userId: string }) => data)
   .handler(async ({ context, data }) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const sr = context.supabase as any;
     const { data: row, error } = await sr.from("set_reminders").select("*").eq("id", data.id).maybeSingle();
     if (error || !row) throw new Error("set not found");
@@ -637,7 +637,7 @@ export const assignSet = createServerFn({ method: "POST" })
     }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const admin = supabaseAdmin as any;
     const { error: upErr } = await admin.from("set_reminders")
       .update({ owner_id: data.userId, gcal_event_id: null, gcal_html_link: null })

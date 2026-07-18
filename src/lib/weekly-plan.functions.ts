@@ -22,7 +22,7 @@ async function requireFounderOrAdmin(context: { supabase: any; userId: string })
 /** Provision the 7 reel slots + 10 idea rows for a given week if not already done. Idempotent. */
 export const ensureWeekProvisioned = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { weekStart: string }) => {
+  .validator((input: { weekStart: string }) => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(input?.weekStart ?? "")) throw new Error("weekStart must be YYYY-MM-DD");
     return { weekStart: input.weekStart };
   })
@@ -141,7 +141,7 @@ export const ensureWeekProvisioned = createServerFn({ method: "POST" })
 /** Generate 10 content ideas through a configurable OpenAI-compatible API. Fills empty positions. */
 export const generateWeekIdeas = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { weekStart: string; brandContext?: string; overwrite?: boolean }) => {
+  .validator((input: { weekStart: string; brandContext?: string; overwrite?: boolean }) => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(input?.weekStart ?? "")) throw new Error("weekStart must be YYYY-MM-DD");
     return {
       weekStart: input.weekStart,
@@ -235,7 +235,7 @@ Return ONLY the JSON array, no markdown fences, no prose.`;
 /** Promote a week idea into a content_items slot for that week. */
 export const promoteIdeaToSlot = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { ideaId: string; contentItemId: string }) => {
+  .validator((input: { ideaId: string; contentItemId: string }) => {
     if (!input?.ideaId || !input?.contentItemId) throw new Error("ideaId and contentItemId required");
     return { ideaId: input.ideaId, contentItemId: input.contentItemId };
   })

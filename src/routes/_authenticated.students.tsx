@@ -2,7 +2,7 @@ import { StudentsTabBar } from "@/components/students-tab-bar";
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useStudentHealth } from "@/lib/use-student-health";
 import { BAND_META } from "@/lib/student-health";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -182,7 +182,7 @@ function StudentsLayout() {
     return m;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [students, lastEodByStudent, lastCallByStudent, apps7dByStudent]);
-  const isAtRisk = (s: Student) => riskByStudent.get(s.id)?.risky ?? false;
+  const isAtRisk = useCallback((s: Student) => riskByStudent.get(s.id)?.risky ?? false, [riskByStudent]);
 
   const filtered = useMemo(() => students.filter(s => {
     const matchesQ = !q || s.full_name.toLowerCase().includes(q.toLowerCase()) || (s.email ?? "").toLowerCase().includes(q.toLowerCase());
@@ -195,7 +195,7 @@ function StudentsLayout() {
       coachFilter === "unassigned" ? !s.coach_id :
       s.coach_id === coachFilter;
     return matchesQ && matchesPhase && matchesCoach;
-  }), [students, q, phaseFilter, coachFilter, lastCallByStudent, lastEodByStudent, apps7dByStudent]);
+  }), [students, q, phaseFilter, coachFilter, isAtRisk]);
 
   const byPhase = useMemo(() => {
     const map = new Map<Phase, Student[]>();

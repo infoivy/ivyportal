@@ -32,7 +32,8 @@ The application database lives in Supabase `public`. The migration history in `s
 | --- | --- | --- |
 | `students` | Student profile, phase, status, coach, and programme information. | Team can read; students can read their own record; admins/coaches create and update; only admins delete. |
 | `student_calls` | Scheduled and completed coaching calls. | Team can read; students can read their own calls; admins/coaches create, update, and delete. |
-| `student_eods` | Student self-reports. | Team can read; students manage their own; admins/coaches have full management. |
+| `student_eods` | Student daily self-reports. | Team can read; students submit and correct their own metrics; admins/coaches may insert or correct. Authenticated deletion is revoked, and row ID, student, report date, and creation time are immutable. |
+| `student_weekly_eods` | Weekly student accountability: group-call attendance, implementation, blockers, wins, and next commitment. | Students read/submit/update only their own; fulfillment roles read; admins may correct. No student delete policy. |
 | `student_action_items` | Action items derived from student calls. | Staff manage items for the student workflow; the secure toggle function supports a student changing an allowed item. |
 | `csm_student_notes` | CSM observations and follow-ups. | CSM/admin team can read; CSMs create their own; authors may update/delete their own and admins can manage all. |
 | `csm_tally` | CSM activity counts (loom, roleplay, check-in, escalation). | CSMs/admins can read; CSMs add their own rows; owners/admins update and delete. |
@@ -64,6 +65,8 @@ The application database lives in Supabase `public`. The migration history in `s
 - `student_toggle_action_item(call_id, index, done)`: narrowly scoped student action-item update.
 - `deals_prevent_reassignment()`: protects deal ownership/reassignment rules.
 - `testimonial_sync_student_flags()`: synchronizes testimonial status to the related student flags.
+- `protect_student_eod_history_identity()`: prevents daily EOD ownership, report-date, and creation-history rewrites.
+- `protect_student_weekly_eod_history()`: prevents weekly EOD identity and submission-history rewrites.
 - `set_updated_at()` and `update_updated_at_column()`: shared update timestamp helpers.
 - `verify_security_schema()`: service-role-only, read-only check used by `npm run supabase:verify`; it returns table/RLS/policy metadata and no application rows.
 
@@ -78,4 +81,4 @@ The application database lives in Supabase `public`. The migration history in `s
 
 ## Deployment verification
 
-Run `npm run supabase:verify` with local `.env`. It calls the service-role-only verification function and fails if any of the 32 application tables is missing, has RLS disabled, or has no policy. This is a structural check; it does not replace role-by-role human testing.
+Run `npm run supabase:verify` with local `.env`. It calls the service-role-only verification function and fails if any of the 33 application tables is missing, has RLS disabled, or has no policy. This is a structural check; it does not replace role-by-role human testing.

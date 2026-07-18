@@ -508,7 +508,7 @@ function InviteModal({ onClose, invitedBy }: { onClose: () => void; invitedBy: s
     if (!email.trim()) return toast.error("Email is required");
     if (selectedRoles.length === 0) return toast.error("Select at least one role");
     setSaving(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const { data, error } = await (supabase as any)
       .from("invitations")
       .insert({

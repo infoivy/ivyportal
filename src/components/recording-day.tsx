@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format, parseISO, addDays, startOfWeek } from "date-fns";
@@ -37,7 +37,7 @@ export function RecordingDay({ onOpenItem }: { onOpenItem: (id: string) => void 
   const thisWeek = mondayOf(new Date());
   const nextWeek = ymd(addDays(parseISO(thisWeek), 7));
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     const [{ data: settings }, { data }] = await Promise.all([
       supabase.from("founder_settings").select("recording_day_of_week").maybeSingle(),
@@ -50,9 +50,9 @@ export function RecordingDay({ onOpenItem }: { onOpenItem: (id: string) => void 
     if (settings?.recording_day_of_week != null) setRecordingDay(settings.recording_day_of_week);
     setSlots((data ?? []) as Slot[]);
     setLoading(false);
-  };
+  }, [thisWeek, nextWeek]);
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
+  useEffect(() => { void load(); }, [load]);
 
   const ordered = useMemo(() => [...slots].sort((a, b) => (a.scheduled_date ?? "").localeCompare(b.scheduled_date ?? "")), [slots]);
   const readyCount = ordered.filter(isReady).length;

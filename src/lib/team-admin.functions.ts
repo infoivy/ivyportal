@@ -9,7 +9,7 @@ async function assertAdmin(supabase: any, userId: string) {
 
 export const deleteTeamMember = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { userId: string }) => input)
+  .validator((input: { userId: string }) => input)
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     if (data.userId === context.userId) throw new Error("You can't delete your own account here.");
@@ -21,7 +21,7 @@ export const deleteTeamMember = createServerFn({ method: "POST" })
 
 export const setMemberActive = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { userId: string; active: boolean }) => input)
+  .validator((input: { userId: string; active: boolean }) => input)
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     if (data.userId === context.userId && !data.active) {
@@ -78,7 +78,7 @@ export const listTeamMembers = createServerFn({ method: "GET" })
  */
 export const approveAsStudent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { userId: string }) => data)
+  .validator((data: { userId: string }) => data)
   .handler(async ({ context, data }) => {
     // Closers onboard the students they close; CSMs onboard the ones they
     // support (founder-confirmed 2026-07-14).

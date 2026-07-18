@@ -71,7 +71,7 @@ function AdminConsole() {
         supabase.from("student_calls").select("id, student_id, call_date, coach_id, progress_rating").eq("status", "completed").is("progress_rating", null).order("call_date", { ascending: false }).limit(50),
         supabase.from("commission_rates").select("*").eq("active", true),
         supabase.from("founder_settings").select("id, crm_enabled, monthly_cash_goal, quarterly_goals").maybeSingle(),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         (supabase as any).from("audit_log").select("id, action, table_name, record_id, created_at, user_id").order("created_at", { ascending: false }).limit(100),
       ]);
       const pmap: Record<string, Profile> = {};

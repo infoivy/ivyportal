@@ -26,7 +26,7 @@ export async function fetchSetNudges(userId: string): Promise<SetNudge[]> {
   const now = Date.now();
   const todayKey = "warm:" + new Intl.DateTimeFormat("en-CA").format(new Date());
   const out: SetNudge[] = [];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   for (const r of (data ?? []) as any[]) {
     const msLeft = new Date(r.event_start).getTime() - now;
     const log = (r.reminder_log ?? {}) as Record<string, string>;

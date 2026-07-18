@@ -277,7 +277,7 @@ function CalendarPage() {
   // just closing calls (sets), coaching, or team meetings.
   const classify = (summary: string): "closing" | "coaching" | "team" | "other" => {
     const t = summary.toLowerCase();
-    if (/coach|role ?play|pathway|mastery|1[:\-]?1|one[- ]on[- ]one/.test(t)) return "coaching";
+    if (/coach|role ?play|pathway|mastery|1[:-]?1|one[- ]on[- ]one/.test(t)) return "coaching";
     if (/team|meeting|sync|standup|all[- ]?hands|huddle/.test(t)) return "team";
     if (/isa call|set[:\s]|closing|sales call|discovery|45|60 ?min/.test(t)) return "closing";
     return "other";

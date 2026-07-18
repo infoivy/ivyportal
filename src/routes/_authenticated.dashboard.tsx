@@ -24,13 +24,21 @@ import { StatDrilldown, type MetricKey } from "@/components/stat-drilldown";
 import { DashboardSettingsSheet } from "@/components/dashboard-settings-sheet";
 import { useDashboardPrefs } from "@/lib/dashboard-prefs";
 import { humanDue } from "@/lib/dates";
-import { VolumeAreaChart, VolumeLegend } from "@/components/ui/volume-area-chart";
+import { VolumeAreaChart, VolumeLegend, type VolumeSeries } from "@/components/ui/volume-area-chart";
 import { OnboardingPanel } from "@/components/onboarding-panel";
 import { MochiIgSection } from "@/components/mochi-ig-section";
 import { TeamGoalCard } from "@/components/team-goal-card";
-import { getWhopCashWindow } from "@/lib/mochi.functions";
+import { getMochiDashboard, getWhopCashWindow, type MochiPeriod } from "@/lib/mochi.functions";
+import { getCloseActivityReport } from "@/lib/close-crm.functions";
 import { SetterActivityCard } from "@/components/setter-activity-card";
 import { DeltaChip } from "@/components/ui/delta-chip";
+import {
+  buildDashboardTrend,
+  buildEodFunnel,
+  buildMochiFunnel,
+  trendHasData,
+  type DashboardTrendRow,
+} from "@/lib/dashboard-activity";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — ISA Team" }] }),
@@ -49,6 +57,32 @@ type EodRow = {
   no_shows: number; closes: number;
 };
 type Profile = { id: string; display_name: string | null };
+type ActivitySource = "all" | "eod" | "crm";
+type FunnelSource = "eod" | "mochi";
+
+const EOD_VOLUME_SERIES: VolumeSeries[] = [
+  { key: "dms", label: "EOD DMs", color: "#9CA3AF" },
+  { key: "convos", label: "EOD convos", color: "#6366F1" },
+  { key: "booked", label: "EOD booked", color: "#22C55E", strokeWidth: 2 },
+  { key: "shows", label: "EOD shows", color: "#F59E0B" },
+  { key: "closes", label: "EOD closes", color: "#A855F7" },
+];
+
+const CRM_VOLUME_SERIES: VolumeSeries[] = [
+  { key: "closeDials", label: "Close dials", color: "#38BDF8" },
+  { key: "closeLeads", label: "Close leads", color: "#0EA5E9" },
+  { key: "mochiLeads", label: "Mochi leads", color: "#F472B6" },
+  { key: "mochiBooked", label: "Mochi booked", color: "#34D399", strokeWidth: 2 },
+  { key: "mochiWon", label: "Mochi won", color: "#C084FC" },
+];
+
+const COMBINED_VOLUME_SERIES: VolumeSeries[] = [
+  CRM_VOLUME_SERIES[0],
+  CRM_VOLUME_SERIES[2],
+  EOD_VOLUME_SERIES[2],
+  EOD_VOLUME_SERIES[3],
+  EOD_VOLUME_SERIES[4],
+];
 
 function currentQuarterLabel(d = new Date()) {
   return `Q${Math.floor(d.getMonth() / 3) + 1} ${d.getFullYear()}`;
@@ -76,8 +110,11 @@ function Dashboard() {
   const { user, displayName, roles } = useAuth();
   const navigate = useNavigate();
   const isFounder = roles.includes("admin") && !roles.includes("setter") && !roles.includes("closer") && !roles.includes("coach") && !roles.includes("csm");
-  const [dateRange, setDateRange] = useState<DateRange>(() => rangeFor("24h"));
+  const canSeeCrm = roles.includes("admin") || roles.includes("founder") || roles.includes("cofounder");
+  const [dateRange, setDateRange] = useState<DateRange>(() => rangeFor("7d"));
   const [compare, setCompare] = useState(false);
+  const [activitySource, setActivitySource] = useState<ActivitySource>("all");
+  const [funnelSource, setFunnelSource] = useState<FunnelSource>("eod");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [drilldown, setDrilldown] = useState<MetricKey | null>(null);
   const [eods, setEods] = useState<EodRow[]>([]);
@@ -93,6 +130,9 @@ function Dashboard() {
   const [nextDue, setNextDue] = useState<{ date: string; amount: number; currency: string; studentName: string } | null>(null);
 
   const days = daysBetween(dateRange);
+  const rangeFrom = format(dateRange.from, "yyyy-MM-dd");
+  const rangeTo = format(dateRange.to, "yyyy-MM-dd");
+  const mochiPeriod: MochiPeriod = days <= 1 ? "today" : days <= 7 ? "last_7_days" : "last_30_days";
 
   const fetchDashboard = async () => {
     const now = new Date();
@@ -112,7 +152,7 @@ function Dashboard() {
         supabase.from("eods_activity").select("id, user_id, report_date, dms_sent, convos_started, calls_booked, calls_scheduled, shows, no_shows, closes").gte("report_date", from).lte("report_date", to).order("report_date", { ascending: true }),
         compare
           ? supabase.from("eods_activity").select("id, user_id, report_date, dms_sent, convos_started, calls_booked, calls_scheduled, shows, no_shows, closes").gte("report_date", prevFrom).lte("report_date", prevTo)
-          : Promise.resolve({ data: [] as EodRow[] }),
+          : Promise.resolve({ data: [] as EodRow[], error: null }),
         supabase.from("profiles").select("id, display_name"),
         supabase.from("students").select("id, status, phase, eod_exempt").eq("status", "active"),
         supabase.from("student_calls").select("id", { count: "exact", head: true }).eq("status", "scheduled").gte("call_date", today).lte("call_date", in7),
@@ -125,6 +165,9 @@ function Dashboard() {
         supabase.from("student_calls").select("action_items_json").not("action_items_json", "is", null).limit(2000),
         supabase.from("user_roles").select("user_id").in("role", ["cofounder", "founder"]),
       ]);
+      if (cur.error) throw new Error(`Team EOD activity failed: ${cur.error.message}`);
+      if (prev.error) throw new Error(`Previous EOD activity failed: ${prev.error.message}`);
+      if (todayEods.error) throw new Error(`Today's EOD activity failed: ${todayEods.error.message}`);
       const eodRows = (cur.data as EodRow[]) ?? [];
       const prevRows = (prev.data as EodRow[]) ?? [];
       const pmap: Record<string, Profile> = {};
@@ -180,6 +223,24 @@ function Dashboard() {
     setEodsTodayCount(mainQ.data.eodsToday);
     setLoading(false);
   }, [mainQ.data]);
+
+  const mochiQ = useQuery({
+    queryKey: ["mochi-dashboard", mochiPeriod],
+    queryFn: () => getMochiDashboard({ data: { period: mochiPeriod } }),
+    enabled: canSeeCrm,
+    staleTime: 2 * 60_000,
+    refetchInterval: 5 * 60_000,
+    retry: 1,
+  });
+
+  const closeActivityQ = useQuery({
+    queryKey: ["close-activity-report", rangeFrom, rangeTo],
+    queryFn: () => getCloseActivityReport({ data: { from: rangeFrom, to: rangeTo } }),
+    enabled: canSeeCrm,
+    staleTime: 2 * 60_000,
+    refetchInterval: 5 * 60_000,
+    retry: 1,
+  });
 
   const cashQ = useQuery({
     queryKey: ["page", "dashboard", "cash-mtd"],
@@ -260,16 +321,35 @@ function Dashboard() {
   const totals = useMemo(() => sumRows(scopedEods), [scopedEods]);
   const prevTotals = useMemo(() => sumRows(scopedPrev), [scopedPrev]);
   const trend = useMemo(() => {
-    const curr = buildTrend(scopedEods, days);
+    const curr = buildDashboardTrend({
+      range: { from: rangeFrom, to: rangeTo },
+      eods: scopedEods,
+      mochi: canSeeCrm ? (mochiQ.data?.funnel ?? []) : [],
+      closeCalls: canSeeCrm
+        ? (closeActivityQ.data?.daily ?? []).map((row) => ({ date: row.date, dials: row.dials, answered: 0 }))
+        : [],
+      closeLeads: canSeeCrm
+        ? (closeActivityQ.data?.daily ?? []).map((row) => ({ date: row.date, count: row.leads }))
+        : [],
+    });
     if (!compare || scopedPrev.length === 0) return curr;
-    const prev = buildTrend(scopedPrev, days, days); // same shape, shifted one window back
+    const prev = buildDashboardTrend({
+      range: {
+        from: format(subDays(dateRange.from, days), "yyyy-MM-dd"),
+        to: format(subDays(dateRange.from, 1), "yyyy-MM-dd"),
+      },
+      eods: scopedPrev,
+      mochi: [],
+      closeCalls: [],
+      closeLeads: [],
+    });
     return curr.map((row, i) => ({
       ...row,
       prev_dms: prev[i]?.dms ?? 0,
       prev_convos: prev[i]?.convos ?? 0,
       prev_booked: prev[i]?.booked ?? 0,
     }));
-  }, [scopedEods, scopedPrev, compare, days]);
+  }, [scopedEods, scopedPrev, compare, days, dateRange.from, rangeFrom, rangeTo, canSeeCrm, mochiQ.data, closeActivityQ.data]);
   const hasPrev = compare && prevEods.length > 0;
 
   const showRate = totals.shows + totals.no_shows > 0
@@ -290,13 +370,45 @@ function Dashboard() {
     return Object.values(byUser).sort((a, b) => b.calls - a.calls).slice(0, 8);
   }, [eods]);
 
-  const stagePct = (value: number, prev: number) => (prev > 0 ? Math.round((value / prev) * 1000) / 10 : null);
-  const formatBreakdown = [
-    { label: "DMs → Convos", value: totals.convos_started, pct: stagePct(totals.convos_started, totals.dms_sent), color: "var(--chart-1)" },
-    { label: "Convos → Booked", value: totals.calls_booked, pct: stagePct(totals.calls_booked, totals.convos_started), color: "var(--chart-3)" },
-    { label: "Booked → Shows", value: totals.shows, pct: stagePct(totals.shows, totals.calls_booked), color: "var(--chart-5)" },
-    { label: "Booked → Closed", value: totals.closes, pct: stagePct(totals.closes, totals.calls_booked), color: "var(--chart-4)" },
+  const mochiTotals = trend.reduce((sum, row) => ({
+    leads: sum.leads + row.mochiLeads,
+    qualified: sum.qualified + row.mochiQualified,
+    booked: sum.booked + row.mochiBooked,
+    won: sum.won + row.mochiWon,
+  }), { leads: 0, qualified: 0, booked: 0, won: 0 });
+  const eodFunnel = buildEodFunnel({
+    dms: totals.dms_sent,
+    convos: totals.convos_started,
+    booked: totals.calls_booked,
+    shows: totals.shows,
+    closes: totals.closes,
+  });
+  const mochiFunnel = buildMochiFunnel(mochiTotals);
+  const selectedFunnelSource: FunnelSource = canSeeCrm ? funnelSource : "eod";
+  const selectedActivitySource: ActivitySource = canSeeCrm ? activitySource : "eod";
+  const formatBreakdown = selectedFunnelSource === "mochi" ? mochiFunnel : eodFunnel;
+  const volumeSeries = selectedActivitySource === "eod"
+    ? EOD_VOLUME_SERIES
+    : selectedActivitySource === "crm"
+      ? CRM_VOLUME_SERIES
+      : COMBINED_VOLUME_SERIES;
+  const volumeHasData = trendHasData(
+    trend,
+    volumeSeries.map((series) => series.key as keyof DashboardTrendRow),
+  );
+  const funnelHasData = formatBreakdown.some((row) => row.value > 0);
+  const previousEodSeries: VolumeSeries[] = [
+    { key: "prev_dms", label: "DMs (previous)", color: "#9CA3AF", strokeWidth: 1, strokeOpacity: 0.35, ghost: true },
+    { key: "prev_convos", label: "Convos (previous)", color: "#6366F1", strokeWidth: 1, strokeOpacity: 0.35, ghost: true },
+    { key: "prev_booked", label: "Booked (previous)", color: "#22C55E", strokeWidth: 1, strokeOpacity: 0.35, ghost: true },
   ];
+  const chartVolumeSeries = selectedActivitySource === "eod" && hasPrev
+    ? [...previousEodSeries, ...volumeSeries]
+    : volumeSeries;
+  const crmLoading = canSeeCrm && (mochiQ.isLoading || closeActivityQ.isLoading);
+  const crmError = canSeeCrm && (mochiQ.isError || closeActivityQ.isError);
+  const volumeLoading = loading || (selectedActivitySource !== "eod" && crmLoading);
+  const funnelLoading = loading || (selectedFunnelSource === "mochi" && mochiQ.isLoading);
 
   const rangeLabel =
     dateRange.preset === "24h" ? "Last 24 hours"
@@ -356,6 +468,13 @@ function Dashboard() {
             </button>
           </div>
         </div>
+
+        {mainQ.isError && (
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-danger/25 bg-danger-bg px-4 py-3 text-[13px] text-danger-fg">
+            <span>Team EOD analytics could not load. Existing reports have not been replaced with zeros.</span>
+            <button onClick={() => mainQ.refetch()} className="shrink-0 font-medium underline underline-offset-4">Retry</button>
+          </div>
+        )}
 
         {/* Start Here — one checklist per business role held */}
         <OnboardingPanel compact />
@@ -444,10 +563,10 @@ function Dashboard() {
         )}
 
         {/* Instagram funnel — live from Mochi CRM */}
-        {(roles.includes("admin") || roles.includes("founder")) && <MochiIgSection />}
+        {canSeeCrm && <MochiIgSection />}
 
         {/* Per-rep dials, call durations & DMs — Close + Mochi */}
-        {(roles.includes("admin") || roles.includes("founder")) && <SetterActivityCard />}
+        {canSeeCrm && <SetterActivityCard />}
 
         {/* Ops strip */}
         {prefs.showOps && (
@@ -482,36 +601,38 @@ function Dashboard() {
           <div className={`grid gap-3 ${hasPrev ? "lg:grid-cols-[1.2fr_1fr_1fr]" : "lg:grid-cols-[1.5fr_1fr]"}`}>
             {prefs.showGrowth && (
               <Panel>
-                <div className="mb-2">
-                  <div className="text-[15px] font-semibold text-foreground">Volume trend</div>
-                  <div className="text-xs text-muted-foreground mt-0.5">DMs, convos &amp; booked · {rangeLabel}</div>
+                <div className="mb-2 flex items-start justify-between gap-3">
+                  <div>
+                    <div className="text-[15px] font-semibold text-foreground">Volume trend</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      Source-separated activity · {rangeLabel}{days > 30 && selectedActivitySource !== "eod" ? " · Mochi covers the latest 30 days" : ""}
+                    </div>
+                  </div>
+                  {canSeeCrm && (
+                    <SourceTabs
+                      value={selectedActivitySource}
+                      options={[{ value: "all", label: "All" }, { value: "eod", label: "EOD" }, { value: "crm", label: "CRM" }]}
+                      onChange={setActivitySource}
+                    />
+                  )}
                 </div>
-                {loading ? <div className="h-[240px]"><Skeleton /></div> : (
+                {volumeLoading ? <div className="h-[240px]"><Skeleton /></div> : !volumeHasData ? (
+                  <AnalyticsEmpty
+                    message={crmError && selectedActivitySource !== "eod"
+                      ? "CRM activity could not load. EOD data remains available under the EOD source."
+                      : `No ${selectedActivitySource === "all" ? "EOD or CRM" : selectedActivitySource.toUpperCase()} activity in this range.`}
+                    showSevenDayAction={dateRange.preset === "24h"}
+                    onViewSevenDays={() => setDateRange(rangeFor("7d"))}
+                  />
+                ) : (
                   <>
                     <VolumeAreaChart
                       data={trend}
-                      series={[
-                        ...(hasPrev ? [
-                          { key: "prev_dms",    label: "DMs (prev)",    color: "#9CA3AF", strokeWidth: 1, strokeOpacity: 0.35, ghost: true },
-                          { key: "prev_convos", label: "Convos (prev)", color: "#6366F1", strokeWidth: 1, strokeOpacity: 0.35, ghost: true },
-                          { key: "prev_booked", label: "Booked (prev)", color: "#22C55E", strokeWidth: 1, strokeOpacity: 0.35, ghost: true },
-                        ] : []),
-                        { key: "dms",    label: "DMs",    color: "#9CA3AF" },
-                        { key: "convos", label: "Convos", color: "#6366F1" },
-                        { key: "booked", label: "Booked", color: "#22C55E", strokeWidth: 2 },
-                        { key: "shows",  label: "Shows",  color: "#F59E0B" },
-                        { key: "closes", label: "Closes", color: "#A855F7" },
-                      ]}
+                      series={chartVolumeSeries}
                     />
-                    <div className="flex items-center justify-between">
-                      <VolumeLegend series={[
-                        { key: "dms",    label: "DMs",    color: "#9CA3AF" },
-                        { key: "convos", label: "Convos", color: "#6366F1" },
-                        { key: "booked", label: "Booked", color: "#22C55E" },
-                        { key: "shows",  label: "Shows",  color: "#F59E0B" },
-                        { key: "closes", label: "Closes", color: "#A855F7" },
-                      ]} />
-                      {hasPrev && <span className="text-micro text-muted-foreground">faded = previous {days}d</span>}
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <VolumeLegend series={volumeSeries} />
+                      {selectedActivitySource === "eod" && hasPrev && <span className="text-micro text-muted-foreground">faded = previous {days}d</span>}
                     </div>
                   </>
                 )}
@@ -521,9 +642,30 @@ function Dashboard() {
 
             {prefs.showFunnel && (
               <Panel>
-                <PanelHead title="Funnel Performance" subtitle="Volume by stage" />
+                <div className="flex items-start justify-between gap-3">
+                  <PanelHead
+                    title="Funnel Performance"
+                    subtitle={selectedFunnelSource === "mochi" ? "Mochi CRM stages · no EOD mixing" : "Self-reported EOD stages"}
+                  />
+                  {canSeeCrm && (
+                    <SourceTabs
+                      value={selectedFunnelSource}
+                      options={[{ value: "eod", label: "EOD" }, { value: "mochi", label: "Mochi" }]}
+                      onChange={setFunnelSource}
+                    />
+                  )}
+                </div>
                 <div className="h-[220px] mt-1">
-                  {loading ? <Skeleton /> : (
+                  {funnelLoading ? <Skeleton /> : !funnelHasData ? (
+                    <AnalyticsEmpty
+                      compact
+                      message={selectedFunnelSource === "mochi" && mochiQ.isError
+                        ? "Mochi funnel could not load. EOD funnel data remains available."
+                        : `No ${selectedFunnelSource === "mochi" ? "Mochi CRM" : "EOD"} funnel activity in this range.`}
+                      showSevenDayAction={dateRange.preset === "24h"}
+                      onViewSevenDays={() => setDateRange(rangeFor("7d"))}
+                    />
+                  ) : (
                     <ResponsiveContainer>
                       <BarChart data={formatBreakdown} layout="vertical" margin={{ top: 5, right: 56, left: 20, bottom: 5 }}>
                         <XAxis type="number" stroke="var(--color-muted-foreground)" fontSize={10} tickLine={false} axisLine={false} />
@@ -639,30 +781,61 @@ function pctDelta(prev: number, curr: number): number | null {
 function prevShowRateOf(t: ReturnType<typeof sumRows>) {
   return t.shows + t.no_shows > 0 ? Math.round((t.shows / (t.shows + t.no_shows)) * 100) : 0;
 }
-function buildTrend(rows: EodRow[], days: number, shiftBack = 0) {
-  const map: Record<string, { dms: number; convos: number; booked: number; shows: number; closes: number }> = {};
-  const out: { key: string; label: string; dms: number; convos: number; booked: number; shows: number; closes: number }[] = [];
-  const today = new Date();
-  const step = days <= 7 ? 1 : days <= 30 ? 1 : 3;
-  for (let i = days - 1; i >= 0; i -= step) {
-    const d = subDays(today, i + shiftBack);
-    const key = format(d, "yyyy-MM-dd");
-    map[key] = { dms: 0, convos: 0, booked: 0, shows: 0, closes: 0 };
-    out.push({ key, label: format(d, days <= 7 ? "EEE" : "MMM d"), dms: 0, convos: 0, booked: 0, shows: 0, closes: 0 });
-  }
-  for (const r of rows) {
-    const b = map[r.report_date];
-    if (!b) continue;
-    b.dms += r.dms_sent;
-    b.convos += r.convos_started;
-    b.booked += r.calls_booked;
-    b.shows += r.shows;
-    b.closes += r.closes ?? 0;
-  }
-  return out.map((o) => ({ ...o, ...map[o.key] }));
-}
 
 /* subcomponents */
+function SourceTabs<T extends string>({
+  value,
+  options,
+  onChange,
+}: {
+  value: T;
+  options: { value: T; label: string }[];
+  onChange: (value: T) => void;
+}) {
+  return (
+    <div className="flex shrink-0 rounded-md bg-muted p-0.5" aria-label="Data source">
+      {options.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          aria-pressed={value === option.value}
+          onClick={() => onChange(option.value)}
+          className={`rounded-[5px] px-2 py-1 text-[11px] font-medium motion-safe:transition-colors ${
+            value === option.value ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function AnalyticsEmpty({
+  message,
+  showSevenDayAction,
+  onViewSevenDays,
+  compact = false,
+}: {
+  message: string;
+  showSevenDayAction: boolean;
+  onViewSevenDays: () => void;
+  compact?: boolean;
+}) {
+  return (
+    <div className={`grid place-items-center px-6 text-center ${compact ? "h-full" : "h-[240px]"}`}>
+      <div>
+        <p className="text-[13px] text-muted-foreground">{message}</p>
+        {showSevenDayAction && (
+          <button type="button" onClick={onViewSevenDays} className="mt-2 text-[12px] font-medium text-primary hover:underline">
+            View the last 7 days
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function Panel({ children, accent }: { children: React.ReactNode; accent?: "emerald" }) {
   return (
     <div className={`card-surface p-3.5 ${accent === "emerald" ? "ring-1 ring-primary/30" : ""}`}>
@@ -836,7 +1009,7 @@ function InstallmentReminders() {
       setLoading(false);
     })();
     return () => { alive = false; };
-  }, [user?.id, isAdmin, isCoach, canSee]);
+  }, [user, isAdmin, isCoach, canSee]);
 
   if (!canSee) return null;
 
@@ -1148,7 +1321,7 @@ function MyAssignedItems() {
         .limit(20);
       const rows = (items ?? []) as { id: string; text: string; due_date: string | null; created_at: string; created_by: string }[];
       const senderIds = Array.from(new Set(rows.map(r => r.created_by)));
-      let names: Record<string, string> = {};
+      const names: Record<string, string> = {};
       if (senderIds.length) {
         const { data: profs } = await supabase.from("profiles").select("id, display_name").in("id", senderIds);
         (profs ?? []).forEach((p: { id: string; display_name: string | null }) => { names[p.id] = p.display_name ?? "Teammate"; });

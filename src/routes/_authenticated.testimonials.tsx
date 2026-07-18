@@ -1,6 +1,6 @@
 import { StudentsTabBar } from "@/components/students-tab-bar";
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -106,7 +106,10 @@ function TestimonialsPage() {
   }, [pageQ.data]);
   const load = () => pageQ.refetch();
 
-  const studentName = (id: string | null) => id ? (students.find(s => s.id === id)?.full_name ?? "—") : "—";
+  const studentName = useCallback(
+    (id: string | null) => id ? (students.find(s => s.id === id)?.full_name ?? "—") : "—",
+    [students],
+  );
 
   const filtered = useMemo(() => {
     let out = rows;
@@ -123,7 +126,7 @@ function TestimonialsPage() {
       );
     }
     return out;
-  }, [rows, typeFilter, statusFilter, studentFilter, query, students]);
+  }, [rows, typeFilter, statusFilter, studentFilter, query, studentName]);
 
   const counts = useMemo(() => {
     const c = { all: rows.length, video: 0, image: 0, text: 0, trustpilot: 0 } as Record<string, number>;

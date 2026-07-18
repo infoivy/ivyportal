@@ -2,12 +2,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { PlacementsSection } from "@/components/student-placements";
 import { Link } from "@tanstack/react-router";
 import { PageSkeleton } from "@/components/ui/skeletons";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import {
-  Trash2, CheckCircle2, Clock, Award, Briefcase, MessageSquare, Users, ListChecks,
+  CheckCircle2, Clock, Award, Briefcase, MessageSquare, Users, ListChecks,
   Calendar, Trophy, TrendingUp, Flame, BookOpen, PartyPopper, ChevronRight, Lock,
   Sparkles, AlertCircle, PlayCircle, FileText } from "lucide-react";
 import { computeStreak } from "@/lib/streak";
@@ -16,6 +16,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getStudentLeaderboard } from "@/lib/student-portal.functions";
+import {
+  GROUP_COACHING_CALLS_PER_WEEK,
+  countStudentDailyEods,
+  getStudentWeeklyDraftAction,
+  getStudentWeeklyWindow,
+  validateStudentWeeklyEod,
+} from "@/lib/student-weekly-eod";
 
 export const Route = createFileRoute("/_authenticated/student-portal")({
   head: () => ({ meta: [{ title: "Student Portal — ISA" }] }),
@@ -35,6 +42,17 @@ type SEod = {
   roleplays: number; looms_sent: number;
   wins: string | null; blockers: string | null; tomorrow_focus: string | null; summary: string | null;
 };
+type StudentWeeklyEod = {
+  id: string;
+  student_id: string;
+  week_start: string;
+  group_calls_attended: number;
+  implementation: string;
+  biggest_win: string | null;
+  biggest_blocker: string | null;
+  next_week_commitment: string;
+  submitted_at: string;
+};
 type ActionItem = { text?: string; done?: boolean; due_date?: string | null };
 type Call = {
   id: string; call_date: string; status: string; progress_rating: number | null;
@@ -50,6 +68,14 @@ const empty = {
   applications_submitted: 0, outreach_sent: 0, replies: 0, interviews: 0,
   roleplays: 0, looms_sent: 0,
   wins: "", blockers: "", tomorrow_focus: "", summary: "",
+};
+
+const emptyWeekly = {
+  groupCallsAttended: 0,
+  implementation: "",
+  biggestWin: "",
+  biggestBlocker: "",
+  nextWeekCommitment: "",
 };
 
 type Tab = "start" | "eod" | "placements" | "actions" | "coaching" | "milestones" | "leaderboard";
@@ -72,6 +98,7 @@ const daysAgoStr = (n: number) => localFmt.format(new Date(Date.now() - n * 8640
 function StudentPortal() {
   const { user, displayName } = useAuth();
   const today = todayStr();
+  const weeklyWindow = useMemo(() => getStudentWeeklyWindow(today), [today]);
   const [tab, setTab] = useState<Tab>(() => (getStudentPortalTab() as Tab) || "eod");
   useEffect(() => { setStudentPortalTab(tab); }, [tab]);
   useEffect(() => { const off = onStudentPortalTab(t => setTab(t as Tab)); return () => { off(); }; }, []);
@@ -80,21 +107,29 @@ function StudentPortal() {
   const [guideDone, setGuideDone] = useState<Set<string>>(new Set());
   const [coach, setCoach] = useState<Coach | null>(null);
   const [eods, setEods] = useState<SEod[]>([]);
+  const [weeklyEods, setWeeklyEods] = useState<StudentWeeklyEod[]>([]);
   const [calls, setCalls] = useState<Call[]>([]);
   const [adhocItems, setAdhocItems] = useState<AdhocItem[]>([]);
   const [docs, setDocs] = useState<Doc[]>([]);
   const [form, setForm] = useState(empty);
+  const [weeklyForm, setWeeklyForm] = useState(emptyWeekly);
   const [existingId, setExistingId] = useState<string | null>(null);
+  const [showWeeklyForm, setShowWeeklyForm] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [savingWeekly, setSavingWeekly] = useState(false);
+  const [weeklyLoadError, setWeeklyLoadError] = useState(false);
+  const [weeklyDraftHydrated, setWeeklyDraftHydrated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [confetti, setConfetti] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
 
   const draftKey = student ? `student-eod-draft:${student.id}:${today}` : null;
+  const weeklyDraftKey = student ? `student-weekly-eod-draft:${student.id}:${weeklyWindow.weekStart}` : null;
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!user) return;
+    setWeeklyDraftHydrated(false);
     const { data: s } = await supabase.from("students")
       .select("id, full_name, email, phase, status, calls_included, calls_allotted, coach_id, first_win_at, offer_landed_at, testimonial_collected, trustpilot_collected")
       .eq("user_id", user.id).maybeSingle();
@@ -102,8 +137,9 @@ function StudentPortal() {
     if (!s) { setLoading(false); return; }
     const st = s as Student;
 
-    const [{ data: e }, { data: c }, { data: ah }, coachRes, docsRes, guideRes] = await Promise.all([
+    const [{ data: e }, weeklyRes, { data: c }, { data: ah }, coachRes, docsRes, guideRes] = await Promise.all([
       supabase.from("student_eods").select("*").eq("student_id", st.id).order("report_date", { ascending: false }).limit(60),
+      supabase.from("student_weekly_eods").select("*").eq("student_id", st.id).order("week_start", { ascending: false }).limit(16),
       supabase.from("student_calls").select("id, call_date, status, progress_rating, next_call_date, action_items_json").eq("student_id", st.id).order("call_date", { ascending: false }),
       supabase.from("student_action_items").select("id, student_id, text, done, due_date, created_at, source_call_id").eq("student_id", st.id).order("created_at", { ascending: false }),
       st.coach_id ? supabase.from("profiles").select("id, display_name, avatar_url").eq("id", st.coach_id).maybeSingle() : Promise.resolve({ data: null }),
@@ -112,6 +148,9 @@ function StudentPortal() {
     ]);
     setGuideDone(new Set(((guideRes.data ?? []) as { step_key: string }[]).map(r => r.step_key)));
     setEods((e ?? []) as SEod[]);
+    const loadedWeekly = (weeklyRes.data ?? []) as StudentWeeklyEod[];
+    setWeeklyLoadError(Boolean(weeklyRes.error));
+    setWeeklyEods(loadedWeekly);
     setCalls((c ?? []) as Call[]);
     setAdhocItems((ah ?? []) as AdhocItem[]);
     setCoach((coachRes.data as Coach) ?? null);
@@ -138,9 +177,28 @@ function StudentPortal() {
       } catch { setForm(empty); }
       setShowForm(false);
     }
+
+    const weekly = loadedWeekly.find((row) => row.week_start === weeklyWindow.weekStart);
+    if (weekly) {
+      setWeeklyForm({
+        groupCallsAttended: weekly.group_calls_attended,
+        implementation: weekly.implementation,
+        biggestWin: weekly.biggest_win ?? "",
+        biggestBlocker: weekly.biggest_blocker ?? "",
+        nextWeekCommitment: weekly.next_week_commitment,
+      });
+      setShowWeeklyForm(false);
+    } else {
+      try {
+        const raw = localStorage.getItem(`student-weekly-eod-draft:${st.id}:${weeklyWindow.weekStart}`);
+        setWeeklyForm(raw ? { ...emptyWeekly, ...JSON.parse(raw) } : emptyWeekly);
+      } catch { setWeeklyForm(emptyWeekly); }
+      setShowWeeklyForm(true);
+    }
+    setWeeklyDraftHydrated(true);
     setLoading(false);
-  };
-  useEffect(() => { load(); }, [user]);
+  }, [user, today, weeklyWindow.weekStart]);
+  useEffect(() => { void load(); }, [load]);
 
   // Autosave draft
   useEffect(() => {
@@ -149,6 +207,20 @@ function StudentPortal() {
     if (isEmpty) { try { localStorage.removeItem(draftKey); } catch {} return; }
     try { localStorage.setItem(draftKey, JSON.stringify(form)); } catch {}
   }, [form, draftKey, existingId]);
+
+  useEffect(() => {
+    if (!weeklyDraftKey) return;
+    const action = getStudentWeeklyDraftAction({
+      hydrated: weeklyDraftHydrated,
+      hasSubmission: weeklyEods.some((row) => row.week_start === weeklyWindow.weekStart),
+      form: weeklyForm,
+    });
+    if (action === "skip") return;
+    try {
+      if (action === "remove") localStorage.removeItem(weeklyDraftKey);
+      else localStorage.setItem(weeklyDraftKey, JSON.stringify(weeklyForm));
+    } catch {}
+  }, [weeklyForm, weeklyDraftKey, weeklyDraftHydrated, weeklyEods, weeklyWindow.weekStart]);
 
   const streak = useMemo(() => computeStreak(eods.map(e => e.report_date)), [eods]);
 
@@ -174,6 +246,16 @@ function StudentPortal() {
     looms: sumOf(prev7, "looms_sent"),
     replies: sumOf(prev7, "replies"),
     interviews: sumOf(prev7, "interviews"),
+  };
+  const weeklySubmission = weeklyEods.find((row) => row.week_start === weeklyWindow.weekStart) ?? null;
+  const weeklyDailyRows = eods.filter((row) => row.report_date >= weeklyWindow.weekStart && row.report_date <= weeklyWindow.weekEnd);
+  const weeklyDailyCount = countStudentDailyEods(eods.map((row) => row.report_date), weeklyWindow);
+  const weeklyActivity = {
+    applications: sumOf(weeklyDailyRows, "applications_submitted"),
+    roleplays: sumOf(weeklyDailyRows, "roleplays"),
+    looms: sumOf(weeklyDailyRows, "looms_sent"),
+    replies: sumOf(weeklyDailyRows, "replies"),
+    interviews: sumOf(weeklyDailyRows, "interviews"),
   };
 
   // Weekly recap on Mondays
@@ -273,12 +355,25 @@ function StudentPortal() {
     await load();
   };
 
-  const deleteEod = async (id: string) => {
-    if (!confirm("Delete this EOD?")) return;
-    const { error } = await supabase.from("student_eods").delete().eq("id", id);
+  const submitWeeklyEod = async () => {
+    if (!student || weeklyLoadError) return;
+    const validationError = validateStudentWeeklyEod(weeklyForm);
+    if (validationError) return toast.error(validationError);
+    setSavingWeekly(true);
+    const { error } = await supabase.from("student_weekly_eods").upsert({
+      student_id: student.id,
+      week_start: weeklyWindow.weekStart,
+      group_calls_attended: weeklyForm.groupCallsAttended,
+      implementation: weeklyForm.implementation.trim(),
+      biggest_win: weeklyForm.biggestWin.trim() || null,
+      biggest_blocker: weeklyForm.biggestBlocker.trim() || null,
+      next_week_commitment: weeklyForm.nextWeekCommitment.trim(),
+    }, { onConflict: "student_id,week_start" });
+    setSavingWeekly(false);
     if (error) return toast.error(error.message);
-    toast.success("Deleted");
-    load();
+    if (weeklyDraftKey) try { localStorage.removeItem(weeklyDraftKey); } catch {}
+    toast.success(weeklySubmission ? "Weekly EOD updated" : "Weekly EOD submitted");
+    await load();
   };
 
   const toggleGuideStep = async (key: string, done: boolean) => {
@@ -524,6 +619,27 @@ function StudentPortal() {
             <WeeklyRecap prev={totalsPrev} evenPrior={{ apps: 0, looms: 0, replies: 0, interviews: 0 }} totals={totals7} />
           )}
 
+          {weeklyLoadError ? (
+            <div className="flex items-center justify-between gap-3 rounded-sm border border-danger/25 bg-danger-bg p-4 text-xs text-danger-fg">
+              <span>Weekly accountability could not load. Nothing has been recorded as zero.</span>
+              <button type="button" onClick={() => load()} className="font-medium underline underline-offset-4">Retry</button>
+            </div>
+          ) : (
+            <WeeklyAccountabilityCard
+              window={weeklyWindow}
+              submission={weeklySubmission}
+              dailyEods={weeklyDailyCount}
+              activity={weeklyActivity}
+              form={weeklyForm}
+              showForm={showWeeklyForm}
+              saving={savingWeekly}
+              onChange={setWeeklyForm}
+              onEdit={() => setShowWeeklyForm(true)}
+              onCollapse={() => setShowWeeklyForm(false)}
+              onSubmit={submitWeeklyEod}
+            />
+          )}
+
           {/* Form / Recap */}
           <div ref={formRef}>
             {existingId && !showForm ? (
@@ -623,7 +739,7 @@ function StudentPortal() {
             <div className="divide-y divide-[var(--accent)]">
               {eods.length === 0 && <div className="p-6 text-center text-xs text-muted-foreground">No EODs yet. Your first log starts your streak. 🔥</div>}
               {eods.map(e => (
-                <div key={e.id} className="grid grid-cols-[80px_1fr_auto] items-center gap-3 p-3 text-xs">
+                <div key={e.id} className="grid grid-cols-[80px_1fr] items-center gap-3 p-3 text-xs">
                   <span className="text-muted-foreground">{e.report_date}</span>
                   <div className="flex gap-3 text-[11px] text-muted-foreground flex-wrap">
                     <span>Apps <span className="text-success-fg">{e.applications_submitted}</span></span>
@@ -631,7 +747,6 @@ function StudentPortal() {
                     <span>Repl <span className="text-foreground">{e.replies}</span></span>
                     <span>Int <span className="text-foreground">{e.interviews}</span></span>
                   </div>
-                  <button onClick={() => deleteEod(e.id)} className="p-1 text-muted-foreground hover:text-danger-fg"><Trash2 className="h-3 w-3" /></button>
                 </div>
               ))}
             </div>
@@ -755,6 +870,147 @@ function StudentPortal() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function WeeklyAccountabilityCard({
+  window: reviewWindow,
+  submission,
+  dailyEods,
+  activity,
+  form,
+  showForm,
+  saving,
+  onChange,
+  onEdit,
+  onCollapse,
+  onSubmit,
+}: {
+  window: ReturnType<typeof getStudentWeeklyWindow>;
+  submission: StudentWeeklyEod | null;
+  dailyEods: number;
+  activity: { applications: number; roleplays: number; looms: number; replies: number; interviews: number };
+  form: typeof emptyWeekly;
+  showForm: boolean;
+  saving: boolean;
+  onChange: React.Dispatch<React.SetStateAction<typeof emptyWeekly>>;
+  onEdit: () => void;
+  onCollapse: () => void;
+  onSubmit: () => void;
+}) {
+  const status = submission ? "Submitted" : reviewWindow.dueToday ? "Due today" : "Overdue";
+  const statusClass = submission
+    ? "border-success/25 bg-success-bg text-success-fg"
+    : reviewWindow.dueToday
+      ? "border-warning/25 bg-warning-bg text-warning-fg"
+      : "border-danger/25 bg-danger-bg text-danger-fg";
+
+  return (
+    <section className="rounded-sm border border-border bg-card p-5 space-y-4" aria-labelledby="weekly-eod-title">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <h2 id="weekly-eod-title" className="text-sm font-semibold">Weekly accountability EOD</h2>
+          </div>
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            {reviewWindow.weekStart} to {reviewWindow.weekEnd} · Monday through Sunday
+          </p>
+        </div>
+        <span className={`rounded-full border px-2.5 py-1 text-[10px] font-medium ${statusClass}`}>{status}</span>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        <WeeklyMetric label="Group calls" value={`${form.groupCallsAttended}/${GROUP_COACHING_CALLS_PER_WEEK}`} good={form.groupCallsAttended >= 5} />
+        <WeeklyMetric label="Daily EODs" value={`${dailyEods}/7`} good={dailyEods >= 5} />
+        <WeeklyMetric label="Applications" value={activity.applications} />
+      </div>
+
+      <div className="flex flex-wrap gap-2 text-[10px] text-muted-foreground">
+        <span className="rounded-full bg-muted px-2 py-1">Roleplays {activity.roleplays}</span>
+        <span className="rounded-full bg-muted px-2 py-1">Looms {activity.looms}</span>
+        <span className="rounded-full bg-muted px-2 py-1">Replies {activity.replies}</span>
+        <span className="rounded-full bg-muted px-2 py-1">Interviews {activity.interviews}</span>
+      </div>
+
+      {submission && !showForm ? (
+        <div className="space-y-3">
+          <WeeklyReflection label="What I implemented or what stopped me" value={submission.implementation} />
+          {submission.biggest_win && <WeeklyReflection label="Biggest win" value={submission.biggest_win} />}
+          {submission.biggest_blocker && <WeeklyReflection label="Biggest blocker" value={submission.biggest_blocker} />}
+          <WeeklyReflection label="Next week's commitment" value={submission.next_week_commitment} />
+          <button type="button" onClick={onEdit} className="text-[11px] font-medium text-primary hover:underline">Edit weekly EOD</button>
+        </div>
+      ) : (
+        <div className="space-y-4 border-t border-border pt-4">
+          <div>
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <label className="text-[11px] font-medium">How many of the 7 group calls did you attend?</label>
+              <span className="text-[11px] tabular-nums text-muted-foreground">{form.groupCallsAttended}/7</span>
+            </div>
+            <div className="grid grid-cols-8 gap-1.5">
+              {Array.from({ length: GROUP_COACHING_CALLS_PER_WEEK + 1 }, (_, value) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-label={`${value} group calls attended`}
+                  aria-pressed={form.groupCallsAttended === value}
+                  onClick={() => onChange((current) => ({ ...current, groupCallsAttended: value }))}
+                  className={`h-8 rounded-sm border text-xs font-medium motion-safe:transition-colors ${
+                    form.groupCallsAttended === value
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-background text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {value}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <TextField
+            label="What did you implement from the calls, or what stopped you? *"
+            value={form.implementation}
+            onChange={(value) => onChange((current) => ({ ...current, implementation: value }))}
+            rows={3}
+          />
+          <TextField label="Biggest win" value={form.biggestWin} onChange={(value) => onChange((current) => ({ ...current, biggestWin: value }))} />
+          <TextField label="Biggest blocker" value={form.biggestBlocker} onChange={(value) => onChange((current) => ({ ...current, biggestBlocker: value }))} />
+          <TextField
+            label="One concrete commitment for next week *"
+            value={form.nextWeekCommitment}
+            onChange={(value) => onChange((current) => ({ ...current, nextWeekCommitment: value }))}
+            rows={2}
+          />
+
+          <div className="flex gap-2">
+            <button type="button" onClick={onSubmit} disabled={saving} className="h-9 flex-1 rounded-sm bg-primary text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60">
+              {saving ? "Saving…" : submission ? "Update weekly EOD" : "Submit weekly EOD"}
+            </button>
+            {submission && <button type="button" onClick={onCollapse} className="h-9 rounded-sm border border-border px-3 text-xs text-muted-foreground hover:text-foreground">Cancel</button>}
+          </div>
+          <p className="text-[10px] text-muted-foreground">Attendance is self-reported. Daily EOD count and weekly activity are calculated from your saved logs.</p>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function WeeklyReflection({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</div>
+      <p className="mt-1 whitespace-pre-wrap text-xs text-foreground">{value}</p>
+    </div>
+  );
+}
+
+function WeeklyMetric({ label, value, good = false }: { label: string; value: string | number; good?: boolean }) {
+  return (
+    <div className="rounded-sm border border-border bg-background px-3 py-2.5">
+      <div className="text-[10px] text-muted-foreground">{label}</div>
+      <div className={`mt-1 text-lg font-semibold tabular-nums ${good ? "text-success-fg" : "text-foreground"}`}>{value}</div>
     </div>
   );
 }

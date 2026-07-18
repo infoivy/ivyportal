@@ -440,7 +440,7 @@ const Card = React.memo(function Card({ cardId, color, title, subtitle, children
 
     // Fast path: nothing to do and nothing to clean up
     if (!q && !hadMarksRef.current) {
-      if (matches) setMatches(false);
+      setMatches(false);
       return;
     }
 
@@ -754,6 +754,7 @@ function NotesModal({ open, onClose, counter, setCounter }: { open: boolean; onC
   const [precall, setPrecall] = useState(PRECALL_TPL);
   const [eodBody, setEodBody] = useState(EOD_DEFAULT_BODY);
   const [copied, setCopied] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   if (!open) return null;
 
@@ -778,7 +779,6 @@ function NotesModal({ open, onClose, counter, setCounter }: { open: boolean; onC
     setTimeout(() => setCopied(false), 1500);
   };
 
-  const [syncing, setSyncing] = useState(false);
   const syncToEod = async () => {
     setSyncing(true);
     const { data: sess } = await supabase.auth.getSession();

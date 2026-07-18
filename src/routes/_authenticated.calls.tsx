@@ -1,6 +1,6 @@
 import { StudentsTabBar } from "@/components/students-tab-bar";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -88,7 +88,10 @@ function CallsPage() {
   }, [pageQ.data]);
   const load = () => pageQ.refetch();
 
-  const studentName = (id: string) => students.find(s => s.id === id)?.full_name ?? "Unknown";
+  const studentName = useCallback(
+    (id: string) => students.find(s => s.id === id)?.full_name ?? "Unknown",
+    [students],
+  );
   const coachName = (id: string | null) => id ? (coaches.find(c => c.id === id)?.display_name ?? id.slice(0, 8)) : "Unassigned";
 
   const filtered = useMemo(() => calls.filter(c => {
@@ -98,7 +101,7 @@ function CallsPage() {
     const s = studentName(c.student_id).toLowerCase();
     const n = (c.coach_notes ?? "").toLowerCase();
     return s.includes(q.toLowerCase()) || n.includes(q.toLowerCase());
-  }), [calls, coachFilter, q, user, students, coaches]);
+  }), [calls, coachFilter, q, user, studentName]);
 
   const byStatus = useMemo(() => {
     const m = new Map<CallStatus, Call[]>();

@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, redirect, useRouterState } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/sops")({
   head: () => ({ meta: [{ title: "SOPs — ISA Team" }] }),
@@ -7,9 +7,9 @@ export const Route = createFileRoute("/_authenticated/sops")({
       throw redirect({ to: "/knowledge" as string });
     }
   },
-  component: () => {
-    // Fallback: if somehow on /sops, redirect via router
-    useRouterState({ select: (s) => s.location.pathname });
-    return <Outlet />;
-  },
+  component: SopsLayout,
 });
+
+function SopsLayout() {
+  return <Outlet />;
+}

@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { todayLocal } from "@/lib/dates";
+import { getStudentWeeklyWindow } from "@/lib/student-weekly-eod";
 import { DateField } from "@/components/ui/date-field";
 import { SelectField } from "@/components/ui/select-field";
 
@@ -42,6 +43,10 @@ type StudentCall = {
 type ActionItem = { text: string; done: boolean };
 
 type StudentEodLite = { student_id: string; report_date: string };
+type StudentWeeklyEodLite = {
+  student_id: string; week_start: string; group_calls_attended: number;
+  next_week_commitment: string;
+};
 type AdHocItem = {
   id: string; student_id: string; text: string; done: boolean;
   due_date: string | null; created_at: string; created_by: string;
@@ -108,6 +113,8 @@ function CsmPage() {
   const [tally, setTally] = useState<TallyRow[]>([]);
   const [calls, setCalls] = useState<StudentCall[]>([]);
   const [studentEods, setStudentEods] = useState<StudentEodLite[]>([]);
+  const [studentWeeklyEods, setStudentWeeklyEods] = useState<StudentWeeklyEodLite[]>([]);
+  const [weeklyEodLoadError, setWeeklyEodLoadError] = useState(false);
   const [adhoc, setAdhoc] = useState<AdHocItem[]>([]);
   const [newAdhocText, setNewAdhocText] = useState("");
   const [newAdhocDue, setNewAdhocDue] = useState("");
@@ -126,12 +133,13 @@ function CsmPage() {
   const fetchPage = async () => {
     if (!user) return null;
     const since = new Date(Date.now() - 14 * 86400000).toISOString();
-    const [studentsRes, notesRes, tallyRes, callsRes, sEodRes, adhocRes] = await Promise.all([
+    const [studentsRes, notesRes, tallyRes, callsRes, sEodRes, weeklyEodRes, adhocRes] = await Promise.all([
       supabase.from("students").select("id, full_name, email, phase, status, coach_id").order("full_name", { ascending: true }),
       supabase.from("csm_student_notes").select("*").order("created_at", { ascending: false }).limit(200),
       supabase.from("csm_tally").select("*").eq("user_id", user.id).gte("created_at", since).order("created_at", { ascending: false }),
       supabase.from("student_calls").select("id, student_id, call_date, action_items_json, next_call_date").order("call_date", { ascending: false }).limit(600),
       supabase.from("student_eods").select("student_id, report_date").order("report_date", { ascending: false }).limit(1000),
+      supabase.from("student_weekly_eods").select("student_id, week_start, group_calls_attended, next_week_commitment").order("week_start", { ascending: false }).limit(1000),
       supabase.from("student_action_items").select("id, student_id, text, done, due_date, created_at, created_by").order("created_at", { ascending: false }).limit(500),
     ]);
     const studentRows = (studentsRes.data ?? []) as Student[];
@@ -148,11 +156,13 @@ function CsmPage() {
       tally: (tallyRes.data ?? []) as TallyRow[],
       calls: (callsRes.data ?? []) as StudentCall[],
       studentEods: (sEodRes.data ?? []) as StudentEodLite[],
+      studentWeeklyEods: (weeklyEodRes.data ?? []) as StudentWeeklyEodLite[],
+      weeklyEodLoadError: Boolean(weeklyEodRes.error),
       adhoc: (adhocRes.data ?? []) as AdHocItem[],
     };
   };
 
-  const pageQ = useQuery({ queryKey: ["page", "csm", user?.id], queryFn: fetchPage, enabled: !!user });
+  const pageQ = useQuery({ queryKey: ["page", "csm", user?.id], queryFn: fetchPage, enabled: !!user && canUse });
   useEffect(() => {
     const d = pageQ.data;
     if (!d) return;
@@ -162,11 +172,11 @@ function CsmPage() {
     setTally(d.tally);
     setCalls(d.calls);
     setStudentEods(d.studentEods);
+    setStudentWeeklyEods(d.studentWeeklyEods);
+    setWeeklyEodLoadError(d.weeklyEodLoadError);
     setAdhoc(d.adhoc);
   }, [pageQ.data]);
   const load = () => pageQ.refetch();
-
-  useEffect(() => { if (canUse) load(); /* eslint-disable-next-line */ }, [canUse, user]);
 
   const filteredStudents = useMemo(() => {
     const q = query.toLowerCase().trim();
@@ -200,6 +210,11 @@ function CsmPage() {
   }, [selectedCalls]);
   const openCount = openActionItems.filter(i => !i.done).length;
   const lastStudentEod = useMemo(() => studentEods.find(e => e.student_id === studentId)?.report_date ?? null, [studentEods, studentId]);
+  const targetWeeklyEodStart = getStudentWeeklyWindow(todayLocal()).weekStart;
+  const selectedWeeklyEod = useMemo(
+    () => studentWeeklyEods.find(e => e.student_id === studentId && e.week_start === targetWeeklyEodStart) ?? null,
+    [studentWeeklyEods, studentId, targetWeeklyEodStart],
+  );
   const studentLoomsReviewed = useMemo(() => tally.filter(t => t.student_id === studentId && t.kind === "loom"), [tally, studentId]);
   const studentRoleplaysReviewed = useMemo(() => tally.filter(t => t.student_id === studentId && t.kind === "roleplay"), [tally, studentId]);
   const selectedAdhoc = useMemo(
@@ -417,12 +432,24 @@ function CsmPage() {
                 </div>
                 <Link to={"/students/$id" as unknown as string} params={{ id: selected.id } as { id: string }} className="text-[11px] text-success-fg hover:text-success-fg shrink-0">Open tracker →</Link>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-[var(--border)]">
+              <div className="grid grid-cols-2 lg:grid-cols-5 gap-px bg-[var(--border)]">
                 <AccountStat label="Open action items" value={openCount} tone={openCount > 0 ? "warn" : "ok"} />
                 <AccountStat label="Last student EOD" value={lastStudentEod ?? "—"} tone={lastStudentEod && Date.now() - new Date(lastStudentEod).getTime() < 2 * 86400000 ? "ok" : "warn"} />
+                <AccountStat
+                  label={`Weekly calls · ${targetWeeklyEodStart}`}
+                  value={weeklyEodLoadError ? "Load error" : selectedWeeklyEod ? `${selectedWeeklyEod.group_calls_attended}/7` : "Not submitted"}
+                  tone={weeklyEodLoadError || !selectedWeeklyEod ? "warn" : undefined}
+                />
                 <AccountStat label="Looms reviewed (14d)" value={studentLoomsReviewed.length} />
                 <AccountStat label="Roleplays reviewed (14d)" value={studentRoleplaysReviewed.length} />
               </div>
+
+              {selectedWeeklyEod && (
+                <div className="border-t border-[var(--border)] bg-[var(--muted)] px-4 py-3">
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Student's next-week commitment</div>
+                  <p className="mt-1 text-xs whitespace-pre-wrap">{selectedWeeklyEod.next_week_commitment}</p>
+                </div>
+              )}
 
               {/* Action items list — read-only. Only the student ticks these off in their portal. */}
               <div className="p-4">

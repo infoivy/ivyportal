@@ -9,7 +9,7 @@ function ymdUTC(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 async function requireFounderOrAdmin(context: { supabase: any; userId: string }) {
   const [{ data: isFounder }, { data: isAdmin }] = await Promise.all([
     context.supabase.rpc("has_role", { _user_id: context.userId, _role: "founder" }),
@@ -27,7 +27,7 @@ const autoPattern = /^(TOF|MOF) · \d of \d$/;
  */
 export const seedIvyDoctrineWeek = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { weekStart: string; force?: boolean }) => {
+  .validator((input: { weekStart: string; force?: boolean }) => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(input?.weekStart ?? "")) {
       throw new Error("weekStart must be YYYY-MM-DD");
     }

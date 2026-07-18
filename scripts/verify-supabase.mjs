@@ -13,7 +13,7 @@ const expectedTables = [
   'ig_connections', 'ig_dashboards', 'ig_monthly_snapshots', 'ig_top_reels',
   'installment_payments', 'installments', 'notes', 'onboarding_progress',
   'onboarding_templates', 'payment_links', 'profiles', 'service_credentials',
-  'student_action_items', 'student_calls', 'student_eods', 'students',
+  'student_action_items', 'student_calls', 'student_eods', 'student_weekly_eods', 'students',
   'testimonials', 'user_roles',
 ];
 
@@ -37,7 +37,7 @@ const byName = new Map(rows.map((row) => [row.table_name, row]));
 const missing = expectedTables.filter((table) => !byName.has(table));
 const unprotected = expectedTables.filter((table) => {
   const row = byName.get(table);
-  return !row.rls_enabled || Number(row.policy_count) < 1;
+  return row && (!row.rls_enabled || Number(row.policy_count) < 1);
 });
 
 if (missing.length || unprotected.length) {

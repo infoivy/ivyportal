@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -67,7 +67,7 @@ export function StudentSuccessInner() {
   const [profiles, setProfiles] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     const [studRes, callsRes, instRes, payRes, adhocRes, eodRes, noteRes, profRes] = await Promise.all([
       supabase.from("students").select("id, full_name, email, phase, status, coach_id, join_date, testimonial_collected, payment_state").order("full_name"),
@@ -102,9 +102,9 @@ export function StudentSuccessInner() {
     setProfiles(profMap);
 
     setLoading(false);
-  };
+  }, [sevenDaysAgo, fourteenDaysAgo]);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { void load(); }, [load]);
 
   // At-risk detection
   const atRisk = useMemo(() => {
@@ -131,7 +131,7 @@ export function StudentSuccessInner() {
       const paymentLate = lateStudentIds.has(s.id);
       return noRecentCall || isGhosting || noRecentEod || paymentLate;
     });
-  }, [students, calls, studentEods, payments]);
+  }, [students, calls, studentEods, payments, fourteenDaysAgo]);
 
   // This week's 1:1s
   const thisWeekCalls = useMemo(() => {

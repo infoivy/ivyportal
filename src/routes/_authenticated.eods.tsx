@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { CheckCircle2, Clock, AlertTriangle, ChevronRight, ChevronDown, Trash2, Pencil, Flame, Download } from "lucide-react";
 import { computeStreak } from "@/lib/streak";
 import { todayLocal } from "@/lib/dates";
+import { chooseTeamOverviewDate } from "@/lib/eod-performance-date";
 import { exportToCsv } from "@/lib/csv";
 import confetti from "canvas-confetti";
 import { VolumeAreaChart, VolumeLegend } from "@/components/ui/volume-area-chart";
@@ -98,11 +99,14 @@ function EODsPage() {
   const [myEods, setMyEods] = useState<EOD[]>([]);
   const [teamEods, setTeamEods] = useState<GridEod[]>([]);
   const [teamRoster, setTeamRoster] = useState<RosterEntry[]>([]);
+  const [teamDateOverride, setTeamDateOverride] = useState<string | null>(null);
   const [mySetterType, setMySetterType] = useState<SetterType>(null);
   const [csmTarget, setCsmTarget] = useState(10);
   const [saving, setSaving] = useState(false);
+  const latestTeamDate = chooseTeamOverviewDate(today, teamEods);
+  const teamDate = teamDateOverride ?? latestTeamDate;
 
-  const loadMine = async () => {
+  const loadMine = useCallback(async () => {
     if (!user) return;
     const [{ data }, { data: prof }] = await Promise.all([
       supabase.from("eods").select("*").eq("user_id", user.id).order("report_date", { ascending: false }).limit(120),
@@ -134,7 +138,7 @@ function EODsPage() {
       try { const raw = localStorage.getItem(`eod-draft:${user.id}:${reportDate}`); if (raw) next = { ...emptyForm, ...JSON.parse(raw) }; } catch {}
       setForm(next);
     }
-  };
+  }, [user, reportDate]);
 
   const fetchTeam = async () => {
     const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 45);
@@ -184,7 +188,7 @@ function EODsPage() {
   }, [teamQ.data]);
   const loadTeam = () => teamQ.refetch();
 
-  useEffect(() => { loadMine(); /* eslint-disable-next-line */ }, [user, reportDate]);
+  useEffect(() => { void loadMine(); }, [loadMine]);
 
   // A tab left open across midnight would otherwise keep a date that is no
   // longer offered by the Today/Yesterday toggle.
@@ -211,6 +215,7 @@ function EODsPage() {
 
   const submit = async () => {
     if (!user) return;
+    if (!form.wins.trim()) return toast.error("Add a wins / summary before submitting.");
     const cleaned = isCsm
       ? { ...form, dms_sent: 0, convos_started: 0, calls_booked: 0, calls_scheduled: 0, shows: 0, no_shows: 0, calls_taken: 0, closes: 0, deposits: 0, cash_collected: 0, deferred_cash: 0, follow_ups_done: 0, dials: 0, leads_contacted: 0 }
       : form;
@@ -266,15 +271,17 @@ function EODsPage() {
   }, [myEods, mySetterType]);
   const streak = useMemo(() => computeStreak(myEods.map(e => e.report_date)), [myEods]);
 
-  // Team-today numbers
-  const teamToday = useMemo(() => {
-    const rows = teamEods.filter(e => e.report_date === today);
+  // Team numbers for the visible reporting date. If nobody has filed today,
+  // Performance opens on the latest completed reporting day instead of
+  // making valid previous-day EODs look missing.
+  const teamDay = useMemo(() => {
+    const rows = teamEods.filter(e => e.report_date === teamDate);
     const sum = (k: keyof EOD) => rows.reduce((a, e) => a + (Number(e[k]) || 0), 0);
     return { submitted: rows.length, expected: teamRoster.length,
       dials: sum("dials") + rows.reduce((a, e) => a + outreachOf(e), 0),
       booked: sum("calls_booked"),
       cash: sum("cash_collected") };
-  }, [teamEods, teamRoster, today]);
+  }, [teamEods, teamRoster, teamDate]);
 
   const kpi = mySetterType ? KPI[mySetterType] : null;
   const primaryVal = mySetterType === "dm" ? form.dms_sent : form.dials;
@@ -327,12 +334,29 @@ function EODsPage() {
           )}
           {canViewTeam && (
             <div className="card-surface p-3">
-              <div className="text-[13px] text-muted-foreground mb-2">Team today</div>
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                <div className="text-[13px] text-muted-foreground">
+                  Team {teamDate === today ? "today" : fmtDayShort(new Date(teamDate + "T00:00:00"))}
+                  {teamDate !== today && <span className="ml-1 text-[10px]">· latest submitted day</span>}
+                </div>
+                <div className="inline-flex rounded-sm border border-[var(--border)] bg-[var(--background)] p-0.5">
+                  {[today, ...(latestTeamDate !== today ? [latestTeamDate] : [])].map(date => (
+                    <button
+                      key={date}
+                      type="button"
+                      onClick={() => setTeamDateOverride(date)}
+                      className={`text-[10px] font-medium px-2 py-0.5 rounded-sm motion-safe:transition-colors ${teamDate === date ? "bg-[var(--accent)] text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                    >
+                      {date === today ? "Today" : fmtDayShort(new Date(date + "T00:00:00"))}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <MiniChip label="Submitted" value={`${teamToday.submitted}/${teamToday.expected}`} tone={teamToday.submitted === teamToday.expected ? "green" : "amber"} />
-                <MiniChip label="Dials + leads" value={teamToday.dials.toLocaleString()} />
-                <MiniChip label="Booked" value={teamToday.booked} />
-                <MiniChip label="Cash" value={`$${Math.round(teamToday.cash).toLocaleString()}`} tone="green" />
+                <MiniChip label="Submitted" value={`${teamDay.submitted}/${teamDay.expected}`} tone={teamDay.submitted === teamDay.expected ? "green" : "amber"} />
+                <MiniChip label="Dials + leads" value={teamDay.dials.toLocaleString()} />
+                <MiniChip label="Booked" value={teamDay.booked} />
+                <MiniChip label="Cash" value={`$${Math.round(teamDay.cash).toLocaleString()}`} tone="green" />
               </div>
             </div>
           )}
@@ -357,7 +381,7 @@ function EODsPage() {
 
         {canViewTeam && (
           <TabsContent value="overview">
-            <TeamOverview roster={teamRoster} eods={teamEods} today={today} />
+            <TeamOverview roster={teamRoster} eods={teamEods} today={teamDate} />
           </TabsContent>
         )}
 
@@ -484,7 +508,7 @@ function EODsPage() {
               </div>
 
               <div className="flex items-center justify-end pt-2 border-t border-[var(--border)]">
-                <Button onClick={submit} disabled={saving || !form.wins.trim()} className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium h-8 rounded-sm text-xs">
+                <Button onClick={submit} disabled={saving} className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium h-8 rounded-sm text-xs">
                   {saving ? "Saving…" : existingId ? "Update EOD" : "Submit EOD"}
                 </Button>
               </div>
@@ -968,11 +992,11 @@ function ComplianceGraphs({ eods, roster }: { eods: GridEod[]; roster: RosterEnt
   const filteredEods = useMemo(() => personFilter === "all" ? eods : eods.filter(e => e.user_id === personFilter), [eods, personFilter]);
   const filteredRoster = useMemo(() => personFilter === "all" ? roster : roster.filter(r => r.user_id === personFilter), [roster, personFilter]);
 
-  const prevDay = (d: string) => {
+  const prevDay = useCallback((d: string) => {
     const dt = new Date(d + "T00:00:00");
     dt.setDate(dt.getDate() - days);
     return isoDate(dt);
-  };
+  }, [days]);
 
   const submissionsData = useMemo(() => dayList.map(d => {
     const submitted = filteredEods.filter(e => e.report_date === d).length;
@@ -1006,7 +1030,7 @@ function ComplianceGraphs({ eods, roster }: { eods: GridEod[]; roster: RosterEnt
       prev_booked: prevEods.reduce((a, e) => a + (e.calls_booked ?? 0), 0),
       prev_shows: prevEods.reduce((a, e) => a + (e.shows ?? 0), 0),
     };
-  }), [dayList, filteredEods, compare]);
+  }), [dayList, filteredEods, compare, prevDay]);
 
   const totalReports = filteredEods.filter(e => dayList.includes(e.report_date)).length;
 

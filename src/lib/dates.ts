@@ -1,9 +1,22 @@
 /** Canonical business timezone for all EOD boundaries. */
-export const BUSINESS_TZ = "Asia/Dubai";
+export const BUSINESS_TZ = "Asia/Riyadh";
+
+const businessDayFormatter = new Intl.DateTimeFormat("en-CA", { timeZone: BUSINESS_TZ });
 
 /** Returns today's date as YYYY-MM-DD in the business timezone. */
 export function todayBiz(): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: BUSINESS_TZ }).format(new Date());
+  return businessDayFormatter.format(new Date());
+}
+
+/** Converts an external timestamp to its YYYY-MM-DD business reporting day. */
+export function businessDay(value: string | Date): string {
+  return businessDayFormatter.format(typeof value === "string" ? new Date(value) : value);
+}
+
+/** Riyadh has no daylight-saving shift, so an explicit +03:00 boundary is stable. */
+export function businessDayUtcBoundary(isoDate: string, end = false): string {
+  const time = end ? "23:59:59.999" : "00:00:00.000";
+  return new Date(`${isoDate}T${time}+03:00`).toISOString();
 }
 
 /** Today in the USER'S own timezone — EODs belong to the day the rep lived

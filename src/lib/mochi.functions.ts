@@ -31,6 +31,15 @@ async function requireFounderOrAdmin(context: Ctx) {
   if (!admin && !founder) throw new Error("Forbidden: admin or founder only");
 }
 
+async function requireFounderAnalyticsAccess(context: Ctx) {
+  const checks = await Promise.all(
+    ["admin", "founder", "cofounder"].map((role) =>
+      context.supabase.rpc("has_role", { _user_id: context.userId, _role: role }),
+    ),
+  );
+  if (!checks.some((check) => check.data)) throw new Error("Forbidden: founder analytics access required");
+}
+
 /** Roles allowed to see money totals (matches revenue/installments access). */
 async function requireMoneyAccess(context: Ctx) {
   const checks = await Promise.all(
@@ -153,12 +162,12 @@ export const getMochiStatus = createServerFn({ method: "GET" })
 /** Instagram funnel + message metrics for dashboard/hub. Founder/admin only. */
 export const getMochiDashboard = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { period?: MochiPeriod }) => ({
+  .validator((input: { period?: MochiPeriod }) => ({
     period: (["today", "last_7_days", "last_30_days"].includes(input?.period ?? "") ? input.period : "last_7_days") as MochiPeriod,
   }))
   .handler(async ({ context, data }): Promise<MochiDashboard> => {
     const ctx = context as Ctx;
-    await requireFounderOrAdmin(ctx);
+    await requireFounderAnalyticsAccess(ctx);
     const empty: MochiDashboard = {
       connected: false,
       period: data.period,
@@ -357,7 +366,7 @@ const RESPONSE_BUCKET_LABELS: [string, string][] = [
 /** Full Instagram CRM detail for the /mochi page. Founder/admin only. */
 export const getMochiDetail = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { period?: MochiPeriod }) => ({
+  .validator((input: { period?: MochiPeriod }) => ({
     period: (["today", "last_7_days", "last_30_days"].includes(input?.period ?? "") ? input.period : "last_7_days") as MochiPeriod,
   }))
   .handler(async ({ context, data }): Promise<MochiDetail> => {
@@ -465,7 +474,7 @@ export const getTeamGoal = createServerFn({ method: "GET" })
 /** Set or clear the collective goal. Admin/founder only. */
 export const setTeamGoal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { amount: number | null; deadline: string | null; note?: string | null }) => ({
+  .validator((input: { amount: number | null; deadline: string | null; note?: string | null }) => ({
     amount: input.amount != null && input.amount > 0 ? input.amount : null,
     deadline: input.deadline || null,
     note: input.note?.trim() || null,
@@ -525,7 +534,7 @@ type WhopTxn = { occurred_at: string; amount: string; net: string; status: strin
  */
 export const getFinanceRevenue = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { from: string; to: string }) => {
+  .validator((input: { from: string; to: string }) => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(input?.from ?? "") || !/^\d{4}-\d{2}-\d{2}$/.test(input?.to ?? "")) {
       throw new Error("from/to must be YYYY-MM-DD");
     }
@@ -625,7 +634,7 @@ export type WhopCashWindow = {
  */
 export const getWhopCashWindow = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { from: string; to: string; prevFrom?: string; prevTo?: string }) => {
+  .validator((input: { from: string; to: string; prevFrom?: string; prevTo?: string }) => {
     const ok = (s?: string) => s == null || /^\d{4}-\d{2}-\d{2}$/.test(s);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(input?.from ?? "") || !/^\d{4}-\d{2}-\d{2}$/.test(input?.to ?? "") || !ok(input.prevFrom) || !ok(input.prevTo)) {
       throw new Error("dates must be YYYY-MM-DD");
@@ -681,7 +690,7 @@ export const getWhopCashWindow = createServerFn({ method: "GET" })
  */
 export const findWhopMatch = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { amount: number; date?: string }) => {
+  .validator((input: { amount: number; date?: string }) => {
     if (!(Number(input?.amount) > 0)) throw new Error("amount required");
     if (input.date != null && !/^\d{4}-\d{2}-\d{2}$/.test(input.date)) throw new Error("date must be YYYY-MM-DD");
     return { amount: Number(input.amount), date: input.date };
@@ -725,7 +734,7 @@ export type MochiHome = {
 /** The Mochi-dashboard replica data: revenue KPIs + collections. Founder/admin/cofounder. */
 export const getMochiHome = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { period?: MochiHomePeriod }) => ({
+  .validator((input: { period?: MochiHomePeriod }) => ({
     period: (["today", "this_week", "last_30_days"].includes(input?.period ?? "") ? input.period : "this_week") as MochiHomePeriod,
   }))
   .handler(async ({ context, data }): Promise<MochiHome> => {

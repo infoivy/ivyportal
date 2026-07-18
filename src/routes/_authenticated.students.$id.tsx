@@ -50,6 +50,11 @@ type SEod = {
   applications_submitted: number; outreach_sent: number; replies: number; interviews: number;
   wins: string | null; blockers: string | null; tomorrow_focus: string | null; summary: string | null;
 };
+type StudentWeeklyEod = {
+  id: string; student_id: string; week_start: string; group_calls_attended: number;
+  implementation: string; biggest_win: string | null; biggest_blocker: string | null;
+  next_week_commitment: string; submitted_at: string;
+};
 type CsmNote = { id: string; student_id: string; user_id: string; note: string; tags: string[] | null; created_at: string };
 type Installment = { id: string; total_amount: number; currency: string; notes: string | null };
 type Payment = { id: string; installment_id: string; sequence: number; amount: number; currency: string; due_date: string; status: string; paid_at: string | null };
@@ -84,6 +89,8 @@ function StudentDetail() {
   }, [setup, student?.id]);
   const [calls, setCalls] = useState<Call[]>([]);
   const [eods, setEods] = useState<SEod[]>([]);
+  const [weeklyEods, setWeeklyEods] = useState<StudentWeeklyEod[]>([]);
+  const [weeklyEodLoadError, setWeeklyEodLoadError] = useState(false);
   const [csmNotes, setCsmNotes] = useState<CsmNote[]>([]);
   const [csmAuthors, setCsmAuthors] = useState<Record<string, string>>({});
   const [installment, setInstallment] = useState<Installment | null>(null);
@@ -98,11 +105,11 @@ function StudentDetail() {
   const milestonesQ = useQuery({
     queryKey: ["page", "student", id, "milestones"],
     queryFn: async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const [mRes, mpRes] = await Promise.all([
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         (supabase as any).from("student_milestones").select("id, name, sort_order").order("sort_order"),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         (supabase as any).from("student_milestone_progress").select("milestone_id").eq("student_id", id),
       ]);
       return {
@@ -121,12 +128,12 @@ function StudentDetail() {
   const toggleMilestone = async (milestoneId: string) => {
     const has = milestoneProgress.has(milestoneId);
     if (has) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const { error } = await (supabase as any).from("student_milestone_progress")
         .delete().eq("student_id", id).eq("milestone_id", milestoneId);
       if (error) return toast.error(error.message);
     } else {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const { error } = await (supabase as any).from("student_milestone_progress")
         .insert({ student_id: id, milestone_id: milestoneId });
       if (error) return toast.error(error.message);
@@ -135,10 +142,11 @@ function StudentDetail() {
   };
 
   const fetchPage = async () => {
-    const [sRes, cRes, eRes, coachRes, csmRes, instRes] = await Promise.all([
+    const [sRes, cRes, eRes, weeklyRes, coachRes, csmRes, instRes] = await Promise.all([
       supabase.from("students").select("*").eq("id", id).maybeSingle(),
       supabase.from("student_calls").select("*").eq("student_id", id).order("call_date", { ascending: false }),
       supabase.from("student_eods").select("*").eq("student_id", id).order("report_date", { ascending: false }),
+      supabase.from("student_weekly_eods").select("*").eq("student_id", id).order("week_start", { ascending: false }),
       supabase.from("user_roles").select("user_id, role").in("role", ["coach", "admin"]),
       supabase.from("csm_student_notes").select("*").eq("student_id", id).order("created_at", { ascending: false }),
       supabase.from("installments").select("*").eq("student_id", id).maybeSingle(),
@@ -162,6 +170,8 @@ function StudentDetail() {
       student: (sRes.data as Student) ?? null,
       calls: (cRes.data ?? []) as Call[],
       eods: (eRes.data ?? []) as SEod[],
+      weeklyEods: (weeklyRes.data ?? []) as StudentWeeklyEod[],
+      weeklyEodLoadError: Boolean(weeklyRes.error),
       csmNotes: (csmRes.data ?? []) as CsmNote[],
       installment: (instRes.data as Installment) ?? null,
       coachList, authors, payments,
@@ -174,6 +184,8 @@ function StudentDetail() {
     setStudent(pageQ.data.student);
     setCalls(pageQ.data.calls);
     setEods(pageQ.data.eods);
+    setWeeklyEods(pageQ.data.weeklyEods);
+    setWeeklyEodLoadError(pageQ.data.weeklyEodLoadError);
     setCsmNotes(pageQ.data.csmNotes);
     setInstallment(pageQ.data.installment);
     setCoaches(pageQ.data.coachList);
@@ -516,7 +528,7 @@ function StudentDetail() {
       <div className="flex items-center gap-1 border-b border-[var(--border)] overflow-x-auto">
         <TabBtn active={tab === "timeline"} onClick={() => setTab("timeline")} icon={<Activity className="h-3 w-3" />}>Timeline</TabBtn>
         <TabBtn active={tab === "calls"} onClick={() => setTab("calls")} icon={<Phone className="h-3 w-3" />}>1:1s ({calls.length})</TabBtn>
-        <TabBtn active={tab === "eods"} onClick={() => setTab("eods")} icon={<User className="h-3 w-3" />}>Student EODs ({eods.length})</TabBtn>
+        <TabBtn active={tab === "eods"} onClick={() => setTab("eods")} icon={<User className="h-3 w-3" />}>Student EODs ({eods.length} daily · {weeklyEods.length} weekly)</TabBtn>
         {isCsm && <TabBtn active={tab === "csm"} onClick={() => setTab("csm")} icon={<HeartHandshake className="h-3 w-3" />}>CSM notes ({csmNotes.length})</TabBtn>}
         <TabBtn active={tab === "installments"} onClick={() => setTab("installments")} icon={<DollarSign className="h-3 w-3" />}>Installments {installment ? `(${payments.filter(p => p.status === "paid").length}/${payments.length})` : ""}</TabBtn>
         <TabBtn active={tab === "notes"} onClick={() => setTab("notes")} icon={<FileText className="h-3 w-3" />}>General notes</TabBtn>
@@ -583,7 +595,9 @@ function StudentDetail() {
       )}
 
       {tab === "eods" && (
-        <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm">
+        <div className="space-y-3">
+          <WeeklyStudentEodHistory weeklyEods={weeklyEods} dailyEods={eods} loadError={weeklyEodLoadError} onRetry={load} />
+          <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm">
           <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
             <div className="text-xs font-semibold flex items-center gap-1.5"><User className="h-3.5 w-3.5 text-success-fg" /> Student EODs · {eods.length}</div>
             {!student.user_id && <span className="text-[10px] text-muted-foreground">Student hasn't signed in yet</span>}
@@ -617,6 +631,7 @@ function StudentDetail() {
               </tbody>
             </table>
           </div>
+        </div>
         </div>
       )}
 
@@ -695,6 +710,78 @@ function StudentDetail() {
       )}
     </div>
   );
+}
+
+function WeeklyStudentEodHistory({
+  weeklyEods,
+  dailyEods,
+  loadError,
+  onRetry,
+}: {
+  weeklyEods: StudentWeeklyEod[];
+  dailyEods: SEod[];
+  loadError: boolean;
+  onRetry: () => unknown;
+}) {
+  if (loadError) {
+    return (
+      <div className="flex items-center justify-between gap-3 rounded-sm border border-danger/25 bg-danger-bg p-4 text-xs text-danger-fg">
+        <span>Weekly accountability could not load. It has not been treated as zero.</span>
+        <button type="button" onClick={onRetry} className="font-medium underline underline-offset-4">Retry</button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-sm border border-border bg-card">
+      <div className="flex items-center justify-between border-b border-border px-4 py-3">
+        <div className="flex items-center gap-1.5 text-xs font-semibold"><CalIcon className="h-3.5 w-3.5 text-muted-foreground" /> Weekly accountability · {weeklyEods.length}</div>
+        <span className="text-[10px] text-muted-foreground">Calls attended are self-reported</span>
+      </div>
+      <div className="divide-y divide-border">
+        {weeklyEods.length === 0 && <div className="p-6 text-center text-xs text-muted-foreground">No weekly EODs submitted yet.</div>}
+        {weeklyEods.map((weekly) => {
+          const weekEnd = addStudentDays(weekly.week_start, 6);
+          const dailyCount = new Set(dailyEods
+            .filter((row) => row.report_date >= weekly.week_start && row.report_date <= weekEnd)
+            .map((row) => row.report_date)).size;
+          return (
+            <article key={weekly.id} className="space-y-3 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="text-xs font-medium">{weekly.week_start} to {weekEnd}</div>
+                <div className="flex items-center gap-3 text-[11px] tabular-nums">
+                  <span className={weekly.group_calls_attended >= 5 ? "text-success-fg" : "text-warning-fg"}>Calls {weekly.group_calls_attended}/7</span>
+                  <span className={dailyCount >= 5 ? "text-success-fg" : "text-warning-fg"}>Daily EODs {dailyCount}/7</span>
+                </div>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                <StaffWeeklyReflection label="Implemented or stopped by" value={weekly.implementation} />
+                <StaffWeeklyReflection label="Next commitment" value={weekly.next_week_commitment} />
+                {weekly.biggest_win && <StaffWeeklyReflection label="Biggest win" value={weekly.biggest_win} />}
+                {weekly.biggest_blocker && <StaffWeeklyReflection label="Biggest blocker" value={weekly.biggest_blocker} />}
+              </div>
+              <div className="text-[10px] text-muted-foreground">Submitted {new Date(weekly.submitted_at).toLocaleString()}</div>
+            </article>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function StaffWeeklyReflection({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <p className="mt-1 whitespace-pre-wrap text-xs">{value}</p>
+    </div>
+  );
+}
+
+function addStudentDays(isoDate: string, days: number): string {
+  const date = new Date(`${isoDate}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
 }
 
 function CsmNotesPanel({ notes, authors, onAdd }: { notes: CsmNote[]; authors: Record<string, string>; onAdd: (n: string) => void }) {

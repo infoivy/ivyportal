@@ -22,7 +22,7 @@ const fmtDur = (sec: number | null) =>
  * outbound DMs from Mochi. Admin/founder dashboard section.
  */
 export function SetterActivityCard() {
-  const [days, setDays] = useState<1 | 3 | 7 | 30>(1);
+  const [days, setDays] = useState<1 | 3 | 7 | 30>(7);
   const [day, setDay] = useState<string>(""); // specific YYYY-MM-DD overrides the rolling window
   const mochiPeriod = days === 1 ? "today" : days <= 7 ? "last_7_days" : "last_30_days";
 
@@ -87,14 +87,25 @@ export function SetterActivityCard() {
         </div>
       </div>
 
+      {(close.isError || booked.isError || mochi.isError) && (
+        <div className="mb-3 rounded-md border border-danger/25 bg-danger-bg px-3 py-2 text-[11px] text-danger-fg">
+          Some live CRM activity could not load. Unavailable values are shown as dashes, not zeros.
+        </div>
+      )}
+      {c?.incomplete && (
+        <div className="mb-3 rounded-md border border-warning/25 bg-warning-bg px-3 py-2 text-[11px] text-warning-fg">
+          Per-rep Close detail is partial because the period contains more than 1,000 call records. Overview totals remain complete.
+        </div>
+      )}
+
       {/* Totals strip */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-x-4 gap-y-3 mb-3">
-        <Total label="Dials" value={c?.totalDials} loading={close.isLoading} />
-        <Total label="Answered" value={c?.totalAnswered} loading={close.isLoading} />
-        <Total label="Avg call" text={c ? fmtDur(c.avgDurationSec) : undefined} loading={close.isLoading} />
-        <Total label="DMs out" value={day ? undefined : mochi.data?.messages?.outbound} loading={!day && mochi.isLoading} />
+        <Total label="Dials" value={c?.totalDials} text={close.isError ? "—" : undefined} loading={close.isLoading} />
+        <Total label="Answered" value={c?.totalAnswered} text={close.isError ? "—" : undefined} loading={close.isLoading} />
+        <Total label="Avg call" text={close.isError ? "—" : c ? fmtDur(c.avgDurationSec) : undefined} loading={close.isLoading} />
+        <Total label="DMs out" value={day ? undefined : mochi.data?.messages?.outbound} text={mochi.isError ? "—" : undefined} loading={!day && mochi.isLoading} />
         {/* CRM census, not summed into EOD sets — same booking must never count twice */}
-        <Total label="Booked · in CRM now" value={booked.data?.booked} loading={booked.isLoading} />
+        <Total label="Booked · in CRM now" value={booked.data?.booked} text={booked.isError ? "—" : undefined} loading={booked.isLoading} />
       </div>
 
       {/* Per-rep rows */}

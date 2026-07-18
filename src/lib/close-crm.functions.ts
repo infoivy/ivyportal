@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
+import { businessDay, businessDayUtcBoundary } from "@/lib/dates";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const CLOSE_KEY_NAME = "close_api_key";
 
@@ -28,7 +30,7 @@ export const getCloseStatus = createServerFn({ method: "GET" })
 /** Save the Close API key. Admin-only. */
 export const saveCloseApiKey = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { apiKey: string }) => {
+  .validator((input: { apiKey: string }) => {
     if (!input?.apiKey || typeof input.apiKey !== "string" || input.apiKey.length < 10) {
       throw new Error("API key is required (min 10 chars)");
     }
@@ -86,7 +88,7 @@ export const testCloseConnection = createServerFn({ method: "POST" })
 /** List leads from Close. Supports optional search query. Returns null when not configured (caller falls back to sample). */
 export const listCloseLeads = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { query?: string; limit?: number } | undefined) => ({
+  .validator((input: { query?: string; limit?: number } | undefined) => ({
     query: input?.query?.trim() || "",
     limit: Math.min(Math.max(input?.limit ?? 200, 1), 500),
   }))
@@ -124,71 +126,165 @@ export const listCloseLeads = createServerFn({ method: "GET" })
   });
 
 
-/** Lead-creation counts for dashboards: total + per-day over the window. */
-export const getCloseLeadStats = createServerFn({ method: "GET" })
+const CLOSE_DIALS = "calls.outbound.all.count";
+const CLOSE_AVG_DURATION = "calls.outbound.all.avg_duration";
+const CLOSE_LEADS = "leads.created.all.count";
+
+async function requireCrmAnalyticsAccess(context: { supabase: any; userId: string }) {
+  const checks = await Promise.all(
+    ["admin", "founder", "cofounder"].map((role) =>
+      context.supabase.rpc("has_role", { _user_id: context.userId, _role: role }),
+    ),
+  );
+  if (!checks.some((check) => check.data)) throw new Error("Forbidden: CRM analytics access required");
+}
+
+async function readCloseKeyForAnalytics(): Promise<string | null> {
+  const { data } = await supabaseAdmin
+    .from("service_credentials")
+    .select("value")
+    .eq("key", CLOSE_KEY_NAME)
+    .maybeSingle();
+  return data?.value ?? null;
+}
+
+function addIsoDays(isoDate: string, days: number): string {
+  const date = new Date(`${isoDate}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+export type CloseActivityReport = {
+  configured: boolean;
+  totalDials: number;
+  totalLeads: number;
+  avgDurationSec: number | null;
+  daily: { date: string; dials: number; leads: number }[];
+};
+
+/** Complete daily Close activity from the official aggregated reporting API. */
+export const getCloseActivityReport = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { days?: number } | undefined) => ({
-    days: Math.min(Math.max(input?.days ?? 30, 1), 90),
-  }))
-  .handler(async ({ context, data }) => {
-    const empty = { configured: false, total: 0, daily: [] as { date: string; count: number }[] };
-    const key = await readCloseKey(context);
+  .validator((input: { days?: number; from?: string; to?: string } | undefined) => {
+    const validDate = (value: string | undefined) =>
+      value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : undefined;
+    const from = validDate(input?.from);
+    const to = validDate(input?.to);
+    if (from && to && from > to) throw new Error("Close date range is invalid");
+    return {
+      days: Math.min(Math.max(input?.days ?? 30, 1), 90),
+      from,
+      to,
+    };
+  })
+  .handler(async ({ context, data }): Promise<CloseActivityReport> => {
+    await requireCrmAnalyticsAccess(context);
+    const empty: CloseActivityReport = { configured: false, totalDials: 0, totalLeads: 0, avgDurationSec: null, daily: [] };
+    const key = await readCloseKeyForAnalytics();
     if (!key) return empty;
     const basic = Buffer.from(`${key}:`).toString("base64");
-    const since = new Date(Date.now() - data.days * 86400000).toISOString().slice(0, 10);
-    const params = new URLSearchParams();
-    params.set("_limit", "200");
-    params.set("_fields", "id,date_created");
-    params.set("query", `date_created >= "${since}"`);
+    const to = data.to ?? businessDay(new Date());
+    const from = data.from ?? addIsoDays(to, -(data.days - 1));
     try {
-      const res = await fetch(`https://api.close.com/api/v1/lead/?${params.toString()}`, {
-        headers: { Authorization: `Basic ${basic}` },
+      const res = await fetch("https://api.close.com/api/v1/report/activity/", {
+        method: "POST",
+        headers: {
+          Authorization: `Basic ${basic}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "x-tz-offset": "3",
+        },
+        body: JSON.stringify({
+          datetime_range: {
+            start: businessDayUtcBoundary(from),
+            end: businessDayUtcBoundary(addIsoDays(to, 1)),
+          },
+          metrics: [CLOSE_DIALS, CLOSE_AVG_DURATION, CLOSE_LEADS],
+          type: "overview",
+        }),
       });
-      if (!res.ok) return { ...empty, configured: true };
-      const json = (await res.json()) as { data?: { date_created?: string }[] };
-      const byDay = new Map<string, number>();
-      for (const l of json.data ?? []) {
-        const day = (l.date_created ?? "").slice(0, 10);
-        if (day) byDay.set(day, (byDay.get(day) ?? 0) + 1);
+      if (!res.ok) throw new Error(`Close activity report failed (${res.status})`);
+      type ReportPoint = { datetime?: string } & Record<string, number | string | undefined>;
+      const json = (await res.json()) as {
+        aggregations?: { totals?: Record<string, number | string | undefined> };
+        data?: ReportPoint[];
+      };
+      const byDay = new Map<string, { dials: number; leads: number }>();
+      for (const point of json.data ?? []) {
+        if (!point.datetime) continue;
+        const date = businessDay(point.datetime);
+        if (date < from || date > to) continue;
+        const current = byDay.get(date) ?? { dials: 0, leads: 0 };
+        current.dials += Number(point[CLOSE_DIALS]) || 0;
+        current.leads += Number(point[CLOSE_LEADS]) || 0;
+        byDay.set(date, current);
       }
+      const totals = json.aggregations?.totals ?? {};
+      const daily = [...byDay.entries()]
+        .map(([date, values]) => ({ date, ...values }))
+        .sort((a, b) => a.date.localeCompare(b.date));
       return {
         configured: true,
-        total: (json.data ?? []).length,
-        daily: [...byDay.entries()].map(([date, count]) => ({ date, count })),
+        totalDials: Number(totals[CLOSE_DIALS]) || daily.reduce((sum, row) => sum + row.dials, 0),
+        totalLeads: Number(totals[CLOSE_LEADS]) || daily.reduce((sum, row) => sum + row.leads, 0),
+        avgDurationSec: totals[CLOSE_AVG_DURATION] == null ? null : Math.round(Number(totals[CLOSE_AVG_DURATION]) || 0),
+        daily,
       };
-    } catch {
-      return { ...empty, configured: true };
+    } catch (error) {
+      if (error instanceof Error) throw error;
+      throw new Error("Close activity report failed");
     }
   });
 
 export type CloseCallStats = {
   configured: boolean;
+  incomplete: boolean;
   totalDials: number;
   totalAnswered: number;
   avgDurationSec: number | null;
   perUser: { name: string; dials: number; answered: number; avgDurationSec: number | null }[];
+  daily: { date: string; dials: number; answered: number }[];
 };
 
 /** Dials + call durations per rep from Close call activities. */
 export const getCloseCallStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { days?: number; date?: string } | undefined) => ({
-    days: Math.min(Math.max(input?.days ?? 7, 1), 30),
-    // A specific calendar day (YYYY-MM-DD) — overrides the rolling window.
-    date: input?.date && /^\d{4}-\d{2}-\d{2}$/.test(input.date) ? input.date : undefined,
-  }))
+  .validator((input: { days?: number; date?: string; from?: string; to?: string } | undefined) => {
+    const validDate = (value: string | undefined) =>
+      value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : undefined;
+    const date = validDate(input?.date);
+    const from = validDate(input?.from);
+    const to = validDate(input?.to);
+    if (from && to && from > to) throw new Error("Close date range is invalid");
+    return {
+      days: Math.min(Math.max(input?.days ?? 7, 1), 30),
+      date,
+      from,
+      to,
+    };
+  })
   .handler(async ({ context, data }): Promise<CloseCallStats> => {
-    const empty: CloseCallStats = { configured: false, totalDials: 0, totalAnswered: 0, avgDurationSec: null, perUser: [] };
-    const key = await readCloseKey(context);
+    await requireCrmAnalyticsAccess(context);
+    const empty: CloseCallStats = { configured: false, incomplete: false, totalDials: 0, totalAnswered: 0, avgDurationSec: null, perUser: [], daily: [] };
+    const key = await readCloseKeyForAnalytics();
     if (!key) return empty;
     const basic = Buffer.from(`${key}:`).toString("base64");
-    const since = data.date ? `${data.date}T00:00:00Z` : new Date(Date.now() - data.days * 86400000).toISOString();
-    const until = data.date ? `${data.date}T23:59:59Z` : null;
+    const since = data.date
+      ? businessDayUtcBoundary(data.date)
+      : data.from
+        ? businessDayUtcBoundary(data.from)
+        : new Date(Date.now() - data.days * 86400000).toISOString();
+    const until = data.date
+      ? businessDayUtcBoundary(data.date, true)
+      : data.to
+        ? businessDayUtcBoundary(data.to, true)
+        : null;
 
-    type Call = { user_name?: string; duration?: number; disposition?: string; direction?: string };
+    type Call = { user_name?: string; duration?: number; disposition?: string; direction?: string; date_created?: string };
     const calls: Call[] = [];
+    let incomplete = false;
     try {
-      // Page through up to 1000 recent calls — plenty for a 7–30 day window.
+      // Per-rep detail is intentionally capped; the caller visibly marks it partial.
       // Activity endpoints cap _limit at 100 (leads allow 200).
       for (let skip = 0; skip < 1000; skip += 100) {
         const params = new URLSearchParams({
@@ -196,31 +292,39 @@ export const getCloseCallStats = createServerFn({ method: "GET" })
           ...(until ? { date_created__lte: until } : {}),
           _limit: "100",
           _skip: String(skip),
-          _fields: "id,user_name,duration,direction,disposition",
+          _fields: "id,user_name,duration,direction,disposition,date_created",
         });
         const res = await fetch(`https://api.close.com/api/v1/activity/call/?${params}`, {
           headers: { Authorization: `Basic ${basic}` },
         });
-        if (!res.ok) break;
+        if (!res.ok) throw new Error(`Close calls failed (${res.status})`);
         const json = (await res.json()) as { data?: Call[]; has_more?: boolean };
         calls.push(...(json.data ?? []));
         if (!json.has_more) break;
+        if (skip === 900) incomplete = true;
       }
-    } catch {
-      return { ...empty, configured: true };
+    } catch (error) {
+      if (error instanceof Error) throw error;
+      throw new Error("Close calls failed");
     }
 
     const byUser = new Map<string, { dials: number; answered: number; durationSum: number }>();
+    const byDay = new Map<string, { dials: number; answered: number }>();
     for (const c of calls) {
       if (c.direction !== "outbound") continue;
       const name = c.user_name || "Unknown";
       const row = byUser.get(name) ?? { dials: 0, answered: 0, durationSum: 0 };
+      const date = c.date_created ? businessDay(c.date_created) : "";
+      const day = byDay.get(date) ?? { dials: 0, answered: 0 };
       row.dials += 1;
+      day.dials += 1;
       if (c.disposition === "answered" || (c.duration ?? 0) > 0) {
         row.answered += 1;
         row.durationSum += c.duration ?? 0;
+        day.answered += 1;
       }
       byUser.set(name, row);
+      if (date) byDay.set(date, day);
     }
 
     const perUser = [...byUser.entries()]
@@ -237,10 +341,14 @@ export const getCloseCallStats = createServerFn({ method: "GET" })
     const durationSum = [...byUser.values()].reduce((s, r) => s + r.durationSum, 0);
     return {
       configured: true,
+      incomplete,
       totalDials,
       totalAnswered,
       avgDurationSec: totalAnswered > 0 ? Math.round(durationSum / totalAnswered) : null,
       perUser,
+      daily: [...byDay.entries()]
+        .map(([date, value]) => ({ date, ...value }))
+        .sort((a, b) => a.date.localeCompare(b.date)),
     };
   });
 
@@ -252,7 +360,7 @@ export type CloseLeadDetail = {
 /** Notes + call history for one Close lead — who called, what they wrote. */
 export const getCloseLeadDetail = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { leadId: string }) => {
+  .validator((input: { leadId: string }) => {
     if (!/^lead_[A-Za-z0-9]+$/.test(input?.leadId ?? "")) throw new Error("Invalid lead id");
     return { leadId: input.leadId };
   })
@@ -284,7 +392,8 @@ export const getCloseLeadDetail = createServerFn({ method: "GET" })
 export const getCloseBookedCount = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const key = await readCloseKey(context);
+    await requireCrmAnalyticsAccess(context);
+    const key = await readCloseKeyForAnalytics();
     if (!key) return { configured: false, booked: 0 };
     const basic = Buffer.from(`${key}:`).toString("base64");
     try {
@@ -292,11 +401,12 @@ export const getCloseBookedCount = createServerFn({ method: "GET" })
         `https://api.close.com/api/v1/lead/?query=${encodeURIComponent('status:"BOOKED APPOINTMENT"')}&_limit=1&_fields=id`,
         { headers: { Authorization: `Basic ${basic}` } },
       );
-      if (!res.ok) return { configured: true, booked: 0 };
+      if (!res.ok) throw new Error(`Close booked count failed (${res.status})`);
       const json = (await res.json()) as { total_results?: number };
       return { configured: true, booked: json.total_results ?? 0 };
-    } catch {
-      return { configured: true, booked: 0 };
+    } catch (error) {
+      if (error instanceof Error) throw error;
+      throw new Error("Close booked count failed");
     }
   });
 

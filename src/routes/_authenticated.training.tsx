@@ -39,7 +39,7 @@ function Training() {
 
   const load = async () => {
     setLoading(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const { data } = await (supabase as any)
       .from("training_videos")
       .select("*")
@@ -60,7 +60,7 @@ function Training() {
 
   const deleteVideo = async (id: string) => {
     if (!confirm("Delete this training video?")) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const { error } = await (supabase as any).from("training_videos").delete().eq("id", id);
     if (error) { toast.error(error.message); return; }
     toast.success("Video deleted");
@@ -222,7 +222,7 @@ function AddVideoDialog({
       setTitle(""); setDescription(""); setVideoUrl(""); setCategory("General");
       setThumb(thumbColors[0]); setSortOrder("0");
     }
-  }, [editing, open]);
+  }, [editing, open, thumbColors]);
 
   const save = async () => {
     if (!title.trim()) { toast.error("Title is required"); return; }
@@ -235,7 +235,7 @@ function AddVideoDialog({
       thumbnail_color: thumb,
       sort_order: parseInt(sortOrder) || 0,
     };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const db = supabase as any;
     const { error } = editing
       ? await db.from("training_videos").update(payload).eq("id", editing.id)

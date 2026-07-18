@@ -736,7 +736,7 @@ function LogDealDialog({
       setCustomRows([{ id: crypto.randomUUID(), amount: "", due_date: nextMonth(), payment_method: "" }]);
       setProgramType("1:1 Pathway");
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [open, editing, currentUserId]);
 
   const submit = async () => {

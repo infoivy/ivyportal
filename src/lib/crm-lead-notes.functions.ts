@@ -16,7 +16,7 @@ export type LeadNote = {
 
 export const listLeadNotes = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { leadId: string }) => {
+  .validator((input: { leadId: string }) => {
     if (!input?.leadId) throw new Error("leadId required");
     return { leadId: input.leadId };
   })
@@ -46,7 +46,7 @@ export const listLeadNotes = createServerFn({ method: "GET" })
 
 export const createLeadNote = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { leadId: string; leadName?: string | null; body: string; pinned?: boolean }) => {
+  .validator((input: { leadId: string; leadName?: string | null; body: string; pinned?: boolean }) => {
     if (!input?.leadId) throw new Error("leadId required");
     const body = String(input.body ?? "").trim();
     if (!body) throw new Error("Note body required");
@@ -75,7 +75,7 @@ export const createLeadNote = createServerFn({ method: "POST" })
 
 export const updateLeadNote = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { id: string; body?: string; pinned?: boolean }) => {
+  .validator((input: { id: string; body?: string; pinned?: boolean }) => {
     if (!input?.id) throw new Error("id required");
     const patch: { body?: string; pinned?: boolean } = {};
     if (typeof input.body === "string") patch.body = input.body.trim();
@@ -93,7 +93,7 @@ export const updateLeadNote = createServerFn({ method: "POST" })
 
 export const deleteLeadNote = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { id: string }) => {
+  .validator((input: { id: string }) => {
     if (!input?.id) throw new Error("id required");
     return { id: input.id };
   })
@@ -107,7 +107,7 @@ export const deleteLeadNote = createServerFn({ method: "POST" })
 // POST: the id list for a full lead book overflows a GET URL (431s at ~200 leads).
 export const countLeadNotes = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { leadIds: string[] }) => ({
+  .validator((input: { leadIds: string[] }) => ({
     leadIds: Array.isArray(input?.leadIds) ? input.leadIds.filter(Boolean).slice(0, 500) : [],
   }))
   .handler(async ({ context, data }): Promise<Record<string, number>> => {

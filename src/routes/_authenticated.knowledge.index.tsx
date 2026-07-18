@@ -233,7 +233,7 @@ function isStubDoc(s: string) {
 function stripMarkdown(s: string) {
   return s
     .replace(/```[\s\S]*?```/g, "")
-    .replace(/[#*_>`\[\]()!-]/g, " ")
+    .replace(/[#*_>`[\]()!-]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
