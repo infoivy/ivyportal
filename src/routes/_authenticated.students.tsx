@@ -90,6 +90,8 @@ function StudentsLayout() {
   const pathname = useRouterState({ select: s => s.location.pathname });
   const isDetail = /^\/students\/[^/]+/.test(pathname);
   const canManage = roles.includes("admin") || roles.includes("coach");
+  // Staff surface — students never see the roster (their portal is /student-portal).
+  const isStaff = ["admin", "closer", "csm", "coach", "founder", "cofounder"].some(r => roles.includes(r));
 
   const qc = useQueryClient();
   const { data: students = [], isLoading: studentsLoading } = useQuery(studentsQuery()) as { data: Student[]; isLoading: boolean };
@@ -270,7 +272,13 @@ function StudentsLayout() {
     invalidateAll();
   };
 
-
+  if (!isStaff) {
+    return (
+      <div className="p-4 sm:p-6 max-w-[1500px] mx-auto">
+        <div className="card-surface p-8 text-center text-[13px] text-muted-foreground">Staff access required.</div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-6 max-w-[1500px] mx-auto space-y-5">

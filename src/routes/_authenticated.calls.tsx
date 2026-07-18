@@ -45,6 +45,8 @@ const KANBAN_COLS: CallStatus[] = ["scheduled", "completed", "follow_up", "no_sh
 function CallsPage() {
   const { user, roles } = useAuth();
   const canManage = roles.includes("admin") || roles.includes("coach");
+  // Staff surface — students see their own 1:1s inside the student portal.
+  const isStaff = ["admin", "csm", "coach", "founder", "cofounder"].some(r => roles.includes(r));
 
   const [calls, setCalls] = useState<Call[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
@@ -121,6 +123,13 @@ function CallsPage() {
     return { total, completed, noShow, followUp, openActions, avgRating };
   }, [filtered]);
 
+  if (!isStaff) {
+    return (
+      <div className="p-4 sm:p-6 max-w-[1500px] mx-auto">
+        <div className="card-surface p-8 text-center text-[13px] text-muted-foreground">Staff access required.</div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-6 max-w-[1500px] mx-auto space-y-5">

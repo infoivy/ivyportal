@@ -232,6 +232,16 @@ function StudentDetail() {
   ] : [], [student]);
   const graduationDone = graduationSteps.filter(s => s.done).length;
 
+  // Staff tracker only — students have their own portal and must never see
+  // this view of themselves (grades, next actions, pathway internals).
+  if (!["admin", "closer", "csm", "coach", "founder", "cofounder"].some(r => roles.includes(r))) {
+    return (
+      <div className="p-4 sm:p-6 max-w-[1500px] mx-auto">
+        <div className="card-surface p-8 text-center text-[13px] text-muted-foreground">Staff access required.</div>
+      </div>
+    );
+  }
+
   if (!student) return <PageSkeleton />;
 
   const coachName = (uid: string | null) => uid ? (coaches.find(c => c.id === uid)?.display_name ?? uid.slice(0, 8)) : "Unassigned";
@@ -386,7 +396,16 @@ function StudentDetail() {
                   />
                   <SelectChip
                     value={student.calls_allotted > 0 ? "1on1" : "group"}
-                    onChange={v => update({ calls_allotted: v === "1on1" ? (student.calls_allotted > 0 ? student.calls_allotted : 10) : 0 })}
+                    onChange={async v => {
+                      await update({ calls_allotted: v === "1on1" ? (student.calls_allotted > 0 ? student.calls_allotted : 10) : 0 });
+                      // Group students must never see 1:1 anything — clear the
+                      // auto "book your 1:1s" task if they had one.
+                      if (v === "group") {
+                        await supabase.from("student_action_items").delete()
+                          .eq("student_id", student.id).eq("done", false)
+                          .ilike("text", "Book your 1:1 coaching calls%");
+                      }
+                    }}
                     options={[{ v: "1on1", l: "1:1 Pathway" }, { v: "group", l: "Group Expertise" }]}
                     color="sky" prefix="Program: "
                   />
