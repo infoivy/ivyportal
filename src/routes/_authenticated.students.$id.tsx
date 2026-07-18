@@ -4,7 +4,7 @@ import { BAND_META } from "@/lib/student-health";
 import { useEffect, useMemo, useState } from "react";
 import { PageSkeleton } from "@/components/ui/skeletons";
 import { PlacementsSection } from "@/components/student-placements";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
@@ -80,6 +80,7 @@ function StudentDetail() {
   const { id } = Route.useParams() as { id: string };
   const nav = useNavigate();
   const { roles, user } = useAuth();
+  const qc = useQueryClient();
   // CSMs run fulfillment: they approve looms, unlock portals, and keep
   // student state current (founder-directed 2026-07-18; RLS matches).
   const canManage = roles.includes("admin") || roles.includes("coach") || roles.includes("csm");
@@ -250,7 +251,15 @@ function StudentDetail() {
   const update = async (patch: Partial<Student>) => {
     setStudent(s => s ? { ...s, ...patch } : s);
     const { error } = await supabase.from("students").update(patch as any).eq("id", student.id);
-    if (error) { toast.error(error.message); load(); }
+    if (error) { toast.error(error.message); load(); return; }
+    // The save is instant, but the page hydrates from the react-query cache
+    // (60s staleTime) on remount — patch the cache too or navigating away and
+    // back shows the old value and the edit looks like it didn't stick.
+    qc.setQueryData(["page", "student", id], (old: unknown) => {
+      const o = old as { student?: Student } | undefined;
+      return o?.student ? { ...o, student: { ...o.student, ...patch } } : old;
+    });
+    qc.invalidateQueries({ queryKey: ["students", "all"] });
   };
 
   const toggleGradStep = async (key: string) => {
