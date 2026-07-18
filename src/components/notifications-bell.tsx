@@ -62,8 +62,9 @@ async function fetchStudentAlerts(): Promise<StudentAlert[]> {
     }
     const eodDate = lastEod.get(st.id);
     const eodDays = eodDate ? Math.floor((now - new Date(eodDate).getTime()) / DAY) : null;
-    if (st.eod_exempt) {
-      // EOD tracking switched off for this student — no missed-EOD alerts
+    if (st.eod_exempt || !st.onboarding_completed_at) {
+      // No missed-EOD alerts while tracking is off — or while the student is
+      // still locked in Start Here and literally cannot submit an EOD.
     } else if (eodDays == null) {
       alerts.push({ key: `eod-${st.id}`, student_id: st.id, student_name: st.full_name, text: "No EOD in the last 30 days", tone: "text-danger-fg" });
     } else if (eodDays >= 3) {
@@ -72,7 +73,9 @@ async function fetchStudentAlerts(): Promise<StudentAlert[]> {
     if (st.payment_state === "behind") {
       alerts.push({ key: `pay-${st.id}`, student_id: st.id, student_name: st.full_name, text: "Payment behind", tone: "text-danger-fg" });
     }
-    if (["coaching_1on1", "applying"].includes(st.phase)) {
+    // 1:1 cadence only applies once they're through onboarding — the
+    // "book your calls" push starts at unlock.
+    if (st.onboarding_completed_at && ["coaching_1on1", "applying"].includes(st.phase)) {
       const callDate = lastCall.get(st.id);
       const callDays = callDate ? Math.floor((now - new Date(callDate).getTime()) / DAY) : null;
       if (callDays == null || callDays > 14) {
