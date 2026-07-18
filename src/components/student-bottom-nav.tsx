@@ -3,38 +3,54 @@ import { useQuery } from "@tanstack/react-query";
 import { FileText, UserCircle, ListChecks, Trophy, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { isStartHereComplete } from "@/lib/student-guide-steps";
 
 const items: { tab: string; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { tab: "start", label: "Start", icon: Sparkles },
   { tab: "eod", label: "EOD", icon: FileText },
   { tab: "actions", label: "Actions", icon: ListChecks },
   { tab: "leaderboard", label: "Board", icon: Trophy },
+  { tab: "start", label: "Start", icon: Sparkles },
 ];
+
+const GRID = { 2: "grid-cols-2", 4: "grid-cols-4", 5: "grid-cols-5" } as Record<number, string>;
 
 export function StudentBottomNav({ activeTab, onTabChange }: { activeTab?: string; onTabChange?: (t: string) => void }) {
   const path = useRouterState({ select: s => s.location.pathname });
   const { user } = useAuth();
-  // Until Start Here is complete the portal is Start Here only — mirror that
-  // here so the mobile nav doesn't advertise tabs the page won't render.
-  const lockedQ = useQuery({
+  // Mirror the portal: locked → Start is everything; unlocked with the
+  // checklist finished → Start disappears and EOD leads.
+  const stateQ = useQuery({
     queryKey: ["student-portal-locked", user?.id],
     enabled: !!user,
     staleTime: 60_000,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data: s } = await supabase
         .from("students")
-        .select("onboarding_completed_at")
+        .select("id, onboarding_completed_at")
         .eq("user_id", user!.id)
         .maybeSingle();
-      return !!data && !data.onboarding_completed_at;
+      if (!s) return { locked: false, startDone: true };
+      const { data: steps } = await supabase
+        .from("student_guide_steps")
+        .select("step_key")
+        .eq("student_id", s.id);
+      return {
+        locked: !s.onboarding_completed_at,
+        startDone: isStartHereComplete((steps ?? []).map(r => r.step_key)),
+      };
     },
   });
-  const locked = lockedQ.data === true;
-  const visible = locked ? items.filter(it => it.tab === "start") : items;
+  const locked = stateQ.data?.locked === true;
+  const startDone = stateQ.data?.startDone !== false;
+  const visible = locked
+    ? items.filter(it => it.tab === "start")
+    : startDone
+      ? items.filter(it => it.tab !== "start")
+      : items;
   const onPortal = path === "/student-portal";
   return (
     <nav className="sm:hidden fixed bottom-0 inset-x-0 z-40 border-t border-[var(--border)] bg-[var(--background)]/95 backdrop-blur">
-      <div className={`grid ${locked ? "grid-cols-2" : "grid-cols-5"}`}>
+      <div className={`grid ${GRID[visible.length + 1] ?? "grid-cols-5"}`}>
         {visible.map(it => {
           const Icon = it.icon;
           const active = onPortal && activeTab === it.tab;

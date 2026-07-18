@@ -345,6 +345,9 @@ function StudentPortal() {
   // Until every Start Here step is done the portal is Start Here and nothing
   // else — a student who just paid has no use for placements/EODs/action items.
   const locked = !!student && !student.onboarding_completed_at;
+  // Once the checklist is finished, Start Here disappears — EOD is the home
+  // tab. It stays (last) only for staff-override unlocks mid-checklist.
+  const startHereDone = isStartHereComplete(guideDone);
   // Stale/persisted tab state can still say "coaching" (e.g. moved to group) —
   // never render the 1:1 panel for group students.
   useEffect(() => {
@@ -353,6 +356,11 @@ function StudentPortal() {
   useEffect(() => {
     if (locked && tab !== "start") setTab("start");
   }, [locked, tab]);
+  // The locked session persisted "start" as the tab — land unlocked students
+  // on their EOD instead of a completed checklist.
+  useEffect(() => {
+    if (student && !locked && startHereDone && tab === "start") setTab("eod");
+  }, [student, locked, startHereDone, tab]);
   // Loom approved ≈ moved past training/coaching into applying
   const loomApproved = ["applying", "offer_won", "testimonial"].includes(student?.phase ?? "");
 
@@ -508,7 +516,7 @@ function StudentPortal() {
               <span dir="rtl">السلام عليكم ورحمة الله وبركاته</span>, {first} <span className="inline-block">👋</span>
             </h1>
             <p className="text-xs text-muted-foreground mt-1">
-              {student.phase.replace("_", " ")} · {student.status} · {isOneOnOne ? "1:1 Pathway" : "Group Expertise Pathway"}
+              {(phasesFor(isOneOnOne).find(p => p.key === student.phase)?.label ?? student.phase.replace("_", " "))} · {student.status} · {isOneOnOne ? "1:1 Pathway" : "Group Expertise Pathway"}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -646,15 +654,18 @@ function StudentPortal() {
         </div>
       </section>
 
-      {/* TABS — group students have no 1:1 coaching tab */}
+      {/* TABS — EOD first; group students have no 1:1 coaching tab; Start Here
+          only lingers (last) while a staff-unlocked student still has steps open */}
       <nav className="flex flex-wrap gap-1 border-b border-[var(--border)] -mb-px">
-        <TabButton active={tab === "start"} onClick={() => setTab("start")} icon={<PlayCircle className="h-3.5 w-3.5" />} label="Start Here" />
         <TabButton active={tab === "eod"} onClick={() => setTab("eod")} icon={<FileText className="h-3.5 w-3.5" />} label="My EOD" />
         <TabButton active={tab === "placements"} onClick={() => setTab("placements")} icon={<Briefcase className="h-3.5 w-3.5" />} label="Placements" />
         <TabButton active={tab === "actions"} onClick={() => setTab("actions")} icon={<ListChecks className="h-3.5 w-3.5" />} label="Action items" badge={openItems.length} urgent={overdue.length > 0 || dueToday.length > 0} />
         {isOneOnOne && <TabButton active={tab === "coaching"} onClick={() => setTab("coaching")} icon={<Calendar className="h-3.5 w-3.5" />} label="My coaching" />}
         <TabButton active={tab === "milestones"} onClick={() => setTab("milestones")} icon={<Trophy className="h-3.5 w-3.5" />} label="Milestones" />
         <TabButton active={tab === "leaderboard"} onClick={() => setTab("leaderboard")} icon={<Trophy className="h-3.5 w-3.5" />} label="Leaderboard" />
+        {!startHereDone && (
+          <TabButton active={tab === "start"} onClick={() => setTab("start")} icon={<PlayCircle className="h-3.5 w-3.5" />} label="Start Here" />
+        )}
       </nav>
 
       {tab === "start" && (
