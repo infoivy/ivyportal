@@ -41,7 +41,7 @@ import {
 } from "@/lib/dashboard-activity";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
-  head: () => ({ meta: [{ title: "Dashboard — ISA Team" }] }),
+  head: () => ({ meta: [{ title: "Dashboard · ISA Team" }] }),
   component: Dashboard,
 });
 
@@ -491,7 +491,7 @@ function Dashboard() {
         {/* IG monthly log reminder */}
         {roles.includes("founder") && !igLoggedThisMonth && !igReminderDismissed && (
           <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-muted text-[13px] text-foreground">
-            <span>No IG analytics logged this month — keep your growth data up to date.</span>
+            <span>No IG analytics logged this month · keep your growth data up to date.</span>
             <div className="flex items-center gap-2 shrink-0">
               <a href="/content?tab=instagram" className="font-medium text-primary hover:underline">Log now →</a>
               <button onClick={() => setIgReminderDismissed(true)} className="text-muted-foreground hover:text-foreground">✕</button>
@@ -515,7 +515,7 @@ function Dashboard() {
                 return (
                   <>
                     <div className="text-[36px] font-medium tabular-nums text-foreground tracking-[-0.025em] leading-none">
-                      <BlurMoney>{heroVal > 0 ? money(heroVal) : "—"}</BlurMoney>
+                      <BlurMoney>{heroVal > 0 ? money(heroVal) : "–"}</BlurMoney>
                     </div>
                     {prevVal > 0 && heroVal > 0 && (() => {
                       const pct = ((heroVal - prevVal) / prevVal) * 100;
@@ -918,7 +918,7 @@ function OpsCard({
         <span className="truncate">{label}</span>
       </div>
       <div className={`text-[24px] font-semibold tabular-nums mt-2 tracking-[-0.01em] ${t.value}`}>
-        {value == null ? <span className="text-muted-foreground text-sm">—</span> : value.toLocaleString()}
+        {value == null ? <span className="text-muted-foreground text-sm">–</span> : value.toLocaleString()}
       </div>
     </Link>
   );

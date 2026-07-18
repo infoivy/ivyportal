@@ -23,7 +23,7 @@ export function MochiIgSection() {
   });
 
   const d = q.data;
-  if (q.isError || (d && !d.connected)) return null; // not connected — stay out of the way
+  if (q.isError || (d && !d.connected)) return null; // not connected · stay out of the way
 
   const spark = d?.funnel.map((f) => f.new_leads) ?? [];
 

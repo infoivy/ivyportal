@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/crm")({
-  head: () => ({ meta: [{ title: "CRM — ISA Team" }] }),
+  head: () => ({ meta: [{ title: "CRM · ISA Team" }] }),
   component: CrmPage,
 });
 
@@ -113,7 +113,7 @@ function ClosePipelineSummary() {
   const totalValue = leads.reduce((a, l) => a + l.value, 0);
   const activeDeals = leads.filter((l) => l.status_type === "active" || l.value > 0).length;
   const wonCount = leads.filter((l) => l.status_type === "won").length;
-  const closeRate = leads.length ? ((wonCount / leads.length) * 100).toFixed(1) + "%" : "—";
+  const closeRate = leads.length ? ((wonCount / leads.length) * 100).toFixed(1) + "%" : "–";
 
   return (
     <div className="card-surface p-4 space-y-3">
@@ -167,11 +167,11 @@ function ClosePipelineSummary() {
       )}
 
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
-        <Kpi icon={Users} label="Leads" value={connected ? String(leads.length) : "—"} />
-        <Kpi icon={Phone} label="Active" value={connected ? String(activeDeals) : "—"} />
-        <Kpi icon={Trophy} label="Won" value={connected ? String(wonCount) : "—"} />
-        <Kpi icon={DollarSign} label="Pipeline" value={connected ? currency(totalValue) : "—"} />
-        <Kpi icon={TrendingUp} label="Close rate" value={connected ? closeRate : "—"} />
+        <Kpi icon={Users} label="Leads" value={connected ? String(leads.length) : "–"} />
+        <Kpi icon={Phone} label="Active" value={connected ? String(activeDeals) : "–"} />
+        <Kpi icon={Trophy} label="Won" value={connected ? String(wonCount) : "–"} />
+        <Kpi icon={DollarSign} label="Pipeline" value={connected ? currency(totalValue) : "–"} />
+        <Kpi icon={TrendingUp} label="Close rate" value={connected ? closeRate : "–"} />
       </div>
 
       {stages.length > 0 && (
@@ -317,7 +317,7 @@ function CloseKeyDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Close CRM connection</DialogTitle>
-          <DialogDescription>The key is stored server-side in service credentials — never in the browser.</DialogDescription>
+          <DialogDescription>The key is stored server-side in service credentials · never in the browser.</DialogDescription>
         </DialogHeader>
         <div className="space-y-2">
           <Label htmlFor="close-key">API key</Label>

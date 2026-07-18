@@ -61,7 +61,7 @@ export function computeStudentHealth(i: HealthInputs): StudentHealth {
   // The "stuck in Start Here" bell alert owns this population instead.
   if (i.locked) {
     if (i.paymentState === "behind") reasons.push("Payment behind");
-    reasons.push("In Start Here onboarding — portal locked");
+    reasons.push("In Start Here onboarding · portal locked");
     return { score: 0, band: i.paymentState === "behind" ? "red" : "amber", reasons, daysQuiet: null, locked: true };
   }
 

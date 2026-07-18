@@ -752,7 +752,7 @@ function ListView({ items, onOpen }: { items: ContentItem[]; onOpen: (i: Content
               className="hover:bg-[var(--muted)] cursor-pointer"
               onClick={() => onOpen(i)}
             >
-              <td className="p-2">{i.scheduled_date ?? "—"}</td>
+              <td className="p-2">{i.scheduled_date ?? "–"}</td>
               <td className="p-2">
                 <span
                   className={`text-[10px] px-1.5 py-0.5 rounded-sm border ${PLATFORM_META[i.platform].color}`}
@@ -761,7 +761,7 @@ function ListView({ items, onOpen }: { items: ContentItem[]; onOpen: (i: Content
                 </span>
               </td>
               <td className="p-2 max-w-md truncate">{i.hook}</td>
-              <td className="p-2 text-muted-foreground">{i.format ?? "—"}</td>
+              <td className="p-2 text-muted-foreground">{i.format ?? "–"}</td>
               <td className="p-2">
                 <span
                   className={`text-[10px] px-1.5 py-0.5 rounded-sm border ${STATUS_META[i.status].color}`}
@@ -781,7 +781,7 @@ function ListView({ items, onOpen }: { items: ContentItem[]; onOpen: (i: Content
                     <ExternalLink className="h-3 w-3 inline" />
                   </a>
                 ) : (
-                  <span className="text-muted-foreground">—</span>
+                  <span className="text-muted-foreground">–</span>
                 )}
               </td>
             </tr>
@@ -1045,7 +1045,7 @@ function IdeaInbox({
             <div className="p-4 border-b border-[var(--border)]">
               <div className="text-sm font-semibold">Monthly reset</div>
               <div className="text-[11px] text-muted-foreground mt-1">
-                Archive all un-harvested ideas so next month starts clean. Nothing is deleted — you
+                Archive all un-harvested ideas so next month starts clean. Nothing is deleted · you
                 can filter by "Archived" to review later.
               </div>
             </div>
@@ -1220,7 +1220,7 @@ function ItemDialog({
           </button>
         </div>
         <div className="p-4 space-y-3">
-          <Field label="Title (short label — for the record)">
+          <Field label="Title (short label · for the record)">
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -1258,8 +1258,8 @@ function ItemDialog({
                 onChange={(v) => setFormat(v)}
                 options={CREATIVE_TYPES.map((c) => ({ value: c, label: c }))}
                 allowEmpty
-                emptyLabel="—"
-                placeholder="—"
+                emptyLabel="–"
+                placeholder="–"
               />
             </Field>
             <Field label="Duration (sec)">

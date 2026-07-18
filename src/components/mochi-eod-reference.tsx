@@ -66,7 +66,7 @@ export function MochiEodReference({
         </div>
         {!personal && (
           <span className="text-[10px] text-muted-foreground/70">
-            Your account isn't linked in Mochi yet — ask an admin
+            Your account isn't linked in Mochi yet · ask an admin
           </span>
         )}
       </div>
@@ -84,7 +84,7 @@ function RefValue({ label, value }: { label: string; value: number | null }) {
   return (
     <div className="flex items-baseline gap-1.5 text-[12px]">
       <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium tabular-nums text-foreground">{value ?? "—"}</span>
+      <span className="font-medium tabular-nums text-foreground">{value ?? "–"}</span>
     </div>
   );
 }

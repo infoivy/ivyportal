@@ -97,7 +97,7 @@ export function PlacementsSection({ studentId, compact = false }: { studentId: s
         <div className="flex items-center gap-2 text-[13px] font-medium text-foreground">
           <Briefcase className="h-3.5 w-3.5 text-muted-foreground" />
           Placements
-          <span className="text-[11px] text-muted-foreground font-normal">the businesses in play — this is the goal</span>
+          <span className="text-[11px] text-muted-foreground font-normal">the businesses in play · this is the goal</span>
         </div>
         <Button size="sm" variant="outline" onClick={() => setAdding((a) => !a)}>
           <Plus className="h-3.5 w-3.5 mr-1" /> Opportunity
@@ -122,7 +122,7 @@ export function PlacementsSection({ studentId, compact = false }: { studentId: s
         <p className="text-[13px] text-muted-foreground py-3">Loading…</p>
       ) : rows.length === 0 ? (
         <p className="text-[13px] text-muted-foreground py-4 text-center border border-dashed border-border rounded-md">
-          No opportunities yet — add the first business this student is talking to.
+          No opportunities yet · add the first business this student is talking to.
         </p>
       ) : (
         <div className="space-y-1.5">

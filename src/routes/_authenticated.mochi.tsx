@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/auth-context";
 import { MochiCrmInner } from "@/components/mochi-crm";
 
 export const Route = createFileRoute("/_authenticated/mochi")({
-  head: () => ({ meta: [{ title: "Instagram CRM — ISA Portal" }] }),
+  head: () => ({ meta: [{ title: "Instagram CRM · ISA Portal" }] }),
   component: MochiPage,
 });
 

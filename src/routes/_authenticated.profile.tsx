@@ -8,7 +8,7 @@ import { UserCircle, Save, Camera, Upload, Trash2 } from "lucide-react";
 import { signAvatar, uploadAvatar } from "@/lib/avatars";
 
 export const Route = createFileRoute("/_authenticated/profile")({
-  head: () => ({ meta: [{ title: "Profile — ISA" }] }),
+  head: () => ({ meta: [{ title: "Profile · ISA" }] }),
   component: ProfilePage,
 });
 

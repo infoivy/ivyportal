@@ -21,7 +21,7 @@ import { SelectField } from "@/components/ui/select-field";
 import { MochiEodReference } from "@/components/mochi-eod-reference";
 
 export const Route = createFileRoute("/_authenticated/eods")({
-  head: () => ({ meta: [{ title: "EOD Reports — ISA Team" }] }),
+  head: () => ({ meta: [{ title: "EOD Reports · ISA Team" }] }),
   component: EODsPage,
 });
 
@@ -223,7 +223,7 @@ function EODsPage() {
     const warnings: string[] = [];
     if (isSetter) {
       if (cleaned.calls_booked > cleaned.convos_started && cleaned.convos_started > 0)
-        warnings.push(`${cleaned.calls_booked} booked but only ${cleaned.convos_started} convos — sure?`);
+        warnings.push(`${cleaned.calls_booked} booked but only ${cleaned.convos_started} convos · sure?`);
       if ((cleaned.shows + cleaned.no_shows) > cleaned.calls_booked && cleaned.calls_booked > 0)
         warnings.push(`Shows + no-shows (${cleaned.shows + cleaned.no_shows}) exceeds calls booked (${cleaned.calls_booked}).`);
     }
@@ -367,7 +367,7 @@ function EODsPage() {
 
       {isFounder && (
         <div className="card-surface px-4 py-3 text-[13px] text-muted-foreground">
-          This account has no setter or closer role — you don't submit EODs. Use the tabs below to view team reports.
+          This account has no setter or closer role · you don't submit EODs. Use the tabs below to view team reports.
         </div>
       )}
 
@@ -392,13 +392,13 @@ function EODsPage() {
             <div className="lg:col-span-2 border border-[var(--border)] bg-[var(--card)] rounded-sm p-5 space-y-5">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <h2 className="text-sm font-semibold">{existingId ? "Update numbers" : "Submit numbers"} — {fmtLong(reportDate)}
+                  <h2 className="text-sm font-semibold">{existingId ? "Update numbers" : "Submit numbers"} · {fmtLong(reportDate)}
                     {!existingId && draftSavedAt && (
                       <span className="ml-2 text-[10px] font-normal text-muted-foreground">Draft saved ✓</span>
                     )}
                   </h2>
                   <p className="text-[11px] text-muted-foreground">
-                    {existingId ? "Already submitted for this day — saving replaces it." : "Zero is a valid answer."}
+                    {existingId ? "Already submitted for this day · saving replaces it." : "Zero is a valid answer."}
                   </p>
                 </div>
                 <div className="inline-flex rounded-sm border border-[var(--border)] bg-[var(--background)] p-0.5">
@@ -415,7 +415,7 @@ function EODsPage() {
 
               {isSetter && !mySetterType && (
                 <div className="rounded-sm border border-warning/25 bg-warning-bg p-3">
-                  <div className="text-[11px] text-warning-fg mb-2">Pick your setter type — this drives your daily KPI.</div>
+                  <div className="text-[11px] text-warning-fg mb-2">Pick your setter type · this drives your daily KPI.</div>
                   <div className="flex gap-2 flex-wrap">
                     <Button size="sm" variant="outline" onClick={() => saveSetterType("phone")}>Phone setter</Button>
                     <Button size="sm" variant="outline" onClick={() => saveSetterType("dm")}>DM setter</Button>
@@ -464,7 +464,7 @@ function EODsPage() {
                 <div className="space-y-3">
                   <SectionLabel>CSM reviews</SectionLabel>
                   <div className="rounded-sm border border-[var(--border)] bg-[var(--background)] p-3">
-                    <div className="text-[11px] text-muted-foreground mb-2">Today's KPI — students reached</div>
+                    <div className="text-[11px] text-muted-foreground mb-2">Today's KPI · students reached</div>
                     <KpiBar label="Student check-ins" value={form.student_checkins} target={csmTarget} />
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -495,7 +495,7 @@ function EODsPage() {
                         <Input type="number" min={0} step="0.01" value={form.cash_collected} onChange={e => setFloat("cash_collected")(e.target.value)} onFocus={e => e.currentTarget.select()} className="bg-[var(--background)] border-[var(--border)] rounded-sm h-9 text-sm" />
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-[13px] text-muted-foreground">Deferred cash — PIF &lt;30d ($)</Label>
+                        <Label className="text-[13px] text-muted-foreground">Deferred cash · PIF &lt;30d ($)</Label>
                         <Input type="number" min={0} step="0.01" value={form.deferred_cash} onChange={e => setFloat("deferred_cash")(e.target.value)} onFocus={e => e.currentTarget.select()} className="bg-[var(--background)] border-[var(--border)] rounded-sm h-9 text-sm" />
                       </div>
                     </div>
@@ -619,12 +619,12 @@ function TeamOverview({ roster, eods, today }: { roster: RosterEntry[]; eods: Gr
       if (r.primary_role === "setter" && st) {
         const cfg = KPI[st];
         const primary = st === "dm" ? outreachOf(todayEod) : todayEod.dials;
-        if (didHitKpi(todayEod, st)) todayLine = `Submitted — hit KPI (${primary} ${cfg.primary.label.toLowerCase()}, ${todayEod.calls_booked} sets)`;
-        else todayLine = `Submitted — missed KPI (${primary} of ${cfg.primary.target} ${cfg.primary.label.toLowerCase()}, ${todayEod.calls_booked} of ${cfg.sets} sets)`;
+        if (didHitKpi(todayEod, st)) todayLine = `Submitted · hit KPI (${primary} ${cfg.primary.label.toLowerCase()}, ${todayEod.calls_booked} sets)`;
+        else todayLine = `Submitted · missed KPI (${primary} of ${cfg.primary.target} ${cfg.primary.label.toLowerCase()}, ${todayEod.calls_booked} of ${cfg.sets} sets)`;
       } else if (r.primary_role === "closer" || r.primary_role === "coach") {
-        todayLine = `Submitted — ${todayEod.calls_taken} calls, ${todayEod.closes} closes, $${Math.round(Number(todayEod.cash_collected)).toLocaleString()} cash`;
+        todayLine = `Submitted · ${todayEod.calls_taken} calls, ${todayEod.closes} closes, $${Math.round(Number(todayEod.cash_collected)).toLocaleString()} cash`;
       } else if (r.primary_role === "csm") {
-        todayLine = `Submitted — ${todayEod.student_checkins} check-ins, ${todayEod.looms_reviewed} looms`;
+        todayLine = `Submitted · ${todayEod.student_checkins} check-ins, ${todayEod.looms_reviewed} looms`;
       } else todayLine = "Submitted";
     }
     return { r, status, todayLine, week, weeklyLabel, weeklyValue, todayEod };
@@ -642,7 +642,7 @@ function TeamOverview({ roster, eods, today }: { roster: RosterEntry[]; eods: Gr
     <div className="space-y-4">
       <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-4">
         <div className="text-sm">
-          <span className="font-semibold">{fmtLong(today)}</span> —{" "}
+          <span className="font-semibold">{fmtLong(today)}</span> –{" "}
           <span className="text-success-fg">{submittedCount} of {cards.length} submitted</span> ·{" "}
           <span className="text-success-fg">{kpiHitCount} hit KPI</span> ·{" "}
           <span className="text-warning-fg">{pendingCount} pending</span>
@@ -715,7 +715,7 @@ function OverviewCard({ card }: { card: {
                     {card.r.primary_role === "csm" && (
                       <span>{w.e.student_checkins} check-ins, {w.e.looms_reviewed} looms</span>
                     )}
-                    {w.status === "amber" && <span className="text-warning-fg"> — missed KPI</span>}
+                    {w.status === "amber" && <span className="text-warning-fg"> · missed KPI</span>}
                     {w.e.wins && <div className="text-muted-foreground mt-0.5"><span className="text-success-fg">Wins:</span> {w.e.wins}</div>}
                     {w.e.blockers && <div className="text-muted-foreground"><span className="text-warning-fg">Blockers:</span> {w.e.blockers}</div>}
                   </div>
@@ -818,7 +818,7 @@ function HistoryDayRow({ eod, setterType, isSetter, isCloser, onDelete }: { eod:
       </button>
       {open && (
         <div className="px-4 pb-4 space-y-2 text-xs bg-[var(--background)]">
-          {dataError && <div className="text-warning-fg text-[11px]">⚠ Booked exceeds convos — this report may have an error. Consider editing.</div>}
+          {dataError && <div className="text-warning-fg text-[11px]">⚠ Booked exceeds convos · this report may have an error. Consider editing.</div>}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             <RowStat label="DMs" value={eod.dms_sent} />
             <RowStat label="Convos" value={eod.convos_started} />
@@ -870,7 +870,7 @@ function trimToTeamStart(dayList: string[], roster: RosterEntry[], eods: GridEod
   const signals: string[] = [];
   const joins = roster.map((r) => r.joined_at).filter(Boolean) as string[];
   if (joins.length === roster.length && joins.length > 0) signals.push(joins.reduce((a, b) => (a < b ? a : b)));
-  else return dayList; // someone has no join date — don't guess
+  else return dayList; // someone has no join date · don't guess
   const eodDates = eods.map((e) => e.report_date).filter((d) => d >= windowStart);
   if (eodDates.length) signals.push(eodDates.reduce((a, b) => (a < b ? a : b)));
   const first = signals.reduce((a, b) => (a < b ? a : b));
@@ -913,7 +913,7 @@ function ComplianceMatrix({ eods, roster }: { eods: GridEod[]; roster: RosterEnt
           ))}
         </div>
         <div className="text-[11px] text-muted-foreground">
-          🟢 submitted + KPI hit · 🟡 submitted, missed KPI · 🔴 missed · — before join date
+          🟢 submitted + KPI hit · 🟡 submitted, missed KPI · 🔴 missed · · before join date
         </div>
       </div>
 
@@ -946,7 +946,7 @@ function ComplianceMatrix({ eods, roster }: { eods: GridEod[]; roster: RosterEnt
                         {dayList.map(d => {
                           const beforeJoin = m.joined_at && d < m.joined_at;
                           const eod = byUserDate.get(`${m.user_id}::${d}`);
-                          if (beforeJoin) return <td key={d} className="px-1 py-1 text-center"><span className="text-[#3a3f4a] text-[11px]">—</span></td>;
+                          if (beforeJoin) return <td key={d} className="px-1 py-1 text-center"><span className="text-[#3a3f4a] text-[11px]">–</span></td>;
                           const status = dayStatus(eod, st);
                           const cls = status === "green" ? "bg-success-bg border-success/25 text-success-fg" : status === "amber" ? "bg-warning-bg border-warning/25 text-warning-fg" : "bg-danger-bg border-danger/25 text-danger-fg";
                           const glyph = status === "red" ? "✗" : status === "amber" ? "!" : "✓";
@@ -1061,11 +1061,11 @@ function ComplianceGraphs({ eods, roster }: { eods: GridEod[]; roster: RosterEnt
         {totalReports === 0 ? <NoData /> : <SubmissionsChart data={setsData} />}
       </GraphCard>
 
-      <GraphCard title="Funnel volume — daily totals" subtitle={`DMs · convos · booked · shows${compare ? " (ghost = prev period)" : ""}`}>
+      <GraphCard title="Funnel volume · daily totals" subtitle={`DMs · convos · booked · shows${compare ? " (ghost = prev period)" : ""}`}>
         {totalReports === 0 ? <NoData /> : <FunnelChart data={funnelData} compare={compare} />}
       </GraphCard>
 
-      <GraphCard title="EOD submissions per person" subtitle="One square per day — green = submitted + hit KPI, amber = submitted only, red = missed" auto>
+      <GraphCard title="EOD submissions per person" subtitle="One square per day · green = submitted + hit KPI, amber = submitted only, red = missed" auto>
         <SubmissionsGrid dayList={dayList} roster={filteredRoster} eods={eods} />
       </GraphCard>
     </div>
@@ -1203,7 +1203,7 @@ function TeamFeed({ eods, isAdmin, onDelete }: { eods: GridEod[]; isAdmin: boole
       {grouped.map(([day, rows]) => (
         <div key={day} className="space-y-2">
           <div className="text-[13px] text-muted-foreground border-b border-[var(--border)] pb-1">
-            {fmtLong(day)} — {rows.length} submitted
+            {fmtLong(day)} · {rows.length} submitted
           </div>
           <div className="grid md:grid-cols-2 gap-2">
             {rows.map(e => <div key={e.id} className="cv-auto"><FeedCard e={e} isAdmin={isAdmin} onDelete={onDelete} /></div>)}

@@ -68,7 +68,7 @@ async function fetchStudentAlerts(): Promise<StudentAlert[]> {
     // warm. Backfilled rows have completed_at == created_at; only alert on
     // real completions (stamped later than row creation).
     if (st.onboarding_completed_at && st.created_at !== st.onboarding_completed_at && Date.now() - new Date(st.onboarding_completed_at).getTime() <= 3 * DAY) {
-      alerts.push({ key: `onb-${st.id}`, student_id: st.id, student_name: st.full_name, text: "Completed Start Here onboarding — portal unlocked", tone: "text-success-fg" });
+      alerts.push({ key: `onb-${st.id}`, student_id: st.id, student_name: st.full_name, text: "Completed Start Here onboarding · portal unlocked", tone: "text-success-fg" });
     }
     // Locked and not moving: no Start Here progress in 3+ days. This is the
     // lazy-onboarding signal — EOD nags don't apply to locked students, so
@@ -288,7 +288,7 @@ export function NotificationsBell() {
                     <Bell className="h-3 w-3 text-danger-fg" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-xs text-foreground truncate">New set — {s.prospect}</div>
+                    <div className="text-xs text-foreground truncate">New set · {s.prospect}</div>
                     <div className="text-[10px] text-muted-foreground">
                       {new Date(s.event_start).toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })} · nobody owns it yet
                     </div>

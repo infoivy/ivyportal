@@ -57,7 +57,7 @@ export function TeamGoalCard() {
         <div className="flex items-center gap-2">
           <Flag className="h-4 w-4 text-primary" />
           <span className="text-[14px] font-medium text-foreground">
-            Team goal — ${g.amount!.toLocaleString()} {deadlineLabel && <span className="text-muted-foreground font-normal">{deadlineLabel}</span>}
+            Team goal · ${g.amount!.toLocaleString()} {deadlineLabel && <span className="text-muted-foreground font-normal">{deadlineLabel}</span>}
           </span>
         </div>
         <div className="flex items-center gap-3">
@@ -127,7 +127,7 @@ function GoalEditor({ current, onSaved, label }: { current: { amount: number | n
         </div>
         <div className="space-y-1">
           <label className="text-[12px] text-muted-foreground">Note to the team (optional)</label>
-          <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Expenses put us $1.5k in debt — let's clear it" />
+          <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Expenses put us $1.5k in debt · let's clear it" />
         </div>
         <div className="flex justify-between">
           <Button size="sm" variant="ghost" onClick={() => save(true)} disabled={saving}>Clear</Button>

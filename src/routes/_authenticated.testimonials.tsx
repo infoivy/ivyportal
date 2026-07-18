@@ -18,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_authenticated/testimonials")({
-  head: () => ({ meta: [{ title: "Testimonials — ISA Team" }] }),
+  head: () => ({ meta: [{ title: "Testimonials · ISA Team" }] }),
   component: TestimonialsPage,
 });
 
@@ -107,7 +107,7 @@ function TestimonialsPage() {
   const load = () => pageQ.refetch();
 
   const studentName = useCallback(
-    (id: string | null) => id ? (students.find(s => s.id === id)?.full_name ?? "—") : "—",
+    (id: string | null) => id ? (students.find(s => s.id === id)?.full_name ?? "–") : "–",
     [students],
   );
 
@@ -164,7 +164,7 @@ function TestimonialsPage() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Testimonials</h1>
-          <p className="text-sm text-muted-foreground mt-1">Social proof library — video, image, text, and Trustpilot.</p>
+          <p className="text-sm text-muted-foreground mt-1">Social proof library · video, image, text, and Trustpilot.</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setRequestOpen(true)}>
@@ -558,7 +558,7 @@ function RequestDialog({
     setBusy(false);
     if (error) toast.error(error.message);
     else {
-      toast.success("Testimonial requested — student flagged");
+      toast.success("Testimonial requested · student flagged");
       onDone(); onClose();
     }
   };

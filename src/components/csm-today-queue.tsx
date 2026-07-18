@@ -112,7 +112,7 @@ export function CsmTodayQueue() {
 
       {needsWork.length === 0 ? (
         <p className="text-[13px] text-muted-foreground py-4 text-center">
-          Everyone is green and recently touched. Rare air — keep it that way.
+          Everyone is green and recently touched. Rare air · keep it that way.
         </p>
       ) : (
         <div className="space-y-1">
@@ -121,7 +121,7 @@ export function CsmTodayQueue() {
             return (
               <div key={s.id} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-md px-2.5 py-2 hover:bg-muted/50 motion-safe:transition-colors">
                 <span className={`text-[11px] font-medium tabular-nums px-1.5 py-0.5 rounded-full border shrink-0 ${BAND_META[band].chip}`}>
-                  {s.h?.score ?? "—"}
+                  {s.h?.score ?? "–"}
                 </span>
                 <Link to="/students/$id" params={{ id: s.id }} className="text-[13px] font-medium text-foreground hover:underline underline-offset-4 decoration-border min-w-28">
                   {s.full_name}
@@ -167,7 +167,7 @@ export function CsmTodayQueue() {
             );
           })}
           {needsWork.length > 12 && (
-            <p className="text-[11px] text-muted-foreground px-2 pt-1">+{needsWork.length - 12} more below the fold — clear the top first.</p>
+            <p className="text-[11px] text-muted-foreground px-2 pt-1">+{needsWork.length - 12} more below the fold · clear the top first.</p>
           )}
         </div>
       )}

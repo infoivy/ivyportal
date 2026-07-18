@@ -31,7 +31,7 @@ export const coachesQuery = () =>
       const ids = new Set((rolesRes.data ?? []).map(r => r.user_id));
       return ((profsRes.data ?? []) as { id: string; display_name: string | null }[]).filter(p => ids.has(p.id));
     },
-    staleTime: 5 * 60_000, // 5min — coach roster changes rarely
+    staleTime: 5 * 60_000, // 5min · coach roster changes rarely
   });
 
 export const studentCallsAggQuery = () =>

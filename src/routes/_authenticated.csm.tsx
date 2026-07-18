@@ -21,7 +21,7 @@ import { DateField } from "@/components/ui/date-field";
 import { SelectField } from "@/components/ui/select-field";
 
 export const Route = createFileRoute("/_authenticated/csm")({
-  head: () => ({ meta: [{ title: "CSM — ISA Portal" }] }),
+  head: () => ({ meta: [{ title: "CSM · ISA Portal" }] }),
   validateSearch: (s: Record<string, unknown>) => ({ tab: (s.tab as string) ?? "overview" }),
   component: CsmHub,
 });
@@ -93,7 +93,7 @@ function CsmHub() {
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-display text-foreground">CSM</h1>
-          <p className="text-body text-muted-foreground mt-0.5">Fulfillment — every student to a landed role.</p>
+          <p className="text-body text-muted-foreground mt-0.5">Fulfillment · every student to a landed role.</p>
         </div>
         <SegmentedControl
           segments={CSM_TABS}
@@ -435,7 +435,7 @@ function CsmPage() {
               </div>
               <div className="grid grid-cols-2 lg:grid-cols-5 gap-px bg-[var(--border)]">
                 <AccountStat label="Open action items" value={openCount} tone={openCount > 0 ? "warn" : "ok"} />
-                <AccountStat label="Last student EOD" value={lastStudentEod ?? "—"} tone={lastStudentEod && Date.now() - new Date(lastStudentEod).getTime() < 2 * 86400000 ? "ok" : "warn"} />
+                <AccountStat label="Last student EOD" value={lastStudentEod ?? "–"} tone={lastStudentEod && Date.now() - new Date(lastStudentEod).getTime() < 2 * 86400000 ? "ok" : "warn"} />
                 <AccountStat
                   label={`Weekly calls · ${targetWeeklyEodStart}`}
                   value={weeklyEodLoadError ? "Load error" : selectedWeeklyEod
@@ -616,7 +616,7 @@ function CsmPage() {
             </div>
             <div>
               <label className="text-[10px] text-muted-foreground">Student (optional)</label>
-              <SelectField value={quickStudent} onChange={(v) => setQuickStudent(v)} options={students.map((s) => ({ value: s.id, label: s.full_name }))} allowEmpty emptyLabel="— none —" placeholder="— none —" />
+              <SelectField value={quickStudent} onChange={(v) => setQuickStudent(v)} options={students.map((s) => ({ value: s.id, label: s.full_name }))} allowEmpty emptyLabel="– none –" placeholder="– none –" />
             </div>
             <div>
               <label className="text-[10px] text-muted-foreground">Note (optional)</label>

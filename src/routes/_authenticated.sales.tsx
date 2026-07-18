@@ -22,7 +22,7 @@ import {
 } from "recharts";
 
 export const Route = createFileRoute("/_authenticated/sales")({
-  head: () => ({ meta: [{ title: "Sales — ISA Team" }] }),
+  head: () => ({ meta: [{ title: "Sales · ISA Team" }] }),
   validateSearch: (s: Record<string, unknown>) => ({ tab: (s.tab as string) ?? "operations" }),
   component: Sales,
 });
@@ -79,7 +79,7 @@ function SalesInner() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-display text-foreground">Activity</h1>
-          <p className="text-body text-muted-foreground mt-1">Today's compliance, full-funnel trends, and scorecards — one view.</p>
+          <p className="text-body text-muted-foreground mt-1">Today's compliance, full-funnel trends, and scorecards · one view.</p>
         </div>
       </div>
 
@@ -274,7 +274,7 @@ function OperationsTab() {
           {missedYesterday.length > 0 && (
             <div className="space-y-2">
               <div className="text-[13px] text-muted-foreground flex items-center gap-1.5">
-                <AlertTriangle className="h-3.5 w-3.5 text-warning-fg" /> Missed yesterday — send nudge
+                <AlertTriangle className="h-3.5 w-3.5 text-warning-fg" /> Missed yesterday · send nudge
               </div>
               <div className="card-surface overflow-hidden">
                 {missedYesterday.map(s => (
@@ -308,7 +308,7 @@ function OperationsTab() {
 
       {/* Scorecards */}
       <section className="space-y-3 pt-2 border-t border-border">
-        <h2 className="text-title text-foreground">Scorecards — last 30 days</h2>
+        <h2 className="text-title text-foreground">Scorecards · last 30 days</h2>
         <div className="space-y-3">
           {setters.length === 0 ? (
             <EmptySales msg="No active setters." />
@@ -653,6 +653,6 @@ function EmptySales({ msg }: { msg: string }) {
 function sevenDayAvgSets(setters: SetterProfile[], recentEods: EODRow[]): string {
   const sevenDaysAgo = isoDate(new Date(Date.now() - 7 * 86400000));
   const last7 = recentEods.filter(e => e.report_date >= sevenDaysAgo && setters.some(s => s.id === e.user_id));
-  if (last7.length === 0) return "—";
+  if (last7.length === 0) return "–";
   return (last7.reduce((s, e) => s + e.calls_booked, 0) / last7.length).toFixed(1);
 }

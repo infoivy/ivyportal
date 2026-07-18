@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin")({
-  head: () => ({ meta: [{ title: "Admin Console — ISA" }] }),
+  head: () => ({ meta: [{ title: "Admin Console · ISA" }] }),
   component: AdminConsole,
 });
 
@@ -281,7 +281,7 @@ function AdminConsole() {
                 <div key={c.id} className="grid grid-cols-[80px_1fr_1fr] gap-3 py-2.5 text-xs items-center">
                   <span className="text-muted-foreground">{c.call_date}</span>
                   <span className="truncate">{student?.full_name ?? "Unknown student"}</span>
-                  <span className="truncate text-muted-foreground">{coach ?? "—"}</span>
+                  <span className="truncate text-muted-foreground">{coach ?? "–"}</span>
                 </div>
               );
             })}
@@ -381,7 +381,7 @@ function AdminConsole() {
           <div className="space-y-2 py-3 border-t border-border">
             <Label className="text-xs">Group coaching calls (Mon–Sun)</Label>
             <p className="text-[10px] text-muted-foreground">
-              Names only, no times — students tick these off in their weekly EOD. Keep them matching the Skool calendar.
+              Names only, no times · students tick these off in their weekly EOD. Keep them matching the Skool calendar.
             </p>
             <div className="grid sm:grid-cols-2 gap-2">
               {callSchedule.map((call, i) => (
@@ -551,7 +551,7 @@ function AdminConsole() {
                       </span>
                     </td>
                     <td className="py-2 pr-3 text-muted-foreground">{e.table_name}</td>
-                    <td className="py-2 text-muted-foreground font-mono truncate max-w-[120px]">{e.record_id ?? "—"}</td>
+                    <td className="py-2 text-muted-foreground font-mono truncate max-w-[120px]">{e.record_id ?? "–"}</td>
                   </tr>
                 ))}
               </tbody>
@@ -789,7 +789,7 @@ function AccessDefaultsCard() {
   return (
     <Panel
       title="Access defaults"
-      subtitle="What each role sees. Applies to everyone with that role; extra roles only ever add access. Admins and founders are never restricted — and this is a visibility layer, not data security."
+      subtitle="What each role sees. Applies to everyone with that role; extra roles only ever add access. Admins and founders are never restricted · and this is a visibility layer, not data security."
       icon={<Shield className="h-3.5 w-3.5 text-primary" />}
     >
       <div className="grid gap-4 lg:grid-cols-2">

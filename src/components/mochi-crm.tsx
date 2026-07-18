@@ -58,7 +58,7 @@ export function MochiCrmInner({ embedded = false }: { embedded?: boolean }) {
     .filter((s) => s.lead_count > 0)
     .map((s) => ({ name: s.source.toLowerCase(), leads: s.lead_count }));
 
-  const pct = (v: number | null) => (v == null ? "—" : `${Math.round(v * 100)}%`);
+  const pct = (v: number | null) => (v == null ? "–" : `${Math.round(v * 100)}%`);
 
   return (
     <div className={embedded ? "space-y-5" : "p-4 sm:p-6 max-w-[1200px] mx-auto space-y-5"}>
@@ -108,7 +108,7 @@ export function MochiCrmInner({ embedded = false }: { embedded?: boolean }) {
         <div className="card-surface px-4 py-3">
           <div className="text-[11px] text-muted-foreground">Compared to prev month</div>
           <div className={`text-[22px] font-medium tabular-nums leading-tight ${h?.prevMonthPct != null && h.prevMonthPct >= 0 ? "text-success-fg" : "text-danger-fg"}`}>
-            {h?.prevMonthPct != null ? `${h.prevMonthPct >= 0 ? "+" : ""}${h.prevMonthPct}%` : "—"}
+            {h?.prevMonthPct != null ? `${h.prevMonthPct >= 0 ? "+" : ""}${h.prevMonthPct}%` : "–"}
           </div>
         </div>
       </div>
@@ -175,7 +175,7 @@ export function MochiCrmInner({ embedded = false }: { embedded?: boolean }) {
           <RateStat label="Lead reply rate" value={pct(d?.replyRate ?? null)} />
           <RateStat
             label="Median response"
-            value={d?.medianResponseMinutes != null ? `${Math.round(d.medianResponseMinutes)}m` : "—"}
+            value={d?.medianResponseMinutes != null ? `${Math.round(d.medianResponseMinutes)}m` : "–"}
           />
         </div>
       </div>

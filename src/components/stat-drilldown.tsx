@@ -114,7 +114,7 @@ export function StatDrilldown({
               style={{ background: color }}
               aria-hidden
             />
-            {label} — drilldown
+            {label} · drilldown
           </DialogTitle>
         </DialogHeader>
 

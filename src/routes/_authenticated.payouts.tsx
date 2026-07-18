@@ -8,7 +8,7 @@ import { cofounderCappedCommission, type CommissionEvent, COFOUNDER_RATE, COFOUN
 import { RevenueTabBar } from "@/components/revenue-tab-bar";
 
 export const Route = createFileRoute("/_authenticated/payouts")({
-  head: () => ({ meta: [{ title: "Payouts — ISA" }] }),
+  head: () => ({ meta: [{ title: "Payouts · ISA" }] }),
   component: Payouts,
 });
 
@@ -349,7 +349,7 @@ function PayoutsInner() {
 
         {/* Setters table */}
         <section className="space-y-2">
-          <h2 className="text-[11px] text-muted-foreground font-semibold">Setters — {(rates.setter_base * 100).toFixed(1)}% base (+ 1% if $5k week)</h2>
+          <h2 className="text-[11px] text-muted-foreground font-semibold">Setters · {(rates.setter_base * 100).toFixed(1)}% base (+ 1% if $5k week)</h2>
           <div className="border border-border bg-card rounded-sm overflow-x-auto">
             {setterRows.length === 0 ? (
               <div className="p-8 text-center text-xs text-muted-foreground">No setter-attributed activity this period.</div>
@@ -374,7 +374,7 @@ function PayoutsInner() {
                       </td>
                       <td className="px-3 py-3 text-right tabular-nums">{r.deals}</td>
                       <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{money(r.cash)}</td>
-                      <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{r.installmentCash > 0 ? money(r.installmentCash) : "—"}</td>
+                      <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{r.installmentCash > 0 ? money(r.installmentCash) : "–"}</td>
                       <td className="px-3 py-3 text-right tabular-nums">{r.weekBonus ? `${((rates.setter_base + 0.01) * 100).toFixed(1)}%` : `${(rates.setter_base * 100).toFixed(1)}%`}</td>
                       <td className="px-4 py-3 text-right tabular-nums font-semibold text-primary">{money(r.total)}</td>
                     </tr>
@@ -393,7 +393,7 @@ function PayoutsInner() {
 
         {/* Closers table */}
         <section className="space-y-2">
-          <h2 className="text-[11px] text-muted-foreground font-semibold">Closers — {(rates.new_close * 100).toFixed(0)}% close-only · {(rates.set_close * 100).toFixed(0)}% set+close</h2>
+          <h2 className="text-[11px] text-muted-foreground font-semibold">Closers · {(rates.new_close * 100).toFixed(0)}% close-only · {(rates.set_close * 100).toFixed(0)}% set+close</h2>
           <div className="border border-border bg-card rounded-sm overflow-x-auto">
             {closerRows.length === 0 ? (
               <div className="p-8 text-center text-xs text-muted-foreground">No closer-attributed activity this period.</div>
@@ -418,7 +418,7 @@ function PayoutsInner() {
                       </td>
                       <td className="px-3 py-3 text-right tabular-nums">{r.deals}</td>
                       <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{money(r.cash)}</td>
-                      <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{r.installmentCash > 0 ? money(r.installmentCash) : "—"}</td>
+                      <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{r.installmentCash > 0 ? money(r.installmentCash) : "–"}</td>
                       <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{money(r.commission)}</td>
                       <td className="px-4 py-3 text-right tabular-nums font-semibold text-primary">{money(r.total)}</td>
                     </tr>

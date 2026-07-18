@@ -477,7 +477,7 @@ export const cancelSet = createServerFn({ method: "POST" })
 
     const { error: upErr } = await sr.from("set_reminders").update({
       status: "cancelled",
-      notes: [row.notes, data.reason ? `Cancelled: ${data.reason}` : "Cancelled — lead did not confirm"].filter(Boolean).join("\n"),
+      notes: [row.notes, data.reason ? `Cancelled: ${data.reason}` : "Cancelled · lead did not confirm"].filter(Boolean).join("\n"),
     }).eq("id", data.id);
     if (upErr) throw new Error(upErr.message);
 

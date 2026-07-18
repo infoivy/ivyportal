@@ -332,7 +332,7 @@ function WeekBlock({
                   <div className="p-2 space-y-1">
                     {daySlots.length === 0 ? (
                       <button onClick={onRepair} className="text-[11px] text-muted-foreground hover:text-muted-foreground italic px-1 underline decoration-dotted">
-                        Slot missing — click to repair
+                        Slot missing · click to repair
                       </button>
                     ) : daySlots.map(s => {
                       const isFilled = s.hook && !/^(TOF|MOF)\s·/.test(s.hook);
@@ -340,7 +340,7 @@ function WeekBlock({
                         <button key={s.id} onClick={() => onOpenItem(s.id)} className="w-full text-left px-2 py-1.5 rounded-sm bg-[var(--background)]/60 hover:bg-[var(--background)] border border-transparent hover:border-border transition">
                           <div className="flex items-center gap-2">
                             {isFilled ? <CheckCircle2 className="h-3 w-3 text-success-fg shrink-0" /> : <Sparkles className="h-3 w-3 text-muted-foreground shrink-0" />}
-                            <span className={`text-xs ${isFilled ? "" : "text-muted-foreground italic"} line-clamp-2`}>{isFilled ? s.hook : "Empty slot — click to draft"}</span>
+                            <span className={`text-xs ${isFilled ? "" : "text-muted-foreground italic"} line-clamp-2`}>{isFilled ? s.hook : "Empty slot · click to draft"}</span>
                           </div>
                           <div className="flex items-center gap-2 mt-1 text-[9px] text-muted-foreground">
                             <span className="uppercase tracking-wider">{s.status}</span>
@@ -416,7 +416,7 @@ function IdeaRow({
             value={text}
             onChange={(e) => setText(e.target.value)}
             onBlur={() => text !== idea.text && onChange(idea.id, { text })}
-            placeholder={idea.stage === "mof" ? "Warm follower angle — story, proof, CTA…" : "Cold-scroll hook — pattern break, insight, identity…"}
+            placeholder={idea.stage === "mof" ? "Warm follower angle · story, proof, CTA…" : "Cold-scroll hook · pattern break, insight, identity…"}
             rows={2}
             className="w-full bg-[var(--background)] border border-[var(--border)] rounded-sm p-1.5 text-xs resize-none focus:outline-none focus:border-border"
           />

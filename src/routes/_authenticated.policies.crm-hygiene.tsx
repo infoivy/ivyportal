@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 export const Route = createFileRoute("/_authenticated/policies/crm-hygiene")({
   head: () => ({
     meta: [
-      { title: "CRM Hygiene Guide — ISA Team" },
+      { title: "CRM Hygiene Guide · ISA Team" },
       { name: "description", content: "Standards for keeping Close CRM clean: what to log, when, and the consequence structure for non-compliance." },
     ],
   }),
@@ -102,11 +102,11 @@ function CrmHygiene() {
             <section id="overview" ref={(el) => { refs.current.overview = el; }} className="scroll-mt-6">
               <SectionHeader icon={Info} kicker="01" title="Overview" />
               <p className="text-muted-foreground leading-relaxed">
-                Every lead we touch — inbound, outbound, referral — lives in Close CRM. This isn't optional record-keeping. Your CRM is your paycheck, your feedback loop, and your promotion case all in one place. This guide defines the standard, the timing, and what happens if the standard slips.
+                Every lead we touch · inbound, outbound, referral · lives in Close CRM. This isn't optional record-keeping. Your CRM is your paycheck, your feedback loop, and your promotion case all in one place. This guide defines the standard, the timing, and what happens if the standard slips.
               </p>
 
               <div className="grid sm:grid-cols-3 gap-3 mt-6">
-                <MiniCard icon={ClipboardCheck} title="What to log" body="Every conversation, every stage change, every objection — no phantom leads." />
+                <MiniCard icon={ClipboardCheck} title="What to log" body="Every conversation, every stage change, every objection · no phantom leads." />
                 <MiniCard icon={Clock} title="When to log it" body="Within the same working session. Never 'I'll catch up on Sunday'." />
                 <MiniCard icon={Users} title="Who owns it" body="The setter who touched the lead. Handoffs are logged, not verbal." />
               </div>
@@ -143,7 +143,7 @@ function CrmHygiene() {
                 <Standard
                   n="05"
                   title="No duplicates, no phantom leads"
-                  body="Search before you create. A lead you added but never actually spoke to is a phantom lead — delete it or mark it correctly. Phantom leads inflate metrics and are treated as data fraud."
+                  body="Search before you create. A lead you added but never actually spoke to is a phantom lead · delete it or mark it correctly. Phantom leads inflate metrics and are treated as data fraud."
                 />
                 <Standard
                   n="06"
@@ -166,7 +166,7 @@ function CrmHygiene() {
                   <div>
                     <p className="font-semibold">The Grace Period</p>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Each team member gets <span className="text-foreground font-medium">two (2) instances</span> of non-compliance per calendar month without penalty. Use them wisely — they reset on the 1st.
+                      Each team member gets <span className="text-foreground font-medium">two (2) instances</span> of non-compliance per calendar month without penalty. Use them wisely · they reset on the 1st.
                     </p>
                   </div>
                 </div>
@@ -215,7 +215,7 @@ function CrmHygiene() {
                   title="Daily"
                   items={[
                     "Log every conversation before signing off",
-                    "Update lead stages as they change — not at end of week",
+                    "Update lead stages as they change · not at end of week",
                     "Submit your EOD with the same numbers Close shows",
                   ]}
                 />
@@ -251,7 +251,7 @@ function CrmHygiene() {
                   <div>
                     <p className="font-semibold">Acknowledgement</p>
                     <p className="text-sm text-muted-foreground mt-1">
-                      By operating as a setter or closer on this team, you acknowledge this policy. Questions or edge cases go to your direct manager before the fact — not after.
+                      By operating as a setter or closer on this team, you acknowledge this policy. Questions or edge cases go to your direct manager before the fact · not after.
                     </p>
                   </div>
                 </div>

@@ -7,7 +7,7 @@ export const getRouter = () => {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 60_000,       // 1min — dashboards feel instant on nav
+        staleTime: 60_000,       // 1min · dashboards feel instant on nav
         gcTime: 5 * 60_000,      // 5min in memory
         refetchOnWindowFocus: false,
         retry: 1,

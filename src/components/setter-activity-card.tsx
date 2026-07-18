@@ -15,7 +15,7 @@ const PERIODS = [
 ] as const;
 
 const fmtDur = (sec: number | null) =>
-  sec == null ? "—" : sec >= 60 ? `${Math.floor(sec / 60)}m ${sec % 60}s` : `${sec}s`;
+  sec == null ? "–" : sec >= 60 ? `${Math.floor(sec / 60)}m ${sec % 60}s` : `${sec}s`;
 
 /**
  * Per-rep activity across both CRMs: dials + call durations from Close,
@@ -100,12 +100,12 @@ export function SetterActivityCard() {
 
       {/* Totals strip */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-x-4 gap-y-3 mb-3">
-        <Total label="Dials" value={c?.totalDials} text={close.isError ? "—" : undefined} loading={close.isLoading} />
-        <Total label="Answered" value={c?.totalAnswered} text={close.isError ? "—" : undefined} loading={close.isLoading} />
-        <Total label="Avg call" text={close.isError ? "—" : c ? fmtDur(c.avgDurationSec) : undefined} loading={close.isLoading} />
-        <Total label="DMs out" value={day ? undefined : mochi.data?.messages?.outbound} text={mochi.isError ? "—" : undefined} loading={!day && mochi.isLoading} />
+        <Total label="Dials" value={c?.totalDials} text={close.isError ? "–" : undefined} loading={close.isLoading} />
+        <Total label="Answered" value={c?.totalAnswered} text={close.isError ? "–" : undefined} loading={close.isLoading} />
+        <Total label="Avg call" text={close.isError ? "–" : c ? fmtDur(c.avgDurationSec) : undefined} loading={close.isLoading} />
+        <Total label="DMs out" value={day ? undefined : mochi.data?.messages?.outbound} text={mochi.isError ? "–" : undefined} loading={!day && mochi.isLoading} />
         {/* CRM census, not summed into EOD sets — same booking must never count twice */}
-        <Total label="Booked · in CRM now" value={booked.data?.booked} text={booked.isError ? "—" : undefined} loading={booked.isLoading} />
+        <Total label="Booked · in CRM now" value={booked.data?.booked} text={booked.isError ? "–" : undefined} loading={booked.isLoading} />
       </div>
 
       {/* Per-rep rows */}
@@ -123,7 +123,7 @@ export function SetterActivityCard() {
                 <span className="text-right w-12 tabular-nums font-medium">{u.dials}</span>
                 <span className="text-right w-14 tabular-nums text-muted-foreground">{u.answered}</span>
                 <span className="text-right w-16 tabular-nums text-muted-foreground">{fmtDur(u.avgDurationSec)}</span>
-                <span className="text-right w-12 tabular-nums text-muted-foreground">{dmByName.get(u.name.toLowerCase()) ?? "—"}</span>
+                <span className="text-right w-12 tabular-nums text-muted-foreground">{dmByName.get(u.name.toLowerCase()) ?? "–"}</span>
               </>
             );
             return pid ? (

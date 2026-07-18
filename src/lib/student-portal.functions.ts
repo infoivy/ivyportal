@@ -3,7 +3,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export type LeaderboardRow = {
   rank: number;
-  name: string;        // first name + last initial — enough to recognize, not doxx
+  name: string;        // first name + last initial · enough to recognize, not doxx
   apps7: number;
   looms7: number;
   interviews7: number;

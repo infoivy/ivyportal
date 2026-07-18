@@ -129,7 +129,7 @@ export function CsmOverview() {
         </div>
         <p className="text-[11px] text-muted-foreground mt-1.5">
           {stats.successRate >= SUCCESS_TARGET
-            ? "At target — keep every student moving."
+            ? "At target · keep every student moving."
             : `${SUCCESS_TARGET}% target · every landed role moves this ${stats.total > 0 ? Math.round(100 / stats.total) : 0} points.`}
         </p>
       </div>
@@ -185,7 +185,7 @@ export function CsmOverview() {
           <div className="text-[11px] text-muted-foreground mb-3">by phase</div>
           {phaseSegments.length === 0 ? (
             <p className="text-[13px] text-muted-foreground py-6 text-center border border-dashed border-border rounded-md">
-              No students in the portal yet — add them on the Students page and this fills in.
+              No students in the portal yet · add them on the Students page and this fills in.
             </p>
           ) : (
             <BreakdownBar segments={phaseSegments} />

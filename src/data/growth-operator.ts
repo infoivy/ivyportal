@@ -445,7 +445,7 @@ export function ivyStarterHooks(): {
 export const EXTRA_DOCTRINE: Playbook[] = [
   {
     id: "ads-p2",
-    title: "Follower ads part 2 — winners",
+    title: "Follower ads part 2 · winners",
     module: "Ads",
     summary: "What to do when a creative wins.",
     localFile: "sops/1B-pvOfhEGCqETuT5Jw0Lk96Ys1-fzCxpXXYdutnutIc.txt",
@@ -456,7 +456,7 @@ export const EXTRA_DOCTRINE: Playbook[] = [
   },
   {
     id: "ads-p3",
-    title: "Follower ads part 3 — advanced",
+    title: "Follower ads part 3 · advanced",
     module: "Ads",
     summary: "Advanced follower ads strategy.",
     localFile: "sops/1_418lCYEz-dRcxbAe1gjBZi7MDc_CKwGVagvlVbsqdc.txt",

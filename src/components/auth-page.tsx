@@ -73,7 +73,7 @@ export function AuthPage() {
       const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
       if (error) throw error;
       applyRememberChoice();
-      toast.success("Account created — you're in. An admin will approve your access shortly.");
+      toast.success("Account created · you're in. An admin will approve your access shortly.");
     } catch (err) {
       toast.error(String((err as Error).message ?? err));
     } finally {
@@ -116,7 +116,7 @@ export function AuthPage() {
 
           {inviteToken && tab === "signup" && (
             <div className="rounded-sm border border-primary/25 bg-primary/10 px-3 py-2 text-xs text-primary">
-              You've been invited to join the ISA Portal. Create your account below — your roles will be assigned automatically when you sign up with your invited email address.
+              You've been invited to join the ISA Portal. Create your account below · your roles will be assigned automatically when you sign up with your invited email address.
             </div>
           )}
 
@@ -160,7 +160,7 @@ export function AuthPage() {
                     redirectTo: `${window.location.origin}/profile`,
                   });
                   if (error) return toast.error(error.message);
-                  toast.success("Reset link sent — check your inbox");
+                  toast.success("Reset link sent · check your inbox");
                 }}
                 className="w-full text-[11px] text-muted-foreground hover:text-foreground motion-safe:transition-colors"
               >Forgot password?</button>

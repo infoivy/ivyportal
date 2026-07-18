@@ -14,7 +14,7 @@ import { deleteTeamMember, setMemberActive, approveAsStudent } from "@/lib/team-
 import { fetchAllTemplates, progressPercent, type OnboardingTemplate } from "@/lib/onboarding";
 
 export const Route = createFileRoute("/_authenticated/team")({
-  head: () => ({ meta: [{ title: "Team — ISA" }] }),
+  head: () => ({ meta: [{ title: "Team · ISA" }] }),
   component: TeamPage,
 });
 

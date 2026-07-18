@@ -12,11 +12,11 @@ export function SelectField({
   value,
   onChange,
   options,
-  placeholder = "— Select —",
+  placeholder = "– Select –",
   className,
   disabled,
   allowEmpty = false,
-  emptyLabel = "— None —",
+  emptyLabel = "– None –",
 }: {
   value: string;
   onChange: (v: string) => void;

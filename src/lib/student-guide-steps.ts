@@ -17,28 +17,28 @@ export const START_HERE_STEPS: GuideStep[] = [
   {
     key: "typeform",
     title: "Fill out your onboarding form",
-    body: "You received a Typeform right after payment — fill it out first so the team knows exactly where you're starting from. Check your email/WhatsApp if you can't find it.",
+    body: "You received a Typeform right after payment. Fill it out first so the team knows exactly where you're starting from. Check your email/WhatsApp if you can't find it.",
   },
   {
     key: "offer_board",
     title: "Join the offer board",
-    body: "The offer board is where the live setter positions are. Join it now — everything after training happens there.",
+    body: "The offer board is where the live setter positions are. Join it now, everything after training happens there.",
   },
   {
     key: "offer_board_loom",
     title: "Watch the offer board walkthrough Loom",
-    body: "The Loom attached in the offer board shows exactly how to use it — roles, applications, what good looks like. Watch it fully before you touch anything else there.",
+    body: "The Loom attached in the offer board shows exactly how to use it: roles, applications, what good looks like. Watch it fully before you touch anything else there.",
   },
   {
     key: "skool_training",
     title: "Finish ALL the training videos in Skool",
-    body: "Every video, in order. This is your foundation — the group calls and looms only click once you've seen the full system.",
+    body: "Every video, in order. This is your foundation: the group calls and looms only click once you've seen the full system.",
     link: { to: "/training", label: "Open training" },
   },
   {
     key: "offer_board_course",
     title: "Complete the offer board course",
-    body: "Inside the offer board itself there's a course on how to run it end to end. Go through the whole thing — it's the last step before your portal unlocks.",
+    body: "Inside the offer board itself there's a course on how to run it end to end. Go through the whole thing, it's the last step before your portal unlocks.",
   },
 ];
 

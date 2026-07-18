@@ -122,7 +122,7 @@ export function GrowthOperatorHome({
               </div>
               <p className="text-[12px] text-muted-foreground mt-0.5 max-w-xl">
                 DFY cockpit for the profile funnel. Doctrine from Grow Acquisition. This is your
-                Content home — not a dead Google Drive.
+                Content home · not a dead Google Drive.
               </p>
               <p className="text-[10px] text-muted-foreground/80 mt-1 font-mono">{DOCTRINE_NOTE}</p>
             </div>
@@ -156,7 +156,7 @@ export function GrowthOperatorHome({
         <div className="grid sm:grid-cols-3 gap-0 divide-y sm:divide-y-0 sm:divide-x divide-[var(--border)]">
           <Stat
             label="This week slots"
-            value={`${filledSlotCount ?? "—"} / ${totalSlots}`}
+            value={`${filledSlotCount ?? "–"} / ${totalSlots}`}
             hint={emptySlots > 0 ? `${emptySlots} still empty or placeholder` : "Plan looks filled"}
             tone={emptySlots > 0 ? "warn" : "ok"}
           />

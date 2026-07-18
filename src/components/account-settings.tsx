@@ -17,7 +17,7 @@ export function EmailCard({ currentEmail }: { currentEmail: string }) {
     const { error } = await supabase.auth.updateUser({ email: next });
     setBusy(false);
     if (error) return toast.error(error.message);
-    toast.success("Check both inboxes — the change confirms by email");
+    toast.success("Check both inboxes · the change confirms by email");
     setEmail("");
   };
 

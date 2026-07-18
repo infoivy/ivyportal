@@ -108,14 +108,14 @@ test("requires honest attendance against the schedule and concrete reflection", 
       { callsAttended: ["Xyz"], oneOnOneCalls: null, implementation: "Applied it", nextWeekCommitment: "Five apps" },
       schedule,
     ),
-    "Attended calls don't match this week's call schedule — reload and try again.",
+    "Attended calls don't match this week's call schedule. Reload and try again.",
   );
   assert.equal(
     validateStudentWeeklyEod(
       { callsAttended: ["Mon", "Mon"], oneOnOneCalls: null, implementation: "Applied it", nextWeekCommitment: "Five apps" },
       schedule,
     ),
-    "Attended calls don't match this week's call schedule — reload and try again.",
+    "Attended calls don't match this week's call schedule. Reload and try again.",
   );
   assert.equal(
     validateStudentWeeklyEod(

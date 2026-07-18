@@ -99,7 +99,7 @@ export function CashLeaderboard({ compact = false }: { compact?: boolean }) {
               <div className="text-sm tabular-nums">{money(r.cash)}</div>
               {i === 0 && (
                 <span
-                  title="Top closer this week — eligible for double bookings next week per the Double Bookings SOP"
+                  title="Top closer this week · eligible for double bookings next week per the Double Bookings SOP"
                   className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/25"
                 >
                   <Zap className="h-3 w-3" /> 2× bookings

@@ -28,7 +28,7 @@ export const signUpEmail = createServerFn({ method: "POST" })
     });
     if (error) {
       if (/already|exists|registered/i.test(error.message)) {
-        throw new Error("An account with this email already exists — try signing in instead.");
+        throw new Error("An account with this email already exists · try signing in instead.");
       }
       throw new Error(error.message);
     }

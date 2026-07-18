@@ -30,7 +30,7 @@ type PL = {
 const METHODS: PaymentMethod[] = ["stripe", "whop", "wise", "paypal", "bank", "other"];
 
 export const Route = createFileRoute("/_authenticated/closer-resources")({
-  head: () => ({ meta: [{ title: "Closer Resources — ISA Team" }] }),
+  head: () => ({ meta: [{ title: "Closer Resources · ISA Team" }] }),
   component: CloserResources,
 });
 
@@ -75,16 +75,16 @@ function CloserResources() {
 
   const categorize = (r: PL): string => {
     if (r.method === "whop") return "Whop (main gateway)";
-    if (r.method === "wise" && r.currency === "USD") return "Wise USD — bank transfer";
-    if (r.method === "wise" && r.currency === "EUR") return "Wise EUR — SEPA";
+    if (r.method === "wise" && r.currency === "USD") return "Wise USD · bank transfer";
+    if (r.method === "wise" && r.currency === "EUR") return "Wise EUR · SEPA";
     if (r.method === "other") return "Revolut";
     if (r.method === "bank") return "YO (UAE bank)";
     return "Other";
   };
   const CATEGORY_ORDER = [
     "Whop (main gateway)",
-    "Wise USD — bank transfer",
-    "Wise EUR — SEPA",
+    "Wise USD · bank transfer",
+    "Wise EUR · SEPA",
     "Revolut",
     "YO (UAE bank)",
     "Other",

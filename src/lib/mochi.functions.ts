@@ -51,7 +51,7 @@ async function requireMoneyAccess(context: Ctx) {
 }
 
 /* Tokens are read/written with the service-role client: callers (setters
-   included) never see the credentials, only derived numbers — and the RLS
+   included) never see the credentials, only derived numbers · and the RLS
    admin-only policy on service_credentials stays intact for direct access. */
 async function readCreds(_context: Ctx) {
   const { data } = await supabaseAdmin
@@ -585,7 +585,7 @@ export const getFinanceRevenue = createServerFn({ method: "GET" })
         const d = t.occurred_at.slice(0, 10);
         return d >= data.from && d <= data.to;
       });
-    } catch { /* provider not synced — logged side still returns */ }
+    } catch { /* provider not synced · logged side still returns */ }
 
     const dayDiff = (a: string, b: string) => Math.abs((new Date(a).getTime() - new Date(b).getTime()) / 86400000);
     const unmatchedWhop: FinanceRevenue["unmatchedWhop"] = [];

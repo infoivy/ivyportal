@@ -13,7 +13,7 @@ import { ArrowLeft, Pencil, Trash2, ExternalLink as ExtIcon, ListTree, Search as
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/knowledge/$slug")({
-  head: () => ({ meta: [{ title: "Knowledge — ISA Team" }] }),
+  head: () => ({ meta: [{ title: "Knowledge · ISA Team" }] }),
   component: KnowledgeDoc,
 });
 
@@ -135,7 +135,7 @@ function KnowledgeDoc() {
         <Card className="p-6 text-center bg-[var(--card)]">
           <FileText className="h-6 w-6 mx-auto text-muted-foreground/50 mb-2" />
           <p className="text-sm text-muted-foreground">
-            Content missing — {isAdmin ? "click Edit to paste it in." : "ask an admin to fill this in."}
+            Content missing · {isAdmin ? "click Edit to paste it in." : "ask an admin to fill this in."}
           </p>
         </Card>
       ) : filteredContent ? (

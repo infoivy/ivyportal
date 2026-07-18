@@ -11,7 +11,7 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/_authenticated/sops/isa-setting-process")({
   head: () => ({
     meta: [
-      { title: "Ivy Sales Academy — Setting Mastery" },
+      { title: "Ivy Sales Academy · Setting Mastery" },
       { name: "description", content: "Complete system: conversation flows, scripts, objection handling, psychology, engagement & operations" },
     ],
   }),
@@ -735,7 +735,7 @@ Losses / lessons:
 Objections seen today:
 Tomorrow's focus:`;
 
-const composeEod = (c: Counter, body: string) => `EOD REPORT — ${c.date}
+const composeEod = (c: Counter, body: string) => `EOD REPORT · ${c.date}
 
 Followers contacted: ${c.contacted}
 Dials: ${c.dials}

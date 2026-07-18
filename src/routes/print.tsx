@@ -4,7 +4,7 @@ import { SECTIONS } from "@/data/sections";
 export const Route = createFileRoute("/print")({
   head: () => ({
     meta: [
-      { title: "ISA — Setter One-Pager (Print)" },
+      { title: "ISA · Setter One-Pager (Print)" },
       { name: "description", content: "Print-ready single-column view of the ISA setter playbook" },
       { name: "robots", content: "noindex" },
     ],
@@ -38,7 +38,7 @@ function Print() {
       </div>
       <div className="print-body max-w-3xl mx-auto px-6 py-8 space-y-8">
         <header className="border-b border-neutral-300 pb-4">
-          <h1 className="text-2xl font-black">Ivy Sales Academy — Setting Mastery</h1>
+          <h1 className="text-2xl font-black">Ivy Sales Academy · Setting Mastery</h1>
           <p className="text-sm text-neutral-600 mt-1">Complete system: conversation flows, scripts, objection handling, psychology, engagement & operations.</p>
         </header>
         {SECTIONS.map(section => (

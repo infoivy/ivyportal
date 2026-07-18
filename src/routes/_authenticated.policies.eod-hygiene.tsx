@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 export const Route = createFileRoute("/_authenticated/policies/eod-hygiene")({
   head: () => ({
     meta: [
-      { title: "EOD & Meetings Policy — ISA Team" },
+      { title: "EOD & Meetings Policy · ISA Team" },
       { name: "description", content: "The daily EOD standard for every role, meeting attendance rules, and the consequence structure for misses." },
     ],
   }),
@@ -64,7 +64,7 @@ function EodHygiene() {
           <div className="min-w-0">
             <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">EOD &amp; Meetings Policy</h1>
             <p className="mt-2 text-muted-foreground max-w-2xl">
-              The EOD is the team's heartbeat. Every role files one, every single day — setters, closers, coaches, and CSMs. This page defines the standard, the timing, and what happens when it slips.
+              The EOD is the team's heartbeat. Every role files one, every single day · setters, closers, coaches, and CSMs. This page defines the standard, the timing, and what happens when it slips.
             </p>
             <div className="mt-3 flex items-center gap-2 text-xs">
               <Badge variant="outline">v1.0</Badge>
@@ -103,13 +103,13 @@ function EodHygiene() {
             <section id="overview" ref={(el) => { refs.current.overview = el; }} className="scroll-mt-6">
               <SectionHeader icon={Info} kicker="01" title="Overview" />
               <p className="text-muted-foreground leading-relaxed">
-                Everything this team measures — compliance, funnels, payouts, at-risk students, your own streak — is built from EODs. One missing report doesn't just hide your day; it corrupts the team's picture of reality. That's why the standard is absolute: <span className="text-foreground font-medium">you do not miss an EOD. Ever.</span> The same applies to team meetings: if a meeting is on the calendar, you are in it.
+                Everything this team measures · compliance, funnels, payouts, at-risk students, your own streak · is built from EODs. One missing report doesn't just hide your day; it corrupts the team's picture of reality. That's why the standard is absolute: <span className="text-foreground font-medium">you do not miss an EOD. Ever.</span> The same applies to team meetings: if a meeting is on the calendar, you are in it.
               </p>
 
               <div className="grid sm:grid-cols-3 gap-3 mt-6">
                 <MiniCard icon={ClipboardCheck} title="Who files" body="Everyone with a role: setters, closers, coaches, CSMs. No role is exempt, no seniority is exempt." />
-                <MiniCard icon={Clock} title="When" body="Every day before 23:59 — seven days a week. There are no off days and no 'quiet days'. Zero is a valid answer." />
-                <MiniCard icon={Users} title="Meetings" body="Team meetings are mandatory, on time, prepared. Absence needs founder approval BEFORE the meeting — not an apology after." />
+                <MiniCard icon={Clock} title="When" body="Every day before 23:59 · seven days a week. There are no off days and no 'quiet days'. Zero is a valid answer." />
+                <MiniCard icon={Users} title="Meetings" body="Team meetings are mandatory, on time, prepared. Absence needs founder approval BEFORE the meeting · not an apology after." />
               </div>
             </section>
 
@@ -124,27 +124,27 @@ function EodHygiene() {
                 <Standard
                   n="01"
                   title="One EOD, every day, before 23:59"
-                  body="Seven days a week. Sick, travelling, slow day — the report still goes in, even if every number is zero. The form autosaves a draft, works on your phone, and takes under three minutes. 'I forgot' is a miss."
+                  body="Seven days a week. Sick, travelling, slow day · the report still goes in, even if every number is zero. The form autosaves a draft, works on your phone, and takes under three minutes. 'I forgot' is a miss."
                 />
                 <Standard
                   n="02"
-                  title="Zero is a valid answer — silence is not"
+                  title="Zero is a valid answer · silence is not"
                   body="A day with no dials is a data point. A day with no report is a hole. Submitting honest zeros is fully compliant; not submitting is the only way to fail this policy."
                 />
                 <Standard
                   n="03"
                   title="Numbers match reality"
-                  body="Your EOD must agree with the CRM, the calendar, and the revenue log. Dials you didn't make, sets that don't exist in the calendar, or cash that isn't in the deal log are treated as data fraud — not as a miss."
+                  body="Your EOD must agree with the CRM, the calendar, and the revenue log. Dials you didn't make, sets that don't exist in the calendar, or cash that isn't in the deal log are treated as data fraud · not as a miss."
                 />
                 <Standard
                   n="04"
-                  title="Same-day only — no backfilling"
+                  title="Same-day only · no backfilling"
                   body="EODs are written the day they happen, while it's fresh. Backdated reports filed days later don't restore compliance; the miss already happened and the data is already suspect."
                 />
                 <Standard
                   n="05"
                   title="Wins and blockers are real sentences"
-                  body="One or two honest lines. 'Good day' is not a win; 'nothing' is not a blocker if you rebooked three no-shows. This is where coaching and fixes come from — write it like your manager reads it, because they do."
+                  body="One or two honest lines. 'Good day' is not a win; 'nothing' is not a blocker if you rebooked three no-shows. This is where coaching and fixes come from · write it like your manager reads it, because they do."
                 />
                 <Standard
                   n="06"
@@ -180,7 +180,7 @@ function EodHygiene() {
                   Icon={AlertTriangle}
                   headerLabel="1st Miss"
                   badge="Warning"
-                  title="Formal Written Warning — same day"
+                  title="Formal Written Warning · same day"
                   body="Your manager logs it and you hear about it the next morning, not next week. The expectation is that this is the only one you ever collect."
                 />
                 <ConsequenceStep
@@ -208,23 +208,23 @@ function EodHygiene() {
             <section id="implementation" ref={(el) => { refs.current.implementation = el; }} className="scroll-mt-6">
               <SectionHeader icon={ListChecks} kicker="04" title="Implementation" />
               <p className="text-muted-foreground leading-relaxed mb-6">
-                How this actually runs day-to-day — and how the portal makes it nearly impossible to miss by accident.
+                How this actually runs day-to-day · and how the portal makes it nearly impossible to miss by accident.
               </p>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <ImplCard
                   title="Daily (you)"
                   items={[
-                    "Submit on the EOD Reports page before 23:59 — phone works fine",
+                    "Submit on the EOD Reports page before 23:59 · phone works fine",
                     "The amber 'EOD due' pill in the top bar means you haven't filed yet today",
                     "The form autosaves a draft, so start it early and finish at night",
-                    "Protect your streak — it's on the page for a reason",
+                    "Protect your streak · it's on the page for a reason",
                   ]}
                 />
                 <ImplCard
                   title="Daily (management)"
                   items={[
-                    "Sales page shows who filed, who hit KPI, who is missing — live",
+                    "Sales page shows who filed, who hit KPI, who is missing · live",
                     "'Missed yesterday' list is chased before 10:00 with the Copy-nudge button",
                     "Every miss is logged as an instance the same day",
                   ]}
@@ -234,7 +234,7 @@ function EodHygiene() {
                   items={[
                     "Compliance and streaks reviewed in the team meeting",
                     "EOD numbers spot-checked against CRM and revenue (see CRM Hygiene)",
-                    "Repeated Friday–Sunday softness gets called out — weekends count",
+                    "Repeated Friday–Sunday softness gets called out · weekends count",
                   ]}
                 />
                 <ImplCard
@@ -253,7 +253,7 @@ function EodHygiene() {
                   <div>
                     <p className="font-semibold">Acknowledgement</p>
                     <p className="text-sm text-muted-foreground mt-1">
-                      By holding any role on this team, you acknowledge this policy. Edge cases go to a founder before the deadline — not after. The report takes three minutes; the trust it builds takes months. Don't trade one for the other.
+                      By holding any role on this team, you acknowledge this policy. Edge cases go to a founder before the deadline · not after. The report takes three minutes; the trust it builds takes months. Don't trade one for the other.
                     </p>
                   </div>
                 </div>

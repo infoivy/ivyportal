@@ -14,7 +14,7 @@ import { DateField } from "@/components/ui/date-field";
 import { SelectField } from "@/components/ui/select-field";
 
 export const Route = createFileRoute("/_authenticated/installments")({
-  head: () => ({ meta: [{ title: "Installments — ISA" }] }),
+  head: () => ({ meta: [{ title: "Installments · ISA" }] }),
   component: InstallmentsPage,
 });
 
@@ -99,7 +99,7 @@ function InstallmentsPage() {
     return map;
   }, [payments]);
 
-  const teamName = (id: string | null) => id ? (team.find(t => t.id === id)?.display_name ?? id.slice(0,8)) : "—";
+  const teamName = (id: string | null) => id ? (team.find(t => t.id === id)?.display_name ?? id.slice(0,8)) : "–";
 
   const filtered = installments.filter(i =>
     !q || i.student_name.toLowerCase().includes(q.toLowerCase())
@@ -135,7 +135,7 @@ function InstallmentsPage() {
             );
             if (!go) return;
           }
-        } catch { /* verification unavailable — proceed, reconciliation will flag it */ }
+        } catch { /* verification unavailable · proceed, reconciliation will flag it */ }
       }
       patch.paid_at = new Date().toISOString();
     } else {
@@ -172,7 +172,7 @@ function InstallmentsPage() {
 
   const nameFor = (p: Payment) => {
     const inst = installments.find(i => i.id === p.installment_id);
-    return inst?.student_name ?? "—";
+    return inst?.student_name ?? "–";
   };
 
   return (
@@ -302,7 +302,7 @@ function InstallmentsPage() {
                     </div>
                   );
                 })}
-                {pays.length === 0 && <div className="px-4 py-3 text-xs text-muted-foreground">No payments scheduled — edit this plan to add some.</div>}
+                {pays.length === 0 && <div className="px-4 py-3 text-xs text-muted-foreground">No payments scheduled · edit this plan to add some.</div>}
               </div>
             </section>
           );
@@ -461,7 +461,7 @@ function PlanEditor({
         <div className="p-4 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <Field label="Existing student">
-              <SelectField value={studentId} onChange={(v) => setStudentId(v)} options={students.map((s) => ({ value: s.id, label: s.full_name }))} allowEmpty emptyLabel="— None (enter name manually) —" placeholder="— None (enter name manually) —" />
+              <SelectField value={studentId} onChange={(v) => setStudentId(v)} options={students.map((s) => ({ value: s.id, label: s.full_name }))} allowEmpty emptyLabel="– None (enter name manually) –" placeholder="– None (enter name manually) –" />
             </Field>
             <Field label="Student name">
               <input value={studentName} onChange={e => setStudentName(e.target.value)} placeholder="e.g. Jane Doe" className="w-full px-2 py-1.5 rounded border border-border bg-background text-sm" />

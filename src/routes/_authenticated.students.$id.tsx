@@ -18,7 +18,7 @@ import {
   AlertTriangle, MessageCircle, GraduationCap, Activity, Briefcase } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/students/$id")({
-  head: () => ({ meta: [{ title: "Student — ISA" }] }),
+  head: () => ({ meta: [{ title: "Student · ISA" }] }),
   validateSearch: (s: Record<string, unknown>): { setup?: string } =>
     typeof s.setup === "string" ? { setup: s.setup } : {},
   component: StudentDetail,
@@ -368,7 +368,7 @@ function StudentDetail() {
                 onClick={() => setPaymentSetupOpen(true)}
                 className="mt-2 inline-flex items-center gap-1.5 text-caption font-medium px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 motion-safe:transition-colors"
               >
-                Set up payment — PIF or installments
+                Set up payment · PIF or installments
               </button>
             )}
             <div className="text-xs text-muted-foreground mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -399,7 +399,7 @@ function StudentDetail() {
                   <SelectChip
                     value={student.eod_exempt ? "off" : "on"}
                     onChange={v => update({ eod_exempt: v === "off" } as never)}
-                    options={[{ v: "on", l: "tracked" }, { v: "off", l: "off — no alerts" }]}
+                    options={[{ v: "on", l: "tracked" }, { v: "off", l: "off · no alerts" }]}
                     color={student.eod_exempt ? "zinc" : "emerald"}
                     prefix="EODs: "
                   />
@@ -436,7 +436,7 @@ function StudentDetail() {
                 {!student.onboarding_completed_at && (
                   <>
                     <span className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-warning-fg border border-warning/25 bg-warning-bg px-1.5 py-0.5 rounded-sm">
-                      <AlertTriangle className="h-2.5 w-2.5" /> Start Here incomplete — portal locked
+                      <AlertTriangle className="h-2.5 w-2.5" /> Start Here incomplete · portal locked
                     </span>
                     <button
                       onClick={() => update({ onboarding_completed_at: new Date().toISOString() })}
@@ -449,7 +449,7 @@ function StudentDetail() {
                 {student.onboarding_completed_at && !["applying", "offer_won", "testimonial", "paused"].includes(student.phase) && (
                   <>
                     <span className="text-[10px] uppercase tracking-wider text-muted-foreground border border-border bg-muted px-1.5 py-0.5 rounded-sm">
-                      Loom review stage — 3/day to the review chat
+                      Loom review stage · 3/day to the review chat
                     </span>
                     <button
                       onClick={() => update({ phase: "applying" })}
@@ -488,7 +488,7 @@ function StudentDetail() {
         />
         <StatCard
           label="Rating trend"
-          value={avgRating ? avgRating.toFixed(1) : "—"}
+          value={avgRating ? avgRating.toFixed(1) : "–"}
           sub={ratings.length ? `${ratings.length} rated calls` : "No ratings yet"}
           accent="amber"
           icon={<Star className="h-3 w-3" />}
@@ -503,14 +503,14 @@ function StudentDetail() {
         />
         <StatCard
           label="Since last 1:1"
-          value={lastCallDaysAgo == null ? "—" : `${lastCallDaysAgo}d`}
+          value={lastCallDaysAgo == null ? "–" : `${lastCallDaysAgo}d`}
           sub={calls.length ? `${calls.length} calls total` : "No calls yet"}
           accent={lastCallDaysAgo != null && lastCallDaysAgo > 14 ? "rose" : "sky"}
           icon={<CalIcon className="h-3 w-3" />}
         />
         <StatCard
           label="Since last EOD"
-          value={lastEodDaysAgo == null ? "—" : `${lastEodDaysAgo}d`}
+          value={lastEodDaysAgo == null ? "–" : `${lastEodDaysAgo}d`}
           sub={eods.length ? `${eods.length} EODs total` : "None submitted"}
           accent={lastEodDaysAgo != null && lastEodDaysAgo >= 5 ? "rose" : "emerald"}
           icon={<FileText className="h-3 w-3" />}

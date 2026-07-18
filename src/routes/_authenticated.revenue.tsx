@@ -41,7 +41,7 @@ import { SelectField } from "@/components/ui/select-field";
 import { BlurMoney } from "@/components/blur-money";
 
 export const Route = createFileRoute("/_authenticated/revenue")({
-  head: () => ({ meta: [{ title: "Revenue — ISA Team" }] }),
+  head: () => ({ meta: [{ title: "Revenue · ISA Team" }] }),
   component: RevenuePage,
 });
 
@@ -516,10 +516,10 @@ function RevenueInner() {
               {deals.slice(0, 25).map((d) => {
                 const canEdit = isAdmin || d.created_by === user?.id;
                 const closer = closers.find((c) => c.id === d.closer_id);
-                const closerName = closer?.display_name || "—";
+                const closerName = closer?.display_name || "–";
                 const setterName = d.setter_id
-                  ? setters.find((s) => s.id === d.setter_id)?.display_name || "—"
-                  : "—";
+                  ? setters.find((s) => s.id === d.setter_id)?.display_name || "–"
+                  : "–";
                 const rateLabel = closerRateLabel(d, rates, closer?.commission_cap_pct);
                 return (
                   <tr key={d.id} className="border-t border-[var(--border)]">
@@ -922,7 +922,7 @@ function LogDealDialog({
                 value={studentId}
                 onChange={setStudentId}
                 options={students.map((s) => ({ value: s.id, label: s.full_name }))}
-                placeholder="— Select student —"
+                placeholder="– Select student –"
                 className="h-9 text-sm"
                 disabled={!!editing}
               />
@@ -954,7 +954,7 @@ function LogDealDialog({
                 onChange={setSetterId}
                 options={setters.map((s) => ({ value: s.id, label: s.display_name || s.id.slice(0, 8) }))}
                 allowEmpty
-                placeholder="— None —"
+                placeholder="– None –"
                 className="h-9 text-sm"
               />
               <p className="text-[10px] text-muted-foreground">Attribute to a setter for base + PIF-bonus commission.</p>
@@ -978,11 +978,11 @@ function LogDealDialog({
                 className={`text-left p-3 rounded-lg border transition ${programType === "Group Expertise Pathway" ? "border-primary/40 bg-primary/10" : "border-[var(--border)] bg-[var(--card)] hover:bg-muted"}`}
               >
                 <div className="text-sm font-medium">Group Expertise Pathway</div>
-                <div className="text-[11px] text-muted-foreground mt-0.5">Group coaching only — no 1:1 calls</div>
+                <div className="text-[11px] text-muted-foreground mt-0.5">Group coaching only · no 1:1 calls</div>
               </button>
             </div>
             {programType && !["1:1 Pathway", "Group Expertise Pathway"].includes(programType) && (
-              <p className="text-[11px] text-muted-foreground">Current value: "{programType}" — picking a tile will replace it.</p>
+              <p className="text-[11px] text-muted-foreground">Current value: "{programType}" · picking a tile will replace it.</p>
             )}
           </div>
 

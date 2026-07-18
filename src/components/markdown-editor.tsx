@@ -56,7 +56,7 @@ export function MarkdownEditor({
           </Button>
         ))}
         <span className="ml-auto text-[11px] text-muted-foreground self-center">
-          Paste from Google Docs — formatting auto-converts to markdown.
+          Paste from Google Docs · formatting auto-converts to markdown.
         </span>
       </div>
       <div className={tab === "split" ? "grid md:grid-cols-2 gap-3" : ""}>

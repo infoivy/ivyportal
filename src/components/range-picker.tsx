@@ -100,7 +100,7 @@ export function RangePicker({ value, onChange }: { value: DateRange; onChange: (
                 ? draft.to && format(draft.to, "yyyy-MM-dd") !== format(draft.from, "yyyy-MM-dd")
                   ? `${format(draft.from, "MMM d")} → ${format(draft.to, "MMM d")}`
                   : `${format(draft.from, "EEE, MMM d")} · one day`
-                : "Pick a day — tap again for a range"}
+                : "Pick a day · tap again for a range"}
             </span>
             <div className="flex gap-1.5">
               <Button size="sm" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>

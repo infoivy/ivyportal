@@ -129,7 +129,7 @@ export function RecordingDay({ onOpenItem }: { onOpenItem: (id: string) => void 
               <div className="flex-1 min-w-0 space-y-0.5">
                 <button onClick={() => onOpenItem(s.id)} className="text-left w-full">
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-muted-foreground">{s.scheduled_date ? format(parseISO(s.scheduled_date), "EEE MMM d") : "—"}</span>
+                    <span className="text-[10px] text-muted-foreground">{s.scheduled_date ? format(parseISO(s.scheduled_date), "EEE MMM d") : "–"}</span>
                     {s.funnel_stage && <span className={`text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-sm border ${stageColor}`}>{s.funnel_stage}</span>}
                     <span className="text-[9px] uppercase tracking-wider text-muted-foreground">{s.status}</span>
                     {s.format && <span className="text-[9px] text-muted-foreground">· {s.format}</span>}
@@ -163,7 +163,7 @@ export function RecordingDay({ onOpenItem }: { onOpenItem: (id: string) => void 
         })}
         {ordered.length === 0 && (
           <div className="text-xs text-muted-foreground text-center p-8 border border-[var(--border)] rounded-sm">
-            No slots this fortnight yet — open the Weekly plan to provision.
+            No slots this fortnight yet · open the Weekly plan to provision.
           </div>
         )}
       </div>
@@ -174,7 +174,7 @@ export function RecordingDay({ onOpenItem }: { onOpenItem: (id: string) => void 
           <div className="m-auto w-full max-w-4xl bg-[var(--card)] border border-border rounded-sm" onClick={e => e.stopPropagation()}>
             <div className="p-4 border-b border-[var(--border)] flex items-center justify-between">
               <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                {focusIdx! + 1} of {ordered.length} · {current.scheduled_date ? format(parseISO(current.scheduled_date), "EEE MMM d") : "—"}
+                {focusIdx! + 1} of {ordered.length} · {current.scheduled_date ? format(parseISO(current.scheduled_date), "EEE MMM d") : "–"}
               </div>
               <button onClick={() => setFocusIdx(null)} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
             </div>

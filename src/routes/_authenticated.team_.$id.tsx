@@ -12,7 +12,7 @@ import { ArrowLeft, Flame, GraduationCap, PhoneCall, Sparkles, Target } from "lu
 import { ResponsiveContainer, ComposedChart, Area, Line, XAxis, YAxis, Tooltip } from "recharts";
 
 export const Route = createFileRoute("/_authenticated/team_/$id")({
-  head: () => ({ meta: [{ title: "Team member — ISA Portal" }] }),
+  head: () => ({ meta: [{ title: "Team member · ISA Portal" }] }),
   component: MemberPage,
 });
 
@@ -152,12 +152,12 @@ function MemberPage() {
     hunger = Math.max(0, Math.min(100, hunger));
 
     const suggestions: string[] = [];
-    if (submissionRate < 80) suggestions.push(`Submitted ${last14.length} of the last 14 EODs — consistency is the first conversation to have.`);
-    if (kpiRate != null && kpiRate < 50 && kpiCfg) suggestions.push(`Hitting KPI ${kpiRate}% of days — drill the daily ${kpiCfg.target} ${kpiCfg.label} + ${kpiCfg.sets} sets in the next roleplay.`);
-    if (trendPct != null && trendPct < -20) suggestions.push(`Volume is down ${Math.abs(trendPct)}% vs last week — check in before it becomes a pattern.`);
-    if (trendPct != null && trendPct > 20) suggestions.push(`Volume is up ${trendPct}% week over week — recognize it publicly in Team Chat.`);
-    if (totals7.sets > 0 && totals7.shows === 0) suggestions.push("Sets are booking but nothing is showing — review confirmation flow (72h window, reminders).");
-    if (streak >= 7) suggestions.push(`${streak}-day streak — protect it; streaks are the habit engine.`);
+    if (submissionRate < 80) suggestions.push(`Submitted ${last14.length} of the last 14 EODs · consistency is the first conversation to have.`);
+    if (kpiRate != null && kpiRate < 50 && kpiCfg) suggestions.push(`Hitting KPI ${kpiRate}% of days · drill the daily ${kpiCfg.target} ${kpiCfg.label} + ${kpiCfg.sets} sets in the next roleplay.`);
+    if (trendPct != null && trendPct < -20) suggestions.push(`Volume is down ${Math.abs(trendPct)}% vs last week · check in before it becomes a pattern.`);
+    if (trendPct != null && trendPct > 20) suggestions.push(`Volume is up ${trendPct}% week over week · recognize it publicly in Team Chat.`);
+    if (totals7.sets > 0 && totals7.shows === 0) suggestions.push("Sets are booking but nothing is showing · review confirmation flow (72h window, reminders).");
+    if (streak >= 7) suggestions.push(`${streak}-day streak · protect it; streaks are the habit engine.`);
     if (suggestions.length === 0) suggestions.push("Steady across the board. Raise targets slightly to keep the edge.");
 
     const daily = [...Array(30)].map((_, i) => {
@@ -218,7 +218,7 @@ function MemberPage() {
         <Stat label="Sets · 7d" value={analysis?.totals7.sets} />
         <Stat label="Shows · 7d" value={analysis?.totals7.shows} />
         <Stat label="EOD streak" value={analysis?.streak ?? 0} suffix="d" />
-        <Stat label="KPI hit · 14d" value={analysis?.kpiRate ?? undefined} suffix="%" placeholder="—" />
+        <Stat label="KPI hit · 14d" value={analysis?.kpiRate ?? undefined} suffix="%" placeholder="–" />
       </div>
 
       {/* Signals */}
@@ -264,7 +264,7 @@ function MemberPage() {
           <div>
             <div className="text-[11px] text-muted-foreground">Avg rating</div>
             <div className="text-[18px] font-medium tabular-nums text-foreground leading-tight">
-              {coachQ.data.avgRating != null ? coachQ.data.avgRating.toFixed(1) : "—"}
+              {coachQ.data.avgRating != null ? coachQ.data.avgRating.toFixed(1) : "–"}
               <span className="text-[11px] text-muted-foreground font-normal"> · {coachQ.data.rated} rated</span>
             </div>
           </div>

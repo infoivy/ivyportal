@@ -32,7 +32,7 @@ import {
 } from "@/lib/student-weekly-eod";
 
 export const Route = createFileRoute("/_authenticated/student-portal")({
-  head: () => ({ meta: [{ title: "Student Portal — ISA" }] }),
+  head: () => ({ meta: [{ title: "Student Portal · ISA" }] }),
   component: StudentPortal,
 });
 
@@ -481,7 +481,7 @@ function StudentPortal() {
         await completeOnboardingFn();
         setConfetti(true);
         setTimeout(() => setConfetti(false), 2500);
-        toast.success("That's onboarding done — your full portal is unlocked. 🎉");
+        toast.success("That's onboarding done. Your full portal is unlocked. 🎉");
         qc.invalidateQueries({ queryKey: ["student-portal-locked"] });
         await load();
       } catch (e) {
@@ -545,7 +545,7 @@ function StudentPortal() {
             <span dir="rtl">السلام عليكم ورحمة الله وبركاته</span>, {first} <span className="inline-block">👋</span>
           </h1>
           <p className="text-xs text-muted-foreground mt-1">
-            Welcome to Ivy Sales Academy. Work through the steps below — the rest of your portal unlocks when they're all done.
+            Welcome to Ivy Sales Academy. Work through the steps below. The rest of your portal unlocks when they're all done.
           </p>
         </section>
         <StartHereGuide done={guideDone} locked unlocking={unlocking} onToggle={toggleGuideStep} />
@@ -586,7 +586,7 @@ function StudentPortal() {
               className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-sm border transition ${existingId ? "border-success/25 bg-success-bg text-success-fg hover:bg-success-bg" : "border-warning/25 bg-warning-bg text-warning-fg hover:bg-warning-bg"}`}
             >
               {existingId ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Clock className="h-3.5 w-3.5" />}
-              {existingId ? "Today logged — edit" : "Submit today's log"}
+              {existingId ? "Today logged, edit" : "Submit today's log"}
             </button>
           </div>
         </div>
@@ -664,7 +664,7 @@ function StudentPortal() {
                       </span>
                     </div>
                   ) : (
-                    <div className="text-xs text-muted-foreground">Not scheduled — book your next call</div>
+                    <div className="text-xs text-muted-foreground">Not scheduled · book your next call</div>
                   )}
                 </div>
               </div>
@@ -679,7 +679,7 @@ function StudentPortal() {
                 <div className="min-w-0 flex-1">
                   <div className="text-[9px] text-muted-foreground">Group coaching</div>
                   <div className="text-sm font-medium">{callSchedule.length} calls a week</div>
-                  <div className="text-[10px] text-muted-foreground">Attend them all — take notes, ask smart questions</div>
+                  <div className="text-[10px] text-muted-foreground">Attend them all · take notes, ask smart questions</div>
                 </div>
               </div>
               <div className="border border-[var(--border)] rounded-sm bg-[var(--background)] p-3 flex items-center gap-3">
@@ -740,7 +740,7 @@ function StudentPortal() {
             >
               <span className="flex items-center gap-2">
                 <Calendar className="h-3.5 w-3.5" />
-                Weekly EOD {weeklyWindow.dueToday ? "due today" : "overdue"} — which calls did you attend this week? Takes 2 minutes.
+                Weekly EOD {weeklyWindow.dueToday ? "due today" : "overdue"}: which calls did you attend this week? Takes 2 minutes.
               </span>
               <span className="font-medium whitespace-nowrap">Fill it out ↓</span>
             </button>
@@ -781,14 +781,14 @@ function StudentPortal() {
                 </div>
 
                 {/* Two modes (founder-set 2026-07-18): until the CSMs approve
-                    your looms — 3 roleplays + 3 looms into the Inner Circle
-                    Loom Review chat; once approved — 5 loom applications a
+                    your looms · 3 roleplays + 3 looms into the Inner Circle
+                    Loom Review chat; once approved · 5 loom applications a
                     day. Never both loom fields at once. */}
                 <div className="rounded-lg border border-border bg-background p-3">
                   <div className="text-[11px] text-muted-foreground mb-2">
                     {loomApproved
-                      ? "Today's targets — looms approved, you're applying now"
-                      : "Today's targets — get your looms approved first: send them to the INNER CIRCLE LOOM REVIEW chat, not to offers"}
+                      ? "Today's targets: looms approved, you're applying now"
+                      : "Today's targets: get your looms approved first. Send looms to the INNER CIRCLE LOOM REVIEW chat, not to offers"}
                   </div>
                   <div className="grid gap-3 grid-cols-2">
                     {loomApproved ? (
@@ -816,7 +816,7 @@ function StudentPortal() {
                 </div>
                 {!loomApproved && (
                   <p className="text-[10px] text-muted-foreground -mt-2">
-                    Looms go to the Inner Circle Loom Review chat for CSM feedback. Once you're approved, this switches to loom applications — 5 a day.
+                    Looms go to the Inner Circle Loom Review chat for CSM feedback. Once you're approved, this switches to loom applications, 5 a day.
                   </p>
                 )}
 
@@ -974,7 +974,7 @@ function StudentPortal() {
           <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-5">
             <div className="flex items-center justify-between mb-3">
               <div className="text-xs font-semibold">Progress rating trend</div>
-              <div className="text-[11px] text-muted-foreground">Latest {ratings.at(-1)?.rating ?? "—"}/5</div>
+              <div className="text-[11px] text-muted-foreground">Latest {ratings.at(-1)?.rating ?? "–"}/5</div>
             </div>
             {ratings.length < 2 ? (
               <div className="text-[11px] text-muted-foreground py-8 text-center">Trend shows once you have 2+ rated calls.</div>
@@ -1010,7 +1010,7 @@ function StudentPortal() {
                 <div key={c.id} className="grid grid-cols-[100px_1fr_auto] items-center gap-3 p-3 text-xs">
                   <span className="text-muted-foreground">{c.call_date}</span>
                   <span className="text-muted-foreground">Completed</span>
-                  <span className="">{c.progress_rating ? `${c.progress_rating}/5` : "—"}</span>
+                  <span className="">{c.progress_rating ? `${c.progress_rating}/5` : "–"}</span>
                 </div>
               ))}
             </div>
@@ -1022,7 +1022,7 @@ function StudentPortal() {
         <div className="space-y-4">
           <PlacementsSection studentId={student.id} />
           <p className="text-caption text-muted-foreground">
-            Add every business you're talking to about a setter role and keep the stage current — your coach and CSM work from this list.
+            Add every business you're talking to about a setter role and keep the stage current. Your coach and CSM work from this list.
           </p>
         </div>
       )}
@@ -1085,7 +1085,7 @@ function WeekCallTiles({ schedule, ticks, onToggle }: {
           );
         })}
       </div>
-      <p className="text-[10px] text-muted-foreground">Tick each call right after you attend it — Sunday's weekly EOD fills itself from these.</p>
+      <p className="text-[10px] text-muted-foreground">Tick each call right after you attend it · Sunday's weekly EOD fills itself from these.</p>
     </section>
   );
 }
@@ -1233,7 +1233,7 @@ function WeeklyAccountabilityCard({
               />
               {form.oneOnOneCalls === 0 && callsUsed < callsAllotted && (
                 <p className="mt-1.5 text-[10px] text-warning-fg">
-                  None this week? You still have {Math.max(0, callsAllotted - callsUsed)} calls to use — book the next one, don't sit on them.
+                  None this week? You still have {Math.max(0, callsAllotted - callsUsed)} calls to use. Book the next one, don't sit on them.
                 </p>
               )}
             </div>
@@ -1260,7 +1260,7 @@ function WeeklyAccountabilityCard({
             </button>
             {submission && <button type="button" onClick={onCollapse} className="h-9 rounded-sm border border-border px-3 text-xs text-muted-foreground hover:text-foreground">Cancel</button>}
           </div>
-          <p className="text-[10px] text-muted-foreground">Attendance is self-reported — call names come from the weekly Skool schedule. Daily EOD count is calculated from your saved logs.</p>
+          <p className="text-[10px] text-muted-foreground">Attendance is self-reported · call names come from the weekly Skool schedule. Daily EOD count is calculated from your saved logs.</p>
         </div>
       )}
     </section>
@@ -1291,11 +1291,11 @@ function StartHereGuide({ done, locked = false, unlocking = false, onToggle }: {
       <div className="card-surface p-4">
         <div className="flex items-center justify-between mb-2">
           <div>
-            <div className="text-sm font-semibold">{locked ? "Start here — unlock your portal" : "Start Here"}</div>
+            <div className="text-sm font-semibold">{locked ? "Start here · unlock your portal" : "Start Here"}</div>
             <div className="text-[11px] text-muted-foreground">
               {locked
                 ? "finish all five steps to unlock EODs, placements, action items, and the leaderboard"
-                : "your onboarding checklist — all done ✓"}
+                : "your onboarding checklist, all done ✓"}
             </div>
           </div>
           <span className={`text-caption font-medium tabular-nums ${doneCount === steps.length ? "text-success-fg" : "text-foreground"}`}>
@@ -1356,7 +1356,7 @@ function RankChip({ onClick }: { onClick: () => void }) {
     <button
       onClick={onClick}
       className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-sm border motion-safe:transition-colors ${top3 ? "border-success/25 bg-success-bg text-success-fg" : "border-border bg-card text-muted-foreground hover:text-foreground"}`}
-      title="Leaderboard — rolling last 7 days"
+      title="Leaderboard · rolling last 7 days"
     >
       <Trophy className="h-3.5 w-3.5" />
       #{you.rank} of {q.data.totalStudents} · last 7d
@@ -1372,16 +1372,16 @@ function LeaderboardPanel() {
   if (q.isLoading) return <div className="text-xs text-muted-foreground py-8 text-center">Loading leaderboard…</div>;
   const data = q.data;
   if (!data || data.rows.length === 0) {
-    return <div className="text-xs text-muted-foreground py-8 text-center">No activity yet this week — first log tops the board.</div>;
+    return <div className="text-xs text-muted-foreground py-8 text-center">No activity yet this week · first log tops the board.</div>;
   }
   return (
     <div className="space-y-4">
       <div className="text-xs text-muted-foreground">
-        Last 7 days across every active student. Interviews and applications move you most — looms keep you on the board while you're still in training.
+        Last 7 days across every active student. Interviews and applications move you most. Looms keep you on the board while you're still in training.
       </div>
       {data.you && data.you.rank > data.rows.length && (
         <div className="card-surface px-4 py-3 text-xs">
-          You're <span className="font-semibold text-foreground">#{data.you.rank}</span> of {data.totalStudents} — log today's numbers to climb.
+          You're <span className="font-semibold text-foreground">#{data.you.rank}</span> of {data.totalStudents} · log today's numbers to climb.
         </div>
       )}
       <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm overflow-hidden">
@@ -1463,7 +1463,7 @@ function StatCard({ label, value, prev, series, accent, brandNew, icon }: { labe
               {up ? "↑" : delta < 0 ? "↓" : "→"} {Math.abs(delta)}% vs prev 7d
             </div>
           ) : (
-            <div className="text-[10px] text-muted-foreground mt-1">—</div>
+            <div className="text-[10px] text-muted-foreground mt-1">–</div>
           )}
         </>
       )}
@@ -1711,7 +1711,7 @@ function WeekDots({ eodDates, today, hasToday }: { eodDates: string[]; today: st
           const isToday = d.key === today;
           const done = logged.has(d.key) || (isToday && hasToday);
           return (
-            <div key={d.key} className="flex flex-col items-center gap-1" title={`${d.key}${done ? " — logged" : isToday ? " — pending" : " — missed"}`}>
+            <div key={d.key} className="flex flex-col items-center gap-1" title={`${d.key}${done ? " · logged" : isToday ? " · pending" : " · missed"}`}>
               <span
                 className={`h-2.5 w-2.5 rounded-full ${
                   done ? "bg-success" : isToday ? "bg-warning" : "bg-danger/50"

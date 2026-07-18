@@ -171,7 +171,7 @@ export function HookLibrary() {
             </div>
             <p className="text-[12px] text-muted-foreground mt-1 max-w-xl">
               From GA hooks training. Seed Ivy-flavored starters, then edit anything. You approve
-              what goes on camera — Hermes/agents draft, they don’t post.
+              what goes on camera · Hermes/agents draft, they don’t post.
             </p>
           </div>
           <button

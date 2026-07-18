@@ -440,7 +440,7 @@ function ReelsTable({ reels }: { reels: TopReel[] }) {
                 <td className="py-2 text-right tabular-nums">{fmt(r.saves)}</td>
                 <td className="py-2 text-right tabular-nums">{fmt(r.shares)}</td>
                 <td className="py-2 text-right tabular-nums">{fmt(r.comments)}</td>
-                <td className="py-2 text-right tabular-nums">{r.new_follows != null ? fmt(r.new_follows) : "—"}</td>
+                <td className="py-2 text-right tabular-nums">{r.new_follows != null ? fmt(r.new_follows) : "–"}</td>
               </tr>
             );
           })}
@@ -622,7 +622,7 @@ function LogMonthDialog({ userId, month, existing, existingReels, onClose, onSav
               </button>
             </div>
             <div className="space-y-1.5">
-              {reels.length === 0 && <div className="text-[11px] text-muted-foreground text-center py-4 border border-dashed border-[var(--border)] rounded-sm">No reels — click "Add reel"</div>}
+              {reels.length === 0 && <div className="text-[11px] text-muted-foreground text-center py-4 border border-dashed border-[var(--border)] rounded-sm">No reels · click "Add reel"</div>}
               {reels.map((r, i) => (
                 <div key={i} className="border border-[var(--border)] bg-[var(--background)] rounded-sm p-2 space-y-1.5">
                   <div className="flex gap-1.5">

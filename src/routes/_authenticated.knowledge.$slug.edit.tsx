@@ -7,7 +7,7 @@ import { DocForm } from "./_authenticated.knowledge.new";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/knowledge/$slug/edit")({
-  head: () => ({ meta: [{ title: "Edit doc — Knowledge Hub" }] }),
+  head: () => ({ meta: [{ title: "Edit doc · Knowledge Hub" }] }),
   component: EditDoc,
 });
 

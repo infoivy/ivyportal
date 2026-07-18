@@ -23,7 +23,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
 export const Route = createFileRoute("/_authenticated/finance")({
-  head: () => ({ meta: [{ title: "Finance — ISA" }] }),
+  head: () => ({ meta: [{ title: "Finance · ISA" }] }),
   component: FinancePage,
 });
 
@@ -41,7 +41,7 @@ const SPLIT = [
   { name: "Abu Bilal", pct: 15 },
 ];
 
-const iso = (d: Date) => format(d, "yyyy-MM-dd"); // local, not UTC — month boundaries must not shift
+const iso = (d: Date) => format(d, "yyyy-MM-dd"); // local, not UTC · month boundaries must not shift
 
 function FinancePage() {
   const { roles } = useAuth();
@@ -254,7 +254,7 @@ function FinanceInner() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
         <StatCard
           label="Cash in · Whop net"
-          value={rev?.connected ? money(rev.whopNet) : calc ? money(calc.collected) : "—"}
+          value={rev?.connected ? money(rev.whopNet) : calc ? money(calc.collected) : "–"}
           sub={(() => {
             const goal = d?.settings?.monthly_cash_goal;
             if (!goal || !isCurrentMonth) return rev?.connected ? `${rev.whopCount} payments · ${money(rev.whopGross)} gross` : undefined;
@@ -264,9 +264,9 @@ function FinanceInner() {
           })()}
           icon={<ArrowDownRight className="h-3.5 w-3.5" />}
         />
-        <StatCard label="Expenses + payouts" value={calc ? money(calc.expensesTotal + payoutsTotal) : "—"} sub={calc ? `${money(calc.expensesTotal)} expenses · ${money(payoutsTotal)} team pay` : undefined} icon={<ArrowUpRight className="h-3.5 w-3.5" />} />
-        <StatCard label="Profit (projected)" value={calc ? money(profitProjected) : "—"} sub={calc ? `${money(profitSoFar)} so far · after expenses & payouts` : undefined} icon={<TrendingUp className="h-3.5 w-3.5" />} tone={calc && profitProjected < 0 ? "danger" : "default"} />
-        <StatCard label="MRR (scheduled)" value={calc ? money(calc.mrrNow) : "—"} sub="installments due this month" icon={<PiggyBank className="h-3.5 w-3.5" />} />
+        <StatCard label="Expenses + payouts" value={calc ? money(calc.expensesTotal + payoutsTotal) : "–"} sub={calc ? `${money(calc.expensesTotal)} expenses · ${money(payoutsTotal)} team pay` : undefined} icon={<ArrowUpRight className="h-3.5 w-3.5" />} />
+        <StatCard label="Profit (projected)" value={calc ? money(profitProjected) : "–"} sub={calc ? `${money(profitSoFar)} so far · after expenses & payouts` : undefined} icon={<TrendingUp className="h-3.5 w-3.5" />} tone={calc && profitProjected < 0 ? "danger" : "default"} />
+        <StatCard label="MRR (scheduled)" value={calc ? money(calc.mrrNow) : "–"} sub="installments due this month" icon={<PiggyBank className="h-3.5 w-3.5" />} />
       </div>
 
       {/* ── Reconciliation: Whop vs what the team logged ──────────────── */}
@@ -289,7 +289,7 @@ function FinanceInner() {
                 <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5">
                   In Whop, not logged ({rev.unmatchedWhop.length})
                 </div>
-                {rev.unmatchedWhop.length === 0 && <p className="text-[12px] text-muted-foreground">Nothing — all Whop money is accounted for.</p>}
+                {rev.unmatchedWhop.length === 0 && <p className="text-[12px] text-muted-foreground">Nothing · all Whop money is accounted for.</p>}
                 <div className="space-y-1">
                   {rev.unmatchedWhop.map((t, i) => (
                     <div key={i} className="flex items-baseline justify-between gap-3 text-[13px] rounded-md bg-muted/50 px-2.5 py-1.5">
@@ -299,14 +299,14 @@ function FinanceInner() {
                   ))}
                 </div>
                 {rev.unmatchedWhop.length > 0 && (
-                  <p className="text-[11px] text-muted-foreground mt-1.5">Money that arrived without a logged close — e.g. sent in from Wise, or a close nobody logged.</p>
+                  <p className="text-[11px] text-muted-foreground mt-1.5">Money that arrived without a logged close · e.g. sent in from Wise, or a close nobody logged.</p>
                 )}
               </div>
               <div>
                 <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5">
                   Logged, not in Whop ({rev.unmatchedLogged.length})
                 </div>
-                {rev.unmatchedLogged.length === 0 && <p className="text-[12px] text-muted-foreground">Nothing — every logged close has Whop money behind it.</p>}
+                {rev.unmatchedLogged.length === 0 && <p className="text-[12px] text-muted-foreground">Nothing · every logged close has Whop money behind it.</p>}
                 <div className="space-y-1">
                   {rev.unmatchedLogged.map((l, i) => (
                     <div key={i} className="flex items-baseline justify-between gap-3 text-[13px] rounded-md bg-muted/50 px-2.5 py-1.5">
@@ -316,7 +316,7 @@ function FinanceInner() {
                   ))}
                 </div>
                 {rev.unmatchedLogged.length > 0 && (
-                  <p className="text-[11px] text-muted-foreground mt-1.5">Logged revenue with no Whop payment — collected elsewhere (Wise/bank) or double-logged.</p>
+                  <p className="text-[11px] text-muted-foreground mt-1.5">Logged revenue with no Whop payment · collected elsewhere (Wise/bank) or double-logged.</p>
                 )}
               </div>
             </div>
@@ -331,7 +331,7 @@ function FinanceInner() {
             <h2 className="text-sm font-semibold">Recurring revenue</h2>
             <span className="text-caption text-muted-foreground">next 6 months · scheduled installments</span>
           </div>
-          <div className="text-[28px] font-medium tabular-nums tracking-[-0.02em] mb-3">{calc ? money(calc.mrrNow) : "—"}</div>
+          <div className="text-[28px] font-medium tabular-nums tracking-[-0.02em] mb-3">{calc ? money(calc.mrrNow) : "–"}</div>
           <div className="h-40">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={calc?.mrrSeries ?? []} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
@@ -361,7 +361,7 @@ function FinanceInner() {
             <span className="text-caption text-muted-foreground">after expenses & payouts · {monthLabel}</span>
           </div>
           <div className="text-[28px] font-medium tabular-nums tracking-[-0.02em] mb-4">
-            {calc ? money(Math.max(0, profitProjected)) : "—"}
+            {calc ? money(Math.max(0, profitProjected)) : "–"}
             <span className="text-[13px] text-muted-foreground font-normal ml-2">projected profit</span>
           </div>
           <div className="space-y-2.5">
@@ -373,7 +373,7 @@ function FinanceInner() {
                 </div>
                 <span className="text-caption text-muted-foreground w-8 text-right">{p.pct}%</span>
                 <span className="text-[13px] tabular-nums font-medium w-24 text-right">
-                  {calc ? money(Math.max(0, profitProjected) * (p.pct / 100)) : "—"}
+                  {calc ? money(Math.max(0, profitProjected) * (p.pct / 100)) : "–"}
                 </span>
               </div>
             ))}
@@ -390,7 +390,7 @@ function FinanceInner() {
       <div className="card-surface p-5">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div>
-            <h2 className="text-sm font-semibold">Money flow — rest of {monthStart.toLocaleString("en", { month: "long" })}</h2>
+            <h2 className="text-sm font-semibold">Money flow · rest of {monthStart.toLocaleString("en", { month: "long" })}</h2>
             <p className="text-caption text-muted-foreground mt-0.5">Scheduled installments in, expenses out. PIF closes land on top of this.</p>
           </div>
           <div className="flex items-center gap-2">
@@ -411,7 +411,7 @@ function FinanceInner() {
                   {f.kind === "in" ? "+" : "−"}{money(f.amount)}
                 </span>
                 <span className="text-right tabular-nums text-muted-foreground">
-                  {calc.startBalance != null ? money(f.balance) : "—"}
+                  {calc.startBalance != null ? money(f.balance) : "–"}
                 </span>
               </div>
             ))}
@@ -439,7 +439,7 @@ function FinanceInner() {
           </Button>
         </div>
         {d && d.expenses.length === 0 ? (
-          <p className="text-[13px] text-muted-foreground py-6 text-center">No expenses yet — add your software, contractors, and ad spend.</p>
+          <p className="text-[13px] text-muted-foreground py-6 text-center">No expenses yet · add your software, contractors, and ad spend.</p>
         ) : (
           <div className="divide-y divide-[var(--accent)]">
             {d?.expenses.map(e => (
@@ -450,7 +450,7 @@ function FinanceInner() {
                 </div>
                 <span className="tabular-nums text-right">{money(Number(e.amount))}</span>
                 <span className="text-muted-foreground text-right hidden sm:block">
-                  {e.recurring ? `monthly · day ${e.due_day ?? 1}` : `one-off · ${e.one_off_date ?? "—"}`}
+                  {e.recurring ? `monthly · day ${e.due_day ?? 1}` : `one-off · ${e.one_off_date ?? "–"}`}
                 </span>
                 <span className={`text-caption text-right hidden sm:block ${e.active ? "text-success-fg" : "text-muted-foreground"}`}>{e.active ? "active" : "paused"}</span>
                 <span className="flex justify-end gap-1">

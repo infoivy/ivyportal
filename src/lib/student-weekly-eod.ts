@@ -138,7 +138,7 @@ export function validateStudentWeeklyEod(
   const validDays = new Set(schedule.map((call) => call.day));
   const unique = new Set(input.callsAttended);
   if (unique.size !== input.callsAttended.length || input.callsAttended.some((day) => !validDays.has(day))) {
-    return "Attended calls don't match this week's call schedule — reload and try again.";
+    return "Attended calls don't match this week's call schedule. Reload and try again.";
   }
   if (input.oneOnOneCalls != null && (!Number.isInteger(input.oneOnOneCalls) || input.oneOnOneCalls < 0 || input.oneOnOneCalls > 20)) {
     return "1:1 calls this week must be a small whole number.";

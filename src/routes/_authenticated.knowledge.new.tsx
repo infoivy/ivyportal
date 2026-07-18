@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import { SelectField } from "@/components/ui/select-field";
 
 export const Route = createFileRoute("/_authenticated/knowledge/new")({
-  head: () => ({ meta: [{ title: "New doc — Knowledge Hub" }] }),
+  head: () => ({ meta: [{ title: "New doc · Knowledge Hub" }] }),
   component: NewDoc,
 });
 

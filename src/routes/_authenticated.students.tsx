@@ -23,7 +23,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 
 export const Route = createFileRoute("/_authenticated/students")({
-  head: () => ({ meta: [{ title: "Students — ISA Team" }] }),
+  head: () => ({ meta: [{ title: "Students · ISA Team" }] }),
   component: StudentsLayout,
 });
 
@@ -166,7 +166,7 @@ function StudentsLayout() {
   };
 
 
-  const coachName = (id: string | null) => (id ? coaches.find(c => c.id === id)?.display_name ?? "—" : "Unassigned");
+  const coachName = (id: string | null) => (id ? coaches.find(c => c.id === id)?.display_name ?? "–" : "Unassigned");
 
   const daysSince = (dateStr: string) => Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
   const atRiskInfo = (s: Student): { risky: boolean; reasons: string[] } => {
@@ -468,7 +468,7 @@ function StudentsLayout() {
                         <div className="min-w-0">
                           <div className="text-sm font-medium truncate">{s.full_name}</div>
                           <div className={`text-[10px] truncate flex items-center gap-1 ${s.email ? "text-muted-foreground" : "text-warning-fg"}`}>
-                            {s.email ?? "⚠ No email — cannot auto-link login"}
+                            {s.email ?? "⚠ No email · cannot auto-link login"}
                           </div>
                           {showReasons && info.reasons.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-1">
@@ -509,7 +509,7 @@ function StudentsLayout() {
                     {visibleCols.has("grade") && (
                       <td className="px-2 py-3">
                         <span className={`text-[11px] px-1.5 py-0.5 rounded-md ${s.student_grade ? "bg-warning-bg text-warning-fg" : "bg-muted text-muted-foreground"}`}>
-                          {s.student_grade ?? "—"}
+                          {s.student_grade ?? "–"}
                         </span>
                       </td>
                     )}
@@ -552,7 +552,7 @@ function StudentsLayout() {
                       <td className="px-2 py-3">
                         {s.payment_state ? (
                           <span className={`text-[12px] px-2 py-0.5 rounded-md border ${PAYMENT_META[s.payment_state].color}`}>{PAYMENT_META[s.payment_state].label}</span>
-                        ) : <span className="text-[10px] text-muted-foreground">—</span>}
+                        ) : <span className="text-[10px] text-muted-foreground">–</span>}
                       </td>
                     )}
                     {visibleCols.has("calls_remaining") && (
@@ -564,12 +564,12 @@ function StudentsLayout() {
                     )}
                     {visibleCols.has("last_call") && (
                       <td className={`px-2 py-3 text-right text-[10px] ${last && daysSince(last) > 14 ? "text-danger-fg" : "text-muted-foreground"}`}>
-                        {last ? `${daysSince(last)}d` : "—"}
+                        {last ? `${daysSince(last)}d` : "–"}
                       </td>
                     )}
                     {visibleCols.has("last_eod") && (
                       <td className={`px-2 py-3 text-right text-[10px] ${lastEod && daysSince(lastEod) >= 5 ? "text-danger-fg" : "text-muted-foreground"}`}>
-                        {lastEod ? `${daysSince(lastEod)}d` : "—"}
+                        {lastEod ? `${daysSince(lastEod)}d` : "–"}
                       </td>
                     )}
                     {visibleCols.has("next_action") && (
@@ -578,11 +578,11 @@ function StudentsLayout() {
                           <input
                             defaultValue={s.next_action ?? ""}
                             onBlur={e => { if (e.target.value !== (s.next_action ?? "")) updateStudent(s.id, { next_action: e.target.value.trim() || null }); }}
-                            placeholder="—"
+                            placeholder="–"
                             className="w-full h-7 px-2 rounded-sm border border-transparent hover:border-[var(--border)] focus:border-ring bg-transparent text-xs focus:outline-none"
                           />
                         ) : (
-                          <span className="text-xs text-muted-foreground">{s.next_action ?? "—"}</span>
+                          <span className="text-xs text-muted-foreground">{s.next_action ?? "–"}</span>
                         )}
                       </td>
                     )}
@@ -1019,10 +1019,10 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
                 <DateField value={dealDate} onChange={setDealDate} clearable={false} />
               </Field>
               <Field label="Closer (who sold this)">
-                <SelectField value={closerId} onChange={(v) => setCloserId(v)} options={closers.map((c) => ({ value: c.id, label: c.display_name ?? c.id.slice(0, 8) }))} placeholder="— Select closer —" />
+                <SelectField value={closerId} onChange={(v) => setCloserId(v)} options={closers.map((c) => ({ value: c.id, label: c.display_name ?? c.id.slice(0, 8) }))} placeholder="– Select closer –" />
               </Field>
               <Field label="Setter (who booked the call)">
-                <SelectField value={setterId} onChange={(v) => setSetterId(v)} options={setters.map((s) => ({ value: s.id, label: s.display_name ?? s.id.slice(0, 8) }))} allowEmpty emptyLabel="— None / unknown —" placeholder="— None / unknown —" />
+                <SelectField value={setterId} onChange={(v) => setSetterId(v)} options={setters.map((s) => ({ value: s.id, label: s.display_name ?? s.id.slice(0, 8) }))} allowEmpty emptyLabel="– None / unknown –" placeholder="– None / unknown –" />
               </Field>
 
               {payMode === "installments" && (

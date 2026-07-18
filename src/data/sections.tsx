@@ -83,11 +83,11 @@ export const SECTIONS: Section[] = [
     cards: [
       {
         title: "The Setter's Identity",
-        subtitle: "New — read before every shift",
+        subtitle: "New · read before every shift",
         body: (
           <div className="space-y-2">
             <P>Consultant, not salesperson. You diagnose, you don't pitch.</P>
-            <P>The frame in every conversation: <i>"i'm figuring out if we can even take you on"</i> — not <i>"let me convince you to book."</i></P>
+            <P>The frame in every conversation: <i>"i'm figuring out if we can even take you on"</i> · not <i>"let me convince you to book."</i></P>
             <H>Before every shift:</H>
             <Q copyable={false}>my job is to find the right men, not convince the wrong ones.</Q>
             <P>Care about his outcome, stay detached from whether he books. The setter who NEEDS the booking pushes too hard and reads as desperate. The setter who genuinely wants the best for him but is fine either way creates the exact energy that makes men book.</P>
@@ -103,7 +103,7 @@ export const SECTIONS: Section[] = [
             <NumStep n={2} title="Personalized Opener" sub="Reference something specific. End with open question." />
             <NumStep n={3} title="Problem Identification" sub="Find the REAL problem, not the surface complaint" />
             <NumStep n={4} title="Situation Deep-Dive" sub="Income, savings, hours, family, what they've tried" />
-            <NumStep n={5} title="Constraint Qualification" sub="Money, Time, or Belief — plus Readiness" />
+            <NumStep n={5} title="Constraint Qualification" sub="Money, Time, or Belief · plus Readiness" />
             <NumStep n={6} title="Support Level Routing" sub="Free community vs full mentorship" />
             <NumStep n={7} title="Recommendation + Positioning" sub="Frame the path based on everything shared" />
             <NumStep n={8} title="Close to Call" sub="Permission close, Calendly, student proof, confirm" />
@@ -113,7 +113,7 @@ export const SECTIONS: Section[] = [
       },
       {
         title: "ICP Quick-Check",
-        subtitle: "New — keep this open every session",
+        subtitle: "New · keep this open every session",
         body: (
           <div className="space-y-2">
             <P>Conversation stays human. This list stays strict.</P>
@@ -157,10 +157,10 @@ export const SECTIONS: Section[] = [
               "Prior attempts (dropshipping, trading, agency pages)",
             ]} />
             <H>Categorize immediately:</H>
-            <P><b>EXPLORING</b> — just researching, vague "want to make money online" energy, hasn't started anything</P>
-            <P><b>STUCK</b> — 9-5 or steady work, hates it, wants out, income but no exit skill</P>
-            <P><b>LEARNING</b> — consuming real content, practicing, hasn't landed a first offer yet</P>
-            <P><b>IN THE GAME</b> — already setting or closing somewhere, wants better placement</P>
+            <P><b>EXPLORING</b> · just researching, vague "want to make money online" energy, hasn't started anything</P>
+            <P><b>STUCK</b> · 9-5 or steady work, hates it, wants out, income but no exit skill</P>
+            <P><b>LEARNING</b> · consuming real content, practicing, hasn't landed a first offer yet</P>
+            <P><b>IN THE GAME</b> · already setting or closing somewhere, wants better placement</P>
           </div>
         ),
       },
@@ -240,17 +240,17 @@ export const SECTIONS: Section[] = [
         subtitle: "Money, Time, or Belief + Readiness",
         body: (
           <div className="space-y-2">
-            <H>MONEY — frame VALUE and rizq:</H>
+            <H>MONEY · frame VALUE and rizq:</H>
             <P>A skill comes with you everywhere, including after hijrah.</P>
             <Q>what are you working with right now, income and savings wise? i need to know so i can point you to the right path instead of guessing...</Q>
-            <H>TIME — frame SPEED:</H>
+            <H>TIME · frame SPEED:</H>
             <P>Compress 6–12 months of trial and error into weeks.</P>
             <Q>knowing your schedule, would you say you want the full roadmap to work through yourself, or you want to move quick with someone reviewing your actual reps every week?</Q>
-            <H>BELIEF — frame REPS + accountability:</H>
+            <H>BELIEF · frame REPS + accountability:</H>
             <Q>you don't need to feel ready to start. you build that by doing reps with someone watching your back. what's the part you doubt most, the skill or yourself?</Q>
             <H>READINESS (the 4th box):</H>
             <Q>if the path was clear and it made sense, is this something you'd move on this month, or is it more of a next-year thing?</Q>
-            <P>Exploring is fine — it just routes to nurture instead of a call.</P>
+            <P>Exploring is fine · it just routes to nurture instead of a call.</P>
           </div>
         ),
       },
@@ -328,7 +328,7 @@ export const SECTIONS: Section[] = [
               ["Personalized Opener", "Reference something real from their page/message"],
               ["Problem Identification", "Validate + dig into why they're really here"],
               ["Deep-Dive", "Woven into conversation, not interrogation"],
-              ["Constraint Qualification", "Money, time, or belief — plus readiness"],
+              ["Constraint Qualification", "Money, time, or belief · plus readiness"],
               ["Support Level Routing", "Free community vs mentorship"],
               ["Recommendation + Positioning", "Tailored to their level"],
               ["Close to Call", "Permission close or transition to DM Close"],
@@ -343,14 +343,14 @@ export const SECTIONS: Section[] = [
       },
       {
         title: "The 5-Minute Rule",
-        subtitle: "New — inbound is the hottest a lead gets",
+        subtitle: "New · inbound is the hottest a lead gets",
         body: (
           <div className="space-y-2">
             <P>An inbound "path" DM is the hottest a lead will ever be. Odds of qualifying drop hard after the first minutes pass.</P>
             <UL items={[
               "Target: first reply within 5 minutes during setting windows",
               "Message request notifications ON at all times",
-              "Inbound ALWAYS beats outbound — drop outbound mid-task if a \"path\" message lands",
+              "Inbound ALWAYS beats outbound · drop outbound mid-task if a \"path\" message lands",
             ]} />
             <H>If you were away:</H>
             <Q>as-salamu alaykum, sorry for the wait man, was on calls. glad you reached out. where are you at right now, working, studying, or in between?</Q>
@@ -549,10 +549,10 @@ export const SECTIONS: Section[] = [
           <div className="space-y-2">
             <H>Pure curiosity:</H>
             <Q>yoo</Q>
-            <H>Assumption — situation:</H>
+            <H>Assumption · situation:</H>
             <Q>you're one of those guys who's fully capable but stuck in the wrong environment, i can tell from your page</Q>
             <Q>you strike me as someone who's done the research but hasn't pulled the trigger yet</Q>
-            <H>Assumption — deen adjacent (only if page signals it):</H>
+            <H>Assumption · deen adjacent (only if page signals it):</H>
             <Q>you're clearly serious about your deen, are you as serious about your income? most guys have one without the other</Q>
             <H>Aspirational gap:</H>
             <Q>if your work ethic matched an actual skill you'd be gone from that job in 6 months</Q>
@@ -599,7 +599,7 @@ export const SECTIONS: Section[] = [
             <H>Defensive ("who are you?" / "is this a scam?"):</H>
             <Q>lol fair, everyone's been burned by something online. no pitch here, genuinely thought you had potential from your page.</Q>
             <P>If still hostile, move on.</P>
-            <H>Stalled mid-convo — pattern interrupts:</H>
+            <H>Stalled mid-convo · pattern interrupts:</H>
             <Q>curious.</Q>
             <Q>interesting take.</Q>
             <Q>you're probably the type who figures things out alone until it stops working, no?</Q>
@@ -644,7 +644,7 @@ export const SECTIONS: Section[] = [
         subtitle: "Response priority by heat",
         body: (
           <div className="space-y-2">
-            <H><Tag tone="green">Green flags — prioritize</Tag></H>
+            <H><Tag tone="green">Green flags · prioritize</Tag></H>
             <UL items={[
               "Employed or earning, mentions savings",
               "Asks specific questions about the skill or process",
@@ -652,14 +652,14 @@ export const SECTIONS: Section[] = [
               "Reached out inbound",
               "Real timeline (quit date, hijrah plan)",
             ]} />
-            <H><Tag tone="yellow">Yellow flags — qualify further</Tag></H>
+            <H><Tag tone="yellow">Yellow flags · qualify further</Tag></H>
             <UL items={[
               "Student with some income",
               "Vague on work but high effort in messages",
               "Burned by a course before",
               "Big dreams, no specifics",
             ]} />
-            <H><Tag tone="red">Red flags — route out fast</Tag></H>
+            <H><Tag tone="red">Red flags · route out fast</Tag></H>
             <UL items={[
               "\"make me a millionaire\" energy",
               "Asks for free money / free coaching msg 1",
@@ -670,11 +670,11 @@ export const SECTIONS: Section[] = [
             ]} />
             <H>Response times:</H>
             <UL items={[
-              <><Tag tone="red">HOT</Tag> reply within 30 min — qualified, urgency, asked for next steps</>,
-              <><Tag tone="yellow">WARM</Tag> within 2 hours — engaged, still qualifying</>,
-              <><Tag tone="neutral">COLD</Tag> within 24 hours — early stage, nurture</>,
+              <><Tag tone="red">HOT</Tag> reply within 30 min · qualified, urgency, asked for next steps</>,
+              <><Tag tone="yellow">WARM</Tag> within 2 hours · engaged, still qualifying</>,
+              <><Tag tone="neutral">COLD</Tag> within 24 hours · early stage, nurture</>,
             ]} />
-            <P className="pt-1"><b>BAD LEAD ≠ CAN'T BUY YET.</b> Bad leads get removed. Men who can't buy yet get routed to the free community and treated as brothers. They come back — and they remember.</P>
+            <P className="pt-1"><b>BAD LEAD ≠ CAN'T BUY YET.</b> Bad leads get removed. Men who can't buy yet get routed to the free community and treated as brothers. They come back · and they remember.</P>
           </div>
         ),
       },
@@ -731,7 +731,7 @@ export const SECTIONS: Section[] = [
             <Q>allahumma baarik akhi 🤲 most guys won't post wins because they're scared of the evil eye or judgment. respect for owning it</Q>
             <Q>allahumma baarik. now imagine this same discipline pointed at something that pays you properly</Q>
             <Q>ma sha Allah, love this. one-off or you building a system behind it?</Q>
-            <Q>allahumma baarik — this is the kind of consistency that transfers to anything you touch</Q>
+            <Q>allahumma baarik · this is the kind of consistency that transfers to anything you touch</Q>
           </div>
         ),
       },
@@ -742,7 +742,7 @@ export const SECTIONS: Section[] = [
           <div className="space-y-1.5">
             <Q>allahumma baarik, this is the part most guys skip, then wonder why nothing else in their life holds together</Q>
             <Q>ma sha Allah the discipline is clearly there. the only question is what you're pointing it at</Q>
-            <Q>you already live harder than most jobs would ever ask of you lol — that's the raw material right there</Q>
+            <Q>you already live harder than most jobs would ever ask of you lol · that's the raw material right there</Q>
           </div>
         ),
       },
@@ -860,7 +860,7 @@ export const SECTIONS: Section[] = [
       },
       {
         title: "Phase 2: Value Drops",
-        subtitle: "Ask permission first — doubles open rate",
+        subtitle: "Ask permission first · doubles open rate",
         body: (
           <div className="space-y-2">
             <H>Permission-first drop:</H>
@@ -891,7 +891,7 @@ export const SECTIONS: Section[] = [
               "\"I keep starting things and not finishing\"",
               "\"I want to move but the money isn't there\"",
             ]} />
-            <H>If not ready — either/or probe:</H>
+            <H>If not ready · either/or probe:</H>
             <Q>what's the bigger blocker for you rn, not knowing the path or not trusting yourself to follow it?</Q>
             <Q>is it a money thing, a time thing, or a you thing? be honest lol</Q>
             <P>Still not ready → keep engaging stories, drop another video in a few days. Some leads take 5–10 interactions. The free community warms them for you.</P>
@@ -906,7 +906,7 @@ export const SECTIONS: Section[] = [
             <H>Agree in their words, then qualify woven in:</H>
             <Q>exactly, and that's the trap. staying busy at the job feels productive but nothing compounds. quick one, how many hours a week could you realistically carve out?</Q>
             <Q>from what you're saying the real issue isn't motivation, it's that there's no structure and nobody checking your work. honestly this is exactly what we built the mentorship around</Q>
-            <H>Rewrites — never standalone:</H>
+            <H>Rewrites · never standalone:</H>
             <P><i>"what's your income?"</i> → </P>
             <Q>the job you're at now, is it at least giving you room to save or is it paycheck to paycheck?</Q>
             <P><i>"do you have savings?"</i> → </P>
@@ -1279,15 +1279,15 @@ export const SECTIONS: Section[] = [
   // ===== PSYCHOLOGY =====
   {
     id: "psych",
-    heading: "Psychology — 9 Principles",
+    heading: "Psychology · 9 Principles",
     color: "var(--muted-foreground)",
     cards: [
       {
-        title: "1 — Reference Their Words",
+        title: "1 · Reference Their Words",
         body: <P>Every message references something they said. Never introduce new topics. They trust you more when they hear their own language reflected back.</P>,
       },
       {
-        title: "2 — Confirm Beliefs, Don't Challenge",
+        title: "2 · Confirm Beliefs, Don't Challenge",
         body: (
           <div className="space-y-1.5">
             <P>Even mindset objections get validated first.</P>
@@ -1297,7 +1297,7 @@ export const SECTIONS: Section[] = [
         ),
       },
       {
-        title: "3 — Ask Questions You Know the Answer To",
+        title: "3 · Ask Questions You Know the Answer To",
         body: (
           <div className="space-y-1.5">
             <Q>so the job isn't going to fund the hijrah on its own, right?</Q>
@@ -1306,28 +1306,28 @@ export const SECTIONS: Section[] = [
         ),
       },
       {
-        title: "4 — \"Expect\" vs \"Need\"",
+        title: "4 · \"Expect\" vs \"Need\"",
         body: (
           <div className="space-y-1.5">
-            <P>Always "what do you <b>expect</b>?" — never "what do you <b>need</b>?"</P>
+            <P>Always "what do you <b>expect</b>?" · never "what do you <b>need</b>?"</P>
             <P>"Need" implies he doesn't know. "Expect" treats him like a serious man making a serious decision.</P>
           </div>
         ),
       },
       {
-        title: "5 — Abundance Mindset",
+        title: "5 · Abundance Mindset",
         body: <P>You're qualifying men FOR the academy, not chasing them. Your time is valuable, the spots are limited, and it shows in your pacing. The setter who needs nothing is the one people want to work with.</P>,
       },
       {
-        title: "6 — Sell the Destination, Not the Flight",
+        title: "6 · Sell the Destination, Not the Flight",
         body: <P>He's not buying calls and roleplays. He's buying the version of himself with income that travels, an exit date, and a hijrah that funds itself. Frame everything as the destination.</P>,
       },
       {
-        title: "7 — Turn Background Into Advantage",
-        body: <P>Gym discipline, memorizing Quran, working a hard job, learning English as a second language — reframe anything as proof he can do hard things. Lowers resistance, builds belief.</P>,
+        title: "7 · Turn Background Into Advantage",
+        body: <P>Gym discipline, memorizing Quran, working a hard job, learning English as a second language · reframe anything as proof he can do hard things. Lowers resistance, builds belief.</P>,
       },
       {
-        title: "8 — Never Answer Questions Directly",
+        title: "8 · Never Answer Questions Directly",
         body: (
           <div className="space-y-1.5">
             <P>"what exactly do you guys do?" doesn't get a service list.</P>
@@ -1337,7 +1337,7 @@ export const SECTIONS: Section[] = [
         ),
       },
       {
-        title: "9 — Setting Is an Emotional Rollercoaster",
+        title: "9 · Setting Is an Emotional Rollercoaster",
         body: (
           <div className="space-y-1.5">
             <P>More than B2B. Curiosity → fear → hope → doubt → trust → decision.</P>
@@ -1362,7 +1362,7 @@ export const SECTIONS: Section[] = [
       {
         title: "Why Engagement Matters",
         subtitle: "They're deciding between you and nothing",
-        body: <P>These prospects aren't deciding between you and a competitor — they're deciding between you and doing nothing. Doing nothing always feels safer. The setter who's always on their stories, always present, always genuinely engaged is the one who's there the day the frustration finally outweighs the fear. <b>Presence converts hesitation.</b></P>,
+        body: <P>These prospects aren't deciding between you and a competitor · they're deciding between you and doing nothing. Doing nothing always feels safer. The setter who's always on their stories, always present, always genuinely engaged is the one who's there the day the frustration finally outweighs the fear. <b>Presence converts hesitation.</b></P>,
       },
       {
         title: "The Friend Mindset",
@@ -1371,8 +1371,8 @@ export const SECTIONS: Section[] = [
           <div className="space-y-2">
             <P><Tag tone="red">HOT</Tag> Brothers you talk to <b>DAILY</b>. Active convos, story replies.</P>
             <P><Tag tone="yellow">WARM</Tag> Catch up <b>weekly to monthly</b>. Sent "path" but didn't book, called but didn't join, free community but quiet.</P>
-            <P><Tag tone="neutral">COLD</Tag> Check on every <b>few months</b>. Interested but not ready — usually money or family. Nurture through stories and the free community.</P>
-            <P className="pt-1">Never burn a bridge with a qualified man who needs time. Life changes fast — raise, bonus, breaking point at work. When it does, he messages the person who treated him well when he had nothing to give.</P>
+            <P><Tag tone="neutral">COLD</Tag> Check on every <b>few months</b>. Interested but not ready · usually money or family. Nurture through stories and the free community.</P>
+            <P className="pt-1">Never burn a bridge with a qualified man who needs time. Life changes fast · raise, bonus, breaking point at work. When it does, he messages the person who treated him well when he had nothing to give.</P>
           </div>
         ),
       },
@@ -1381,7 +1381,7 @@ export const SECTIONS: Section[] = [
         subtitle: "15–20 min/day",
         body: (
           <UL items={[
-            "Reply to hot lead stories (priority first) — genuine, no pitch",
+            "Reply to hot lead stories (priority first) · genuine, no pitch",
             "React to warm lead stories (sent \"path\", not booked; called, not closed)",
             "Use ISA's own stories as leverage: \"did you see this one? thought of you\"",
           ]} />
@@ -1428,7 +1428,7 @@ export const SECTIONS: Section[] = [
             <P>Start ~100 leads → 80 personalized follow-ups → 40 re-engage → ~7 calls booked.</P>
             <P>Two weeks later refresh remaining ~33 → 4 more calls → two weeks after → 3 more calls.</P>
             <P>Pipeline of 300+ qualified leads constantly nurturing.</P>
-            <P className="pt-1">B2C leads go quiet more often than B2B — the refresh matters <b>more</b> here, not less.</P>
+            <P className="pt-1">B2C leads go quiet more often than B2B · the refresh matters <b>more</b> here, not less.</P>
           </div>
         ),
       },
@@ -1578,10 +1578,10 @@ export const SECTIONS: Section[] = [
       },
       {
         title: "Benchmark Stats",
-        subtitle: "New — targets, not absolutes",
+        subtitle: "New · targets, not absolutes",
         body: (
           <div className="space-y-2">
-            <P>Expect the lower bands early — this ICP has lower intent than B2B.</P>
+            <P>Expect the lower bands early · this ICP has lower intent than B2B.</P>
             <table className="w-full text-[11.5px]">
               <thead>
                 <tr className="text-left text-muted-foreground">
@@ -1608,7 +1608,7 @@ export const SECTIONS: Section[] = [
       },
       {
         title: "The Closer Handoff",
-        subtitle: "New — send the moment booking confirms",
+        subtitle: "New · send the moment booking confirms",
         body: (
           <div className="space-y-2">
             <P>A bad handoff wastes everyone's time. The closer gets:</P>
@@ -1631,7 +1631,7 @@ export const SECTIONS: Section[] = [
       },
       {
         title: "Frontline Feedback",
-        subtitle: "New — the market intel loop",
+        subtitle: "New · the market intel loop",
         body: (
           <div className="space-y-2">
             <P>The setter talks to more of the market than anyone at ISA. Keep a running market intel doc:</P>
@@ -1642,7 +1642,7 @@ export const SECTIONS: Section[] = [
               "Exact language leads use for their problems",
               "Content pieces driving \"path\" spikes",
             ]} />
-            <P>Post observations as they happen in the team channel — one-liners are fine:</P>
+            <P>Post observations as they happen in the team channel · one-liners are fine:</P>
             <Q>3 guys this week mentioned [competitor].</Q>
             <P>Weekly 15-min sync with Abdulrahman: lead quality patterns, offer questions, what content to make more of.</P>
           </div>

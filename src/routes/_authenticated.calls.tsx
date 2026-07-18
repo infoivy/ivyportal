@@ -15,7 +15,7 @@ import { DateField } from "@/components/ui/date-field";
 import { SelectField } from "@/components/ui/select-field";
 
 export const Route = createFileRoute("/_authenticated/calls")({
-  head: () => ({ meta: [{ title: "1-on-1s — ISA" }] }),
+  head: () => ({ meta: [{ title: "1-on-1s · ISA" }] }),
   component: CallsPage,
 });
 
@@ -119,7 +119,7 @@ function CallsPage() {
     const followUp = filtered.filter(c => c.status === "follow_up").length;
     const openActions = filtered.reduce((n, c) => n + (c.action_items_json?.filter(a => !a.done).length ?? 0), 0);
     const ratings = filtered.map(c => c.progress_rating).filter((r): r is number => !!r);
-    const avgRating = ratings.length ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1) : "—";
+    const avgRating = ratings.length ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1) : "–";
     return { total, completed, noShow, followUp, openActions, avgRating };
   }, [filtered]);
 
@@ -195,7 +195,7 @@ function CallsPage() {
       {view === "table" ? (
         <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm overflow-hidden">
           <div className="grid grid-cols-[64px_1.3fr_auto] sm:grid-cols-[0.7fr_1.3fr_1fr_0.9fr_0.9fr_0.7fr_auto] items-center px-4 py-2 border-b border-[var(--border)] text-[10px] text-muted-foreground gap-2">
-            <span>Date</span><span>Student</span><span className="hidden sm:block">Coach</span><span className="hidden sm:block" title="1–5 stars — how the student is progressing overall">Progress (1–5)</span><span className="hidden sm:block" title="Open action items / total">Action items</span><span className="hidden sm:block">Fathom</span><span />
+            <span>Date</span><span>Student</span><span className="hidden sm:block">Coach</span><span className="hidden sm:block" title="1–5 stars · how the student is progressing overall">Progress (1–5)</span><span className="hidden sm:block" title="Open action items / total">Action items</span><span className="hidden sm:block">Fathom</span><span />
           </div>
           {filtered.length === 0 && <div className="p-8 text-center text-xs text-muted-foreground">No calls match your filters.</div>}
           {filtered.map(c => {
@@ -219,17 +219,17 @@ function CallsPage() {
                 <span className="hidden sm:flex items-center gap-0.5 text-xs" title="Progress rating: 1 (stuck) – 5 (crushing it)">
                   {c.progress_rating ? Array.from({ length: 5 }).map((_, i) => (
                     <Star key={i} className={`h-3 w-3 ${i < c.progress_rating! ? "fill-amber-400 text-warning-fg" : "text-[#2a3140]"}`} />
-                  )) : <span className="text-muted-foreground">—</span>}
+                  )) : <span className="text-muted-foreground">–</span>}
                 </span>
                 <span className={`hidden sm:block text-xs ${openA > 0 ? "text-warning-fg" : "text-muted-foreground"}`} title="Open / total action items from this call">
-                  {totalA ? `${totalA - openA}/${totalA} done` : "—"}
+                  {totalA ? `${totalA - openA}/${totalA} done` : "–"}
                 </span>
                 <span className="hidden sm:block">
                   {c.fathom_url ? (
                     <a href={c.fathom_url} target="_blank" rel="noopener" className="flex items-center gap-1 text-success-fg hover:text-success-fg text-[11px]">
                       <Video className="h-3 w-3" /> Open <ExternalLink className="h-2.5 w-2.5" />
                     </a>
-                  ) : <span className="text-muted-foreground text-xs">—</span>}
+                  ) : <span className="text-muted-foreground text-xs">–</span>}
                 </span>
                 <button onClick={() => setEditing(c)} className="text-muted-foreground hover:text-foreground p-1">
                   <ChevronRight className="h-3.5 w-3.5" />
@@ -404,7 +404,7 @@ function CallModal({ call, onClose, onSaved, students, coaches, defaultCoachId }
               ))}
               <span className="text-[10px] text-muted-foreground ml-2">{form.progress_rating ? `${form.progress_rating}/5` : "not rated"}</span>
             </div>
-            <p className="text-[10px] text-muted-foreground mt-1">How the student is progressing overall — not just this call.</p>
+            <p className="text-[10px] text-muted-foreground mt-1">How the student is progressing overall · not just this call.</p>
           </Field>
           <Field label="Fathom recording URL" full>
             <input value={form.fathom_url} onChange={e => setForm(f => ({ ...f, fathom_url: e.target.value }))} placeholder="https://fathom.video/…" className={inputCls} />

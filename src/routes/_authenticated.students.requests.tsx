@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { UserPlus, GraduationCap, CheckCircle2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/students/requests")({
-  head: () => ({ meta: [{ title: "Access Requests — ISA Team" }] }),
+  head: () => ({ meta: [{ title: "Access Requests · ISA Team" }] }),
   component: RequestsPage,
 });
 
@@ -51,7 +51,7 @@ function RequestsPage() {
     setBusy(p.id);
     try {
       const r = await approveFn({ data: { userId: p.id } });
-      toast.success("Approved — set their name, payment, and package.");
+      toast.success("Approved. Set their name, payment, and package.");
       qc.invalidateQueries({ queryKey: ["students"] });
       if (r.studentId) navigate({ to: "/students/$id", params: { id: r.studentId }, search: { setup: "payment" } as never });
     } catch (e) { toast.error(String((e as Error).message ?? e)); }
@@ -63,7 +63,7 @@ function RequestsPage() {
     try {
       const { error } = await supabase.from("user_roles").insert({ user_id: p.id, role });
       if (error) throw error;
-      toast.success(`${p.display_name ?? "Member"} is now a ${role} — finish their profile on the Team page.`);
+      toast.success(`${p.display_name ?? "Member"} is now a ${role}. Finish their profile on the Team page.`);
       setTeamPick(null);
       qc.invalidateQueries({ queryKey: ["students", "access-requests"] });
     } catch (e) { toast.error(String((e as Error).message ?? e)); }
@@ -87,7 +87,7 @@ function RequestsPage() {
       <header className="pb-2">
         <h1 className="text-display text-foreground">Access requests</h1>
         <p className="text-body text-muted-foreground mt-1">
-          Everyone who signed up through the portal link and is waiting to be let in. Most are students you just closed — approve them and set up their payment.
+          Everyone who signed up through the portal link and is waiting to be let in. Most are students you just closed. Approve them and set up their payment.
         </p>
       </header>
 

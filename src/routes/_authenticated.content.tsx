@@ -9,7 +9,7 @@ export const Route = createFileRoute("/_authenticated/content")({
   validateSearch: (s: Record<string, unknown>) => ({
     tab: (s.tab as string) ?? "plan",
   }),
-  head: () => ({ meta: [{ title: "Content — ISA Portal" }] }),
+  head: () => ({ meta: [{ title: "Content · ISA Portal" }] }),
   component: ContentPage,
 });
 

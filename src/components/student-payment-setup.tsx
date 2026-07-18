@@ -92,7 +92,7 @@ export function StudentPaymentSetup({
           calls_allotted: callsAllotted,
         } as never).eq("id", student.id);
         if (stuErr) throw new Error("Student: " + stuErr.message);
-        toast.success("Scholarship set — no deal or installments created");
+        toast.success("Scholarship set · no deal or installments created");
         onDone();
       } catch (e) {
         toast.error(String((e as Error).message ?? e));
@@ -196,7 +196,7 @@ export function StudentPaymentSetup({
         }
       }
 
-      toast.success("Payment set up — deal and installments created");
+      toast.success("Payment set up · deal and installments created");
       onDone();
     } catch (e) {
       toast.error(String((e as Error).message ?? e));
@@ -211,7 +211,7 @@ export function StudentPaymentSetup({
     <Dialog open onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-lg max-h-[92vh] overflow-y-auto overscroll-contain">
         <DialogHeader>
-          <DialogTitle>Set up payment — {student.full_name}</DialogTitle>
+          <DialogTitle>Set up payment · {student.full_name}</DialogTitle>
           <p className="text-caption text-muted-foreground">
             Creates the deal and installment plan; Revenue and Installments update automatically.
           </p>
@@ -235,7 +235,7 @@ export function StudentPaymentSetup({
                 className={`text-left p-3 rounded-lg border transition ${pkg === "group_only" ? "border-primary/40 bg-primary/10" : "border-[var(--border)] bg-[var(--card)] hover:bg-muted"}`}
               >
                 <div className="text-sm font-medium">Group Expertise Pathway</div>
-                <div className="text-[11px] text-muted-foreground mt-0.5">Group coaching only — no 1:1 calls</div>
+                <div className="text-[11px] text-muted-foreground mt-0.5">Group coaching only · no 1:1 calls</div>
               </button>
             </div>
           </div>
@@ -256,7 +256,7 @@ export function StudentPaymentSetup({
 
         {payMode === "scholarship" ? (
           <div className="rounded-lg border border-primary/25 bg-primary/10 px-3 py-2.5 text-caption text-primary">
-            Free placement — no deal, revenue, or installment plan is created. The student is marked Scholarship and gets full program access.
+            Free placement · no deal, revenue, or installment plan is created. The student is marked Scholarship and gets full program access.
           </div>
         ) : (<>
         <div className="grid grid-cols-2 gap-3">
@@ -277,7 +277,7 @@ export function StudentPaymentSetup({
           </div>
           <div className="space-y-1.5">
             <Label className="text-caption text-muted-foreground">Setter (optional)</Label>
-            <SelectField value={setterId} onChange={setSetterId} options={personOpts(setters)} allowEmpty emptyLabel="— None —" placeholder="— None —" className="h-9 text-sm" />
+            <SelectField value={setterId} onChange={setSetterId} options={personOpts(setters)} allowEmpty emptyLabel="– None –" placeholder="– None –" className="h-9 text-sm" />
           </div>
         </div>
         </>)}

@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { SelectField } from "@/components/ui/select-field";
 
 export const Route = createFileRoute("/_authenticated/action-items")({
-  head: () => ({ meta: [{ title: "Action Items — ISA Team" }] }),
+  head: () => ({ meta: [{ title: "Action Items · ISA Team" }] }),
   component: ActionItemsHub,
 });
 
@@ -118,7 +118,7 @@ function ActionItemsHub() {
           studentId: c.student_id,
           studentName: students[c.student_id] ?? "Unknown",
           ownerId: c.coach_id,
-          ownerName: c.coach_id ? (profiles[c.coach_id] ?? "—") : "Unassigned",
+          ownerName: c.coach_id ? (profiles[c.coach_id] ?? "–") : "Unassigned",
           ownerLabel: "Coach",
           refDate: c.call_date,
           canDelete: false,
@@ -137,7 +137,7 @@ function ActionItemsHub() {
         studentId: a.student_id,
         studentName: a.student_id ? (students[a.student_id] ?? "Unknown") : (profiles[a.assignee_id ?? ""] ?? "Team"),
         ownerId,
-        ownerName: profiles[ownerId] ?? "—",
+        ownerName: profiles[ownerId] ?? "–",
         ownerLabel: a.assignee_id ? "Assignee" : "Assigned by",
         createdByName: profiles[a.created_by] ?? undefined,
         refDate: a.created_at.slice(0, 10),
@@ -302,7 +302,7 @@ function ActionItemsHub() {
             <div
               key={r.key}
               className="grid grid-cols-[24px_minmax(0,1fr)_28px] sm:grid-cols-[24px_minmax(0,1fr)_140px_120px_90px_28px] gap-2 items-center px-3 py-2.5 border-b border-[var(--accent)] last:border-0 hover:bg-[var(--muted)]"
-              title={r.source === "call" ? "From 1:1 call — student ticks off in portal" : "Ad-hoc — staff or student can tick off"}
+              title={r.source === "call" ? "From 1:1 call · student ticks off in portal" : "Ad-hoc · staff or student can tick off"}
             >
               <Checkbox
                 checked={r.done}
@@ -347,7 +347,7 @@ function ActionItemsHub() {
               )}
               <span className="hidden sm:block text-xs text-muted-foreground truncate" title={r.ownerLabel}>{r.ownerName}</span>
               <span className={`hidden sm:block text-[11px] text-right ${overdue ? "text-danger-fg" : r.due ? "text-muted-foreground" : "text-[#2a3140]"}`}>
-                {r.due ? (overdue ? <span className="inline-flex items-center gap-1" title={r.due}><AlertTriangle className="h-3 w-3" />{humanDue(r.due)}</span> : <span title={r.due}>{humanDue(r.due)}</span>) : "—"}
+                {r.due ? (overdue ? <span className="inline-flex items-center gap-1" title={r.due}><AlertTriangle className="h-3 w-3" />{humanDue(r.due)}</span> : <span title={r.due}>{humanDue(r.due)}</span>) : "–"}
               </span>
               <span className="flex justify-end">
                 {r.canDelete && r.adhocId && (

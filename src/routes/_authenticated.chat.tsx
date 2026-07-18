@@ -9,7 +9,7 @@ import { MessagesSquare, Send, Trash2 } from "lucide-react";
 import { MentionTextarea, type MentionPerson } from "@/components/mention-textarea";
 
 export const Route = createFileRoute("/_authenticated/chat")({
-  head: () => ({ meta: [{ title: "Team Chat — ISA Team" }] }),
+  head: () => ({ meta: [{ title: "Team Chat · ISA Team" }] }),
   component: ChatPage,
 });
 
@@ -120,7 +120,7 @@ function ChatInner({ userId, isAdmin }: { userId: string; isAdmin: boolean }) {
         </div>
         <h1 className="text-display text-foreground">Team Chat</h1>
         <p className="text-body text-muted-foreground mt-1">
-          Anything goes — questions, wins, issues, tips, bugs. History stays forever.
+          Anything goes · questions, wins, issues, tips, bugs. History stays forever.
         </p>
       </header>
 

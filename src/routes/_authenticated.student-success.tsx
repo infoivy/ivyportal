@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/student-success")({
-  head: () => ({ meta: [{ title: "Student Success HQ — ISA" }] }),
+  head: () => ({ meta: [{ title: "Student Success HQ · ISA" }] }),
   component: StudentSuccessHQ,
 });
 
@@ -357,7 +357,7 @@ export function StudentSuccessInner() {
 
           {/* ─── WEEKLY DIGEST TAB ────────────────────────────── */}
           <TabsContent value="digest" className="space-y-3">
-            <h2 className="text-[13px] text-muted-foreground">Weekly digest — {weekStart} to {weekEnd}</h2>
+            <h2 className="text-[13px] text-muted-foreground">Weekly digest · {weekStart} to {weekEnd}</h2>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <DigestCard label="New students this week" value={digest.newThisWeek} icon={<Users className="h-4 w-4 text-muted-foreground" />} />
               <DigestCard label="Offers won" value={digest.graduated} icon={<Trophy className="h-4 w-4 text-warning-fg" />} />

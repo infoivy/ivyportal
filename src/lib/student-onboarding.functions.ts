@@ -56,7 +56,7 @@ export const completeStudentOnboarding = createServerFn({ method: "POST" })
         await supabaseAdmin.from("student_action_items").insert({
           student_id: student.id,
           created_by: context.userId,
-          text: `Book your 1:1 coaching calls — you have ${allotted} with your coach. Book the first one now, don't sit on them.`,
+          text: `Book your 1:1 coaching calls. You have ${allotted} with your coach. Book the first one now, don't sit on them.`,
         });
       }
     }
@@ -64,7 +64,7 @@ export const completeStudentOnboarding = createServerFn({ method: "POST" })
     // Best-effort: the unlock must not fail because the announcement did.
     const pathway = oneOnOne ? "1:1 Pathway" : "Group Expertise Pathway";
     await supabaseAdmin.from("team_chat").insert({
-      body: `🎓 ${student.full_name} completed Start Here onboarding (${pathway}) — portal unlocked, now in ${phase === "coaching_1on1" ? "coaching" : phase.replace("_", " ")}.`,
+      body: `🎓 ${student.full_name} completed Start Here onboarding (${pathway}). Portal unlocked, now in ${phase === "coaching_1on1" ? "coaching" : phase.replace("_", " ")}.`,
       kind: "general",
       created_by: context.userId,
       student_id: student.id,

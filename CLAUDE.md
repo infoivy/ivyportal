@@ -41,6 +41,10 @@ UI checks use `const { roles } = useAuth()` and `roles.includes('role')`. Do not
 - Historical EOD and revenue records are operational records, not content: do not alter or delete them. Add a new correction/adjustment flow if the business needs an audit trail; never silently rewrite history.
 - Do not put Supabase service-role keys, access tokens, OAuth secrets, or customer data in git, browser code, logs, or documentation.
 
+## Copy style
+
+Never use em dashes (—) in user-facing text (founder-directed 2026-07-18). Use a period, comma, colon, or the " · " separator instead. Empty-value placeholders in tables use "–" (en dash), not "—".
+
 ## Change discipline
 
 Keep changes small, typed, and migration-backed. Run `npm run build` and `npx tsc --noEmit` after app changes; run `npm run supabase:verify` after a deployment/migration. Preserve RLS. Use an explicit new migration for schema, policy, function, trigger, or bucket changes. Do not use the service role in client code. Do not change commission rules, role gates, EOD KPIs, or data-history behavior without explicit written approval.

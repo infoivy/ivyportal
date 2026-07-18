@@ -34,7 +34,7 @@ type ConnectStatus =
   | "ok" | "denied" | "missing" | "invalid_state" | "no_refresh" | "db_error" | "exchange_failed";
 
 export const Route = createFileRoute("/_authenticated/calendar")({
-  head: () => ({ meta: [{ title: "Calendar — ISA Team" }] }),
+  head: () => ({ meta: [{ title: "Calendar · ISA Team" }] }),
   validateSearch: (s: Record<string, unknown>) => ({
     connect: (s.connect as ConnectStatus | undefined) ?? undefined,
   }),
@@ -53,7 +53,7 @@ function cleanDescription(html: string): string {
   const text = typeof window !== "undefined"
     ? new DOMParser().parseFromString(withBreaks, "text/html").body.textContent ?? ""
     : withBreaks.replace(/<[^>]+>/g, "");
-  return text.replace(/[—–_-]{6,}/g, "").replace(/\n{3,}/g, "\n\n").trim();
+  return text.replace(/[––_-]{6,}/g, "").replace(/\n{3,}/g, "\n\n").trim();
 }
 
 const URL_RE = /(https?:\/\/[^\s<>"']+)/g;
@@ -213,7 +213,7 @@ function CalendarPage() {
         autoCancelled.current.add(s.id);
         cancelSetFn({ data: { id: s.id, reason: "no confirmation 6h before the call" } })
           .then(() => {
-            toast.warning(`${s.prospect} removed — no confirmation 6h before the call.`);
+            toast.warning(`${s.prospect} removed · no confirmation 6h before the call.`);
             qc.invalidateQueries({ queryKey: ["cal", "sets"] });
           })
           .catch(() => {});
@@ -502,7 +502,7 @@ function CalendarPage() {
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
               <h2 className="text-title text-foreground">Set reminders</h2>
-              <p className="text-caption text-muted-foreground">Closing-call bookings (Pathway Onboarding + ISA Call links) land here automatically — coaching calls never do. Tick each reminder as you send it, confirm the lead, and unconfirmed sets auto-drop 6h before the call.</p>
+              <p className="text-caption text-muted-foreground">Closing-call bookings (Pathway Onboarding + ISA Call links) land here automatically · coaching calls never do. Tick each reminder as you send it, confirm the lead, and unconfirmed sets auto-drop 6h before the call.</p>
             </div>
             <div className="flex gap-1">
               {(["all", "mine"] as const).map((f) => (
@@ -551,14 +551,14 @@ function CalendarPage() {
               try {
                 await unclaimSetFn({ data: { id } });
                 qc.invalidateQueries({ queryKey: ["cal", "sets"] });
-                toast.success("Unclaimed — back in the pool (removed from the calendar).");
+                toast.success("Unclaimed · back in the pool (removed from the calendar).");
               } catch (err) { toast.error(String((err as Error).message ?? err)); }
             }}
             onAssign={async (id, userId) => {
               try {
                 const r = await assignSetFn({ data: { id, userId } });
                 qc.invalidateQueries({ queryKey: ["cal", "sets"] });
-                toast.success(r.calendar ? "Assigned — it's on their calendar with reminders." : "Assigned. They should connect Google Calendar for the reminders.");
+                toast.success(r.calendar ? "Assigned · it's on their calendar with reminders." : "Assigned. They should connect Google Calendar for the reminders.");
               } catch (err) { toast.error(String((err as Error).message ?? err)); }
             }}
             onTrack={(id, window, state) => {
@@ -578,7 +578,7 @@ function CalendarPage() {
               qc.setQueryData<UpcomingSet[]>(["cal", "sets"], (old) => (old ?? []).map((r) =>
                 r.id === id ? { ...r, confirmed_at: confirm ? new Date().toISOString() : null } : r,
               ));
-              if (confirm) toast.success("Confirmed — the slot is locked in.");
+              if (confirm) toast.success("Confirmed · the slot is locked in.");
               trackSetFn({ data: { id, confirm } }).catch((err) => {
                 toast.error(String((err as Error).message ?? err));
                 qc.invalidateQueries({ queryKey: ["cal", "sets"] });
@@ -597,14 +597,14 @@ function CalendarPage() {
               try {
                 const r = await cancelSetFn({ data: { id, reason: "removed manually" } });
                 qc.invalidateQueries({ queryKey: ["cal", "sets"] });
-                toast.success(r.calendarRemoved ? "Cancelled and removed from the calendar. Undo below if that was a mistake." : "Cancelled — undo below if that was a mistake.");
+                toast.success(r.calendarRemoved ? "Cancelled and removed from the calendar. Undo below if that was a mistake." : "Cancelled · undo below if that was a mistake.");
               } catch (err) { toast.error(String((err as Error).message ?? err)); }
             }}
             onRestore={async (id) => {
               try {
                 const r = await restoreSetFn({ data: { id } });
                 qc.invalidateQueries({ queryKey: ["cal", "sets"] });
-                toast.success(r.calendarRestored ? "Restored — it's back on the calendar with reminders." : "Restored to the list. Reconnect Google Calendar to re-add the event.");
+                toast.success(r.calendarRestored ? "Restored · it's back on the calendar with reminders." : "Restored to the list. Reconnect Google Calendar to re-add the event.");
               } catch (err) { toast.error(String((err as Error).message ?? err)); }
             }}
             onClaim={async (id) => {
@@ -612,7 +612,7 @@ function CalendarPage() {
                 const r = await claimSetFn({ data: { id } });
                 qc.invalidateQueries({ queryKey: ["cal", "sets"] });
                 toast.success(r.calendar
-                  ? "Claimed — it's on your calendar with reminders 2d · 1d · 3h · 1h before."
+                  ? "Claimed · it's on your calendar with reminders 2d · 1d · 3h · 1h before."
                   : "Claimed. Connect your Google Calendar to get the reminders.");
               } catch (err) { toast.error(String((err as Error).message ?? err)); }
             }}
@@ -641,7 +641,7 @@ function CalendarPage() {
                 const start = new Date(ev.start);
                 const durationMin = Math.max(15, Math.round((new Date(ev.end).getTime() - start.getTime()) / 60000));
                 await setReminderFn({ data: { prospect: ev.summary.replace(/^Set:\s*/i, ""), startISO: ev.start, durationMin, notes: ev.description ? cleanDescription(ev.description) : undefined, source: "claimed" } });
-                toast.success("Set claimed — it's on your calendar with reminders 2d · 1d · 3h · 1h before.");
+                toast.success("Set claimed · it's on your calendar with reminders 2d · 1d · 3h · 1h before.");
                 qc.invalidateQueries({ queryKey: ["cal", "sets"] });
                 setSelectedEvent(null);
               } catch (err) {
@@ -661,7 +661,7 @@ function CalendarPage() {
             try {
               const r = await setReminderFn({ data: { ...input, source: "manual" as const } });
               qc.invalidateQueries({ queryKey: ["cal", "sets"] });
-              toast.success("Set logged — reminders at 2 days, 1 day, 3 hours, and 1 hour before.");
+              toast.success("Set logged · reminders at 2 days, 1 day, 3 hours, and 1 hour before.");
               if (r.htmlLink) window.open(r.htmlLink, "_blank");
               setSetOpen(false);
             } catch (e) {
@@ -751,7 +751,7 @@ function DayColumn({ day, events, onSelect, toLocal, hourStart, hourRows }: { da
           const top = ((startMin - hourStart * 60) / 60) * ROW_PX;
           const height = Math.max(20, ((endMin - startMin) / 60) * ROW_PX);
           if (top + height < 0 || top > hourRows * ROW_PX) return null;
-          const compact = height < 36; // one line only — no clipped second line
+          const compact = height < 36; // one line only · no clipped second line
           const widthPct = 100 / cols;
           return (
             <button
@@ -973,7 +973,7 @@ function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, o
   if (visible.length === 0 && cancelled.length === 0) {
     return (
       <div className="text-caption text-muted-foreground py-6 text-center">
-        {filter === "mine" ? "Nothing here yet — your claimed sets and any unclaimed new bookings will show up here. Check All sets to see the whole team's." : "No upcoming sets yet. New closing-call bookings land here automatically."}
+        {filter === "mine" ? "Nothing here yet · your claimed sets and any unclaimed new bookings will show up here. Check All sets to see the whole team's." : "No upcoming sets yet. New closing-call bookings land here automatically."}
       </div>
     );
   }
@@ -1034,7 +1034,7 @@ function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, o
                 </span>
               ) : (
                 <span className="text-micro font-medium text-warning-fg bg-warning-bg border border-warning/25 rounded-full px-2 py-0.5 shrink-0">
-                  Unclaimed — needs a setter
+                  Unclaimed · needs a setter
                 </span>
               )}
               {confirmed ? (
@@ -1043,7 +1043,7 @@ function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, o
                 </span>
               ) : (
                 <span className={`text-micro font-medium rounded-full px-2 py-0.5 border shrink-0 ${inDanger ? "text-danger-fg bg-danger-bg border-danger/25" : "text-warning-fg bg-warning-bg border-warning/25"}`}>
-                  {inDanger ? "Unconfirmed — drops 6h before" : "Unconfirmed"}
+                  {inDanger ? "Unconfirmed · drops 6h before" : "Unconfirmed"}
                 </span>
               )}
               {!s.owner_id && (
@@ -1083,7 +1083,7 @@ function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, o
               <div className="text-micro text-muted-foreground pl-0.5">
                 <span className={sentCount === WINDOWS.length ? "text-success-fg" : ""}>{sentCount}/{WINDOWS.length} reminders sent</span>
                 {openDue.length > 0 ? (
-                  <span className="text-danger-fg font-medium"> · {openDue[0].label} reminder due now — send it</span>
+                  <span className="text-danger-fg font-medium"> · {openDue[0].label} reminder due now · send it</span>
                 ) : nextToOpen ? (
                   <span> · next ({nextToOpen.label}) opens in {durLabel(msLeft - nextToOpen.minutes * 60_000)}</span>
                 ) : null}
@@ -1140,7 +1140,7 @@ function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, o
                               : state === "no_response"
                                 ? "tap to clear"
                                 : windowOpen
-                                  ? "due now — tap once sent"
+                                  ? "due now · tap once sent"
                                   : msLeft <= 0 ? "call has started" : `opens ${format(toLocal(opensAt), "EEE h:mm a")}`}
                         </div>
                       </button>
@@ -1152,7 +1152,7 @@ function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, o
                     <button
                       disabled={!canTrack}
                       onClick={() => onTrack(s.id, todayWarmKey, warmToday ? null : "reminded")}
-                      title={warmToday ? "Warm touch logged today — click to undo" : "Booked days out — send one warm touch per day so the lead stays engaged"}
+                      title={warmToday ? "Warm touch logged today · click to undo" : "Booked days out · send one warm touch per day so the lead stays engaged"}
                       className={`text-caption font-medium rounded-md px-3 py-1.5 border motion-safe:transition-colors disabled:cursor-default ${
                         warmToday
                           ? "text-success-fg bg-success-bg border-success/25"
@@ -1175,7 +1175,7 @@ function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, o
                         Lead confirmed ✓
                       </button>
                       <button onClick={() => onCancel(s.id)} className="text-caption text-muted-foreground hover:text-danger-fg motion-safe:transition-colors">
-                        Didn't confirm — remove from calendar
+                        Didn't confirm · remove from calendar
                       </button>
                     </>
                   ))}
@@ -1203,7 +1203,7 @@ function UpcomingSetsList({ sets, loading, filter, onDelete, onClaim, onTrack, o
                       key={w.key}
                       disabled={!canTrack}
                       onClick={() => onTrack(s.id, w.key, next)}
-                      title={state === "reminded" ? `${w.label}: sent — click when the lead confirms` : state === "confirmed" ? `${w.label}: lead confirmed — click for 'no response'` : state === "no_response" ? `${w.label}: reached out, no response — click to clear` : windowOpen ? `${w.label} window open — click when you've sent the reminder` : `${w.label} before the call`}
+                      title={state === "reminded" ? `${w.label}: sent · click when the lead confirms` : state === "confirmed" ? `${w.label}: lead confirmed · click for 'no response'` : state === "no_response" ? `${w.label}: reached out, no response · click to clear` : windowOpen ? `${w.label} window open · click when you've sent the reminder` : `${w.label} before the call`}
                       className={`text-micro font-medium rounded-full px-2 py-0.5 border motion-safe:transition-colors disabled:cursor-default ${
                         state === "confirmed"
                           ? "text-success-fg bg-success-bg border-success/40"
@@ -1287,7 +1287,7 @@ function SetNotes({ id, initial, onSave }: { id: string; initial: string; onSave
       >
         {initial
           ? <span className="text-muted-foreground whitespace-pre-wrap">{initial}</span>
-          : <span className="text-muted-foreground/60 italic">Add notes — objections, context, CRM info…</span>}
+          : <span className="text-muted-foreground/60 italic">Add notes · objections, context, CRM info…</span>}
       </button>
     );
   }
