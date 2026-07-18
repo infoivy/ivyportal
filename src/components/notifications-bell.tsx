@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Bell, DollarSign, HeartHandshake } from "lucide-react";
+import { Bell, DollarSign, HeartHandshake, UserPlus } from "lucide-react";
+import { START_HERE_REQUIRED_KEYS } from "@/lib/student-guide-steps";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -36,11 +37,12 @@ async function fetchStudentAlerts(): Promise<StudentAlert[]> {
   const now = Date.now();
   const thirty = new Date(now - 30 * DAY).toISOString().slice(0, 10);
   const sixty = new Date(now - 60 * DAY).toISOString().slice(0, 10);
-  const [students, eods, calls, placements] = await Promise.all([
+  const [students, eods, calls, placements, guideSteps] = await Promise.all([
     supabase.from("students").select("id, full_name, phase, payment_state, eod_exempt, onboarding_completed_at, created_at, calls_allotted").eq("status", "active"),
     supabase.from("student_eods").select("student_id, report_date").gte("report_date", thirty),
     supabase.from("student_calls").select("student_id, call_date").eq("status", "completed").gte("call_date", sixty),
     supabase.from("student_placements").select("student_id, business_name, interview_at").not("interview_at", "is", null),
+    supabase.from("student_guide_steps").select("student_id, step_key, done_at"),
   ]);
 
   const lastEod = new Map<string, string>();
@@ -51,6 +53,14 @@ async function fetchStudentAlerts(): Promise<StudentAlert[]> {
   for (const c of (calls.data ?? []) as { student_id: string; call_date: string }[]) {
     if (c.call_date > (lastCall.get(c.student_id) ?? "")) lastCall.set(c.student_id, c.call_date);
   }
+  const stepsDone = new Map<string, number>();
+  const lastStepAt = new Map<string, string>();
+  for (const g of (guideSteps.data ?? []) as { student_id: string; step_key: string; done_at: string }[]) {
+    if (START_HERE_REQUIRED_KEYS.includes(g.step_key)) {
+      stepsDone.set(g.student_id, (stepsDone.get(g.student_id) ?? 0) + 1);
+    }
+    if (g.done_at > (lastStepAt.get(g.student_id) ?? "")) lastStepAt.set(g.student_id, g.done_at);
+  }
 
   const alerts: StudentAlert[] = [];
   for (const st of (students.data ?? []) as { id: string; full_name: string; phase: string; payment_state: string | null; eod_exempt?: boolean; onboarding_completed_at?: string | null; created_at?: string; calls_allotted?: number | null }[]) {
@@ -59,6 +69,23 @@ async function fetchStudentAlerts(): Promise<StudentAlert[]> {
     // real completions (stamped later than row creation).
     if (st.onboarding_completed_at && st.created_at !== st.onboarding_completed_at && Date.now() - new Date(st.onboarding_completed_at).getTime() <= 3 * DAY) {
       alerts.push({ key: `onb-${st.id}`, student_id: st.id, student_name: st.full_name, text: "Completed Start Here onboarding — portal unlocked", tone: "text-success-fg" });
+    }
+    // Locked and not moving: no Start Here progress in 3+ days. This is the
+    // lazy-onboarding signal — EOD nags don't apply to locked students, so
+    // this is the alert that keeps them from silently stalling.
+    if (!st.onboarding_completed_at) {
+      const lastActivity = lastStepAt.get(st.id) ?? st.created_at ?? "";
+      const stuckDays = lastActivity ? Math.floor((now - new Date(lastActivity).getTime()) / DAY) : null;
+      if (stuckDays != null && stuckDays >= 3) {
+        const done = stepsDone.get(st.id) ?? 0;
+        alerts.push({
+          key: `stuck-${st.id}`,
+          student_id: st.id,
+          student_name: st.full_name,
+          text: `Stuck in Start Here ${stuckDays}d (${done}/${START_HERE_REQUIRED_KEYS.length} steps)`,
+          tone: stuckDays >= 7 ? "text-danger-fg" : "text-warning-fg",
+        });
+      }
     }
     const eodDate = lastEod.get(st.id);
     const eodDays = eodDate ? Math.floor((now - new Date(eodDate).getTime()) / DAY) : null;
@@ -182,6 +209,21 @@ export function NotificationsBell() {
   });
   const studentAlerts = alertsQ.data ?? [];
 
+  // Signups waiting in Students → Requests — the tab badge alone was easy to
+  // miss (approvals sat 1.5 days before this existed).
+  const canApprove = ["admin", "closer", "csm", "founder", "cofounder"].some((r) => roles.includes(r));
+  const signupsQ = useQuery({
+    queryKey: ["notifications", "pending-signups"],
+    enabled: !!user && canApprove,
+    refetchInterval: 5 * 60_000,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data } = await supabase.rpc("pending_signups");
+      return (data ?? []).length;
+    },
+  });
+  const pendingSignups = signupsQ.data ?? 0;
+
   // Every setter gets pinged about unclaimed closing calls until someone takes them
   const isSetter = roles.includes("setter");
   const unclaimedQ = useQuery({
@@ -193,12 +235,12 @@ export function NotificationsBell() {
   });
   const unclaimedSets = unclaimedQ.data ?? [];
 
-  if (!isAdmin && !isCoach && !isFulfillment && !isSetter && setNudges.length === 0) return null;
+  if (!isAdmin && !isCoach && !isFulfillment && !isSetter && !canApprove && setNudges.length === 0) return null;
 
   const overdue = items.filter(i => i.days < 0).length;
   const dueSoon = items.length - overdue;
-  const badgeCount = items.length + setNudges.length + studentAlerts.length + unclaimedSets.length;
-  const badgeTone = overdue > 0 || setNudges.length > 0 || unclaimedSets.length > 0 || studentAlerts.some(a => a.tone.includes("danger")) ? "bg-danger" : dueSoon > 0 || studentAlerts.length > 0 ? "bg-warning" : "";
+  const badgeCount = items.length + setNudges.length + studentAlerts.length + unclaimedSets.length + pendingSignups;
+  const badgeTone = overdue > 0 || setNudges.length > 0 || unclaimedSets.length > 0 || studentAlerts.some(a => a.tone.includes("danger")) ? "bg-danger" : dueSoon > 0 || studentAlerts.length > 0 || pendingSignups > 0 ? "bg-warning" : "";
 
   return (
     <Popover>
@@ -224,6 +266,20 @@ export function NotificationsBell() {
           </span>
         </div>
         <div className="max-h-96 overflow-auto">
+          {pendingSignups > 0 && (
+            <Link to="/students/requests" className="flex items-start gap-2 px-3 py-2 border-b border-[var(--border)] hover:bg-muted/50 transition">
+              <div className="mt-0.5 h-6 w-6 rounded-sm bg-warning-bg flex items-center justify-center">
+                <UserPlus className="h-3 w-3 text-warning-fg" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs text-foreground">
+                  {pendingSignups} signup{pendingSignups === 1 ? "" : "s"} waiting for approval
+                </div>
+                <div className="text-[10px] text-muted-foreground">New portal accounts with no role yet</div>
+              </div>
+              <span className="text-[10px] font-medium text-warning-fg whitespace-nowrap">review →</span>
+            </Link>
+          )}
           {unclaimedSets.length > 0 && (
             <div className="border-b border-[var(--border)]">
               {unclaimedSets.map(s => (
@@ -275,7 +331,7 @@ export function NotificationsBell() {
               ))}
             </div>
           )}
-          {items.length === 0 && setNudges.length === 0 && studentAlerts.length === 0 ? (
+          {items.length === 0 && setNudges.length === 0 && studentAlerts.length === 0 && pendingSignups === 0 ? (
             <div className="px-3 py-8 text-center text-xs text-muted-foreground">Nothing needs you right now</div>
           ) : (
             items.map(item => {

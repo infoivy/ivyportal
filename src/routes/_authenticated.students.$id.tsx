@@ -49,6 +49,7 @@ type Call = {
 type SEod = {
   id: string; student_id: string; report_date: string;
   applications_submitted: number; outreach_sent: number; replies: number; interviews: number;
+  roleplays: number | null; looms_sent: number | null;
   wins: string | null; blockers: string | null; tomorrow_focus: string | null; summary: string | null;
 };
 type StudentWeeklyEod = {
@@ -201,10 +202,8 @@ function StudentDetail() {
   // ---- Derived stats (all hooks BEFORE any early return) ----
   const totals = useMemo(() => eods.reduce((a, e) => ({
     apps: a.apps + e.applications_submitted,
-    outreach: a.outreach + e.outreach_sent,
-    replies: a.replies + e.replies,
     interviews: a.interviews + e.interviews,
-  }), { apps: 0, outreach: 0, replies: 0, interviews: 0 }), [eods]);
+  }), { apps: 0, interviews: 0 }), [eods]);
 
   const callsUsed = useMemo(() => calls.filter(c => c.status === "completed").length, [calls]);
   const ratings = useMemo(
@@ -454,9 +453,9 @@ function StudentDetail() {
       <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
         <StatCard
           label="Calls used"
-          value={`${callsUsed}/${student.calls_allotted}`}
-          sub={`${Math.max(0, student.calls_allotted - callsUsed)} remaining`}
-          accent={callsUsed >= student.calls_allotted ? "rose" : "sky"}
+          value={student.calls_allotted > 0 ? `${callsUsed}/${student.calls_allotted}` : "Group"}
+          sub={student.calls_allotted > 0 ? `${Math.max(0, student.calls_allotted - callsUsed)} remaining` : "no 1:1 allotment"}
+          accent={student.calls_allotted > 0 && callsUsed >= student.calls_allotted ? "rose" : "sky"}
           icon={<Phone className="h-3 w-3" />}
         />
         <StatCard
@@ -650,8 +649,8 @@ function StudentDetail() {
                 <tr className="border-b border-[var(--accent)]">
                   <th className="text-left p-2">Date</th>
                   <th className="text-right p-2">Apps</th>
-                  <th className="text-right p-2">Outreach</th>
-                  <th className="text-right p-2">Replies</th>
+                  <th className="text-right p-2">Looms</th>
+                  <th className="text-right p-2">Roleplays</th>
                   <th className="text-right p-2">Interviews</th>
                   <th className="text-left p-2">Wins</th>
                   <th className="text-left p-2">Blockers</th>
@@ -663,8 +662,8 @@ function StudentDetail() {
                   <tr key={e.id} className="border-b border-[var(--accent)]">
                     <td className="p-2 font-mono text-muted-foreground">{e.report_date}</td>
                     <td className="p-2 text-right font-mono text-success-fg">{e.applications_submitted}</td>
-                    <td className="p-2 text-right font-mono">{e.outreach_sent}</td>
-                    <td className="p-2 text-right font-mono">{e.replies}</td>
+                    <td className="p-2 text-right font-mono">{e.looms_sent ?? 0}</td>
+                    <td className="p-2 text-right font-mono">{e.roleplays ?? 0}</td>
                     <td className="p-2 text-right font-mono">{e.interviews}</td>
                     <td className="p-2 max-w-[200px] truncate">{e.wins}</td>
                     <td className="p-2 max-w-[200px] truncate text-warning-fg/80">{e.blockers}</td>

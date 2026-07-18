@@ -22,7 +22,10 @@ export const getStudentLeaderboard = createServerFn({ method: "GET" })
     const since = new Date(Date.now() - 6 * 86400000).toISOString().slice(0, 10);
 
     const [{ data: students }, { data: eods }] = await Promise.all([
-      supabaseAdmin.from("students").select("id, full_name, user_id, status").eq("status", "active"),
+      // Locked students can't log EODs — an all-zero "board of 19" where 18
+      // can't compete is meaningless. They join at unlock.
+      supabaseAdmin.from("students").select("id, full_name, user_id, status")
+        .eq("status", "active").not("onboarding_completed_at", "is", null),
       supabaseAdmin.from("student_eods")
         .select("student_id, applications_submitted, looms_sent, interviews")
         .gte("report_date", since),

@@ -45,6 +45,7 @@ type ActionItem = { text: string; done: boolean };
 type StudentEodLite = { student_id: string; report_date: string };
 type StudentWeeklyEodLite = {
   student_id: string; week_start: string; group_calls_attended: number;
+  one_on_one_calls: number | null;
   next_week_commitment: string;
 };
 type AdHocItem = {
@@ -139,7 +140,7 @@ function CsmPage() {
       supabase.from("csm_tally").select("*").eq("user_id", user.id).gte("created_at", since).order("created_at", { ascending: false }),
       supabase.from("student_calls").select("id, student_id, call_date, action_items_json, next_call_date").order("call_date", { ascending: false }).limit(600),
       supabase.from("student_eods").select("student_id, report_date").order("report_date", { ascending: false }).limit(1000),
-      supabase.from("student_weekly_eods").select("student_id, week_start, group_calls_attended, next_week_commitment").order("week_start", { ascending: false }).limit(1000),
+      supabase.from("student_weekly_eods").select("student_id, week_start, group_calls_attended, one_on_one_calls, next_week_commitment").order("week_start", { ascending: false }).limit(1000),
       supabase.from("student_action_items").select("id, student_id, text, done, due_date, created_at, created_by").order("created_at", { ascending: false }).limit(500),
     ]);
     const studentRows = (studentsRes.data ?? []) as Student[];
@@ -437,7 +438,9 @@ function CsmPage() {
                 <AccountStat label="Last student EOD" value={lastStudentEod ?? "—"} tone={lastStudentEod && Date.now() - new Date(lastStudentEod).getTime() < 2 * 86400000 ? "ok" : "warn"} />
                 <AccountStat
                   label={`Weekly calls · ${targetWeeklyEodStart}`}
-                  value={weeklyEodLoadError ? "Load error" : selectedWeeklyEod ? `${selectedWeeklyEod.group_calls_attended}/7` : "Not submitted"}
+                  value={weeklyEodLoadError ? "Load error" : selectedWeeklyEod
+                    ? `${selectedWeeklyEod.group_calls_attended}/7${selectedWeeklyEod.one_on_one_calls != null ? ` · ${selectedWeeklyEod.one_on_one_calls} 1:1` : ""}`
+                    : "Not submitted"}
                   tone={weeklyEodLoadError || !selectedWeeklyEod ? "warn" : undefined}
                 />
                 <AccountStat label="Looms reviewed (14d)" value={studentLoomsReviewed.length} />

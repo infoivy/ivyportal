@@ -138,7 +138,8 @@ export function CsmOverview() {
       <div className="card-surface px-5 py-4 flex flex-wrap items-center gap-x-10 gap-y-3">
         {(() => {
           const bands = { green: 0, amber: 0, red: 0 };
-          for (const h of healthMap?.values() ?? []) bands[h.band] += 1;
+          // Locked Start Here students aren't in the coached population yet.
+          for (const h of healthMap?.values() ?? []) { if (!h.locked) bands[h.band] += 1; }
           const total = bands.green + bands.amber + bands.red || 1;
           return (
             <>

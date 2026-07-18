@@ -71,7 +71,9 @@ export function CsmTodayQueue() {
   if (!ranked || ranked.length === 0) return null;
 
   const touched3d = ranked.filter((s) => s.daysSinceTouch != null && s.daysSinceTouch <= 3).length;
-  const needsWork = ranked.filter((s) => (s.h?.band ?? "amber") !== "green" || s.daysSinceTouch == null || s.daysSinceTouch > 3);
+  // Locked students belong to the "stuck in Start Here" bell alert, not the
+  // daily work queue — they have no EODs/calls/placements to work yet.
+  const needsWork = ranked.filter((s) => !s.h?.locked && ((s.h?.band ?? "amber") !== "green" || s.daysSinceTouch == null || s.daysSinceTouch > 3));
 
   const checkIn = async (studentId: string) => {
     const { error } = await supabase.from("csm_tally").insert({

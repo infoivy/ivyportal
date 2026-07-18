@@ -23,7 +23,7 @@ import { RangePicker, type DateRange, rangeFor, daysBetween } from "@/components
 import { StatDrilldown, type MetricKey } from "@/components/stat-drilldown";
 import { DashboardSettingsSheet } from "@/components/dashboard-settings-sheet";
 import { useDashboardPrefs } from "@/lib/dashboard-prefs";
-import { humanDue } from "@/lib/dates";
+import { humanDue, todayLocal } from "@/lib/dates";
 import { VolumeAreaChart, VolumeLegend, type VolumeSeries } from "@/components/ui/volume-area-chart";
 import { OnboardingPanel } from "@/components/onboarding-panel";
 import { MochiIgSection } from "@/components/mochi-ig-section";
@@ -1064,7 +1064,9 @@ function MyDayBlock({ roles }: { roles: string[] }) {
 
   useEffect(() => {
     if (!user) return;
-    const today = new Date().toISOString().slice(0, 10);
+    // Local day, not UTC — an exact .eq("call_date", …) match with the UTC
+    // date shows yesterday's calls between midnight and 3am in Riyadh.
+    const today = todayLocal();
     const in7 = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
     const eodRisk = new Date(Date.now() - 5 * 86400000).toISOString().slice(0, 10);
     const staleCall = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);

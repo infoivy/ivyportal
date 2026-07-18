@@ -12,8 +12,9 @@ import { signAvatars } from "@/lib/avatars";
 import { toast } from "sonner";
 import {
   School, Search, Plus, LayoutGrid, Table as TableIcon, Trash2, X,
-  ChevronRight, Users, AlertTriangle, Columns3, Award, MessageSquare, Trophy, Download,
+  ChevronRight, Users, AlertTriangle, Columns3, Award, MessageSquare, Trophy, Download, Lock,
 } from "lucide-react";
+import { START_HERE_REQUIRED_KEYS } from "@/lib/student-guide-steps";
 import { exportToCsv } from "@/lib/csv";
 import { DateField } from "@/components/ui/date-field";
 import { SelectField } from "@/components/ui/select-field";
@@ -37,6 +38,7 @@ type Student = {
   calls_allotted: number; payment_state: PaymentState | null;
   first_win_at: string | null; offer_landed_at: string | null;
   testimonial_collected: boolean; trustpilot_collected: boolean;
+  onboarding_completed_at: string | null;
   created_at: string; updated_at: string;
 };
 type Coach = { id: string; display_name: string | null };
@@ -91,6 +93,20 @@ function StudentsLayout() {
 
   const qc = useQueryClient();
   const { data: students = [], isLoading: studentsLoading } = useQuery(studentsQuery()) as { data: Student[]; isLoading: boolean };
+  // Start Here progress for locked students — who's moving, who's stalling.
+  const guideStepsQ = useQuery({
+    queryKey: ["student_guide_steps", "all"],
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data } = await supabase.from("student_guide_steps").select("student_id, step_key");
+      const counts: Record<string, number> = {};
+      for (const r of data ?? []) {
+        if (START_HERE_REQUIRED_KEYS.includes(r.step_key)) counts[r.student_id] = (counts[r.student_id] ?? 0) + 1;
+      }
+      return counts;
+    },
+  });
+  const startHereCount = (id: string) => guideStepsQ.data?.[id] ?? 0;
   const { data: coaches = [] } = useQuery(coachesQuery()) as { data: Coach[] };
   const { data: callAgg } = useQuery(studentCallsAggQuery());
   const { data: eodAgg } = useQuery(studentEodsAggQuery());
@@ -155,6 +171,12 @@ function StudentsLayout() {
     const reasons: string[] = [];
     // Past coaching (offer won, testimonial) or dormant — not in the risk pool.
     if (!["onboarding", "coaching_1on1", "applying"].includes(s.phase)) return { risky: false, reasons };
+    // Locked in Start Here: EODs/calls/apps can't exist yet — the roster lock
+    // badge and the "stuck in Start Here" bell alert own that population.
+    if (!s.onboarding_completed_at) {
+      if (s.status === "ghosting") reasons.push("Ghosting");
+      return { risky: reasons.length > 0, reasons };
+    }
     if (s.status === "ghosting") reasons.push("Ghosting");
     const lastEod = lastEodByStudent[s.id];
     const eodDays = lastEod ? daysSince(lastEod) : null;
@@ -163,14 +185,16 @@ function StudentsLayout() {
     } else if (eodDays != null && eodDays >= 5) {
       reasons.push(`No EOD ${eodDays}d`);
     }
-    if (s.phase === "coaching_1on1") {
+    if (s.phase === "coaching_1on1" && s.calls_allotted > 0) {
       const last = lastCallByStudent[s.id];
       const d = last ? daysSince(last) : null;
       if (d == null) reasons.push("No 1:1 yet");
       else if (d > 14) reasons.push(`No 1:1 ${d}d`);
     }
+    // Applications only start once looms are approved (phase = applying);
+    // pre-approval students are doing looms, not apps.
     const apps = apps7dByStudent[s.id] ?? 0;
-    if (s.phase !== "onboarding" && apps === 0 && lastEod && daysSince(lastEod) < 7) {
+    if (s.phase === "applying" && apps === 0 && lastEod && daysSince(lastEod) < 7) {
       reasons.push("Low apps");
     }
     return { risky: reasons.length > 0, reasons };
@@ -453,6 +477,16 @@ function StudentsLayout() {
                         {(() => {
                           const h = healthMap?.get(s.id);
                           if (!h) return <span className="text-[11px] text-muted-foreground">…</span>;
+                          if (h.locked) {
+                            return (
+                              <span
+                                className="text-[10px] px-1.5 py-0.5 rounded-full border border-border bg-muted text-muted-foreground"
+                                title={h.reasons.join(" · ")}
+                              >
+                                onboarding
+                              </span>
+                            );
+                          }
                           return (
                             <span
                               className={`text-[11px] font-medium tabular-nums px-1.5 py-0.5 rounded-full border ${BAND_META[h.band].chip}`}
@@ -477,6 +511,14 @@ function StudentsLayout() {
                           <SelectField value={s.phase} onChange={v => updateStudent(s.id, { phase: v as Phase })} options={PHASES.map(p => ({ value: p.key, label: p.label }))} className={`w-auto text-[12px] ${phaseMeta(s.phase).color}`} />
                         ) : (
                           <span className={`inline-flex items-center text-[12px] px-2 py-0.5 rounded-md border ${phaseMeta(s.phase).color}`}>{phaseMeta(s.phase).label}</span>
+                        )}
+                        {!s.onboarding_completed_at && (
+                          <span
+                            className="mt-1 flex w-fit items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md bg-warning-bg text-warning-fg"
+                            title="Portal locked until every Start Here step is done"
+                          >
+                            <Lock className="h-2.5 w-2.5" /> Start Here {startHereCount(s.id)}/{START_HERE_REQUIRED_KEYS.length}
+                          </span>
                         )}
                       </td>
                     )}
@@ -506,8 +548,10 @@ function StudentsLayout() {
                       </td>
                     )}
                     {visibleCols.has("calls_remaining") && (
-                      <td className={`px-2 py-3 text-right text-xs ${remaining === 0 ? "text-danger-fg" : "text-foreground"}`}>
-                        {remaining}<span className="text-muted-foreground">/{s.calls_allotted}</span>
+                      <td className={`px-2 py-3 text-right text-xs ${s.calls_allotted > 0 && remaining === 0 ? "text-danger-fg" : "text-foreground"}`}>
+                        {s.calls_allotted > 0
+                          ? <>{remaining}<span className="text-muted-foreground">/{s.calls_allotted}</span></>
+                          : <span className="text-[10px] text-muted-foreground">group</span>}
                       </td>
                     )}
                     {visibleCols.has("last_call") && (

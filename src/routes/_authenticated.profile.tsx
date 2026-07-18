@@ -77,14 +77,6 @@ function ProfilePage() {
     toast.success("Profile saved");
   };
 
-  const changePassword = async () => {
-    const pw = prompt("Enter new password (min 8 chars):");
-    if (!pw || pw.length < 8) return;
-    const { error } = await supabase.auth.updateUser({ password: pw });
-    if (error) return toast.error(error.message);
-    toast.success("Password updated");
-  };
-
   return (
     <div className="p-4 sm:p-6 max-w-2xl mx-auto space-y-5">
       <header>
@@ -129,10 +121,8 @@ function ProfilePage() {
           />
         </div>
 
-        <div className="flex items-center justify-between pt-3 border-t border-[var(--border)]">
-          <button onClick={changePassword} className="text-xs text-muted-foreground hover:text-foreground">
-            Change password
-          </button>
+        {/* Password changes live in the PasswordCard below — one control, proper input */}
+        <div className="flex items-center justify-end pt-3 border-t border-[var(--border)]">
           <button onClick={save} disabled={saving} className="flex items-center gap-1 bg-primary hover:bg-primary/90 text-primary-foreground font-medium px-3 py-1.5 rounded-sm text-xs">
             <Save className="h-3 w-3" /> {saving ? "Saving…" : "Save changes"}
           </button>

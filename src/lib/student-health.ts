@@ -20,6 +20,8 @@ export type StudentHealth = {
   reasons: string[];
   /** Days since the student was last seen in any signal (EOD/call/placement). */
   daysQuiet: number | null;
+  /** Still locked in Start Here — none of the activity judgments apply yet. */
+  locked?: boolean;
 };
 
 export type HealthInputs = {
@@ -31,6 +33,7 @@ export type HealthInputs = {
   /** 14d totals from student EODs. */
   roleplays14: number;
   looms14: number;
+  apps14: number;
   /** Open action items past due / total open. */
   overdueItems: number;
   openItems: number;
@@ -42,6 +45,8 @@ export type HealthInputs = {
   interviewUpcoming: boolean;
   /** Founder-set switch: this student's EODs aren't tracked — no missed-EOD or volume penalties. */
   eodExempt?: boolean;
+  /** Locked in Start Here onboarding: cannot submit EODs, book path hasn't started. */
+  locked?: boolean;
 };
 
 const DAY = 86400000;
@@ -51,6 +56,15 @@ const daysSince = (iso: string | null | undefined) =>
 export function computeStudentHealth(i: HealthInputs): StudentHealth {
   const reasons: string[] = [];
 
+  // Locked in Start Here: EODs, calls, volume, and placements can't have
+  // happened yet — scoring them as absent floods the CSM queue with red.
+  // The "stuck in Start Here" bell alert owns this population instead.
+  if (i.locked) {
+    if (i.paymentState === "behind") reasons.push("Payment behind");
+    reasons.push("In Start Here onboarding — portal locked");
+    return { score: 0, band: i.paymentState === "behind" ? "red" : "amber", reasons, daysQuiet: null, locked: true };
+  }
+
   // EOD consistency (35) — exempt students get full credit, no nagging
   const recent = i.eodDates.map((d) => d.slice(0, 10)).sort().reverse();
   const lastEodDays = recent.length ? daysSince(recent[0])! : null;
@@ -58,7 +72,8 @@ export function computeStudentHealth(i: HealthInputs): StudentHealth {
   if (i.eodExempt) {
     eodScore = 35;
   } else {
-    const cutoff14 = new Date(Date.now() - 13 * DAY).toISOString().slice(0, 10);
+    // Local day to match report_date (a local-day string), not UTC.
+    const cutoff14 = new Intl.DateTimeFormat("en-CA").format(new Date(Date.now() - 13 * DAY));
     const submitted14 = new Set(recent.filter((d) => d >= cutoff14)).size;
     eodScore = (submitted14 / 14) * 25;
     if (lastEodDays == null) { eodScore = 0; reasons.push("Never submitted an EOD"); }
@@ -84,16 +99,20 @@ export function computeStudentHealth(i: HealthInputs): StudentHealth {
     else if (callDays > 9) callScore = 10;
   }
 
-  // Work volume (15): targets are 3 roleplays + 5 looms per day.
-  // Volume comes from EODs, so exempt students get full credit here too.
+  // Work volume (15): 3 roleplays/day always, plus the stage metric —
+  // 3 looms/day for review pre-approval, 5 loom applications/day once
+  // approved (phase applying+). Volume comes from EODs, so exempt students
+  // get full credit here too.
   let volumeScore = 15;
   if (!i.eodExempt) {
+    const applying = ["applying", "offer_won", "testimonial"].includes(i.phase);
     const targetRoleplays = 3 * 14;
-    const targetLooms = 5 * 14;
-    const volumeRatio = Math.min(1, (i.roleplays14 / targetRoleplays + i.looms14 / targetLooms) / 2);
+    const stageDone = applying ? i.apps14 : i.looms14;
+    const stageTarget = (applying ? 5 : 3) * 14;
+    const volumeRatio = Math.min(1, (i.roleplays14 / targetRoleplays + stageDone / stageTarget) / 2);
     volumeScore = Math.round(volumeRatio * 15);
     if (volumeRatio < 0.3 && lastEodDays != null && lastEodDays < 5) {
-      reasons.push("Roleplay/loom volume far below target");
+      reasons.push(applying ? "Roleplay/application volume far below target" : "Roleplay/loom volume far below target");
     }
   }
 

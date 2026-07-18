@@ -2,7 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { computeStudentHealth, type StudentHealth } from "@/lib/student-health";
 
-const iso = (d: Date) => d.toISOString().slice(0, 10);
+// Local calendar day — report_date and due_date are local-day strings, and
+// toISOString() would shift them near midnight in positive-offset timezones.
+const localFmt = new Intl.DateTimeFormat("en-CA");
+const iso = (d: Date) => localFmt.format(d);
 
 export type HealthMap = Map<string, StudentHealth>;
 
@@ -18,8 +21,8 @@ export function useStudentHealth() {
       const sixty = iso(new Date(Date.now() - 59 * 86400000));
       const fourteen = iso(new Date(Date.now() - 13 * 86400000));
       const [students, eods, items, calls, placements] = await Promise.all([
-        supabase.from("students").select("id, status, phase, payment_state, eod_exempt"),
-        supabase.from("student_eods").select("student_id, report_date, roleplays, looms_sent").gte("report_date", sixty),
+        supabase.from("students").select("id, status, phase, payment_state, eod_exempt, onboarding_completed_at"),
+        supabase.from("student_eods").select("student_id, report_date, roleplays, looms_sent, applications_submitted").gte("report_date", sixty),
         supabase.from("student_action_items").select("student_id, due_date, done").eq("done", false),
         supabase.from("student_calls").select("student_id, call_date, status").eq("status", "completed").gte("call_date", sixty),
         supabase.from("student_placements").select("student_id, stage, updated_at, interview_at"),
@@ -66,6 +69,7 @@ export function useStudentHealth() {
           eodDates: es.map((e) => e.report_date),
           roleplays14: recent14.reduce((a, e) => a + (e.roleplays ?? 0), 0),
           looms14: recent14.reduce((a, e) => a + (e.looms_sent ?? 0), 0),
+          apps14: recent14.reduce((a, e) => a + ((e as { applications_submitted?: number | null }).applications_submitted ?? 0), 0),
           overdueItems: itemRow.overdue,
           openItems: itemRow.open,
           lastCallDate: lastCallBy.get(s.id) ?? null,
@@ -73,6 +77,7 @@ export function useStudentHealth() {
           placementActivity14: pls.some((p) => p.updated_at >= fourteen),
           interviewUpcoming: pls.some((p) => p.interview_at && p.interview_at > new Date().toISOString()),
           eodExempt: !!s.eod_exempt,
+          locked: !s.onboarding_completed_at,
         }));
       }
       return map;

@@ -23,6 +23,7 @@ type Student = {
   join_date: string;
   testimonial_collected: boolean;
   payment_state: string | null;
+  onboarding_completed_at: string | null;
 };
 
 type CallRow = { student_id: string; call_date: string; next_call_date: string | null };
@@ -70,7 +71,7 @@ export function StudentSuccessInner() {
   const load = useCallback(async () => {
     setLoading(true);
     const [studRes, callsRes, instRes, payRes, adhocRes, eodRes, noteRes, profRes] = await Promise.all([
-      supabase.from("students").select("id, full_name, email, phase, status, coach_id, join_date, testimonial_collected, payment_state").order("full_name"),
+      supabase.from("students").select("id, full_name, email, phase, status, coach_id, join_date, testimonial_collected, payment_state, onboarding_completed_at").order("full_name"),
       supabase.from("student_calls").select("student_id, call_date, next_call_date").order("call_date", { ascending: false }).limit(2000),
       supabase.from("installments").select("id, student_id"),
       supabase.from("installment_payments").select("id, installment_id, status, due_date"),
@@ -124,11 +125,14 @@ export function StudentSuccessInner() {
       // Only students still in the active journey can be at-risk; the 1:1
       // cadence check only applies while they are actually in coaching.
       if (!["onboarding", "coaching_1on1", "applying"].includes(s.phase)) return false;
+      const isGhosting = s.status === "ghosting";
+      const paymentLate = lateStudentIds.has(s.id);
+      // Locked in Start Here: no EODs or 1:1s can exist yet — only ghosting
+      // and payment problems count against them here.
+      if (!s.onboarding_completed_at) return isGhosting || paymentLate;
       const lastCall = recentCallByStudent.get(s.id);
       const noRecentCall = s.phase === "coaching_1on1" && (!lastCall || lastCall < fourteenDaysAgo);
-      const isGhosting = s.status === "ghosting";
       const noRecentEod = !eodsByStudent.has(s.id);
-      const paymentLate = lateStudentIds.has(s.id);
       return noRecentCall || isGhosting || noRecentEod || paymentLate;
     });
   }, [students, calls, studentEods, payments, fourteenDaysAgo]);

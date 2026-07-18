@@ -529,8 +529,9 @@ function StudentPortal() {
             )}
             <button
               onClick={() => {
-                if (existingId) { setShowForm(true); setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth" }), 50); }
-                else { setTab("eod"); setShowForm(true); setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth" }), 50); }
+                setTab("eod");
+                setShowForm(true);
+                setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
               }}
               className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-sm border transition ${existingId ? "border-success/25 bg-success-bg text-success-fg hover:bg-success-bg" : "border-warning/25 bg-warning-bg text-warning-fg hover:bg-warning-bg"}`}
             >
@@ -627,7 +628,7 @@ function StudentPortal() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="text-[9px] text-muted-foreground">Group coaching</div>
-                  <div className="text-sm font-medium">7 calls a week</div>
+                  <div className="text-sm font-medium">{callSchedule.length} calls a week</div>
                   <div className="text-[10px] text-muted-foreground">Attend them all — take notes, ask smart questions</div>
                 </div>
               </div>
@@ -714,6 +715,7 @@ function StudentPortal() {
               <SubmittedRecap
                 form={form}
                 streak={streak}
+                loomApproved={loomApproved}
                 onEdit={() => setShowForm(true)}
               />
             ) : (
@@ -1018,7 +1020,7 @@ function WeeklyAccountabilityCard({
       <section className="rounded-sm border border-border bg-card p-4 flex items-center gap-3">
         <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
         <div className="text-xs text-muted-foreground">
-          <span className="font-medium text-foreground">Weekly EOD</span> — opens Sunday. You'll tick off which of the 7 group calls you attended{oneOnOne ? " and log your 1:1s" : ""}.
+          <span className="font-medium text-foreground">Weekly EOD</span> — opens Sunday. You'll tick off which of the {schedule.length} group calls you attended{oneOnOne ? " and log your 1:1s" : ""}.
         </div>
       </section>
     );
@@ -1259,10 +1261,10 @@ function RankChip({ onClick }: { onClick: () => void }) {
     <button
       onClick={onClick}
       className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-sm border motion-safe:transition-colors ${top3 ? "border-success/25 bg-success-bg text-success-fg" : "border-border bg-card text-muted-foreground hover:text-foreground"}`}
-      title="This week's leaderboard"
+      title="Leaderboard — rolling last 7 days"
     >
       <Trophy className="h-3.5 w-3.5" />
-      #{you.rank} of {q.data.totalStudents} this week
+      #{you.rank} of {q.data.totalStudents} · last 7d
     </button>
   );
 }
@@ -1280,7 +1282,7 @@ function LeaderboardPanel() {
   return (
     <div className="space-y-4">
       <div className="text-xs text-muted-foreground">
-        Last 7 days across every active student. Applications count most — looms keep you on the board while you're still in training.
+        Last 7 days across every active student. Interviews and applications move you most — looms keep you on the board while you're still in training.
       </div>
       {data.you && data.you.rank > data.rows.length && (
         <div className="card-surface px-4 py-3 text-xs">
@@ -1395,16 +1397,16 @@ function WeeklyRecap({ prev, totals }: { prev: any; evenPrior: any; totals: any 
         <div className="text-xs font-semibold text-muted-foreground">Weekly recap</div>
       </div>
       <div className="text-xs text-foreground">
-        Last week: <span className="font-semibold text-success-fg">{prev.apps}</span> applications, <span className="font-semibold">{prev.roleplays}</span> roleplays, <span className="font-semibold">{prev.interviews}</span> interviews.
+        Last week: <span className="font-semibold text-success-fg">{prev.apps}</span> applications, <span className="font-semibold">{prev.looms}</span> looms, <span className="font-semibold">{prev.roleplays}</span> roleplays, <span className="font-semibold">{prev.interviews}</span> interviews.
       </div>
       <div className="text-[11px] text-muted-foreground mt-1">
-        Apps {pct(totals.apps, prev.apps)} · Roleplays {pct(totals.roleplays, prev.roleplays)} · Interviews {pct(totals.interviews, prev.interviews)} vs this week so far
+        Apps {pct(totals.apps, prev.apps)} · Looms {pct(totals.looms, prev.looms)} · Roleplays {pct(totals.roleplays, prev.roleplays)} · Interviews {pct(totals.interviews, prev.interviews)} vs this week so far
       </div>
     </div>
   );
 }
 
-function SubmittedRecap({ form, streak, onEdit }: { form: typeof empty; streak: number; onEdit: () => void }) {
+function SubmittedRecap({ form, streak, loomApproved, onEdit }: { form: typeof empty; streak: number; loomApproved: boolean; onEdit: () => void }) {
   return (
     <div className="border border-success/25 bg-success-bg rounded-lg p-6 text-center space-y-4">
       <div className="flex justify-center">
@@ -1417,8 +1419,11 @@ function SubmittedRecap({ form, streak, onEdit }: { form: typeof empty; streak: 
         <div className="text-[11px] text-muted-foreground mt-1">See you tomorrow.</div>
       </div>
       <div className="flex justify-center gap-6 text-xs flex-wrap">
-        <span><span className="text-success-fg text-lg font-semibold">{form.applications_submitted}</span> <span className="text-muted-foreground">apps</span></span>
-        <span><span className="text-foreground text-lg font-semibold">{form.looms_sent}</span> <span className="text-muted-foreground">looms</span></span>
+        {loomApproved ? (
+          <span><span className="text-success-fg text-lg font-semibold">{form.applications_submitted}</span> <span className="text-muted-foreground">apps</span></span>
+        ) : (
+          <span><span className="text-success-fg text-lg font-semibold">{form.looms_sent}</span> <span className="text-muted-foreground">looms</span></span>
+        )}
         <span><span className="text-foreground text-lg font-semibold">{form.roleplays}</span> <span className="text-muted-foreground">roleplays</span></span>
         <span><span className="text-success-fg text-lg font-semibold">{form.interviews}</span> <span className="text-muted-foreground">int.</span></span>
       </div>

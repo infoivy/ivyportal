@@ -30,7 +30,7 @@ type Call = {
   next_step: string | null; next_call_date: string | null;
   created_at: string;
 };
-type Student = { id: string; full_name: string };
+type Student = { id: string; full_name: string; calls_allotted?: number };
 type Coach = { id: string; display_name: string | null; avatar_path: string | null };
 
 const STATUS_META: Record<CallStatus, { label: string; color: string }> = {
@@ -59,7 +59,7 @@ function CallsPage() {
   const fetchPage = async () => {
     const [cRes, sRes, roleRes] = await Promise.all([
       supabase.from("student_calls").select("*").order("call_date", { ascending: false }).limit(500),
-      supabase.from("students").select("id, full_name").order("full_name"),
+      supabase.from("students").select("id, full_name, calls_allotted").order("full_name"),
       supabase.from("user_roles").select("user_id, role").in("role", ["coach", "admin"]),
     ]);
     const coachIds = Array.from(new Set((roleRes.data ?? []).map(r => r.user_id)));
@@ -373,7 +373,9 @@ function CallModal({ call, onClose, onSaved, students, coaches, defaultCoachId }
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="Student" full>
-            <SelectField value={form.student_id} onChange={(v) => setForm(f => ({ ...f, student_id: v }))} options={students.map((s) => ({ value: s.id, label: s.full_name }))} placeholder="Select student…" />
+            {/* Group-pathway students (calls_allotted 0) have no 1:1s to log —
+                keep an already-selected student (editing an old call) visible. */}
+            <SelectField value={form.student_id} onChange={(v) => setForm(f => ({ ...f, student_id: v }))} options={students.filter((s) => (s.calls_allotted ?? 0) > 0 || s.id === form.student_id).map((s) => ({ value: s.id, label: s.full_name }))} placeholder="Select student…" />
           </Field>
           <Field label="Coach">
             <SelectField value={form.coach_id} onChange={(v) => setForm(f => ({ ...f, coach_id: v }))} options={coaches.map((c) => ({ value: c.id, label: c.display_name ?? c.id }))} allowEmpty emptyLabel="Me" placeholder="Me" disabled={!isAdmin && call !== undefined} />
