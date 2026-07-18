@@ -22,6 +22,7 @@ import {
   DEFAULT_GROUP_CALL_SCHEDULE,
   countStudentDailyEods,
   fromStoredCallsAttended,
+  getCurrentWeekStart,
   getStudentWeeklyDraftAction,
   getStudentWeeklyWindow,
   parseGroupCallSchedule,
@@ -110,6 +111,7 @@ function StudentPortal() {
   const qc = useQueryClient();
   const today = todayStr();
   const weeklyWindow = useMemo(() => getStudentWeeklyWindow(today), [today]);
+  const currentWeekStart = useMemo(() => getCurrentWeekStart(today), [today]);
   const [tab, setTab] = useState<Tab>(() => (getStudentPortalTab() as Tab) || "eod");
   useEffect(() => { setStudentPortalTab(tab); }, [tab]);
   useEffect(() => { const off = onStudentPortalTab(t => setTab(t as Tab)); return () => { off(); }; }, []);
@@ -126,6 +128,7 @@ function StudentPortal() {
   const [docs, setDocs] = useState<Doc[]>([]);
   const [form, setForm] = useState(empty);
   const [weeklyForm, setWeeklyForm] = useState(emptyWeekly);
+  const [currentTicks, setCurrentTicks] = useState<string[]>([]);
   const [existingId, setExistingId] = useState<string | null>(null);
   const [showWeeklyForm, setShowWeeklyForm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -151,7 +154,7 @@ function StudentPortal() {
     if (!s) { setLoading(false); return; }
     const st = s as Student;
 
-    const [{ data: e }, weeklyRes, { data: c }, { data: ah }, coachRes, docsRes, guideRes, orgRes] = await Promise.all([
+    const [{ data: e }, weeklyRes, { data: c }, { data: ah }, coachRes, docsRes, guideRes, orgRes, attendRes] = await Promise.all([
       supabase.from("student_eods").select("*").eq("student_id", st.id).order("report_date", { ascending: false }).limit(60),
       supabase.from("student_weekly_eods").select("*").eq("student_id", st.id).order("week_start", { ascending: false }).limit(16),
       supabase.from("student_calls").select("id, call_date, status, progress_rating, next_call_date, action_items_json").eq("student_id", st.id).order("call_date", { ascending: false }),
@@ -160,6 +163,8 @@ function StudentPortal() {
       supabase.from("docs").select("slug, title, category").contains("role_visibility", ["student"]).order("pinned", { ascending: false }).order("sort_order").limit(8),
       (supabase as any).from("student_guide_steps").select("step_key").eq("student_id", st.id),
       supabase.from("org_settings").select("group_call_schedule").limit(1).maybeSingle(),
+      supabase.from("student_call_attendance").select("week_start, day").eq("student_id", st.id)
+        .in("week_start", Array.from(new Set([currentWeekStart, weeklyWindow.weekStart]))),
     ]);
     setGuideDone(new Set(((guideRes.data ?? []) as { step_key: string }[]).map(r => r.step_key)));
     setCallSchedule(parseGroupCallSchedule(orgRes.data?.group_call_schedule));
@@ -194,6 +199,12 @@ function StudentPortal() {
       setShowForm(false);
     }
 
+    // Live attendance ticks: current week feeds the tiles; the submission
+    // window's ticks pre-fill the weekly form.
+    const attendRows = (attendRes.data ?? []) as { week_start: string; day: string }[];
+    setCurrentTicks(attendRows.filter(r => r.week_start === currentWeekStart).map(r => r.day));
+    const windowTicks = attendRows.filter(r => r.week_start === weeklyWindow.weekStart).map(r => r.day);
+
     const weekly = loadedWeekly.find((row) => row.week_start === weeklyWindow.weekStart);
     if (weekly) {
       setWeeklyForm({
@@ -208,14 +219,53 @@ function StudentPortal() {
     } else {
       try {
         const raw = localStorage.getItem(`student-weekly-eod-draft:${st.id}:${weeklyWindow.weekStart}`);
-        setWeeklyForm(raw ? { ...emptyWeekly, ...JSON.parse(raw) } : emptyWeekly);
-      } catch { setWeeklyForm(emptyWeekly); }
+        const draft = raw ? { ...emptyWeekly, ...JSON.parse(raw) } : emptyWeekly;
+        // Attendance lives in the DB (ticked all week, any device) — it wins
+        // over whatever a stale local draft says.
+        setWeeklyForm({ ...draft, callsAttended: windowTicks });
+      } catch { setWeeklyForm({ ...emptyWeekly, callsAttended: windowTicks }); }
       setShowWeeklyForm(true);
     }
     setWeeklyDraftHydrated(true);
     setLoading(false);
-  }, [user, today, weeklyWindow.weekStart]);
+  }, [user, today, weeklyWindow.weekStart, currentWeekStart]);
   useEffect(() => { void load(); }, [load]);
+
+  // One tick = one row; works from any device all week. The weekly submit
+  // then snapshots whatever is ticked.
+  const toggleAttendance = async (weekStart: string, day: string, on: boolean) => {
+    if (!student) return;
+    const call = callSchedule.find(c => c.day === day);
+    if (!call) return;
+    if (weekStart === currentWeekStart) {
+      setCurrentTicks(prev => on ? Array.from(new Set([...prev, day])) : prev.filter(d => d !== day));
+    }
+    if (weekStart === weeklyWindow.weekStart) {
+      setWeeklyForm(prev => ({
+        ...prev,
+        callsAttended: on ? Array.from(new Set([...prev.callsAttended, day])) : prev.callsAttended.filter(d => d !== day),
+      }));
+    }
+    const { error } = on
+      ? await supabase.from("student_call_attendance").upsert(
+          { student_id: student.id, week_start: weekStart, day, name: call.name },
+          { onConflict: "student_id,week_start,day" },
+        )
+      : await supabase.from("student_call_attendance").delete()
+          .eq("student_id", student.id).eq("week_start", weekStart).eq("day", day);
+    if (error) {
+      toast.error(error.message);
+      if (weekStart === currentWeekStart) {
+        setCurrentTicks(prev => on ? prev.filter(d => d !== day) : Array.from(new Set([...prev, day])));
+      }
+      if (weekStart === weeklyWindow.weekStart) {
+        setWeeklyForm(prev => ({
+          ...prev,
+          callsAttended: on ? prev.callsAttended.filter(d => d !== day) : Array.from(new Set([...prev.callsAttended, day])),
+        }));
+      }
+    }
+  };
 
   // Autosave draft
   useEffect(() => {
@@ -781,6 +831,16 @@ function StudentPortal() {
             )}
           </div>
 
+          {/* This week's calls — tick each one off right after attending.
+              On Sunday the weekly EOD form below takes over the same week. */}
+          {!weeklyWindow.dueToday && (
+            <WeekCallTiles
+              schedule={callSchedule}
+              ticks={currentTicks}
+              onToggle={(day, on) => toggleAttendance(currentWeekStart, day, on)}
+            />
+          )}
+
           {/* Weekly EOD lives UNDER the daily one; it only shouts at the end of the week */}
           <div ref={weeklyRef}>
             {weeklyLoadError ? (
@@ -802,6 +862,7 @@ function StudentPortal() {
                 showForm={showWeeklyForm}
                 saving={savingWeekly}
                 onChange={setWeeklyForm}
+                onToggleCall={(day, on) => toggleAttendance(weeklyWindow.weekStart, day, on)}
                 onEdit={() => setShowWeeklyForm(true)}
                 onCollapse={() => setShowWeeklyForm(false)}
                 onSubmit={submitWeeklyEod}
@@ -981,6 +1042,54 @@ function StudentPortal() {
   );
 }
 
+/**
+ * Live attendance tiles for the running week: one tile per call, tap it the
+ * day you attend. Rows are stored per tick, so it works across devices and
+ * Sunday's weekly EOD pre-fills itself from them.
+ */
+function WeekCallTiles({ schedule, ticks, onToggle }: {
+  schedule: GroupCall[];
+  ticks: string[];
+  onToggle: (day: string, on: boolean) => void;
+}) {
+  return (
+    <section className="rounded-sm border border-border bg-card p-5 space-y-3" aria-labelledby="week-calls-title">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Calendar className="h-4 w-4 text-muted-foreground" />
+          <h2 id="week-calls-title" className="text-sm font-semibold">This week's calls</h2>
+        </div>
+        <span className="text-[11px] tabular-nums text-muted-foreground">{ticks.length}/{schedule.length} attended</span>
+      </div>
+      <div className="grid gap-1.5 sm:grid-cols-2">
+        {schedule.map((call) => {
+          const on = ticks.includes(call.day);
+          return (
+            <button
+              key={call.day}
+              type="button"
+              aria-pressed={on}
+              onClick={() => onToggle(call.day, !on)}
+              className={`flex items-center gap-2.5 rounded-sm border px-3 py-2.5 text-left motion-safe:transition-colors ${
+                on ? "border-success/25 bg-success-bg" : "border-border bg-background hover:bg-muted/50"
+              }`}
+            >
+              <span className={`h-5 w-5 rounded-full flex items-center justify-center shrink-0 ${on ? "bg-success text-success-fg" : "border border-border text-transparent"}`}>
+                <CheckCircle2 className="h-3 w-3" />
+              </span>
+              <span className="min-w-0 text-xs">
+                <span className="text-muted-foreground tabular-nums">{call.day}</span>{" "}
+                <span className={on ? "font-medium text-foreground" : "text-foreground"}>{call.name}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      <p className="text-[10px] text-muted-foreground">Tick each call right after you attend it — Sunday's weekly EOD fills itself from these.</p>
+    </section>
+  );
+}
+
 function WeeklyAccountabilityCard({
   window: reviewWindow,
   submission,
@@ -994,6 +1103,7 @@ function WeeklyAccountabilityCard({
   showForm,
   saving,
   onChange,
+  onToggleCall,
   onEdit,
   onCollapse,
   onSubmit,
@@ -1010,21 +1120,14 @@ function WeeklyAccountabilityCard({
   showForm: boolean;
   saving: boolean;
   onChange: React.Dispatch<React.SetStateAction<typeof emptyWeekly>>;
+  onToggleCall: (day: string, on: boolean) => void;
   onEdit: () => void;
   onCollapse: () => void;
   onSubmit: () => void;
 }) {
-  // The student's first week isn't "overdue" — nothing was due yet.
-  if (firstWeek && !submission) {
-    return (
-      <section className="rounded-sm border border-border bg-card p-4 flex items-center gap-3">
-        <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
-        <div className="text-xs text-muted-foreground">
-          <span className="font-medium text-foreground">Weekly EOD</span> — opens Sunday. You'll tick off which of the {schedule.length} group calls you attended{oneOnOne ? " and log your 1:1s" : ""}.
-        </div>
-      </section>
-    );
-  }
+  // The student's first week isn't "overdue" — the live call tiles above
+  // already cover this week; nothing to show here until Sunday.
+  if (firstWeek && !submission) return null;
 
   const pending = !submission;
   const status = submission ? "Submitted" : reviewWindow.dueToday ? "Due today" : "Overdue";
@@ -1104,14 +1207,7 @@ function WeeklyAccountabilityCard({
                   >
                     <Checkbox
                       checked={checked}
-                      onCheckedChange={(v) =>
-                        onChange((current) => ({
-                          ...current,
-                          callsAttended: v === true
-                            ? [...current.callsAttended, call.day]
-                            : current.callsAttended.filter((d) => d !== call.day),
-                        }))
-                      }
+                      onCheckedChange={(v) => onToggleCall(call.day, v === true)}
                       className="h-3.5 w-3.5"
                     />
                     <span className="text-xs">

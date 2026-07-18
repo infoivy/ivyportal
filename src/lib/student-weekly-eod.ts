@@ -6,15 +6,16 @@ export type GroupCall = { day: string; name: string };
 /**
  * Fallback mirror of the org_settings.group_call_schedule seed, used when the
  * settings read fails. The database row is the source of truth (admin-editable).
+ * Names confirmed by the founder from the Skool calendar 2026-07-18.
  */
 export const DEFAULT_GROUP_CALL_SCHEDULE: GroupCall[] = [
-  { day: "Mon", name: "Off Call Drills" },
-  { day: "Tue", name: "Role Finding" },
-  { day: "Wed", name: "Roleplays" },
-  { day: "Thu", name: "Script Review" },
-  { day: "Fri", name: "Setting Masterclass" },
-  { day: "Sat", name: "Call Review" },
-  { day: "Sun", name: "Roleplays" },
+  { day: "Mon", name: "🧠 Off Call Discipline w/ Abu Bilal" },
+  { day: "Tue", name: "💼 Role Finding Masterclass w/ Faizan" },
+  { day: "Wed", name: "📞 Roleplays w/ Abdulrahman" },
+  { day: "Thu", name: "📝 Script Breakdown w/ Faizan" },
+  { day: "Fri", name: "⚔️ Setting Mastery w/ Abdulrahman" },
+  { day: "Sat", name: "🎬 Call Review Thursdays w/ Abu Bilal" },
+  { day: "Sun", name: "📞 Roleplays w/ Abdulrahman" },
 ];
 
 export function parseGroupCallSchedule(raw: unknown): GroupCall[] {
@@ -76,6 +77,12 @@ export function getStudentWeeklyWindow(today: string): StudentWeeklyWindow {
     weekEnd: addDays(weekStart, 6),
     dueToday: weekday === 0,
   };
+}
+
+/** Monday of the week containing `today` — the week whose calls are being ticked live. */
+export function getCurrentWeekStart(today: string): string {
+  const weekday = parseIsoDay(today).getUTCDay();
+  return addDays(today, -(weekday === 0 ? 6 : weekday - 1));
 }
 
 export function countStudentDailyEods(

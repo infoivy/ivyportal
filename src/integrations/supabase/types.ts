@@ -1559,6 +1559,38 @@ export type Database = {
           },
         ]
       }
+      student_call_attendance: {
+        Row: {
+          day: string
+          name: string
+          student_id: string
+          ticked_at: string
+          week_start: string
+        }
+        Insert: {
+          day: string
+          name: string
+          student_id: string
+          ticked_at?: string
+          week_start: string
+        }
+        Update: {
+          day?: string
+          name?: string
+          student_id?: string
+          ticked_at?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_call_attendance_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_calls: {
         Row: {
           action_items: string | null

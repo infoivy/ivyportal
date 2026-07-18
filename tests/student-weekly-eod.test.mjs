@@ -6,6 +6,7 @@ import {
   GROUP_COACHING_CALLS_PER_WEEK,
   countStudentDailyEods,
   fromStoredCallsAttended,
+  getCurrentWeekStart,
   getStudentWeeklyDraftAction,
   getStudentWeeklyWindow,
   parseGroupCallSchedule,
@@ -68,12 +69,18 @@ test("schedule has one call per weekday and survives malformed settings", () => 
 test("attended day keys resolve to durable {day, name} records and back", () => {
   const records = toAttendedRecords(["Wed", "Mon"], DEFAULT_GROUP_CALL_SCHEDULE);
   assert.deepEqual(records, [
-    { day: "Mon", name: "Off Call Drills" },
-    { day: "Wed", name: "Roleplays" },
+    { day: "Mon", name: "🧠 Off Call Discipline w/ Abu Bilal" },
+    { day: "Wed", name: "📞 Roleplays w/ Abdulrahman" },
   ]);
   assert.deepEqual(fromStoredCallsAttended(records), ["Mon", "Wed"]);
   assert.deepEqual(fromStoredCallsAttended(null), []);
   assert.deepEqual(fromStoredCallsAttended([{ nope: 1 }]), []);
+});
+
+test("current week start is the Monday of today's week, Sunday included", () => {
+  assert.equal(getCurrentWeekStart("2026-07-18"), "2026-07-13"); // Saturday
+  assert.equal(getCurrentWeekStart("2026-07-19"), "2026-07-13"); // Sunday stays in its week
+  assert.equal(getCurrentWeekStart("2026-07-20"), "2026-07-20"); // Monday starts a new one
 });
 
 test("does not touch a weekly draft before stored state is hydrated", () => {
