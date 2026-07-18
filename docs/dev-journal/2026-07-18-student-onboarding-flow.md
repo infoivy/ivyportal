@@ -27,6 +27,9 @@ Pulled hermes' latest first and audited its weekly-EOD migration/lib/tests befor
 - Backfill edge cases: existing students must not lock (backfilled `created_at`), backfilled rows must not fire "completed onboarding" alerts (`completed_at != created_at` guard), and a mid-week unlock must not show "Overdue" for a week that predates the student (first-week teaser).
 - CSMs lacked students UPDATE under RLS even though the founder's flow has CSMs approving looms — extended the policy (explicitly flagged in the summary since it's a role-gate change).
 
+### Addendum (same day)
+Founder reversed the backfill: ALL existing students now go through the gate too ("all the existing students as well should have this lock on basis of their program type"). Cleared `onboarding_completed_at` for all 19 students (all are 1:1 pathway; zero daily EODs existed, so nothing was lost). Legacy checklist ticks partially carry over (typeform/offer_board/skool_training); legacy `book_1on1`/`group_calls` keys are ignored; nobody was left with a fully-ticked-but-locked checklist. Follow-up commit `530d59f`: the bell no longer fires missed-EOD or missed-1:1 alerts for locked students — they can't submit EODs and the 1:1 push starts at unlock.
+
 ### Future work
 - Founder should verify/correct the seven call names in Admin → Portal settings (screenshot names were truncated).
 - The offer-board walkthrough Loom step has no URL in the portal — the Loom lives in the offer board itself; could add a configurable link.
