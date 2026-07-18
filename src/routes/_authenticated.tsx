@@ -1,4 +1,4 @@
-import { createFileRoute, Link, Outlet, redirect, useNavigate, useRouterState } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppSidebar } from "@/components/app-sidebar";
@@ -23,11 +23,6 @@ import { PageSkeleton } from "@/components/ui/skeletons";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
-  beforeLoad: async () => {
-    if (typeof window === "undefined") return;
-    const { data } = await supabase.auth.getSession();
-    if (!data.session) throw redirect({ to: "/auth" });
-  },
   component: AuthedLayout,
 });
 
@@ -56,7 +51,10 @@ function AuthedLayout() {
     const load = async (userId: string | null, fromSignIn = false) => {
       if (!userId) {
         loadedUserId = null;
-        if (alive) setState({ user: null, roles: [], displayName: null, loading: false });
+        if (alive) {
+          setState({ user: null, roles: [], displayName: null, loading: false });
+          navigate({ to: "/auth", replace: true });
+        }
         return;
       }
       if (fromSignIn && userId === loadedUserId) fromSignIn = false;
@@ -131,7 +129,7 @@ function AuthedLayout() {
     await supabase.auth.signOut();
   };
 
-  if (state.loading) {
+  if (state.loading || !state.user) {
     return (
       <div className="dashboard-dark min-h-screen bg-[var(--background)]">
         <div className="h-12 border-b border-[var(--border)] bg-[var(--background)]/95" />

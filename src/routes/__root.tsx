@@ -103,7 +103,7 @@ const THEME_SCRIPT = `(function(){try{var t=localStorage.getItem('isa-theme');if
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="dark" suppressHydrationWarning>
       <head>
         <HeadContent />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
