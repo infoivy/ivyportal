@@ -109,7 +109,10 @@ function EODsPage() {
   const [csmTarget, setCsmTarget] = useState(10);
   const [saving, setSaving] = useState(false);
   const latestTeamDate = chooseTeamOverviewDate(today, teamEods);
-  const selectedTeamDays = teamDates.length ? teamDates : [latestTeamDate];
+  const selectedTeamDays = useMemo(
+    () => (teamDates.length ? teamDates : [latestTeamDate]),
+    [teamDates, latestTeamDate],
+  );
   const teamDate = selectedTeamDays[selectedTeamDays.length - 1];
 
   const loadMine = useCallback(async () => {

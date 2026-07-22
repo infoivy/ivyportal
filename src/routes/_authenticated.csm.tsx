@@ -42,10 +42,17 @@ type StudentCall = {
 };
 type ActionItem = { text: string; done: boolean };
 
-type StudentEodLite = { student_id: string; report_date: string };
+type StudentEodLite = {
+  student_id: string; report_date: string;
+  roleplays: number | null; looms_sent: number | null;
+  applications_submitted: number | null; interviews: number | null;
+  wins: string | null; blockers: string | null;
+};
 type StudentWeeklyEodLite = {
   student_id: string; week_start: string; group_calls_attended: number;
+  calls_attended: { day?: string; name?: string }[] | null;
   one_on_one_calls: number | null;
+  implementation: string | null; biggest_win: string | null; biggest_blocker: string | null;
   next_week_commitment: string;
 };
 type AdHocItem = {
@@ -139,8 +146,8 @@ function CsmPage() {
       supabase.from("csm_student_notes").select("*").order("created_at", { ascending: false }).limit(200),
       supabase.from("csm_tally").select("*").eq("user_id", user.id).gte("created_at", since).order("created_at", { ascending: false }),
       supabase.from("student_calls").select("id, student_id, call_date, action_items_json, next_call_date").order("call_date", { ascending: false }).limit(600),
-      supabase.from("student_eods").select("student_id, report_date").order("report_date", { ascending: false }).limit(1000),
-      supabase.from("student_weekly_eods").select("student_id, week_start, group_calls_attended, one_on_one_calls, next_week_commitment").order("week_start", { ascending: false }).limit(1000),
+      supabase.from("student_eods").select("student_id, report_date, roleplays, looms_sent, applications_submitted, interviews, wins, blockers").order("report_date", { ascending: false }).limit(1000),
+      supabase.from("student_weekly_eods").select("student_id, week_start, group_calls_attended, calls_attended, one_on_one_calls, implementation, biggest_win, biggest_blocker, next_week_commitment").order("week_start", { ascending: false }).limit(1000),
       supabase.from("student_action_items").select("id, student_id, text, done, due_date, created_at, created_by").order("created_at", { ascending: false }).limit(500),
     ]);
     const studentRows = (studentsRes.data ?? []) as Student[];
@@ -211,6 +218,10 @@ function CsmPage() {
   }, [selectedCalls]);
   const openCount = openActionItems.filter(i => !i.done).length;
   const lastStudentEod = useMemo(() => studentEods.find(e => e.student_id === studentId)?.report_date ?? null, [studentEods, studentId]);
+  const selectedDailyEods = useMemo(
+    () => studentEods.filter(e => e.student_id === studentId).slice(0, 7),
+    [studentEods, studentId],
+  );
   const targetWeeklyEodStart = getStudentWeeklyWindow(todayLocal()).weekStart;
   const selectedWeeklyEod = useMemo(
     () => studentWeeklyEods.find(e => e.student_id === studentId && e.week_start === targetWeeklyEodStart) ?? null,
@@ -448,11 +459,76 @@ function CsmPage() {
               </div>
 
               {selectedWeeklyEod && (
-                <div className="border-t border-[var(--border)] bg-[var(--muted)] px-4 py-3">
-                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Student's next-week commitment</div>
-                  <p className="mt-1 text-xs whitespace-pre-wrap">{selectedWeeklyEod.next_week_commitment}</p>
+                <div className="border-t border-[var(--border)] bg-[var(--muted)] px-4 py-3 space-y-2.5">
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                      Weekly EOD · calls attended {selectedWeeklyEod.group_calls_attended}/7
+                      {selectedWeeklyEod.one_on_one_calls != null && ` · ${selectedWeeklyEod.one_on_one_calls} 1:1`}
+                    </div>
+                    {Array.isArray(selectedWeeklyEod.calls_attended) && selectedWeeklyEod.calls_attended.length > 0 && (
+                      <div className="mt-1.5 flex flex-wrap gap-1">
+                        {selectedWeeklyEod.calls_attended.filter(c => c && c.day && c.name).map(c => (
+                          <span key={c.day} className="rounded-full bg-[var(--background)] border border-[var(--border)] px-2 py-0.5 text-[10px] text-muted-foreground">{c.day} · {c.name}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {selectedWeeklyEod.implementation && (
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Implemented / stopped by</div>
+                      <p className="mt-0.5 text-xs whitespace-pre-wrap">{selectedWeeklyEod.implementation}</p>
+                    </div>
+                  )}
+                  <div className="grid sm:grid-cols-2 gap-2">
+                    {selectedWeeklyEod.biggest_win && (
+                      <div>
+                        <div className="text-[10px] uppercase tracking-wide text-success-fg">Biggest win</div>
+                        <p className="mt-0.5 text-xs whitespace-pre-wrap">{selectedWeeklyEod.biggest_win}</p>
+                      </div>
+                    )}
+                    {selectedWeeklyEod.biggest_blocker && (
+                      <div>
+                        <div className="text-[10px] uppercase tracking-wide text-warning-fg">Biggest blocker</div>
+                        <p className="mt-0.5 text-xs whitespace-pre-wrap">{selectedWeeklyEod.biggest_blocker}</p>
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Next-week commitment</div>
+                    <p className="mt-0.5 text-xs whitespace-pre-wrap">{selectedWeeklyEod.next_week_commitment}</p>
+                  </div>
                 </div>
               )}
+
+              {/* Daily EODs — the student's own logs, wins and blockers included */}
+              <div className="p-4 border-t border-[var(--border)]">
+                <div className="text-[10px] text-muted-foreground mb-2">Daily EODs · last 7 submitted</div>
+                {selectedDailyEods.length === 0 ? (
+                  <div className="text-xs text-muted-foreground py-2">No daily EODs yet.</div>
+                ) : (
+                  <ul className="space-y-1.5">
+                    {selectedDailyEods.map(e => (
+                      <li key={e.report_date} className="text-xs">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                          <span className="font-mono text-muted-foreground">{e.report_date}</span>
+                          <span className="tabular-nums">RP {e.roleplays ?? 0}</span>
+                          {(e.applications_submitted ?? 0) > 0
+                            ? <span className="tabular-nums text-success-fg">Apps {e.applications_submitted}</span>
+                            : <span className="tabular-nums">Looms {e.looms_sent ?? 0}</span>}
+                          {(e.interviews ?? 0) > 0 && <span className="tabular-nums text-success-fg">Int {e.interviews}</span>}
+                        </div>
+                        {(e.wins || e.blockers) && (
+                          <div className="mt-0.5 text-[11px] text-muted-foreground">
+                            {e.wins && <span><span className="text-success-fg">Win:</span> {e.wins}</span>}
+                            {e.wins && e.blockers && " · "}
+                            {e.blockers && <span><span className="text-warning-fg">Blocker:</span> {e.blockers}</span>}
+                          </div>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
 
               {/* Action items list — read-only. Only the student ticks these off in their portal. */}
               <div className="p-4">

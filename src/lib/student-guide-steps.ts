@@ -11,6 +11,8 @@ export type GuideStep = {
   title: string;
   body: string;
   link?: { to: string; label: string };
+  /** Inline video embed (e.g. Loom) rendered inside the step card. */
+  embedUrl?: string;
 };
 
 export const START_HERE_STEPS: GuideStep[] = [
@@ -27,13 +29,13 @@ export const START_HERE_STEPS: GuideStep[] = [
   {
     key: "offer_board_loom",
     title: "Watch the offer board walkthrough Loom",
-    body: "The Loom attached in the offer board shows exactly how to use it: roles, applications, what good looks like. Watch it fully before you touch anything else there.",
+    body: "This walkthrough shows exactly how to use the offer board: roles, applications, what good looks like. Watch it fully before you touch anything else there.",
+    embedUrl: "https://www.loom.com/embed/75693ce98cdd41c1adfd6ba9dcd5fd72",
   },
   {
     key: "skool_training",
     title: "Finish ALL the training videos in Skool",
-    body: "Every video, in order. This is your foundation: the group calls and looms only click once you've seen the full system.",
-    link: { to: "/training", label: "Open training" },
+    body: "Every video, in order, inside the Skool community. This is your foundation: the group calls and looms only click once you've seen the full system.",
   },
   {
     key: "offer_board_course",

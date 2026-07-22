@@ -1321,6 +1321,16 @@ function StartHereGuide({ done, locked = false, unlocking = false, onToggle }: {
               <div className="min-w-0 flex-1">
                 <div className={`text-sm font-medium ${checked ? "text-success-fg" : "text-foreground"}`}>{s.title}</div>
                 <p className="text-[12px] text-muted-foreground mt-1 leading-relaxed">{s.body}</p>
+                {s.embedUrl && (
+                  <div className="mt-3 relative w-full overflow-hidden rounded-sm border border-[var(--border)]" style={{ paddingBottom: "56.25%" }}>
+                    <iframe
+                      src={s.embedUrl}
+                      title={s.title}
+                      allowFullScreen
+                      className="absolute inset-0 h-full w-full"
+                    />
+                  </div>
+                )}
                 <div className="flex items-center gap-3 mt-2">
                   {s.link && (
                     <Link to={s.link.to} className="text-[11px] font-medium text-primary hover:underline">{s.link.label} →</Link>
