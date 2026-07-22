@@ -18,10 +18,10 @@ if (ids.length) {
   const planIds = (plans ?? []).map((p) => p.id);
   if (planIds.length) await sb.from("installment_payments").delete().in("installment_id", planIds);
   await sb.from("installments").delete().in("student_id", ids);
-  await sb.from("student_calls").delete().in("student_id", ids);
-  await sb.from("student_eods").delete().in("student_id", ids);
-  await sb.from("csm_student_notes").delete().in("student_id", ids);
-  await sb.from("testimonials").delete().in("student_id", ids);
+  // student_weekly_eods is ON DELETE RESTRICT — must go before students.
+  for (const t of ["student_weekly_eods", "student_call_attendance", "student_guide_steps", "student_placements", "student_calls", "student_eods", "csm_student_notes", "testimonials"]) {
+    await sb.from(t).delete().in("student_id", ids);
+  }
   console.log(`cascaded ${ids.length} demo students' dependents`);
 }
 for (const table of ["student_action_items", "deals", "eods", "ig_monthly_snapshots", "students"]) {
