@@ -9,7 +9,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { CheckCircle2, Clock, AlertTriangle, ChevronRight, ChevronDown, Trash2, Pencil, Flame, Download } from "lucide-react";
+import { CheckCircle2, Clock, AlertTriangle, ChevronRight, ChevronDown, Trash2, Pencil, Flame, Download, CalendarDays, X } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { computeStreak } from "@/lib/streak";
 import { todayLocal } from "@/lib/dates";
 import { chooseTeamOverviewDate } from "@/lib/eod-performance-date";
@@ -99,12 +101,16 @@ function EODsPage() {
   const [myEods, setMyEods] = useState<EOD[]>([]);
   const [teamEods, setTeamEods] = useState<GridEod[]>([]);
   const [teamRoster, setTeamRoster] = useState<RosterEntry[]>([]);
-  const [teamDateOverride, setTeamDateOverride] = useState<string | null>(null);
+  // Team overview day selection: [] = auto (today, falling back to the
+  // latest submitted day); one entry = a specific day; several = an
+  // aggregated custom pick from the calendar.
+  const [teamDates, setTeamDates] = useState<string[]>([]);
   const [mySetterType, setMySetterType] = useState<SetterType>(null);
   const [csmTarget, setCsmTarget] = useState(10);
   const [saving, setSaving] = useState(false);
   const latestTeamDate = chooseTeamOverviewDate(today, teamEods);
-  const teamDate = teamDateOverride ?? latestTeamDate;
+  const selectedTeamDays = teamDates.length ? teamDates : [latestTeamDate];
+  const teamDate = selectedTeamDays[selectedTeamDays.length - 1];
 
   const loadMine = useCallback(async () => {
     if (!user) return;
@@ -170,7 +176,10 @@ function EODsPage() {
         return { ...e, display_name: p?.display_name ?? "Unknown", primary_role: primaryRole(e.user_id), setter_type: p?.setter_type ?? null };
       }) as GridEod[],
       roster: userIds
-        .filter(uid => !exempt.has(uid) && (roleMap.get(uid) ?? []).some(r => ["setter", "closer", "coach", "csm"].includes(r)))
+        // RLS hides other users' user_roles rows from non-admins, so a
+        // closer's roleMap only contains himself — anyone who actually filed
+        // an EOD in the window belongs on the board regardless.
+        .filter(uid => !exempt.has(uid) && ((roleMap.get(uid) ?? []).some(r => ["setter", "closer", "coach", "csm"].includes(r)) || eods.some(e => e.user_id === uid)))
         .map(uid => {
           const p = profMap.get(uid);
           return { user_id: uid, display_name: p?.display_name ?? "Unknown", primary_role: primaryRole(uid), setter_type: p?.setter_type ?? null, joined_at: (p?.created_at ?? "").slice(0, 10) };
@@ -273,17 +282,19 @@ function EODsPage() {
   }, [myEods, mySetterType]);
   const streak = useMemo(() => computeStreak(myEods.map(e => e.report_date)), [myEods]);
 
-  // Team numbers for the visible reporting date. If nobody has filed today,
-  // Performance opens on the latest completed reporting day instead of
-  // making valid previous-day EODs look missing.
+  // Team numbers for the selected reporting day(s). If nobody has filed
+  // today, Performance opens on the latest completed reporting day instead
+  // of making valid previous-day EODs look missing. Multiple calendar-picked
+  // days aggregate.
   const teamDay = useMemo(() => {
-    const rows = teamEods.filter(e => e.report_date === teamDate);
+    const daySet = new Set(selectedTeamDays);
+    const rows = teamEods.filter(e => daySet.has(e.report_date));
     const sum = (k: keyof EOD) => rows.reduce((a, e) => a + (Number(e[k]) || 0), 0);
-    return { submitted: rows.length, expected: teamRoster.length,
+    return { submitted: rows.length, expected: teamRoster.length * selectedTeamDays.length,
       dials: sum("dials") + rows.reduce((a, e) => a + outreachOf(e), 0),
       booked: sum("calls_booked"),
       cash: sum("cash_collected") };
-  }, [teamEods, teamRoster, teamDate]);
+  }, [teamEods, teamRoster, selectedTeamDays]);
 
   const kpi = mySetterType ? KPI[mySetterType] : null;
   const primaryVal = mySetterType === "dm" ? form.dms_sent : form.dials;
@@ -338,20 +349,25 @@ function EODsPage() {
             <div className="card-surface p-3">
               <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                 <div className="text-[13px] text-muted-foreground">
-                  Team {teamDate === today ? "today" : fmtDayShort(new Date(teamDate + "T00:00:00"))}
-                  {teamDate !== today && <span className="ml-1 text-[10px]">· latest submitted day</span>}
+                  {selectedTeamDays.length > 1
+                    ? <>Team · {selectedTeamDays.length} days</>
+                    : <>Team {teamDate === today ? "today" : fmtDayShort(new Date(teamDate + "T00:00:00"))}
+                      {teamDate !== today && teamDates.length === 0 && <span className="ml-1 text-[10px]">· latest submitted day</span>}</>}
                 </div>
-                <div className="inline-flex rounded-sm border border-[var(--border)] bg-[var(--background)] p-0.5">
-                  {[today, ...(latestTeamDate !== today ? [latestTeamDate] : [])].map(date => (
-                    <button
-                      key={date}
-                      type="button"
-                      onClick={() => setTeamDateOverride(date)}
-                      className={`text-[10px] font-medium px-2 py-0.5 rounded-sm motion-safe:transition-colors ${teamDate === date ? "bg-[var(--accent)] text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                    >
-                      {date === today ? "Today" : fmtDayShort(new Date(date + "T00:00:00"))}
-                    </button>
-                  ))}
+                <div className="flex items-center gap-1">
+                  <div className="inline-flex rounded-sm border border-[var(--border)] bg-[var(--background)] p-0.5">
+                    {[today, ...(latestTeamDate !== today ? [latestTeamDate] : [])].map(date => (
+                      <button
+                        key={date}
+                        type="button"
+                        onClick={() => setTeamDates([date])}
+                        className={`text-[10px] font-medium px-2 py-0.5 rounded-sm motion-safe:transition-colors ${selectedTeamDays.length === 1 && teamDate === date ? "bg-[var(--accent)] text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                      >
+                        {date === today ? "Today" : fmtDayShort(new Date(date + "T00:00:00"))}
+                      </button>
+                    ))}
+                  </div>
+                  <TeamDayPicker today={today} selected={teamDates} onChange={setTeamDates} />
                 </div>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -383,7 +399,7 @@ function EODsPage() {
 
         {canViewTeam && (
           <TabsContent value="overview">
-            <TeamOverview roster={teamRoster} eods={teamEods} today={teamDate} />
+            <TeamOverview roster={teamRoster} eods={teamEods} days={selectedTeamDays} />
           </TabsContent>
         )}
 
@@ -584,7 +600,61 @@ function dayStatus(e: EOD | undefined, st: SetterType): "green" | "amber" | "red
 
 // ---------- Team Overview ----------
 
-function TeamOverview({ roster, eods, today }: { roster: RosterEntry[]; eods: GridEod[]; today: string }) {
+/**
+ * Calendar picker for the Team overview: pick any specific reporting day(s)
+ * inside the loaded 45-day window. Multiple days aggregate; Clear returns to
+ * the automatic today/latest behavior.
+ */
+function TeamDayPicker({ today, selected, onChange }: {
+  today: string;
+  selected: string[];
+  onChange: (days: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const localIso = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const oldest = new Date(); oldest.setDate(oldest.getDate() - 45);
+  const custom = selected.length > 0;
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label="Pick specific days"
+          className={`h-[22px] w-[22px] inline-flex items-center justify-center rounded-sm border motion-safe:transition-colors ${custom && selected.length > 1 ? "border-primary/25 bg-primary/10 text-primary" : "border-[var(--border)] bg-[var(--background)] text-muted-foreground hover:text-foreground"}`}
+        >
+          <CalendarDays className="h-3 w-3" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-auto p-0 bg-[var(--card)] border-[var(--border)]">
+        <Calendar
+          mode="multiple"
+          selected={selected.map(d => new Date(d + "T00:00:00"))}
+          onSelect={(dates) => onChange((dates ?? []).map(localIso).sort())}
+          disabled={{ after: new Date(today + "T23:59:59"), before: oldest }}
+          defaultMonth={new Date(today + "T00:00:00")}
+        />
+        <div className="flex items-center justify-between border-t border-[var(--border)] px-3 py-2">
+          <span className="text-[10px] text-muted-foreground">
+            {custom ? `${selected.length} day${selected.length === 1 ? "" : "s"} selected` : "Pick days to aggregate"}
+          </span>
+          {custom && (
+            <button
+              type="button"
+              onClick={() => { onChange([]); setOpen(false); }}
+              className="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-3 w-3" /> Clear
+            </button>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function TeamOverview({ roster, eods, days }: { roster: RosterEntry[]; eods: GridEod[]; days: string[] }) {
+  const single = days.length === 1 ? days[0] : null;
   const weekDays = useMemo(() => {
     const start = new Date(); start.setDate(start.getDate() - 6);
     return Array.from({ length: 7 }, (_, i) => { const d = new Date(start); d.setDate(start.getDate() + i); return isoDate(d); });
@@ -597,8 +667,15 @@ function TeamOverview({ roster, eods, today }: { roster: RosterEntry[]; eods: Gr
 
   const cards = roster.map(r => {
     const st: SetterType = r.primary_role === "setter" ? r.setter_type : null;
-    const todayEod = byUserDate.get(`${r.user_id}::${today}`);
-    const status: "green" | "amber" | "red" = !todayEod ? "red" : (r.primary_role === "setter" && st ? (didHitKpi(todayEod, st) ? "green" : "amber") : "green");
+    const dayRows = days.map(d => byUserDate.get(`${r.user_id}::${d}`));
+    const submittedRows = dayRows.filter((e): e is EOD => !!e);
+    const todayEod = single ? dayRows[0] : undefined;
+    const kpiHits = st ? submittedRows.filter(e => didHitKpi(e, st)).length : submittedRows.length;
+    const status: "green" | "amber" | "red" =
+      submittedRows.length === 0 ? "red"
+        : submittedRows.length === days.length && kpiHits === submittedRows.length ? "green"
+        : r.primary_role === "setter" || submittedRows.length < days.length ? "amber"
+        : "green";
     const week = weekDays.map(d => {
       const e = byUserDate.get(`${r.user_id}::${d}`);
       return { d, status: !e ? "red" as const : (r.primary_role === "setter" && st ? (didHitKpi(e, st) ? "green" as const : "amber" as const) : "green" as const), e };
@@ -614,18 +691,34 @@ function TeamOverview({ roster, eods, today }: { roster: RosterEntry[]; eods: Gr
       weeklyLabel = "Check-ins this week";
       weeklyValue = week.reduce((a, x) => a + (x.e?.student_checkins ?? 0), 0);
     }
-    let todayLine = "No EOD submitted yet today";
-    if (todayEod) {
+    const sum = (k: keyof EOD) => submittedRows.reduce((a, e) => a + (Number(e[k]) || 0), 0);
+    let todayLine: string;
+    if (single) {
+      todayLine = "No EOD submitted yet today";
+      if (todayEod) {
+        if (r.primary_role === "setter" && st) {
+          const cfg = KPI[st];
+          const primary = st === "dm" ? outreachOf(todayEod) : todayEod.dials;
+          if (didHitKpi(todayEod, st)) todayLine = `Submitted · hit KPI (${primary} ${cfg.primary.label.toLowerCase()}, ${todayEod.calls_booked} sets)`;
+          else todayLine = `Submitted · missed KPI (${primary} of ${cfg.primary.target} ${cfg.primary.label.toLowerCase()}, ${todayEod.calls_booked} of ${cfg.sets} sets)`;
+        } else if (r.primary_role === "closer" || r.primary_role === "coach") {
+          todayLine = `Submitted · ${todayEod.calls_taken} calls, ${todayEod.closes} closes, $${Math.round(Number(todayEod.cash_collected)).toLocaleString()} cash`;
+        } else if (r.primary_role === "csm") {
+          todayLine = `Submitted · ${todayEod.student_checkins} check-ins, ${todayEod.looms_reviewed} looms`;
+        } else todayLine = "Submitted";
+      }
+    } else {
+      // Aggregated view across the calendar-picked days.
+      const base = `${submittedRows.length}/${days.length} days submitted`;
       if (r.primary_role === "setter" && st) {
-        const cfg = KPI[st];
-        const primary = st === "dm" ? outreachOf(todayEod) : todayEod.dials;
-        if (didHitKpi(todayEod, st)) todayLine = `Submitted · hit KPI (${primary} ${cfg.primary.label.toLowerCase()}, ${todayEod.calls_booked} sets)`;
-        else todayLine = `Submitted · missed KPI (${primary} of ${cfg.primary.target} ${cfg.primary.label.toLowerCase()}, ${todayEod.calls_booked} of ${cfg.sets} sets)`;
+        todayLine = `${base} · KPI hit ${kpiHits}/${days.length} · ${sum("calls_booked")} sets`;
       } else if (r.primary_role === "closer" || r.primary_role === "coach") {
-        todayLine = `Submitted · ${todayEod.calls_taken} calls, ${todayEod.closes} closes, $${Math.round(Number(todayEod.cash_collected)).toLocaleString()} cash`;
+        todayLine = `${base} · ${sum("closes")} closes · $${Math.round(sum("cash_collected")).toLocaleString()} cash`;
       } else if (r.primary_role === "csm") {
-        todayLine = `Submitted · ${todayEod.student_checkins} check-ins, ${todayEod.looms_reviewed} looms`;
-      } else todayLine = "Submitted";
+        todayLine = `${base} · ${sum("student_checkins")} check-ins · ${sum("looms_reviewed")} looms`;
+      } else {
+        todayLine = base;
+      }
     }
     return { r, status, todayLine, week, weeklyLabel, weeklyValue, todayEod };
   });
@@ -634,18 +727,29 @@ function TeamOverview({ roster, eods, today }: { roster: RosterEntry[]; eods: Gr
   const order = { red: 0, amber: 1, green: 2 } as const;
   cards.sort((a, b) => order[a.status] - order[b.status] || a.r.display_name.localeCompare(b.r.display_name));
 
-  const submittedCount = cards.filter(c => c.status !== "red").length;
-  const kpiHitCount = cards.filter(c => c.status === "green" && c.todayEod).length;
-  const pendingCount = cards.filter(c => c.status === "red").length;
+  const totalSlots = cards.length * days.length;
+  const submittedSlots = cards.reduce((a, c) => a + days.filter(d => byUserDate.has(`${c.r.user_id}::${d}`)).length, 0);
+  const kpiSlots = cards.reduce((a, c) => {
+    const st: SetterType = c.r.primary_role === "setter" ? c.r.setter_type : null;
+    return a + days.filter(d => {
+      const e = byUserDate.get(`${c.r.user_id}::${d}`);
+      return e && (!st || didHitKpi(e, st));
+    }).length;
+  }, 0);
+  const headline = single
+    ? fmtLong(single)
+    : days.length <= 3
+      ? days.map(fmtLong).join(" · ")
+      : `${days.length} days · ${fmtLong(days[0])} → ${fmtLong(days[days.length - 1])}`;
 
   return (
     <div className="space-y-4">
       <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-4">
         <div className="text-sm">
-          <span className="font-semibold">{fmtLong(today)}</span> –{" "}
-          <span className="text-success-fg">{submittedCount} of {cards.length} submitted</span> ·{" "}
-          <span className="text-success-fg">{kpiHitCount} hit KPI</span> ·{" "}
-          <span className="text-warning-fg">{pendingCount} pending</span>
+          <span className="font-semibold">{headline}</span> –{" "}
+          <span className="text-success-fg">{submittedSlots} of {totalSlots} reports in</span> ·{" "}
+          <span className="text-success-fg">{kpiSlots} hit KPI</span> ·{" "}
+          <span className="text-warning-fg">{totalSlots - submittedSlots} missing</span>
         </div>
       </div>
       <div className="grid md:grid-cols-2 gap-3">
