@@ -334,7 +334,7 @@ const PAGE_LABELS: Array<[string, string]> = [
   ["/calendar", "Calendar"], ["/crm", "CRM"], ["/finance", "Finance"], ["/mochi", "Mochi"], ["/students", "Students"], ["/calls", "1-on-1 Calls"],
   ["/student-success", "Student Success"], ["/csm", "CSM"],
   ["/testimonials", "Testimonials"], ["/knowledge", "Knowledge"], ["/policies", "Knowledge"],
-  ["/sops", "Knowledge"], ["/content", "Content"], ["/admin", "Admin"],
+  ["/sops", "Knowledge"], ["/admin", "Admin"],
   ["/team", "Team"], ["/profile", "Profile"], ["/student-portal", "My Portal"],
 ];
 

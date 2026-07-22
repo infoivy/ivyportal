@@ -83,12 +83,10 @@ function AdminConsole() {
       const rows = (ratesRes.data ?? []).map(r => ({ id: r.id, key: r.key, label: r.label, rate: Number(r.rate), active: r.active }));
 
       // Go-live checklist signals (fire-and-forget queries)
-      const now = new Date();
       const sb = supabase as any;
-      const [plRes, ccRes, igRes, demoEodRes, demoStudentRes] = await Promise.all([
+      const [plRes, ccRes, demoEodRes, demoStudentRes] = await Promise.all([
         sb.from("payment_links").select("id", { count: "exact", head: true }),
         sb.from("calendar_connections").select("id", { count: "exact", head: true }),
-        sb.from("ig_monthly_snapshots").select("id").eq("month", `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`).limit(1).maybeSingle(),
         sb.from("eods").select("id", { count: "exact", head: true }).eq("is_demo", true),
         sb.from("students").select("id", { count: "exact", head: true }).eq("is_demo", true),
       ]);
@@ -107,7 +105,6 @@ function AdminConsole() {
         setterTypesSet: allSettersHaveType,
         teamInvited: adminCount >= 2,
         calendarConnected: (ccRes.count ?? 0) > 0,
-        igLogged: !!igRes.data,
         demoRemoved: (demoEodRes.count ?? 0) === 0 && (demoStudentRes.count ?? 0) === 0,
       };
 
@@ -686,7 +683,6 @@ const CHECKLIST_ITEMS: { key: string; label: string; hint: string; to?: string }
   { key: "setterTypesSet", label: "All setters have a type (phone/DM)", hint: "Set inline on the Sales page", to: "/sales" },
   { key: "teamInvited", label: "Co-founders / team invited (≥2 admins)", hint: "Invite via Team", to: "/team" },
   { key: "calendarConnected", label: "At least one calendar connected", hint: "Connect in Calendar", to: "/calendar" },
-  { key: "igLogged", label: "IG snapshot logged this month", hint: "Log in Content → Instagram", to: "/content" },
   { key: "demoRemoved", label: "Demo data removed", hint: "Run npm run demo:remove" },
 ];
 

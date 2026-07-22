@@ -5,7 +5,7 @@ import { useAccess } from "@/lib/use-access";
 import {
   LayoutDashboard, FileText, BookOpen, Calendar, GraduationCap,
   Database, Users, Shield, UserCircle, School, HeartHandshake, Phone, DollarSign,
-  ListChecks, Quote, Building2, Sparkles, Clapperboard,
+  ListChecks, Quote, Building2, Sparkles,
   MessagesSquare,
 } from "lucide-react";
 
@@ -61,9 +61,8 @@ const libraryItems: Item[] = [
   { title: "Training",  url: "/training",  icon: GraduationCap, roles: ["admin", "founder", "closer", "setter", "coach"] },
 ];
 
-const founderItems: Item[] = [
-  { title: "Content", url: "/content", icon: Clapperboard, roles: ["founder"] },
-];
+// Content planning was removed 2026-07-22 (founder-directed) — no
+// founder-only sidebar group remains.
 
 const adminItems: Item[] = [
   { title: "Admin", url: "/admin", icon: Shield, roles: ["admin"] },
@@ -265,7 +264,6 @@ export function AppSidebar({ roles }: { roles: string[] }) {
         {renderGroup("Sales", salesItems(roles))}
         {renderGroup("Students", studentsEntry(roles, canApproveRequests ? pendingApprovals : 0))}
         {renderGroup("Library", libraryItems)}
-        {roles.includes("founder") && renderGroup("Founder", founderItems)}
         {isAdmin && renderGroup("Admin", adminItems)}
         {renderGroup("Account", [{ title: "Profile", url: "/profile", icon: UserCircle }])}
       </SidebarContent>

@@ -4,8 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import {
   Search, School, Users, LayoutDashboard, FileText, Phone, DollarSign,
-  BarChart3, Calendar, GraduationCap, ListChecks, Trophy, Shield, HeartHandshake,
-  BookOpen, Star, Sparkles,
+  BarChart3, Calendar, GraduationCap, ListChecks, Shield, HeartHandshake,
+  BookOpen, Star,
 } from "lucide-react";
 
 type PageItem = { kind: "page"; title: string; to: string; icon: React.ComponentType<{ className?: string }>; roles?: string[] };
@@ -13,8 +13,7 @@ type StudentItem = { kind: "student"; id: string; name: string; email: string | 
 type PersonItem = { kind: "person"; id: string; name: string; role?: string };
 type DocItem = { kind: "doc"; slug: string; title: string; category: string | null };
 type TestimonialItem = { kind: "testimonial"; id: string; title: string };
-type ContentItem = { kind: "content"; id: string; title: string; platform: string };
-type Item = PageItem | StudentItem | PersonItem | DocItem | TestimonialItem | ContentItem;
+type Item = PageItem | StudentItem | PersonItem | DocItem | TestimonialItem;
 
 let paletteCache: {
   at: number;
@@ -22,7 +21,6 @@ let paletteCache: {
   people: PersonItem[];
   docs: DocItem[];
   testimonials: TestimonialItem[];
-  content: ContentItem[];
 } | null = null;
 
 const PAGES: PageItem[] = [
@@ -42,7 +40,6 @@ const PAGES: PageItem[] = [
   { kind: "page", title: "Calendar", to: "/calendar", icon: Calendar },
   { kind: "page", title: "Training", to: "/training", icon: GraduationCap, roles: ["admin", "founder", "closer", "setter", "coach"] },
   { kind: "page", title: "Knowledge", to: "/knowledge", icon: BookOpen },
-  { kind: "page", title: "Content", to: "/content", icon: Sparkles, roles: ["founder"] },
   { kind: "page", title: "Team", to: "/team", icon: Users, roles: ["admin"] },
   { kind: "page", title: "Admin", to: "/admin", icon: Shield, roles: ["admin"] },
   { kind: "page", title: "Profile", to: "/profile", icon: Users },
@@ -57,7 +54,6 @@ export function CommandPalette() {
   const [people, setPeople] = useState<PersonItem[]>([]);
   const [docs, setDocs] = useState<DocItem[]>([]);
   const [testimonialsList, setTestimonialsList] = useState<TestimonialItem[]>([]);
-  const [contentList, setContentList] = useState<ContentItem[]>([]);
   const [active, setActive] = useState(0);
 
   useEffect(() => {
@@ -80,18 +76,16 @@ export function CommandPalette() {
       setPeople(paletteCache.people);
       setDocs(paletteCache.docs);
       setTestimonialsList(paletteCache.testimonials);
-      setContentList(paletteCache.content);
       return;
     }
     let alive = true;
     (async () => {
-      const [sRes, pRes, rRes, dRes, tRes, cRes] = await Promise.all([
+      const [sRes, pRes, rRes, dRes, tRes] = await Promise.all([
         supabase.from("students").select("id, full_name, email").order("full_name").limit(500),
         supabase.from("profiles").select("id, display_name").limit(200),
         supabase.from("user_roles").select("user_id, role"),
         supabase.from("docs").select("slug, title, category").limit(300),
         supabase.from("testimonials").select("id, title").limit(200),
-        supabase.from("content_items").select("id, hook, platform").limit(200),
       ]);
       if (!alive) return;
       const roleMap = new Map<string, string[]>();
@@ -105,13 +99,11 @@ export function CommandPalette() {
       }));
       const docs2 = ((dRes.data ?? []) as any[]).map(d => ({ kind: "doc" as const, slug: d.slug, title: d.title, category: d.category }));
       const testimonials2 = ((tRes.data ?? []) as any[]).map(t => ({ kind: "testimonial" as const, id: t.id, title: t.title ?? "Untitled" }));
-      const content2 = ((cRes.data ?? []) as any[]).map(c => ({ kind: "content" as const, id: c.id, title: c.hook ?? "Untitled", platform: c.platform ?? "" }));
       setStudents(students2);
       setPeople(people2);
       setDocs(docs2);
       setTestimonialsList(testimonials2);
-      setContentList(content2);
-      paletteCache = { at: Date.now(), students: students2, people: people2, docs: docs2, testimonials: testimonials2, content: content2 };
+      paletteCache = { at: Date.now(), students: students2, people: people2, docs: docs2, testimonials: testimonials2 };
     })();
     return () => { alive = false; };
   }, [open]);
@@ -134,9 +126,8 @@ export function CommandPalette() {
     ).slice(0, 6);
     const dc = (term ? docs.filter(d => d.title.toLowerCase().includes(term)) : []).slice(0, 6);
     const ts = (term ? testimonialsList.filter(t => t.title.toLowerCase().includes(term)) : []).slice(0, 6);
-    const cn = (term ? contentList.filter(c => c.title.toLowerCase().includes(term)) : []).slice(0, 6);
-    return [...pages, ...st, ...pe, ...dc, ...ts, ...cn];
-  }, [q, visiblePages, students, people, docs, testimonialsList, contentList]);
+    return [...pages, ...st, ...pe, ...dc, ...ts];
+  }, [q, visiblePages, students, people, docs, testimonialsList]);
 
   useEffect(() => { setActive(0); }, [q, open]);
 
@@ -150,7 +141,6 @@ export function CommandPalette() {
     else if (it.kind === "student") nav({ to: "/students/$id", params: { id: it.id } });
     else if (it.kind === "doc") nav({ to: "/knowledge/$slug", params: { slug: it.slug } });
     else if (it.kind === "testimonial") nav({ to: "/testimonials" });
-    else if (it.kind === "content") nav({ to: "/content", search: { tab: "plan" } as any });
     else nav({ to: "/team" });
   };
 
@@ -222,23 +212,11 @@ export function CommandPalette() {
                 </div>
               );
             }
-            if (it.kind === "testimonial") {
-              return (
-                <div key={`t-${it.id}`} className={base} onMouseEnter={() => setActive(i)} onClick={() => go(it)}>
-                  <Star className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="flex-1 truncate">{it.title}</span>
-                  <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Testimonial</span>
-                </div>
-              );
-            }
             return (
-              <div key={`c-${it.id}`} className={base} onMouseEnter={() => setActive(i)} onClick={() => go(it)}>
-                <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />
-                <div className="flex-1 min-w-0">
-                  <div className="truncate">{it.title}</div>
-                  {it.platform && <div className="text-[10px] text-muted-foreground truncate">{it.platform}</div>}
-                </div>
-                <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Content</span>
+              <div key={`t-${it.id}`} className={base} onMouseEnter={() => setActive(i)} onClick={() => go(it)}>
+                <Star className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="flex-1 truncate">{it.title}</span>
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Testimonial</span>
               </div>
             );
           })}
