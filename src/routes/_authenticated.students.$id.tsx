@@ -283,7 +283,18 @@ function StudentDetail() {
   };
 
   const saveNextAction = async (v: string) => {
-    await update({ next_action: v.trim() || null });
+    const text = v.trim();
+    await update({ next_action: text || null });
+    // A next action IS an action item (founder-directed 2026-07-22): setting
+    // one drops it straight into the student's open action items so it shows
+    // in their portal and the team's queues, not just this header field.
+    if (text && user) {
+      const { error } = await supabase.from("student_action_items").insert({
+        student_id: student.id, created_by: user.id, text,
+      });
+      if (error) toast.error(`Next action saved, but the action item failed: ${error.message}`);
+      else toast.success("Next action saved · action item created");
+    }
   };
 
   const renameStudent = async (name: string) => {

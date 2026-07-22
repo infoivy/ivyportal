@@ -56,13 +56,13 @@ const HISTORY_DAYS = 50;
 
 // The real weekly call schedule (mirrors org_settings.group_call_schedule).
 const CALLS = [
-  { day: "Mon", name: "🧠 Off Call Discipline w/ Abu Bilal" },
-  { day: "Tue", name: "💼 Role Finding Masterclass w/ Faizan" },
-  { day: "Wed", name: "📞 Roleplays w/ Abdulrahman" },
-  { day: "Thu", name: "📝 Script Breakdown w/ Faizan" },
-  { day: "Fri", name: "⚔️ Setting Mastery w/ Abdulrahman" },
-  { day: "Sat", name: "🎬 Call Review Thursdays w/ Abu Bilal" },
-  { day: "Sun", name: "📞 Roleplays w/ Abdulrahman" },
+  { day: "Mon", name: "📞 Roleplays w/ Abdulrahman" },
+  { day: "Tue", name: "📝 Script Breakdown w/ Faizan" },
+  { day: "Wed", name: "⚔️ Setting Mastery w/ Abdulrahman" },
+  { day: "Thu", name: "🎬 Call Review Thursdays w/ Abu Bilal" },
+  { day: "Fri", name: "📞 Roleplays w/ Abdulrahman" },
+  { day: "Sat", name: "🧠 Off Call Discipline w/ Abu Bilal" },
+  { day: "Sun", name: "💼 Role Finding Masterclass w/ Faizan" },
 ];
 const attended = (days) => CALLS.filter((c) => days.includes(c.day));
 

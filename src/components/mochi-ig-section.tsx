@@ -13,7 +13,8 @@ const PERIODS: { label: string; value: MochiPeriod }[] = [
 
 /** Instagram funnel numbers from Mochi CRM — admin/founder dashboard section. */
 export function MochiIgSection() {
-  const [period, setPeriod] = useState<MochiPeriod>("last_7_days");
+  // Founder-set 2026-07-22: every time-ranged view opens on 24 hours.
+  const [period, setPeriod] = useState<MochiPeriod>("today");
   const q = useQuery({
     queryKey: ["mochi-dashboard", period],
     queryFn: () => getMochiDashboard({ data: { period } }),

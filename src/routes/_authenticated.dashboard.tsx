@@ -111,7 +111,8 @@ function Dashboard() {
   const navigate = useNavigate();
   const isFounder = roles.includes("admin") && !roles.includes("setter") && !roles.includes("closer") && !roles.includes("coach") && !roles.includes("csm");
   const canSeeCrm = roles.includes("admin") || roles.includes("founder") || roles.includes("cofounder");
-  const [dateRange, setDateRange] = useState<DateRange>(() => rangeFor("7d"));
+  // Founder-set 2026-07-22: every time-ranged view opens on 24 hours.
+  const [dateRange, setDateRange] = useState<DateRange>(() => rangeFor("24h"));
   const [compare, setCompare] = useState(false);
   const [activitySource, setActivitySource] = useState<ActivitySource>("all");
   const [funnelSource, setFunnelSource] = useState<FunnelSource>("eod");

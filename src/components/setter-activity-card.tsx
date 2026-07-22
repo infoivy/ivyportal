@@ -22,7 +22,8 @@ const fmtDur = (sec: number | null) =>
  * outbound DMs from Mochi. Admin/founder dashboard section.
  */
 export function SetterActivityCard() {
-  const [days, setDays] = useState<1 | 3 | 7 | 30>(7);
+  // Founder-set 2026-07-22: every time-ranged view opens on 24 hours.
+  const [days, setDays] = useState<1 | 3 | 7 | 30>(1);
   const [day, setDay] = useState<string>(""); // specific YYYY-MM-DD overrides the rolling window
   const mochiPeriod = days === 1 ? "today" : days <= 7 ? "last_7_days" : "last_30_days";
 

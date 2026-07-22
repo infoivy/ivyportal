@@ -6,16 +6,16 @@ export type GroupCall = { day: string; name: string };
 /**
  * Fallback mirror of the org_settings.group_call_schedule seed, used when the
  * settings read fails. The database row is the source of truth (admin-editable).
- * Names confirmed by the founder from the Skool calendar 2026-07-18.
+ * Day mapping founder-corrected 2026-07-22 (Roleplays runs Mon AND Fri).
  */
 export const DEFAULT_GROUP_CALL_SCHEDULE: GroupCall[] = [
-  { day: "Mon", name: "🧠 Off Call Discipline w/ Abu Bilal" },
-  { day: "Tue", name: "💼 Role Finding Masterclass w/ Faizan" },
-  { day: "Wed", name: "📞 Roleplays w/ Abdulrahman" },
-  { day: "Thu", name: "📝 Script Breakdown w/ Faizan" },
-  { day: "Fri", name: "⚔️ Setting Mastery w/ Abdulrahman" },
-  { day: "Sat", name: "🎬 Call Review Thursdays w/ Abu Bilal" },
-  { day: "Sun", name: "📞 Roleplays w/ Abdulrahman" },
+  { day: "Mon", name: "📞 Roleplays w/ Abdulrahman" },
+  { day: "Tue", name: "📝 Script Breakdown w/ Faizan" },
+  { day: "Wed", name: "⚔️ Setting Mastery w/ Abdulrahman" },
+  { day: "Thu", name: "🎬 Call Review Thursdays w/ Abu Bilal" },
+  { day: "Fri", name: "📞 Roleplays w/ Abdulrahman" },
+  { day: "Sat", name: "🧠 Off Call Discipline w/ Abu Bilal" },
+  { day: "Sun", name: "💼 Role Finding Masterclass w/ Faizan" },
 ];
 
 export function parseGroupCallSchedule(raw: unknown): GroupCall[] {

@@ -69,8 +69,8 @@ test("schedule has one call per weekday and survives malformed settings", () => 
 test("attended day keys resolve to durable {day, name} records and back", () => {
   const records = toAttendedRecords(["Wed", "Mon"], DEFAULT_GROUP_CALL_SCHEDULE);
   assert.deepEqual(records, [
-    { day: "Mon", name: "🧠 Off Call Discipline w/ Abu Bilal" },
-    { day: "Wed", name: "📞 Roleplays w/ Abdulrahman" },
+    { day: "Mon", name: "📞 Roleplays w/ Abdulrahman" },
+    { day: "Wed", name: "⚔️ Setting Mastery w/ Abdulrahman" },
   ]);
   assert.deepEqual(fromStoredCallsAttended(records), ["Mon", "Wed"]);
   assert.deepEqual(fromStoredCallsAttended(null), []);
