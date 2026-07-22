@@ -145,7 +145,13 @@ function AuthedLayout() {
       if (event === "SIGNED_OUT") {
         loader.transition(null);
       } else if (event === "SIGNED_IN") {
-        loader.transition(session?.user.id ?? null, { wantsLanding: true });
+        // supabase-js re-emits SIGNED_IN on every page load and tab refocus.
+        // Only an actual sign-in (auth page sets the one-shot flag) may
+        // trigger role landing — otherwise every hard navigation yanks the
+        // user back to their default page.
+        loader.transition(session?.user.id ?? null, {
+          wantsLanding: window.sessionStorage.getItem("isa-landing-pending") === "1",
+        });
       } else if (event === "USER_UPDATED") {
         loader.transition(session?.user.id ?? null);
       }
