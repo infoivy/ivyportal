@@ -19,6 +19,7 @@ import { todayLocal } from "@/lib/dates";
 import { getStudentWeeklyWindow } from "@/lib/student-weekly-eod";
 import { DateField } from "@/components/ui/date-field";
 import { SelectField } from "@/components/ui/select-field";
+import { StudentLocalTime } from "@/components/student-local-time";
 
 export const Route = createFileRoute("/_authenticated/csm")({
   head: () => ({ meta: [{ title: "CSM · ISA Portal" }] }),
@@ -26,7 +27,7 @@ export const Route = createFileRoute("/_authenticated/csm")({
   component: CsmHub,
 });
 
-type Student = { id: string; full_name: string; email: string | null; phase: string; status: string; coach_id: string | null };
+type Student = { id: string; full_name: string; email: string | null; phase: string; status: string; coach_id: string | null; timezone: string | null };
 type CsmNote = {
   id: string; student_id: string; user_id: string; note: string; tags: string[] | null; created_at: string;
   student_name?: string; author?: string;
@@ -142,7 +143,7 @@ function CsmPage() {
     if (!user) return null;
     const since = new Date(Date.now() - 14 * 86400000).toISOString();
     const [studentsRes, notesRes, tallyRes, callsRes, sEodRes, weeklyEodRes, adhocRes] = await Promise.all([
-      supabase.from("students").select("id, full_name, email, phase, status, coach_id").order("full_name", { ascending: true }),
+      supabase.from("students").select("id, full_name, email, phase, status, coach_id, timezone").order("full_name", { ascending: true }),
       supabase.from("csm_student_notes").select("*").order("created_at", { ascending: false }).limit(200),
       supabase.from("csm_tally").select("*").eq("user_id", user.id).gte("created_at", since).order("created_at", { ascending: false }),
       supabase.from("student_calls").select("id, student_id, call_date, action_items_json, next_call_date").order("call_date", { ascending: false }).limit(600),
@@ -440,7 +441,10 @@ function CsmPage() {
                 <div>
                   <div className="text-[10px] text-warning-fg mb-1">Accountability</div>
                   <h2 className="text-lg font-semibold">{selected.full_name}</h2>
-                  <p className="text-[11px] text-muted-foreground">{selected.email ?? "no email"}</p>
+                  <p className="text-[11px] text-muted-foreground flex flex-wrap items-center gap-x-2">
+                    <span>{selected.email ?? "no email"}</span>
+                    <StudentLocalTime tz={selected.timezone} className="text-[11px]" />
+                  </p>
                 </div>
                 <Link to={"/students/$id" as unknown as string} params={{ id: selected.id } as { id: string }} className="text-[11px] text-success-fg hover:text-success-fg shrink-0">Open tracker →</Link>
               </div>

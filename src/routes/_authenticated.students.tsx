@@ -15,6 +15,7 @@ import {
   ChevronRight, Users, AlertTriangle, Columns3, Award, MessageSquare, Trophy, Download, Lock,
 } from "lucide-react";
 import { START_HERE_REQUIRED_KEYS } from "@/lib/student-guide-steps";
+import { StudentLocalTime } from "@/components/student-local-time";
 import { exportToCsv } from "@/lib/csv";
 import { DateField } from "@/components/ui/date-field";
 import { SelectField } from "@/components/ui/select-field";
@@ -39,6 +40,7 @@ type Student = {
   first_win_at: string | null; offer_landed_at: string | null;
   testimonial_collected: boolean; trustpilot_collected: boolean;
   onboarding_completed_at: string | null;
+  timezone: string | null;
   created_at: string; updated_at: string;
 };
 type Coach = { id: string; display_name: string | null };
@@ -67,7 +69,7 @@ const PAYMENT_META: Record<PaymentState, { label: string; color: string }> = {
 const phaseMeta = (p: Phase) => PHASES.find(x => x.key === p) ?? PHASES[0];
 const statusMeta = (s: Status) => STATUSES.find(x => x.key === s)!;
 
-type ColKey = "student" | "health" | "grade" | "phase" | "status" | "coach" | "payment" | "calls_remaining" | "last_call" | "last_eod" | "next_action" | "badges";
+type ColKey = "student" | "health" | "grade" | "phase" | "status" | "coach" | "payment" | "calls_remaining" | "last_call" | "last_eod" | "local_time" | "next_action" | "badges";
 type ColDef = { key: ColKey; label: string; default: boolean };
 const COLUMNS: ColDef[] = [
   { key: "student",         label: "Student",         default: true },
@@ -80,6 +82,7 @@ const COLUMNS: ColDef[] = [
   { key: "calls_remaining", label: "Calls left",      default: true },
   { key: "last_call",       label: "Last 1:1",        default: true },
   { key: "last_eod",        label: "Last EOD",        default: false },
+  { key: "local_time",      label: "Local time",      default: true },
   { key: "next_action",     label: "Next action",     default: false },
   { key: "badges",          label: "Badges",          default: false },
 ];
@@ -444,6 +447,7 @@ function StudentsLayout() {
                 {visibleCols.has("calls_remaining") && <th className="text-right px-2 py-2 font-normal">Calls left</th>}
                 {visibleCols.has("last_call") && <th className="text-right px-2 py-2 font-normal">Last 1:1</th>}
                 {visibleCols.has("last_eod") && <th className="text-right px-2 py-2 font-normal">Last EOD</th>}
+                {visibleCols.has("local_time") && <th className="text-left px-2 py-2 font-normal">Local time</th>}
                 {visibleCols.has("next_action") && <th className="text-left px-2 py-2 font-normal">Next action</th>}
                 {visibleCols.has("badges") && <th className="text-left px-2 py-2 font-normal">Badges</th>}
                 <th className="px-2 py-2" />
@@ -570,6 +574,11 @@ function StudentsLayout() {
                     {visibleCols.has("last_eod") && (
                       <td className={`px-2 py-3 text-right text-[10px] ${lastEod && daysSince(lastEod) >= 5 ? "text-danger-fg" : "text-muted-foreground"}`}>
                         {lastEod ? `${daysSince(lastEod)}d` : "–"}
+                      </td>
+                    )}
+                    {visibleCols.has("local_time") && (
+                      <td className="px-2 py-3 text-[11px] whitespace-nowrap">
+                        {s.timezone ? <StudentLocalTime tz={s.timezone} /> : <span className="text-[10px] text-muted-foreground">–</span>}
                       </td>
                     )}
                     {visibleCols.has("next_action") && (

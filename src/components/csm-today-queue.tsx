@@ -84,7 +84,14 @@ export function CsmTodayQueue() {
   const touched3d = ranked.filter((s) => s.daysSinceTouch != null && s.daysSinceTouch <= 3).length;
   // Locked students belong to the "stuck in Start Here" bell alert, not the
   // daily work queue — they have no EODs/calls/placements to work yet.
-  const needsWork = ranked.filter((s) => !s.h?.locked && ((s.h?.band ?? "amber") !== "green" || s.daysSinceTouch == null || s.daysSinceTouch > 3));
+  // Graduated students owe no touch cadence either; they only appear when
+  // something is actually wrong (payment/ghosting turns them non-green).
+  const needsWork = ranked.filter((s) => {
+    if (s.h?.locked) return false;
+    const graduated = ["offer_won", "testimonial", "graduated"].includes(s.phase);
+    if (graduated) return (s.h?.band ?? "green") !== "green";
+    return (s.h?.band ?? "amber") !== "green" || s.daysSinceTouch == null || s.daysSinceTouch > 3;
+  });
 
   const checkIn = async (studentId: string) => {
     const { error } = await supabase.from("csm_tally").insert({

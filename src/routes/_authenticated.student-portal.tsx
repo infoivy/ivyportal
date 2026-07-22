@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import {
   CheckCircle2, Clock, Award, Briefcase, MessageSquare, Users, ListChecks,
   Calendar, Trophy, TrendingUp, Flame, BookOpen, PartyPopper, ChevronRight, Lock,
-  Sparkles, AlertCircle, PlayCircle, FileText } from "lucide-react";
+  Sparkles, AlertCircle, PlayCircle, FileText, Star } from "lucide-react";
 import { computeStreak } from "@/lib/streak";
 import { setStudentPortalTab, onStudentPortalTab, getStudentPortalTab } from "@/lib/student-portal-bus";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -17,6 +17,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getStudentLeaderboard } from "@/lib/student-portal.functions";
 import { completeStudentOnboarding } from "@/lib/student-onboarding.functions";
+import { syncStudentTimezone } from "@/lib/student-timezone.functions";
 import { START_HERE_STEPS, isStartHereComplete } from "@/lib/student-guide-steps";
 import {
   DEFAULT_GROUP_CALL_SCHEDULE,
@@ -42,6 +43,7 @@ type Student = {
   first_win_at: string | null; offer_landed_at: string | null;
   testimonial_collected: boolean | null; trustpilot_collected: boolean | null;
   onboarding_completed_at: string | null;
+  timezone: string | null; join_date: string | null;
 };
 type Coach = { id: string; display_name: string | null; avatar_url: string | null };
 type SEod = {
@@ -148,7 +150,7 @@ function StudentPortal() {
     if (!user) return;
     setWeeklyDraftHydrated(false);
     const { data: s } = await supabase.from("students")
-      .select("id, full_name, email, phase, status, calls_included, calls_allotted, coach_id, first_win_at, offer_landed_at, testimonial_collected, trustpilot_collected, onboarding_completed_at")
+      .select("id, full_name, email, phase, status, calls_included, calls_allotted, coach_id, first_win_at, offer_landed_at, testimonial_collected, trustpilot_collected, onboarding_completed_at, timezone, join_date")
       .eq("user_id", user.id).maybeSingle();
     setStudent((s as Student) ?? null);
     if (!s) { setLoading(false); return; }
@@ -460,6 +462,19 @@ function StudentPortal() {
   };
 
   const completeOnboardingFn = useServerFn(completeStudentOnboarding);
+  const syncTzFn = useServerFn(syncStudentTimezone);
+  // Keep the student's stored timezone matched to where they actually are —
+  // staff read it as "their local time" before messaging.
+  useEffect(() => {
+    if (!student) return;
+    try {
+      const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (browserTz && browserTz !== student.timezone) {
+        void syncTzFn({ data: { timezone: browserTz } }).catch(() => {});
+      }
+    } catch { /* environment without Intl tz — skip */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [student?.id, student?.timezone]);
   const toggleGuideStep = async (key: string, done: boolean) => {
     if (!student) return;
     const next = new Set(guideDone);
@@ -533,6 +548,60 @@ function StudentPortal() {
 
   const first = (displayName ?? student.full_name).split(" ")[0];
   const brandNew = eods.length === 0;
+
+  // Offer landed: the grind is over. The portal becomes a graduation page —
+  // celebration plus the two asks that remain (testimonial, Trustpilot).
+  if (["offer_won", "testimonial", "graduated"].includes(student.phase)) {
+    return (
+      <div className="p-4 sm:p-6 max-w-3xl mx-auto space-y-5 relative">
+        <section className="card-surface p-6 text-center">
+          <div className="text-4xl mb-2">🎉</div>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            <span dir="rtl">السلام عليكم ورحمة الله وبركاته</span>, {first}
+          </h1>
+          <p className="text-sm text-foreground mt-2 font-medium">You landed your offer. Alhamdulillah.</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {student.offer_landed_at ? `Offer landed ${student.offer_landed_at.slice(0, 10)}` : "Offer landed"}
+            {student.join_date && student.offer_landed_at && (() => {
+              const days = Math.max(1, Math.round((new Date(student.offer_landed_at).getTime() - new Date(student.join_date).getTime()) / 86400000));
+              return ` · ${days} days from joining`;
+            })()}
+          </p>
+        </section>
+
+        <GraduationPlacement studentId={student.id} />
+
+        <div className="grid sm:grid-cols-2 gap-3">
+          <div className={`border rounded-sm p-5 ${student.testimonial_collected ? "border-success/25 bg-success-bg" : "border-[var(--border)] bg-[var(--card)]"}`}>
+            <div className={`h-10 w-10 rounded-full flex items-center justify-center mb-3 ${student.testimonial_collected ? "bg-success text-success-fg" : "border border-[var(--border)] text-muted-foreground"}`}>
+              {student.testimonial_collected ? <CheckCircle2 className="h-5 w-5" /> : <PlayCircle className="h-4 w-4" />}
+            </div>
+            <div className="text-sm font-semibold">Testimonial video</div>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              {student.testimonial_collected
+                ? "Received. Thank you for telling your story."
+                : "Record a short video about your journey: where you started, what changed, the offer you landed. Your CSM will collect it."}
+            </p>
+          </div>
+          <div className={`border rounded-sm p-5 ${student.trustpilot_collected ? "border-success/25 bg-success-bg" : "border-[var(--border)] bg-[var(--card)]"}`}>
+            <div className={`h-10 w-10 rounded-full flex items-center justify-center mb-3 ${student.trustpilot_collected ? "bg-success text-success-fg" : "border border-[var(--border)] text-muted-foreground"}`}>
+              {student.trustpilot_collected ? <CheckCircle2 className="h-5 w-5" /> : <Star className="h-4 w-4" />}
+            </div>
+            <div className="text-sm font-semibold">Trustpilot review</div>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              {student.trustpilot_collected
+                ? "Posted. It helps the next student find us."
+                : "Leave an honest review of the program on Trustpilot. Two minutes, means everything."}
+            </p>
+          </div>
+        </div>
+
+        <p className="text-[11px] text-muted-foreground text-center">
+          No more daily EODs. You earned that. Your CSM stays one message away.
+        </p>
+      </div>
+    );
+  }
 
   // Fresh student: Start Here is the whole portal until every step is done.
   if (locked) {
@@ -1273,6 +1342,37 @@ function WeeklyReflection({ label, value }: { label: string; value: string }) {
       <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</div>
       <p className="mt-1 whitespace-pre-wrap text-xs text-foreground">{value}</p>
     </div>
+  );
+}
+
+/** The landed placement, shown on the graduation page. */
+function GraduationPlacement({ studentId }: { studentId: string }) {
+  const q = useQuery({
+    queryKey: ["graduation-placement", studentId],
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("student_placements")
+        .select("business_name, role_title, started_at")
+        .eq("student_id", studentId)
+        .eq("stage", "placed")
+        .order("started_at", { ascending: false, nullsFirst: false })
+        .limit(1)
+        .maybeSingle();
+      return data ?? null;
+    },
+  });
+  if (!q.data) return null;
+  return (
+    <section className="card-surface p-4 flex items-center gap-3">
+      <div className="h-10 w-10 rounded-full bg-success-bg text-success-fg flex items-center justify-center shrink-0">
+        <Briefcase className="h-4 w-4" />
+      </div>
+      <div className="min-w-0">
+        <div className="text-sm font-semibold truncate">{q.data.role_title} · {q.data.business_name}</div>
+        {q.data.started_at && <div className="text-[11px] text-muted-foreground">Started {q.data.started_at.slice(0, 10)}</div>}
+      </div>
+    </section>
   );
 }
 

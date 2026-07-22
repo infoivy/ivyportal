@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { DateField } from "@/components/ui/date-field";
 import { SelectField } from "@/components/ui/select-field";
 import { StudentPaymentSetup } from "@/components/student-payment-setup";
+import { StudentLocalTime, timezoneOptions } from "@/components/student-local-time";
 import {
   ArrowLeft, Video, Trash2, Plus, Save, Calendar as CalIcon,
   Phone, FileText, User, Pencil, ExternalLink, CheckCircle2, Circle,
@@ -38,6 +39,7 @@ type Student = {
   testimonial_collected: boolean; trustpilot_collected: boolean; testimonial_requested?: boolean;
   general_notes: string | null;
   onboarding_completed_at: string | null;
+  timezone: string | null;
 };
 type Call = {
   id: string; student_id: string; coach_id: string | null; call_date: string;
@@ -386,6 +388,18 @@ function StudentDetail() {
               <span>{student.email ?? "no email"}</span>
               {student.whatsapp && <span className="flex items-center gap-1"><MessageCircle className="h-3 w-3 text-success-fg" /> {student.whatsapp}</span>}
               <span>joined {student.join_date}</span>
+              <StudentLocalTime tz={student.timezone} className="text-xs" />
+              {canManage && (
+                <select
+                  value={student.timezone ?? ""}
+                  onChange={e => update({ timezone: e.target.value || null })}
+                  className="h-6 rounded-sm border border-[var(--border)] bg-[var(--background)] px-1 text-[10px] text-muted-foreground focus:outline-none focus:border-ring max-w-[150px]"
+                  title="Student timezone (auto-synced from their browser when they use the portal)"
+                >
+                  <option value="">tz unknown</option>
+                  {timezoneOptions().map(z => <option key={z} value={z}>{z}</option>)}
+                </select>
+              )}
             </div>
 
             <div className="flex flex-wrap gap-2 mt-4 items-center">

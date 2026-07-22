@@ -12,7 +12,7 @@ const items: { tab: string; label: string; icon: React.ComponentType<{ className
   { tab: "start", label: "Start", icon: Sparkles },
 ];
 
-const GRID = { 2: "grid-cols-2", 4: "grid-cols-4", 5: "grid-cols-5" } as Record<number, string>;
+const GRID = { 1: "grid-cols-1", 2: "grid-cols-2", 4: "grid-cols-4", 5: "grid-cols-5" } as Record<number, string>;
 
 export function StudentBottomNav({ activeTab, onTabChange }: { activeTab?: string; onTabChange?: (t: string) => void }) {
   const path = useRouterState({ select: s => s.location.pathname });
@@ -26,10 +26,10 @@ export function StudentBottomNav({ activeTab, onTabChange }: { activeTab?: strin
     queryFn: async () => {
       const { data: s } = await supabase
         .from("students")
-        .select("id, onboarding_completed_at")
+        .select("id, onboarding_completed_at, phase")
         .eq("user_id", user!.id)
         .maybeSingle();
-      if (!s) return { locked: false, startDone: true };
+      if (!s) return { locked: false, startDone: true, graduated: false };
       const { data: steps } = await supabase
         .from("student_guide_steps")
         .select("step_key")
@@ -37,16 +37,21 @@ export function StudentBottomNav({ activeTab, onTabChange }: { activeTab?: strin
       return {
         locked: !s.onboarding_completed_at,
         startDone: isStartHereComplete((steps ?? []).map(r => r.step_key)),
+        graduated: ["offer_won", "testimonial", "graduated"].includes(s.phase),
       };
     },
   });
   const locked = stateQ.data?.locked === true;
   const startDone = stateQ.data?.startDone !== false;
-  const visible = locked
-    ? items.filter(it => it.tab === "start")
-    : startDone
-      ? items.filter(it => it.tab !== "start")
-      : items;
+  const graduated = stateQ.data?.graduated === true;
+  // Graduated students see the graduation page only — no tabs to advertise.
+  const visible = graduated
+    ? []
+    : locked
+      ? items.filter(it => it.tab === "start")
+      : startDone
+        ? items.filter(it => it.tab !== "start")
+        : items;
   const onPortal = path === "/student-portal";
   return (
     <nav className="sm:hidden fixed bottom-0 inset-x-0 z-40 border-t border-[var(--border)] bg-[var(--background)]/95 backdrop-blur">

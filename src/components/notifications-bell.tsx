@@ -89,9 +89,10 @@ async function fetchStudentAlerts(): Promise<StudentAlert[]> {
     }
     const eodDate = lastEod.get(st.id);
     const eodDays = eodDate ? Math.floor((now - new Date(eodDate).getTime()) / DAY) : null;
-    if (st.eod_exempt || !st.onboarding_completed_at) {
-      // No missed-EOD alerts while tracking is off — or while the student is
-      // still locked in Start Here and literally cannot submit an EOD.
+    if (st.eod_exempt || !st.onboarding_completed_at || ["offer_won", "testimonial", "graduated"].includes(st.phase)) {
+      // No missed-EOD alerts while tracking is off, while the student is
+      // still locked in Start Here, or once they've landed their offer —
+      // graduated students owe no EODs.
     } else if (eodDays == null) {
       alerts.push({ key: `eod-${st.id}`, student_id: st.id, student_name: st.full_name, text: "No EOD in the last 30 days", tone: "text-danger-fg" });
     } else if (eodDays >= 3) {

@@ -65,6 +65,16 @@ export function computeStudentHealth(i: HealthInputs): StudentHealth {
     return { score: 0, band: i.paymentState === "behind" ? "red" : "amber", reasons, daysQuiet: null, locked: true };
   }
 
+  // Offer landed: the grind is over — no EOD, volume, call-cadence, or
+  // placement judgments apply. Only payment/ghosting can pull them down.
+  if (["offer_won", "testimonial", "graduated"].includes(i.phase)) {
+    let gScore = 100;
+    if (i.paymentState === "behind") { gScore -= 20; reasons.push("Payment behind"); }
+    if (i.status === "ghosting") { gScore = Math.min(gScore, 25); reasons.unshift("Marked ghosting"); }
+    const gBand: HealthBand = gScore >= 70 ? "green" : gScore >= 40 ? "amber" : "red";
+    return { score: gScore, band: gBand, reasons, daysQuiet: null };
+  }
+
   // EOD consistency (35) — exempt students get full credit, no nagging
   const recent = i.eodDates.map((d) => d.slice(0, 10)).sort().reverse();
   const lastEodDays = recent.length ? daysSince(recent[0])! : null;

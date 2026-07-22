@@ -1945,6 +1945,7 @@ export type Database = {
           student_grade: string | null
           testimonial_collected: boolean
           testimonial_requested: boolean
+          timezone: string | null
           trustpilot_collected: boolean
           updated_at: string
           user_id: string | null
@@ -1975,6 +1976,7 @@ export type Database = {
           student_grade?: string | null
           testimonial_collected?: boolean
           testimonial_requested?: boolean
+          timezone?: string | null
           trustpilot_collected?: boolean
           updated_at?: string
           user_id?: string | null
@@ -2005,6 +2007,7 @@ export type Database = {
           student_grade?: string | null
           testimonial_collected?: boolean
           testimonial_requested?: boolean
+          timezone?: string | null
           trustpilot_collected?: boolean
           updated_at?: string
           user_id?: string | null

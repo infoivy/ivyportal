@@ -239,6 +239,7 @@ const studentRows = STUDENTS.map((s) => ({
   payment_state: s.payment_state,
   student_grade: s.grade ?? null,
   whatsapp: s.whatsapp ?? null,
+  timezone: s.tz ?? pick(["Europe/London", "America/New_York", "Asia/Karachi", "Europe/Amsterdam", "America/Chicago", "Asia/Dubai"]),
   next_action: s.next_action ?? null,
   onboarding_completed_at: s.locked ? null : at(shift(s.join, s.unlockedAfter ?? 6), 19, ri(5, 55)).toISOString(),
   first_win_at: s.first_win_daysAgo ? dayAgo(s.first_win_daysAgo) : null,
