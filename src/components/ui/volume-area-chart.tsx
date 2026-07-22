@@ -1,4 +1,4 @@
-import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
+import { ResponsiveContainer, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 
 export type VolumeSeries = {
   key: string;
@@ -27,6 +27,46 @@ export function VolumeAreaChart({
   const gridColor = "var(--color-border)";
   const tickColor = "var(--color-muted-foreground)";
 
+  const tooltipProps = {
+    contentStyle: {
+      background: "var(--color-card)",
+      border: "1px solid var(--color-border)",
+      borderRadius: 10,
+      fontSize: 12,
+      boxShadow: "var(--shadow-overlay)",
+    },
+    labelStyle: { color: "var(--color-foreground)", fontWeight: 500 as const, marginBottom: 4 },
+  };
+
+  // A single bucket (e.g. the 24h range) has no line to draw — an area chart
+  // degenerates to floating dots. Render grouped bars instead.
+  if (data.length === 1) {
+    return (
+      <div className="w-full" style={{ height }}>
+        <ResponsiveContainer>
+          <BarChart data={data} margin={{ top: 10, right: 12, left: -10, bottom: 0 }} barCategoryGap="28%">
+            <CartesianGrid strokeDasharray="2 4" stroke={gridColor} vertical={false} />
+            <XAxis dataKey={xKey} tick={{ fontSize: 11, fill: tickColor }} tickLine={false} axisLine={false} tickMargin={8} />
+            <YAxis tick={{ fontSize: 11, fill: tickColor }} tickLine={false} axisLine={false} tickCount={yTickCount} width={38} />
+            <Tooltip {...tooltipProps} cursor={{ fill: "var(--color-muted)", opacity: 0.4 }} />
+            {series.map(s => (
+              <Bar
+                key={s.key}
+                name={s.label || s.key}
+                dataKey={s.key}
+                fill={s.color}
+                fillOpacity={s.ghost ? 0.35 : 0.9}
+                radius={[4, 4, 0, 0]}
+                maxBarSize={36}
+                isAnimationActive={false}
+              />
+            ))}
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full" style={{ height }}>
       <ResponsiveContainer>
@@ -54,17 +94,7 @@ export function VolumeAreaChart({
             tickCount={yTickCount}
             width={38}
           />
-          <Tooltip
-            contentStyle={{
-              background: "var(--color-card)",
-              border: "1px solid var(--color-border)",
-              borderRadius: 10,
-              fontSize: 12,
-              boxShadow: "var(--shadow-overlay)",
-            }}
-            labelStyle={{ color: "var(--color-foreground)", fontWeight: 500, marginBottom: 4 }}
-            cursor={{ stroke: "var(--color-border)", strokeWidth: 1 }}
-          />
+          <Tooltip {...tooltipProps} cursor={{ stroke: "var(--color-border)", strokeWidth: 1 }} />
           {series.map(s => (
             <Area
               key={s.key}
