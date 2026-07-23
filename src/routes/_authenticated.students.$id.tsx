@@ -102,6 +102,7 @@ function StudentDetail() {
   const [csmNotes, setCsmNotes] = useState<CsmNote[]>([]);
   const [csmAuthors, setCsmAuthors] = useState<Record<string, string>>({});
   const [installment, setInstallment] = useState<Installment | null>(null);
+  const [hasDeal, setHasDeal] = useState(true);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [coaches, setCoaches] = useState<Coach[]>([]);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
@@ -150,7 +151,7 @@ function StudentDetail() {
   };
 
   const fetchPage = async () => {
-    const [sRes, cRes, eRes, weeklyRes, coachRes, csmRes, instRes] = await Promise.all([
+    const [sRes, cRes, eRes, weeklyRes, coachRes, csmRes, instRes, dealRes] = await Promise.all([
       supabase.from("students").select("*").eq("id", id).maybeSingle(),
       supabase.from("student_calls").select("*").eq("student_id", id).order("call_date", { ascending: false }),
       supabase.from("student_eods").select("*").eq("student_id", id).order("report_date", { ascending: false }),
@@ -158,6 +159,7 @@ function StudentDetail() {
       supabase.from("user_roles").select("user_id, role").in("role", ["coach", "admin"]),
       supabase.from("csm_student_notes").select("*").eq("student_id", id).order("created_at", { ascending: false }),
       supabase.from("installments").select("*").eq("student_id", id).maybeSingle(),
+      supabase.from("deals").select("id").eq("student_id", id).limit(1),
     ]);
     const coachIds = Array.from(new Set((coachRes.data ?? []).map(r => r.user_id)));
     const csmAuthorIds = Array.from(new Set((csmRes.data ?? []).map((n: any) => n.user_id)));
@@ -182,6 +184,7 @@ function StudentDetail() {
       weeklyEodLoadError: Boolean(weeklyRes.error),
       csmNotes: (csmRes.data ?? []) as CsmNote[],
       installment: (instRes.data as Installment) ?? null,
+      hasDeal: (dealRes.data ?? []).length > 0,
       coachList, authors, payments,
     };
   };
@@ -196,6 +199,7 @@ function StudentDetail() {
     setWeeklyEodLoadError(pageQ.data.weeklyEodLoadError);
     setCsmNotes(pageQ.data.csmNotes);
     setInstallment(pageQ.data.installment);
+    setHasDeal(pageQ.data.hasDeal);
     setCoaches(pageQ.data.coachList);
     setCsmAuthors(pageQ.data.authors);
     setPayments(pageQ.data.payments);
@@ -376,12 +380,15 @@ function StudentDetail() {
                 onDone={() => { setPaymentSetupOpen(false); load(); }}
               />
             )}
-            {!student.payment_state && (
+            {/* Keyed off the DEAL, not payment_state: "skip for now" during
+                approval left students with no close on record, and setting the
+                Pay chip used to bury this entrance forever. */}
+            {!hasDeal && student.payment_state !== "scholarship" && (roles.includes("admin") || roles.includes("closer")) && (
               <button
                 onClick={() => setPaymentSetupOpen(true)}
                 className="mt-2 inline-flex items-center gap-1.5 text-caption font-medium px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 motion-safe:transition-colors"
               >
-                Set up payment · PIF or installments
+                {student.payment_state ? "Log the close · no deal on record" : "Log close · set up payment"}
               </button>
             )}
             <div className="text-xs text-muted-foreground mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">

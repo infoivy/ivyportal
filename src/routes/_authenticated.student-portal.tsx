@@ -18,6 +18,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { getStudentLeaderboard } from "@/lib/student-portal.functions";
 import { completeStudentOnboarding } from "@/lib/student-onboarding.functions";
 import { syncStudentTimezone } from "@/lib/student-timezone.functions";
+import { timeIn, timezoneOptions } from "@/components/student-local-time";
 import { START_HERE_STEPS, isStartHereComplete } from "@/lib/student-guide-steps";
 import {
   DEFAULT_GROUP_CALL_SCHEDULE,
@@ -463,18 +464,6 @@ function StudentPortal() {
 
   const completeOnboardingFn = useServerFn(completeStudentOnboarding);
   const syncTzFn = useServerFn(syncStudentTimezone);
-  // Keep the student's stored timezone matched to where they actually are —
-  // staff read it as "their local time" before messaging.
-  useEffect(() => {
-    if (!student) return;
-    try {
-      const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      if (browserTz && browserTz !== student.timezone) {
-        void syncTzFn({ data: { timezone: browserTz } }).catch(() => {});
-      }
-    } catch { /* environment without Intl tz — skip */ }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [student?.id, student?.timezone]);
   const toggleGuideStep = async (key: string, done: boolean) => {
     if (!student) return;
     const next = new Set(guideDone);
@@ -548,6 +537,23 @@ function StudentPortal() {
 
   const first = (displayName ?? student.full_name).split(" ")[0];
   const brandNew = eods.length === 0;
+
+  // Soft lock (founder-directed 2026-07-23): every student confirms their own
+  // timezone before anything else. Staff plan around this, so a silent
+  // browser guess is not enough — the student picks it, sees the resulting
+  // clock, and confirms. One time; editable later via their CSM.
+  if (!student.timezone) {
+    return (
+      <TimezoneGate
+        first={first}
+        onConfirm={async (tz) => {
+          await syncTzFn({ data: { timezone: tz } });
+          setStudent(s => (s ? { ...s, timezone: tz } : s));
+          toast.success("Timezone saved");
+        }}
+      />
+    );
+  }
 
   // Offer landed: the grind is over. The portal becomes a graduation page —
   // celebration plus the two asks that remain (testimonial, Trustpilot).
@@ -1341,6 +1347,80 @@ function WeeklyReflection({ label, value }: { label: string; value: string }) {
     <div>
       <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</div>
       <p className="mt-1 whitespace-pre-wrap text-xs text-foreground">{value}</p>
+    </div>
+  );
+}
+
+/**
+ * One-time soft lock: the student confirms their timezone before the portal
+ * opens. Pre-filled from the browser's own zone; the live clock preview lets
+ * them sanity-check ("is that my current time?") before confirming.
+ */
+function TimezoneGate({ first, onConfirm }: { first: string; onConfirm: (tz: string) => Promise<void> }) {
+  const browserTz = useMemo(() => {
+    try { return Intl.DateTimeFormat().resolvedOptions().timeZone ?? ""; } catch { return ""; }
+  }, []);
+  const options = useMemo(() => timezoneOptions(), []);
+  const [tz, setTz] = useState(browserTz && options.includes(browserTz) ? browserTz : "");
+  const [saving, setSaving] = useState(false);
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const idInt = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(idInt);
+  }, []);
+  const preview = tz ? timeIn(tz, now) : null;
+
+  const confirm = async () => {
+    if (!tz) return;
+    setSaving(true);
+    try { await onConfirm(tz); }
+    catch (e) { toast.error(String((e as Error).message ?? e)); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <div className="p-4 sm:p-6 max-w-xl mx-auto space-y-5">
+      <section className="card-surface p-6">
+        <div className="text-[10px] text-muted-foreground mb-1">Student portal</div>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          <span dir="rtl">السلام عليكم ورحمة الله وبركاته</span>, {first} <span className="inline-block">👋</span>
+        </h1>
+        <p className="text-xs text-muted-foreground mt-2">
+          One quick thing before your portal opens: confirm your timezone. Your coach and success team use it to reach you at sane hours.
+        </p>
+
+        <div className="mt-5 space-y-3">
+          <div className="space-y-1.5">
+            <label className="text-[12px] text-muted-foreground">Your timezone</label>
+            <select
+              value={tz}
+              onChange={e => setTz(e.target.value)}
+              className="w-full h-10 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-sm focus:outline-none focus:border-ring"
+            >
+              <option value="" disabled>Select your timezone…</option>
+              {options.map(z => <option key={z} value={z}>{z.replace(/_/g, " ")}</option>)}
+            </select>
+          </div>
+
+          {preview && (
+            <div className="rounded-sm border border-[var(--border)] bg-[var(--background)] px-3 py-2.5 flex items-center justify-between">
+              <span className="text-[12px] text-muted-foreground">Your current time should be</span>
+              <span className="text-sm font-semibold tabular-nums">{preview}</span>
+            </div>
+          )}
+
+          <button
+            onClick={confirm}
+            disabled={!tz || saving}
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium h-10 rounded-sm text-sm disabled:opacity-50"
+          >
+            {saving ? "Saving…" : "That's my time · open my portal"}
+          </button>
+          <p className="text-[10px] text-muted-foreground text-center">
+            Wrong preview? Pick a different city until the clock matches yours.
+          </p>
+        </div>
+      </section>
     </div>
   );
 }
