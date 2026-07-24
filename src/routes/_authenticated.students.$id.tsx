@@ -714,10 +714,11 @@ function StudentDetail() {
                   <th className="text-right p-2">Interviews</th>
                   <th className="text-left p-2">Wins</th>
                   <th className="text-left p-2">Blockers</th>
+                  <th className="p-2" />
                 </tr>
               </thead>
               <tbody>
-                {eods.length === 0 && <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">No EODs yet.</td></tr>}
+                {eods.length === 0 && <tr><td colSpan={8} className="p-6 text-center text-muted-foreground">No EODs yet.</td></tr>}
                 {eods.map(e => (
                   <tr key={e.id} className="border-b border-[var(--accent)]">
                     <td className="p-2 font-mono text-muted-foreground">{e.report_date}</td>
@@ -727,6 +728,25 @@ function StudentDetail() {
                     <td className="p-2 text-right font-mono">{e.interviews}</td>
                     <td className="p-2 max-w-[200px] truncate">{e.wins}</td>
                     <td className="p-2 max-w-[200px] truncate text-warning-fg/80">{e.blockers}</td>
+                    <td className="p-2 text-right">
+                      {/* Students can only adjust their EODs; deleting a bogus
+                          row is a CSM/coach/admin action (founder 2026-07-25). */}
+                      {canManage && (
+                        <button
+                          onClick={async () => {
+                            if (!confirm(`Delete the ${e.report_date} EOD? This cannot be undone.`)) return;
+                            const { error } = await supabase.from("student_eods").delete().eq("id", e.id);
+                            if (error) return toast.error(error.message);
+                            toast.success("EOD deleted");
+                            load();
+                          }}
+                          className="p-1 rounded hover:bg-danger-bg text-muted-foreground hover:text-danger-fg"
+                          title="Delete this EOD"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>

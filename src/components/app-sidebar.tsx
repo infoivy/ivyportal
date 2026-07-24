@@ -58,7 +58,6 @@ const studentsEntry = (roles: string[], pendingApprovals: number): Item[] => [{
 
 const libraryItems: Item[] = [
   { title: "Knowledge", url: "/knowledge", icon: BookOpen },
-  { title: "Training",  url: "/training",  icon: GraduationCap, roles: ["admin", "founder", "closer", "setter", "coach"] },
 ];
 
 // Content planning was removed 2026-07-22 (founder-directed) — no
@@ -71,8 +70,9 @@ const adminItems: Item[] = [
 
 // Student sidebar: portal tabs (via the tab bus) + library + profile, so the
 // nav doesn't feel empty and the journey is one click away.
+// No "Start Here" entry: locked students are forced onto it by the portal
+// itself, and once unlocked it no longer exists (founder-directed 2026-07-25).
 const studentTabItems: { tab: string; title: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { tab: "start", title: "Start Here", icon: Sparkles },
   { tab: "eod", title: "My Portal", icon: FileText },
   { tab: "leaderboard", title: "Leaderboard", icon: Users },
 ];
@@ -150,15 +150,12 @@ export function AppSidebar({ roles }: { roles: string[] }) {
     if (!canApproveRequests) return;
     let alive = true;
     (async () => {
-      const [{ data: profs }, { data: roleRows }] = await Promise.all([
-        supabase.from("profiles").select("id, active"),
-        supabase.from("user_roles").select("user_id"),
-      ]);
+      // pending_signups() — RLS hides other users' user_roles rows from
+      // plain closers/CSMs, so the client-side "profiles minus placed"
+      // computation counted the whole org as pending for them.
+      const { data } = await supabase.rpc("pending_signups");
       if (!alive) return;
-      const placed = new Set((roleRows ?? []).map(r => r.user_id));
-      setPendingApprovals(
-        (profs ?? []).filter(p => (p as { active?: boolean }).active !== false && !placed.has(p.id)).length,
-      );
+      setPendingApprovals((data ?? []).length);
     })();
     return () => { alive = false; };
   }, [canApproveRequests, currentPath]);
@@ -248,7 +245,6 @@ export function AppSidebar({ roles }: { roles: string[] }) {
           <StudentJourneyGroup collapsed={collapsed} currentPath={currentPath} />
           {renderGroup("Library", [
             { title: "Knowledge", url: "/knowledge", icon: BookOpen },
-            { title: "Training", url: "/training", icon: GraduationCap },
           ])}
           {renderGroup("You", [{ title: "Profile", url: "/profile", icon: UserCircle }])}
         </SidebarContent>

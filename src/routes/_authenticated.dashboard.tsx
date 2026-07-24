@@ -736,7 +736,6 @@ function Dashboard() {
           <div className="grid gap-2 sm:grid-cols-4">
             <QuickAction to="/eods"     icon={FileText}   label="Submit EOD" />
             <QuickAction to="/sales" search={{ tab: "trends" }} icon={Target} label="Sales Trends" />
-            <QuickAction to="/training" icon={Zap}        label="Training" />
             <QuickAction to="/policies/crm-hygiene" icon={MessageSquare} label="CRM Hygiene" />
           </div>
         )}

@@ -38,7 +38,6 @@ const PAGES: PageItem[] = [
   { kind: "page", title: "CSM", to: "/csm", icon: HeartHandshake, roles: ["admin", "csm"] },
   { kind: "page", title: "Testimonials", to: "/testimonials", icon: Star, roles: ["admin", "coach", "closer", "setter", "csm"] },
   { kind: "page", title: "Calendar", to: "/calendar", icon: Calendar },
-  { kind: "page", title: "Training", to: "/training", icon: GraduationCap, roles: ["admin", "founder", "closer", "setter", "coach"] },
   { kind: "page", title: "Knowledge", to: "/knowledge", icon: BookOpen },
   { kind: "page", title: "Team", to: "/team", icon: Users, roles: ["admin"] },
   { kind: "page", title: "Admin", to: "/admin", icon: Shield, roles: ["admin"] },

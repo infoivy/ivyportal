@@ -1,11 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { EmailCard, PasswordCard, OrgCard } from "@/components/account-settings";
 import { toast } from "sonner";
 import { UserCircle, Save, Camera, Upload, Trash2 } from "lucide-react";
 import { signAvatar, uploadAvatar } from "@/lib/avatars";
+import { syncStudentTimezone } from "@/lib/student-timezone.functions";
+import { StudentLocalTime, timezoneOptions } from "@/components/student-local-time";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({ meta: [{ title: "Profile · ISA" }] }),
@@ -129,10 +133,71 @@ function ProfilePage() {
         </div>
       </div>
 
+      {/* Students: their timezone drives staff scheduling and the weekly
+          EOD auto-submit — editable here after the first-login confirmation */}
+      <StudentTimezoneCard />
+
       {/* Account + org management — absorbed from the removed Settings page */}
       <EmailCard currentEmail={user?.email ?? ""} />
       <PasswordCard />
       {roles.some((r) => ["admin", "founder"].includes(r)) && <OrgCard userId={user?.id ?? null} />}
+    </div>
+  );
+}
+
+/**
+ * Students set their timezone at first portal open; this is where they change
+ * it later (moved cities, travelling). Renders nothing for non-students.
+ */
+function StudentTimezoneCard() {
+  const { user } = useAuth();
+  const syncTzFn = useServerFn(syncStudentTimezone);
+  const qc = useQueryClient();
+  const q = useQuery({
+    queryKey: ["profile-student-tz", user?.id],
+    enabled: !!user,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data } = await supabase.from("students").select("id, timezone").eq("user_id", user!.id).maybeSingle();
+      return data ?? null;
+    },
+  });
+  const [saving, setSaving] = useState(false);
+  if (!q.data) return null;
+  const tz = q.data.timezone;
+  return (
+    <div className="card-surface p-5 space-y-3">
+      <div>
+        <div className="text-sm font-medium">Your timezone</div>
+        <p className="text-[12px] text-muted-foreground mt-0.5">
+          Your coach and success team use this to reach you at sane hours. Moved or travelling? Update it here.
+        </p>
+      </div>
+      <div className="flex flex-wrap items-center gap-3">
+        <select
+          value={tz ?? ""}
+          disabled={saving}
+          onChange={async e => {
+            const next = e.target.value;
+            if (!next || next === tz) return;
+            setSaving(true);
+            try {
+              await syncTzFn({ data: { timezone: next } });
+              toast.success("Timezone updated");
+              qc.invalidateQueries({ queryKey: ["profile-student-tz"] });
+            } catch (err) {
+              toast.error(String((err as Error).message ?? err));
+            } finally {
+              setSaving(false);
+            }
+          }}
+          className="h-9 min-w-[220px] px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-sm focus:outline-none focus:border-ring disabled:opacity-60"
+        >
+          <option value="" disabled>Select your timezone…</option>
+          {timezoneOptions().map(z => <option key={z} value={z}>{z.replace(/_/g, " ")}</option>)}
+        </select>
+        {tz && <StudentLocalTime tz={tz} className="text-xs" />}
+      </div>
     </div>
   );
 }

@@ -37,7 +37,9 @@ export function startOfDayBiz(isoDate?: string): Date {
 /** "due today" / "due tomorrow" / "due by Friday" / "due by next Tuesday" — reads like a person, not a database. */
 export function humanDue(isoDate: string | null | undefined): string {
   if (!isoDate) return "no due date";
-  const today = todayBiz();
+  // Viewer-local day, not business day: students read their own action items
+  // and "due today" must mean THEIR today.
+  const today = todayLocal();
   const days = Math.round((new Date(isoDate + "T00:00:00").getTime() - new Date(today + "T00:00:00").getTime()) / 86400000);
   const weekday = new Date(isoDate + "T00:00:00").toLocaleDateString("en", { weekday: "long" });
   if (days === 0) return "due today";

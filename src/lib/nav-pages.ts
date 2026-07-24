@@ -19,7 +19,6 @@ export const CONFIGURABLE_PAGES: NavPage[] = [
   { title: "Sales", url: "/sales", roles: ["admin", "closer"] },
   { title: "Revenue", url: "/revenue", roles: ["admin", "closer", "coach"] },
   { title: "Closer Resources", url: "/closer-resources", roles: ["admin", "closer"] },
-  { title: "Training", url: "/training", roles: ["admin", "founder", "closer", "setter", "coach"] },
   { title: "Calendar", url: "/calendar" },
   { title: "Students", url: "/students", roles: ["admin", "closer", "csm", "coach"] },
   { title: "1-on-1 Calls", url: "/calls", roles: ["admin", "coach", "csm"] },

@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { PlacementsSection } from "@/components/student-placements";
 import { Link } from "@tanstack/react-router";
 import { PageSkeleton } from "@/components/ui/skeletons";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -19,6 +18,8 @@ import { getStudentLeaderboard } from "@/lib/student-portal.functions";
 import { completeStudentOnboarding } from "@/lib/student-onboarding.functions";
 import { syncStudentTimezone } from "@/lib/student-timezone.functions";
 import { timeIn, timezoneOptions } from "@/components/student-local-time";
+import { getStudentNextCall } from "@/lib/student-next-call.functions";
+import { humanDue } from "@/lib/dates";
 import { START_HERE_STEPS, isStartHereComplete } from "@/lib/student-guide-steps";
 import {
   DEFAULT_GROUP_CALL_SCHEDULE,
@@ -92,15 +93,10 @@ const emptyWeekly = {
   nextWeekCommitment: "",
 };
 
-type Tab = "start" | "eod" | "placements" | "actions" | "coaching" | "milestones" | "leaderboard";
-
-const phasesFor = (oneOnOne: boolean): { key: string; label: string }[] => [
-  { key: "onboarding", label: "Onboarding" },
-  { key: "coaching_1on1", label: oneOnOne ? "1:1 Coaching" : "Group Coaching" },
-  { key: "applying", label: "Applying" },
-  { key: "offer_won", label: "Offer Won" },
-  { key: "testimonial", label: "Testimonial" },
-];
+// Placements and the phase journey were cut from the student view
+// (founder-directed 2026-07-25): students work their daily loop; the pipeline
+// language (coaching → applying, placements) is staff vocabulary.
+type Tab = "start" | "eod" | "actions" | "coaching" | "milestones" | "leaderboard";
 
 // The student's LOCAL day — same rule as team EODs. toISOString() is UTC and
 // files evening submissions onto tomorrow for western timezones, which then
@@ -398,22 +394,19 @@ function StudentPortal() {
   // Until every Start Here step is done the portal is Start Here and nothing
   // else — a student who just paid has no use for placements/EODs/action items.
   const locked = !!student && !student.onboarding_completed_at;
-  // Once the checklist is finished, Start Here disappears — EOD is the home
-  // tab. It stays (last) only for staff-override unlocks mid-checklist.
-  const startHereDone = isStartHereComplete(guideDone);
-  // Stale/persisted tab state can still say "coaching" (e.g. moved to group) —
-  // never render the 1:1 panel for group students.
+  // Stale/persisted tab state can still say "coaching" (e.g. moved to group)
+  // or point at removed tabs — never render those panels.
   useEffect(() => {
-    if (student && !isOneOnOne && tab === "coaching") setTab("start");
-  }, [student, isOneOnOne, tab]);
+    if (student && !isOneOnOne && tab === "coaching") setTab(locked ? "start" : "eod");
+  }, [student, isOneOnOne, tab, locked]);
   useEffect(() => {
     if (locked && tab !== "start") setTab("start");
   }, [locked, tab]);
-  // The locked session persisted "start" as the tab — land unlocked students
-  // on their EOD instead of a completed checklist.
+  // Once onboarding is done, Start Here is gone entirely (founder-directed
+  // 2026-07-25) — and "placements" no longer exists as a tab.
   useEffect(() => {
-    if (student && !locked && startHereDone && tab === "start") setTab("eod");
-  }, [student, locked, startHereDone, tab]);
+    if (student && !locked && (tab === "start" || (tab as string) === "placements")) setTab("eod");
+  }, [student, locked, tab]);
   // Loom approved ≈ moved past training/coaching into applying
   const loomApproved = ["applying", "offer_won", "testimonial"].includes(student?.phase ?? "");
 
@@ -464,6 +457,16 @@ function StudentPortal() {
 
   const completeOnboardingFn = useServerFn(completeStudentOnboarding);
   const syncTzFn = useServerFn(syncStudentTimezone);
+  const nextCallFn = useServerFn(getStudentNextCall);
+  // The live booking from the coaches' connected calendars beats the
+  // hand-logged next_call_date when it exists.
+  const calendarCallQ = useQuery({
+    queryKey: ["student-next-call", student?.id],
+    enabled: !!student && !!student.onboarding_completed_at && (student.calls_allotted ?? 0) > 0,
+    staleTime: 5 * 60_000,
+    queryFn: async () => (await nextCallFn()).event,
+  });
+  const calendarNextCall = calendarCallQ.data ?? null;
   const toggleGuideStep = async (key: string, done: boolean) => {
     if (!student) return;
     const next = new Set(guideDone);
@@ -640,9 +643,6 @@ function StudentPortal() {
             <h1 className="text-2xl font-semibold tracking-tight">
               <span dir="rtl">السلام عليكم ورحمة الله وبركاته</span>, {first} <span className="inline-block">👋</span>
             </h1>
-            <p className="text-xs text-muted-foreground mt-1">
-              {(phasesFor(isOneOnOne).find(p => p.key === student.phase)?.label ?? student.phase.replace("_", " "))} · {student.status}
-            </p>
           </div>
           <div className="flex items-center gap-2">
             <RankChip onClick={() => setTab("leaderboard")} />
@@ -731,7 +731,15 @@ function StudentPortal() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="text-[9px] text-muted-foreground">Next 1:1</div>
-                  {nextCallDate ? (
+                  {calendarNextCall ? (
+                    <div className="text-sm font-medium">
+                      {new Date(calendarNextCall.start).toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                      {calendarNextCall.with && <span className="text-muted-foreground text-[11px] ml-2">w/ {calendarNextCall.with}</span>}
+                      {calendarNextCall.meet_link && (
+                        <a href={calendarNextCall.meet_link} target="_blank" rel="noopener" className="text-[11px] text-primary hover:underline ml-2">Join →</a>
+                      )}
+                    </div>
+                  ) : nextCallDate ? (
                     <div className="text-sm font-medium">
                       {nextCallDate}
                       <span className="text-muted-foreground text-[11px] ml-2">
@@ -773,30 +781,17 @@ function StudentPortal() {
 
         {/* This week — 7 day-dots build streak pressure at a glance */}
         <WeekDots eodDates={eods.map(e => e.report_date)} today={today} hasToday={!!existingId} />
-
-        {/* Journey stepper */}
-        <div className="mt-5 pt-5 border-t border-[var(--border)]">
-          <JourneyStepper current={student.phase} oneOnOne={isOneOnOne} />
-        </div>
       </section>
 
       {/* TABS — EOD first; group students have no 1:1 coaching tab; Start Here
-          only lingers (last) while a staff-unlocked student still has steps open */}
+          exists only pre-unlock (its own full-page view) */}
       <nav className="flex flex-wrap gap-1 border-b border-[var(--border)] -mb-px">
         <TabButton active={tab === "eod"} onClick={() => setTab("eod")} icon={<FileText className="h-3.5 w-3.5" />} label="My EOD" />
-        <TabButton active={tab === "placements"} onClick={() => setTab("placements")} icon={<Briefcase className="h-3.5 w-3.5" />} label="Placements" />
         <TabButton active={tab === "actions"} onClick={() => setTab("actions")} icon={<ListChecks className="h-3.5 w-3.5" />} label="Action items" badge={openItems.length} urgent={overdue.length > 0 || dueToday.length > 0} />
         {isOneOnOne && <TabButton active={tab === "coaching"} onClick={() => setTab("coaching")} icon={<Calendar className="h-3.5 w-3.5" />} label="My coaching" />}
         <TabButton active={tab === "milestones"} onClick={() => setTab("milestones")} icon={<Trophy className="h-3.5 w-3.5" />} label="Milestones" />
         <TabButton active={tab === "leaderboard"} onClick={() => setTab("leaderboard")} icon={<Trophy className="h-3.5 w-3.5" />} label="Leaderboard" />
-        {!startHereDone && (
-          <TabButton active={tab === "start"} onClick={() => setTab("start")} icon={<PlayCircle className="h-3.5 w-3.5" />} label="Start Here" />
-        )}
       </nav>
-
-      {tab === "start" && (
-        <StartHereGuide done={guideDone} onToggle={toggleGuideStep} />
-      )}
 
       {tab === "leaderboard" && <LeaderboardPanel />}
 
@@ -965,13 +960,6 @@ function StudentPortal() {
                     <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
                   </Link>
                 ))}
-                <Link to="/training" className="flex items-center gap-3 p-3 hover:bg-muted/50 group">
-                  <div className="h-7 w-7 rounded-sm bg-[var(--background)] border border-[var(--border)] flex items-center justify-center">
-                    <PlayCircle className="h-3.5 w-3.5 text-muted-foreground group-hover:text-muted-foreground" />
-                  </div>
-                  <div className="flex-1 text-xs font-medium">Training videos</div>
-                  <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-                </Link>
               </div>
             </div>
           )}
@@ -1090,15 +1078,6 @@ function StudentPortal() {
               ))}
             </div>
           </div>
-        </div>
-      )}
-
-      {tab === "placements" && student && (
-        <div className="space-y-4">
-          <PlacementsSection studentId={student.id} />
-          <p className="text-caption text-muted-foreground">
-            Add every business you're talking to about a setter role and keep the stage current. Your coach and CSM work from this list.
-          </p>
         </div>
       )}
 
@@ -1474,7 +1453,7 @@ function StartHereGuide({ done, locked = false, unlocking = false, onToggle }: {
             <div className="text-sm font-semibold">{locked ? "Start here · unlock your portal" : "Start Here"}</div>
             <div className="text-[11px] text-muted-foreground">
               {locked
-                ? "finish all five steps to unlock EODs, placements, action items, and the leaderboard"
+                ? "finish all five steps to unlock your EODs, action items, and the leaderboard"
                 : "your onboarding checklist, all done ✓"}
             </div>
           </div>
@@ -1528,7 +1507,7 @@ function StartHereGuide({ done, locked = false, unlocking = false, onToggle }: {
 
       {locked && (
         <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
-          <Lock className="h-3 w-3" /> Placements, EODs, action items, and the leaderboard appear here the moment your last step is ticked.
+          <Lock className="h-3 w-3" /> Your EODs, action items, and the leaderboard appear here the moment your last step is ticked.
         </p>
       )}
     </div>
@@ -1607,30 +1586,6 @@ function TabButton({ active, onClick, icon, label, badge, urgent }: { active: bo
         <span className={`ml-1 text-[10px] px-1.5 py-0.5 rounded-full ${urgent ? "bg-danger/20 text-danger-fg" : "bg-[var(--accent)] text-muted-foreground"}`}>{badge}</span>
       )}
     </button>
-  );
-}
-
-function JourneyStepper({ current, oneOnOne }: { current: string; oneOnOne: boolean }) {
-  const PHASES = phasesFor(oneOnOne);
-  const currentIndex = PHASES.findIndex(p => p.key === current);
-  return (
-    <div className="flex items-center gap-2 overflow-x-auto">
-      {PHASES.map((p, i) => {
-        const done = i < currentIndex;
-        const active = i === currentIndex;
-        return (
-          <div key={p.key} className="flex items-center gap-2 flex-shrink-0">
-            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-sm border text-[11px] ${active ? "border-primary/40 bg-primary/10 text-primary font-medium" : done ? "border-border bg-muted text-muted-foreground" : "border-[var(--border)] text-muted-foreground/60"}`}>
-              <div className={`h-4 w-4 rounded-full flex items-center justify-center text-[9px] ${active ? "bg-primary text-primary-foreground" : done ? "bg-muted-foreground/30 text-background" : "border border-border"}`}>
-                {done ? <CheckCircle2 className="h-2.5 w-2.5" /> : i + 1}
-              </div>
-              {p.label}
-            </div>
-            {i < PHASES.length - 1 && <ChevronRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />}
-          </div>
-        );
-      })}
-    </div>
   );
 }
 
@@ -1759,7 +1714,7 @@ function ActionRow({ a, today, onToggle }: { a: { kind?: "call" | "adhoc"; callI
           )}
           {a.item.due_date && (
             <span className={isOverdue ? "text-danger-fg" : ""}>
-              · due {a.item.due_date}{isOverdue ? " (overdue)" : ""}
+              · {humanDue(a.item.due_date)}
             </span>
           )}
         </div>

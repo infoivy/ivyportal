@@ -13,7 +13,6 @@ import { Route as PrintRouteImport } from './routes/print'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthenticatedTrainingRouteImport } from './routes/_authenticated.training'
 import { Route as AuthenticatedTestimonialsRouteImport } from './routes/_authenticated.testimonials'
 import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated.team'
 import { Route as AuthenticatedStudentsRouteImport } from './routes/_authenticated.students'
@@ -29,14 +28,11 @@ import { Route as AuthenticatedPayoutsRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedMochiRouteImport } from './routes/_authenticated.mochi'
 import { Route as AuthenticatedKnowledgeRouteImport } from './routes/_authenticated.knowledge'
 import { Route as AuthenticatedInstallmentsRouteImport } from './routes/_authenticated.installments'
-import { Route as AuthenticatedInstagramRouteImport } from './routes/_authenticated.instagram'
-import { Route as AuthenticatedFounderRouteImport } from './routes/_authenticated.founder'
 import { Route as AuthenticatedFinanceRouteImport } from './routes/_authenticated.finance'
 import { Route as AuthenticatedEodsRouteImport } from './routes/_authenticated.eods'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
 import { Route as AuthenticatedCsmRouteImport } from './routes/_authenticated.csm'
 import { Route as AuthenticatedCrmRouteImport } from './routes/_authenticated.crm'
-import { Route as AuthenticatedContentRouteImport } from './routes/_authenticated.content'
 import { Route as AuthenticatedCloserResourcesRouteImport } from './routes/_authenticated.closer-resources'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated.chat'
 import { Route as AuthenticatedCallsRouteImport } from './routes/_authenticated.calls'
@@ -75,11 +71,6 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedTrainingRoute = AuthenticatedTrainingRouteImport.update({
-  id: '/training',
-  path: '/training',
-  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedTestimonialsRoute =
   AuthenticatedTestimonialsRouteImport.update({
@@ -160,16 +151,6 @@ const AuthenticatedInstallmentsRoute =
     path: '/installments',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedInstagramRoute = AuthenticatedInstagramRouteImport.update({
-  id: '/instagram',
-  path: '/instagram',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedFounderRoute = AuthenticatedFounderRouteImport.update({
-  id: '/founder',
-  path: '/founder',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
 const AuthenticatedFinanceRoute = AuthenticatedFinanceRouteImport.update({
   id: '/finance',
   path: '/finance',
@@ -193,11 +174,6 @@ const AuthenticatedCsmRoute = AuthenticatedCsmRouteImport.update({
 const AuthenticatedCrmRoute = AuthenticatedCrmRouteImport.update({
   id: '/crm',
   path: '/crm',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedContentRoute = AuthenticatedContentRouteImport.update({
-  id: '/content',
-  path: '/content',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedCloserResourcesRoute =
@@ -319,14 +295,11 @@ export interface FileRoutesByFullPath {
   '/calls': typeof AuthenticatedCallsRoute
   '/chat': typeof AuthenticatedChatRoute
   '/closer-resources': typeof AuthenticatedCloserResourcesRoute
-  '/content': typeof AuthenticatedContentRoute
   '/crm': typeof AuthenticatedCrmRoute
   '/csm': typeof AuthenticatedCsmRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/eods': typeof AuthenticatedEodsRoute
   '/finance': typeof AuthenticatedFinanceRoute
-  '/founder': typeof AuthenticatedFounderRoute
-  '/instagram': typeof AuthenticatedInstagramRoute
   '/installments': typeof AuthenticatedInstallmentsRoute
   '/knowledge': typeof AuthenticatedKnowledgeRouteWithChildren
   '/mochi': typeof AuthenticatedMochiRoute
@@ -342,7 +315,6 @@ export interface FileRoutesByFullPath {
   '/students': typeof AuthenticatedStudentsRouteWithChildren
   '/team': typeof AuthenticatedTeamRoute
   '/testimonials': typeof AuthenticatedTestimonialsRoute
-  '/training': typeof AuthenticatedTrainingRoute
   '/knowledge/$slug': typeof AuthenticatedKnowledgeSlugRouteWithChildren
   '/knowledge/new': typeof AuthenticatedKnowledgeNewRoute
   '/policies/crm-hygiene': typeof AuthenticatedPoliciesCrmHygieneRoute
@@ -367,14 +339,11 @@ export interface FileRoutesByTo {
   '/calls': typeof AuthenticatedCallsRoute
   '/chat': typeof AuthenticatedChatRoute
   '/closer-resources': typeof AuthenticatedCloserResourcesRoute
-  '/content': typeof AuthenticatedContentRoute
   '/crm': typeof AuthenticatedCrmRoute
   '/csm': typeof AuthenticatedCsmRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/eods': typeof AuthenticatedEodsRoute
   '/finance': typeof AuthenticatedFinanceRoute
-  '/founder': typeof AuthenticatedFounderRoute
-  '/instagram': typeof AuthenticatedInstagramRoute
   '/installments': typeof AuthenticatedInstallmentsRoute
   '/mochi': typeof AuthenticatedMochiRoute
   '/payouts': typeof AuthenticatedPayoutsRoute
@@ -388,7 +357,6 @@ export interface FileRoutesByTo {
   '/students': typeof AuthenticatedStudentsRouteWithChildren
   '/team': typeof AuthenticatedTeamRoute
   '/testimonials': typeof AuthenticatedTestimonialsRoute
-  '/training': typeof AuthenticatedTrainingRoute
   '/knowledge/$slug': typeof AuthenticatedKnowledgeSlugRouteWithChildren
   '/knowledge/new': typeof AuthenticatedKnowledgeNewRoute
   '/policies/crm-hygiene': typeof AuthenticatedPoliciesCrmHygieneRoute
@@ -415,14 +383,11 @@ export interface FileRoutesById {
   '/_authenticated/calls': typeof AuthenticatedCallsRoute
   '/_authenticated/chat': typeof AuthenticatedChatRoute
   '/_authenticated/closer-resources': typeof AuthenticatedCloserResourcesRoute
-  '/_authenticated/content': typeof AuthenticatedContentRoute
   '/_authenticated/crm': typeof AuthenticatedCrmRoute
   '/_authenticated/csm': typeof AuthenticatedCsmRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/eods': typeof AuthenticatedEodsRoute
   '/_authenticated/finance': typeof AuthenticatedFinanceRoute
-  '/_authenticated/founder': typeof AuthenticatedFounderRoute
-  '/_authenticated/instagram': typeof AuthenticatedInstagramRoute
   '/_authenticated/installments': typeof AuthenticatedInstallmentsRoute
   '/_authenticated/knowledge': typeof AuthenticatedKnowledgeRouteWithChildren
   '/_authenticated/mochi': typeof AuthenticatedMochiRoute
@@ -438,7 +403,6 @@ export interface FileRoutesById {
   '/_authenticated/students': typeof AuthenticatedStudentsRouteWithChildren
   '/_authenticated/team': typeof AuthenticatedTeamRoute
   '/_authenticated/testimonials': typeof AuthenticatedTestimonialsRoute
-  '/_authenticated/training': typeof AuthenticatedTrainingRoute
   '/_authenticated/knowledge/$slug': typeof AuthenticatedKnowledgeSlugRouteWithChildren
   '/_authenticated/knowledge/new': typeof AuthenticatedKnowledgeNewRoute
   '/_authenticated/policies/crm-hygiene': typeof AuthenticatedPoliciesCrmHygieneRoute
@@ -465,14 +429,11 @@ export interface FileRouteTypes {
     | '/calls'
     | '/chat'
     | '/closer-resources'
-    | '/content'
     | '/crm'
     | '/csm'
     | '/dashboard'
     | '/eods'
     | '/finance'
-    | '/founder'
-    | '/instagram'
     | '/installments'
     | '/knowledge'
     | '/mochi'
@@ -488,7 +449,6 @@ export interface FileRouteTypes {
     | '/students'
     | '/team'
     | '/testimonials'
-    | '/training'
     | '/knowledge/$slug'
     | '/knowledge/new'
     | '/policies/crm-hygiene'
@@ -513,14 +473,11 @@ export interface FileRouteTypes {
     | '/calls'
     | '/chat'
     | '/closer-resources'
-    | '/content'
     | '/crm'
     | '/csm'
     | '/dashboard'
     | '/eods'
     | '/finance'
-    | '/founder'
-    | '/instagram'
     | '/installments'
     | '/mochi'
     | '/payouts'
@@ -534,7 +491,6 @@ export interface FileRouteTypes {
     | '/students'
     | '/team'
     | '/testimonials'
-    | '/training'
     | '/knowledge/$slug'
     | '/knowledge/new'
     | '/policies/crm-hygiene'
@@ -560,14 +516,11 @@ export interface FileRouteTypes {
     | '/_authenticated/calls'
     | '/_authenticated/chat'
     | '/_authenticated/closer-resources'
-    | '/_authenticated/content'
     | '/_authenticated/crm'
     | '/_authenticated/csm'
     | '/_authenticated/dashboard'
     | '/_authenticated/eods'
     | '/_authenticated/finance'
-    | '/_authenticated/founder'
-    | '/_authenticated/instagram'
     | '/_authenticated/installments'
     | '/_authenticated/knowledge'
     | '/_authenticated/mochi'
@@ -583,7 +536,6 @@ export interface FileRouteTypes {
     | '/_authenticated/students'
     | '/_authenticated/team'
     | '/_authenticated/testimonials'
-    | '/_authenticated/training'
     | '/_authenticated/knowledge/$slug'
     | '/_authenticated/knowledge/new'
     | '/_authenticated/policies/crm-hygiene'
@@ -635,13 +587,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/training': {
-      id: '/_authenticated/training'
-      path: '/training'
-      fullPath: '/training'
-      preLoaderRoute: typeof AuthenticatedTrainingRouteImport
-      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/testimonials': {
       id: '/_authenticated/testimonials'
@@ -748,20 +693,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedInstallmentsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/instagram': {
-      id: '/_authenticated/instagram'
-      path: '/instagram'
-      fullPath: '/instagram'
-      preLoaderRoute: typeof AuthenticatedInstagramRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/founder': {
-      id: '/_authenticated/founder'
-      path: '/founder'
-      fullPath: '/founder'
-      preLoaderRoute: typeof AuthenticatedFounderRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/finance': {
       id: '/_authenticated/finance'
       path: '/finance'
@@ -795,13 +726,6 @@ declare module '@tanstack/react-router' {
       path: '/crm'
       fullPath: '/crm'
       preLoaderRoute: typeof AuthenticatedCrmRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/content': {
-      id: '/_authenticated/content'
-      path: '/content'
-      fullPath: '/content'
-      preLoaderRoute: typeof AuthenticatedContentRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/closer-resources': {
@@ -1025,14 +949,11 @@ interface AuthenticatedRouteChildren {
   AuthenticatedCallsRoute: typeof AuthenticatedCallsRoute
   AuthenticatedChatRoute: typeof AuthenticatedChatRoute
   AuthenticatedCloserResourcesRoute: typeof AuthenticatedCloserResourcesRoute
-  AuthenticatedContentRoute: typeof AuthenticatedContentRoute
   AuthenticatedCrmRoute: typeof AuthenticatedCrmRoute
   AuthenticatedCsmRoute: typeof AuthenticatedCsmRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEodsRoute: typeof AuthenticatedEodsRoute
   AuthenticatedFinanceRoute: typeof AuthenticatedFinanceRoute
-  AuthenticatedFounderRoute: typeof AuthenticatedFounderRoute
-  AuthenticatedInstagramRoute: typeof AuthenticatedInstagramRoute
   AuthenticatedInstallmentsRoute: typeof AuthenticatedInstallmentsRoute
   AuthenticatedKnowledgeRoute: typeof AuthenticatedKnowledgeRouteWithChildren
   AuthenticatedMochiRoute: typeof AuthenticatedMochiRoute
@@ -1048,7 +969,6 @@ interface AuthenticatedRouteChildren {
   AuthenticatedStudentsRoute: typeof AuthenticatedStudentsRouteWithChildren
   AuthenticatedTeamRoute: typeof AuthenticatedTeamRoute
   AuthenticatedTestimonialsRoute: typeof AuthenticatedTestimonialsRoute
-  AuthenticatedTrainingRoute: typeof AuthenticatedTrainingRoute
   AuthenticatedTeamIdRoute: typeof AuthenticatedTeamIdRoute
 }
 
@@ -1060,14 +980,11 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedCallsRoute: AuthenticatedCallsRoute,
   AuthenticatedChatRoute: AuthenticatedChatRoute,
   AuthenticatedCloserResourcesRoute: AuthenticatedCloserResourcesRoute,
-  AuthenticatedContentRoute: AuthenticatedContentRoute,
   AuthenticatedCrmRoute: AuthenticatedCrmRoute,
   AuthenticatedCsmRoute: AuthenticatedCsmRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEodsRoute: AuthenticatedEodsRoute,
   AuthenticatedFinanceRoute: AuthenticatedFinanceRoute,
-  AuthenticatedFounderRoute: AuthenticatedFounderRoute,
-  AuthenticatedInstagramRoute: AuthenticatedInstagramRoute,
   AuthenticatedInstallmentsRoute: AuthenticatedInstallmentsRoute,
   AuthenticatedKnowledgeRoute: AuthenticatedKnowledgeRouteWithChildren,
   AuthenticatedMochiRoute: AuthenticatedMochiRoute,
@@ -1083,7 +1000,6 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedStudentsRoute: AuthenticatedStudentsRouteWithChildren,
   AuthenticatedTeamRoute: AuthenticatedTeamRoute,
   AuthenticatedTestimonialsRoute: AuthenticatedTestimonialsRoute,
-  AuthenticatedTrainingRoute: AuthenticatedTrainingRoute,
   AuthenticatedTeamIdRoute: AuthenticatedTeamIdRoute,
 }
 

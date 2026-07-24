@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { humanDue } from "@/lib/dates";
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 const DAY = 86400000;
@@ -118,7 +119,7 @@ export function CsmTodayQueue() {
       due_date: itemDue ? localIso(itemDue) : null,
     });
     if (error) return toast.error(error.message);
-    toast.success(itemDue ? `Action item added · due ${localIso(itemDue)}` : "Action item added");
+    toast.success(itemDue ? `Action item added · ${humanDue(localIso(itemDue))}` : "Action item added");
     setItemText("");
     setItemDue(undefined);
     setDueOpen(false);
@@ -204,7 +205,7 @@ export function CsmTodayQueue() {
                         className={`flex w-full items-center gap-1.5 rounded-sm border px-2 py-1.5 text-[11px] motion-safe:transition-colors ${itemDue ? "border-primary/25 bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground"}`}
                       >
                         <CalendarDays className="h-3 w-3" />
-                        {itemDue ? `Due ${localIso(itemDue)}` : "Add due date"}
+                        {itemDue ? humanDue(localIso(itemDue)) : "Add due date"}
                         {itemDue && (
                           <span
                             role="button"

@@ -15,7 +15,7 @@ import {
   PhoneCall, AlertTriangle, Undo2, CheckCircle2, Circle, Clock, X,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { todayLocal } from "@/lib/dates";
+import { humanDue, todayLocal } from "@/lib/dates";
 import { getStudentWeeklyWindow } from "@/lib/student-weekly-eod";
 import { DateField } from "@/components/ui/date-field";
 import { SelectField } from "@/components/ui/select-field";
@@ -588,7 +588,7 @@ function CsmPage() {
                           <div className={`text-sm ${it.done ? "line-through text-muted-foreground" : ""}`}>{it.text}</div>
                           <div className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
                             <Clock className="h-2.5 w-2.5" />
-                            {it.due_date ? `due ${it.due_date}` : `added ${it.created_at.slice(0, 10)}`}
+                            {it.due_date ? humanDue(it.due_date) : `added ${it.created_at.slice(0, 10)}`}
                           </div>
                         </div>
                         {(it.created_by === user?.id || roles.includes("admin")) && (
