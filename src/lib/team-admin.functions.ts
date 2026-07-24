@@ -117,6 +117,10 @@ export const approveAsStudent = createServerFn({ method: "POST" })
           phase: "onboarding",
           status: "active",
           join_date: new Date().toISOString().slice(0, 10),
+          // Baseline is NO 1:1s (founder 2026-07-25) — the payment setup's
+          // 1:1 Pathway package or the Program chip grants the allotment.
+          calls_included: 0,
+          calls_allotted: 0,
         } as never)
         .select("id")
         .single();
