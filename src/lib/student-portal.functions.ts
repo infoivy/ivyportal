@@ -19,20 +19,40 @@ export const getStudentLeaderboard = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const since = new Date(Date.now() - 6 * 86400000).toISOString().slice(0, 10);
+    // Over-fetch by 2 days, then trim per student to THEIR local last-7-days —
+    // report_date is each student's local day, so a shared UTC window
+    // drifts out of sync with what their own EOD tab shows.
+    const fetchSince = new Date(Date.now() - 8 * 86400000).toISOString().slice(0, 10);
 
     const [{ data: students }, { data: eods }] = await Promise.all([
       // Locked students can't log EODs — an all-zero "board of 19" where 18
       // can't compete is meaningless. They join at unlock.
-      supabaseAdmin.from("students").select("id, full_name, user_id, status")
+      supabaseAdmin.from("students").select("id, full_name, user_id, status, timezone")
         .eq("status", "active").not("onboarding_completed_at", "is", null),
       supabaseAdmin.from("student_eods")
-        .select("student_id, applications_submitted, looms_sent, interviews")
-        .gte("report_date", since),
+        .select("student_id, report_date, applications_submitted, looms_sent, interviews")
+        .gte("report_date", fetchSince),
     ]);
 
+    const localSince = (tz: string | null) => {
+      let localToday: string;
+      try {
+        localToday = new Intl.DateTimeFormat("en-CA", { timeZone: tz ?? "Asia/Riyadh" }).format(new Date());
+      } catch {
+        localToday = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Riyadh" }).format(new Date());
+      }
+      const d = new Date(`${localToday}T12:00:00Z`);
+      d.setUTCDate(d.getUTCDate() - 6);
+      return d.toISOString().slice(0, 10);
+    };
+    const sinceByStudent = new Map(
+      ((students ?? []) as { id: string; timezone: string | null }[]).map((s) => [s.id, localSince(s.timezone)]),
+    );
+
     const byStudent = new Map<string, { apps7: number; looms7: number; interviews7: number }>();
-    for (const e of (eods ?? []) as { student_id: string; applications_submitted: number; looms_sent: number | null; interviews: number }[]) {
+    for (const e of (eods ?? []) as { student_id: string; report_date: string; applications_submitted: number; looms_sent: number | null; interviews: number }[]) {
+      const since = sinceByStudent.get(e.student_id);
+      if (!since || e.report_date < since) continue;
       const agg = byStudent.get(e.student_id) ?? { apps7: 0, looms7: 0, interviews7: 0 };
       agg.apps7 += e.applications_submitted || 0;
       agg.looms7 += e.looms_sent || 0;

@@ -417,3 +417,22 @@
   content-visibility: auto;
   contain-intrinsic-size: auto 120px;
 }
+
+/* Open to-dos demand a glance: a slow warning-tinted border breath.
+   Gated to motion-safe; still visibly warning-bordered when reduced. */
+@keyframes todo-border-breathe {
+  0%, 100% { border-color: color-mix(in srgb, var(--warning) 25%, transparent); box-shadow: 0 0 0 0 color-mix(in srgb, var(--warning) 0%, transparent); }
+  50% { border-color: color-mix(in srgb, var(--warning) 70%, transparent); box-shadow: 0 0 10px 0 color-mix(in srgb, var(--warning) 18%, transparent); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .todo-pulse { animation: todo-border-breathe 2.6s var(--ease-out-quad, ease-in-out) infinite; }
+}
+
+/* Today's week-dot breathes until the day is logged. */
+@keyframes today-dot-breathe {
+  0%, 100% { box-shadow: 0 0 0 2px color-mix(in srgb, var(--warning) 30%, transparent); }
+  50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--warning) 45%, transparent); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .today-dot-pulse { animation: today-dot-breathe 2s ease-in-out infinite; }
+}

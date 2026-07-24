@@ -52,6 +52,7 @@ const PHASES: { key: Phase; label: string; color: string }[] = [
   { key: "applying", label: "Applying", color: "text-success-fg border-success/25 bg-success-bg" },
   { key: "offer_won", label: "Offer Won", color: "text-warning-fg border-warning/25 bg-warning-bg" },
   { key: "testimonial", label: "Testimonial", color: "text-success-fg border-success/25 bg-success-bg" },
+  { key: "graduated", label: "Graduated", color: "text-success-fg border-success/25 bg-success-bg" },
   { key: "paused", label: "Paused", color: "text-muted-foreground border-border bg-zinc-500/5" },
 ];
 const STATUSES: { key: Status; label: string; color: string }[] = [
@@ -166,6 +167,8 @@ function StudentsLayout() {
     qc.invalidateQueries({ queryKey: ["students", "all"] });
     qc.invalidateQueries({ queryKey: ["student_calls", "agg"] });
     qc.invalidateQueries({ queryKey: ["student_eods", "agg"] });
+    // Roster edits (coach, phase, status) feed the CSM workspace's cached page
+    qc.invalidateQueries({ queryKey: ["page", "csm"] });
   };
 
 

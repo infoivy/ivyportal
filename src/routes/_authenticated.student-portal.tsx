@@ -19,6 +19,7 @@ import { completeStudentOnboarding } from "@/lib/student-onboarding.functions";
 import { syncStudentTimezone } from "@/lib/student-timezone.functions";
 import { timeIn, timezoneOptions } from "@/components/student-local-time";
 import { getStudentNextCall } from "@/lib/student-next-call.functions";
+import { getMyGraduationReview, submitGraduationReview } from "@/lib/student-review.functions";
 import { humanDue } from "@/lib/dates";
 import { START_HERE_STEPS, isStartHereComplete } from "@/lib/student-guide-steps";
 import {
@@ -420,6 +421,9 @@ function StudentPortal() {
     if (error) return toast.error(error.message);
     const wasNew = !existingId;
     toast.success(existingId ? "EOD updated" : "EOD submitted");
+    // The leaderboard and rank chip read the same EODs — refresh immediately
+    // so the rank moves the moment the log lands.
+    qc.invalidateQueries({ queryKey: ["student-leaderboard"] });
     if (draftKey) try { localStorage.removeItem(draftKey); } catch {}
     if (wasNew) {
       setConfetti(true);
@@ -605,6 +609,8 @@ function StudentPortal() {
           </div>
         </div>
 
+        <GraduationReviewCard first={first} />
+
         <p className="text-[11px] text-muted-foreground text-center">
           No more daily EODs. You earned that. Your CSM stays one message away.
         </p>
@@ -666,9 +672,10 @@ function StudentPortal() {
           </div>
         </div>
 
-        {/* To do — urgent items sit directly under the salaam */}
+        {/* To do — urgent items sit directly under the salaam; the border
+            breathes so it can't be scrolled past unnoticed */}
         {openItems.length > 0 && (
-          <div className="mt-4 rounded-lg border border-warning/25 bg-warning-bg/50 p-3 space-y-1">
+          <div className="mt-4 rounded-lg border border-warning/25 bg-warning-bg/50 p-3 space-y-1 todo-pulse">
             <div className="flex items-center justify-between gap-3 px-1">
               <div className="flex items-center gap-2 text-[12px] font-semibold text-foreground">
                 <ListChecks className="h-3.5 w-3.5 text-warning-fg" /> To do
@@ -1084,11 +1091,33 @@ function StudentPortal() {
       {tab === "milestones" && (
         <div className="space-y-3">
           <div className="text-xs text-muted-foreground">The finish line. Your coach unlocks these as you hit them.</div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <MilestoneCard done={!!student.first_win_at} label="First win" detail={student.first_win_at ? `Unlocked ${student.first_win_at.slice(0, 10)}` : "Land your first interview or big response"} />
-            <MilestoneCard done={!!student.offer_landed_at} label="Offer landed" detail={student.offer_landed_at ? `Unlocked ${student.offer_landed_at.slice(0, 10)}` : "Sign your first offer"} />
-            <MilestoneCard done={!!student.testimonial_collected} label="Testimonial" detail={student.testimonial_collected ? "Shared with us" : "Share your story with future students"} />
-            <MilestoneCard done={!!student.trustpilot_collected} label="Trustpilot review" detail={student.trustpilot_collected ? "Live on Trustpilot" : "Help others find us"} />
+          {/* Founder 2026-07-25: the first REAL win is the signed offer — an
+              interview is just a possibility. One social-proof milestone, then
+              graduation. */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <MilestoneCard
+              done={!!student.offer_landed_at}
+              label="First win · offer landed"
+              detail={student.offer_landed_at ? `Unlocked ${student.offer_landed_at.slice(0, 10)}` : "Sign your first setter offer. Everything before this is practice."}
+            />
+            <MilestoneCard
+              done={!!student.testimonial_collected && !!student.trustpilot_collected}
+              label="Testimonial & Trustpilot"
+              detail={
+                student.testimonial_collected && student.trustpilot_collected
+                  ? "Both in. Future students will find us because of you."
+                  : student.testimonial_collected
+                    ? "Testimonial in · Trustpilot review still open"
+                    : student.trustpilot_collected
+                      ? "Trustpilot in · testimonial still open"
+                      : "Share your story and leave a Trustpilot review"
+              }
+            />
+            <MilestoneCard
+              done={student.phase === "graduated"}
+              label="Graduated from The Ivy Sales Academy"
+              detail={student.phase === "graduated" ? "Done. Go be great." : "Offer signed, story shared · your coach marks you graduated"}
+            />
           </div>
         </div>
       )}
@@ -1401,6 +1430,78 @@ function TimezoneGate({ first, onConfirm }: { first: string; onConfirm: (tz: str
         </div>
       </section>
     </div>
+  );
+}
+
+/**
+ * The casual "few words from you" ask on the graduation page — separate from
+ * Trustpilot, written right here, lands in the team's Testimonials pipeline.
+ */
+function GraduationReviewCard({ first }: { first: string }) {
+  const submitFn = useServerFn(submitGraduationReview);
+  const getFn = useServerFn(getMyGraduationReview);
+  const q = useQuery({
+    queryKey: ["graduation-review"],
+    staleTime: 60_000,
+    queryFn: async () => (await getFn()).text,
+  });
+  const [text, setText] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  useEffect(() => { if (q.data != null) setText(q.data); }, [q.data]);
+  const submitted = q.data != null && !editing;
+
+  const send = async () => {
+    setSaving(true);
+    try {
+      await submitFn({ data: { text } });
+      toast.success("Got it. Thank you, seriously.");
+      setEditing(false);
+      await q.refetch();
+    } catch (e) {
+      toast.error(String((e as Error).message ?? e));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section className="card-surface p-5 space-y-3">
+      <div>
+        <div className="text-sm font-semibold">One more thing, {first}…</div>
+        <p className="text-[12px] text-muted-foreground mt-1">
+          While it's fresh: how was it, in your own words? Where you started, what actually made the difference, where you are now. No script, no pressure. A few honest sentences is perfect.
+        </p>
+      </div>
+      {submitted ? (
+        <div className="space-y-2">
+          <blockquote className="rounded-sm border border-success/25 bg-success-bg px-3 py-2.5 text-xs whitespace-pre-wrap">{q.data}</blockquote>
+          <button onClick={() => setEditing(true)} className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-4">
+            Edit your words
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <textarea
+            value={text}
+            onChange={e => setText(e.target.value)}
+            rows={4}
+            placeholder="I came in with… and now…"
+            className="w-full rounded-sm border border-[var(--border)] bg-[var(--background)] p-2.5 text-sm focus:outline-none focus:border-ring resize-y"
+          />
+          <div className="flex items-center justify-end gap-2">
+            {editing && <button onClick={() => { setEditing(false); setText(q.data ?? ""); }} className="h-8 rounded-sm border border-border px-3 text-xs text-muted-foreground hover:text-foreground">Cancel</button>}
+            <button
+              onClick={send}
+              disabled={saving || text.trim().length < 10}
+              className="h-8 rounded-sm bg-primary px-4 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            >
+              {saving ? "Sending…" : "Send it"}
+            </button>
+          </div>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -1859,7 +1960,7 @@ function WeekDots({ eodDates, today, hasToday }: { eodDates: string[]; today: st
             <div key={d.key} className="flex flex-col items-center gap-1" title={`${d.key}${done ? " · logged" : isToday ? " · pending" : " · missed"}`}>
               <span
                 className={`h-2.5 w-2.5 rounded-full ${
-                  done ? "bg-success" : isToday ? "bg-warning" : "bg-danger/50"
+                  done ? "bg-success" : isToday ? "bg-warning today-dot-pulse" : "bg-danger/50"
                 } ${isToday ? "ring-2 ring-warning/30" : ""} ${isToday && done ? "ring-success/30" : ""}`}
               />
               <span className={`text-[9px] leading-none ${isToday ? "text-foreground font-semibold" : "text-muted-foreground/60"}`}>{d.letter}</span>

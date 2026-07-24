@@ -65,7 +65,7 @@ type Installment = { id: string; total_amount: number; currency: string; notes: 
 type Payment = { id: string; installment_id: string; sequence: number; amount: number; currency: string; due_date: string; status: string; paid_at: string | null };
 type Coach = { id: string; display_name: string | null };
 
-const PHASES: Phase[] = ["uncategorized", "onboarding", "coaching_1on1", "applying", "offer_won", "testimonial", "paused"];
+const PHASES: Phase[] = ["uncategorized", "onboarding", "coaching_1on1", "applying", "offer_won", "testimonial", "graduated", "paused"];
 const STATUSES: Status[] = ["active", "inactive", "ghosting"];
 const GRADES = ["A", "B", "C", "D", "At Risk"];
 const PAYMENT_STATES: { key: PaymentState; label: string; color: string }[] = [
@@ -266,6 +266,9 @@ function StudentDetail() {
       return o?.student ? { ...o, student: { ...o.student, ...patch } } : old;
     });
     qc.invalidateQueries({ queryKey: ["students", "all"] });
+    // Coach/phase/status changes must show up in the CSM workspace too —
+    // it caches its own page query (founder-reported 2026-07-25).
+    qc.invalidateQueries({ queryKey: ["page", "csm"] });
   };
 
   const toggleGradStep = async (key: string) => {
