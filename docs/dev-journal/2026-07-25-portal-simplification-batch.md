@@ -15,6 +15,9 @@ Google events carry attendees in the raw API response even though TeamEvent drop
 ### What was challenging
 The combined per-JWT delete test misled me (RESET ROLE mid-transaction) — clean single-actor transactions confirmed the policies. The founder's "1 minute before midnight" is implemented as a ≥23:45 window because pg_cron can't fire per-timezone at exact minutes; worst case the auto-submit lands at 23:45–23:50 local, which still closes the week.
 
+### Addendum (same day) — milestones, graduation review, pulses, syncs
+Commit `14be87c`. Milestones tab reworked per founder: "First win · offer landed" (an interview is just a possibility), Testimonial+Trustpilot merged into one card with half-done states, new "Graduated from The Ivy Sales Academy" milestone driven by phase=graduated (added to both staff phase pickers · the enum value existed but was unselectable). Graduation page now asks casually for an in-portal written review ("how was it, in your own words") — server fn stores it as a testimonials row (type text, tag graduation-review, status received) since students can't insert under RLS; editable after sending; feeds the team's existing Testimonials page untouched. To-do card border + today's unlogged week-dot breathe via new motion-safe keyframes (todo-border-breathe, today-dot-breathe) in styles.css. Leaderboard: per-student local-timezone 7d windows (was one shared UTC window) + immediate invalidation on daily EOD submit so rank moves with the log. Coach/phase/status edits on profile or roster invalidate ["page","csm"] so the CSM workspace reflects assignments without reload.
+
 ### Future work
 - Auto-submitted weeklies are visibly labeled by their implementation text; CSMs may want a filter for them.
 - The calendar 1:1 match is attendee-email/name-based — students booking with a different email won't match (falls back to coach-logged).
