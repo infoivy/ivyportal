@@ -788,6 +788,12 @@ function StudentPortal() {
 
         {/* This week — 7 day-dots build streak pressure at a glance */}
         <WeekDots eodDates={eods.map(e => e.report_date)} today={today} hasToday={!!existingId} />
+
+        {/* The moment it happens, they tell us — front and center, not buried
+            in a tab (founder-directed 2026-07-25) */}
+        {!student.offer_landed_at && (
+          <OfferLandedForm onReported={async () => { setConfetti(true); setTimeout(() => setConfetti(false), 2500); await load(); }} />
+        )}
       </section>
 
       {/* TABS — EOD first; group students have no 1:1 coaching tab; Start Here
@@ -1119,9 +1125,6 @@ function StudentPortal() {
               detail={student.phase === "graduated" ? "Done. Go be great." : "Offer signed, story shared · your coach marks you graduated"}
             />
           </div>
-          {!student.offer_landed_at && (
-            <OfferLandedForm onReported={async () => { setConfetti(true); setTimeout(() => setConfetti(false), 2500); await load(); }} />
-          )}
         </div>
       )}
     </div>
@@ -1535,7 +1538,7 @@ function OfferLandedForm({ onReported }: { onReported: () => Promise<void> }) {
   };
 
   return (
-    <section className="card-surface p-4 space-y-3">
+    <div className="mt-4 rounded-lg border border-[var(--border)] bg-[var(--background)] p-3 space-y-3">
       {!open ? (
         <button onClick={() => setOpen(true)} className="w-full flex items-center justify-between gap-3 text-left">
           <div>
@@ -1592,7 +1595,7 @@ function OfferLandedForm({ onReported }: { onReported: () => Promise<void> }) {
           </div>
         </>
       )}
-    </section>
+    </div>
   );
 }
 
