@@ -21,6 +21,7 @@ import { timeIn, timezoneOptions } from "@/components/student-local-time";
 import { getStudentNextCall } from "@/lib/student-next-call.functions";
 import { getMyGraduationReview, reportOfferLanded, submitGraduationReview } from "@/lib/student-review.functions";
 import { humanDue } from "@/lib/dates";
+import { signAvatar } from "@/lib/avatars";
 import { START_HERE_STEPS, isStartHereComplete } from "@/lib/student-guide-steps";
 import {
   DEFAULT_GROUP_CALL_SCHEDULE,
@@ -159,7 +160,7 @@ function StudentPortal() {
       supabase.from("student_weekly_eods").select("*").eq("student_id", st.id).order("week_start", { ascending: false }).limit(16),
       supabase.from("student_calls").select("id, call_date, status, progress_rating, next_call_date, action_items_json").eq("student_id", st.id).order("call_date", { ascending: false }),
       supabase.from("student_action_items").select("id, student_id, text, done, due_date, created_at, source_call_id").eq("student_id", st.id).order("created_at", { ascending: false }),
-      st.coach_id ? supabase.from("profiles").select("id, display_name, avatar_url").eq("id", st.coach_id).maybeSingle() : Promise.resolve({ data: null }),
+      st.coach_id ? supabase.from("profiles").select("id, display_name, avatar_url, avatar_path").eq("id", st.coach_id).maybeSingle() : Promise.resolve({ data: null }),
       supabase.from("docs").select("slug, title, category").contains("role_visibility", ["student"]).order("pinned", { ascending: false }).order("sort_order").limit(8),
       (supabase as any).from("student_guide_steps").select("step_key").eq("student_id", st.id),
       supabase.from("org_settings").select("group_call_schedule").limit(1).maybeSingle(),
@@ -174,7 +175,15 @@ function StudentPortal() {
     setWeeklyEods(loadedWeekly);
     setCalls((c ?? []) as Call[]);
     setAdhocItems((ah ?? []) as AdhocItem[]);
-    setCoach((coachRes.data as Coach) ?? null);
+    // Avatars live in storage under avatar_path; sign it for display (the
+    // legacy avatar_url column is empty for everyone current).
+    const coachRow = coachRes.data as (Coach & { avatar_path?: string | null }) | null;
+    if (coachRow) {
+      const signed = coachRow.avatar_path ? await signAvatar(coachRow.avatar_path) : null;
+      setCoach({ id: coachRow.id, display_name: coachRow.display_name, avatar_url: signed ?? coachRow.avatar_url });
+    } else {
+      setCoach(null);
+    }
     setDocs((docsRes.data ?? []) as Doc[]);
 
     const t = (e ?? []).find((r: any) => r.report_date === today);
