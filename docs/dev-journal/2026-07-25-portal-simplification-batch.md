@@ -1,0 +1,21 @@
+# Log: Portal simplification · calendar 1:1s · weekly auto-submit · staff-only EOD deletes
+
+### Prompt
+Founder batch 2026-07-25: phase journey (onboarding → 1:1 coaching → applying) and Placements don't belong in the student view; Next 1:1 should come from the team's calendar; action-item dates should read "due by next Monday" style everywhere; weekly EOD should submit itself 1 minute before Sunday midnight in the student's timezone; students must never delete EODs (adjust only; CSMs/coaches delete); remove the Training tab (keep Knowledge); students change timezone on Profile; Start Here disappears once onboarding is done.
+
+### Issue
+The student portal still spoke staff pipeline language (journey stepper, Placements tab), Start Here lingered post-unlock for staff-override cases, "Next 1:1" only knew coach-logged rows, due dates rendered as raw ISO, weekly EODs went missing when students skipped Sunday, EOD deletion was all-or-nothing (hermes' 2026-07-18 revoke blocked staff too), and Training duplicated Skool.
+
+### What I did
+Commit `9b49f3d` + migration `20260724215801_weekly_autosubmit_and_eod_delete` (applied via MCP). Portal: stepper + phase subtitle + Placements tab removed; Start Here gone post-unlock (tabs, sidebar Journey group, mobile nav); persisted-tab redirects cover both removed tabs. Next 1:1: new `getStudentNextCall` server fn scans all `calendar_connections` (45d window) for events with the student as attendee (email) or named in the summary; falls back to student_calls; card shows host + Meet link. Due dates: existing `humanDue` swept into portal action rows, CSM workspace items, queue popover/toast; switched its anchor from business-day to viewer-local day. Auto-submit: pg_cron enabled, `auto_submit_student_weekly_eods()` every 5 min inserts from `student_call_attendance` for students whose local Sunday time ≥ 23:45 (tz-validated against pg_timezone_names; skips locked/exempt/graduated/non-active; ON CONFLICT no-op). Deletes: `grant delete` restored on both EOD tables with admin/coach/CSM-only policies; trash button on the profile EODs tab; per-JWT verified (student 0 rows, CSM deletes). Training route + sidebar/palette/nav-pages/quick-action references deleted. Profile: StudentTimezoneCard (select + live clock) via the existing server fn. Bonus: sidebar requests badge had reintroduced the raw profiles-minus-roles RLS bug — now uses pending_signups().
+
+### How I did it
+Google events carry attendees in the raw API response even though TeamEvent drops them, so the new fn reads them pre-mapping. Cron cadence over exact-time scheduling: a */5 sweep with a 23:45+ local-time window and a unique key is timezone-proof and idempotent; the migration's remote version landed as 2026-07-24 (server clock) — file renamed to match. CLAUDE.md business rules amended (student flow, setter defaults minus Training).
+
+### What was challenging
+The combined per-JWT delete test misled me (RESET ROLE mid-transaction) — clean single-actor transactions confirmed the policies. The founder's "1 minute before midnight" is implemented as a ≥23:45 window because pg_cron can't fire per-timezone at exact minutes; worst case the auto-submit lands at 23:45–23:50 local, which still closes the week.
+
+### Future work
+- Auto-submitted weeklies are visibly labeled by their implementation text; CSMs may want a filter for them.
+- The calendar 1:1 match is attendee-email/name-based — students booking with a different email won't match (falls back to coach-logged).
+- student-placements component is now staff-only; the student portal no longer links it.
