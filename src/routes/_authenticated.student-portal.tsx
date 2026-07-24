@@ -19,7 +19,7 @@ import { completeStudentOnboarding } from "@/lib/student-onboarding.functions";
 import { syncStudentTimezone } from "@/lib/student-timezone.functions";
 import { timeIn, timezoneOptions } from "@/components/student-local-time";
 import { getStudentNextCall } from "@/lib/student-next-call.functions";
-import { getMyGraduationReview, submitGraduationReview } from "@/lib/student-review.functions";
+import { getMyGraduationReview, reportOfferLanded, submitGraduationReview } from "@/lib/student-review.functions";
 import { humanDue } from "@/lib/dates";
 import { START_HERE_STEPS, isStartHereComplete } from "@/lib/student-guide-steps";
 import {
@@ -1119,6 +1119,9 @@ function StudentPortal() {
               detail={student.phase === "graduated" ? "Done. Go be great." : "Offer signed, story shared · your coach marks you graduated"}
             />
           </div>
+          {!student.offer_landed_at && (
+            <OfferLandedForm onReported={async () => { setConfetti(true); setTimeout(() => setConfetti(false), 2500); await load(); }} />
+          )}
         </div>
       )}
     </div>
@@ -1500,6 +1503,94 @@ function GraduationReviewCard({ first }: { first: string }) {
             </button>
           </div>
         </div>
+      )}
+    </section>
+  );
+}
+
+/**
+ * Students declare their own first offer (founder-directed 2026-07-25):
+ * company, role type, OTE. Lights the milestone instantly; the team gets
+ * pinged to verify and move them to Offer Won.
+ */
+function OfferLandedForm({ onReported }: { onReported: () => Promise<void> }) {
+  const reportFn = useServerFn(reportOfferLanded);
+  const [open, setOpen] = useState(false);
+  const [company, setCompany] = useState("");
+  const [roleType, setRoleType] = useState("");
+  const [ote, setOte] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const submit = async () => {
+    setSaving(true);
+    try {
+      await reportFn({ data: { company, roleType, ote } });
+      toast.success("LET'S GO. The team has been told. 🎉");
+      await onReported();
+    } catch (e) {
+      toast.error(String((e as Error).message ?? e));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section className="card-surface p-4 space-y-3">
+      {!open ? (
+        <button onClick={() => setOpen(true)} className="w-full flex items-center justify-between gap-3 text-left">
+          <div>
+            <div className="text-sm font-semibold">🎉 Landed your first offer?</div>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Tell us the moment it happens. We'll take it from there.</p>
+          </div>
+          <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+        </button>
+      ) : (
+        <>
+          <div className="text-sm font-semibold">🎉 Tell us about the offer</div>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-[11px] text-muted-foreground">Company name</label>
+              <input
+                value={company}
+                onChange={e => setCompany(e.target.value)}
+                placeholder="e.g. Northpeak Solar"
+                className="w-full h-9 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-sm focus:outline-none focus:border-ring"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[11px] text-muted-foreground">Role type</label>
+              <select
+                value={roleType}
+                onChange={e => setRoleType(e.target.value)}
+                className="w-full h-9 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-sm focus:outline-none focus:border-ring"
+              >
+                <option value="" disabled>Pick one…</option>
+                <option value="closing">Closing</option>
+                <option value="dm_setting">DM setting</option>
+                <option value="phone_setting">Phone setting</option>
+              </select>
+            </div>
+            <div className="space-y-1 sm:col-span-2">
+              <label className="text-[11px] text-muted-foreground">OTE · on-target earnings</label>
+              <input
+                value={ote}
+                onChange={e => setOte(e.target.value)}
+                placeholder='e.g. "$3,000/mo" or "$800 base + $50/show"'
+                className="w-full h-9 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-sm focus:outline-none focus:border-ring"
+              />
+            </div>
+          </div>
+          <div className="flex items-center justify-end gap-2">
+            <button onClick={() => setOpen(false)} className="h-8 rounded-sm border border-border px-3 text-xs text-muted-foreground hover:text-foreground">Not yet</button>
+            <button
+              onClick={submit}
+              disabled={saving || company.trim().length < 2 || !roleType || !ote.trim()}
+              className="h-8 rounded-sm bg-primary px-4 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            >
+              {saving ? "Sending…" : "I landed it 🎉"}
+            </button>
+          </div>
+        </>
       )}
     </section>
   );
