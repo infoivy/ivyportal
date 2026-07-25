@@ -2,15 +2,17 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 /**
- * Post-unlock portal walkthrough videos, per pathway. The group video is
- * coming — until it exists, group students are not gated.
+ * Post-unlock portal walkthrough videos, per pathway. One video for everyone
+ * (founder-decided 2026-07-25); the per-pathway split stays so a group-only
+ * recording can slot in later without touching the gate.
  */
+const WALKTHROUGH = {
+  share: "https://www.loom.com/share/4c9761b6b75449a5aba126dcd6398f24",
+  embed: "https://www.loom.com/embed/4c9761b6b75449a5aba126dcd6398f24",
+};
 export const WALKTHROUGH_VIDEOS: Record<"one_on_one" | "group", { share: string; embed: string } | null> = {
-  one_on_one: {
-    share: "https://www.loom.com/share/4c9761b6b75449a5aba126dcd6398f24",
-    embed: "https://www.loom.com/embed/4c9761b6b75449a5aba126dcd6398f24",
-  },
-  group: null,
+  one_on_one: WALKTHROUGH,
+  group: WALKTHROUGH,
 };
 
 // Video length via Loom's oEmbed, cached for the process lifetime. If Loom
