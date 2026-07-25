@@ -1949,6 +1949,8 @@ export type Database = {
           trustpilot_collected: boolean
           updated_at: string
           user_id: string | null
+          walkthrough_done_at: string | null
+          walkthrough_started_at: string | null
           whatsapp: string | null
         }
         Insert: {
@@ -1978,6 +1980,8 @@ export type Database = {
           testimonial_requested?: boolean
           timezone?: string | null
           trustpilot_collected?: boolean
+          walkthrough_done_at?: string | null
+          walkthrough_started_at?: string | null
           updated_at?: string
           user_id?: string | null
           whatsapp?: string | null
@@ -2009,6 +2013,8 @@ export type Database = {
           testimonial_requested?: boolean
           timezone?: string | null
           trustpilot_collected?: boolean
+          walkthrough_done_at?: string | null
+          walkthrough_started_at?: string | null
           updated_at?: string
           user_id?: string | null
           whatsapp?: string | null

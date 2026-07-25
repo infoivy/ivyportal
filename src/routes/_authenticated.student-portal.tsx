@@ -20,6 +20,7 @@ import { syncStudentTimezone } from "@/lib/student-timezone.functions";
 import { timeIn, timezoneOptions } from "@/components/student-local-time";
 import { getStudentNextCall } from "@/lib/student-next-call.functions";
 import { getMyGraduationReview, reportOfferLanded, submitGraduationReview } from "@/lib/student-review.functions";
+import { WALKTHROUGH_VIDEOS, beginPortalWalkthrough, completePortalWalkthrough } from "@/lib/student-walkthrough.functions";
 import { humanDue } from "@/lib/dates";
 import { signAvatar } from "@/lib/avatars";
 import { START_HERE_STEPS, isStartHereComplete } from "@/lib/student-guide-steps";
@@ -48,6 +49,7 @@ type Student = {
   testimonial_collected: boolean | null; trustpilot_collected: boolean | null;
   onboarding_completed_at: string | null;
   timezone: string | null; join_date: string | null;
+  walkthrough_started_at: string | null; walkthrough_done_at: string | null;
 };
 type Coach = { id: string; display_name: string | null; avatar_url: string | null };
 type SEod = {
@@ -149,7 +151,7 @@ function StudentPortal() {
     if (!user) return;
     setWeeklyDraftHydrated(false);
     const { data: s } = await supabase.from("students")
-      .select("id, full_name, email, phase, status, calls_included, calls_allotted, coach_id, first_win_at, offer_landed_at, testimonial_collected, trustpilot_collected, onboarding_completed_at, timezone, join_date")
+      .select("id, full_name, email, phase, status, calls_included, calls_allotted, coach_id, first_win_at, offer_landed_at, testimonial_collected, trustpilot_collected, onboarding_completed_at, timezone, join_date, walkthrough_started_at, walkthrough_done_at")
       .eq("user_id", user.id).maybeSingle();
     setStudent((s as Student) ?? null);
     if (!s) { setLoading(false); return; }
@@ -404,6 +406,13 @@ function StudentPortal() {
   // Until every Start Here step is done the portal is Start Here and nothing
   // else — a student who just paid has no use for placements/EODs/action items.
   const locked = !!student && !student.onboarding_completed_at;
+  // Post-unlock walkthrough (founder 2026-07-25): the unlocked portal stays
+  // visible but soft-locked until the pathway's walkthrough Loom is marked
+  // watched. Group students gate only once their video exists.
+  const walkthroughVideo = student
+    ? WALKTHROUGH_VIDEOS[isOneOnOne ? "one_on_one" : "group"]
+    : null;
+  const softLocked = !!student && !locked && !!walkthroughVideo && !student.walkthrough_done_at;
   // Stale/persisted tab state can still say "coaching" (e.g. moved to group)
   // or point at removed tabs — never render those panels.
   useEffect(() => {
@@ -650,6 +659,21 @@ function StudentPortal() {
     <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-5 relative">
       {confetti && <ConfettiBurst />}
 
+      {/* Post-unlock walkthrough: the whole portal is scrollable below, but
+          soft-locked until this is marked watched — he narrates, they follow. */}
+      {softLocked && walkthroughVideo && (
+        <WalkthroughGate
+          video={walkthroughVideo}
+          startedAt={student.walkthrough_started_at}
+          onDone={async () => {
+            setConfetti(true);
+            setTimeout(() => setConfetti(false), 2500);
+            await load();
+          }}
+        />
+      )}
+
+      <div className={softLocked ? "space-y-5 pointer-events-none select-none opacity-55" : "space-y-5"} aria-hidden={softLocked || undefined}>
       {/* HERO */}
       <section className="card-surface p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -1136,6 +1160,7 @@ function StudentPortal() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
@@ -1516,6 +1541,66 @@ function GraduationReviewCard({ first }: { first: string }) {
           </div>
         </div>
       )}
+    </section>
+  );
+}
+
+/**
+ * Post-unlock walkthrough gate: the founder's Loom, embedded in full, pinned
+ * above a scrollable-but-dimmed portal. Mark-done is server-verified against
+ * the video's runtime (an iframe can't report playback, but elapsed time
+ * catches "watched a 12-minute video in 40 seconds").
+ */
+function WalkthroughGate({ video, startedAt, onDone }: {
+  video: { share: string; embed: string };
+  startedAt: string | null;
+  onDone: () => Promise<void>;
+}) {
+  const beginFn = useServerFn(beginPortalWalkthrough);
+  const completeFn = useServerFn(completePortalWalkthrough);
+  const [saving, setSaving] = useState(false);
+  const began = useRef(false);
+  useEffect(() => {
+    if (began.current || startedAt) return;
+    began.current = true;
+    void beginFn().catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startedAt]);
+
+  const markDone = async () => {
+    setSaving(true);
+    try {
+      await completeFn();
+      toast.success("Portal unlocked. Now you know exactly how to run it.");
+      await onDone();
+    } catch (e) {
+      toast.error(String((e as Error).message ?? e));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section className="card-surface p-5 space-y-3 border-primary/25">
+      <div>
+        <div className="text-sm font-semibold">Watch this first · how to run your portal</div>
+        <p className="text-[12px] text-muted-foreground mt-1">
+          Your portal is unlocked. Before you touch anything, watch this walkthrough in full — scroll along as it plays; everything below opens the moment you mark it done.
+        </p>
+      </div>
+      <div className="relative w-full overflow-hidden rounded-sm border border-[var(--border)]" style={{ paddingBottom: "56.25%" }}>
+        <iframe src={video.embed} title="Portal walkthrough" allowFullScreen className="absolute inset-0 h-full w-full" />
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="text-[11px] text-muted-foreground">Watched it all? Say the word.</span>
+        <button
+          onClick={markDone}
+          disabled={saving}
+          className="h-9 rounded-sm bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+        >
+          {saving ? "Checking…" : "I watched it in full · unlock my portal"}
+        </button>
+      </div>
     </section>
   );
 }
