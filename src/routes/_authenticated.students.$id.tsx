@@ -12,6 +12,10 @@ import { DateField } from "@/components/ui/date-field";
 import { SelectField } from "@/components/ui/select-field";
 import { StudentPaymentSetup } from "@/components/student-payment-setup";
 import { StudentLocalTime, timezoneOptions } from "@/components/student-local-time";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarPicker } from "@/components/ui/calendar";
+import { Checkbox } from "@/components/ui/checkbox";
+import { humanDue } from "@/lib/dates";
 import {
   ArrowLeft, Video, Trash2, Plus, Save, Calendar as CalIcon,
   Phone, FileText, User, Pencil, ExternalLink, CheckCircle2, Circle,
@@ -61,6 +65,7 @@ type StudentWeeklyEod = {
   next_week_commitment: string; submitted_at: string;
 };
 type CsmNote = { id: string; student_id: string; user_id: string; note: string; tags: string[] | null; created_at: string };
+type AdhocItem = { id: string; text: string; done: boolean; due_date: string | null; created_at: string };
 type Installment = { id: string; total_amount: number; currency: string; notes: string | null };
 type Payment = { id: string; installment_id: string; sequence: number; amount: number; currency: string; due_date: string; status: string; paid_at: string | null };
 type Coach = { id: string; display_name: string | null };
@@ -103,6 +108,7 @@ function StudentDetail() {
   const [csmAuthors, setCsmAuthors] = useState<Record<string, string>>({});
   const [installment, setInstallment] = useState<Installment | null>(null);
   const [hasDeal, setHasDeal] = useState(true);
+  const [adhocItems, setAdhocItems] = useState<AdhocItem[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [coaches, setCoaches] = useState<Coach[]>([]);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
@@ -151,7 +157,7 @@ function StudentDetail() {
   };
 
   const fetchPage = async () => {
-    const [sRes, cRes, eRes, weeklyRes, coachRes, csmRes, instRes, dealRes] = await Promise.all([
+    const [sRes, cRes, eRes, weeklyRes, coachRes, csmRes, instRes, dealRes, aiRes] = await Promise.all([
       supabase.from("students").select("*").eq("id", id).maybeSingle(),
       supabase.from("student_calls").select("*").eq("student_id", id).order("call_date", { ascending: false }),
       supabase.from("student_eods").select("*").eq("student_id", id).order("report_date", { ascending: false }),
@@ -160,6 +166,7 @@ function StudentDetail() {
       supabase.from("csm_student_notes").select("*").eq("student_id", id).order("created_at", { ascending: false }),
       supabase.from("installments").select("*").eq("student_id", id).maybeSingle(),
       supabase.from("deals").select("id").eq("student_id", id).limit(1),
+      supabase.from("student_action_items").select("id, text, done, due_date, created_at").eq("student_id", id).order("created_at", { ascending: false }).limit(50),
     ]);
     const coachIds = Array.from(new Set((coachRes.data ?? []).map(r => r.user_id)));
     const csmAuthorIds = Array.from(new Set((csmRes.data ?? []).map((n: any) => n.user_id)));
@@ -185,6 +192,7 @@ function StudentDetail() {
       csmNotes: (csmRes.data ?? []) as CsmNote[],
       installment: (instRes.data as Installment) ?? null,
       hasDeal: (dealRes.data ?? []).length > 0,
+      adhocItems: (aiRes.data ?? []) as AdhocItem[],
       coachList, authors, payments,
     };
   };
@@ -200,6 +208,7 @@ function StudentDetail() {
     setCsmNotes(pageQ.data.csmNotes);
     setInstallment(pageQ.data.installment);
     setHasDeal(pageQ.data.hasDeal);
+    setAdhocItems(pageQ.data.adhocItems);
     setCoaches(pageQ.data.coachList);
     setCsmAuthors(pageQ.data.authors);
     setPayments(pageQ.data.payments);
@@ -291,19 +300,27 @@ function StudentDetail() {
     load();
   };
 
-  const saveNextAction = async (v: string) => {
-    const text = v.trim();
-    await update({ next_action: text || null });
-    // A next action IS an action item (founder-directed 2026-07-22): setting
-    // one drops it straight into the student's open action items so it shows
-    // in their portal and the team's queues, not just this header field.
-    if (text && user) {
-      const { error } = await supabase.from("student_action_items").insert({
-        student_id: student.id, created_by: user.id, text,
-      });
-      if (error) toast.error(`Next action saved, but the action item failed: ${error.message}`);
-      else toast.success("Next action saved · action item created");
-    }
+  // Next actions ARE action items (founder-directed 2026-07-22, composer +
+  // due date + multi-add 2026-07-26). students.next_action mirrors the most
+  // recent one so the roster column and at-risk copy keep working.
+  const addNextAction = async (text: string, due: string | null) => {
+    if (!user) return;
+    const { error } = await supabase.from("student_action_items").insert({
+      student_id: student.id, created_by: user.id, text, due_date: due,
+    });
+    if (error) { toast.error(error.message); return; }
+    await update({ next_action: text });
+    toast.success(due ? `Action item added · ${humanDue(due)}` : "Action item added");
+    qc.invalidateQueries({ queryKey: ["page", "student", id] });
+    load();
+  };
+
+  const toggleActionItem = async (itemId: string, done: boolean) => {
+    const { error } = await supabase.from("student_action_items")
+      .update({ done, done_at: done ? new Date().toISOString() : null })
+      .eq("id", itemId);
+    if (error) { toast.error(error.message); return; }
+    load();
   };
 
   const renameStudent = async (name: string) => {
@@ -497,17 +514,14 @@ function StudentDetail() {
               </div>
             )}
 
-            {/* Next action */}
-            <div className="mt-4 flex items-center gap-3">
-              <span className="text-[10px] uppercase tracking-widest text-muted-foreground shrink-0">Next action</span>
-              <input
-                disabled={!canManage}
-                defaultValue={student.next_action ?? ""}
-                onBlur={e => { if (e.target.value !== (student.next_action ?? "")) saveNextAction(e.target.value); }}
-                placeholder="e.g. Follow up on portfolio review by Friday"
-                className="flex-1 h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs focus:outline-none focus:border-ring disabled:opacity-60"
-              />
-            </div>
+            {/* Next actions — composer creates real action items (portal +
+                queues), due date optional, add as many as needed */}
+            <NextActionsComposer
+              canManage={canManage || roles.includes("closer")}
+              items={adhocItems}
+              onAdd={addNextAction}
+              onToggle={toggleActionItem}
+            />
           </div>
         </div>
       </div>
@@ -1242,5 +1256,111 @@ function EditableName({ value, canEdit, onSave }: { value: string; canEdit: bool
       }}
       className="text-xl font-semibold bg-[var(--background)] border border-border rounded-sm px-2 py-0.5 w-[min(320px,80vw)] focus:outline-none focus:border-ring"
     />
+  );
+}
+
+/**
+ * Next actions composer: every entry is a real action item (portal + queues),
+ * optional due date, add as many as needed. students.next_action mirrors the
+ * latest so the roster column keeps reading.
+ */
+function NextActionsComposer({ canManage, items, onAdd, onToggle }: {
+  canManage: boolean;
+  items: AdhocItem[];
+  onAdd: (text: string, due: string | null) => Promise<void>;
+  onToggle: (id: string, done: boolean) => Promise<void>;
+}) {
+  const [text, setText] = useState("");
+  const [due, setDue] = useState<Date | undefined>(undefined);
+  const [dueOpen, setDueOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const open = items.filter(i => !i.done);
+  const localIso = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+  const add = async () => {
+    const t = text.trim();
+    if (!t) return;
+    setSaving(true);
+    try {
+      await onAdd(t, due ? localIso(due) : null);
+      setText("");
+      setDue(undefined);
+      setDueOpen(false);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="mt-4 space-y-2">
+      {canManage && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[10px] uppercase tracking-widest text-muted-foreground shrink-0">Next actions</span>
+          <input
+            value={text}
+            onChange={e => setText(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter") add(); }}
+            placeholder="e.g. Follow up on portfolio review"
+            className="flex-1 min-w-[200px] h-8 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-xs focus:outline-none focus:border-ring"
+          />
+          <Popover open={dueOpen} onOpenChange={setDueOpen}>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className={`h-8 inline-flex items-center gap-1.5 rounded-sm border px-2.5 text-[11px] motion-safe:transition-colors ${due ? "border-primary/25 bg-primary/10 text-primary" : "border-[var(--border)] text-muted-foreground hover:text-foreground"}`}
+              >
+                <CalIcon className="h-3 w-3" />
+                {due ? humanDue(localIso(due)) : "Due date"}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-auto p-0 bg-[var(--card)] border-[var(--border)]">
+              <CalendarPicker
+                mode="single"
+                selected={due}
+                onSelect={(d) => { setDue(d); setDueOpen(false); }}
+                disabled={{ before: new Date() }}
+              />
+              {due && (
+                <div className="border-t border-[var(--border)] px-3 py-2 text-right">
+                  <button type="button" onClick={() => { setDue(undefined); setDueOpen(false); }} className="text-[10px] text-muted-foreground hover:text-foreground">
+                    Clear date
+                  </button>
+                </div>
+              )}
+            </PopoverContent>
+          </Popover>
+          <button
+            onClick={add}
+            disabled={saving || !text.trim()}
+            className="h-8 rounded-sm bg-primary px-3 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          >
+            {saving ? "Adding…" : "Add"}
+          </button>
+        </div>
+      )}
+      {open.length > 0 && (
+        <ul className="space-y-1">
+          {open.map(it => (
+            <li key={it.id} className="flex items-start gap-2 text-xs">
+              <Checkbox
+                checked={false}
+                disabled={!canManage}
+                onCheckedChange={(v) => { if (v === true) onToggle(it.id, true); }}
+                className="mt-0.5 h-3.5 w-3.5"
+              />
+              <span className="flex-1 min-w-0">
+                {it.text}
+                {it.due_date && (
+                  <span className={`ml-2 text-[10px] ${it.due_date < new Date().toISOString().slice(0, 10) ? "text-danger-fg" : "text-muted-foreground"}`}>
+                    {humanDue(it.due_date)}
+                  </span>
+                )}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
