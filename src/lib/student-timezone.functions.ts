@@ -31,3 +31,33 @@ export const syncStudentTimezone = createServerFn({ method: "POST" })
     if (upErr) throw new Error(upErr.message);
     return { ok: true, updated: true };
   });
+
+/**
+ * Students set their own WhatsApp number (founder-directed 2026-07-26) —
+ * the portal soft-locks until it exists. E.164-ish: country code required.
+ */
+export const saveStudentWhatsapp = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: { whatsapp: string }) => {
+    const cleaned = String(input?.whatsapp ?? "").replace(/[\s\-().]/g, "");
+    if (!/^\+[1-9]\d{7,14}$/.test(cleaned)) {
+      throw new Error("Enter your full WhatsApp number with country code, like +44 7700 900123.");
+    }
+    return { whatsapp: cleaned };
+  })
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: student, error } = await supabaseAdmin
+      .from("students")
+      .select("id")
+      .eq("user_id", context.userId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!student) throw new Error("Your account isn't linked to a student profile.");
+    const { error: upErr } = await supabaseAdmin
+      .from("students")
+      .update({ whatsapp: data.whatsapp })
+      .eq("id", student.id);
+    if (upErr) throw new Error(upErr.message);
+    return { ok: true };
+  });

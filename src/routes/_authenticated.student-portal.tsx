@@ -16,7 +16,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getStudentLeaderboard } from "@/lib/student-portal.functions";
 import { completeStudentOnboarding } from "@/lib/student-onboarding.functions";
-import { syncStudentTimezone } from "@/lib/student-timezone.functions";
+import { saveStudentWhatsapp, syncStudentTimezone } from "@/lib/student-timezone.functions";
 import { timeIn, timezoneOptions } from "@/components/student-local-time";
 import { getStudentNextCall } from "@/lib/student-next-call.functions";
 import { getMyGraduationReview, reportOfferLanded, submitGraduationReview } from "@/lib/student-review.functions";
@@ -48,7 +48,7 @@ type Student = {
   first_win_at: string | null; offer_landed_at: string | null;
   testimonial_collected: boolean | null; trustpilot_collected: boolean | null;
   onboarding_completed_at: string | null;
-  timezone: string | null; join_date: string | null;
+  timezone: string | null; join_date: string | null; whatsapp: string | null;
   walkthrough_started_at: string | null; walkthrough_done_at: string | null;
 };
 type Coach = { id: string; display_name: string | null; avatar_url: string | null };
@@ -151,7 +151,7 @@ function StudentPortal() {
     if (!user) return;
     setWeeklyDraftHydrated(false);
     const { data: s } = await supabase.from("students")
-      .select("id, full_name, email, phase, status, calls_included, calls_allotted, coach_id, first_win_at, offer_landed_at, testimonial_collected, trustpilot_collected, onboarding_completed_at, timezone, join_date, walkthrough_started_at, walkthrough_done_at")
+      .select("id, full_name, email, phase, status, calls_included, calls_allotted, coach_id, first_win_at, offer_landed_at, testimonial_collected, trustpilot_collected, onboarding_completed_at, timezone, join_date, whatsapp, walkthrough_started_at, walkthrough_done_at")
       .eq("user_id", user.id).maybeSingle();
     setStudent((s as Student) ?? null);
     if (!s) { setLoading(false); return; }
@@ -479,6 +479,7 @@ function StudentPortal() {
 
   const completeOnboardingFn = useServerFn(completeStudentOnboarding);
   const syncTzFn = useServerFn(syncStudentTimezone);
+  const saveWhatsappFn = useServerFn(saveStudentWhatsapp);
   const nextCallFn = useServerFn(getStudentNextCall);
   // The live booking from the coaches' connected calendars beats the
   // hand-logged next_call_date when it exists.
@@ -563,18 +564,22 @@ function StudentPortal() {
   const first = (displayName ?? student.full_name).split(" ")[0];
   const brandNew = eods.length === 0;
 
-  // Soft lock (founder-directed 2026-07-23): every student confirms their own
-  // timezone before anything else. Staff plan around this, so a silent
-  // browser guess is not enough — the student picks it, sees the resulting
-  // clock, and confirms. One time; editable later via their CSM.
-  if (!student.timezone) {
+  // Soft lock (founder-directed 2026-07-23, WhatsApp added 2026-07-26):
+  // every student confirms their own timezone AND WhatsApp before anything
+  // else — staff plan and reach out around both. Asks only for what's
+  // missing; existing students who confirmed their timezone see just the
+  // WhatsApp field on their next visit.
+  if (!student.timezone || !student.whatsapp) {
     return (
-      <TimezoneGate
+      <DetailsGate
         first={first}
-        onConfirm={async (tz) => {
-          await syncTzFn({ data: { timezone: tz } });
-          setStudent(s => (s ? { ...s, timezone: tz } : s));
-          toast.success("Timezone saved");
+        needTimezone={!student.timezone}
+        needWhatsapp={!student.whatsapp}
+        onConfirm={async (tz, whatsapp) => {
+          if (tz) await syncTzFn({ data: { timezone: tz } });
+          if (whatsapp) await saveWhatsappFn({ data: { whatsapp } });
+          setStudent(s => (s ? { ...s, timezone: tz ?? s.timezone, whatsapp: whatsapp ?? s.whatsapp } : s));
+          toast.success("Saved · welcome in");
         }}
       />
     );
@@ -1400,31 +1405,46 @@ function WeeklyReflection({ label, value }: { label: string; value: string }) {
 }
 
 /**
- * One-time soft lock: the student confirms their timezone before the portal
- * opens. Pre-filled from the browser's own zone; the live clock preview lets
- * them sanity-check ("is that my current time?") before confirming.
+ * One-time soft lock: the student confirms their timezone and WhatsApp
+ * before the portal opens. Asks only for what's missing. Timezone is
+ * pre-filled from the browser with a live clock preview; WhatsApp requires
+ * a country code.
  */
-function TimezoneGate({ first, onConfirm }: { first: string; onConfirm: (tz: string) => Promise<void> }) {
+function DetailsGate({ first, needTimezone, needWhatsapp, onConfirm }: {
+  first: string;
+  needTimezone: boolean;
+  needWhatsapp: boolean;
+  onConfirm: (tz: string | null, whatsapp: string | null) => Promise<void>;
+}) {
   const browserTz = useMemo(() => {
     try { return Intl.DateTimeFormat().resolvedOptions().timeZone ?? ""; } catch { return ""; }
   }, []);
   const options = useMemo(() => timezoneOptions(), []);
   const [tz, setTz] = useState(browserTz && options.includes(browserTz) ? browserTz : "");
+  const [whatsapp, setWhatsapp] = useState("");
   const [saving, setSaving] = useState(false);
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const idInt = setInterval(() => setNow(new Date()), 30_000);
     return () => clearInterval(idInt);
   }, []);
-  const preview = tz ? timeIn(tz, now) : null;
+  const preview = needTimezone && tz ? timeIn(tz, now) : null;
+  const whatsappOk = /^\+[1-9][\d\s\-().]{7,18}$/.test(whatsapp.trim());
+  const ready = (!needTimezone || !!tz) && (!needWhatsapp || whatsappOk);
 
   const confirm = async () => {
-    if (!tz) return;
+    if (!ready) return;
     setSaving(true);
-    try { await onConfirm(tz); }
+    try { await onConfirm(needTimezone ? tz : null, needWhatsapp ? whatsapp.trim() : null); }
     catch (e) { toast.error(String((e as Error).message ?? e)); }
     finally { setSaving(false); }
   };
+
+  const intro = needTimezone && needWhatsapp
+    ? "Two quick things before your portal opens: confirm your timezone and drop your WhatsApp number. Your coach and success team run on both."
+    : needWhatsapp
+      ? "One quick thing before your portal opens: your WhatsApp number. It's how your coach and success team actually reach you."
+      : "One quick thing before your portal opens: confirm your timezone. Your coach and success team use it to reach you at sane hours.";
 
   return (
     <div className="p-4 sm:p-6 max-w-xl mx-auto space-y-5">
@@ -1433,40 +1453,57 @@ function TimezoneGate({ first, onConfirm }: { first: string; onConfirm: (tz: str
         <h1 className="text-2xl font-semibold tracking-tight">
           <span dir="rtl">السلام عليكم ورحمة الله وبركاته</span>, {first} <span className="inline-block">👋</span>
         </h1>
-        <p className="text-xs text-muted-foreground mt-2">
-          One quick thing before your portal opens: confirm your timezone. Your coach and success team use it to reach you at sane hours.
-        </p>
+        <p className="text-xs text-muted-foreground mt-2">{intro}</p>
 
         <div className="mt-5 space-y-3">
-          <div className="space-y-1.5">
-            <label className="text-[12px] text-muted-foreground">Your timezone</label>
-            <select
-              value={tz}
-              onChange={e => setTz(e.target.value)}
-              className="w-full h-10 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-sm focus:outline-none focus:border-ring"
-            >
-              <option value="" disabled>Select your timezone…</option>
-              {options.map(z => <option key={z} value={z}>{z.replace(/_/g, " ")}</option>)}
-            </select>
-          </div>
+          {needTimezone && (
+            <>
+              <div className="space-y-1.5">
+                <label className="text-[12px] text-muted-foreground">Your timezone</label>
+                <select
+                  value={tz}
+                  onChange={e => setTz(e.target.value)}
+                  className="w-full h-10 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-sm focus:outline-none focus:border-ring"
+                >
+                  <option value="" disabled>Select your timezone…</option>
+                  {options.map(z => <option key={z} value={z}>{z.replace(/_/g, " ")}</option>)}
+                </select>
+              </div>
+              {preview && (
+                <div className="rounded-sm border border-[var(--border)] bg-[var(--background)] px-3 py-2.5 flex items-center justify-between">
+                  <span className="text-[12px] text-muted-foreground">Your current time should be</span>
+                  <span className="text-sm font-semibold tabular-nums">{preview}</span>
+                </div>
+              )}
+            </>
+          )}
 
-          {preview && (
-            <div className="rounded-sm border border-[var(--border)] bg-[var(--background)] px-3 py-2.5 flex items-center justify-between">
-              <span className="text-[12px] text-muted-foreground">Your current time should be</span>
-              <span className="text-sm font-semibold tabular-nums">{preview}</span>
+          {needWhatsapp && (
+            <div className="space-y-1.5">
+              <label className="text-[12px] text-muted-foreground">Your WhatsApp number</label>
+              <input
+                type="tel"
+                value={whatsapp}
+                onChange={e => setWhatsapp(e.target.value)}
+                placeholder="+44 7700 900123"
+                className="w-full h-10 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-sm focus:outline-none focus:border-ring"
+              />
+              <p className="text-[10px] text-muted-foreground">Include your country code (+44, +1, +966…). This is where loom feedback and check-ins reach you.</p>
             </div>
           )}
 
           <button
             onClick={confirm}
-            disabled={!tz || saving}
+            disabled={!ready || saving}
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium h-10 rounded-sm text-sm disabled:opacity-50"
           >
-            {saving ? "Saving…" : "That's my time · open my portal"}
+            {saving ? "Saving…" : "All set · open my portal"}
           </button>
-          <p className="text-[10px] text-muted-foreground text-center">
-            Wrong preview? Pick a different city until the clock matches yours.
-          </p>
+          {needTimezone && (
+            <p className="text-[10px] text-muted-foreground text-center">
+              Wrong clock preview? Pick a different city until it matches yours.
+            </p>
+          )}
         </div>
       </section>
     </div>
