@@ -14,3 +14,6 @@ Client permits pretty-typed numbers ("+44 7700 900123"); the server stores the c
 
 ### Future work
 - Students can't edit their WhatsApp later (staff can, via AddStudentModal fields); a Profile card like the timezone one is trivial if asked.
+
+### Addendum (same day)
+Commit `f992547`: profile "Next action" input replaced with a NextActionsComposer · each add is a real student_action_item (text + shadcn calendar due date, multi-add, inline open-items list with humanDue + done checkbox); students.next_action mirrors the latest entry for the roster column. Also investigated founder's "student requests aren't coming in": pipeline healthy — the two 48h signups (Abdullaah Medjedovic, Ibrahim Rashid) auto-linked to staff-created student rows by email match and were granted the student role instantly, so they correctly never appear in Requests (it lists only role-less accounts). Confirmed the already-unlocked-without-details case needs no new work: DetailsGate keys on missing timezone/whatsapp regardless of unlock state.
