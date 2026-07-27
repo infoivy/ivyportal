@@ -18,7 +18,8 @@ import {
   BarChart, Bar, LabelList, Cell,
 } from "recharts";
 import { format, subDays, differenceInCalendarDays } from "date-fns";
-import { money, startOfWeekMon, endOfWeekSun, isoDay, type Deal } from "@/lib/revenue";
+import { money, startOfWeekMon, endOfWeekSun, isoDay } from "@/lib/revenue";
+import { fetchCollectedCashByCloser } from "@/lib/collected-cash";
 import { RangePicker, type DateRange, rangeFor, daysBetween } from "@/components/range-picker";
 import { StatDrilldown, type MetricKey } from "@/components/stat-drilldown";
 import { DashboardSettingsSheet } from "@/components/dashboard-settings-sheet";
@@ -1197,24 +1198,10 @@ function UnifiedLeaderboard({ profiles, eods, canSeeCash }: { profiles: Record<s
     setCashLoading(true);
     (async () => {
       try {
-        const [dealsRes, eodsRes] = await Promise.all([
-          supabase.from("deals").select("closer_id, cash_collected_upfront, deal_date")
-            .gte("deal_date", startISO).lte("deal_date", endISO),
-          supabase.from("eods").select("user_id, cash_collected, report_date")
-            .gte("report_date", startISO).lte("report_date", endISO),
-        ]);
-        const totals = new Map<string, { cash: number; closes: number }>();
-        for (const d of (dealsRes.data ?? []) as Pick<Deal, "closer_id" | "cash_collected_upfront">[]) {
-          const c = totals.get(d.closer_id) ?? { cash: 0, closes: 0 };
-          c.cash += Number(d.cash_collected_upfront) || 0;
-          c.closes += 1;
-          totals.set(d.closer_id, c);
-        }
-        for (const e of (eodsRes.data ?? []) as { user_id: string; cash_collected: number | null }[]) {
-          const c = totals.get(e.user_id) ?? { cash: 0, closes: 0 };
-          c.cash += Number(e.cash_collected) || 0;
-          totals.set(e.user_id, c);
-        }
+        // COLLECTED cash only (cofounder-directed 2026-07-27): deal upfronts
+        // + installments PAID in the window. No scheduled money, no EOD
+        // self-reports — those double-count the same dollars.
+        const totals = await fetchCollectedCashByCloser(startISO, endISO);
         const out = Array.from(totals.entries())
           .map(([uid, v]) => ({ uid, name: profiles[uid]?.display_name ?? "Unknown", value: v.cash, sub: `${v.closes} close${v.closes === 1 ? "" : "s"}` }))
           .sort((a, b) => b.value - a.value);

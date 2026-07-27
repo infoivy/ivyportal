@@ -1,20 +1,21 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  type Deal,
   money,
   startOfWeekMon,
   endOfWeekSun,
   isoDay,
 } from "@/lib/revenue";
+import { fetchCollectedCashByCloser } from "@/lib/collected-cash";
 import { Card } from "@/components/ui/card";
 import { Trophy, Zap } from "lucide-react";
 
 /**
- * Weekly cash leaderboard (Mon–Sun of current week).
- * Combines deals.cash_collected_upfront + eods.cash_collected per closer.
- * Top closer flagged "Double bookings eligible".
+ * Weekly cash leaderboard (Mon–Sun of current week). COLLECTED cash only:
+ * deal upfronts + installment payments that were actually PAID this week
+ * (cofounder-directed 2026-07-27) — scheduled money and EOD self-reports
+ * never count.
  */
 export function CashLeaderboard({ compact = false }: { compact?: boolean }) {
   const [rows, setRows] = useState<{ user_id: string; name: string; cash: number; closes: number }[]>([]);
@@ -25,27 +26,7 @@ export function CashLeaderboard({ compact = false }: { compact?: boolean }) {
       const startISO = isoDay(startOfWeekMon(new Date()));
       const endISO = isoDay(endOfWeekSun(new Date()));
 
-      const [dealsRes, eodsRes] = await Promise.all([
-        supabase.from("deals").select("closer_id, cash_collected_upfront, deal_date")
-          .gte("deal_date", startISO).lte("deal_date", endISO),
-        supabase.from("eods").select("user_id, cash_collected, closes, report_date")
-          .gte("report_date", startISO).lte("report_date", endISO),
-      ]);
-
-      const totals = new Map<string, { cash: number; closes: number }>();
-      for (const d of (dealsRes.data ?? []) as Deal[]) {
-        const cur = totals.get(d.closer_id) ?? { cash: 0, closes: 0 };
-        cur.cash += Number(d.cash_collected_upfront) || 0;
-        cur.closes += 1;
-        totals.set(d.closer_id, cur);
-      }
-      for (const e of eodsRes.data ?? []) {
-        const key = e.user_id as string;
-        const cur = totals.get(key) ?? { cash: 0, closes: 0 };
-        cur.cash += Number(e.cash_collected) || 0;
-        totals.set(key, cur);
-      }
-
+      const totals = await fetchCollectedCashByCloser(startISO, endISO);
       const userIds = Array.from(totals.keys());
       if (userIds.length === 0) return [];
       const { data: profiles } = await supabase.from("profiles").select("id, display_name").in("id", userIds);
@@ -99,10 +80,10 @@ export function CashLeaderboard({ compact = false }: { compact?: boolean }) {
               <div className="text-sm tabular-nums">{money(r.cash)}</div>
               {i === 0 && (
                 <span
-                  title="Top closer this week · eligible for double bookings next week per the Double Bookings SOP"
+                  title="This week's top closer gets DOUBLE the closing-call bookings next week (Double Bookings SOP)"
                   className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/25"
                 >
-                  <Zap className="h-3 w-3" /> 2× bookings
+                  <Zap className="h-3 w-3" /> Top closer · 2× bookings next week
                 </span>
               )}
             </div>
