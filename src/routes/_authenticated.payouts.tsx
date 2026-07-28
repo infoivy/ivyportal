@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { keys, invalidateForTables } from "@/lib/query-keys";
 import { useAuth } from "@/lib/auth-context";
-import { Loader2, ChevronLeft, ChevronRight, CircleCheck, Undo2, X } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, CircleCheck, Undo2, X, Pencil } from "lucide-react";
 import { money, type Deal, type CommissionRates, DEFAULT_RATES } from "@/lib/revenue";
 import {
   getPeriod, buildPayoutRows, memberPayoutTotals,
@@ -54,7 +54,7 @@ function PayoutsInner() {
     queryKey: [...keys.payoutsPage, period.monthStart],
     placeholderData: (prev) => prev,
     queryFn: async () => {
-      const [dealsRes, profilesRes, ratesRes, ipRes, instRes, cofRes, teamRes] = await Promise.all([
+      const [dealsRes, profilesRes, ratesRes, ipRes, instRes, cofRes, teamRes, fsRes] = await Promise.all([
         supabase
           .from("deals")
           .select("id, closer_id, setter_id, total_value, cash_collected_upfront, deal_date, payment_type")
@@ -72,6 +72,7 @@ function PayoutsInner() {
         supabase.from("installments").select("id, setter_id, closer_id, student_name"),
         supabase.from("user_roles").select("user_id").eq("role", "cofounder"),
         supabase.from("user_roles").select("user_id").in("role", ["admin", "founder", "cofounder", "closer", "setter", "coach", "csm"]),
+        supabase.from("founder_settings").select("id, base_pay_day").maybeSingle(),
       ]);
       const ratesOut: CommissionRates = { ...DEFAULT_RATES };
       for (const row of (ratesRes.data ?? [])) {
@@ -86,6 +87,8 @@ function PayoutsInner() {
         installments: (instRes.data ?? []) as Installment[],
         cofounderIds: ((cofRes.data ?? []) as { user_id: string }[]).map((r) => r.user_id),
         teamIds: Array.from(new Set(((teamRes.data ?? []) as { user_id: string }[]).map((r) => r.user_id))),
+        settingsId: (fsRes.data?.id ?? null) as string | null,
+        basePayDay: Number((fsRes.data as { base_pay_day?: number } | null)?.base_pay_day) || 1,
       };
     },
   });
@@ -191,6 +194,16 @@ function PayoutsInner() {
           profileMap={profileMap}
           teamIds={data?.teamIds ?? []}
           isSecondHalf={period.isSecondHalf}
+          basePayDay={data?.basePayDay ?? 1}
+          onBasePayDayChange={async (day) => {
+            const clamped = Math.min(31, Math.max(1, Math.round(day) || 1));
+            const { error } = data?.settingsId
+              ? await (supabase.from("founder_settings") as any).update({ base_pay_day: clamped }).eq("id", data.settingsId)
+              : await (supabase.from("founder_settings") as any).insert({ base_pay_day: clamped });
+            if (error) return toast.error(error.message);
+            toast.success(`Base pay lands on day ${clamped}`);
+            invalidateForTables(qc, ["founder_settings"]);
+          }}
           onChanged={() => {
             invalidateForTables(qc, ["profiles"]);
             qc.invalidateQueries({ queryKey: ["payout-alert"] });
@@ -355,10 +368,12 @@ function PayoutsInner() {
 /** Base pay lives on profiles.base_pay_monthly (same field the Team page
  *  edits). Add, adjust inline, or remove; changes flow to Finance, the
  *  confirmation card, and the cash-in calendar via invalidation. */
-function BasePayPanel({ profileMap, teamIds, isSecondHalf, onChanged }: {
+function BasePayPanel({ profileMap, teamIds, isSecondHalf, basePayDay, onBasePayDayChange, onChanged }: {
   profileMap: Map<string, Profile>;
   teamIds: string[];
   isSecondHalf: boolean;
+  basePayDay: number;
+  onBasePayDayChange: (day: number) => void;
   onChanged: () => void;
 }) {
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -386,9 +401,20 @@ function BasePayPanel({ profileMap, teamIds, isSecondHalf, onChanged }: {
 
   return (
     <div className="card-surface px-4 py-3.5">
-      <div className="flex items-baseline justify-between gap-3 mb-2">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
         <span className="text-[13px] font-medium text-foreground">Base pay</span>
-        <span className="text-[11px] text-muted-foreground">monthly · paid with the 2nd half{isSecondHalf ? " (this period)" : ""}</span>
+        <label className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          monthly · paid with the 2nd half{isSecondHalf ? " (this period)" : ""} · lands on day
+          <select
+            value={Math.min(basePayDay, 31)}
+            onChange={e => onBasePayDayChange(Number(e.target.value))}
+            className="h-6 rounded-sm border border-[var(--border)] bg-[var(--background)] px-1 text-[11px] tabular-nums text-foreground focus:outline-none focus:border-ring"
+          >
+            {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
+              <option key={day} value={day}>{day}</option>
+            ))}
+          </select>
+        </label>
       </div>
       <div className="space-y-1">
         {withBase.map((p) => (
@@ -407,7 +433,7 @@ function BasePayPanel({ profileMap, teamIds, isSecondHalf, onChanged }: {
                 <button onClick={() => setEditingId(null)} className="text-[11px] text-muted-foreground hover:text-foreground">Cancel</button>
               </span>
             ) : (
-              <span className="flex items-center gap-2">
+              <span className="flex items-center gap-1.5">
                 <button
                   onClick={() => { setEditingId(p.id); setDraft(String(p.base_pay_monthly ?? "")); }}
                   className="tabular-nums font-medium hover:underline underline-offset-2"
@@ -416,11 +442,18 @@ function BasePayPanel({ profileMap, teamIds, isSecondHalf, onChanged }: {
                   ${Number(p.base_pay_monthly).toLocaleString()}<span className="text-muted-foreground font-normal"> / month</span>
                 </button>
                 <button
+                  onClick={() => { setEditingId(p.id); setDraft(String(p.base_pay_monthly ?? "")); }}
+                  className="p-1 rounded-sm text-muted-foreground hover:text-foreground hover:bg-muted"
+                  title="Edit amount"
+                >
+                  <Pencil className="h-3 w-3" />
+                </button>
+                <button
                   onClick={() => { if (confirm(`Remove ${p.display_name}'s base pay?`)) void save(p.id, null); }}
-                  className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-danger-fg motion-safe:transition-opacity"
+                  className="p-1 rounded-sm text-muted-foreground hover:text-danger-fg hover:bg-danger-bg"
                   title="Remove base pay"
                 >
-                  <X className="h-3.5 w-3.5" />
+                  <X className="h-3 w-3" />
                 </button>
               </span>
             )}

@@ -761,6 +761,7 @@ export type Database = {
       }
       founder_settings: {
         Row: {
+          base_pay_day: number
           created_at: string
           crm_enabled: boolean
           id: string
@@ -780,6 +781,7 @@ export type Database = {
           weekly_cash_bonus_threshold: number
         }
         Insert: {
+          base_pay_day?: number
           created_at?: string
           crm_enabled?: boolean
           id?: string
@@ -799,6 +801,7 @@ export type Database = {
           weekly_cash_bonus_threshold?: number
         }
         Update: {
+          base_pay_day?: number
           created_at?: string
           crm_enabled?: boolean
           id?: string
@@ -1352,6 +1355,7 @@ export type Database = {
           id: string
           phone: string | null
           setter_type: string | null
+          timezone: string | null
           updated_at: string
         }
         Insert: {
@@ -1367,6 +1371,7 @@ export type Database = {
           id: string
           phone?: string | null
           setter_type?: string | null
+          timezone?: string | null
           updated_at?: string
         }
         Update: {
@@ -1382,6 +1387,7 @@ export type Database = {
           id?: string
           phone?: string | null
           setter_type?: string | null
+          timezone?: string | null
           updated_at?: string
         }
         Relationships: []
