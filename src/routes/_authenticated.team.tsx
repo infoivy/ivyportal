@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { timeIn } from "@/components/student-local-time";
 import { TimezoneCombobox } from "@/components/ui/timezone-combobox";
+import { DateField } from "@/components/ui/date-field";
 import { toast } from "sonner";
 import {
   Users, Shield, Phone, UserCircle2, GraduationCap, Pencil, X, HeartHandshake, Sparkles, School,
@@ -26,6 +27,7 @@ type SetterType = "phone" | "dm" | "full_cycle" | null;
 type Member = {
   timezone: string | null;
   base_pay_day: number;
+  started_on: string | null;
   id: string;
   display_name: string | null;
   avatar_path: string | null;
@@ -68,7 +70,7 @@ function TeamPage() {
 
   const fetchPage = async () => {
     const [{ data: profs }, { data: rolesData }, tpls, { data: progressRows }] = await Promise.all([
-      supabase.from("profiles").select("id, display_name, avatar_path, active, phone, timezone, setter_type, base_pay_monthly, base_pay_day, csm_daily_target" as any),
+      supabase.from("profiles").select("id, display_name, avatar_path, active, phone, timezone, setter_type, base_pay_monthly, base_pay_day, started_on, csm_daily_target" as any),
       supabase.from("user_roles").select("user_id, role"),
       fetchAllTemplates(),
       supabase.from("onboarding_progress").select("user_id, role, step_id"),
@@ -87,6 +89,7 @@ function TeamPage() {
       timezone: p.timezone ?? null,
       base_pay_monthly: p.base_pay_monthly ?? null,
       base_pay_day: p.base_pay_day ?? 1,
+      started_on: p.started_on ?? null,
       csm_daily_target: (p as any).csm_daily_target ?? null,
       active: p.active ?? true,
       roles: rolesByUser.get(p.id) ?? [],
@@ -368,7 +371,7 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
   const [phone, setPhone] = useState(member.phone ?? "");
   const [tz, setTz] = useState(member.timezone ?? "");
   const [basePay, setBasePay] = useState(member.base_pay_monthly != null ? String(member.base_pay_monthly) : "");
-  const [basePayDay, setBasePayDay] = useState(String(member.base_pay_day || 1));
+  const [startedOn, setStartedOn] = useState(member.started_on ?? "");
   const [csmTarget, setCsmTarget] = useState(String((member as any).csm_daily_target ?? 10));
   const [setterType, setSetterType] = useState<SetterType>(member.setter_type);
   const [avatarPath, setAvatarPath] = useState<string | null>(member.avatar_path);
@@ -407,7 +410,10 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
       timezone: tz || null,
       setter_type: setterType,
       base_pay_monthly: basePay.trim() ? Number(basePay) : null,
-      base_pay_day: Math.min(31, Math.max(1, Math.round(Number(basePayDay)) || 1)),
+      ...(startedOn ? {
+        started_on: startedOn,
+        base_pay_day: Math.min(31, Math.max(1, Number(startedOn.slice(8, 10)) || 1)),
+      } : {}),
       csm_daily_target: Math.max(1, Number(csmTarget) || 10),
     } as any).eq("id", member.id);
     setSaving(false);
@@ -452,18 +458,15 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
           <label className="text-[12px] text-muted-foreground">Timezone (they can also set it on their Profile)</label>
           <TimezoneCombobox value={tz} onChange={setTz} />
         </div>
-        <div className="grid grid-cols-[1fr_auto] gap-2">
+        <div className="grid sm:grid-cols-2 gap-2">
           <div className="space-y-1">
             <label className="text-[12px] text-muted-foreground">Base pay · $/month (optional)</label>
             <input value={basePay} onChange={e => setBasePay(e.target.value.replace(/[^0-9.]/g, ""))} placeholder="500" inputMode="decimal"
               className="w-full h-9 px-3 rounded-sm border border-[var(--border)] bg-[var(--background)] text-sm outline-none focus:border-ring" />
           </div>
           <div className="space-y-1">
-            <label className="text-[12px] text-muted-foreground">Paid on day</label>
-            <select value={basePayDay} onChange={e => setBasePayDay(e.target.value)}
-              className="h-9 rounded-sm border border-[var(--border)] bg-[var(--background)] px-2 text-sm tabular-nums outline-none focus:border-ring">
-              {Array.from({ length: 31 }, (_, i) => i + 1).map(day => <option key={day} value={day}>{day}</option>)}
-            </select>
+            <label className="text-[12px] text-muted-foreground">First day (sets their monthly pay day)</label>
+            <DateField value={startedOn} onChange={setStartedOn} placeholder="Pick their start date" clearable={false} className="h-9" />
           </div>
         </div>
         <div className="space-y-1.5">

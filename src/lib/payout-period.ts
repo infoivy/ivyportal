@@ -29,7 +29,7 @@ export function getPeriod(offset = 0) {
 
 export type PayoutPeriod = ReturnType<typeof getPeriod>;
 
-export type PayoutProfile = { id: string; display_name: string; commission_cap_pct?: number | null; base_pay_monthly?: number | null; base_pay_day?: number | null };
+export type PayoutProfile = { id: string; display_name: string; commission_cap_pct?: number | null; base_pay_monthly?: number | null; base_pay_day?: number | null; started_on?: string | null };
 
 export type PayoutInstallmentPayment = {
   id: string;

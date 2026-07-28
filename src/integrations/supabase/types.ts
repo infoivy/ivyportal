@@ -1356,6 +1356,7 @@ export type Database = {
           id: string
           phone: string | null
           setter_type: string | null
+          started_on: string | null
           timezone: string | null
           updated_at: string
         }
@@ -1373,6 +1374,7 @@ export type Database = {
           id: string
           phone?: string | null
           setter_type?: string | null
+          started_on?: string | null
           timezone?: string | null
           updated_at?: string
         }
@@ -1390,6 +1392,7 @@ export type Database = {
           id?: string
           phone?: string | null
           setter_type?: string | null
+          started_on?: string | null
           timezone?: string | null
           updated_at?: string
         }
