@@ -59,24 +59,29 @@ function FinancePage() {
 function FinanceInner() {
   const qc = useQueryClient();
   const [monthOffset, setMonthOffset] = useState(0);
+  // Scheduled-revenue chart pages in 6-month windows anchored to the viewed
+  // month (founder: "allow me to click the next button").
+  const [mrrPage, setMrrPage] = useState(0);
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + monthOffset + 1, 0);
   const isCurrentMonth = monthOffset === 0;
+  const mrrFrom = new Date(now.getFullYear(), now.getMonth() + monthOffset + mrrPage * 6, 1);
+  const mrrTo = new Date(now.getFullYear(), now.getMonth() + monthOffset + mrrPage * 6 + 6, 0);
   const today = iso(now);
 
   const [expenseModal, setExpenseModal] = useState<{ open: boolean; editing: Expense | null }>({ open: false, editing: null });
   const [balanceDraft, setBalanceDraft] = useState<string>("");
 
   const pageQ = useQuery({
-    queryKey: ["page", "finance", iso(monthStart)],
+    queryKey: ["page", "finance", iso(monthStart), mrrPage],
     queryFn: async () => {
       const in6mo = new Date(now.getFullYear(), now.getMonth() + 6, 0);
       const [expensesRes, dealsRes, paysRes, futurePaysRes, settingsRes, paidRes, instRes, profRes, ratesRes, cofRes] = await Promise.all([
         supabase.from("business_expenses").select("*").order("recurring", { ascending: false }).order("due_day"),
         supabase.from("deals").select("id, closer_id, setter_id, cash_collected_upfront, deal_date").eq("is_demo", false).gte("deal_date", iso(monthStart)).lte("deal_date", iso(monthEnd)),
         supabase.from("installment_payments").select("amount, due_date, status, installments!inner(students!inner(is_demo))").eq("installments.students.is_demo", false).gte("due_date", iso(monthStart)).lte("due_date", iso(monthEnd)),
-        supabase.from("installment_payments").select("amount, due_date, status, installments!inner(students!inner(is_demo))").eq("installments.students.is_demo", false).eq("status", "upcoming").gte("due_date", iso(new Date(now.getFullYear(), now.getMonth(), 1))).lte("due_date", iso(in6mo)),
+        supabase.from("installment_payments").select("amount, due_date, status, installments!inner(students!inner(is_demo))").eq("installments.students.is_demo", false).neq("status", "waived").gte("due_date", iso(mrrFrom)).lte("due_date", iso(mrrTo)),
         supabase.from("founder_settings").select("id, processor_balance, processor_balance_updated_at, monthly_cash_goal, base_pay_day").maybeSingle(),
         supabase.from("installment_payments").select("amount, paid_at, installment_id, installments!inner(students!inner(is_demo))").eq("installments.students.is_demo", false).eq("status", "paid").gte("paid_at", iso(monthStart) + "T00:00:00").lte("paid_at", iso(monthEnd) + "T23:59:59").not("paid_at", "is", null),
         supabase.from("installments").select("id, setter_id, closer_id, students!inner(is_demo)").eq("students.is_demo", false),
@@ -185,18 +190,24 @@ function FinanceInner() {
       return { ...f, balance: running };
     });
 
-    // MRR: upcoming installment income per month, next 6 months
-    const mrrByMonth = new Map<string, number>();
+    // Scheduled installment revenue per due-month: PAID + still-due together
+    // (the old version counted only unpaid rows, so it decayed to zero as
+    // people actually paid — founder-reported 2026-07-28). Waived excluded.
+    const mrrByMonth = new Map<string, { total: number; collected: number }>();
     d.futurePays.forEach(p => {
       const key = p.due_date.slice(0, 7);
-      mrrByMonth.set(key, (mrrByMonth.get(key) ?? 0) + Number(p.amount));
+      const cur = mrrByMonth.get(key) ?? { total: 0, collected: 0 };
+      cur.total += Number(p.amount);
+      if (p.status === "paid") cur.collected += Number(p.amount);
+      mrrByMonth.set(key, cur);
     });
     const mrrSeries = Array.from({ length: 6 }, (_, i) => {
-      const m = new Date(now.getFullYear(), now.getMonth() + i, 1);
+      const m = new Date(mrrFrom.getFullYear(), mrrFrom.getMonth() + i, 1);
       const key = iso(m).slice(0, 7);
-      return { month: m.toLocaleString("en", { month: "short" }), value: mrrByMonth.get(key) ?? 0 };
+      const bucket = mrrByMonth.get(key) ?? { total: 0, collected: 0 };
+      return { month: m.toLocaleString("en", { month: "short" }), value: bucket.total, collected: bucket.collected };
     });
-    const mrrNow = mrrSeries[0]?.value ?? 0;
+    const mrrNow = mrrSeries[0] ?? { month: "", value: 0, collected: 0 };
 
     return {
       monthExpenses, expensesTotal, basePayRows, collected, expectedRest, projectedIn,
@@ -204,7 +215,7 @@ function FinanceInner() {
       endBalance: startBalance != null ? running : null,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [d, monthOffset]);
+  }, [d, monthOffset, mrrPage]);
   // Team payouts for the month — commissions (incl. co-founder caps) + base
   // pay. Profit is what's left AFTER these, not just after expenses.
   const payouts = useMemo(() => {
@@ -261,9 +272,13 @@ function FinanceInner() {
           <p className="text-body text-muted-foreground mt-1">Cash in, expenses out, profit split, and recurring revenue.</p>
         </div>
         <div className="flex items-center gap-1">
-          <Button size="icon" variant="ghost" onClick={() => setMonthOffset(o => o - 1)}><ChevronLeft className="h-4 w-4" /></Button>
-          <span className="text-sm text-muted-foreground tabular-nums min-w-[130px] text-center">{monthLabel}</span>
-          <Button size="icon" variant="ghost" onClick={() => setMonthOffset(o => o + 1)}><ChevronRight className="h-4 w-4" /></Button>
+          <button onClick={() => setMonthOffset(o => o - 1)} className="h-9 w-9 flex items-center justify-center rounded-md border border-border bg-card hover:bg-muted motion-safe:transition-colors" aria-label="Previous month">
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <span className="text-sm font-medium px-3 py-2 border border-border rounded-md bg-card whitespace-nowrap tabular-nums min-w-[130px] text-center">{monthLabel}</span>
+          <button onClick={() => setMonthOffset(o => o + 1)} className="h-9 w-9 flex items-center justify-center rounded-md border border-border bg-card hover:bg-muted motion-safe:transition-colors" aria-label="Next month">
+            <ChevronRight className="h-4 w-4" />
+          </button>
           {monthOffset !== 0 && (
             <Button size="sm" variant="ghost" onClick={() => setMonthOffset(0)}>Today</Button>
           )}
@@ -286,72 +301,26 @@ function FinanceInner() {
         />
         <StatCard label="Expenses + payouts" value={calc ? money(calc.expensesTotal + payoutsTotal) : "–"} sub={calc && payouts ? `${money(calc.expensesTotal + payouts.basePay)} expenses incl. base pay · ${money(payouts.setterCommission + payouts.closerCommission)} commissions` : undefined} icon={<ArrowUpRight className="h-3.5 w-3.5" />} />
         <StatCard label="Profit (projected)" value={calc ? money(profitProjected) : "–"} sub={calc ? `${money(profitSoFar)} so far · after expenses & payouts` : undefined} icon={<TrendingUp className="h-3.5 w-3.5" />} tone={calc && profitProjected < 0 ? "danger" : "default"} />
-        <StatCard label="MRR (scheduled)" value={calc ? money(calc.mrrNow) : "–"} sub="installments due this month" icon={<PiggyBank className="h-3.5 w-3.5" />} />
+        <StatCard label="Installment revenue" value={calc ? money(calc.mrrNow.value) : "–"} sub={calc ? `${money(calc.mrrNow.collected)} collected · ${money(calc.mrrNow.value - calc.mrrNow.collected)} still due` : undefined} icon={<PiggyBank className="h-3.5 w-3.5" />} />
       </div>
 
-      {/* ── Reconciliation: Whop vs what the team logged ──────────────── */}
-      {rev?.connected && (
+      <div className="grid gap-4 lg:grid-cols-2">
+        {/* Scheduled installment revenue chart */}
         <div className="card-surface p-5">
-          <div className="flex flex-wrap items-baseline justify-between gap-2 mb-3">
-            <h2 className="text-sm font-semibold">Revenue reconciliation</h2>
-            <span className="text-caption text-muted-foreground">
-              Whop {money(rev.whopGross)} · logged {money(rev.loggedTotal)} ·{" "}
-              <span className={rev.gap === 0 ? "text-success-fg" : "text-warning-fg"}>
-                gap {rev.gap >= 0 ? "+" : "−"}{money(Math.abs(rev.gap))}
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <h2 className="text-sm font-semibold">Scheduled installment revenue</h2>
+            <span className="flex items-center gap-1">
+              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setMrrPage(p => p - 1)} aria-label="Previous 6 months"><ChevronLeft className="h-3.5 w-3.5" /></Button>
+              <span className="text-caption text-muted-foreground whitespace-nowrap">
+                {mrrPage === 0 ? "next 6 months" : `${mrrPage > 0 ? "+" : ""}${mrrPage * 6} to ${mrrPage * 6 + 6} months`}
               </span>
+              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setMrrPage(p => p + 1)} aria-label="Next 6 months"><ChevronRight className="h-3.5 w-3.5" /></Button>
             </span>
           </div>
-          {rev.gap === 0 && rev.unmatchedWhop.length === 0 && rev.unmatchedLogged.length === 0 ? (
-            <p className="text-[13px] text-muted-foreground">Every Whop payment matches a logged close or installment. Clean month.</p>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5">
-                  In Whop, not logged ({rev.unmatchedWhop.length})
-                </div>
-                {rev.unmatchedWhop.length === 0 && <p className="text-[12px] text-muted-foreground">Nothing · all Whop money is accounted for.</p>}
-                <div className="space-y-1">
-                  {rev.unmatchedWhop.map((t, i) => (
-                    <div key={i} className="flex items-baseline justify-between gap-3 text-[13px] rounded-md bg-muted/50 px-2.5 py-1.5">
-                      <span className="truncate">{t.customer}{t.product ? <span className="text-muted-foreground"> · {t.product}</span> : null}</span>
-                      <span className="tabular-nums shrink-0">{money(t.amount)} <span className="text-muted-foreground">{t.date.slice(5)}</span></span>
-                    </div>
-                  ))}
-                </div>
-                {rev.unmatchedWhop.length > 0 && (
-                  <p className="text-[11px] text-muted-foreground mt-1.5">Money that arrived without a logged close · e.g. sent in from Wise, or a close nobody logged.</p>
-                )}
-              </div>
-              <div>
-                <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5">
-                  Logged, not in Whop ({rev.unmatchedLogged.length})
-                </div>
-                {rev.unmatchedLogged.length === 0 && <p className="text-[12px] text-muted-foreground">Nothing · every logged close has Whop money behind it.</p>}
-                <div className="space-y-1">
-                  {rev.unmatchedLogged.map((l, i) => (
-                    <div key={i} className="flex items-baseline justify-between gap-3 text-[13px] rounded-md bg-muted/50 px-2.5 py-1.5">
-                      <span className="truncate">{l.student} <span className="text-muted-foreground">· {l.kind}</span></span>
-                      <span className="tabular-nums shrink-0">{money(l.amount)} <span className="text-muted-foreground">{l.date.slice(5)}</span></span>
-                    </div>
-                  ))}
-                </div>
-                {rev.unmatchedLogged.length > 0 && (
-                  <p className="text-[11px] text-muted-foreground mt-1.5">Logged revenue with no Whop payment · collected elsewhere (Wise/bank) or double-logged.</p>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        {/* MRR chart */}
-        <div className="card-surface p-5">
-          <div className="flex items-baseline justify-between mb-1">
-            <h2 className="text-sm font-semibold">Recurring revenue</h2>
-            <span className="text-caption text-muted-foreground">next 6 months · scheduled installments</span>
+          <div className="text-[28px] font-medium tabular-nums tracking-[-0.02em]">{calc ? money(calc.mrrNow.value) : "–"}</div>
+          <div className="text-caption text-muted-foreground mb-3">
+            {calc ? `${money(calc.mrrNow.collected)} collected · ${money(calc.mrrNow.value - calc.mrrNow.collected)} still due · paid installments stay counted` : ""}
           </div>
-          <div className="text-[28px] font-medium tabular-nums tracking-[-0.02em] mb-3">{calc ? money(calc.mrrNow) : "–"}</div>
           <div className="h-40">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={calc?.mrrSeries ?? []} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
@@ -497,6 +466,62 @@ function FinanceInner() {
           </div>
         )}
       </div>
+
+      {/* ── Reconciliation: Whop vs what the team logged ──────────────── */}
+      {rev?.connected && (
+        <div className="card-surface p-5">
+          <div className="flex flex-wrap items-baseline justify-between gap-2 mb-3">
+            <h2 className="text-sm font-semibold">Revenue reconciliation</h2>
+            <span className="text-caption text-muted-foreground">
+              Whop {money(rev.whopGross)} · logged {money(rev.loggedTotal)} ·{" "}
+              <span className={rev.gap === 0 ? "text-success-fg" : "text-warning-fg"}>
+                gap {rev.gap >= 0 ? "+" : "−"}{money(Math.abs(rev.gap))}
+              </span>
+            </span>
+          </div>
+          {rev.gap === 0 && rev.unmatchedWhop.length === 0 && rev.unmatchedLogged.length === 0 ? (
+            <p className="text-[13px] text-muted-foreground">Every Whop payment matches a logged close or installment. Clean month.</p>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5">
+                  In Whop, not logged ({rev.unmatchedWhop.length})
+                </div>
+                {rev.unmatchedWhop.length === 0 && <p className="text-[12px] text-muted-foreground">Nothing · all Whop money is accounted for.</p>}
+                <div className="space-y-1">
+                  {rev.unmatchedWhop.map((t, i) => (
+                    <div key={i} className="flex items-baseline justify-between gap-3 text-[13px] rounded-md bg-muted/50 px-2.5 py-1.5">
+                      <span className="truncate">{t.customer}{t.product ? <span className="text-muted-foreground"> · {t.product}</span> : null}</span>
+                      <span className="tabular-nums shrink-0">{money(t.amount)} <span className="text-muted-foreground">{t.date.slice(5)}</span></span>
+                    </div>
+                  ))}
+                </div>
+                {rev.unmatchedWhop.length > 0 && (
+                  <p className="text-[11px] text-muted-foreground mt-1.5">Money that arrived without a logged close · e.g. sent in from Wise, or a close nobody logged.</p>
+                )}
+              </div>
+              <div>
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5">
+                  Logged, not in Whop ({rev.unmatchedLogged.length})
+                </div>
+                {rev.unmatchedLogged.length === 0 && <p className="text-[12px] text-muted-foreground">Nothing · every logged close has Whop money behind it.</p>}
+                <div className="space-y-1">
+                  {rev.unmatchedLogged.map((l, i) => (
+                    <div key={i} className="flex items-baseline justify-between gap-3 text-[13px] rounded-md bg-muted/50 px-2.5 py-1.5">
+                      <span className="truncate">{l.student} <span className="text-muted-foreground">· {l.kind}</span></span>
+                      <span className="tabular-nums shrink-0">{money(l.amount)} <span className="text-muted-foreground">{l.date.slice(5)}</span></span>
+                    </div>
+                  ))}
+                </div>
+                {rev.unmatchedLogged.length > 0 && (
+                  <p className="text-[11px] text-muted-foreground mt-1.5">Logged revenue with no Whop payment · collected elsewhere (Wise/bank) or double-logged.</p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
 
       {expenseModal.open && (
         <ExpenseModal
