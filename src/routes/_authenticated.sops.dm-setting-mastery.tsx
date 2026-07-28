@@ -852,7 +852,7 @@ Anything promised by setter: None, or specify exactly`}
             </Card>
 
             <Card cat="frameworks" width={320} title="Daily KPI Reference" subtitle="Current baseline">
-              <p className="font-medium text-card-foreground">125 DMs · 3 qualified sets</p>
+              <p className="font-medium text-card-foreground">300 DMs · 6 qualified sets</p>
               <p className="mt-2">Quality matters more than inflated volume. A booked call counts only if it is actually qualified — Green or approved Manager Review.</p>
             </Card>
 
@@ -1006,7 +1006,7 @@ Notes for sales manager:`}
                 <li>No guaranteed job or income claims made</li>
                 <li>No exact price, calendar link, asset URL, or testimonial invented</li>
                 <li>End goal: a qualified call and a clean closer handoff</li>
-                <li>Daily reference: 125 DMs · 3 qualified sets</li>
+                <li>Daily reference: 300 DMs · 6 qualified sets</li>
                 <li>Scripts stayed concise, natural, one question at a time</li>
               </ul>
             </Card>

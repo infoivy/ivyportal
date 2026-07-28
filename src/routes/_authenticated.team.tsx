@@ -495,7 +495,7 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
               {([
                 { key: null, label: "Not set" },
                 { key: "phone" as const, label: "Phone setter (100 dials + 3 sets/day)" },
-                { key: "dm" as const, label: "DM setter (125 contacted + 3 sets/day)" },
+                { key: "dm" as const, label: "DM setter (300 DMs + 6 sets/day)" },
                 { key: "full_cycle" as const, label: "Full cycle (100 dials + 50 outreached + 3 sets/day)" },
               ]).map(opt => (
                 <button

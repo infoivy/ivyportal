@@ -260,7 +260,7 @@ export function InviteModal({ onClose }: { onClose: () => void }) {
                   {([
                     { key: null, label: "Not set" },
                     { key: "phone" as const, label: "Phone (100 dials)" },
-                    { key: "dm" as const, label: "DM (125 leads)" },
+                    { key: "dm" as const, label: "DM (300 DMs)" },
                     { key: "full_cycle" as const, label: "Full cycle (100 dials + 50 outreached)" },
                   ]).map(opt => (
                     <button

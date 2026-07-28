@@ -1539,7 +1539,7 @@ export const SECTIONS: Section[] = [
             <tbody>
               {[
                 ["Phone setter", "100 dials", "3 sets"],
-                ["DM setter", "125 people contacted", "3 sets"],
+                ["DM setter", "300 DMs sent", "6 sets"],
               ].map((r, i) => (
                 <tr key={i} className="border-t border-border/70">
                   {r.map((c, j) => <td key={j} className="py-1 pr-2">{c}</td>)}

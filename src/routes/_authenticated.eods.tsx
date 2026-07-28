@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { CheckCircle2, Clock, AlertTriangle, ChevronRight, ChevronDown, Flame } from "lucide-react";
 import { computeStreak } from "@/lib/streak";
+import { KPI, kpiTargetsFor, outreachOf, didHitKpi, didHitCsmKpi, dayStatus, type SetterType } from "@/lib/eod-kpi";
 import { todayLocal } from "@/lib/dates";
 import confetti from "canvas-confetti";
 import { MochiEodReference } from "@/components/mochi-eod-reference";
@@ -32,19 +33,6 @@ type EOD = {
   cash_collected: number; deferred_cash: number; follow_ups_done: number;
   dials: number; leads_contacted: number;
   wins: string | null; blockers: string | null; tomorrow_focus: string | null; summary: string | null;
-};
-
-type SetterType = "phone" | "dm" | "full_cycle" | null;
-
-// KPI defaults — plain numbers; adjust in Admin → Settings later
-const KPI = {
-  phone:      { primary: { key: "dials" as const, label: "Dials", target: 100 }, secondary: null, sets: 3 },
-  // 2026-07-11 founder-approved: "leads contacted/outreached" folded into
-  // "DMs sent" — same activity, one field. Historical rows keep
-  // leads_contacted; readers take the max of both so old KPI days hold.
-  dm:         { primary: { key: "dms_sent" as const, label: "DMs sent", target: 125 }, secondary: null, sets: 3 },
-  // Full cycle does both: dials AND outreach must hit
-  full_cycle: { primary: { key: "dials" as const, label: "Dials", target: 100 }, secondary: { key: "dms_sent" as const, label: "DMs sent", target: 50 }, sets: 3 },
 };
 
 const SETTER_TYPE_LABEL: Record<string, string> = { phone: "Phone setter", dm: "DM setter", full_cycle: "Full cycle" };
@@ -206,7 +194,16 @@ function EODsPage() {
   }, [myEods, mySetterType, isCsm, csmTarget]);
   const streak = useMemo(() => computeStreak(myEods.map(e => e.report_date)), [myEods]);
 
-  const kpi = mySetterType ? KPI[mySetterType] : null;
+  // The form is for TODAY: show the targets that apply to this report date.
+  const kpi = mySetterType ? (() => {
+    const cfg = KPI[mySetterType];
+    const t = kpiTargetsFor(mySetterType, today);
+    return {
+      primary: { ...cfg.primary, target: t.primaryTarget },
+      secondary: cfg.secondary ? { ...cfg.secondary, target: t.secondaryTarget ?? cfg.secondary.target } : null,
+      sets: t.sets,
+    };
+  })() : null;
   const primaryVal = mySetterType === "dm" ? form.dms_sent : form.dials;
   // full_cycle primary = dials; its outreach bar reads form.dms_sent directly
 
@@ -417,41 +414,6 @@ function EODsPage() {
       </Tabs>}
     </div>
   );
-}
-
-// ---------- KPI logic ----------
-
-/** Outreach volume with legacy fallback: pre-2026-07-11 rows logged it as leads_contacted. */
-function outreachOf(e: EOD): number {
-  return Math.max(e.dms_sent ?? 0, e.leads_contacted ?? 0);
-}
-
-function didHitKpi(e: EOD, st: SetterType): boolean {
-  if (!st) return false;
-  const cfg = KPI[st];
-  const read = (k: keyof EOD) => (k === "dms_sent" ? outreachOf(e) : ((e[k] ?? 0) as number));
-  // Founder rule 2026-07-14: SETS are the KPI. 3+ sets = KPI met regardless of
-  // volume. Couldn't hit sets? Full volume (100 dials / 125 DMs / both for
-  // full-cycle) still counts as a KPI day.
-  if ((e.calls_booked ?? 0) >= cfg.sets) return true;
-  if (read(cfg.primary.key) < cfg.primary.target) return false;
-  if (cfg.secondary && read(cfg.secondary.key) < cfg.secondary.target) return false;
-  return true;
-}
-
-/** CSM KPI: daily student check-ins against their personal target
- *  (profiles.csm_daily_target — part-time vs full-time, founder-set). A
- *  submitted EOD with 0 check-ins must NOT read as green (founder-reported
- *  2026-07-28). */
-function didHitCsmKpi(e: EOD, target: number | null | undefined): boolean {
-  return (e.student_checkins ?? 0) >= Math.max(1, Number(target) || 10);
-}
-
-function dayStatus(e: EOD | undefined, st: SetterType, csmTarget?: number | null): "green" | "amber" | "red" {
-  if (!e) return "red";
-  if (st) return didHitKpi(e, st) ? "green" : "amber";
-  if (csmTarget != null) return didHitCsmKpi(e, csmTarget) ? "green" : "amber";
-  return "green"; // no KPI defined (closer/coach)
 }
 
 // ---------- My history (grouped by week) ----------

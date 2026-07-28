@@ -21,10 +21,26 @@ export const KPI = {
   // 2026-07-11 founder-approved: "leads contacted/outreached" folded into
   // "DMs sent" — same activity, one field. Historical rows keep
   // leads_contacted; readers take the max of both so old KPI days hold.
-  dm:         { primary: { key: "dms_sent" as const, label: "DMs sent", target: 125 }, secondary: null, sets: 3 },
+  // 2026-07-28 founder-directed: DM setters raise to 300 DMs · 6 sets,
+  // effective 2026-07-29. Earlier rows judge under the 125 · 3 rules of
+  // their day (same philosophy as the leads_contacted fallback).
+  dm:         { primary: { key: "dms_sent" as const, label: "DMs sent", target: 300 }, secondary: null, sets: 6 },
   // Full cycle does both: dials AND outreach must hit
   full_cycle: { primary: { key: "dials" as const, label: "Dials", target: 100 }, secondary: { key: "dms_sent" as const, label: "DMs sent", target: 50 }, sets: 3 },
 };
+
+// KPI raises never re-judge history: targets resolve per report date.
+const DM_V1 = { target: 125, sets: 3 };
+const DM_V2_FROM = "2026-07-29";
+
+/** The targets that applied on a given report date. */
+export function kpiTargetsFor(st: Exclude<SetterType, null>, reportDate: string) {
+  const cfg = KPI[st];
+  if (st === "dm" && reportDate < DM_V2_FROM) {
+    return { primaryTarget: DM_V1.target, sets: DM_V1.sets, secondaryTarget: null as number | null };
+  }
+  return { primaryTarget: cfg.primary.target, sets: cfg.sets, secondaryTarget: cfg.secondary?.target ?? null };
+}
 
 /** Outreach volume with legacy fallback: pre-2026-07-11 rows logged it as leads_contacted. */
 export function outreachOf(e: EodKpiRow): number {
@@ -34,13 +50,14 @@ export function outreachOf(e: EodKpiRow): number {
 export function didHitKpi(e: EodKpiRow, st: SetterType): boolean {
   if (!st) return false;
   const cfg = KPI[st];
+  const t = kpiTargetsFor(st, e.report_date);
   const read = (k: "dials" | "dms_sent") => (k === "dms_sent" ? outreachOf(e) : (e[k] ?? 0));
-  // Founder rule 2026-07-14: SETS are the KPI. 3+ sets = KPI met regardless of
-  // volume. Couldn't hit sets? Full volume (100 dials / 125 DMs / both for
-  // full-cycle) still counts as a KPI day.
-  if ((e.calls_booked ?? 0) >= cfg.sets) return true;
-  if (read(cfg.primary.key) < cfg.primary.target) return false;
-  if (cfg.secondary && read(cfg.secondary.key) < cfg.secondary.target) return false;
+  // Founder rule 2026-07-14: SETS are the KPI. Hitting the sets target means
+  // KPI met regardless of volume. Couldn't hit sets? Full volume (100 dials /
+  // 300 DMs / both for full-cycle) still counts as a KPI day.
+  if ((e.calls_booked ?? 0) >= t.sets) return true;
+  if (read(cfg.primary.key) < t.primaryTarget) return false;
+  if (cfg.secondary && read(cfg.secondary.key) < (t.secondaryTarget ?? cfg.secondary.target)) return false;
   return true;
 }
 

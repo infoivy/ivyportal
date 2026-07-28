@@ -8,7 +8,7 @@ import { invalidateForTables } from "@/lib/query-keys";
 import { todayLocal } from "@/lib/dates";
 import { SelectField } from "@/components/ui/select-field";
 import {
-  KPI, outreachOf, didHitKpi, didHitCsmKpi, dayStatus, type SetterType, type EodKpiRow,
+  KPI, kpiTargetsFor, outreachOf, didHitKpi, didHitCsmKpi, dayStatus, type SetterType, type EodKpiRow,
 } from "@/lib/eod-kpi";
 
 /**
@@ -122,10 +122,11 @@ export function TeamWeekSection() {
       if (todayEod) {
         if (r.primary_role === "setter" && st) {
           const cfg = KPI[st];
+          const t = kpiTargetsFor(st, today);
           const primary = st === "dm" ? outreachOf(todayEod) : (todayEod.dials ?? 0);
           todayLine = didHitKpi(todayEod, st)
             ? `Submitted · hit KPI (${primary} ${cfg.primary.label.toLowerCase()}, ${todayEod.calls_booked ?? 0} sets)`
-            : `Submitted · missed KPI (${primary} of ${cfg.primary.target} ${cfg.primary.label.toLowerCase()}, ${todayEod.calls_booked ?? 0} of ${cfg.sets} sets)`;
+            : `Submitted · missed KPI (${primary} of ${t.primaryTarget} ${cfg.primary.label.toLowerCase()}, ${todayEod.calls_booked ?? 0} of ${t.sets} sets)`;
         } else if (r.primary_role === "closer" || r.primary_role === "coach") {
           todayLine = `Submitted · ${todayEod.calls_taken ?? 0} calls, ${todayEod.closes ?? 0} closes, $${Math.round(Number(todayEod.cash_collected ?? 0)).toLocaleString()} cash`;
         } else if (r.primary_role === "csm") {

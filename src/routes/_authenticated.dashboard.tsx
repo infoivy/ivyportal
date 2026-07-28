@@ -25,7 +25,7 @@ import { PayoutAlertBanner } from "@/components/payout-alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { humanDue, todayLocal } from "@/lib/dates";
-import type { SetterType } from "@/lib/eod-kpi";
+import { KPI, kpiTargetsFor, type SetterType } from "@/lib/eod-kpi";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Home · Ivy Portal" }] }),
@@ -554,21 +554,28 @@ function setterTarget(
   const safeDials = dials ?? 0;
   const safeDms = dms ?? 0;
   const safeBooked = booked ?? 0;
-  const ratios = setterType === "phone"
-    ? [safeDials / 100, safeBooked / 3]
-    : setterType === "dm"
-      ? [safeDms / 125, safeBooked / 3]
-      : setterType === "full_cycle"
-        ? [safeDials / 100, safeDms / 50, safeBooked / 3]
-        : [safeBooked / 3];
+  // Targets come from the shared KPI source for TODAY, so a raise (DM 300 · 6
+  // from 2026-07-29) can never drift this card out of sync.
+  const typed = setterType === "phone" || setterType === "dm" || setterType === "full_cycle"
+    ? (setterType as Exclude<SetterType, null>)
+    : null;
+  const t = typed ? kpiTargetsFor(typed, todayLocal()) : null;
+  const secondary = typed ? KPI[typed].secondary : null;
+  const ratios = typed && t
+    ? [
+        typed === "dm" ? safeDms / t.primaryTarget : safeDials / t.primaryTarget,
+        ...(secondary ? [safeDms / (t.secondaryTarget ?? secondary.target)] : []),
+        safeBooked / t.sets,
+      ]
+    : [safeBooked / 3];
   const progress = Math.min(100, Math.max(0, Math.round((ratios.reduce((total, ratio) => total + Math.min(1, ratio), 0) / ratios.length) * 100)));
-  const label = setterType === "phone"
-    ? `${safeDials}/100 dials · ${safeBooked}/3 sets`
-    : setterType === "dm"
-      ? `${safeDms}/125 DMs · ${safeBooked}/3 sets`
-      : setterType === "full_cycle"
-        ? `${safeDials}/100 dials · ${safeDms}/50 DMs · ${safeBooked}/3 sets`
-        : `${safeBooked}/3 sets`;
+  const label = typed && t
+    ? typed === "dm"
+      ? `${safeDms}/${t.primaryTarget} DMs · ${safeBooked}/${t.sets} sets`
+      : typed === "full_cycle"
+        ? `${safeDials}/${t.primaryTarget} dials · ${safeDms}/${t.secondaryTarget ?? secondary?.target} DMs · ${safeBooked}/${t.sets} sets`
+        : `${safeDials}/${t.primaryTarget} dials · ${safeBooked}/${t.sets} sets`
+    : `${safeBooked}/3 sets`;
   return { progress, label };
 }
 
