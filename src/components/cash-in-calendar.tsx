@@ -51,10 +51,16 @@ const fmtMoney = (n: number, cur = "USD") =>
  * 15th and the last day of the month (founder-designed 2026-07-28).
  * Self-fetching so it can live on the Calendar page and Installments alike.
  */
-export function CashInCalendarCard() {
+export function CashInCalendarCard({ foundersOnly = false }: { foundersOnly?: boolean } = {}) {
   const { roles } = useAuth();
-  const canSeeIn = roles.some(r => ["admin", "closer", "coach", "founder", "cofounder"].includes(r));
-  const canSeeMoneyOut = roles.includes("founder") || roles.includes("cofounder");
+  const isFounderSide = roles.includes("founder") || roles.includes("cofounder");
+  // On the Calendar page the whole card is founder/cofounder-only
+  // (founder-directed 2026-07-28); on Installments the in-flows stay
+  // visible to the money roles.
+  const canSeeIn = foundersOnly
+    ? isFounderSide
+    : roles.some(r => ["admin", "closer", "coach", "founder", "cofounder"].includes(r));
+  const canSeeMoneyOut = isFounderSide;
 
   const q = useQuery({
     queryKey: keys.cashCalendar,
