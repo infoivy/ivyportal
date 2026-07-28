@@ -7,7 +7,7 @@ import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import {
   DollarSign, Plus, Trash2, X, AlertTriangle, Bell, CheckCircle2,
-  Calendar as CalendarIcon, Edit3, Search,
+  Calendar as CalendarIcon, Edit3, Search, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { RevenueTabBar } from "@/components/revenue-tab-bar";
 import { DateField } from "@/components/ui/date-field";
@@ -196,6 +196,9 @@ function InstallmentsPage() {
         <StatCard icon={<Bell className="h-4 w-4" />} label="Due in 3 days" value={dueIn3.length} tone="sky" />
         <StatCard icon={<CheckCircle2 className="h-4 w-4" />} label="Collected (MTD)" value={fmtMoney(collectedThisMonth, "USD")} tone="emerald" />
       </div>
+
+      {/* Cash-in calendar — every day, and the money that should land on it */}
+      <CashInCalendar payments={payments} nameFor={nameFor} />
 
       {/* Reminder queue */}
       {(dueIn3.length > 0 || dueIn1.length > 0 || overdue.length > 0) && (
@@ -523,5 +526,128 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <div className="text-xs text-muted-foreground mb-1">{label}</div>
       {children}
     </label>
+  );
+}
+
+/**
+ * Cash-in calendar: a month grid where every day shows the money scheduled
+ * to land (upcoming/late/missed still expected · paid shown as collected).
+ * Click a day for the payment breakdown.
+ */
+function CashInCalendar({ payments, nameFor }: { payments: Payment[]; nameFor: (p: Payment) => string }) {
+  const [monthStart, setMonthStart] = useState(() => {
+    const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1);
+  });
+  const [selected, setSelected] = useState<string | null>(null);
+
+  const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const todayIso = iso(new Date());
+
+  const byDay = useMemo(() => {
+    const m = new Map<string, { expected: number; collected: number; rows: Payment[] }>();
+    for (const p of payments) {
+      if (p.status === "waived") continue;
+      const cur = m.get(p.due_date) ?? { expected: 0, collected: 0, rows: [] };
+      if (p.status === "paid") cur.collected += Number(p.amount) || 0;
+      else cur.expected += Number(p.amount) || 0;
+      cur.rows.push(p);
+      m.set(p.due_date, cur);
+    }
+    return m;
+  }, [payments]);
+
+  const monthLabel = monthStart.toLocaleDateString("en", { month: "long", year: "numeric" });
+  const daysInMonth = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0).getDate();
+  // Monday-first offset
+  const firstDow = (monthStart.getDay() + 6) % 7;
+  const cells: (string | null)[] = [
+    ...Array.from({ length: firstDow }, () => null),
+    ...Array.from({ length: daysInMonth }, (_, i) => iso(new Date(monthStart.getFullYear(), monthStart.getMonth(), i + 1))),
+  ];
+
+  const monthTotals = useMemo(() => {
+    let expected = 0, collected = 0;
+    for (const [day, v] of byDay) {
+      if (day.slice(0, 7) === iso(monthStart).slice(0, 7)) { expected += v.expected; collected += v.collected; }
+    }
+    return { expected, collected };
+  }, [byDay, monthStart]);
+
+  const shiftMonth = (delta: number) => {
+    setSelected(null);
+    setMonthStart(m => new Date(m.getFullYear(), m.getMonth() + delta, 1));
+  };
+
+  const sel = selected ? byDay.get(selected) : null;
+  const compact = (n: number) => n >= 1000 ? `$${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}k` : `$${Math.round(n)}`;
+
+  return (
+    <section className="rounded-lg border border-border bg-card">
+      <header className="px-4 py-3 border-b border-border flex flex-wrap items-center gap-3">
+        <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+        <h2 className="font-medium text-sm">Cash-in calendar</h2>
+        <span className="text-xs text-muted-foreground">
+          {fmtMoney(monthTotals.expected, "USD")} still expected · {fmtMoney(monthTotals.collected, "USD")} collected this month
+        </span>
+        <div className="ml-auto flex items-center gap-1">
+          <button onClick={() => shiftMonth(-1)} className="grid h-7 w-7 place-items-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted" aria-label="Previous month">
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <span className="text-sm font-medium min-w-[130px] text-center tabular-nums">{monthLabel}</span>
+          <button onClick={() => shiftMonth(1)} className="grid h-7 w-7 place-items-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted" aria-label="Next month">
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+      </header>
+      <div className="p-3">
+        <div className="grid grid-cols-7 gap-1 text-center text-[10px] uppercase tracking-wide text-muted-foreground mb-1">
+          {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(d => <div key={d}>{d}</div>)}
+        </div>
+        <div className="grid grid-cols-7 gap-1">
+          {cells.map((day, i) => {
+            if (!day) return <div key={`b${i}`} />;
+            const v = byDay.get(day);
+            const isToday = day === todayIso;
+            const isSel = day === selected;
+            const overdue = v && v.expected > 0 && day < todayIso;
+            return (
+              <button
+                key={day}
+                onClick={() => setSelected(isSel ? null : day)}
+                className={`min-h-[64px] rounded-md border p-1.5 text-left align-top motion-safe:transition-colors ${
+                  isSel ? "border-primary/40 bg-primary/10"
+                  : v ? (overdue ? "border-danger/25 bg-danger-bg hover:bg-danger-bg/70" : v.expected > 0 ? "border-warning/25 bg-warning-bg/60 hover:bg-warning-bg" : "border-success/25 bg-success-bg/60 hover:bg-success-bg")
+                  : "border-[var(--border)] bg-[var(--background)] hover:bg-muted/50"
+                } ${isToday ? "ring-2 ring-ring/40" : ""}`}
+              >
+                <div className={`text-[10px] tabular-nums ${isToday ? "font-bold text-foreground" : "text-muted-foreground"}`}>{Number(day.slice(8, 10))}</div>
+                {v && v.expected > 0 && (
+                  <div className={`text-[11px] font-semibold tabular-nums ${overdue ? "text-danger-fg" : "text-warning-fg"}`}>{compact(v.expected)}</div>
+                )}
+                {v && v.collected > 0 && (
+                  <div className="text-[10px] tabular-nums text-success-fg">✓ {compact(v.collected)}</div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+        {sel && selected && (
+          <div className="mt-3 rounded-md border border-border bg-[var(--background)]">
+            <div className="px-3 py-2 border-b border-border text-xs font-medium">
+              {selected} · {fmtMoney(sel.expected, "USD")} expected{sel.collected > 0 ? ` · ${fmtMoney(sel.collected, "USD")} collected` : ""}
+            </div>
+            <div className="divide-y divide-border">
+              {sel.rows.map(p => (
+                <div key={p.id} className="px-3 py-2 flex items-center gap-3 text-xs">
+                  <span className="font-medium">{nameFor(p)}</span>
+                  <span className="text-muted-foreground">#{p.sequence} · {fmtMoney(Number(p.amount), p.currency)}</span>
+                  <span className={`ml-auto text-[10px] px-2 py-0.5 rounded-full border ${STATUS_META[p.status].cls}`}>{STATUS_META[p.status].label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
   );
 }

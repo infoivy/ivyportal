@@ -903,7 +903,7 @@ function LogDealDialog({
                 size="sm"
                 variant={studentMode === "existing" ? "default" : "outline"}
                 onClick={() => setStudentMode("existing")}
-                disabled={!!editing}
+                disabled={!!editing && !isAdmin}
               >
                 Pick existing
               </Button>
@@ -912,7 +912,7 @@ function LogDealDialog({
                 size="sm"
                 variant={studentMode === "new" ? "default" : "outline"}
                 onClick={() => setStudentMode("new")}
-                disabled={!!editing}
+                disabled={!!editing && !isAdmin}
               >
                 New student
               </Button>
@@ -924,7 +924,7 @@ function LogDealDialog({
                 options={students.map((s) => ({ value: s.id, label: s.full_name }))}
                 placeholder="– Select student –"
                 className="h-9 text-sm"
-                disabled={!!editing}
+                disabled={!!editing && !isAdmin}
               />
             ) : (
               <Input
