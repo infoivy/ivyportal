@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -77,10 +77,10 @@ function FinanceInner() {
         supabase.from("deals").select("id, closer_id, setter_id, cash_collected_upfront, deal_date").gte("deal_date", iso(monthStart)).lte("deal_date", iso(monthEnd)),
         supabase.from("installment_payments").select("amount, due_date, status").gte("due_date", iso(monthStart)).lte("due_date", iso(monthEnd)),
         supabase.from("installment_payments").select("amount, due_date, status").eq("status", "upcoming").gte("due_date", iso(new Date(now.getFullYear(), now.getMonth(), 1))).lte("due_date", iso(in6mo)),
-        supabase.from("founder_settings").select("id, processor_balance, processor_balance_updated_at, monthly_cash_goal").maybeSingle(),
+        supabase.from("founder_settings").select("id, processor_balance, processor_balance_updated_at, monthly_cash_goal, base_pay_day").maybeSingle(),
         supabase.from("installment_payments").select("amount, paid_at, installment_id").eq("status", "paid").gte("paid_at", iso(monthStart) + "T00:00:00").lte("paid_at", iso(monthEnd) + "T23:59:59").not("paid_at", "is", null),
         supabase.from("installments").select("id, setter_id, closer_id"),
-        supabase.from("profiles").select("id, commission_cap_pct, base_pay_monthly"),
+        supabase.from("profiles").select("id, display_name, commission_cap_pct, base_pay_monthly"),
         supabase.from("commission_rates").select("key, rate").eq("active", true),
         supabase.from("user_roles").select("user_id").eq("role", "cofounder"),
       ]);
@@ -137,6 +137,14 @@ function FinanceInner() {
     }).sort((a, b) => a.date.localeCompare(b.date));
 
     const expensesTotal = monthExpenses.reduce((a, e) => a + Number(e.amount), 0);
+    // Base pay presents as a business expense (founder-directed 2026-07-28)
+    // but stays OUT of expensesTotal — calcMonthPayouts already counts it, so
+    // profit would double-subtract otherwise.
+    const basePayDayRaw = Number((d.settings as { base_pay_day?: number } | null)?.base_pay_day) || 1;
+    const basePayDate = iso(new Date(monthStart.getFullYear(), monthStart.getMonth(), Math.min(basePayDayRaw, daysInMonth)));
+    const basePayRows = (d.profiles as { id: string; display_name?: string | null; base_pay_monthly?: number | null }[])
+      .filter(p => (p.base_pay_monthly ?? 0) > 0)
+      .map(p => ({ id: p.id, name: p.display_name ?? "Team member", amount: Number(p.base_pay_monthly), date: basePayDate }));
     // Collected = upfronts logged this month + installments PAID this month
     // (by paid_at — a payment due in May but paid in June is June cash).
     const collected = d.deals.reduce((a, x) => a + (Number(x.cash_collected_upfront) || 0), 0)
@@ -157,6 +165,9 @@ function FinanceInner() {
     monthExpenses
       .filter(e => !isCurrentMonth || e.date >= today)
       .forEach(e => flow.push({ date: e.date, label: e.name, amount: Number(e.amount), kind: "out" }));
+    basePayRows
+      .filter(b => !isCurrentMonth || b.date >= today)
+      .forEach(b => flow.push({ date: b.date, label: `${b.name} · base pay`, amount: b.amount, kind: "out" }));
     flow.sort((a, b) => a.date.localeCompare(b.date) || (a.kind === "in" ? -1 : 1));
 
     const startBalance = d.settings?.processor_balance != null ? Number(d.settings.processor_balance) : null;
@@ -180,7 +191,7 @@ function FinanceInner() {
     const mrrNow = mrrSeries[0]?.value ?? 0;
 
     return {
-      monthExpenses, expensesTotal, collected, expectedRest, projectedIn,
+      monthExpenses, expensesTotal, basePayRows, basePayDay: basePayDayRaw, collected, expectedRest, projectedIn,
       profitSoFar, profitProjected, flowWithBalance, startBalance, mrrSeries, mrrNow,
       endBalance: startBalance != null ? running : null,
     };
@@ -265,7 +276,7 @@ function FinanceInner() {
           })()}
           icon={<ArrowDownRight className="h-3.5 w-3.5" />}
         />
-        <StatCard label="Expenses + payouts" value={calc ? money(calc.expensesTotal + payoutsTotal) : "–"} sub={calc ? `${money(calc.expensesTotal)} expenses · ${money(payoutsTotal)} team pay` : undefined} icon={<ArrowUpRight className="h-3.5 w-3.5" />} />
+        <StatCard label="Expenses + payouts" value={calc ? money(calc.expensesTotal + payoutsTotal) : "–"} sub={calc && payouts ? `${money(calc.expensesTotal + payouts.basePay)} expenses incl. base pay · ${money(payouts.setterCommission + payouts.closerCommission)} commissions` : undefined} icon={<ArrowUpRight className="h-3.5 w-3.5" />} />
         <StatCard label="Profit (projected)" value={calc ? money(profitProjected) : "–"} sub={calc ? `${money(profitSoFar)} so far · after expenses & payouts` : undefined} icon={<TrendingUp className="h-3.5 w-3.5" />} tone={calc && profitProjected < 0 ? "danger" : "default"} />
         <StatCard label="MRR (scheduled)" value={calc ? money(calc.mrrNow) : "–"} sub="installments due this month" icon={<PiggyBank className="h-3.5 w-3.5" />} />
       </div>
@@ -439,7 +450,7 @@ function FinanceInner() {
             <Plus className="h-3.5 w-3.5 mr-1" /> Add expense
           </Button>
         </div>
-        {d && d.expenses.length === 0 ? (
+        {d && d.expenses.length === 0 && (calc?.basePayRows.length ?? 0) === 0 ? (
           <p className="text-[13px] text-muted-foreground py-6 text-center">No expenses yet · add your software, contractors, and ad spend.</p>
         ) : (
           <div className="divide-y divide-[var(--accent)]">
@@ -457,6 +468,21 @@ function FinanceInner() {
                 <span className="flex justify-end gap-1">
                   <button onClick={() => setExpenseModal({ open: true, editing: e })} className="p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted"><Pencil className="h-3.5 w-3.5" /></button>
                   <button onClick={() => deleteExpense(e.id)} className="p-1.5 rounded text-muted-foreground hover:text-danger-fg hover:bg-danger-bg"><Trash2 className="h-3.5 w-3.5" /></button>
+                </span>
+              </div>
+            ))}
+            {/* Team base pay: part of the monthly out-flow, managed on Payouts */}
+            {calc?.basePayRows.map(b => (
+              <div key={b.id} className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] sm:grid-cols-[minmax(0,1.4fr)_110px_150px_100px_70px] gap-3 items-center py-2.5 text-[13px]">
+                <div className="min-w-0">
+                  <span className="truncate font-medium">{b.name}</span>
+                  <span className="ml-2 text-caption text-muted-foreground">team base pay</span>
+                </div>
+                <span className="tabular-nums text-right">{money(b.amount)}</span>
+                <span className="text-muted-foreground text-right hidden sm:block">monthly · day {calc.basePayDay}</span>
+                <span className="text-caption text-right hidden sm:block text-success-fg">active</span>
+                <span className="flex justify-end">
+                  <Link to={"/payouts" as string} className="text-caption text-primary hover:underline px-1.5 py-1">edit →</Link>
                 </span>
               </div>
             ))}
