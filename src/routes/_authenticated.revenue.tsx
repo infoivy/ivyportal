@@ -81,7 +81,8 @@ function RevenueInner() {
   const [loading, setLoading] = useState(true);
   const [logOpen, setLogOpen] = useState(false);
   const [editing, setEditing] = useState<Deal | null>(null);
-  const [dateRange, setDateRange] = useState<DateRange>(() => rangeFor("24h"));
+  // 30 days by default (founder 2026-07-28: 24h opened on "No data" everywhere)
+  const [dateRange, setDateRange] = useState<DateRange>(() => rangeFor("30d"));
   const [compare, setCompare] = useState(false);
 
   const fetchPage = async () => {
@@ -390,11 +391,14 @@ function RevenueInner() {
         <BreakdownBar segments={paymentBreakdown} title="Payment types" />
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-1 space-y-4">
+      <div className="grid lg:grid-cols-2 gap-4">
           <Card className="p-5">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold">Sales trend</h3>
+              <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-[3px] bg-muted-foreground/40" /> booked</span>
+                <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-[3px] bg-success" /> cash</span>
+              </div>
               <div className="flex gap-1">
                 {(["monthly", "weekly", "daily"] as const).map((m) => (
                   <button
@@ -409,16 +413,17 @@ function RevenueInner() {
             </div>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={trend}>
-                  <CartesianGrid strokeDasharray="2 4" stroke="var(--color-border)" vertical={false} />
-                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }} interval="preserveStartEnd" tickLine={false} axisLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }} tickLine={false} axisLine={false} />
+                <BarChart data={trend} barGap={2}>
+                  <CartesianGrid stroke="var(--color-border)" strokeOpacity={0.5} vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: "var(--color-muted-foreground)" }} interval="preserveStartEnd" tickLine={false} axisLine={false} tickMargin={8} />
+                  <YAxis tick={{ fontSize: 10, fill: "var(--color-muted-foreground)" }} tickLine={false} axisLine={false} width={34} tickFormatter={(v: number) => (v >= 1000 ? `${Math.round(v / 1000)}k` : String(v))} />
                   <Tooltip
+                    cursor={{ fill: "var(--color-muted)", opacity: 0.4 }}
                     contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: 10, fontSize: 12, boxShadow: "var(--shadow-overlay)" }}
                     formatter={(v: number, k: string) => (k === "deals" ? [v, "deals"] : [money(v), k === "cash" ? "cash" : "booked"])}
                   />
-                  <Bar dataKey="booked" fill="var(--chart-1)" radius={[3, 3, 0, 0]} isAnimationActive={false} />
-                  <Bar dataKey="cash" fill="var(--chart-2)" radius={[3, 3, 0, 0]} isAnimationActive={false} />
+                  <Bar dataKey="booked" fill="var(--color-muted-foreground)" fillOpacity={0.35} radius={[4, 4, 0, 0]} maxBarSize={26} isAnimationActive={false} />
+                  <Bar dataKey="cash" fill="var(--success)" radius={[4, 4, 0, 0]} maxBarSize={26} isAnimationActive={false} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -428,26 +433,30 @@ function RevenueInner() {
           <Card className="p-5">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold">Deals & average size</h3>
-              <span className="text-[12px] text-muted-foreground">{trendMode === "monthly" ? "6mo" : trendMode === "weekly" ? "8wk" : "30d"}</span>
+              <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-[3px] bg-muted-foreground/40" /> deals</span>
+                <span className="inline-flex items-center gap-1.5"><span className="h-[2px] w-3 rounded-full bg-success" /> avg size</span>
+                <span>{trendMode === "monthly" ? "6mo" : trendMode === "weekly" ? "8wk" : "30d"}</span>
+              </div>
             </div>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={trend.map((t) => ({ ...t, avg: t.deals ? Math.round(t.booked / t.deals) : 0 }))}>
-                  <CartesianGrid strokeDasharray="2 4" stroke="var(--color-border)" vertical={false} />
-                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }} interval="preserveStartEnd" tickLine={false} axisLine={false} />
-                  <YAxis yAxisId="deals" tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }} tickLine={false} axisLine={false} allowDecimals={false} />
-                  <YAxis yAxisId="avg" orientation="right" tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }} tickLine={false} axisLine={false} tickFormatter={(v: number) => (v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v))} />
+                  <CartesianGrid stroke="var(--color-border)" strokeOpacity={0.5} vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: "var(--color-muted-foreground)" }} interval="preserveStartEnd" tickLine={false} axisLine={false} tickMargin={8} />
+                  <YAxis yAxisId="deals" tick={{ fontSize: 10, fill: "var(--color-muted-foreground)" }} tickLine={false} axisLine={false} width={28} allowDecimals={false} />
+                  <YAxis yAxisId="avg" orientation="right" tick={{ fontSize: 10, fill: "var(--color-muted-foreground)" }} tickLine={false} axisLine={false} width={34} tickFormatter={(v: number) => (v >= 1000 ? `${Math.round(v / 1000)}k` : String(v))} />
                   <Tooltip
+                    cursor={{ fill: "var(--color-muted)", opacity: 0.4 }}
                     contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: 10, fontSize: 12, boxShadow: "var(--shadow-overlay)" }}
                     formatter={(v: number, k: string) => (k === "deals" ? [v, "deals"] : [money(v), "avg deal size"])}
                   />
-                  <Bar yAxisId="deals" dataKey="deals" fill="var(--chart-4)" radius={[3, 3, 0, 0]} isAnimationActive={false} />
-                  <Line yAxisId="avg" dataKey="avg" stroke="var(--chart-3)" strokeWidth={2} dot={false} isAnimationActive={false} />
+                  <Bar yAxisId="deals" dataKey="deals" fill="var(--color-muted-foreground)" fillOpacity={0.35} radius={[4, 4, 0, 0]} maxBarSize={26} isAnimationActive={false} />
+                  <Line yAxisId="avg" dataKey="avg" stroke="var(--success)" strokeWidth={2} dot={false} isAnimationActive={false} />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
           </Card>
-        </div>
       </div>
 
       {/* Per-person payouts live in the Payouts ledger (Revenue → Payouts tab) */}
