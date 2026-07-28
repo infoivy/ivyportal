@@ -786,7 +786,7 @@ function StudentDetail() {
             <div className="text-center py-6 text-xs text-muted-foreground">
               No installment plan for this student.
               <div className="mt-2">
-                <Link to="/installments" className="text-success-fg hover:text-success-fg text-[11px]">Manage on Installments page →</Link>
+                <Link to="/revenue" search={{ tab: "plans" } as never} className="text-success-fg hover:text-success-fg text-[11px]">Manage on Money in →</Link>
               </div>
             </div>
           ) : (
@@ -796,7 +796,7 @@ function StudentDetail() {
                   <div className="text-sm font-semibold flex items-center gap-1.5"><DollarSign className="h-3.5 w-3.5 text-success-fg" /> {installment.currency} {installment.total_amount.toLocaleString()}</div>
                   {installment.notes && <div className="text-[11px] text-muted-foreground mt-0.5">{installment.notes}</div>}
                 </div>
-                <Link to="/installments" className="text-[11px] text-success-fg hover:text-success-fg">Edit plan →</Link>
+                <Link to="/revenue" search={{ tab: "plans" } as never} className="text-[11px] text-success-fg hover:text-success-fg">Edit plan →</Link>
               </div>
               <table className="w-full text-xs">
                 <thead className="text-[10px] uppercase tracking-wider text-muted-foreground">

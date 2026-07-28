@@ -680,7 +680,7 @@ const CHECKLIST_ITEMS: { key: string; label: string; hint: string; to?: string }
   { key: "paymentLinks", label: "Payment links seeded", hint: "Add links in Closer Resources → Manage", to: "/closer-resources" },
   { key: "commissionConfirmed", label: "Commission rates confirmed", hint: "new_close + set_close rates active in Revenue → Commissions", to: "/revenue" },
   { key: "cashGoalSet", label: "Monthly cash goal set", hint: "Set below in Portal settings" },
-  { key: "setterTypesSet", label: "All setters have a type (phone/DM)", hint: "Set inline on the Sales page", to: "/sales" },
+  { key: "setterTypesSet", label: "All setters have a type (phone/DM)", hint: "Set inline on Performance · Team week", to: "/performance" },
   { key: "teamInvited", label: "Co-founders / team invited (≥2 admins)", hint: "Invite via Team", to: "/team" },
   { key: "calendarConnected", label: "At least one calendar connected", hint: "Connect in Calendar", to: "/calendar" },
   { key: "demoRemoved", label: "Demo data removed", hint: "Run npm run demo:remove" },

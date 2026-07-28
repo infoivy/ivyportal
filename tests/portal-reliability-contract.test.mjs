@@ -6,6 +6,7 @@ const root = new URL("../", import.meta.url);
 const dashboard = readFileSync(new URL("src/routes/_authenticated.dashboard.tsx", root), "utf8");
 const performanceUrl = new URL("src/routes/_authenticated.performance.tsx", root);
 const eods = readFileSync(new URL("src/routes/_authenticated.eods.tsx", root), "utf8");
+const teamWeek = readFileSync(new URL("src/components/team-week.tsx", root), "utf8");
 const sales = readFileSync(new URL("src/routes/_authenticated.sales.tsx", root), "utf8");
 const authenticatedLayout = readFileSync(new URL("src/routes/_authenticated.tsx", root), "utf8");
 const adminConsole = readFileSync(new URL("src/routes/_authenticated.admin.tsx", root), "utf8");
@@ -107,10 +108,13 @@ test("EOD remains a focused submission workflow", () => {
   assert.doesNotMatch(miniChip, /green/i);
 });
 
-test("Sales remains a daily work queue and legacy analytics opens Performance", () => {
-  assert.match(sales, /Today's submission status/);
-  assert.doesNotMatch(sales, /#22c55e|green|emerald/i);
-  assert.doesNotMatch(sales, /function TrendsTab|VolumeAreaChart|Scorecards · last 30 days/);
+test("Sales dissolved into Performance; the ops strip lives in Team week", () => {
+  // Founder-approved merge 2026-07-28: /sales is a redirect stub and the
+  // daily ops strip (filed today, missed-yesterday nudges) moved to the
+  // Performance Team week section.
+  assert.match(sales, /to: "\/performance"/);
+  assert.match(teamWeek, /Filed today/);
+  assert.match(teamWeek, /Missed yesterday/);
   assert.match(analyticsAlias, /to: "\/performance"/);
   assert.doesNotMatch(analyticsAlias, /tab: "trends"/);
 });
@@ -147,9 +151,8 @@ test("operational Home, Performance, and directory exclude demo profiles as well
   assert.match(performance, /from\("profiles"\)[\s\S]*?\.eq\("is_demo", false\)/);
   assert.match(performance, /filter\(\(id\) => profileMap\.has\(id\)\)/);
   assert.match(directory, /from\("profiles"\)[\s\S]*?\.eq\("is_demo", false\)/);
-  assert.match(sales, /from\("profiles"\)[^\n]*\.eq\("is_demo", false\)/);
-  assert.equal((sales.match(/from\("eods_activity_real"\)/g) ?? []).length, 2);
-  assert.doesNotMatch(sales, /from\("eods"\)/);
+  assert.match(teamWeek, /from\("profiles"\)[\s\S]{0,160}?\.eq\("is_demo", false\)/);
+  assert.match(teamWeek, /from\("eods"\)[\s\S]{0,400}?\.eq\("is_demo", false\)/);
   assert.match(teamAdminRoute, /from\("profiles"\)[^\n]*\.eq\("is_demo", false\)/);
   assert.match(adminConsole, /from\("eods_activity_real"\)/);
   assert.equal((adminConsole.match(/from\("eods"\)/g) ?? []).length, 1);
@@ -223,7 +226,7 @@ test("every operational installment-payment reader requires a real owning studen
     ["src/routes/_authenticated.finance.tsx", 3],
     ["src/components/cash-in-calendar.tsx", 1],
     ["src/routes/_authenticated.students.$id.tsx", 1],
-    ["src/routes/_authenticated.installments.tsx", 1],
+    ["src/components/revenue/payment-plans-section.tsx", 1],
     ["src/components/notifications-bell.tsx", 1],
   ];
 
@@ -238,7 +241,6 @@ test("every operational installment-payment reader requires a real owning studen
   const dealReaders = [
     "src/lib/collected-cash.ts",
     "src/lib/mochi.functions.ts",
-    "src/components/setter-leaderboard.tsx",
     "src/components/cash-in-calendar.tsx",
     "src/routes/_authenticated.students.$id.tsx",
     "src/components/payout-alert.tsx",
@@ -268,8 +270,6 @@ test("shared student workspaces and staff utilities exclude demo-owned records a
   const studentsRoute = readFileSync(new URL("src/routes/_authenticated.students.tsx", root), "utf8");
   const studentLeaderboard = readFileSync(new URL("src/lib/student-portal.functions.ts", root), "utf8");
   const setterActivity = readFileSync(new URL("src/components/setter-activity-card.tsx", root), "utf8");
-  const cashLeaderboard = readFileSync(new URL("src/components/weekly-leaderboard.tsx", root), "utf8");
-  const setterLeaderboard = readFileSync(new URL("src/components/setter-leaderboard.tsx", root), "utf8");
   const paymentSetup = readFileSync(new URL("src/components/student-payment-setup.tsx", root), "utf8");
   const calendarRoute = readFileSync(new URL("src/routes/_authenticated.calendar.tsx", root), "utf8");
   const calendarFunctions = readFileSync(new URL("src/lib/calendar.functions.ts", root), "utf8");
@@ -311,7 +311,7 @@ test("shared student workspaces and staff utilities exclude demo-owned records a
   assert.match(studentLeaderboard, /from\("students"\)[\s\S]{0,180}?\.eq\("is_demo", false\)/);
   assert.match(studentLeaderboard, /from\("student_eods"\)[\s\S]{0,200}?students!inner\(is_demo\)[\s\S]{0,120}?\.eq\("students\.is_demo", false\)/);
 
-  for (const source of [setterActivity, cashLeaderboard, setterLeaderboard, paymentSetup, calendarRoute]) {
+  for (const source of [setterActivity, paymentSetup, calendarRoute]) {
     assert.match(source, /from\("profiles"\)[\s\S]{0,180}?\.eq\("is_demo", false\)/);
   }
 

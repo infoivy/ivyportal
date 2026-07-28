@@ -23,8 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { CashLeaderboard } from "@/components/weekly-leaderboard";
-import { SetterLeaderboard } from "@/components/setter-leaderboard";
+import { PaymentPlansSection } from "@/components/revenue/payment-plans-section";
 import { toast } from "sonner";
 import {
   Plus, DollarSign, TrendingUp, Trophy, ClipboardList, Pencil, Trash2,
@@ -42,7 +41,10 @@ import { SelectField } from "@/components/ui/select-field";
 import { BlurMoney } from "@/components/blur-money";
 
 export const Route = createFileRoute("/_authenticated/revenue")({
-  head: () => ({ meta: [{ title: "Revenue · ISA Team" }] }),
+  head: () => ({ meta: [{ title: "Money in · ISA Team" }] }),
+  validateSearch: (search: Record<string, unknown>): { tab?: "deals" | "plans" } => ({
+    tab: search.tab === "plans" ? "plans" : search.tab === "deals" ? "deals" : undefined,
+  }),
   component: RevenuePage,
 });
 
@@ -64,6 +66,8 @@ function RevenuePage() {
 }
 
 function RevenueInner() {
+  const search = Route.useSearch();
+  const tab = search.tab ?? "deals";
   const { user, roles } = useAuth();
   const isAdmin = roles.includes("admin");
   const canLog = isAdmin || roles.includes("closer") || roles.includes("coach");
@@ -296,18 +300,6 @@ function RevenueInner() {
     return buckets;
   }, [deals, trendMode]);
 
-  // Commission milestone bonuses (team cash MTD)
-  const milestones = useMemo(() => {
-    const tiers = [
-      { threshold: 10_000 },
-      { threshold: 25_000 },
-      { threshold: 50_000 },
-      { threshold: 100_000 },
-    ];
-    const cash = stats.cash;
-    return tiers.map((t) => ({ ...t, hit: cash >= t.threshold, progress: Math.min(1, cash / t.threshold) }));
-  }, [stats.cash]);
-
   const deleteDeal = async (id: string) => {
     if (!confirm("Delete this deal? This does NOT delete the linked student.")) return;
     const { error } = await supabase.from("deals").delete().eq("id", id);
@@ -322,11 +314,13 @@ function RevenueInner() {
     <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3 pb-5 mb-1">
         <div>
-          <h1 className="text-display text-foreground">Deals</h1>
-          <p className="text-body text-muted-foreground mt-1">Deals, commissions, and cash performance</p>
+          <h1 className="text-display text-foreground">Money in</h1>
+          <p className="text-body text-muted-foreground mt-1">Deals, payment plans, and cash collection</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <FilterToolbar value={dateRange} onChange={setDateRange} compare={compare} onCompareToggle={() => setCompare((c) => !c)} />
+          {tab === "deals" && (
+            <FilterToolbar value={dateRange} onChange={setDateRange} compare={compare} onCompareToggle={() => setCompare((c) => !c)} />
+          )}
           {canLog && (
             <Button onClick={() => { setEditing(null); setLogOpen(true); }} size="sm">
               <Plus className="h-4 w-4 mr-1" /> Log a close
@@ -336,6 +330,27 @@ function RevenueInner() {
       </header>
 
       <RevenueTabBar />
+
+      {/* Deals vs payment plans — one merged Money-in destination
+          (founder-approved 2026-07-28) */}
+      <div className="inline-flex rounded-lg bg-muted p-[3px]">
+        <Link
+          to="/revenue"
+          search={{ tab: "deals" } as never}
+          className={`text-[13px] font-medium px-3 py-1.5 rounded-[8px] motion-safe:transition-colors ${tab === "deals" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          Deals
+        </Link>
+        <Link
+          to="/revenue"
+          search={{ tab: "plans" } as never}
+          className={`text-[13px] font-medium px-3 py-1.5 rounded-[8px] motion-safe:transition-colors ${tab === "plans" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          Payment plans
+        </Link>
+      </div>
+
+      {tab === "plans" ? <PaymentPlansSection /> : (<>
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -433,44 +448,7 @@ function RevenueInner() {
             </div>
           </Card>
         </div>
-        <CashLeaderboard />
-        <SetterLeaderboard />
       </div>
-
-      {/* Commission milestone bonuses */}
-      <Card className="p-5">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Trophy className="h-4 w-4 text-warning-fg" />
-            <h3 className="text-[15px] font-semibold">Team cash milestones (MTD)</h3>
-          </div>
-          <span className="text-[13px] text-muted-foreground">
-            Cash collected: <span className="text-primary font-semibold"><BlurMoney>{money(stats.cash)}</BlurMoney></span>
-          </span>
-        </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {milestones.map((m) => (
-            <div
-              key={m.threshold}
-              className={`card-surface p-3 ${m.hit ? "ring-1 ring-primary/30" : ""}`}
-            >
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[13px] font-medium">{money(m.threshold)}</span>
-                <span className={`text-[12px] ${m.hit ? "text-primary" : "text-muted-foreground"}`}>
-                  {m.hit ? "Unlocked" : `${Math.floor(m.progress * 100)}%`}
-                </span>
-              </div>
-              <div className="h-1.5 rounded-full bg-muted overflow-hidden mb-2">
-                <div
-                  className={`h-full rounded-full ${m.hit ? "bg-primary" : "bg-primary/50"}`}
-                  style={{ width: `${m.progress * 100}%` }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
-
 
       {/* Per-person payouts live in the Payouts ledger (Revenue → Payouts tab) */}
       <Link
@@ -570,6 +548,8 @@ function RevenueInner() {
         </div>
       )}
 
+      </>)}
+
       <LogDealDialog
         open={logOpen}
         onOpenChange={setLogOpen}
@@ -584,75 +564,6 @@ function RevenueInner() {
     </div>
   );
 }
-
-function CommissionRatesCard({
-  rows,
-  reload,
-}: {
-  rows: { id: string; key: string; label: string; rate: number; active: boolean }[];
-  reload: () => Promise<void>;
-}) {
-  const [draft, setDraft] = useState(rows);
-  const [saving, setSaving] = useState(false);
-  useEffect(() => setDraft(rows), [rows]);
-
-  const save = async () => {
-    setSaving(true);
-    for (const r of draft) {
-      const orig = rows.find((x) => x.id === r.id);
-      if (!orig || orig.rate !== r.rate) {
-        await supabase.from("commission_rates").update({ rate: r.rate }).eq("id", r.id);
-      }
-    }
-    setSaving(false);
-    toast.success("Commission rates updated");
-    reload();
-  };
-
-  return (
-    <Card className="p-5">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <Percent className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-semibold">Commission rates</h3>
-        </div>
-        <Button size="sm" onClick={save} disabled={saving}>
-          <Save className="h-4 w-4 mr-1" /> Save
-        </Button>
-      </div>
-      <div className="grid sm:grid-cols-3 gap-3">
-        {draft.map((r) => (
-          <div key={r.id} className="space-y-1">
-            <Label className="text-xs">{r.label}</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                max="1"
-                value={r.rate}
-                onChange={(e) =>
-                  setDraft((d) =>
-                    d.map((x) => (x.id === r.id ? { ...x, rate: Math.max(0, Math.min(1, Number(e.target.value) || 0)) } : x)),
-                  )
-                }
-                className=""
-              />
-              <span className="text-xs text-muted-foreground tabular-nums w-12">
-                {(r.rate * 100).toFixed(1)}%
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
-      <p className="text-[11px] text-muted-foreground mt-3">
-        Editing here affects future commission calculations across the app. Historical deals reflect the current rate.
-      </p>
-    </Card>
-  );
-}
-
-/* ---------- Log a close dialog ---------- */
 
 function LogDealDialog({
   open, onOpenChange, closers, setters, students, currentUserId, isAdmin, editing, onSaved,

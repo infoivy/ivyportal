@@ -33,11 +33,11 @@ test("portal chrome is monochrome and dark mode uses a true-black surface stack"
   assert.match(styles, /\.dark\s*\{[\s\S]*--background:\s+#000000/);
   assert.match(styles, /\.dark\s*\{[\s\S]*--card:\s+#080808/);
   assert.match(styles, /\.dark\s*\{[\s\S]*--primary:\s+#F5F5F7/);
-  assert.match(styles, /--success:\s+#1C1C1E/);
-  assert.match(styles, /\.dark\s*\{[\s\S]*--success:\s+#FAFAFA/);
+  assert.match(styles, /--success:\s+#16A34A/); // real green per founder 2026-07-28
+  assert.match(styles, /\.dark\s*\{[\s\S]*--success:\s+#22C55E/);
   assert.doesNotMatch(
     visualSource,
-    /(?:bg|text|border|from|to)-(?:green|emerald|lime|olive|sage)-|#(?:16a34a|15803d|22c55e|4ade80|10b981)/i,
+    /(?:bg|text|border|from|to)-(?:green|emerald|lime|olive|sage)-|#(?:10b981)/i,
   );
   assert.doesNotMatch(styles, /--cat-\*\//);
 });

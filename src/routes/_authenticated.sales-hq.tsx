@@ -1,8 +1,8 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
-// Merged into /sales — this stub preserves old bookmarks.
+// Old bookmarks: sales-hq → sales → Performance (founder-approved 2026-07-28).
 export const Route = createFileRoute("/_authenticated/sales-hq")({
   beforeLoad: () => {
-    throw redirect({ to: "/sales", search: { tab: "operations" }, replace: true });
+    throw redirect({ to: "/performance", replace: true });
   },
 });

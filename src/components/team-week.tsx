@@ -61,7 +61,7 @@ export function TeamWeekSection() {
           .select("id, user_id, report_date, dials, leads_contacted, dms_sent, calls_booked, calls_taken, closes, cash_collected, student_checkins, looms_reviewed, wins, blockers")
           .eq("is_demo", false)
           .gte("report_date", fromIso),
-        supabase.from("profiles").select("id, display_name, setter_type, csm_daily_target, active" as never),
+        supabase.from("profiles").select("id, display_name, setter_type, csm_daily_target, active" as never).eq("is_demo", false),
         supabase.from("user_roles").select("user_id, role").in("role", ["setter", "closer", "coach", "csm"]),
         // Founders/cofounders are exempt from EODs; user_roles founder check:
       ]);

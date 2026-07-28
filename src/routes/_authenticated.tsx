@@ -321,16 +321,6 @@ function AuthedLayout() {
   );
 }
 
-const PAGE_LABELS: Array<[string, string]> = [
-  ["/dashboard", "Overview"], ["/eods", "Performance"], ["/action-items", "Action Items"], ["/chat", "Team Chat"],
-  ["/sales", "Sales"], ["/revenue", "Deals"], ["/installments", "Installments"],
-  ["/payouts", "Payouts"], ["/closer-resources", "Closer Resources"],
-  ["/calendar", "Calendar"], ["/crm", "CRM"], ["/finance", "Finance"], ["/mochi", "Mochi"], ["/students", "Students"], ["/calls", "1-on-1 Calls"],
-  ["/student-success", "Student Success"], ["/csm", "CSM"],
-  ["/testimonials", "Testimonials"], ["/knowledge", "Knowledge"], ["/policies", "Knowledge"],
-  ["/sops", "Knowledge"], ["/admin", "Admin"],
-  ["/team", "Team"], ["/profile", "Profile"], ["/student-portal", "My Portal"],
-];
 
 function PageContextLabel() {
   const path = useRouterState({ select: (s) => s.location.pathname });
