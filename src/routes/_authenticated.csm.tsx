@@ -125,6 +125,7 @@ function CsmPage() {
   const [studentEods, setStudentEods] = useState<StudentEodLite[]>([]);
   const [studentWeeklyEods, setStudentWeeklyEods] = useState<StudentWeeklyEodLite[]>([]);
   const [weeklyEodLoadError, setWeeklyEodLoadError] = useState(false);
+  const [checkinTarget, setCheckinTarget] = useState(10);
   const [adhoc, setAdhoc] = useState<AdHocItem[]>([]);
   const [newAdhocText, setNewAdhocText] = useState("");
   const [newAdhocDue, setNewAdhocDue] = useState("");
@@ -143,7 +144,7 @@ function CsmPage() {
   const fetchPage = async () => {
     if (!user) return null;
     const since = new Date(Date.now() - 14 * 86400000).toISOString();
-    const [studentsRes, notesRes, tallyRes, callsRes, sEodRes, weeklyEodRes, adhocRes] = await Promise.all([
+    const [studentsRes, notesRes, tallyRes, callsRes, sEodRes, weeklyEodRes, adhocRes, targetRes] = await Promise.all([
       supabase.from("students").select("id, full_name, email, phase, status, coach_id, timezone").order("full_name", { ascending: true }),
       supabase.from("csm_student_notes").select("*").order("created_at", { ascending: false }).limit(200),
       supabase.from("csm_tally").select("*").eq("user_id", user.id).gte("created_at", since).order("created_at", { ascending: false }),
@@ -151,6 +152,8 @@ function CsmPage() {
       supabase.from("student_eods").select("student_id, report_date, roleplays, looms_sent, applications_submitted, interviews, wins, blockers").order("report_date", { ascending: false }).limit(1000),
       supabase.from("student_weekly_eods").select("student_id, week_start, group_calls_attended, calls_attended, one_on_one_calls, implementation, biggest_win, biggest_blocker, next_week_commitment").order("week_start", { ascending: false }).limit(1000),
       supabase.from("student_action_items").select("id, student_id, text, done, due_date, created_at, created_by").order("created_at", { ascending: false }).limit(500),
+      // Per-CSM daily check-in KPI (part-time vs full-time, founder-set on Team)
+      supabase.from("profiles").select("csm_daily_target" as never).eq("id", user.id).maybeSingle(),
     ]);
     const studentRows = (studentsRes.data ?? []) as Student[];
     const noteRows = (notesRes.data ?? []) as CsmNote[];
@@ -169,6 +172,7 @@ function CsmPage() {
       studentWeeklyEods: (weeklyEodRes.data ?? []) as StudentWeeklyEodLite[],
       weeklyEodLoadError: Boolean(weeklyEodRes.error),
       adhoc: (adhocRes.data ?? []) as AdHocItem[],
+      checkinTarget: Number((targetRes.data as { csm_daily_target?: number } | null)?.csm_daily_target) || 10,
     };
   };
 
@@ -186,6 +190,7 @@ function CsmPage() {
     setStudentWeeklyEods(d.studentWeeklyEods);
     setWeeklyEodLoadError(d.weeklyEodLoadError);
     setAdhoc(d.adhoc);
+    setCheckinTarget(d.checkinTarget);
   }, [pageQ.data]);
 
   const filteredStudents = useMemo(() => {
@@ -393,9 +398,19 @@ function CsmPage() {
                   className={`w-full text-left p-4 transition ${M.color} ${M.ring} focus:outline-none focus:ring-2`}
                 >
                   <Icon className="h-4 w-4" />
-                  <div className="text-3xl font-medium tabular-nums mt-2">{count}</div>
-                  <div className="mt-1 text-sm font-medium">{M.label}</div>
-                  <div className="text-[10px] opacity-80 mt-0.5">Tap +1 · today</div>
+                  <div className="text-3xl font-medium tabular-nums mt-2">
+                    {count}
+                    {k === "checkin" && <span className="text-base opacity-60">/{checkinTarget}</span>}
+                  </div>
+                  <div className="mt-1 text-sm font-medium">
+                    {M.label}
+                    {k === "checkin" && count >= checkinTarget && " ✓"}
+                  </div>
+                  <div className="text-[10px] opacity-80 mt-0.5">
+                    {k === "checkin"
+                      ? count >= checkinTarget ? "Daily target hit" : `${checkinTarget - count} to go today`
+                      : "Tap +1 · today"}
+                  </div>
                 </button>
                 <div className="absolute top-1 right-1 flex gap-0.5">
                   <button
