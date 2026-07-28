@@ -617,6 +617,7 @@ export type Database = {
           category: Database["public"]["Enums"]["doc_category"]
           content: string
           created_at: string
+          embed_url: string | null
           external_links: Json
           id: string
           is_founder_only: boolean
@@ -633,6 +634,7 @@ export type Database = {
           category: Database["public"]["Enums"]["doc_category"]
           content?: string
           created_at?: string
+          embed_url?: string | null
           external_links?: Json
           id?: string
           is_founder_only?: boolean
@@ -649,6 +651,7 @@ export type Database = {
           category?: Database["public"]["Enums"]["doc_category"]
           content?: string
           created_at?: string
+          embed_url?: string | null
           external_links?: Json
           id?: string
           is_founder_only?: boolean
@@ -1311,15 +1314,39 @@ export type Database = {
         }
         Relationships: []
       }
+      payout_confirmations: {
+        Row: {
+          amount_paid: number
+          confirmed_at: string
+          confirmed_by: string
+          period_start: string
+          user_id: string
+        }
+        Insert: {
+          amount_paid?: number
+          confirmed_at?: string
+          confirmed_by: string
+          period_start: string
+          user_id: string
+        }
+        Update: {
+          amount_paid?: number
+          confirmed_at?: string
+          confirmed_by?: string
+          period_start?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           active: boolean
           avatar_path: string | null
           avatar_url: string | null
           base_pay_monthly: number | null
-          csm_daily_target: number
           commission_cap_pct: number | null
           created_at: string
+          csm_daily_target: number
           dashboard_prefs: Json
           display_name: string | null
           id: string
@@ -1332,9 +1359,9 @@ export type Database = {
           avatar_path?: string | null
           avatar_url?: string | null
           base_pay_monthly?: number | null
-          csm_daily_target?: number
           commission_cap_pct?: number | null
           created_at?: string
+          csm_daily_target?: number
           dashboard_prefs?: Json
           display_name?: string | null
           id: string
@@ -1347,9 +1374,9 @@ export type Database = {
           avatar_path?: string | null
           avatar_url?: string | null
           base_pay_monthly?: number | null
-          csm_daily_target?: number
           commission_cap_pct?: number | null
           created_at?: string
+          csm_daily_target?: number
           dashboard_prefs?: Json
           display_name?: string | null
           id?: string
@@ -1744,62 +1771,6 @@ export type Database = {
           },
         ]
       }
-      student_weekly_eods: {
-        Row: {
-          biggest_blocker: string | null
-          biggest_win: string | null
-          calls_attended: Json
-          created_at: string
-          group_calls_attended: number
-          id: string
-          implementation: string
-          next_week_commitment: string
-          one_on_one_calls: number | null
-          student_id: string
-          submitted_at: string
-          updated_at: string
-          week_start: string
-        }
-        Insert: {
-          biggest_blocker?: string | null
-          biggest_win?: string | null
-          calls_attended?: Json
-          created_at?: string
-          group_calls_attended: number
-          id?: string
-          implementation: string
-          next_week_commitment: string
-          one_on_one_calls?: number | null
-          student_id: string
-          submitted_at?: string
-          updated_at?: string
-          week_start: string
-        }
-        Update: {
-          biggest_blocker?: string | null
-          biggest_win?: string | null
-          calls_attended?: Json
-          created_at?: string
-          group_calls_attended?: number
-          id?: string
-          implementation?: string
-          next_week_commitment?: string
-          one_on_one_calls?: number | null
-          student_id?: string
-          submitted_at?: string
-          updated_at?: string
-          week_start?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "student_weekly_eods_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       student_milestone_progress: {
         Row: {
           achieved_at: string
@@ -1919,6 +1890,62 @@ export type Database = {
           },
         ]
       }
+      student_weekly_eods: {
+        Row: {
+          biggest_blocker: string | null
+          biggest_win: string | null
+          calls_attended: Json
+          created_at: string
+          group_calls_attended: number
+          id: string
+          implementation: string
+          next_week_commitment: string
+          one_on_one_calls: number | null
+          student_id: string
+          submitted_at: string
+          updated_at: string
+          week_start: string
+        }
+        Insert: {
+          biggest_blocker?: string | null
+          biggest_win?: string | null
+          calls_attended?: Json
+          created_at?: string
+          group_calls_attended: number
+          id?: string
+          implementation: string
+          next_week_commitment: string
+          one_on_one_calls?: number | null
+          student_id: string
+          submitted_at?: string
+          updated_at?: string
+          week_start: string
+        }
+        Update: {
+          biggest_blocker?: string | null
+          biggest_win?: string | null
+          calls_attended?: Json
+          created_at?: string
+          group_calls_attended?: number
+          id?: string
+          implementation?: string
+          next_week_commitment?: string
+          one_on_one_calls?: number | null
+          student_id?: string
+          submitted_at?: string
+          updated_at?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_weekly_eods_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       students: {
         Row: {
           calls_allotted: number
@@ -1926,6 +1953,7 @@ export type Database = {
           coach_id: string | null
           created_at: string
           email: string | null
+          eod_exempt: boolean
           first_win_at: string | null
           full_name: string
           general_notes: string | null
@@ -1938,7 +1966,6 @@ export type Database = {
           offers_landed_count: number
           onboarding_completed_at: string | null
           payment_state: Database["public"]["Enums"]["payment_state"] | null
-          eod_exempt: boolean
           phase: Database["public"]["Enums"]["student_phase"]
           source: string | null
           status: Database["public"]["Enums"]["student_status"]
@@ -1959,6 +1986,7 @@ export type Database = {
           coach_id?: string | null
           created_at?: string
           email?: string | null
+          eod_exempt?: boolean
           first_win_at?: string | null
           full_name: string
           general_notes?: string | null
@@ -1971,7 +1999,6 @@ export type Database = {
           offers_landed_count?: number
           onboarding_completed_at?: string | null
           payment_state?: Database["public"]["Enums"]["payment_state"] | null
-          eod_exempt?: boolean
           phase?: Database["public"]["Enums"]["student_phase"]
           source?: string | null
           status?: Database["public"]["Enums"]["student_status"]
@@ -1980,10 +2007,10 @@ export type Database = {
           testimonial_requested?: boolean
           timezone?: string | null
           trustpilot_collected?: boolean
-          walkthrough_done_at?: string | null
-          walkthrough_started_at?: string | null
           updated_at?: string
           user_id?: string | null
+          walkthrough_done_at?: string | null
+          walkthrough_started_at?: string | null
           whatsapp?: string | null
         }
         Update: {
@@ -1992,6 +2019,7 @@ export type Database = {
           coach_id?: string | null
           created_at?: string
           email?: string | null
+          eod_exempt?: boolean
           first_win_at?: string | null
           full_name?: string
           general_notes?: string | null
@@ -2004,7 +2032,6 @@ export type Database = {
           offers_landed_count?: number
           onboarding_completed_at?: string | null
           payment_state?: Database["public"]["Enums"]["payment_state"] | null
-          eod_exempt?: boolean
           phase?: Database["public"]["Enums"]["student_phase"]
           source?: string | null
           status?: Database["public"]["Enums"]["student_status"]
@@ -2013,10 +2040,10 @@ export type Database = {
           testimonial_requested?: boolean
           timezone?: string | null
           trustpilot_collected?: boolean
-          walkthrough_done_at?: string | null
-          walkthrough_started_at?: string | null
           updated_at?: string
           user_id?: string | null
+          walkthrough_done_at?: string | null
+          walkthrough_started_at?: string | null
           whatsapp?: string | null
         }
         Relationships: []
@@ -2224,6 +2251,7 @@ export type Database = {
       }
     }
     Functions: {
+      auto_submit_student_weekly_eods: { Args: never; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

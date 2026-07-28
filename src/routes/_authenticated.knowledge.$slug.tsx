@@ -28,6 +28,7 @@ type DocRow = {
   updated_at: string;
   updated_by: string | null;
   external_links: { label: string; url: string }[] | null;
+  embed_url: string | null;
 };
 
 function KnowledgeDoc() {
@@ -121,17 +122,27 @@ function KnowledgeDoc() {
         </div>
       ) : undefined}
     >
-      <div className="relative mb-2">
-        <SearchIcon className="h-3.5 w-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={findQ}
-          onChange={(e) => setFindQ(e.target.value)}
-          placeholder="Search inside this doc…"
-          className="pl-9 h-9 text-sm bg-[var(--card)]"
-        />
-      </div>
+      {/* Embedded docs render the live file; in-doc search only applies to text docs */}
+      {!doc.embed_url && (
+        <div className="relative mb-2">
+          <SearchIcon className="h-3.5 w-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={findQ}
+            onChange={(e) => setFindQ(e.target.value)}
+            placeholder="Search inside this doc…"
+            className="pl-9 h-9 text-sm bg-[var(--card)]"
+          />
+        </div>
+      )}
 
-      {!doc.content || doc.content.trim().length < 20 ? (
+      {doc.embed_url ? (
+        <iframe
+          src={doc.embed_url}
+          title={doc.title}
+          className="w-full min-h-[75vh] rounded-sm border border-[var(--border)] bg-[var(--card)]"
+          allow="fullscreen"
+        />
+      ) : !doc.content || doc.content.trim().length < 20 ? (
         <Card className="p-6 text-center bg-[var(--card)]">
           <FileText className="h-6 w-6 mx-auto text-muted-foreground/50 mb-2" />
           <p className="text-sm text-muted-foreground">

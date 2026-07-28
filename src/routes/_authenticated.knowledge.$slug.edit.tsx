@@ -24,6 +24,7 @@ function EditDoc() {
   const [visibility, setVisibility] = useState<string[]>(["admin"]);
   const [pinned, setPinned] = useState(false);
   const [links, setLinks] = useState<ExternalLink[]>([]);
+  const [embedUrl, setEmbedUrl] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -43,6 +44,7 @@ function EditDoc() {
       setVisibility(data.role_visibility);
       setPinned(data.pinned);
       setLinks(((data.external_links as ExternalLink[] | null) ?? []) as ExternalLink[]);
+      setEmbedUrl(((data as { embed_url?: string | null }).embed_url) ?? "");
       setLoading(false);
     })();
   }, [slugParam, navigate]);
@@ -67,9 +69,10 @@ function EditDoc() {
         role_visibility: visibility,
         pinned,
         external_links: links,
+        embed_url: embedUrl.trim() || null,
         updated_by: user?.id ?? null,
         updated_at: new Date().toISOString(),
-      })
+      } as never)
       .eq("id", id);
     setSaving(false);
     if (error) return toast.error(error.message);
@@ -94,6 +97,8 @@ function EditDoc() {
       setPinned={setPinned}
       links={links}
       setLinks={setLinks}
+      embedUrl={embedUrl}
+      setEmbedUrl={setEmbedUrl}
       saving={saving}
       onSave={save}
     />

@@ -36,6 +36,7 @@ function NewDoc() {
   const [visibility, setVisibility] = useState<string[]>(["admin"]);
   const [pinned, setPinned] = useState(false);
   const [links, setLinks] = useState<ExternalLink[]>([]);
+  const [embedUrl, setEmbedUrl] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -61,8 +62,9 @@ function NewDoc() {
       role_visibility: visibility,
       pinned,
       external_links: links,
+      embed_url: embedUrl.trim() || null,
       updated_by: user?.id ?? null,
-    });
+    } as never);
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success("Doc created");
@@ -89,6 +91,8 @@ function NewDoc() {
       setPinned={setPinned}
       links={links}
       setLinks={setLinks}
+      embedUrl={embedUrl}
+      setEmbedUrl={setEmbedUrl}
       saving={saving}
       onSave={save}
     />
@@ -111,13 +115,15 @@ export function DocForm(props: {
   setPinned: (v: boolean) => void;
   links: ExternalLink[];
   setLinks: (v: ExternalLink[]) => void;
+  embedUrl: string;
+  setEmbedUrl: (v: string) => void;
   saving: boolean;
   onSave: () => void;
 }) {
   const {
     mode, title, setTitle, slug, setSlug, category, setCategory,
     content, setContent, visibility, toggleRole, pinned, setPinned,
-    links, setLinks, saving, onSave,
+    links, setLinks, embedUrl, setEmbedUrl, saving, onSave,
   } = props;
 
   return (
@@ -183,6 +189,18 @@ export function DocForm(props: {
           <Checkbox checked={pinned} onCheckedChange={(v) => setPinned(!!v)} />
           Pin to top of category
         </label>
+
+        <div className="space-y-1.5">
+          <Label>Embed URL (optional)</Label>
+          <Input
+            placeholder="https://docs.google.com/document/d/…/preview"
+            value={embedUrl}
+            onChange={(e) => setEmbedUrl(e.target.value)}
+          />
+          <p className="text-[11px] text-muted-foreground">
+            When set, the doc shows this file embedded (Google Doc /preview link, PDF, Loom) instead of the text below.
+          </p>
+        </div>
 
         <div className="space-y-2">
           <Label>External links (Looms, booking, etc.)</Label>
