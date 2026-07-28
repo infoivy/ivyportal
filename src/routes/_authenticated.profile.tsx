@@ -2,11 +2,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { EmailCard, PasswordCard, OrgCard } from "@/components/account-settings";
 import { toast } from "sonner";
-import { UserCircle, Save, Camera, Upload, Trash2 } from "lucide-react";
+import { Camera, Mail, Save, Trash2, Upload } from "lucide-react";
 import { signAvatar, uploadAvatar } from "@/lib/avatars";
 import { syncStudentTimezone } from "@/lib/student-timezone.functions";
 import { TimezoneCombobox } from "@/components/ui/timezone-combobox";
@@ -17,14 +18,22 @@ export const Route = createFileRoute("/_authenticated/profile")({
   component: ProfilePage,
 });
 
+/**
+ * One "Personal information" card with everything identity: avatar, name,
+ * contact, timezone, email, member-since. Security (password, org) sits
+ * behind a second tab (founder reference 2026-07-29: S.O.K.-style profile).
+ */
 function ProfilePage() {
   const { user, roles } = useAuth();
+  const [tab, setTab] = useState<"profile" | "security">("profile");
   const [displayName, setDisplayName] = useState("");
   const [avatarPath, setAvatarPath] = useState<string | null>(null);
   const [avatarSignedUrl, setAvatarSignedUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [emailOpen, setEmailOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const isTeam = roles.some(r => ["admin", "founder", "cofounder", "closer", "setter", "coach", "csm"].includes(r));
 
   useEffect(() => {
     if (!user) return;
@@ -82,86 +91,117 @@ function ProfilePage() {
     toast.success("Profile saved");
   };
 
+  const memberSince = user?.created_at ? format(new Date(user.created_at), "MMMM d, yyyy") : null;
+
   return (
-    <div className="p-4 sm:p-6 max-w-2xl mx-auto space-y-5">
+    <div className="p-4 sm:p-6 max-w-3xl mx-auto space-y-5">
       <header>
-        <h1 className="text-display text-foreground">Profile</h1>
-        <p className="text-[13px] text-muted-foreground mt-0.5">{user?.email} · {roles.join(" · ") || "member"}</p>
+        <h1 className="text-display text-foreground">Profile & settings</h1>
+        <p className="text-body text-muted-foreground mt-1">{roles.map(r => r === "cofounder" ? "co-founder" : r).join(" · ") || "member"}</p>
       </header>
 
-      <div className="card-surface p-5 space-y-4">
-        <div className="flex items-center gap-4">
-          <div className="h-20 w-20 rounded-md border border-[var(--border)] bg-[var(--accent)] overflow-hidden flex items-center justify-center text-2xl font-semibold text-muted-foreground shrink-0">
-            {avatarSignedUrl ? <img src={avatarSignedUrl} alt="" className="h-full w-full object-cover" /> : (displayName ?? "?").slice(0, 1).toUpperCase()}
-          </div>
-          <div className="flex-1 space-y-2">
-            <label className="text-[12px] text-muted-foreground flex items-center gap-1">
-              <Camera className="h-3 w-3" /> Profile picture
-            </label>
-            <div className="flex items-center gap-2">
-              <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
-              <button
-                onClick={() => fileRef.current?.click()}
-                disabled={uploading}
-                className="flex items-center gap-1 text-xs bg-[var(--accent)] hover:bg-muted border border-[var(--border)] px-3 py-1.5 rounded-sm"
-              >
-                <Upload className="h-3 w-3" /> {uploading ? "Uploading…" : "Upload image"}
-              </button>
-              {avatarPath && (
-                <button onClick={removeAvatar} className="flex items-center gap-1 text-xs text-danger-fg hover:text-danger-fg px-2 py-1.5">
-                  <Trash2 className="h-3 w-3" /> Remove
-                </button>
-              )}
-            </div>
-            <p className="text-[12px] text-muted-foreground">PNG or JPG, up to 5MB.</p>
-          </div>
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-[12px] text-muted-foreground">Display name</label>
-          <input
-            value={displayName}
-            onChange={e => setDisplayName(e.target.value)}
-            className="w-full h-9 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-sm focus:outline-none focus:border-ring"
-          />
-        </div>
-
-        {/* Password changes live in the PasswordCard below — one control, proper input */}
-        <div className="flex items-center justify-end pt-3 border-t border-[var(--border)]">
-          <button onClick={save} disabled={saving} className="flex items-center gap-1 bg-primary hover:bg-primary/90 text-primary-foreground font-medium px-3 py-1.5 rounded-sm text-xs">
-            <Save className="h-3 w-3" /> {saving ? "Saving…" : "Save changes"}
+      <div className="inline-flex rounded-lg bg-muted p-[3px]">
+        {(["profile", "security"] as const).map(t => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`text-[13px] font-medium px-4 py-1.5 rounded-[8px] capitalize motion-safe:transition-colors ${tab === t ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            {t}
           </button>
-        </div>
+        ))}
       </div>
 
-      {/* Students: their timezone drives staff scheduling and the weekly
-          EOD auto-submit — editable here after the first-login confirmation */}
-      <StudentTimezoneCard />
+      {tab === "profile" ? (
+        <section className="card-surface overflow-hidden">
+          <div className="px-5 pt-5">
+            <h2 className="text-title text-foreground">Personal information</h2>
+            <p className="text-caption text-muted-foreground mt-0.5">Manage how you appear across the portal.</p>
+          </div>
 
-      {/* Team members: phone + timezone so the founder can reach people at
-          sane hours and see everyone's local time on the Team page */}
-      <TeamContactCard />
+          <div className="p-5 flex flex-col sm:flex-row gap-6">
+            <div className="shrink-0">
+              <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
+              <div className="relative group h-24 w-24">
+                <div className="h-24 w-24 rounded-full border border-[var(--border)] bg-[var(--accent)] overflow-hidden grid place-items-center text-2xl font-medium text-muted-foreground">
+                  {avatarSignedUrl ? <img src={avatarSignedUrl} alt="" className="h-full w-full object-cover" /> : (displayName || "?").slice(0, 1).toUpperCase()}
+                </div>
+                <button
+                  onClick={() => fileRef.current?.click()}
+                  disabled={uploading}
+                  aria-label="Change photo"
+                  className="absolute inset-0 grid place-items-center rounded-full bg-black/45 text-white opacity-0 group-hover:opacity-100 focus-visible:opacity-100 motion-safe:transition-opacity"
+                >
+                  <Camera className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="mt-2 flex items-center justify-center gap-2 text-[11px]">
+                <button onClick={() => fileRef.current?.click()} disabled={uploading} className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground">
+                  <Upload className="h-3 w-3" /> {uploading ? "Uploading…" : "Upload"}
+                </button>
+                {avatarPath && (
+                  <button onClick={removeAvatar} className="inline-flex items-center gap-1 text-danger-fg hover:underline">
+                    <Trash2 className="h-3 w-3" /> Remove
+                  </button>
+                )}
+              </div>
+            </div>
 
-      {/* Account + org management — absorbed from the removed Settings page */}
-      <EmailCard currentEmail={user?.email ?? ""} />
-      <PasswordCard />
-      {roles.some((r) => ["admin", "founder"].includes(r)) && <OrgCard userId={user?.id ?? null} />}
+            <div className="flex-1 grid sm:grid-cols-2 gap-4 content-start">
+              <div className="space-y-1.5 sm:col-span-2">
+                <label className="text-[12px] text-muted-foreground">Display name</label>
+                <input
+                  value={displayName}
+                  onChange={e => setDisplayName(e.target.value)}
+                  className="w-full h-10 px-3 rounded-md border border-[var(--border)] bg-[var(--background)] text-sm focus:outline-none focus:border-ring"
+                />
+              </div>
+              {isTeam ? <TeamContactFields /> : <StudentTimezoneField />}
+            </div>
+          </div>
+
+          <div className="px-5 pb-5 space-y-3">
+            <div className="rounded-md border border-[var(--border)] bg-[var(--background)] px-3.5 py-3 flex flex-wrap items-center gap-3">
+              <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span className="text-sm text-foreground min-w-0 truncate">{user?.email}</span>
+              <button
+                onClick={() => setEmailOpen(v => !v)}
+                className="ml-auto text-[12px] font-medium px-3 py-1.5 rounded-md border border-[var(--border)] text-muted-foreground hover:text-foreground hover:border-ring/50 motion-safe:transition-colors"
+              >
+                {emailOpen ? "Cancel" : "Change email"}
+              </button>
+            </div>
+            {emailOpen && <EmailCard currentEmail={user?.email ?? ""} />}
+          </div>
+
+          <div className="px-5 py-4 border-t border-[var(--border)] flex flex-wrap items-center justify-between gap-3">
+            <span className="text-caption text-muted-foreground">{memberSince ? `Member since ${memberSince}` : ""}</span>
+            <button onClick={save} disabled={saving} className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground font-medium px-4 py-2 rounded-md text-[13px]">
+              <Save className="h-3.5 w-3.5" /> {saving ? "Saving…" : "Save changes"}
+            </button>
+          </div>
+        </section>
+      ) : (
+        <div className="space-y-5">
+          <PasswordCard />
+          {roles.some((r) => ["admin", "founder"].includes(r)) && <OrgCard userId={user?.id ?? null} />}
+        </div>
+      )}
     </div>
   );
 }
 
 /**
- * Staff contact details: phone (E.164, validated) and timezone. Renders only
- * for team-role holders; students have their own timezone card and submit
- * WhatsApp through the portal gate.
+ * Staff contact details as fields of the personal-information card: phone
+ * (E.164, validated, autosaves) and timezone (autosaves). The Team page
+ * shows everyone's local time from these.
  */
-function TeamContactCard() {
-  const { user, roles } = useAuth();
-  const isTeam = roles.some(r => ["admin", "founder", "cofounder", "closer", "setter", "coach", "csm"].includes(r));
+function TeamContactFields() {
+  const { user } = useAuth();
   const qc = useQueryClient();
   const q = useQuery({
     queryKey: ["profile-team-contact", user?.id],
-    enabled: !!user && isTeam,
+    enabled: !!user,
     queryFn: async () => {
       const { data } = await supabase.from("profiles").select("phone, timezone" as never).eq("id", user!.id).maybeSingle();
       return (data ?? { phone: null, timezone: null }) as unknown as { phone: string | null; timezone: string | null };
@@ -177,9 +217,8 @@ function TeamContactCard() {
     setTz(q.data.timezone ?? "");
     setHydrated(true);
   }, [q.data, hydrated]);
-  if (!isTeam || !q.data) return null;
+  if (!q.data) return null;
 
-  const missing = !q.data.phone || !q.data.timezone;
   const savePhone = async (next: string | undefined) => {
     setPhone(next);
     if (next && !isValidPhoneNumber(next)) return;
@@ -202,31 +241,22 @@ function TeamContactCard() {
   };
 
   return (
-    <div className="card-surface p-5 space-y-4">
-      <div>
-        <div className="text-sm font-medium">Contact & timezone</div>
-        <p className="text-[12px] text-muted-foreground mt-0.5">
-          {missing
-            ? "Add your phone number and timezone so the team can reach you at sane hours."
-            : "The Team page shows your current local time from this."}
-        </p>
-      </div>
-      <div className="space-y-1">
+    <>
+      <div className="space-y-1.5">
         <label className="text-[12px] text-muted-foreground">Phone (WhatsApp)</label>
-        <div className="max-w-sm">
-          <PhoneInput value={phone} onChange={savePhone} placeholder="Your number" />
-        </div>
+        <PhoneInput value={phone} onChange={savePhone} placeholder="Your number" />
         {phone && !isValidPhoneNumber(phone) && (
           <p className="text-[11px] text-danger-fg">That number doesn't look complete yet.</p>
         )}
       </div>
-      <div className="space-y-1">
+      <div className="space-y-1.5">
         <label className="text-[12px] text-muted-foreground">Timezone</label>
-        <div className={`max-w-sm ${saving ? "opacity-60 pointer-events-none" : ""}`}>
+        <div className={saving ? "opacity-60 pointer-events-none" : ""}>
           <TimezoneCombobox value={tz} onChange={next => { if (next && next !== tz) void saveTz(next); }} />
         </div>
+        <p className="text-[11px] text-muted-foreground">The Team page shows your current local time from this.</p>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -234,7 +264,7 @@ function TeamContactCard() {
  * Students set their timezone at first portal open; this is where they change
  * it later (moved cities, travelling). Renders nothing for non-students.
  */
-function StudentTimezoneCard() {
+function StudentTimezoneField() {
   const { user } = useAuth();
   const syncTzFn = useServerFn(syncStudentTimezone);
   const qc = useQueryClient();
@@ -251,14 +281,9 @@ function StudentTimezoneCard() {
   if (!q.data) return null;
   const tz = q.data.timezone;
   return (
-    <div className="card-surface p-5 space-y-3">
-      <div>
-        <div className="text-sm font-medium">Your timezone</div>
-        <p className="text-[12px] text-muted-foreground mt-0.5">
-          Your coach and success team use this to reach you at sane hours. Moved or travelling? Update it here.
-        </p>
-      </div>
-      <div className={`max-w-sm ${saving ? "opacity-60 pointer-events-none" : ""}`}>
+    <div className="space-y-1.5">
+      <label className="text-[12px] text-muted-foreground">Timezone</label>
+      <div className={saving ? "opacity-60 pointer-events-none" : ""}>
         <TimezoneCombobox
           value={tz ?? ""}
           onChange={async next => {
@@ -276,6 +301,7 @@ function StudentTimezoneCard() {
           }}
         />
       </div>
+      <p className="text-[11px] text-muted-foreground">Your coach and success team use this to reach you at sane hours.</p>
     </div>
   );
 }
