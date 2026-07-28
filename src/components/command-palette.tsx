@@ -2,13 +2,16 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { BookOpen, Search, School, Star, UserCircle, Users } from "lucide-react";
+import { useAccess } from "@/lib/use-access";
 import {
-  Search, School, Users, LayoutDashboard, FileText, Phone, DollarSign,
-  BarChart3, Calendar, GraduationCap, ListChecks, Shield, HeartHandshake,
-  BookOpen, Star,
-} from "lucide-react";
+  DIRECT_COMMAND_ITEMS,
+  PRIMARY_NAV_ITEMS,
+  isVisibleToRoles,
+  type PortalNavItem,
+} from "@/lib/portal-navigation";
 
-type PageItem = { kind: "page"; title: string; to: string; icon: React.ComponentType<{ className?: string }>; roles?: string[] };
+type PageItem = PortalNavItem & { kind: "page" };
 type StudentItem = { kind: "student"; id: string; name: string; email: string | null };
 type PersonItem = { kind: "person"; id: string; name: string; role?: string };
 type DocItem = { kind: "doc"; slug: string; title: string; category: string | null };
@@ -23,29 +26,25 @@ let paletteCache: {
   testimonials: TestimonialItem[];
 } | null = null;
 
-const PAGES: PageItem[] = [
-  { kind: "page", title: "Overview", to: "/dashboard", icon: LayoutDashboard, roles: ["admin", "founder", "closer", "setter", "coach"] },
-  { kind: "page", title: "Performance", to: "/eods", icon: FileText, roles: ["admin", "founder", "cofounder", "closer", "setter", "coach", "csm"] },
-  { kind: "page", title: "Action Items", to: "/action-items", icon: ListChecks, roles: ["admin", "founder", "cofounder", "closer", "setter", "coach", "csm"] },
-  { kind: "page", title: "Sales", to: "/sales", icon: BarChart3, roles: ["admin", "closer", "setter"] },
-  { kind: "page", title: "Sales Trends", to: "/sales?tab=trends", icon: BarChart3, roles: ["admin", "closer", "setter"] },
-  { kind: "page", title: "Revenue", to: "/revenue", icon: DollarSign, roles: ["admin", "closer", "setter", "coach"] },
-  { kind: "page", title: "Installments", to: "/installments", icon: DollarSign, roles: ["admin", "closer", "coach"] },
-  { kind: "page", title: "Payouts", to: "/payouts", icon: DollarSign, roles: ["admin", "cofounder"] },
-  { kind: "page", title: "Students", to: "/students", icon: School, roles: ["admin", "founder", "cofounder", "closer", "coach", "csm"] },
-  { kind: "page", title: "1-on-1 Calls", to: "/calls", icon: Phone, roles: ["admin", "coach", "csm"] },
-  { kind: "page", title: "Student Success", to: "/student-success", icon: HeartHandshake, roles: ["admin", "csm", "coach", "founder"] },
-  { kind: "page", title: "CSM", to: "/csm", icon: HeartHandshake, roles: ["admin", "csm"] },
-  { kind: "page", title: "Testimonials", to: "/testimonials", icon: Star, roles: ["admin", "coach", "closer", "setter", "csm"] },
-  { kind: "page", title: "Calendar", to: "/calendar", icon: Calendar, roles: ["admin", "founder", "cofounder", "closer", "setter", "coach", "csm"] },
-  { kind: "page", title: "Knowledge", to: "/knowledge", icon: BookOpen },
-  { kind: "page", title: "Team", to: "/team", icon: Users, roles: ["admin"] },
-  { kind: "page", title: "Admin", to: "/admin", icon: Shield, roles: ["admin"] },
-  { kind: "page", title: "Profile", to: "/profile", icon: Users },
-];
+const PAGES: PageItem[] = Array.from(
+  new Map(
+    [
+      ...PRIMARY_NAV_ITEMS,
+      ...DIRECT_COMMAND_ITEMS,
+      {
+        key: "profile",
+        title: "Profile",
+        description: "Account and personal settings.",
+        url: "/profile",
+        icon: UserCircle,
+      },
+    ].map((item) => [item.url, { ...item, kind: "page" as const }]),
+  ).values(),
+);
 
 export function CommandPalette() {
   const { roles } = useAuth();
+  const { pageHidden } = useAccess();
   const nav = useNavigate();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -80,11 +79,11 @@ export function CommandPalette() {
     let alive = true;
     (async () => {
       const [sRes, pRes, rRes, dRes, tRes] = await Promise.all([
-        supabase.from("students").select("id, full_name, email").order("full_name").limit(500),
-        supabase.from("profiles").select("id, display_name").limit(200),
+        supabase.from("students").select("id, full_name, email").eq("is_demo", false).order("full_name").limit(500),
+        supabase.from("profiles").select("id, display_name").eq("is_demo", false).limit(200),
         supabase.from("user_roles").select("user_id, role"),
         supabase.from("docs").select("slug, title, category").limit(300),
-        supabase.from("testimonials").select("id, title").limit(200),
+        supabase.from("testimonials").select("id, title, students!inner(is_demo)").eq("students.is_demo", false).limit(200),
       ]);
       if (!alive) return;
       const roleMap = new Map<string, string[]>();
@@ -108,8 +107,8 @@ export function CommandPalette() {
   }, [open]);
 
   const visiblePages = useMemo(
-    () => PAGES.filter(p => !p.roles || p.roles.some(r => roles.includes(r))),
-    [roles]
+    () => PAGES.filter((page) => isVisibleToRoles(page, roles) && !pageHidden(page.url)),
+    [roles, pageHidden]
   );
 
   const results = useMemo<Item[]>(() => {
@@ -133,14 +132,12 @@ export function CommandPalette() {
   const go = (it: Item) => {
     setOpen(false); setQ("");
     if (it.kind === "page") {
-      const [path, qs] = it.to.split("?");
-      const search = qs ? Object.fromEntries(new URLSearchParams(qs)) : undefined;
-      nav({ to: path as any, search: search as any });
+      nav({ to: it.url as any });
     }
     else if (it.kind === "student") nav({ to: "/students/$id", params: { id: it.id } });
     else if (it.kind === "doc") nav({ to: "/knowledge/$slug", params: { slug: it.slug } });
     else if (it.kind === "testimonial") nav({ to: "/testimonials" });
-    else nav({ to: "/team" });
+    else nav({ to: "/team/$id", params: { id: it.id } });
   };
 
   if (!open) return null;
@@ -171,7 +168,7 @@ export function CommandPalette() {
             if (it.kind === "page") {
               const Icon = it.icon;
               return (
-                <div key={`p-${it.to}`} className={base} onMouseEnter={() => setActive(i)} onClick={() => go(it)}>
+                <div key={`p-${it.url}`} className={base} onMouseEnter={() => setActive(i)} onClick={() => go(it)}>
                   <Icon className="h-3.5 w-3.5 text-muted-foreground" />
                   <span className="flex-1 truncate">{it.title}</span>
                   <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Page</span>

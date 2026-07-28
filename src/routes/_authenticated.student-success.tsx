@@ -71,14 +71,14 @@ export function StudentSuccessInner() {
   const load = useCallback(async () => {
     setLoading(true);
     const [studRes, callsRes, instRes, payRes, adhocRes, eodRes, noteRes, profRes] = await Promise.all([
-      supabase.from("students").select("id, full_name, email, phase, status, coach_id, join_date, testimonial_collected, payment_state, onboarding_completed_at").order("full_name"),
-      supabase.from("student_calls").select("student_id, call_date, next_call_date").order("call_date", { ascending: false }).limit(2000),
-      supabase.from("installments").select("id, student_id"),
-      supabase.from("installment_payments").select("id, installment_id, status, due_date"),
-      supabase.from("student_action_items").select("id, student_id, text, done, due_date, created_at").eq("done", false).order("due_date", { ascending: true }),
-      supabase.from("student_eods").select("student_id, report_date").gte("report_date", sevenDaysAgo),
-      supabase.from("csm_student_notes").select("student_id, created_at").gte("created_at", fourteenDaysAgo + "T00:00:00"),
-      supabase.from("profiles").select("id, display_name"),
+      supabase.from("students").select("id, full_name, email, phase, status, coach_id, join_date, testimonial_collected, payment_state, onboarding_completed_at").eq("is_demo", false).order("full_name"),
+      supabase.from("student_calls").select("student_id, call_date, next_call_date, students!inner(is_demo)").eq("students.is_demo", false).order("call_date", { ascending: false }).limit(2000),
+      supabase.from("installments").select("id, student_id, students!inner(is_demo)").eq("students.is_demo", false),
+      supabase.from("installment_payments").select("id, installment_id, status, due_date, installments!inner(students!inner(is_demo))").eq("installments.students.is_demo", false),
+      supabase.from("student_action_items").select("id, student_id, text, done, due_date, created_at, students!inner(is_demo)").eq("is_demo", false).eq("students.is_demo", false).eq("done", false).order("due_date", { ascending: true }),
+      supabase.from("student_eods").select("student_id, report_date, students!inner(is_demo)").eq("students.is_demo", false).gte("report_date", sevenDaysAgo),
+      supabase.from("csm_student_notes").select("student_id, created_at, students!inner(is_demo)").eq("students.is_demo", false).gte("created_at", fourteenDaysAgo + "T00:00:00"),
+      supabase.from("profiles").select("id, display_name").eq("is_demo", false),
     ]);
 
     const studs = (studRes.data ?? []) as Student[];

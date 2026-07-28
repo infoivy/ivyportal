@@ -1,5 +1,13 @@
-// Single source of truth for role-visible portal pages. The sidebar, the
-// access-defaults admin panel, and the route guard all read from here.
+import {
+  CUSTOMER_NAV_ITEMS,
+  PRIMARY_NAV_ITEMS,
+  WORK_NAV_ITEMS,
+  type PortalNavItem,
+} from "@/lib/portal-navigation";
+
+// Access defaults and route visibility are derived from the same navigation
+// metadata as the shell and command palette. Server-side RLS remains the
+// authorization boundary; this registry controls discoverability only.
 // `roles` = which business roles see the page by default (undefined = every
 // signed-in team member). Admin/founder surfaces are not overridable.
 
@@ -7,28 +15,25 @@ export type NavPage = {
   title: string;
   url: string;
   /** roles that see it by default; undefined = all roles */
-  roles?: string[];
+  roles?: readonly string[];
   /** pages that can never be hidden via access defaults */
   locked?: boolean;
 };
 
-export const CONFIGURABLE_PAGES: NavPage[] = [
-  { title: "Dashboard", url: "/dashboard", roles: ["admin", "founder", "closer", "setter", "coach"] },
-  { title: "EOD Reports", url: "/eods", locked: true }, // the EOD policy depends on it
-  { title: "Action Items", url: "/action-items" },
-  { title: "Sales", url: "/sales", roles: ["admin", "closer"] },
-  { title: "Revenue", url: "/revenue", roles: ["admin", "closer", "coach"] },
-  { title: "Closer Resources", url: "/closer-resources", roles: ["admin", "closer"] },
-  { title: "Calendar", url: "/calendar" },
-  { title: "Students", url: "/students", roles: ["admin", "closer", "csm", "coach"] },
-  { title: "1-on-1 Calls", url: "/calls", roles: ["admin", "coach", "csm"] },
-  { title: "Student Success", url: "/student-success", roles: ["admin", "csm", "coach", "founder"] },
-  { title: "CSM", url: "/csm", roles: ["admin", "csm"] },
-  { title: "Student Alerts", url: "/alerts", roles: ["admin", "coach", "closer", "setter", "csm"] },
-  { title: "Testimonials", url: "/testimonials", roles: ["admin", "coach", "closer", "setter", "csm"] },
-  { title: "Knowledge", url: "/knowledge", locked: true },
-  { title: "Notes", url: "/notes" },
+const ACCESS_ITEMS: PortalNavItem[] = [
+  ...PRIMARY_NAV_ITEMS.filter((item) => ["home", "performance", "knowledge"].includes(item.key)),
+  ...WORK_NAV_ITEMS,
+  ...CUSTOMER_NAV_ITEMS,
 ];
+
+export const CONFIGURABLE_PAGES: NavPage[] = Array.from(
+  new Map(
+    ACCESS_ITEMS.map((item) => [
+      item.url,
+      { title: item.title, url: item.url, roles: item.roles, locked: item.locked },
+    ]),
+  ).values(),
+);
 
 export const CONFIGURABLE_ROLES = ["setter", "closer", "coach", "csm"] as const;
 export type ConfigurableRole = (typeof CONFIGURABLE_ROLES)[number];

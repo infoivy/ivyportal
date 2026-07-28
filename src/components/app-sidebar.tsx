@@ -1,89 +1,54 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { BookOpen, FileText, UserCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAccess } from "@/lib/use-access";
 import {
-  LayoutDashboard, FileText, BookOpen, Calendar, GraduationCap,
-  Database, Users, Shield, UserCircle, School, HeartHandshake, Phone, DollarSign,
-  ListChecks, Quote, Building2, Sparkles,
-  MessagesSquare,
-} from "lucide-react";
-
+  ADMIN_NAV_ITEMS,
+  PRIMARY_NAV_ITEMS,
+  STAFF_ROLES,
+  isVisibleToRoles,
+  matchesNavItem,
+  type PortalNavItem,
+} from "@/lib/portal-navigation";
 import {
-  Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
-  SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
-  useSidebar, SidebarHeader,
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import isaLogo from "@/assets/isa-logo.png.asset.json";
-import { firstStudentsTab } from "@/components/students-tab-bar";
-import { setStudentPortalTab, getStudentPortalTab, onStudentPortalTab } from "@/lib/student-portal-bus";
-import { firstSalesTab } from "@/components/revenue-tab-bar";
+import {
+  getStudentPortalTab,
+  onStudentPortalTab,
+  setStudentPortalTab,
+} from "@/lib/student-portal-bus";
 
-type Item = {
-  title: string;
-  url: string;
-  icon: React.ComponentType<{ className?: string }>;
-  roles?: string[];
-  /** Extra path prefixes that keep this entry highlighted (tabbed sections). */
-  match?: string[];
-  /** Red notification count shown on the entry (e.g. signups awaiting approval). */
-  badge?: number;
-};
+type SidebarItem = PortalNavItem & { badge?: number };
 
-const todayItems: Item[] = [
-  { title: "Overview",     url: "/dashboard",    icon: LayoutDashboard, roles: ["admin", "founder", "closer", "setter", "coach"] },
-  { title: "Performance",  url: "/eods",         icon: FileText },
-  { title: "Action Items", url: "/action-items", icon: ListChecks },
-  { title: "Calendar",     url: "/calendar",     icon: Calendar },
-  { title: "Team Chat",    url: "/chat",         icon: MessagesSquare },
-];
-
-const salesItems = (roles: string[]): Item[] => [
-  { title: "Sales",            url: firstSalesTab(roles), icon: Building2, roles: ["admin", "closer", "coach", "founder", "cofounder"], match: ["/sales", "/revenue", "/installments", "/payouts", "/finance"] },
-  { title: "CRM",              url: "/crm",              icon: Database,   roles: ["admin", "founder", "cofounder", "closer"] },
-  { title: "Closer Resources", url: "/closer-resources", icon: DollarSign, roles: ["admin", "closer"] },
-];
-
-// One entry — the fulfillment side (Students / CSM / 1-on-1 Calls /
-// Testimonials) is tabbed on-page, like Sales. Setters land on Testimonials.
-const studentsEntry = (roles: string[], pendingApprovals: number): Item[] => [{
-  title: "Students",
-  url: firstStudentsTab(roles),
-  icon: School,
-  roles: ["admin", "closer", "csm", "coach", "founder", "cofounder", "setter"],
-  match: ["/students", "/csm", "/calls", "/testimonials"],
-  // Access requests from the shared portal link wait on the Students page
-  badge: pendingApprovals,
-}];
-
-const libraryItems: Item[] = [
-  { title: "Knowledge", url: "/knowledge", icon: BookOpen },
-];
-
-// Content planning was removed 2026-07-22 (founder-directed) — no
-// founder-only sidebar group remains.
-
-const adminItems: Item[] = [
-  { title: "Admin", url: "/admin", icon: Shield, roles: ["admin"] },
-  { title: "Team",  url: "/team",  icon: Users,  roles: ["admin"] },
-];
-
-// Student sidebar: portal tabs (via the tab bus) + library + profile, so the
-// nav doesn't feel empty and the journey is one click away.
-// No "Start Here" entry: locked students are forced onto it by the portal
-// itself, and once unlocked it no longer exists (founder-directed 2026-07-25).
-const studentTabItems: { tab: string; title: string; icon: React.ComponentType<{ className?: string }> }[] = [
+const studentTabItems = [
   { tab: "eod", title: "My Portal", icon: FileText },
-  { tab: "leaderboard", title: "Leaderboard", icon: Users },
+  { tab: "leaderboard", title: "Leaderboard", icon: UserCircle },
 ];
 
 function StudentJourneyGroup({ collapsed, currentPath }: { collapsed: boolean; currentPath: string }) {
   const [activeTab, setActiveTab] = useState(getStudentPortalTab());
   const { isMobile, setOpenMobile } = useSidebar();
-  useEffect(() => { const off = onStudentPortalTab(t => setActiveTab(t)); return () => { off(); }; }, []);
+
+  useEffect(() => {
+    const off = onStudentPortalTab(setActiveTab);
+    return () => { off(); };
+  }, []);
+
   const onPortal = currentPath.startsWith("/student-portal");
   return (
-    <SidebarGroup className={"px-2 py-2.5 " + (collapsed ? "border-t border-sidebar-border/60 first:border-t-0 py-2" : "")}>
+    <SidebarGroup className={`px-2 py-2.5 ${collapsed ? "border-t border-sidebar-border/60 first:border-t-0 py-2" : ""}`}>
       {!collapsed && (
         <SidebarGroupLabel className="px-2 mb-1 h-auto text-micro font-medium uppercase tracking-[0.08em] text-muted-foreground/70">
           Journey
@@ -91,21 +56,32 @@ function StudentJourneyGroup({ collapsed, currentPath }: { collapsed: boolean; c
       )}
       <SidebarGroupContent>
         <SidebarMenu className="gap-px">
-          {studentTabItems.map(item => {
-            const active = onPortal && (item.tab === activeTab || (item.tab === "eod" && !studentTabItems.some(i => i.tab === activeTab)));
+          {studentTabItems.map((item) => {
+            const active = onPortal && (
+              item.tab === activeTab ||
+              (item.tab === "eod" && !studentTabItems.some((candidate) => candidate.tab === activeTab))
+            );
             return (
               <SidebarMenuItem key={item.tab}>
                 <SidebarMenuButton
                   asChild
                   isActive={active}
                   tooltip={collapsed ? item.title : undefined}
-                  className={
-                    "h-8 rounded-md px-2 motion-safe:transition-colors motion-safe:duration-150 " +
-                    (active ? "bg-muted text-foreground font-medium" : "text-muted-foreground hover:text-foreground hover:bg-muted/60")
-                  }
+                  className={`h-12 md:h-9 rounded-md px-2 motion-safe:transition-colors motion-safe:duration-150 ${
+                    active
+                      ? "bg-muted text-foreground font-medium"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                  }`}
                 >
-                  <Link to="/student-portal" onClick={() => { setStudentPortalTab(item.tab); if (isMobile) setOpenMobile(false); }} className="flex items-center gap-2.5">
-                    <item.icon className={"h-4 w-4 shrink-0 " + (active ? "text-foreground" : "text-muted-foreground")} />
+                  <Link
+                    to="/student-portal"
+                    onClick={() => {
+                      setStudentPortalTab(item.tab);
+                      if (isMobile) setOpenMobile(false);
+                    }}
+                    className="flex items-center gap-2.5"
+                  >
+                    <item.icon className={`h-4 w-4 shrink-0 ${active ? "text-foreground" : "text-muted-foreground"}`} />
                     {!collapsed && <span className="text-body leading-none">{item.title}</span>}
                   </Link>
                 </SidebarMenuButton>
@@ -122,83 +98,64 @@ export function AppSidebar({ roles }: { roles: string[] }) {
   const { pageHidden } = useAccess();
   const { state, isMobile, setOpenMobile } = useSidebar();
   const collapsed = state === "collapsed";
-  // On mobile the sidebar is a sheet — navigating should slide it away, not
-  // leave it covering the page you just picked.
-  const closeMobileNav = () => { if (isMobile) setOpenMobile(false); };
-  const currentPath = useRouterState({ select: s => s.location.pathname });
+  const currentPath = useRouterState({ select: (router) => router.location.pathname });
   const isAdmin = roles.includes("admin");
   const isStudent = roles.includes("student");
-  const isTeam = roles.some(r => ["admin", "coach", "closer", "setter", "csm"].includes(r));
-  const [crmEnabled, setCrmEnabled] = useState(false);
+  const isTeam = roles.some((role) => (STAFF_ROLES as readonly string[]).includes(role));
   const [org, setOrg] = useState<{ name: string; logo: string | null }>({ name: "Ivy Portal", logo: null });
   const [pendingApprovals, setPendingApprovals] = useState(0);
 
+  const closeMobileNav = () => {
+    if (isMobile) setOpenMobile(false);
+  };
+
   useEffect(() => {
-    supabase.from("founder_settings").select("crm_enabled").maybeSingle().then(({ data }) => {
-      setCrmEnabled(!!(data as any)?.crm_enabled);
-    });
     supabase.from("org_settings").select("org_name, logo_url").maybeSingle().then(({ data }) => {
       if (data) setOrg({ name: data.org_name, logo: data.logo_url });
     });
   }, []);
 
-  // Signups with no role yet are locked out until someone places them —
-  // admins, closers, and CSMs can all approve (Requests tab). Refreshed on
-  // navigation so approving clears the badge.
   const canApproveRequests = isAdmin || roles.includes("closer") || roles.includes("csm");
   useEffect(() => {
     if (!canApproveRequests) return;
     let alive = true;
     (async () => {
-      // pending_signups() — RLS hides other users' user_roles rows from
-      // plain closers/CSMs, so the client-side "profiles minus placed"
-      // computation counted the whole org as pending for them.
       const { data } = await supabase.rpc("pending_signups");
-      if (!alive) return;
-      setPendingApprovals((data ?? []).length);
+      if (alive) setPendingApprovals((data ?? []).length);
     })();
     return () => { alive = false; };
   }, [canApproveRequests, currentPath]);
 
-  const isActive = (item: Item) => {
-    if (item.match) return item.match.some((m) => currentPath.startsWith(m));
-    return item.url === "/dashboard" ? currentPath === item.url : currentPath.startsWith(item.url);
-  };
+  const renderGroup = (label: string, items: readonly SidebarItem[]) => {
+    const filtered = items.filter((item) => isVisibleToRoles(item, roles) && !pageHidden(item.url));
+    if (!filtered.length) return null;
 
-  const renderGroup = (label: string, items: Item[]) => {
-    const filtered = items.filter(i => {
-      if (i.url === "/crm" && !crmEnabled) return false;
-      if (pageHidden(i.url)) return false;
-      return !i.roles || i.roles.some(r => roles.includes(r));
-    });
-    if (filtered.length === 0) return null;
     return (
-      <SidebarGroup className={"px-2 py-2.5 " + (collapsed ? "border-t border-sidebar-border/60 first:border-t-0 py-2" : "")}>
+      <SidebarGroup className={`px-2 py-2.5 ${collapsed ? "border-t border-sidebar-border/60 first:border-t-0 py-2" : ""}`}>
         {!collapsed && (
           <SidebarGroupLabel className="px-2 mb-1 h-auto text-micro font-medium uppercase tracking-[0.08em] text-muted-foreground/70">
             {label}
           </SidebarGroupLabel>
         )}
         <SidebarGroupContent>
-          <SidebarMenu className="gap-px">
-            {filtered.map(item => {
-              const active = isActive(item);
+          <SidebarMenu className="gap-1">
+            {filtered.map((item) => {
+              const active = matchesNavItem(item, currentPath);
               return (
-                <SidebarMenuItem key={item.url}>
+                <SidebarMenuItem key={item.key}>
                   <SidebarMenuButton
                     asChild
                     isActive={active}
                     tooltip={collapsed ? item.title : undefined}
-                    className={
-                      "h-8 rounded-md px-2 motion-safe:transition-colors motion-safe:duration-150 " +
-                      (active
+                    className={`h-12 md:h-9 rounded-md px-2 motion-safe:transition-colors motion-safe:duration-150 ${
+                      active
                         ? "bg-muted text-foreground font-medium"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/60")
-                    }
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                    }`}
                   >
-                    <Link to={item.url} preload="intent" onClick={closeMobileNav} className="flex items-center gap-2.5">
+                    <Link to={item.url as never} preload="intent" onClick={closeMobileNav} className="flex items-center gap-2.5">
                       <span className="relative shrink-0 flex">
-                        <item.icon className={"h-4 w-4 " + (active ? "text-foreground" : "text-muted-foreground")} />
+                        <item.icon className={`h-4 w-4 ${active ? "text-foreground" : "text-muted-foreground"}`} />
                         {collapsed && (item.badge ?? 0) > 0 && (
                           <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-destructive" />
                         )}
@@ -221,7 +178,7 @@ export function AppSidebar({ roles }: { roles: string[] }) {
   };
 
   const header = (label: string) => (
-    <SidebarHeader className="h-[52px] justify-center border-b border-sidebar-border px-2 py-0">
+    <SidebarHeader className="h-14 md:h-[52px] justify-center border-b border-sidebar-border px-2 py-0">
       <div className="flex items-center gap-2.5 px-1">
         <div className="h-7 w-7 rounded-lg flex items-center justify-center shrink-0 overflow-hidden">
           <img src={org.logo ?? isaLogo.url} alt={org.name} className="h-full w-full object-contain" />
@@ -236,32 +193,48 @@ export function AppSidebar({ roles }: { roles: string[] }) {
     </SidebarHeader>
   );
 
-  // Student-only view: journey tabs + library + profile
   if (isStudent && !isTeam) {
     return (
       <Sidebar collapsible="icon" className="border-r border-sidebar-border">
         {header("Student")}
         <SidebarContent className="gap-0 py-2">
           <StudentJourneyGroup collapsed={collapsed} currentPath={currentPath} />
-          {renderGroup("Library", [
-            { title: "Knowledge", url: "/knowledge", icon: BookOpen },
-          ])}
-          {renderGroup("You", [{ title: "Profile", url: "/profile", icon: UserCircle }])}
+          {renderGroup("Library", [{
+            key: "student-knowledge",
+            title: "Knowledge",
+            description: "Training and reference material.",
+            url: "/knowledge",
+            icon: BookOpen,
+          }])}
+          {renderGroup("You", [{
+            key: "student-profile",
+            title: "Profile",
+            description: "Account settings.",
+            url: "/profile",
+            icon: UserCircle,
+          }])}
         </SidebarContent>
       </Sidebar>
     );
   }
 
+  const primaryItems = PRIMARY_NAV_ITEMS.map((item) => (
+    item.key === "customers" ? { ...item, badge: canApproveRequests ? pendingApprovals : 0 } : item
+  ));
+
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
       {header(isAdmin ? "Admin" : "Team")}
       <SidebarContent className="gap-0 py-2">
-        {renderGroup("Today", todayItems)}
-        {renderGroup("Sales", salesItems(roles))}
-        {renderGroup("Students", studentsEntry(roles, canApproveRequests ? pendingApprovals : 0))}
-        {renderGroup("Library", libraryItems)}
-        {isAdmin && renderGroup("Admin", adminItems)}
-        {renderGroup("Account", [{ title: "Profile", url: "/profile", icon: UserCircle }])}
+        {renderGroup("Workspace", primaryItems)}
+        {isAdmin && renderGroup("System", ADMIN_NAV_ITEMS)}
+        {renderGroup("Account", [{
+          key: "profile",
+          title: "Profile",
+          description: "Account settings.",
+          url: "/profile",
+          icon: UserCircle,
+        }])}
       </SidebarContent>
     </Sidebar>
   );

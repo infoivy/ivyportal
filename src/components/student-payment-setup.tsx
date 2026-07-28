@@ -66,7 +66,7 @@ export function StudentPaymentSetup({
       const setterIds = Array.from(new Set((roleRows ?? []).filter(r => r.role === "setter" || r.role === "admin").map(r => r.user_id)));
       const allIds = Array.from(new Set([...closerIds, ...setterIds]));
       if (!allIds.length) return;
-      const { data: profs } = await supabase.from("profiles").select("id, display_name").in("id", allIds);
+      const { data: profs } = await supabase.from("profiles").select("id, display_name").eq("is_demo", false).in("id", allIds);
       const byId = new Map((profs ?? []).map(p => [p.id, p as Person]));
       setClosers(closerIds.map(id => byId.get(id) ?? { id, display_name: null }));
       setSetters(setterIds.map(id => byId.get(id) ?? { id, display_name: null }));

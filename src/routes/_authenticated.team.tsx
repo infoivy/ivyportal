@@ -70,7 +70,7 @@ function TeamPage() {
 
   const fetchPage = async () => {
     const [{ data: profs }, { data: rolesData }, tpls, { data: progressRows }] = await Promise.all([
-      supabase.from("profiles").select("id, display_name, avatar_path, active, phone, timezone, setter_type, base_pay_monthly, base_pay_day, started_on, csm_daily_target" as any),
+      supabase.from("profiles").select("id, display_name, avatar_path, active, phone, timezone, setter_type, base_pay_monthly, base_pay_day, started_on, csm_daily_target" as any).eq("is_demo", false),
       supabase.from("user_roles").select("user_id, role"),
       fetchAllTemplates(),
       supabase.from("onboarding_progress").select("user_id, role, step_id"),
@@ -254,7 +254,12 @@ function TeamPage() {
               </div>
               <div className="min-w-0">
                 <div className="text-sm font-medium truncate flex items-center gap-2">
-                  <Link to="/team/$id" params={{ id: m.id }} className="hover:underline underline-offset-4 decoration-border hover:decoration-foreground" title="Open performance page">
+                  <Link
+                    to="/performance"
+                    search={{ member: m.id }}
+                    className="hover:underline underline-offset-4 decoration-border hover:decoration-foreground"
+                    title="Open Performance"
+                  >
                     {m.display_name ?? "Unnamed"}
                   </Link>
                   {!m.active && <span className="text-[9px] text-danger-fg border border-danger/25 bg-danger-bg px-1.5 py-0.5 rounded-sm">Inactive</span>}

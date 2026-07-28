@@ -28,7 +28,7 @@ type Lead = {
 
 const STATUS_TYPE_COLOR: Record<string, string> = {
   active: "#3b82f6",
-  won: "#22c55e",
+  won: "#525252",
   lost: "#ef4444",
   "": "#64748b",
 };

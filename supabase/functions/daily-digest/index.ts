@@ -20,7 +20,7 @@ Deno.serve(async (_req) => {
     // Missed EODs yesterday
     const [setterRolesRes, yesterdayEodsRes] = await Promise.all([
       supabase.from("user_roles").select("user_id").eq("role", "setter"),
-      supabase.from("eods").select("user_id").eq("report_date", yesterday),
+      supabase.from("eods").select("user_id").eq("is_demo", false).eq("report_date", yesterday),
     ]);
     const setterIds = new Set((setterRolesRes.data ?? []).map((r: any) => r.user_id));
     const filedYesterday = new Set((yesterdayEodsRes.data ?? []).map((r: any) => r.user_id));

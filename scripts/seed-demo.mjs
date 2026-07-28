@@ -113,7 +113,7 @@ for (const m of TEAM) {
   const uid = await ensureUser(m.email, m.name);
   idByEmail.set(m.email, uid);
   await sb.from("profiles").upsert({
-    id: uid, display_name: m.name, setter_type: m.setter_type, active: true,
+    id: uid, display_name: m.name, setter_type: m.setter_type, active: true, is_demo: true,
     base_pay_monthly: m.base_pay ?? null,
   });
   await sb.from("user_roles").delete().eq("user_id", uid);
@@ -125,11 +125,11 @@ const csmIds = [ID.yahya, ID.dawud];
 
 for (const p of PENDING) {
   const uid = await ensureUser(p.email, p.name);
-  await sb.from("profiles").upsert({ id: uid, display_name: p.name, active: true, created_at: at(dayAgo(p.daysAgo), 20).toISOString() });
+  await sb.from("profiles").upsert({ id: uid, display_name: p.name, active: true, is_demo: true, created_at: at(dayAgo(p.daysAgo), 20).toISOString() });
   await sb.from("user_roles").delete().eq("user_id", uid); // must stay role-less
 }
 const studentUid = await ensureUser(STUDENT_LOGIN.email, STUDENT_LOGIN.name);
-await sb.from("profiles").upsert({ id: studentUid, display_name: STUDENT_LOGIN.name, active: true });
+await sb.from("profiles").upsert({ id: studentUid, display_name: STUDENT_LOGIN.name, active: true, is_demo: true });
 
 // ── wipe previous demo data (v2 and prior v3 runs) ───────────────────────────
 console.log("Clearing previous demo data…");

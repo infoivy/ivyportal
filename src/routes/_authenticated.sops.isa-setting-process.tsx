@@ -799,29 +799,31 @@ function NotesModal({ open, onClose, counter, setCounter }: { open: boolean; onC
       return (m?.[1] ?? "").trim() || null;
     };
 
-    // Merge with any EOD already filed for this day — the counter only knows
-    // outreach numbers, and a blind upsert would zero shows/no-shows and wipe
-    // the narrative the rep already wrote.
+    // Submitted EODs are operational history. Sync can create the day's record
+    // once, but it must never replace an existing submission.
     const { data: existing } = await supabase.from("eods")
-      .select("*").eq("user_id", userId).eq("report_date", counter.date).maybeSingle();
-    const ex = (existing ?? {}) as Record<string, unknown>;
+      .select("id").eq("is_demo", false).eq("user_id", userId).eq("report_date", counter.date).maybeSingle();
+    if (existing) {
+      setSyncing(false);
+      return toast.error("An EOD is already submitted for this date and is locked.");
+    }
 
     const payload = {
-      ...ex,
       user_id: userId,
       report_date: counter.date,
-      dms_sent: Math.max(counter.contacted, Number(ex.dms_sent) || 0),
-      convos_started: Math.max(counter.convos, Number(ex.convos_started) || 0),
-      calls_booked: Math.max(counter.sets, Number(ex.calls_booked) || 0),
-      calls_scheduled: Math.max(counter.sets, Number(ex.calls_scheduled) || 0),
-      wins: grab("Wins") ?? (ex.wins as string | null) ?? null,
-      blockers: grab("Losses / lessons") ?? grab("Losses") ?? grab("Objections seen today") ?? (ex.blockers as string | null) ?? null,
-      tomorrow_focus: grab("Tomorrow's focus") ?? grab("Tomorrow") ?? (ex.tomorrow_focus as string | null) ?? null,
+      dms_sent: counter.contacted,
+      convos_started: counter.convos,
+      calls_booked: counter.sets,
+      calls_scheduled: counter.sets,
+      wins: grab("Wins"),
+      blockers: grab("Losses / lessons") ?? grab("Losses") ?? grab("Objections seen today"),
+      tomorrow_focus: grab("Tomorrow's focus") ?? grab("Tomorrow"),
     };
 
-    const { error } = await supabase.from("eods").upsert(payload as never, { onConflict: "user_id,report_date" });
+    const { error } = await supabase.from("eods").insert(payload as never);
     setSyncing(false);
-    if (error) toast.error(error.message);
+    if (error?.code === "23505") toast.error("An EOD is already submitted for this date and is locked.");
+    else if (error) toast.error(error.message);
     else toast.success("Synced to EOD Reports");
   };
 

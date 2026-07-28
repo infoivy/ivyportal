@@ -74,10 +74,10 @@ function ActionItemsHub() {
 
   const fetchPage = async () => {
     const [cRes, aRes, sRes, pRes, teamList] = await Promise.all([
-      supabase.from("student_calls").select("id, student_id, coach_id, call_date, action_items_json").order("call_date", { ascending: false }).limit(2000),
-      supabase.from("student_action_items").select("*").order("created_at", { ascending: false }).limit(2000),
-      supabase.from("students").select("id, full_name"),
-      supabase.from("profiles").select("id, display_name"),
+      supabase.from("student_calls").select("id, student_id, coach_id, call_date, action_items_json, students!inner(is_demo)").eq("students.is_demo", false).order("call_date", { ascending: false }).limit(2000),
+      supabase.from("student_action_items").select("*").eq("is_demo", false).order("created_at", { ascending: false }).limit(2000),
+      supabase.from("students").select("id, full_name").eq("is_demo", false),
+      supabase.from("profiles").select("id, display_name").eq("is_demo", false),
       teamFn().catch(() => []),
     ]);
     const sm: Record<string, string> = {}; (sRes.data ?? []).forEach((s: { id: string; full_name: string }) => { sm[s.id] = s.full_name; });

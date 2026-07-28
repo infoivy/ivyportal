@@ -49,9 +49,10 @@ export const getTeamCalendarStatus = createServerFn({ method: "GET" })
     const { data: profs } = await supabaseAdmin
       .from("profiles")
       .select("id, display_name, avatar_url")
+      .eq("is_demo", false)
       .in("id", ids);
     const pmap = new Map((profs ?? []).map((p) => [p.id, p]));
-    return conns.map((c) => ({
+    return conns.filter((c) => pmap.has(c.user_id)).map((c) => ({
       user_id: c.user_id,
       email: c.google_email,
       color: c.color_hex,
@@ -102,14 +103,16 @@ export const getTeamCalendarEvents = createServerFn({ method: "POST" })
     const { data: profs } = await supabaseAdmin
       .from("profiles")
       .select("id, display_name")
+      .eq("is_demo", false)
       .in("id", ids);
     const pmap = new Map((profs ?? []).map((p) => [p.id, p.display_name ?? "Unknown"]));
+    const realConnections = conns.filter((c) => pmap.has(c.user_id));
 
     const now = Date.now();
 
     // One Google round-trip per member, all in parallel — the page used to
     // wait for each member's calendar sequentially.
-    const perUser = await Promise.all(conns.map(async (c): Promise<TeamEvent[]> => {
+    const perUser = await Promise.all(realConnections.map(async (c): Promise<TeamEvent[]> => {
       try {
         let accessToken = c.access_token as string | null;
         const exp = c.access_token_expires_at ? new Date(c.access_token_expires_at).getTime() : 0;
@@ -247,13 +250,15 @@ export const listUpcomingSets = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     const ids = Array.from(new Set(((rows ?? []) as { owner_id: string | null }[]).map((r) => r.owner_id).filter((x): x is string => !!x)));
     const { data: profs } = ids.length
-      ? await context.supabase.from("profiles").select("id, display_name").in("id", ids)
+      ? await context.supabase.from("profiles").select("id, display_name").eq("is_demo", false).in("id", ids)
       : { data: [] };
     const pmap = new Map((profs ?? []).map((p) => [p.id, p.display_name ?? "Unknown"]));
-    return ((rows ?? []) as Omit<UpcomingSet, "owner_name">[]).map((r) => ({
+    return ((rows ?? []) as Omit<UpcomingSet, "owner_name">[])
+      .filter((r) => !r.owner_id || pmap.has(r.owner_id))
+      .map((r) => ({
       ...r,
       owner_name: r.owner_id ? (pmap.get(r.owner_id) ?? "Unknown") : "Unclaimed",
-    })) as UpcomingSet[];
+      })) as UpcomingSet[];
   });
 
 /** Remove a set reminder row (own or admin; the calendar event stays). */

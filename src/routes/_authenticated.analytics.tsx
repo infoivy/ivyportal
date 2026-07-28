@@ -1,8 +1,8 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
-// Merged into /sales — this stub preserves old bookmarks.
+// Legacy analytics bookmarks now resolve to the canonical Performance workspace.
 export const Route = createFileRoute("/_authenticated/analytics")({
   beforeLoad: () => {
-    throw redirect({ to: "/sales", search: { tab: "trends" }, replace: true });
+    throw redirect({ to: "/performance", replace: true });
   },
 });

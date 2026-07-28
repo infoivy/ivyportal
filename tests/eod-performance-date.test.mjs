@@ -10,19 +10,20 @@ test("uses the latest submitted reporting date when today has no reports", () =>
   assert.equal(chooseTeamOverviewDate("2026-07-18", reports), "2026-07-17");
 });
 
-test("Performance applies the selected reporting day(s) to its team summary and overview", () => {
+test("Performance applies the selected reporting range and member to one canonical dataset", () => {
   const route = readFileSync(
-    new URL("../src/routes/_authenticated.eods.tsx", import.meta.url),
+    new URL("../src/routes/_authenticated.performance.tsx", import.meta.url),
     "utf8",
   );
 
-  // Auto behavior still anchors on today-or-latest-submitted…
-  assert.match(route, /chooseTeamOverviewDate\(today, teamEods\)/);
-  assert.match(route, /teamDates\.length \? teamDates : \[latestTeamDate\]/);
-  // …and both the summary chips and the overview consume the same selection.
-  assert.match(route, /const daySet = new Set\(selectedTeamDays\)/);
-  assert.match(route, /teamEods\.filter\(e => daySet\.has\(e\.report_date\)\)/);
-  assert.match(route, /<TeamOverview roster=\{teamRoster\} eods=\{teamEods\} days=\{selectedTeamDays\}/);
-  // The calendar picker is wired to the same state.
-  assert.match(route, /<TeamDayPicker today=\{today\} selected=\{teamDates\} onChange=\{setTeamDates\}/);
+  assert.match(route, /const dayList = buildDayList\(days\)/);
+  assert.match(route, /queryKey: \["page", "performance", days\]/);
+  assert.match(route, /\.gte\("report_date", from\)/);
+  assert.match(route, /\.lte\("report_date", to\)/);
+  assert.match(route, /memberId === "all" \? rows : rows\.filter\(\(row\) => row\.user_id === memberId\)/);
+  assert.match(
+    route,
+    /value:\s*sum\(\s*selectedRows\.filter\(\(row\) => row\.report_date === date\),\s*metric,?\s*\)/,
+  );
+  assert.match(route, /\(\[7, 30, 90\] as RangeDays\[\]\)/);
 });

@@ -47,7 +47,7 @@ export function StudentBottomNav({ activeTab, onTabChange }: { activeTab?: strin
   const onPortal = path === "/student-portal";
   return (
     <nav className="sm:hidden fixed bottom-0 inset-x-0 z-40 border-t border-[var(--border)] bg-[var(--background)]/95 backdrop-blur">
-      <div className={`grid ${GRID[visible.length + 1] ?? "grid-cols-5"}`}>
+      <div className={`grid pb-[max(0.25rem,env(safe-area-inset-bottom))] ${GRID[visible.length + 1] ?? "grid-cols-5"}`}>
         {visible.map(it => {
           const Icon = it.icon;
           const active = onPortal && activeTab === it.tab;
@@ -55,7 +55,7 @@ export function StudentBottomNav({ activeTab, onTabChange }: { activeTab?: strin
             <button
               key={it.tab}
               onClick={() => onTabChange?.(it.tab)}
-              className={`flex flex-col items-center gap-0.5 py-2 text-[10px] ${active ? "text-primary" : "text-muted-foreground"}`}
+              className={`flex min-h-12 flex-col items-center justify-center gap-0.5 text-[10px] ${active ? "text-primary" : "text-muted-foreground"}`}
             >
               <Icon className="h-4 w-4" />
               {it.label}
@@ -64,7 +64,7 @@ export function StudentBottomNav({ activeTab, onTabChange }: { activeTab?: strin
         })}
         <Link
           to="/profile"
-          className={`flex flex-col items-center gap-0.5 py-2 text-[10px] ${path === "/profile" ? "text-primary" : "text-muted-foreground"}`}
+          className={`flex min-h-12 flex-col items-center justify-center gap-0.5 text-[10px] ${path === "/profile" ? "text-primary" : "text-muted-foreground"}`}
         >
           <UserCircle className="h-4 w-4" />
           Me

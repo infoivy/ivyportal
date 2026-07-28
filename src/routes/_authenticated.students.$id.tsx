@@ -159,15 +159,15 @@ function StudentDetail() {
 
   const fetchPage = async () => {
     const [sRes, cRes, eRes, weeklyRes, coachRes, csmRes, instRes, dealRes, aiRes] = await Promise.all([
-      supabase.from("students").select("*").eq("id", id).maybeSingle(),
-      supabase.from("student_calls").select("*").eq("student_id", id).order("call_date", { ascending: false }),
-      supabase.from("student_eods").select("*").eq("student_id", id).order("report_date", { ascending: false }),
-      supabase.from("student_weekly_eods").select("*").eq("student_id", id).order("week_start", { ascending: false }),
+      supabase.from("students").select("*").eq("is_demo", false).eq("id", id).maybeSingle(),
+      supabase.from("student_calls").select("*, students!inner(is_demo)").eq("students.is_demo", false).eq("student_id", id).order("call_date", { ascending: false }),
+      supabase.from("student_eods").select("*, students!inner(is_demo)").eq("students.is_demo", false).eq("student_id", id).order("report_date", { ascending: false }),
+      supabase.from("student_weekly_eods").select("*, students!inner(is_demo)").eq("students.is_demo", false).eq("student_id", id).order("week_start", { ascending: false }),
       supabase.from("user_roles").select("user_id, role").in("role", ["coach", "admin"]),
-      supabase.from("csm_student_notes").select("*").eq("student_id", id).order("created_at", { ascending: false }),
-      supabase.from("installments").select("*").eq("student_id", id).maybeSingle(),
-      supabase.from("deals").select("id").eq("student_id", id).limit(1),
-      supabase.from("student_action_items").select("id, text, done, due_date, created_at").eq("student_id", id).order("created_at", { ascending: false }).limit(50),
+      supabase.from("csm_student_notes").select("*, students!inner(is_demo)").eq("students.is_demo", false).eq("student_id", id).order("created_at", { ascending: false }),
+      supabase.from("installments").select("*, students!inner(is_demo)").eq("students.is_demo", false).eq("student_id", id).maybeSingle(),
+      supabase.from("deals").select("id").eq("is_demo", false).eq("student_id", id).limit(1),
+      supabase.from("student_action_items").select("id, text, done, due_date, created_at, students!inner(is_demo)").eq("is_demo", false).eq("students.is_demo", false).eq("student_id", id).order("created_at", { ascending: false }).limit(50),
     ]);
     const coachIds = Array.from(new Set((coachRes.data ?? []).map(r => r.user_id)));
     const csmAuthorIds = Array.from(new Set((csmRes.data ?? []).map((n: any) => n.user_id)));
@@ -175,13 +175,13 @@ function StudentDetail() {
     let coachList: Coach[] = [];
     const authors: Record<string, string> = {};
     if (allProfIds.length) {
-      const { data: profs } = await supabase.from("profiles").select("id, display_name").in("id", allProfIds);
+      const { data: profs } = await supabase.from("profiles").select("id, display_name").eq("is_demo", false).in("id", allProfIds);
       coachList = (profs ?? []).filter((p: any) => coachIds.includes(p.id)) as Coach[];
       (profs ?? []).forEach((p: any) => { authors[p.id] = p.display_name ?? "Unknown"; });
     }
     let payments: Payment[] = [];
     if (instRes.data) {
-      const { data: pRows } = await supabase.from("installment_payments").select("*").eq("installment_id", (instRes.data as any).id).order("sequence");
+      const { data: pRows } = await supabase.from("installment_payments").select("*, installments!inner(students!inner(is_demo))").eq("installments.students.is_demo", false).eq("installment_id", (instRes.data as any).id).order("sequence");
       payments = (pRows ?? []) as Payment[];
     }
     return {
@@ -1134,7 +1134,7 @@ function TimelineFeed({ student, calls, eods, csmNotes, csmAuthors, coachName, p
     queryKey: ["placements", student.id],
     staleTime: 60_000,
     queryFn: async () =>
-      ((await supabase.from("student_placements").select("*").eq("student_id", student.id).order("created_at", { ascending: false })).data ?? []) as PlacementRow[],
+      ((await supabase.from("student_placements").select("*, students!inner(is_demo)").eq("students.is_demo", false).eq("student_id", student.id).order("created_at", { ascending: false })).data ?? []) as PlacementRow[],
   });
   const events: TimelineEvent[] = [];
   for (const pl of placementsQ.data ?? []) {

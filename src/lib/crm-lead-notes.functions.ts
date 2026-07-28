@@ -34,10 +34,12 @@ export const listLeadNotes = createServerFn({ method: "GET" })
       const { data: pr } = await context.supabase
         .from("profiles")
         .select("id, display_name, avatar_url")
+        .eq("is_demo", false)
         .in("id", ids);
       profiles = Object.fromEntries((pr ?? []).map((p: any) => [p.id, p]));
     }
-    return (rows ?? []).map((r: any) => ({
+    const realRows = (rows ?? []).filter((r: any) => profiles[r.created_by]);
+    return realRows.map((r: any) => ({
       ...r,
       author_name: profiles[r.created_by]?.display_name ?? null,
       author_avatar: profiles[r.created_by]?.avatar_url ?? null,
@@ -114,10 +116,18 @@ export const countLeadNotes = createServerFn({ method: "POST" })
     if (!data.leadIds.length) return {};
     const { data: rows, error } = await context.supabase
       .from("crm_lead_notes")
-      .select("lead_id")
+      .select("lead_id, created_by")
       .in("lead_id", data.leadIds);
     if (error) throw new Error(error.message);
+    const authorIds = [...new Set((rows ?? []).map((r: any) => r.created_by))];
+    const { data: realProfiles } = authorIds.length
+      ? await context.supabase.from("profiles").select("id").eq("is_demo", false).in("id", authorIds)
+      : { data: [] };
+    const realAuthorIds = new Set((realProfiles ?? []).map((p: any) => p.id));
     const counts: Record<string, number> = {};
-    for (const r of rows ?? []) counts[(r as any).lead_id] = (counts[(r as any).lead_id] ?? 0) + 1;
+    for (const r of rows ?? []) {
+      if (!realAuthorIds.has((r as any).created_by)) continue;
+      counts[(r as any).lead_id] = (counts[(r as any).lead_id] ?? 0) + 1;
+    }
     return counts;
   });

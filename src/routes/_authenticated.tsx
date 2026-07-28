@@ -18,6 +18,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { CommandPalette } from "@/components/command-palette";
 import { StudentBottomNav } from "@/components/student-bottom-nav";
+import { StaffBottomNav } from "@/components/staff-bottom-nav";
 import { setStudentPortalTab, getStudentPortalTab, onStudentPortalTab } from "@/lib/student-portal-bus";
 import { todayLocal } from "@/lib/dates";
 import {
@@ -26,6 +27,7 @@ import {
   signOutWithLocalFallback,
 } from "@/lib/auth-session-loader";
 import { PageSkeleton } from "@/components/ui/skeletons";
+import { STAFF_ROLES, pageLabelForPath } from "@/lib/portal-navigation";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -48,7 +50,7 @@ function AuthedLayout() {
   const pureStudent =
     !state.loading &&
     state.roles.includes("student") &&
-    !state.roles.some(r => ["admin", "founder", "cofounder", "coach", "closer", "setter", "csm"].includes(r));
+    !state.roles.some((role) => (STAFF_ROLES as readonly string[]).includes(role));
   useEffect(() => {
     if (!pureStudent) return;
     const allowed = ["/student-portal", "/knowledge", "/profile"].some(
@@ -92,6 +94,7 @@ function AuthedLayout() {
         const { data, error } = await supabase
           .from("eods")
           .select("id")
+          .eq("is_demo", false)
           .eq("user_id", userId)
           .eq("report_date", todayLocal())
           .maybeSingle();
@@ -114,26 +117,19 @@ function AuthedLayout() {
 
         const path = window.location.pathname;
         const isStudent = roles.includes("student");
-        const isTeam = roles.some(role => ["admin", "coach", "closer", "setter", "csm"].includes(role));
+        const isTeam = roles.some((role) => (STAFF_ROLES as readonly string[]).includes(role));
         if (shouldLand) window.sessionStorage.removeItem("isa-landing-pending");
 
         if (shouldLand) {
           if (isStudent && !isTeam) {
             navigate({ to: "/student-portal", replace: true });
-          } else if (!roles.includes("admin") && !roles.includes("founder")) {
-            if (roles.includes("setter")) navigate({ to: "/eods", replace: true });
-            else if (roles.includes("closer")) navigate({ to: "/sales", search: { tab: "operations" }, replace: true });
-            else if (roles.includes("csm")) navigate({ to: "/csm", search: { tab: "overview" }, replace: true });
-            else if (roles.includes("coach")) navigate({ to: "/calls", replace: true });
-          }
+          } else if (isTeam) navigate({ to: "/dashboard", replace: true });
         } else {
           if (isStudent && !isTeam && (path === "/dashboard" || path === "/" || path === "/auth")) {
             navigate({ to: "/student-portal", replace: true });
           }
-          const canDashboard = roles.some(role => ["admin", "founder", "closer", "setter", "coach"].includes(role));
-          if (!canDashboard && roles.includes("csm") && path === "/dashboard") {
-            navigate({ to: "/csm", search: { tab: "overview" }, replace: true });
-          }
+          const canDashboard = roles.some((role) => (STAFF_ROLES as readonly string[]).includes(role));
+          if (!canDashboard && path === "/dashboard") navigate({ to: "/profile", replace: true });
         }
       },
       onEodStatus: (_userId, submitted) => setEodSubmitted(submitted),
@@ -219,7 +215,7 @@ function AuthedLayout() {
   }
 
   const isStudent = state.roles.includes("student");
-  const isTeam = state.roles.some(r => ["admin", "coach", "closer", "setter", "csm"].includes(r));
+  const isTeam = state.roles.some((role) => (STAFF_ROLES as readonly string[]).includes(role));
   const studentOnly = isStudent && !isTeam;
 
   // New signups have no role until an admin approves them — no team shell.
@@ -235,9 +231,9 @@ function AuthedLayout() {
           <AppSidebar roles={state.roles} />
           <div className="flex-1 flex flex-col min-w-0">
             {/* Frosted top bar */}
-            <header className="h-[52px] flex items-center justify-between border-b border-border px-3 frosted sticky top-0 z-30">
+            <header className="h-14 sm:h-[52px] flex items-center justify-between border-b border-border px-1 sm:px-3 frosted sticky top-0 z-30">
               <div className="flex items-center gap-2 min-w-0">
-                <SidebarTrigger className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md motion-safe:transition-colors" />
+                <SidebarTrigger className="h-12 w-12 sm:h-7 sm:w-7 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md motion-safe:transition-colors" />
                 <div className="h-4 w-px bg-border mx-1" />
                 <PageContextLabel />
               </div>
@@ -245,7 +241,7 @@ function AuthedLayout() {
                 {/* Search */}
                 <button
                   onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true, bubbles: true }))}
-                  className="inline-flex items-center gap-1.5 text-[12px] px-2.5 py-1.5 rounded-md bg-muted text-muted-foreground hover:text-foreground motion-safe:transition-colors"
+                  className="inline-flex h-12 w-12 sm:h-auto sm:w-auto items-center justify-center gap-1.5 text-[12px] sm:px-2.5 sm:py-1.5 rounded-md bg-muted text-muted-foreground hover:text-foreground motion-safe:transition-colors"
                   title="Search (⌘K)"
                 >
                   <Search className="h-3.5 w-3.5" />
@@ -270,7 +266,7 @@ function AuthedLayout() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
-                      className="h-7 w-7 rounded-full bg-muted text-foreground flex items-center justify-center text-micro font-semibold shrink-0 hover:bg-accent motion-safe:transition-colors"
+                      className="h-12 w-12 sm:h-7 sm:w-7 rounded-full bg-muted text-foreground flex items-center justify-center text-micro font-semibold shrink-0 hover:bg-accent motion-safe:transition-colors"
                       title={state.displayName ?? "Account"}
                     >
                       {(state.displayName ?? "U").charAt(0).toUpperCase()}
@@ -292,7 +288,7 @@ function AuthedLayout() {
               </div>
             </header>
 
-            <main className={`flex-1 min-w-0 overflow-x-clip relative ${studentOnly ? "pb-16 sm:pb-0" : ""}`}>
+            <main className={`flex-1 min-w-0 overflow-x-clip relative ${studentOnly ? "pb-16 sm:pb-0" : isTeam ? "pb-20 md:pb-0" : ""}`}>
               {/* relative + min-h-full: full-viewport pages (SOP canvas) position
                   against this wrapper even while the enter animation holds a transform */}
               <div className="page-enter relative min-h-full">
@@ -311,6 +307,7 @@ function AuthedLayout() {
         />
         <CommandPalette />
         {studentOnly && <StudentBottomNavBridge />}
+        {isTeam && !studentOnly && <StaffBottomNav />}
       </SidebarProvider>
     </AuthContext.Provider>
   );
@@ -345,20 +342,9 @@ function PendingApproval({ email, onSignOut }: { email: string; onSignOut: () =>
   );
 }
 
-const PAGE_LABELS: Array<[string, string]> = [
-  ["/dashboard", "Overview"], ["/eods", "Performance"], ["/action-items", "Action Items"], ["/chat", "Team Chat"],
-  ["/sales", "Sales"], ["/revenue", "Deals"], ["/installments", "Installments"],
-  ["/payouts", "Payouts"], ["/closer-resources", "Closer Resources"],
-  ["/calendar", "Calendar"], ["/crm", "CRM"], ["/finance", "Finance"], ["/mochi", "Mochi"], ["/students", "Students"], ["/calls", "1-on-1 Calls"],
-  ["/student-success", "Student Success"], ["/csm", "CSM"],
-  ["/testimonials", "Testimonials"], ["/knowledge", "Knowledge"], ["/policies", "Knowledge"],
-  ["/sops", "Knowledge"], ["/admin", "Admin"],
-  ["/team", "Team"], ["/profile", "Profile"], ["/student-portal", "My Portal"],
-];
-
 function PageContextLabel() {
   const path = useRouterState({ select: (s) => s.location.pathname });
-  const label = PAGE_LABELS.find(([p]) => path.startsWith(p))?.[1] ?? "Ivy Portal";
+  const label = pageLabelForPath(path);
   return <span className="text-body font-semibold text-foreground truncate">{label}</span>;
 }
 

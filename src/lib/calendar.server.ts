@@ -151,7 +151,7 @@ export function getRedirectUri(requestUrl: string): string {
   return `${u.origin}/api/public/google-oauth-callback`;
 }
 
-const CLOSER_COLORS = ["#3b82f6", "#a855f7", "#22c55e", "#f59e0b", "#ec4899", "#06b6d4", "#f97316", "#ef4444"];
+const CLOSER_COLORS = ["#525252", "#737373", "#8A8A8A", "#A3A3A3", "#B0B0B0", "#C0C0C0", "#D4D4D4", "#E5E5E5"];
 export function pickColorForIndex(i: number): string {
   return CLOSER_COLORS[i % CLOSER_COLORS.length];
 }

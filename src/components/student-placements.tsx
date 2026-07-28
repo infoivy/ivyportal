@@ -50,7 +50,7 @@ export function PlacementsSection({ studentId, compact = false }: { studentId: s
     queryKey: ["placements", studentId],
     staleTime: 60_000,
     queryFn: async () =>
-      ((await supabase.from("student_placements").select("*").eq("student_id", studentId).order("created_at", { ascending: false })).data ?? []) as Placement[],
+      ((await supabase.from("student_placements").select("*, students!inner(is_demo)").eq("students.is_demo", false).eq("student_id", studentId).order("created_at", { ascending: false })).data ?? []) as Placement[],
   });
   const rows = q.data ?? [];
   // Covers the per-student list, the board, CSM overview counts, health
@@ -180,8 +180,8 @@ export function PlacementBoard() {
     staleTime: 60_000,
     queryFn: async () => {
       const [placements, students] = await Promise.all([
-        supabase.from("student_placements").select("*").neq("stage", "lost").order("updated_at", { ascending: false }),
-        supabase.from("students").select("id, full_name"),
+        supabase.from("student_placements").select("*, students!inner(is_demo)").eq("students.is_demo", false).neq("stage", "lost").order("updated_at", { ascending: false }),
+        supabase.from("students").select("id, full_name").eq("is_demo", false),
       ]);
       const names = new Map(((students.data ?? []) as { id: string; full_name: string }[]).map((s) => [s.id, s.full_name]));
       return { rows: (placements.data ?? []) as Placement[], names };

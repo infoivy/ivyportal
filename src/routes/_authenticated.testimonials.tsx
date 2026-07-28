@@ -78,8 +78,8 @@ function TestimonialsPage() {
 
   const fetchPage = async () => {
     const [{ data: ts }, { data: sts }] = await Promise.all([
-      supabase.from("testimonials").select("*").order("created_at", { ascending: false }),
-      supabase.from("students").select("id, full_name").order("full_name"),
+      supabase.from("testimonials").select("*, students!inner(is_demo)").eq("students.is_demo", false).order("created_at", { ascending: false }),
+      supabase.from("students").select("id, full_name").eq("is_demo", false).order("full_name"),
     ]);
     const list = (ts ?? []) as Testimonial[];
     // Batch signed URLs for file-backed items

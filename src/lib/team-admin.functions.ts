@@ -64,7 +64,7 @@ export const listTeamMembers = createServerFn({ method: "GET" })
     const ids = Array.from(new Set((roleRows ?? []).map((r) => r.user_id)));
     if (ids.length === 0) return [] as { id: string; name: string }[];
     const { data: profs } = await supabaseAdmin
-      .from("profiles").select("id, display_name, active").in("id", ids);
+      .from("profiles").select("id, display_name, active").eq("is_demo", false).in("id", ids);
     return (profs ?? [])
       .filter((p) => (p as { active?: boolean }).active !== false)
       .map((p) => ({ id: p.id, name: p.display_name ?? "Unnamed" }))

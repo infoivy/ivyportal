@@ -67,12 +67,12 @@ export function CashInCalendarCard({ foundersOnly = false }: { foundersOnly?: bo
     enabled: canSeeIn,
     queryFn: async () => {
       const [pRes, iRes, eRes, profRes, dealsRes, ratesRes, cofRes] = await Promise.all([
-        (supabase.from("installment_payments" as never).select("*").order("due_date", { ascending: true }) as unknown as Promise<{ data: Payment[] | null }>),
-        (supabase.from("installments" as never).select("id, student_name, setter_id, closer_id") as unknown as Promise<{ data: (PayoutInstallment & { student_name: string })[] | null }>),
+        (supabase.from("installment_payments" as never).select("*, installments!inner(students!inner(is_demo))").eq("installments.students.is_demo", false).order("due_date", { ascending: true }) as unknown as Promise<{ data: Payment[] | null }>),
+        (supabase.from("installments" as never).select("id, student_name, setter_id, closer_id, students!inner(is_demo)").eq("students.is_demo", false) as unknown as Promise<{ data: (PayoutInstallment & { student_name: string })[] | null }>),
         // RLS blanks these for anyone who isn't founder/cofounder
         (supabase.from("business_expenses").select("*").eq("active", true) as unknown as Promise<{ data: Expense[] | null }>),
-        supabase.from("profiles").select("id, display_name, commission_cap_pct, base_pay_monthly, base_pay_day, started_on"),
-        supabase.from("deals").select("id, closer_id, setter_id, total_value, cash_collected_upfront, deal_date, payment_type").gte("deal_date", new Date(new Date().getFullYear(), new Date().getMonth() - 2, 1).toISOString().slice(0, 10)),
+        supabase.from("profiles").select("id, display_name, commission_cap_pct, base_pay_monthly, base_pay_day, started_on").eq("is_demo", false),
+        supabase.from("deals").select("id, closer_id, setter_id, total_value, cash_collected_upfront, deal_date, payment_type").eq("is_demo", false).gte("deal_date", new Date(new Date().getFullYear(), new Date().getMonth() - 2, 1).toISOString().slice(0, 10)),
         supabase.from("commission_rates").select("key, rate").eq("active", true),
         supabase.from("user_roles").select("user_id").eq("role", "cofounder"),
       ]);

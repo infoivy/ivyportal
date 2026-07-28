@@ -12,6 +12,7 @@ test("missing summary produces an explicit submission error instead of a dead bu
     route,
     /if \(!form\.wins\.trim\(\)\) return toast\.error\("Add a wins \/ summary before submitting\."\);/,
   );
-  assert.match(route, /<Button onClick=\{submit\} disabled=\{saving\}/);
+  assert.match(route, /<fieldset disabled=\{Boolean\(existingId\)\}/);
+  assert.match(route, /<Button onClick=\{submit\} disabled=\{saving \|\| Boolean\(existingId\)\}/);
   assert.doesNotMatch(route, /disabled=\{saving \|\| !form\.wins\.trim\(\)\}/);
 });

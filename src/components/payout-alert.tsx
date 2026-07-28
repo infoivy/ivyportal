@@ -26,18 +26,20 @@ async function fetchPeriodStatus(offset: number): Promise<PayoutAlertPeriod | nu
     supabase
       .from("deals")
       .select("id, closer_id, setter_id, total_value, cash_collected_upfront, deal_date, payment_type")
+      .eq("is_demo", false)
       .gte("deal_date", period.monthStart)
       .lte("deal_date", period.monthEnd),
-    supabase.from("profiles").select("id, display_name, commission_cap_pct, base_pay_monthly, base_pay_day"),
+    supabase.from("profiles").select("id, display_name, commission_cap_pct, base_pay_monthly, base_pay_day").eq("is_demo", false),
     supabase.from("commission_rates").select("key, rate").eq("active", true),
     supabase
       .from("installment_payments")
-      .select("id, amount, paid_at, installment_id")
+      .select("id, amount, paid_at, installment_id, installments!inner(students!inner(is_demo))")
+      .eq("installments.students.is_demo", false)
       .eq("status", "paid")
       .gte("paid_at", period.monthStart + "T00:00:00")
       .lte("paid_at", period.monthEnd + "T23:59:59")
       .not("paid_at", "is", null),
-    supabase.from("installments").select("id, setter_id, closer_id, student_name"),
+    supabase.from("installments").select("id, setter_id, closer_id, student_name, students!inner(is_demo)").eq("students.is_demo", false),
     supabase.from("user_roles").select("user_id").eq("role", "cofounder"),
     (supabase.from("payout_confirmations" as any).select("user_id").eq("period_start", period.start) as any),
   ]);

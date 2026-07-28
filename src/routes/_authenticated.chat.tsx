@@ -56,10 +56,11 @@ function ChatInner({ userId, isAdmin }: { userId: string; isAdmin: boolean }) {
     queryKey: ["page", "chat"],
     refetchInterval: 20_000, // channel stays fresh without realtime plumbing
     queryFn: async () => {
-      const [msgsRes, profsRes, studentsRes] = await Promise.all([
-        supabase.from("team_chat").select("*").order("created_at", { ascending: true }).limit(500),
-        supabase.from("profiles").select("id, display_name"),
-        supabase.from("students").select("id, full_name").order("full_name"),
+      const [generalMsgsRes, studentMsgsRes, profsRes, studentsRes] = await Promise.all([
+        supabase.from("team_chat").select("*").is("student_id", null).order("created_at", { ascending: true }).limit(500),
+        supabase.from("team_chat").select("*, students!inner(is_demo)").eq("students.is_demo", false).order("created_at", { ascending: true }).limit(500),
+        supabase.from("profiles").select("id, display_name").eq("is_demo", false),
+        supabase.from("students").select("id, full_name").eq("is_demo", false).order("full_name"),
       ]);
       const names: Record<string, string> = {};
       (profsRes.data ?? []).forEach((p: { id: string; display_name: string | null }) => { names[p.id] = p.display_name ?? "Teammate"; });
@@ -69,7 +70,10 @@ function ChatInner({ userId, isAdmin }: { userId: string; isAdmin: boolean }) {
         ...(profsRes.data ?? []).filter((p: any) => p.display_name).map((p: any) => ({ id: p.id, name: p.display_name as string, kind: "member" as const })),
         ...((studentsRes.data ?? []) as { id: string; full_name: string }[]).map((s) => ({ id: s.id, name: s.full_name, kind: "student" as const })),
       ];
-      return { messages: (msgsRes.data ?? []) as Message[], names, studentNames, people };
+      const messages = [...(generalMsgsRes.data ?? []), ...(studentMsgsRes.data ?? [])]
+        .sort((a, b) => a.created_at.localeCompare(b.created_at))
+        .slice(-500) as Message[];
+      return { messages, names, studentNames, people };
     },
   });
   const d = pageQ.data;

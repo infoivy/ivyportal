@@ -59,7 +59,7 @@ export function ThemeToggle() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
-          className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground motion-safe:transition-colors motion-safe:duration-150 hover:text-foreground hover:bg-muted"
+          className="flex h-12 w-12 sm:h-7 sm:w-7 items-center justify-center rounded-md text-muted-foreground motion-safe:transition-colors motion-safe:duration-150 hover:text-foreground hover:bg-muted"
           title="Theme"
           aria-label="Theme"
         >

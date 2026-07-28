@@ -32,16 +32,17 @@ export function CsmOverview() {
     queryFn: async () => {
       const eightWeeksAgo = new Date(Date.now() - 8 * 7 * 86400000).toISOString();
       const twoWeeksAgo = iso(subDays(new Date(), 13));
-      const [studentsRes, tallyRes, callsRes, eodsRes, placementsRes] = await Promise.all([
-        supabase.from("students").select("id, phase, status, offer_landed_at, first_win_at"),
-        supabase.from("csm_tally").select("kind, created_at").gte("created_at", eightWeeksAgo),
-        supabase.from("student_calls").select("id, call_date, status").gte("call_date", iso(subDays(new Date(), 8 * 7))),
-        supabase.from("student_eods").select("student_id, report_date").gte("report_date", twoWeeksAgo),
-        supabase.from("student_placements").select("stage"),
+      const [studentsRes, genericTallyRes, studentTallyRes, callsRes, eodsRes, placementsRes] = await Promise.all([
+        supabase.from("students").select("id, phase, status, offer_landed_at, first_win_at").eq("is_demo", false),
+        supabase.from("csm_tally").select("kind, created_at").is("student_id", null).gte("created_at", eightWeeksAgo),
+        supabase.from("csm_tally").select("kind, created_at, students!inner(is_demo)").eq("students.is_demo", false).gte("created_at", eightWeeksAgo),
+        supabase.from("student_calls").select("id, call_date, status, students!inner(is_demo)").eq("students.is_demo", false).gte("call_date", iso(subDays(new Date(), 8 * 7))),
+        supabase.from("student_eods").select("student_id, report_date, students!inner(is_demo)").eq("students.is_demo", false).gte("report_date", twoWeeksAgo),
+        supabase.from("student_placements").select("stage, students!inner(is_demo)").eq("students.is_demo", false),
       ]);
       return {
         students: studentsRes.data ?? [],
-        tally: tallyRes.data ?? [],
+        tally: [...(genericTallyRes.data ?? []), ...(studentTallyRes.data ?? [])],
         calls: callsRes.data ?? [],
         eods: eodsRes.data ?? [],
         placements: placementsRes.data ?? [],
@@ -104,7 +105,7 @@ export function CsmOverview() {
   const phaseSegments = [...stats.phases.entries()].map(([phase, count], i) => ({
     label: PHASE_LABEL[phase] ?? phase,
     value: count,
-    color: ["#60A5FA", "#A78BFA", "#FBBF24", "#4ADE80", "#22D3EE"][i % 5],
+    color: ["#171717", "#404040", "#737373", "#A3A3A3", "#D4D4D4"][i % 5],
   }));
 
   return (
