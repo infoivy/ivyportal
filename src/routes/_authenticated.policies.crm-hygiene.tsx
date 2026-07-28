@@ -1,5 +1,6 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { useAuth } from "@/lib/auth-context";
 import {
   ShieldCheck, ArrowLeft, Info, AlertTriangle, AlertOctagon, ShieldAlert,
   ClipboardCheck, Clock, Users, ListChecks, CheckCircle2,
@@ -14,8 +15,15 @@ export const Route = createFileRoute("/_authenticated/policies/crm-hygiene")({
       { name: "description", content: "Standards for keeping Close CRM clean: what to log, when, and the consequence structure for non-compliance." },
     ],
   }),
-  component: CrmHygiene,
+  component: CrmHygieneGate,
 });
+
+// Staff policy: students never see CRM standards (founder-reported 2026-07-28).
+function CrmHygieneGate() {
+  const { roles } = useAuth();
+  if (roles.length > 0 && roles.every(r => r === "student")) return <Navigate to="/knowledge" replace />;
+  return <CrmHygiene />;
+}
 
 const sections = [
   { id: "overview", label: "Overview", icon: Info },

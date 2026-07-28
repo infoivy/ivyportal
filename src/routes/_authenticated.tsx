@@ -39,6 +39,24 @@ function AuthedLayout() {
   const [eodSubmitted, setEodSubmitted] = useState<boolean | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
 
+  // Central student gate. Students have a three-surface portal; every other
+  // route is staff. Route files carry their own guards too, but this is the
+  // one place that covers direct URLs, the command palette, and future routes
+  // nobody remembered to gate (students reached /eods and the policy docs
+  // this way, founder-reported 2026-07-28).
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const pureStudent =
+    !state.loading &&
+    state.roles.includes("student") &&
+    !state.roles.some(r => ["admin", "founder", "cofounder", "coach", "closer", "setter", "csm"].includes(r));
+  useEffect(() => {
+    if (!pureStudent) return;
+    const allowed = ["/student-portal", "/knowledge", "/profile"].some(
+      base => pathname === base || pathname.startsWith(base + "/"),
+    );
+    if (!allowed) navigate({ to: "/student-portal", replace: true });
+  }, [pureStudent, pathname, navigate]);
+
   useEffect(() => {
     const cleanupSessionOnly = installSessionOnlyCleanup();
     const clearAuthBoundaryCache = isolateAuthBoundaryCache(queryClient);

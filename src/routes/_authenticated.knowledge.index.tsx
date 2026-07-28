@@ -137,7 +137,8 @@ function KnowledgeIndex() {
                       to: "/sops/isa-setting-process",
                     },
                   ]
-                : value === "team_ops"
+                : value === "team_ops" &&
+                  !roles.every((r) => r === "student")
                   ? [
                       {
                         key: "eod-hygiene",

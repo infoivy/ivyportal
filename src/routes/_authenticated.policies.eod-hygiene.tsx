@@ -1,5 +1,6 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { useAuth } from "@/lib/auth-context";
 import {
   FileText, ArrowLeft, Info, AlertTriangle, AlertOctagon, ShieldAlert,
   ClipboardCheck, Clock, Users, ListChecks, CheckCircle2,
@@ -14,8 +15,16 @@ export const Route = createFileRoute("/_authenticated/policies/eod-hygiene")({
       { name: "description", content: "The daily EOD standard for every role, meeting attendance rules, and the consequence structure for misses." },
     ],
   }),
-  component: EodHygiene,
+  component: EodHygieneGate,
 });
+
+// Staff policy: students have their own EOD flow inside the portal and never
+// see the team standard (founder-reported 2026-07-28).
+function EodHygieneGate() {
+  const { roles } = useAuth();
+  if (roles.length > 0 && roles.every(r => r === "student")) return <Navigate to="/knowledge" replace />;
+  return <EodHygiene />;
+}
 
 const sections = [
   { id: "overview", label: "Overview", icon: Info },

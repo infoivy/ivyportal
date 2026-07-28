@@ -1,4 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { useAuth } from "@/lib/auth-context";
 import { TransformWrapper, TransformComponent, useControls, useTransformEffect, type ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
 import React, { useRef, useState, useEffect, useCallback, useMemo, useDeferredValue } from "react";
 import { type TabId } from "@/data/content";
@@ -15,8 +16,15 @@ export const Route = createFileRoute("/_authenticated/sops/isa-setting-process")
       { name: "description", content: "Complete system: conversation flows, scripts, objection handling, psychology, engagement & operations" },
     ],
   }),
-  component: Index,
+  component: SettingProcessGate,
 });
+
+// Staff SOP (admin/setter surface in Knowledge): students never see it.
+function SettingProcessGate() {
+  const { roles } = useAuth();
+  if (roles.length > 0 && roles.every(r => r === "student")) return <Navigate to="/knowledge" replace />;
+  return <Index />;
+}
 
 const HEADER_HEIGHT_DESKTOP = 118;
 const HEADER_HEIGHT_MOBILE = 104;
