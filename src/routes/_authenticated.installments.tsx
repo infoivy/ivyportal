@@ -58,7 +58,7 @@ type Expense = {
   category: string | null;
   active: boolean;
 };
-type OutItem = { label: string; amount: number; kind: "general" | "team" };
+type OutItem = { label: string; short: string; amount: number; kind: "general" | "team" };
 
 const STATUS_META: Record<PayStatus, { label: string; cls: string }> = {
   upcoming: { label: "Upcoming", cls: "text-muted-foreground border-border bg-muted" },
@@ -655,14 +655,14 @@ function CashInCalendar({ payments, nameFor, expenses, basePays, basePayDay, onB
       if (amount <= 0) continue;
       if (e.recurring) {
         const day = Math.min(Math.max(e.due_day ?? 1, 1), daysInMonth);
-        add(`${monthKey}-${String(day).padStart(2, "0")}`, { label: e.name + (e.category ? ` · ${e.category}` : ""), amount, kind: "general" });
+        add(`${monthKey}-${String(day).padStart(2, "0")}`, { label: e.name + (e.category ? ` · ${e.category}` : ""), short: e.name, amount, kind: "general" });
       } else if (e.one_off_date && e.one_off_date.slice(0, 7) === monthKey) {
-        add(e.one_off_date, { label: e.name + (e.category ? ` · ${e.category}` : ""), amount, kind: "general" });
+        add(e.one_off_date, { label: e.name + (e.category ? ` · ${e.category}` : ""), short: e.name, amount, kind: "general" });
       }
     }
     const payDay = Math.min(Math.max(basePayDay, 1), daysInMonth);
     for (const b of basePays) {
-      add(`${monthKey}-${String(payDay).padStart(2, "0")}`, { label: `${b.label} · base pay`, amount: b.amount, kind: "team" });
+      add(`${monthKey}-${String(payDay).padStart(2, "0")}`, { label: `${b.label} · base pay`, short: b.label, amount: b.amount, kind: "team" });
     }
     return m;
   }, [expenses, basePays, basePayDay, monthStart, daysInMonth]);
@@ -732,18 +732,37 @@ function CashInCalendar({ payments, nameFor, expenses, basePays, basePayDay, onB
                 } ${isToday ? "ring-2 ring-ring/40" : ""}`}
               >
                 <div className={`text-[10px] tabular-nums ${isToday ? "font-bold text-foreground" : "text-muted-foreground"}`}>{Number(day.slice(8, 10))}</div>
-                {v && v.expected > 0 && (
-                  <div className={`text-[11px] font-semibold tabular-nums ${overdue ? "text-danger-fg" : "text-warning-fg"}`}>{compact(v.expected)}</div>
-                )}
-                {v && v.collected > 0 && (
-                  <div className="text-[10px] tabular-nums text-success-fg">✓ {compact(v.collected)}</div>
-                )}
-                {out && out.general > 0 && (
-                  <div className="text-[10px] tabular-nums cal-out-general">−{compact(out.general)}</div>
-                )}
-                {out && out.team > 0 && (
-                  <div className="text-[10px] tabular-nums cal-out-team">−{compact(out.team)}</div>
-                )}
+                {(() => {
+                  // One line per amount with its name in small letters
+                  // (founder-requested 2026-07-28); overflow collapses.
+                  const lines: { key: string; cls: string; amt: string; name: string }[] = [
+                    ...(v?.rows ?? []).map(p => ({
+                      key: p.id,
+                      cls: p.status === "paid" ? "text-success-fg" : (day < todayIso ? "text-danger-fg" : "text-warning-fg"),
+                      amt: `${p.status === "paid" ? "✓" : ""}${compact(Number(p.amount) || 0)}`,
+                      name: nameFor(p),
+                    })),
+                    ...(out?.items ?? []).map((it, j) => ({
+                      key: `o${j}`,
+                      cls: it.kind === "team" ? "cal-out-team" : "cal-out-general",
+                      amt: `−${compact(it.amount)}`,
+                      name: it.short,
+                    })),
+                  ];
+                  const shown = lines.slice(0, 4);
+                  return (
+                    <>
+                      {shown.map(l => (
+                        <div key={l.key} className={`text-[10px] leading-4 tabular-nums truncate ${l.cls}`}>
+                          {l.amt} <span className="text-[9px] opacity-70">{l.name}</span>
+                        </div>
+                      ))}
+                      {lines.length > 4 && (
+                        <div className="text-[9px] text-muted-foreground">+{lines.length - 4} more</div>
+                      )}
+                    </>
+                  );
+                })()}
               </button>
             );
           })}
