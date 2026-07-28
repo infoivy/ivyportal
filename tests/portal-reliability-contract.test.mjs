@@ -53,6 +53,10 @@ const immutableStaffEodMigrationUrl = new URL(
   "supabase/migrations/20260728140725_staff_eods_insert_only.sql",
   root,
 );
+const readOnlyActivityMigrationUrl = new URL(
+  "supabase/migrations/20260728182946_eods_activity_real_read_only.sql",
+  root,
+);
 const packageJson = JSON.parse(readFileSync(new URL("package.json", root), "utf8"));
 
 test("Home is action-first and does not duplicate the canonical analytics workspace", () => {
@@ -376,10 +380,20 @@ test("student portal reads and writes weekly accountability EODs", () => {
 
 test("operational analytics exclude demos and include every founder role", () => {
   assert.ok(existsSync(realActivityMigrationUrl));
+  assert.ok(existsSync(readOnlyActivityMigrationUrl));
   const activityMigration = readFileSync(realActivityMigrationUrl, "utf8");
+  const readOnlyMigration = readFileSync(readOnlyActivityMigrationUrl, "utf8");
   assert.match(activityMigration, /create or replace view public\.eods_activity_real/);
   assert.match(activityMigration, /is_demo is not true/);
   assert.match(activityMigration, /has_role\(auth\.uid\(\), 'cofounder'\)/);
+  assert.match(
+    readOnlyMigration,
+    /revoke all on table public\.eods_activity_real from public, anon, authenticated/i,
+  );
+  assert.match(
+    readOnlyMigration,
+    /grant select on table public\.eods_activity_real to authenticated/i,
+  );
 });
 
 test("weekly accountability has database-enforced attendance, week, and history rules", () => {
