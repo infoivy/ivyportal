@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { keys } from "@/lib/query-keys";
 import { useAuth } from "@/lib/auth-context";
 import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { money, type Deal, type CommissionRates, commissionForDeal, setterWeekBonusIds, DEFAULT_RATES, isSelfSet } from "@/lib/revenue";
@@ -96,52 +98,57 @@ function PayoutsInner() {
   const [periodOffset, setPeriodOffset] = useState(0);
   const period = useMemo(() => getPeriod(periodOffset), [periodOffset]);
 
-  const [deals, setDeals] = useState<Deal[]>([]);
-  const [profileMap, setProfileMap] = useState<Map<string, Profile>>(new Map());
-  const [rates, setRates] = useState<CommissionRates>(DEFAULT_RATES);
-  const [installmentPayments, setInstallmentPayments] = useState<InstallmentPayment[]>([]);
-  const [installments, setInstallments] = useState<Installment[]>([]);
-  const [cofounderIds, setCofounderIds] = useState<Set<string>>(new Set());
-  const [loading, setLoading] = useState(true);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    // Whole calendar month: the co-founder monthly cap needs both halves.
-    const [dealsRes, profilesRes, ratesRes, ipRes, instRes, cofRes] = await Promise.all([
-      supabase
-        .from("deals")
-        .select("id, closer_id, setter_id, total_value, cash_collected_upfront, deal_date, payment_type")
-        .gte("deal_date", period.monthStart)
-        .lte("deal_date", period.monthEnd),
-      supabase.from("profiles").select("id, display_name, commission_cap_pct, base_pay_monthly"),
-      supabase.from("commission_rates").select("key, rate").eq("active", true),
-      supabase
-        .from("installment_payments")
-        .select("id, amount, paid_at, installment_id")
-        .eq("status", "paid")
-        .gte("paid_at", period.monthStart + "T00:00:00")
-        .lte("paid_at", period.monthEnd + "T23:59:59")
-        .not("paid_at", "is", null),
-      supabase.from("installments").select("id, setter_id, closer_id, student_name"),
-      supabase.from("user_roles").select("user_id").eq("role", "cofounder"),
-    ]);
-    setCofounderIds(new Set(((cofRes.data ?? []) as { user_id: string }[]).map((r) => r.user_id)));
-    setDeals((dealsRes.data ?? []) as Deal[]);
+  // Cached month-wide read (the co-founder monthly cap needs both halves).
+  // Deal logging, installment payments, and profile edits elsewhere reach
+  // this ledger through invalidateForTables + focus refetch.
+  const dataQ = useQuery({
+    queryKey: [...keys.payoutsPage, period.monthStart],
+    placeholderData: (prev) => prev,
+    queryFn: async () => {
+      const [dealsRes, profilesRes, ratesRes, ipRes, instRes, cofRes] = await Promise.all([
+        supabase
+          .from("deals")
+          .select("id, closer_id, setter_id, total_value, cash_collected_upfront, deal_date, payment_type")
+          .gte("deal_date", period.monthStart)
+          .lte("deal_date", period.monthEnd),
+        supabase.from("profiles").select("id, display_name, commission_cap_pct, base_pay_monthly"),
+        supabase.from("commission_rates").select("key, rate").eq("active", true),
+        supabase
+          .from("installment_payments")
+          .select("id, amount, paid_at, installment_id")
+          .eq("status", "paid")
+          .gte("paid_at", period.monthStart + "T00:00:00")
+          .lte("paid_at", period.monthEnd + "T23:59:59")
+          .not("paid_at", "is", null),
+        supabase.from("installments").select("id, setter_id, closer_id, student_name"),
+        supabase.from("user_roles").select("user_id").eq("role", "cofounder"),
+      ]);
+      const ratesOut: CommissionRates = { ...DEFAULT_RATES };
+      for (const row of (ratesRes.data ?? [])) {
+        const k = row.key as keyof CommissionRates;
+        if (k in ratesOut) (ratesOut as Record<string, number>)[k] = Number(row.rate);
+      }
+      return {
+        deals: (dealsRes.data ?? []) as Deal[],
+        profiles: (profilesRes.data ?? []) as Profile[],
+        rates: ratesOut,
+        installmentPayments: (ipRes.data ?? []) as InstallmentPayment[],
+        installments: (instRes.data ?? []) as Installment[],
+        cofounderIds: ((cofRes.data ?? []) as { user_id: string }[]).map((r) => r.user_id),
+      };
+    },
+  });
+  const deals = dataQ.data?.deals ?? [];
+  const rates = dataQ.data?.rates ?? DEFAULT_RATES;
+  const installmentPayments = dataQ.data?.installmentPayments ?? [];
+  const installments = dataQ.data?.installments ?? [];
+  const loading = dataQ.isPending;
+  const profileMap = useMemo(() => {
     const pm = new Map<string, Profile>();
-    for (const p of (profilesRes.data ?? []) as Profile[]) pm.set(p.id, p);
-    setProfileMap(pm);
-    const r: CommissionRates = { ...DEFAULT_RATES };
-    for (const row of (ratesRes.data ?? [])) {
-      const k = row.key as keyof CommissionRates;
-      if (k in r) (r as Record<string, number>)[k] = Number(row.rate);
-    }
-    setRates(r);
-    setInstallmentPayments((ipRes.data ?? []) as InstallmentPayment[]);
-    setInstallments((instRes.data ?? []) as Installment[]);
-    setLoading(false);
-  }, [period.monthStart, period.monthEnd]);
-
-  useEffect(() => { void load(); }, [load]);
+    for (const p of dataQ.data?.profiles ?? []) pm.set(p.id, p);
+    return pm;
+  }, [dataQ.data?.profiles]);
+  const cofounderIds = useMemo(() => new Set(dataQ.data?.cofounderIds ?? []), [dataQ.data?.cofounderIds]);
 
   // Build installment map: id → installment
   const installmentMap = useMemo(() => {

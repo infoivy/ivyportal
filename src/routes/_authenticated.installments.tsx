@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { findWhopMatch } from "@/lib/mochi.functions";
 import { supabase } from "@/integrations/supabase/client";
+import { keys, invalidateForTables } from "@/lib/query-keys";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import {
@@ -76,19 +78,34 @@ function InstallmentsPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [editing, setEditing] = useState<Installment | null>(null);
 
-  const load = async () => {
-    const [iRes, pRes, sRes, tRes] = await Promise.all([
-      (supabase.from("installments" as any).select("*").order("created_at", { ascending: false }) as any),
-      (supabase.from("installment_payments" as any).select("*").order("due_date", { ascending: true }) as any),
-      supabase.from("students").select("id, full_name").order("full_name"),
-      supabase.from("profiles").select("id, display_name" as any),
-    ]);
-    setInstallments((iRes.data ?? []) as Installment[]);
-    setPayments((pRes.data ?? []) as Payment[]);
-    setStudents((sRes.data ?? []) as Student[]);
-    setTeam(((tRes.data ?? []) as any[]).map(p => ({ id: p.id, display_name: p.display_name })) as Person[]);
-  };
-  useEffect(() => { load(); }, []);
+  // Cached page read: other pages' mutations (deal logging, student renames)
+  // reach this view through invalidateForTables; mutations below still patch
+  // local state for instant feedback.
+  const qc = useQueryClient();
+  const pageQ = useQuery({
+    queryKey: keys.installmentsPage,
+    queryFn: async () => {
+      const [iRes, pRes, sRes, tRes] = await Promise.all([
+        (supabase.from("installments" as any).select("*").order("created_at", { ascending: false }) as any),
+        (supabase.from("installment_payments" as any).select("*").order("due_date", { ascending: true }) as any),
+        supabase.from("students").select("id, full_name").order("full_name"),
+        supabase.from("profiles").select("id, display_name" as any),
+      ]);
+      return {
+        installments: (iRes.data ?? []) as Installment[],
+        payments: (pRes.data ?? []) as Payment[],
+        students: (sRes.data ?? []) as Student[],
+        team: ((tRes.data ?? []) as any[]).map(p => ({ id: p.id, display_name: p.display_name })) as Person[],
+      };
+    },
+  });
+  useEffect(() => {
+    if (!pageQ.data) return;
+    setInstallments(pageQ.data.installments);
+    setPayments(pageQ.data.payments);
+    setStudents(pageQ.data.students);
+    setTeam(pageQ.data.team);
+  }, [pageQ.data]);
 
   const paymentsByInstallment = useMemo(() => {
     const map = new Map<string, Payment[]>();
@@ -146,6 +163,7 @@ function InstallmentsPage() {
     const { error } = await (supabase.from("installment_payments" as any).update(patch).eq("id", id) as any);
     if (error) return toast.error(error.message);
     setPayments(prev => prev.map(p => p.id === id ? { ...p, ...patch } : p));
+    invalidateForTables(qc, ["installment_payments"]);
   };
 
   const removePayment = async (id: string) => {
@@ -153,6 +171,7 @@ function InstallmentsPage() {
     const { error } = await (supabase.from("installment_payments" as any).delete().eq("id", id) as any);
     if (error) return toast.error(error.message);
     setPayments(prev => prev.filter(p => p.id !== id));
+    invalidateForTables(qc, ["installment_payments"]);
   };
 
   const removeInstallment = async (id: string) => {
@@ -161,6 +180,7 @@ function InstallmentsPage() {
     if (error) return toast.error(error.message);
     setInstallments(prev => prev.filter(i => i.id !== id));
     setPayments(prev => prev.filter(p => p.installment_id !== id));
+    invalidateForTables(qc, ["installments", "installment_payments"]);
   };
 
   const dismissReminder = async (id: string, which: "3d" | "1d") => {
@@ -168,6 +188,7 @@ function InstallmentsPage() {
     const { error } = await (supabase.from("installment_payments" as any).update(patch).eq("id", id) as any);
     if (error) return toast.error(error.message);
     setPayments(prev => prev.map(p => p.id === id ? { ...p, ...patch } : p));
+    invalidateForTables(qc, ["installment_payments"]);
   };
 
   const nameFor = (p: Payment) => {
@@ -320,7 +341,7 @@ function InstallmentsPage() {
           team={team}
           currentUserId={user?.id ?? null}
           onClose={() => { setAddOpen(false); setEditing(null); }}
-          onSaved={async () => { setAddOpen(false); setEditing(null); await load(); }}
+          onSaved={() => { setAddOpen(false); setEditing(null); invalidateForTables(qc, ["installments", "installment_payments"]); }}
         />
       )}
     </div>
