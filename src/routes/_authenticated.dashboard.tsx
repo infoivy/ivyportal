@@ -366,13 +366,27 @@ function Dashboard() {
     booked: sum.booked + row.mochiBooked,
     won: sum.won + row.mochiWon,
   }), { leads: 0, qualified: 0, booked: 0, won: 0 });
-  const eodFunnel = buildEodFunnel({
-    dms: totals.dms_sent,
-    convos: totals.convos_started,
-    booked: totals.calls_booked,
-    shows: totals.shows,
-    closes: totals.closes,
+  // The funnel's EOD side owns a fixed 7-day window — tying it to the global
+  // 24H picker left it permanently empty (founder-reported 2026-07-28).
+  const funnelEodQ = useQuery({
+    queryKey: ["page", "dashboard", "funnel-eod-7d"],
+    queryFn: async () => {
+      const from = new Date(); from.setDate(from.getDate() - 6);
+      const { data } = await supabase
+        .from("eods")
+        .select("dms_sent, leads_contacted, convos_started, calls_booked, shows, closes")
+        .gte("report_date", from.toISOString().slice(0, 10));
+      const rows = data ?? [];
+      return {
+        dms: rows.reduce((s, r) => s + Math.max(r.dms_sent ?? 0, r.leads_contacted ?? 0), 0),
+        convos: rows.reduce((s, r) => s + (r.convos_started ?? 0), 0),
+        booked: rows.reduce((s, r) => s + (r.calls_booked ?? 0), 0),
+        shows: rows.reduce((s, r) => s + (r.shows ?? 0), 0),
+        closes: rows.reduce((s, r) => s + (r.closes ?? 0), 0),
+      };
+    },
   });
+  const eodFunnel = buildEodFunnel(funnelEodQ.data ?? { dms: 0, convos: 0, booked: 0, shows: 0, closes: 0 });
   const mochiFunnel = buildMochiFunnel(mochiTotals);
   const selectedFunnelSource: FunnelSource = canSeeCrm ? funnelSource : "eod";
   const selectedActivitySource: ActivitySource = canSeeCrm ? activitySource : "eod";
@@ -398,7 +412,7 @@ function Dashboard() {
   const crmLoading = canSeeCrm && (mochiQ.isLoading || closeActivityQ.isLoading);
   const crmError = canSeeCrm && (mochiQ.isError || closeActivityQ.isError);
   const volumeLoading = loading || (selectedActivitySource !== "eod" && crmLoading);
-  const funnelLoading = loading || (selectedFunnelSource === "mochi" && mochiQ.isLoading);
+  const funnelLoading = selectedFunnelSource === "mochi" ? (loading || mochiQ.isLoading) : funnelEodQ.isLoading;
 
   const rangeLabel =
     dateRange.preset === "24h" ? "Last 24 hours"
@@ -575,7 +589,7 @@ function Dashboard() {
                 <div className="flex items-start justify-between gap-3">
                   <PanelHead
                     title="Funnel Performance"
-                    subtitle={selectedFunnelSource === "mochi" ? "Mochi CRM stages · no EOD mixing" : "Self-reported EOD stages"}
+                    subtitle={selectedFunnelSource === "mochi" ? "Mochi CRM stages · no EOD mixing" : "Self-reported EOD stages · last 7 days"}
                   />
                   {canSeeCrm && (
                     <SourceTabs
@@ -591,8 +605,10 @@ function Dashboard() {
                       compact
                       message={selectedFunnelSource === "mochi" && mochiQ.isError
                         ? "Mochi funnel could not load. EOD funnel data remains available."
-                        : `No ${selectedFunnelSource === "mochi" ? "Mochi CRM" : "EOD"} funnel activity in this range.`}
-                      showSevenDayAction={dateRange.preset === "24h"}
+                        : selectedFunnelSource === "mochi"
+                          ? "No Mochi CRM funnel activity in this range."
+                          : "No EODs filed in the last 7 days."}
+                      showSevenDayAction={selectedFunnelSource === "mochi" && dateRange.preset === "24h"}
                       onViewSevenDays={() => setDateRange(rangeFor("7d"))}
                     />
                   ) : (
