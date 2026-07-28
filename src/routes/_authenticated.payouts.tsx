@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { keys, invalidateForTables } from "@/lib/query-keys";
 import { useAuth } from "@/lib/auth-context";
-import { Loader2, ChevronLeft, ChevronRight, CircleCheck, Undo2 } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, CircleCheck, Undo2, X } from "lucide-react";
 import { money, type Deal, type CommissionRates, DEFAULT_RATES } from "@/lib/revenue";
 import {
   getPeriod, buildPayoutRows, memberPayoutTotals,
@@ -54,7 +54,7 @@ function PayoutsInner() {
     queryKey: [...keys.payoutsPage, period.monthStart],
     placeholderData: (prev) => prev,
     queryFn: async () => {
-      const [dealsRes, profilesRes, ratesRes, ipRes, instRes, cofRes] = await Promise.all([
+      const [dealsRes, profilesRes, ratesRes, ipRes, instRes, cofRes, teamRes] = await Promise.all([
         supabase
           .from("deals")
           .select("id, closer_id, setter_id, total_value, cash_collected_upfront, deal_date, payment_type")
@@ -71,6 +71,7 @@ function PayoutsInner() {
           .not("paid_at", "is", null),
         supabase.from("installments").select("id, setter_id, closer_id, student_name"),
         supabase.from("user_roles").select("user_id").eq("role", "cofounder"),
+        supabase.from("user_roles").select("user_id").in("role", ["admin", "founder", "cofounder", "closer", "setter", "coach", "csm"]),
       ]);
       const ratesOut: CommissionRates = { ...DEFAULT_RATES };
       for (const row of (ratesRes.data ?? [])) {
@@ -84,6 +85,7 @@ function PayoutsInner() {
         installmentPayments: (ipRes.data ?? []) as InstallmentPayment[],
         installments: (instRes.data ?? []) as Installment[],
         cofounderIds: ((cofRes.data ?? []) as { user_id: string }[]).map((r) => r.user_id),
+        teamIds: Array.from(new Set(((teamRes.data ?? []) as { user_id: string }[]).map((r) => r.user_id))),
       };
     },
   });
@@ -183,27 +185,17 @@ function PayoutsInner() {
           </div>
         </div>
 
-        {/* Base pay — monthly, alongside per-period commissions */}
-        {(() => {
-          const withBase = [...profileMap.values()].filter((p) => (p.base_pay_monthly ?? 0) > 0);
-          if (withBase.length === 0) return null;
-          return (
-            <div className="card-surface px-4 py-3.5">
-              <div className="flex items-baseline justify-between gap-3 mb-2">
-                <span className="text-[13px] font-medium text-foreground">Base pay</span>
-                <span className="text-[11px] text-muted-foreground">monthly · paid with the 2nd half{period.isSecondHalf ? " (this period)" : ""}</span>
-              </div>
-              <div className="space-y-1">
-                {withBase.map((p) => (
-                  <div key={p.id} className="flex items-baseline justify-between text-[13px] rounded-md px-2 py-1.5 hover:bg-muted/60 motion-safe:transition-colors">
-                    <span className="text-foreground">{p.display_name}</span>
-                    <span className="tabular-nums font-medium">${Number(p.base_pay_monthly).toLocaleString()}<span className="text-muted-foreground font-normal"> / month</span></span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          );
-        })()}
+        {/* Base pay — monthly, paid with the 2nd half. Editable here so new
+            base pay doesn't require a trip to the Team page. */}
+        <BasePayPanel
+          profileMap={profileMap}
+          teamIds={data?.teamIds ?? []}
+          isSecondHalf={period.isSecondHalf}
+          onChanged={() => {
+            invalidateForTables(qc, ["profiles"]);
+            qc.invalidateQueries({ queryKey: ["payout-alert"] });
+          }}
+        />
 
         <RevenueTabBar />
 
@@ -356,6 +348,114 @@ function PayoutsInner() {
           </p>
         )}
       </div>
+    </div>
+  );
+}
+
+/** Base pay lives on profiles.base_pay_monthly (same field the Team page
+ *  edits). Add, adjust inline, or remove; changes flow to Finance, the
+ *  confirmation card, and the cash-in calendar via invalidation. */
+function BasePayPanel({ profileMap, teamIds, isSecondHalf, onChanged }: {
+  profileMap: Map<string, Profile>;
+  teamIds: string[];
+  isSecondHalf: boolean;
+  onChanged: () => void;
+}) {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draft, setDraft] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [addId, setAddId] = useState("");
+  const [addAmount, setAddAmount] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const withBase = [...profileMap.values()].filter((p) => (p.base_pay_monthly ?? 0) > 0);
+  const addable = teamIds
+    .map(id => profileMap.get(id))
+    .filter((p): p is Profile => !!p && (p.base_pay_monthly ?? 0) <= 0)
+    .sort((a, b) => (a.display_name ?? "").localeCompare(b.display_name ?? ""));
+
+  const save = async (id: string, amount: number | null) => {
+    setSaving(true);
+    const { error } = await supabase.from("profiles").update({ base_pay_monthly: amount } as never).eq("id", id);
+    setSaving(false);
+    if (error) return toast.error(error.message);
+    toast.success(amount == null ? "Base pay removed" : `Base pay set · $${amount.toLocaleString()}/month`);
+    setEditingId(null); setAdding(false); setAddId(""); setAddAmount("");
+    onChanged();
+  };
+
+  return (
+    <div className="card-surface px-4 py-3.5">
+      <div className="flex items-baseline justify-between gap-3 mb-2">
+        <span className="text-[13px] font-medium text-foreground">Base pay</span>
+        <span className="text-[11px] text-muted-foreground">monthly · paid with the 2nd half{isSecondHalf ? " (this period)" : ""}</span>
+      </div>
+      <div className="space-y-1">
+        {withBase.map((p) => (
+          <div key={p.id} className="flex items-center justify-between gap-2 text-[13px] rounded-md px-2 py-1.5 hover:bg-muted/60 motion-safe:transition-colors group">
+            <span className="text-foreground">{p.display_name}</span>
+            {editingId === p.id ? (
+              <span className="flex items-center gap-1.5">
+                <input
+                  autoFocus
+                  value={draft}
+                  onChange={e => setDraft(e.target.value.replace(/[^0-9.]/g, ""))}
+                  onKeyDown={e => { if (e.key === "Enter" && Number(draft) > 0) void save(p.id, Number(draft)); if (e.key === "Escape") setEditingId(null); }}
+                  className="h-7 w-24 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-right text-[13px] tabular-nums focus:outline-none focus:border-ring"
+                />
+                <button disabled={saving || !(Number(draft) > 0)} onClick={() => save(p.id, Number(draft))} className="text-[11px] font-medium text-primary hover:underline disabled:opacity-40">Save</button>
+                <button onClick={() => setEditingId(null)} className="text-[11px] text-muted-foreground hover:text-foreground">Cancel</button>
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">
+                <button
+                  onClick={() => { setEditingId(p.id); setDraft(String(p.base_pay_monthly ?? "")); }}
+                  className="tabular-nums font-medium hover:underline underline-offset-2"
+                  title="Edit amount"
+                >
+                  ${Number(p.base_pay_monthly).toLocaleString()}<span className="text-muted-foreground font-normal"> / month</span>
+                </button>
+                <button
+                  onClick={() => { if (confirm(`Remove ${p.display_name}'s base pay?`)) void save(p.id, null); }}
+                  className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-danger-fg motion-safe:transition-opacity"
+                  title="Remove base pay"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </span>
+            )}
+          </div>
+        ))}
+        {withBase.length === 0 && <div className="text-[12px] text-muted-foreground px-2 py-1">No base pay set yet.</div>}
+      </div>
+      {adding ? (
+        <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-[var(--border)] pt-2">
+          <select
+            value={addId}
+            onChange={e => setAddId(e.target.value)}
+            className="h-8 rounded-sm border border-[var(--border)] bg-[var(--background)] px-2 text-[12px] focus:outline-none focus:border-ring"
+          >
+            <option value="">Pick a team member…</option>
+            {addable.map(p => <option key={p.id} value={p.id}>{p.display_name ?? p.id.slice(0, 8)}</option>)}
+          </select>
+          <input
+            placeholder="$/month"
+            value={addAmount}
+            onChange={e => setAddAmount(e.target.value.replace(/[^0-9.]/g, ""))}
+            className="h-8 w-24 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-right text-[12px] tabular-nums focus:outline-none focus:border-ring"
+          />
+          <button
+            disabled={saving || !addId || !(Number(addAmount) > 0)}
+            onClick={() => save(addId, Number(addAmount))}
+            className="h-8 px-3 rounded-sm bg-primary text-primary-foreground text-[12px] font-medium hover:bg-primary/90 disabled:opacity-40"
+          >
+            Add
+          </button>
+          <button onClick={() => { setAdding(false); setAddId(""); setAddAmount(""); }} className="text-[11px] text-muted-foreground hover:text-foreground">Cancel</button>
+        </div>
+      ) : (
+        <button onClick={() => setAdding(true)} className="mt-2 text-[11px] font-medium text-primary hover:underline">+ Add base pay</button>
+      )}
     </div>
   );
 }
