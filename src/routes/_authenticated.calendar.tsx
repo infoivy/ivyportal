@@ -655,10 +655,9 @@ function CalendarPage() {
           />
         )}
 
-        {/* Money calendar — installments in, costs/base pay/commissions out
-            (founder-requested 2026-07-28: lives with team activity, not only
-            on Installments). Renders nothing for roles without access. */}
-        <CashInCalendarCard />
+        {/* Money calendar — founder/cofounder ONLY on this page
+            (founder-directed 2026-07-28); everyone else sees nothing here. */}
+        <CashInCalendarCard foundersOnly />
       </div>
       {setOpen && (
         <SetReminderDialog
