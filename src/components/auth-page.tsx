@@ -100,17 +100,17 @@ export function AuthPage() {
           </div>
           <div>
             <div className="text-xs font-semibold tracking-[0.2em] uppercase text-foreground">ISA Portal</div>
-            <div className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground">Setting Ops Dashboard</div>
+            <div className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground">Team & Student Portal</div>
           </div>
         </div>
 
         <div className="card-surface p-6 space-y-4">
           <div>
             <h1 className="text-lg font-semibold">
-              {tab === "signin" ? "Welcome back" : "Join the team"}
+              {tab === "signin" ? "Welcome back" : "Join Ivy Sales Academy"}
             </h1>
             <p className="text-[11px] text-muted-foreground uppercase tracking-wider mt-0.5">
-              {tab === "signin" ? "Sign in to your dashboard" : "Create your portal account"}
+              {tab === "signin" ? "One login for team and students" : "Create your portal account"}
             </p>
           </div>
 
