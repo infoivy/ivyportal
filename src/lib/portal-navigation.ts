@@ -342,7 +342,9 @@ const LABEL_ITEMS = [
 export function pageLabelForPath(pathname: string) {
   const exact = LABEL_ITEMS.find((item) => pathname === item.url);
   if (exact) return exact.title;
-  return LABEL_ITEMS
-    .filter((item) => matchesNavItem(item, pathname))
-    .sort((a, b) => b.url.length - a.url.length)[0]?.title ?? "Ivy Portal";
+  return (
+    LABEL_ITEMS.filter((item) => matchesNavItem(item, pathname)).sort(
+      (a, b) => b.url.length - a.url.length,
+    )[0]?.title ?? "Ivy Portal"
+  );
 }

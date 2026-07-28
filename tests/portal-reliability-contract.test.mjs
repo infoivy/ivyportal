@@ -83,7 +83,7 @@ test("Performance is the single EOD activity analytics workspace", () => {
   assert.match(performance, /Activity trend/);
   assert.match(performance, /showDots/);
   assert.match(performance, /from\("eods_activity_real"\)/);
-  assert.match(performance, /<SheetContent side="bottom"/);
+  assert.match(performance, /<SheetContent\s+side="bottom"/);
   assert.match(performance, /hidden overflow-x-auto xl:block/);
   assert.match(performance, /divide-y divide-border xl:hidden/);
   assert.match(performance, /rows\.some\(\(row\) => row\[key\] == null\)/);

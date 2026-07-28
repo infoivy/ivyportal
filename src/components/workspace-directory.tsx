@@ -38,8 +38,12 @@ export function WorkspaceDirectory({
                   <item.icon className="h-4.5 w-4.5" aria-hidden="true" />
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-body font-semibold text-foreground">{item.title}</span>
-                  <span className="mt-0.5 block text-caption leading-5 text-muted-foreground">{item.description}</span>
+                  <span className="block text-body font-semibold text-foreground">
+                    {item.title}
+                  </span>
+                  <span className="mt-0.5 block text-caption leading-5 text-muted-foreground">
+                    {item.description}
+                  </span>
                 </span>
                 <span className="grid h-8 w-8 place-items-center text-muted-foreground group-hover:text-foreground motion-safe:transition-colors">
                   <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
@@ -49,8 +53,12 @@ export function WorkspaceDirectory({
           </div>
         ) : (
           <div className="px-5 py-10 text-center">
-            <p className="text-body font-medium text-foreground">No tools are assigned to this role.</p>
-            <p className="mt-1 text-caption text-muted-foreground">Ask an admin if your access should be updated.</p>
+            <p className="text-body font-medium text-foreground">
+              No tools are assigned to this role.
+            </p>
+            <p className="mt-1 text-caption text-muted-foreground">
+              Ask an admin if your access should be updated.
+            </p>
           </div>
         )}
       </section>

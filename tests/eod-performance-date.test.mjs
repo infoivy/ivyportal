@@ -21,6 +21,9 @@ test("Performance applies the selected reporting range and member to one canonic
   assert.match(route, /\.gte\("report_date", from\)/);
   assert.match(route, /\.lte\("report_date", to\)/);
   assert.match(route, /memberId === "all" \? rows : rows\.filter\(\(row\) => row\.user_id === memberId\)/);
-  assert.match(route, /value: sum\(selectedRows\.filter\(\(row\) => row\.report_date === date\), metric\)/);
+  assert.match(
+    route,
+    /value:\s*sum\(\s*selectedRows\.filter\(\(row\) => row\.report_date === date\),\s*metric,?\s*\)/,
+  );
   assert.match(route, /\(\[7, 30, 90\] as RangeDays\[\]\)/);
 });

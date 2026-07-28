@@ -3,11 +3,7 @@ import { Menu } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useAuth } from "@/lib/auth-context";
 import { useAccess } from "@/lib/use-access";
-import {
-  PRIMARY_NAV_ITEMS,
-  isVisibleToRoles,
-  matchesNavItem,
-} from "@/lib/portal-navigation";
+import { PRIMARY_NAV_ITEMS, isVisibleToRoles, matchesNavItem } from "@/lib/portal-navigation";
 
 const MOBILE_PRIMARY_KEYS = ["home", "work", "performance", "customers"] as const;
 
@@ -48,7 +44,12 @@ export function StaffBottomNav() {
             >
               <Icon className="h-[18px] w-[18px]" />
               <span className="truncate">{item.title}</span>
-              {active && <span className="absolute bottom-1 h-0.5 w-4 rounded-full bg-foreground" aria-hidden />}
+              {active && (
+                <span
+                  className="absolute bottom-1 h-0.5 w-4 rounded-full bg-foreground"
+                  aria-hidden
+                />
+              )}
             </Link>
           );
         })}
@@ -62,7 +63,9 @@ export function StaffBottomNav() {
         >
           <Menu className="h-[18px] w-[18px]" />
           <span>More</span>
-          {moreActive && <span className="absolute bottom-1 h-0.5 w-4 rounded-full bg-foreground" aria-hidden />}
+          {moreActive && (
+            <span className="absolute bottom-1 h-0.5 w-4 rounded-full bg-foreground" aria-hidden />
+          )}
         </button>
       </div>
     </nav>
