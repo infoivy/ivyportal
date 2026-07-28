@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth-context";
 import { getFinanceRevenue } from "@/lib/mochi.functions";
 import { calcMonthPayouts } from "@/lib/payouts-calc";
 import { RevenueTabBar } from "@/components/revenue-tab-bar";
+import { ExpenseModal } from "@/components/expense-modal";
 import { DEFAULT_RATES } from "@/lib/revenue";
 import { money } from "@/lib/revenue";
 import { toast } from "sonner";
@@ -543,93 +544,5 @@ function StatCard({ label, value, sub, icon, tone = "default" }: {
       <div className={`text-[22px] font-medium tabular-nums tracking-[-0.02em] leading-none ${tone === "danger" ? "text-danger-fg" : "text-foreground"}`}>{value}</div>
       {sub && <div className="text-caption text-muted-foreground mt-1.5">{sub}</div>}
     </div>
-  );
-}
-
-function ExpenseModal({ editing, onClose, onSaved }: { editing: Expense | null; onClose: () => void; onSaved: () => void }) {
-  const { user } = useAuth();
-  const [name, setName] = useState(editing?.name ?? "");
-  const [amount, setAmount] = useState(editing ? String(editing.amount) : "");
-  const [recurring, setRecurring] = useState(editing?.recurring ?? true);
-  const [dueDay, setDueDay] = useState(editing?.due_day ? String(editing.due_day) : "1");
-  const [oneOffDate, setOneOffDate] = useState(editing?.one_off_date ?? new Date().toISOString().slice(0, 10));
-  const [category, setCategory] = useState(editing?.category ?? "");
-  const [active, setActive] = useState(editing?.active ?? true);
-  const [saving, setSaving] = useState(false);
-
-  const save = async () => {
-    if (!name.trim()) return toast.error("Name required");
-    const amt = Number(amount);
-    if (!(amt >= 0)) return toast.error("Amount must be ≥ 0");
-    const day = Math.max(1, Math.min(31, Number(dueDay) || 1));
-    setSaving(true);
-    const payload = {
-      name: name.trim(),
-      amount: amt,
-      recurring,
-      due_day: recurring ? day : null,
-      one_off_date: recurring ? null : oneOffDate,
-      category: category.trim() || null,
-      active,
-      updated_at: new Date().toISOString(),
-    };
-    const { error } = editing
-      ? await (supabase as any).from("business_expenses").update(payload).eq("id", editing.id)
-      : await (supabase as any).from("business_expenses").insert({ ...payload, created_by: user?.id ?? null });
-    setSaving(false);
-    if (error) return toast.error(error.message);
-    toast.success(editing ? "Expense updated" : "Expense added");
-    onSaved();
-  };
-
-  return (
-    <Dialog open onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>{editing ? "Edit expense" : "Add expense"}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>Name</Label>
-              <Input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Close CRM" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Amount ($ / month)</Label>
-              <Input type="number" min="0" value={amount} onChange={e => setAmount(e.target.value)} placeholder="e.g. 99" />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <label className="flex items-center gap-2 text-sm pt-6">
-              <Checkbox checked={recurring} onCheckedChange={v => setRecurring(!!v)} /> Recurring monthly
-            </label>
-            {recurring ? (
-              <div className="space-y-1.5">
-                <Label>Due day of month</Label>
-                <Input type="number" min="1" max="31" value={dueDay} onChange={e => setDueDay(e.target.value)} />
-              </div>
-            ) : (
-              <div className="space-y-1.5">
-                <Label>Date</Label>
-                <DateField value={oneOffDate} onChange={setOneOffDate} clearable={false} className="h-9" />
-              </div>
-            )}
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>Category (optional)</Label>
-              <Input value={category} onChange={e => setCategory(e.target.value)} placeholder="software / team / ads" />
-            </div>
-            <label className="flex items-center gap-2 text-sm pt-6">
-              <Checkbox checked={active} onCheckedChange={v => setActive(!!v)} /> Active
-            </label>
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" size="sm" onClick={onClose} disabled={saving}>Cancel</Button>
-          <Button size="sm" onClick={save} disabled={saving}>{saving ? "Saving…" : editing ? "Save changes" : "Add expense"}</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   );
 }

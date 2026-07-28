@@ -1,9 +1,15 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Pencil, Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
-import { keys } from "@/lib/query-keys";
+import { keys, invalidateForTables } from "@/lib/query-keys";
+import { findWhopMatch } from "@/lib/mochi.functions";
+import { ExpenseModal, type BusinessExpense } from "@/components/expense-modal";
+import { SelectField } from "@/components/ui/select-field";
 import { type Deal, type CommissionRates, DEFAULT_RATES } from "@/lib/revenue";
 import {
   buildPayoutRows, basePayDateFor, basePayEligibleOn,
@@ -21,17 +27,15 @@ type Payment = {
   status: PayStatus;
   paid_at: string | null;
 };
-type Expense = {
-  id: string;
-  name: string;
+type OutItem = {
+  label: string;
+  short: string;
   amount: number;
-  recurring: boolean;
-  due_day: number | null;
-  one_off_date: string | null;
-  category: string | null;
-  active: boolean;
+  // What the entry IS decides what you can do with it in the drill-down
+  // (founder 2026-07-28: click an out entry to pay/edit/remove it).
+  kind: "expense" | "basePay" | "commission";
+  sourceId?: string;
 };
-type OutItem = { label: string; short: string; amount: number };
 
 const STATUS_LABEL: Record<PayStatus, { label: string; cls: string }> = {
   upcoming: { label: "Upcoming", cls: "text-muted-foreground border-border bg-muted" },
@@ -45,22 +49,28 @@ const fmtMoney = (n: number, cur = "USD") =>
   new Intl.NumberFormat(undefined, { style: "currency", currency: cur }).format(n || 0);
 
 /**
- * The money calendar: installments coming in per day, and (founder/cofounder
- * only) money going out — recurring costs, per-member base pay after a full
- * month worked, and the two live semi-monthly team-commission totals on the
- * 15th and the last day of the month (founder-designed 2026-07-28).
- * Self-fetching so it can live on the Calendar page and Installments alike.
+ * Cash flow: installments coming in per day, and (founder/cofounder only)
+ * money going out — recurring costs, per-member base pay after a full month
+ * worked, and the two live semi-monthly team-commission totals on the 15th
+ * and the last day of the month (founder-designed 2026-07-28). Drill-down
+ * rows are actionable: expenses edit/remove, in-flows change status, one-off
+ * costs (e.g. a refund) can be logged straight onto a day.
+ * Self-fetching so it can live on the Calendar page and Money in alike.
  */
 export function CashInCalendarCard({ foundersOnly = false }: { foundersOnly?: boolean } = {}) {
   const { roles } = useAuth();
+  const qc = useQueryClient();
   const isFounderSide = roles.includes("founder") || roles.includes("cofounder");
   // On the Calendar page the whole card is founder/cofounder-only
-  // (founder-directed 2026-07-28); on Installments the in-flows stay
+  // (founder-directed 2026-07-28); on Money in the in-flows stay
   // visible to the money roles.
   const canSeeIn = foundersOnly
     ? isFounderSide
     : roles.some(r => ["admin", "closer", "coach", "founder", "cofounder"].includes(r));
   const canSeeMoneyOut = isFounderSide;
+  // Writing installment rows is closer/admin territory (RLS enforces it);
+  // don't render controls that would silently fail for anyone else.
+  const canEditIn = roles.some(r => ["admin", "closer"].includes(r));
 
   const q = useQuery({
     queryKey: keys.cashCalendar,
@@ -70,7 +80,7 @@ export function CashInCalendarCard({ foundersOnly = false }: { foundersOnly?: bo
         (supabase.from("installment_payments" as never).select("*, installments!inner(students!inner(is_demo))").eq("installments.students.is_demo", false).order("due_date", { ascending: true }) as unknown as Promise<{ data: Payment[] | null }>),
         (supabase.from("installments" as never).select("id, student_name, setter_id, closer_id, students!inner(is_demo)").eq("students.is_demo", false) as unknown as Promise<{ data: (PayoutInstallment & { student_name: string })[] | null }>),
         // RLS blanks these for anyone who isn't founder/cofounder
-        (supabase.from("business_expenses").select("*").eq("active", true) as unknown as Promise<{ data: Expense[] | null }>),
+        (supabase.from("business_expenses").select("*").eq("active", true) as unknown as Promise<{ data: BusinessExpense[] | null }>),
         supabase.from("profiles").select("id, display_name, commission_cap_pct, base_pay_monthly, base_pay_day, started_on").eq("is_demo", false),
         supabase.from("deals").select("id, closer_id, setter_id, total_value, cash_collected_upfront, deal_date, payment_type").eq("is_demo", false).gte("deal_date", new Date(new Date().getFullYear(), new Date().getMonth() - 2, 1).toISOString().slice(0, 10)),
         supabase.from("commission_rates").select("key, rate").eq("active", true),
@@ -84,7 +94,7 @@ export function CashInCalendarCard({ foundersOnly = false }: { foundersOnly?: bo
       return {
         payments: (pRes.data ?? []) as Payment[],
         installments: (iRes.data ?? []) as (PayoutInstallment & { student_name: string })[],
-        expenses: (eRes.data ?? []) as Expense[],
+        expenses: (eRes.data ?? []) as BusinessExpense[],
         profiles: (profRes.data ?? []) as PayoutProfile[],
         deals: (dealsRes.data ?? []) as Deal[],
         rates,
@@ -97,6 +107,7 @@ export function CashInCalendarCard({ foundersOnly = false }: { foundersOnly?: bo
     const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1);
   });
   const [selected, setSelected] = useState<string | null>(null);
+  const [expenseModal, setExpenseModal] = useState<{ open: boolean; editing: BusinessExpense | null; defaultDate?: string }>({ open: false, editing: null });
 
   const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   const todayIso = iso(new Date());
@@ -105,6 +116,49 @@ export function CashInCalendarCard({ foundersOnly = false }: { foundersOnly?: bo
     () => new Map((q.data?.installments ?? []).map(i => [i.id, i.student_name])),
     [q.data],
   );
+
+  const findWhopMatchFn = useServerFn(findWhopMatch);
+
+  const setStatus = async (id: string, status: PayStatus) => {
+    const patch: { status: PayStatus; paid_at: string | null } = { status, paid_at: null };
+    if (status === "paid") {
+      // Cash only counts once it's actually in Whop (founder rule 2026-07-14).
+      // Check for a matching charge before letting the row flip to paid.
+      const row = payments.find(p => p.id === id);
+      if (row) {
+        try {
+          const m = await findWhopMatchFn({ data: { amount: Number(row.amount) } });
+          if (m.connected && !m.matched) {
+            const go = confirm(
+              `No Whop payment of ~$${Number(row.amount).toLocaleString()} found in the last few days.\n\n` +
+              `Money only counts once it's in Whop. Mark paid anyway? (Only do this for verified off-Whop money, e.g. a Wise transfer.)`,
+            );
+            if (!go) return;
+          }
+        } catch { /* verification unavailable · proceed, reconciliation will flag it */ }
+      }
+      patch.paid_at = new Date().toISOString();
+    }
+    const { error } = await (supabase.from("installment_payments" as never) as unknown as { update: (v: object) => { eq: (c: string, v: string) => Promise<{ error: { message: string } | null }> } }).update(patch).eq("id", id);
+    if (error) return toast.error(error.message);
+    invalidateForTables(qc, ["installment_payments"]);
+  };
+
+  const removePayment = async (id: string) => {
+    if (!confirm("Delete this payment row? This can't be undone.")) return;
+    const { error } = await (supabase.from("installment_payments" as never) as unknown as { delete: () => { eq: (c: string, v: string) => Promise<{ error: { message: string } | null }> } }).delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    invalidateForTables(qc, ["installment_payments"]);
+  };
+
+  const deleteExpense = async (e: BusinessExpense) => {
+    const scope = e.recurring ? "This is a recurring cost: removing it removes it from every month." : "This removes the one-off cost.";
+    if (!confirm(`Remove "${e.name}"? ${scope}`)) return;
+    const { error } = await (supabase.from("business_expenses" as never) as unknown as { delete: () => { eq: (c: string, v: string) => Promise<{ error: { message: string } | null }> } }).delete().eq("id", e.id);
+    if (error) return toast.error(error.message);
+    toast.success("Expense removed");
+    invalidateForTables(qc, ["business_expenses"]);
+  };
 
   const byDay = useMemo(() => {
     const m = new Map<string, { expected: number; collected: number; rows: Payment[] }>();
@@ -148,9 +202,9 @@ export function CashInCalendarCard({ foundersOnly = false }: { foundersOnly?: bo
       if (amount <= 0) continue;
       if (e.recurring) {
         const day = Math.min(Math.max(e.due_day ?? 1, 1), daysInMonth);
-        add(`${monthKey}-${String(day).padStart(2, "0")}`, { label: e.name + (e.category ? ` · ${e.category}` : ""), short: e.name, amount });
+        add(`${monthKey}-${String(day).padStart(2, "0")}`, { label: e.name + (e.category ? ` · ${e.category}` : ""), short: e.name, amount, kind: "expense", sourceId: e.id });
       } else if (e.one_off_date && e.one_off_date.slice(0, 7) === monthKey) {
-        add(e.one_off_date, { label: e.name + (e.category ? ` · ${e.category}` : ""), short: e.name, amount });
+        add(e.one_off_date, { label: e.name + (e.category ? ` · ${e.category}` : ""), short: e.name, amount, kind: "expense", sourceId: e.id });
       }
     }
 
@@ -158,7 +212,7 @@ export function CashInCalendarCard({ foundersOnly = false }: { foundersOnly?: bo
       if ((p.base_pay_monthly ?? 0) <= 0) continue;
       const payDate = basePayDateFor(p, monthStartIso);
       if (!basePayEligibleOn(p, payDate)) continue;
-      add(payDate, { label: `${p.display_name ?? "Team member"} · base pay`, short: p.display_name ?? "Base pay", amount: Number(p.base_pay_monthly) });
+      add(payDate, { label: `${p.display_name ?? "Team member"} · base pay`, short: p.display_name ?? "Base pay", amount: Number(p.base_pay_monthly), kind: "basePay", sourceId: p.id });
     }
 
     // Two live commission entries: mid-month and last day (founder-designed).
@@ -181,10 +235,15 @@ export function CashInCalendarCard({ foundersOnly = false }: { foundersOnly?: bo
     };
     const firstHalf = half(monthStartIso, `${monthKey}-15`);
     const secondHalf = half(`${monthKey}-16`, monthEndIso);
-    if (firstHalf > 0.009) add(`${monthKey}-15`, { label: `Team commissions · ${monthLabel.split(" ")[0]} 1–15 (live)`, short: "Team commissions", amount: firstHalf });
-    if (secondHalf > 0.009) add(monthEndIso, { label: `Team commissions · ${monthLabel.split(" ")[0]} 16–${daysInMonth} (live)`, short: "Team commissions", amount: secondHalf });
+    if (firstHalf > 0.009) add(`${monthKey}-15`, { label: `Team commissions · ${monthLabel.split(" ")[0]} 1–15 (live)`, short: "Team commissions", amount: firstHalf, kind: "commission" });
+    if (secondHalf > 0.009) add(monthEndIso, { label: `Team commissions · ${monthLabel.split(" ")[0]} 16–${daysInMonth} (live)`, short: "Team commissions", amount: secondHalf, kind: "commission" });
     return m;
   }, [q.data, canSeeMoneyOut, monthStart, daysInMonth, payments, monthLabel]);
+
+  const expenseById = useMemo(
+    () => new Map((q.data?.expenses ?? []).map(e => [e.id, e])),
+    [q.data],
+  );
 
   const monthTotals = useMemo(() => {
     let expected = 0, collected = 0, out = 0;
@@ -211,7 +270,7 @@ export function CashInCalendarCard({ foundersOnly = false }: { foundersOnly?: bo
     <section className="rounded-lg border border-border bg-card">
       <header className="px-4 py-3 border-b border-border flex flex-wrap items-center gap-3">
         <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-        <h2 className="font-medium text-sm">Money calendar</h2>
+        <h2 className="font-medium text-sm">Cash flow</h2>
         <span className="text-xs text-muted-foreground">
           {fmtMoney(monthTotals.expected)} still expected · {fmtMoney(monthTotals.collected)} collected
           {canSeeMoneyOut && monthTotals.out > 0 && (
@@ -287,7 +346,7 @@ export function CashInCalendarCard({ foundersOnly = false }: { foundersOnly?: bo
             <span className="ml-auto opacity-70">commission totals are live · they move with cash until the period closes</span>
           </div>
         )}
-        {(sel || selOut) && selected && (
+        {selected && (sel || selOut || canSeeMoneyOut) && (
           <div className="mt-3 rounded-md border border-border bg-[var(--background)]">
             <div className="px-3 py-2 border-b border-border text-xs font-medium">
               {selected}
@@ -296,23 +355,91 @@ export function CashInCalendarCard({ foundersOnly = false }: { foundersOnly?: bo
             </div>
             <div className="divide-y divide-border">
               {sel?.rows.map(p => (
-                <div key={p.id} className="px-3 py-2 flex items-center gap-3 text-xs">
+                <div key={p.id} className="px-3 py-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
                   <span className="font-medium">{nameFor(p)}</span>
                   <span className="text-muted-foreground">#{p.sequence} · {fmtMoney(Number(p.amount), p.currency)}</span>
-                  <span className={`ml-auto text-[10px] px-2 py-0.5 rounded-full border ${STATUS_LABEL[p.status].cls}`}>{STATUS_LABEL[p.status].label}</span>
+                  <div className="ml-auto flex items-center gap-2">
+                    {canEditIn ? (
+                      <>
+                        <SelectField
+                          value={p.status}
+                          onChange={v => setStatus(p.id, v as PayStatus)}
+                          options={(Object.keys(STATUS_LABEL) as PayStatus[]).map(s => ({ value: s, label: STATUS_LABEL[s].label }))}
+                          className={`w-auto text-xs ${STATUS_LABEL[p.status].cls}`}
+                        />
+                        <button onClick={() => removePayment(p.id)} className="text-danger-fg hover:underline" aria-label="Delete payment row">
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </>
+                    ) : (
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full border ${STATUS_LABEL[p.status].cls}`}>{STATUS_LABEL[p.status].label}</span>
+                    )}
+                  </div>
                 </div>
               ))}
-              {selOut?.items.map((it, i) => (
-                <div key={`out-${i}`} className="px-3 py-2 flex items-center gap-3 text-xs">
-                  <span className="font-medium cal-out-general">{it.label}</span>
-                  <span className="text-muted-foreground">−{fmtMoney(it.amount)}</span>
-                  <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full border cal-out-general border-current/25">Out</span>
-                </div>
-              ))}
+              {selOut?.items.map((it, i) => {
+                const exp = it.kind === "expense" && it.sourceId ? expenseById.get(it.sourceId) : null;
+                return (
+                  <div key={`out-${i}`} className="px-3 py-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+                    <span className="font-medium cal-out-general">{it.label}</span>
+                    <span className="text-muted-foreground">−{fmtMoney(it.amount)}</span>
+                    <div className="ml-auto flex items-center gap-2">
+                      {exp && (
+                        <>
+                          <button
+                            onClick={() => setExpenseModal({ open: true, editing: exp })}
+                            className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
+                          >
+                            <Pencil className="h-3 w-3" /> Edit
+                          </button>
+                          <button
+                            onClick={() => deleteExpense(exp)}
+                            className="inline-flex items-center gap-1 text-danger-fg hover:underline"
+                          >
+                            <Trash2 className="h-3 w-3" /> Remove
+                          </button>
+                        </>
+                      )}
+                      {it.kind === "basePay" && (
+                        <Link to="/payouts" className="text-muted-foreground hover:text-foreground hover:underline">
+                          Manage on Payouts →
+                        </Link>
+                      )}
+                      {it.kind === "commission" && (
+                        <span className="text-[10px] text-muted-foreground">live · tracks the payout ledger</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              {!sel && !selOut && (
+                <div className="px-3 py-2 text-xs text-muted-foreground">Nothing scheduled on this day.</div>
+              )}
             </div>
+            {canSeeMoneyOut && (
+              <div className="px-3 py-2 border-t border-border">
+                <button
+                  onClick={() => setExpenseModal({ open: true, editing: null, defaultDate: selected })}
+                  className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  <Plus className="h-3.5 w-3.5" /> Add one-off cost on this day
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
+      {expenseModal.open && (
+        <ExpenseModal
+          editing={expenseModal.editing}
+          defaultOneOffDate={expenseModal.defaultDate}
+          onClose={() => setExpenseModal({ open: false, editing: null })}
+          onSaved={() => {
+            setExpenseModal({ open: false, editing: null });
+            invalidateForTables(qc, ["business_expenses"]);
+          }}
+        />
+      )}
     </section>
   );
 }

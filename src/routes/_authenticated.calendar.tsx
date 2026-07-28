@@ -655,7 +655,7 @@ function CalendarPage() {
           />
         )}
 
-        {/* Money calendar — founder/cofounder ONLY on this page
+        {/* Cash flow calendar — founder/cofounder ONLY on this page
             (founder-directed 2026-07-28); everyone else sees nothing here. */}
         <CashInCalendarCard foundersOnly />
       </div>
