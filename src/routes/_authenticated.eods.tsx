@@ -42,7 +42,7 @@ type EOD = {
 };
 
 type SetterType = "phone" | "dm" | "full_cycle" | null;
-type RosterEntry = { user_id: string; display_name: string; primary_role: string; setter_type: SetterType; joined_at: string };
+type RosterEntry = { user_id: string; display_name: string; primary_role: string; setter_type: SetterType; csm_target: number | null; joined_at: string };
 type GridEod = EOD & { display_name?: string; primary_role?: string; setter_type?: SetterType };
 
 // KPI defaults — plain numbers; adjust in Admin → Settings later
@@ -163,8 +163,8 @@ function EODsPage() {
     // expected counts even when they also hold closer/csm roles.
     const exempt = new Set((cofRows ?? []).map(r => r.user_id));
     const userIds = Array.from(new Set([...(rolesData ?? []).map(r => r.user_id), ...eods.map(e => e.user_id)]));
-    const { data: profs } = await supabase.from("profiles").select("id, display_name, setter_type, created_at").in("id", userIds);
-    const profMap = new Map((profs ?? []).map(p => [p.id, p as { id: string; display_name: string; setter_type: SetterType; created_at: string }]));
+    const { data: profs } = await supabase.from("profiles").select("id, display_name, setter_type, csm_daily_target, created_at" as never).in("id", userIds);
+    const profMap = new Map(((profs ?? []) as unknown as { id: string; display_name: string; setter_type: SetterType; csm_daily_target: number | null; created_at: string }[]).map(p => [p.id, p]));
     const roleMap = new Map<string, string[]>();
     (rolesData ?? []).forEach(r => {
       const arr = roleMap.get(r.user_id) ?? [];
@@ -187,7 +187,7 @@ function EODsPage() {
         .filter(uid => !exempt.has(uid) && ((roleMap.get(uid) ?? []).some(r => ["setter", "closer", "coach", "csm"].includes(r)) || eods.some(e => e.user_id === uid)))
         .map(uid => {
           const p = profMap.get(uid);
-          return { user_id: uid, display_name: p?.display_name ?? "Unknown", primary_role: primaryRole(uid), setter_type: p?.setter_type ?? null, joined_at: (p?.created_at ?? "").slice(0, 10) };
+          return { user_id: uid, display_name: p?.display_name ?? "Unknown", primary_role: primaryRole(uid), setter_type: p?.setter_type ?? null, csm_target: p?.csm_daily_target ?? null, joined_at: (p?.created_at ?? "").slice(0, 10) };
         }) as RosterEntry[],
     };
   };
@@ -281,11 +281,13 @@ function EODsPage() {
     const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 7);
     const recent = myEods.filter(e => new Date(e.report_date) >= cutoff);
     const sum = (k: keyof EOD) => recent.reduce((a, e) => a + (Number(e[k]) || 0), 0);
-    const kpiHitDays = recent.filter(e => didHitKpi(e, mySetterType)).length;
+    const kpiHitDays = recent.filter(e =>
+      mySetterType ? didHitKpi(e, mySetterType) : isCsm ? didHitCsmKpi(e, csmTarget) : false,
+    ).length;
     return { submitted: recent.length, kpiHitDays,
       dials: sum("dials"), leads: recent.reduce((a, e) => a + outreachOf(e), 0), sets: sum("calls_booked"),
       shows: sum("shows"), cash: sum("cash_collected"), closes: sum("closes") };
-  }, [myEods, mySetterType]);
+  }, [myEods, mySetterType, isCsm, csmTarget]);
   const streak = useMemo(() => computeStreak(myEods.map(e => e.report_date)), [myEods]);
 
   // Team numbers for the selected reporting day(s). If nobody has filed
@@ -542,7 +544,7 @@ function EODsPage() {
               {isAdmin ? (
                 <SubmittedTodayPanel roster={teamRoster} eods={teamEods} today={today} />
               ) : (
-                <MyLast7Panel myEods={myEods} today={today} setterType={mySetterType} />
+                <MyLast7Panel myEods={myEods} today={today} setterType={mySetterType} csmTarget={isCsm ? csmTarget : null} />
               )}
               <div className="card-surface p-4 text-[13px] text-muted-foreground leading-relaxed">
                 <div className="text-[13px] font-medium text-primary mb-2">Pro tip</div>
@@ -553,7 +555,7 @@ function EODsPage() {
         </TabsContent>
 
         <TabsContent value="mine">
-          <MyHistory myEods={myEods} setterType={mySetterType} isSetter={isSetter} isCloser={isCloser} onDelete={deleteEod} />
+          <MyHistory myEods={myEods} setterType={mySetterType} isSetter={isSetter} isCloser={isCloser} csmTarget={isCsm ? csmTarget : null} onDelete={deleteEod} />
         </TabsContent>
 
         {canViewTeam && (
@@ -598,10 +600,19 @@ function didHitKpi(e: EOD, st: SetterType): boolean {
   return true;
 }
 
-function dayStatus(e: EOD | undefined, st: SetterType): "green" | "amber" | "red" {
+/** CSM KPI: daily student check-ins against their personal target
+ *  (profiles.csm_daily_target — part-time vs full-time, founder-set). A
+ *  submitted EOD with 0 check-ins must NOT read as green (founder-reported
+ *  2026-07-28). */
+function didHitCsmKpi(e: EOD, target: number | null | undefined): boolean {
+  return (e.student_checkins ?? 0) >= Math.max(1, Number(target) || 10);
+}
+
+function dayStatus(e: EOD | undefined, st: SetterType, csmTarget?: number | null): "green" | "amber" | "red" {
   if (!e) return "red";
-  if (!st) return "green"; // no KPI defined
-  return didHitKpi(e, st) ? "green" : "amber";
+  if (st) return didHitKpi(e, st) ? "green" : "amber";
+  if (csmTarget != null) return didHitCsmKpi(e, csmTarget) ? "green" : "amber";
+  return "green"; // no KPI defined (closer/coach)
 }
 
 // ---------- Team Overview ----------
@@ -673,18 +684,21 @@ function TeamOverview({ roster, eods, days }: { roster: RosterEntry[]; eods: Gri
 
   const cards = roster.map(r => {
     const st: SetterType = r.primary_role === "setter" ? r.setter_type : null;
+    const csmTarget = r.primary_role === "csm" ? (r.csm_target ?? 10) : null;
     const dayRows = days.map(d => byUserDate.get(`${r.user_id}::${d}`));
     const submittedRows = dayRows.filter((e): e is EOD => !!e);
     const todayEod = single ? dayRows[0] : undefined;
-    const kpiHits = st ? submittedRows.filter(e => didHitKpi(e, st)).length : submittedRows.length;
+    const kpiHits = st ? submittedRows.filter(e => didHitKpi(e, st)).length
+      : csmTarget != null ? submittedRows.filter(e => didHitCsmKpi(e, csmTarget)).length
+      : submittedRows.length;
     const status: "green" | "amber" | "red" =
       submittedRows.length === 0 ? "red"
         : submittedRows.length === days.length && kpiHits === submittedRows.length ? "green"
-        : r.primary_role === "setter" || submittedRows.length < days.length ? "amber"
+        : r.primary_role === "setter" || r.primary_role === "csm" || submittedRows.length < days.length ? "amber"
         : "green";
     const week = weekDays.map(d => {
       const e = byUserDate.get(`${r.user_id}::${d}`);
-      return { d, status: !e ? "red" as const : (r.primary_role === "setter" && st ? (didHitKpi(e, st) ? "green" as const : "amber" as const) : "green" as const), e };
+      return { d, status: !e ? "red" as const : dayStatus(e, st, csmTarget), e };
     });
     let weeklyLabel = ""; let weeklyValue: string | number = "";
     if (r.primary_role === "setter") {
@@ -710,7 +724,10 @@ function TeamOverview({ roster, eods, days }: { roster: RosterEntry[]; eods: Gri
         } else if (r.primary_role === "closer" || r.primary_role === "coach") {
           todayLine = `Submitted · ${todayEod.calls_taken} calls, ${todayEod.closes} closes, $${Math.round(Number(todayEod.cash_collected)).toLocaleString()} cash`;
         } else if (r.primary_role === "csm") {
-          todayLine = `Submitted · ${todayEod.student_checkins} check-ins, ${todayEod.looms_reviewed} looms`;
+          const t = csmTarget ?? 10;
+          todayLine = didHitCsmKpi(todayEod, t)
+            ? `Submitted · hit KPI (${todayEod.student_checkins} of ${t} check-ins, ${todayEod.looms_reviewed} looms)`
+            : `Submitted · missed KPI (${todayEod.student_checkins} of ${t} check-ins, ${todayEod.looms_reviewed} looms)`;
         } else todayLine = "Submitted";
       }
     } else {
@@ -721,7 +738,7 @@ function TeamOverview({ roster, eods, days }: { roster: RosterEntry[]; eods: Gri
       } else if (r.primary_role === "closer" || r.primary_role === "coach") {
         todayLine = `${base} · ${sum("closes")} closes · $${Math.round(sum("cash_collected")).toLocaleString()} cash`;
       } else if (r.primary_role === "csm") {
-        todayLine = `${base} · ${sum("student_checkins")} check-ins · ${sum("looms_reviewed")} looms`;
+        todayLine = `${base} · KPI hit ${kpiHits}/${days.length} · ${sum("student_checkins")} check-ins · ${sum("looms_reviewed")} looms`;
       } else {
         todayLine = base;
       }
@@ -841,7 +858,7 @@ function OverviewCard({ card }: { card: {
 
 // ---------- My history (grouped by week) ----------
 
-function MyHistory({ myEods, setterType, isSetter, isCloser, onDelete }: { myEods: EOD[]; setterType: SetterType; isSetter: boolean; isCloser: boolean; onDelete: (id: string) => void }) {
+function MyHistory({ myEods, setterType, isSetter, isCloser, csmTarget = null, onDelete }: { myEods: EOD[]; setterType: SetterType; isSetter: boolean; isCloser: boolean; csmTarget?: number | null; onDelete: (id: string) => void }) {
   const groups = useMemo(() => {
     const m = new Map<string, EOD[]>();
     myEods.forEach(e => {
@@ -868,7 +885,8 @@ function MyHistory({ myEods, setterType, isSetter, isCloser, onDelete }: { myEod
         const leads = rows.reduce((a, e) => a + outreachOf(e), 0);
         const sets = rows.reduce((a, e) => a + e.calls_booked, 0);
         const cash = rows.reduce((a, e) => a + Number(e.cash_collected ?? 0), 0);
-        const kpiDays = rows.filter(e => didHitKpi(e, setterType)).length;
+        const checkins = rows.reduce((a, e) => a + (e.student_checkins ?? 0), 0);
+        const kpiDays = rows.filter(e => setterType ? didHitKpi(e, setterType) : csmTarget != null ? didHitCsmKpi(e, csmTarget) : false).length;
         return (
           <div key={wk} className="border border-[var(--border)] bg-[var(--card)] rounded-sm">
             <button onClick={() => toggle(wk)} className="w-full flex items-center justify-between p-3 text-left hover:bg-[var(--muted)]">
@@ -881,7 +899,8 @@ function MyHistory({ myEods, setterType, isSetter, isCloser, onDelete }: { myEod
                 {isSetter && (setterType === "dm" ? <span>{leads} DMs</span> : <span>{dials} dials</span>)}
                 {isSetter && <span>{sets} sets</span>}
                 {isCloser && <span>${Math.round(cash).toLocaleString()} cash</span>}
-                {setterType && <span className={kpiDays >= 5 ? "text-success-fg" : "text-warning-fg"}>KPI {kpiDays} of {submitted}</span>}
+                {csmTarget != null && <span>{checkins} check-ins</span>}
+                {(setterType || csmTarget != null) && <span className={kpiDays >= 5 ? "text-success-fg" : "text-warning-fg"}>KPI {kpiDays} of {submitted}</span>}
               </div>
             </button>
             {isOpen && (
@@ -1047,6 +1066,7 @@ function ComplianceMatrix({ eods, roster }: { eods: GridEod[]; roster: RosterEnt
                   {members.map(m => {
                     const s = rowStats(m);
                     const st: SetterType = m.primary_role === "setter" ? m.setter_type : null;
+                    const mCsmTarget = m.primary_role === "csm" ? (m.csm_target ?? 10) : null;
                     return (
                       <tr key={m.user_id} className="border-b border-[var(--accent)] last:border-0">
                         <td className="px-3 py-2 sticky left-0 bg-[var(--card)] font-medium truncate max-w-[180px]">
@@ -1057,7 +1077,7 @@ function ComplianceMatrix({ eods, roster }: { eods: GridEod[]; roster: RosterEnt
                           const beforeJoin = m.joined_at && d < m.joined_at;
                           const eod = byUserDate.get(`${m.user_id}::${d}`);
                           if (beforeJoin) return <td key={d} className="px-1 py-1 text-center"><span className="text-[#3a3f4a] text-[11px]">–</span></td>;
-                          const status = dayStatus(eod, st);
+                          const status = dayStatus(eod, st, mCsmTarget);
                           const cls = status === "green" ? "bg-success-bg border-success/25 text-success-fg" : status === "amber" ? "bg-warning-bg border-warning/25 text-warning-fg" : "bg-danger-bg border-danger/25 text-danger-fg";
                           const glyph = status === "red" ? "✗" : status === "amber" ? "!" : "✓";
                           return (<td key={d} className="px-1 py-1 text-center"><span title={`${m.display_name} · ${fmtLong(d)} · ${status}`} className={`inline-flex items-center justify-center h-5 w-5 rounded-sm border text-[11px] ${cls}`}>{glyph}</span></td>);
@@ -1391,7 +1411,7 @@ function SubmittedTodayPanel({ roster, eods, today }: { roster: RosterEntry[]; e
   );
 }
 
-function MyLast7Panel({ myEods, today, setterType }: { myEods: EOD[]; today: string; setterType: SetterType }) {
+function MyLast7Panel({ myEods, today, setterType, csmTarget = null }: { myEods: EOD[]; today: string; setterType: SetterType; csmTarget?: number | null }) {
   const days = useMemo(() => { const list: string[] = []; const t = new Date(today + "T00:00:00"); for (let i = 6; i >= 0; i--) { const d = new Date(t); d.setDate(t.getDate() - i); list.push(isoDate(d)); } return list; }, [today]);
   const byDate = new Map(myEods.map(e => [e.report_date, e]));
   return (
@@ -1400,7 +1420,7 @@ function MyLast7Panel({ myEods, today, setterType }: { myEods: EOD[]; today: str
       <div className="space-y-1.5 text-xs">
         {days.map(d => {
           const e = byDate.get(d);
-          const status = dayStatus(e, setterType);
+          const status = dayStatus(e, setterType, csmTarget);
           const glyph = !e ? "✗" : status === "amber" ? "!" : "✓";
           const cls = !e ? "text-danger-fg" : status === "amber" ? "text-warning-fg" : "text-success-fg";
           return (<div key={d} className="flex items-center justify-between"><span className="text-muted-foreground">{fmtLong(d)}</span><span className={`text-[11px] ${cls}`}>{glyph}</span></div>);
