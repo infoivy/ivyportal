@@ -94,6 +94,7 @@ function AuthedLayout() {
         const { data, error } = await supabase
           .from("eods")
           .select("id")
+          .eq("is_demo", false)
           .eq("user_id", userId)
           .eq("report_date", todayLocal())
           .maybeSingle();

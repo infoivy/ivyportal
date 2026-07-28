@@ -82,13 +82,13 @@ function RevenueInner() {
 
   const fetchPage = async () => {
     const [dealsRes, ratesRes, rolesRes, studentsRes] = await Promise.all([
-      supabase.from("deals").select("*").order("deal_date", { ascending: false }).limit(500),
+      supabase.from("deals").select("*").eq("is_demo", false).order("deal_date", { ascending: false }).limit(500),
       supabase.from("commission_rates").select("*").eq("active", true),
       supabase
         .from("user_roles")
         .select("user_id, role")
         .in("role", ["closer", "coach", "admin", "setter"]),
-      supabase.from("students").select("id, full_name").order("full_name"),
+      supabase.from("students").select("id, full_name").eq("is_demo", false).order("full_name"),
     ]);
 
     const r: CommissionRates = { ...DEFAULT_RATES };
@@ -109,7 +109,7 @@ function RevenueInner() {
     let closerList: Profile[] = [];
     let setterList: Profile[] = [];
     if (allIds.length > 0) {
-      const { data: profs } = await supabase.from("profiles").select("id, display_name, commission_cap_pct").in("id", allIds);
+      const { data: profs } = await supabase.from("profiles").select("id, display_name, commission_cap_pct").eq("is_demo", false).in("id", allIds);
       const profMap = new Map(((profs ?? []) as Profile[]).map((p) => [p.id, p]));
       closerList = closerIds.map((id) => profMap.get(id)).filter(Boolean) as Profile[];
       setterList = setterIds.map((id) => profMap.get(id)).filter(Boolean) as Profile[];

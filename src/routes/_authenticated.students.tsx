@@ -51,6 +51,7 @@ const PHASES: { key: Phase; label: string; color: string }[] = [
   { key: "onboarding", label: "Onboarding", color: "text-muted-foreground border-border bg-muted" },
   { key: "coaching_1on1", label: "1:1 Coaching", color: "text-muted-foreground border-border bg-muted" },
   { key: "applying", label: "Applying", color: "text-success-fg border-success/25 bg-success-bg" },
+  { key: "training", label: "Training", color: "text-muted-foreground border-border bg-muted" },
   { key: "offer_won", label: "Offer Won", color: "text-warning-fg border-warning/25 bg-warning-bg" },
   { key: "testimonial", label: "Testimonial", color: "text-success-fg border-success/25 bg-success-bg" },
   { key: "graduated", label: "Graduated", color: "text-success-fg border-success/25 bg-success-bg" },
@@ -102,10 +103,10 @@ function StudentsLayout() {
   const { data: students = [], isLoading: studentsLoading } = useQuery(studentsQuery()) as { data: Student[]; isLoading: boolean };
   // Start Here progress for locked students — who's moving, who's stalling.
   const guideStepsQ = useQuery({
-    queryKey: ["student_guide_steps", "all"],
+    queryKey: ["student_guide_steps", "real"],
     staleTime: 60_000,
     queryFn: async () => {
-      const { data } = await supabase.from("student_guide_steps").select("student_id, step_key");
+      const { data } = await supabase.from("student_guide_steps").select("student_id, step_key, students!inner(is_demo)").eq("students.is_demo", false);
       const counts: Record<string, number> = {};
       for (const r of data ?? []) {
         if (START_HERE_REQUIRED_KEYS.includes(r.step_key)) counts[r.student_id] = (counts[r.student_id] ?? 0) + 1;
@@ -132,7 +133,7 @@ function StudentsLayout() {
     enabled: coaches.length > 0,
     staleTime: 5 * 60_000,
     queryFn: async () => {
-      const { data: profs } = await supabase.from("profiles").select("id, avatar_path" as any).in("id", coaches.map(c => c.id));
+      const { data: profs } = await supabase.from("profiles").select("id, avatar_path" as any).eq("is_demo", false).in("id", coaches.map(c => c.id));
       const paths: Record<string, string | null> = {};
       ((profs ?? []) as any[]).forEach(p => { paths[p.id] = p.avatar_path ?? null; });
       const signed = await signAvatars(Object.values(paths));
@@ -799,7 +800,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
       const setterIds = Array.from(new Set((roleRows ?? []).filter((r: any) => r.role === "setter" || r.role === "admin").map((r: any) => r.user_id)));
       const allIds = Array.from(new Set([...closerIds, ...setterIds]));
       if (!allIds.length) return;
-      const { data: profs } = await supabase.from("profiles").select("id, display_name").in("id", allIds);
+      const { data: profs } = await supabase.from("profiles").select("id, display_name").eq("is_demo", false).in("id", allIds);
       const byId = new Map((profs ?? []).map((p: any) => [p.id, p as Setter]));
       setClosers(closerIds.map(id => byId.get(id) ?? { id, display_name: null }));
       setSetters(setterIds.map(id => byId.get(id) ?? { id, display_name: null }));

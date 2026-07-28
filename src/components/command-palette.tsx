@@ -79,11 +79,11 @@ export function CommandPalette() {
     let alive = true;
     (async () => {
       const [sRes, pRes, rRes, dRes, tRes] = await Promise.all([
-        supabase.from("students").select("id, full_name, email").order("full_name").limit(500),
-        supabase.from("profiles").select("id, display_name").limit(200),
+        supabase.from("students").select("id, full_name, email").eq("is_demo", false).order("full_name").limit(500),
+        supabase.from("profiles").select("id, display_name").eq("is_demo", false).limit(200),
         supabase.from("user_roles").select("user_id, role"),
         supabase.from("docs").select("slug, title, category").limit(300),
-        supabase.from("testimonials").select("id, title").limit(200),
+        supabase.from("testimonials").select("id, title, students!inner(is_demo)").eq("students.is_demo", false).limit(200),
       ]);
       if (!alive) return;
       const roleMap = new Map<string, string[]>();

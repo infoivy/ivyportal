@@ -132,9 +132,10 @@ function PerformancePage() {
       roleRows.forEach((row) => roleMap.set(row.user_id, [...(roleMap.get(row.user_id) ?? []), row.role]));
       const exempt = new Set(roleRows.filter((row) => ["founder", "cofounder"].includes(row.role)).map((row) => row.user_id));
       const reportingIds = roleRows.filter((row) => (REPORTING_ROLES as readonly string[]).includes(row.role)).map((row) => row.user_id);
+      const reportingIdSet = new Set(reportingIds);
       const activityIds = activities.map((row) => row.user_id);
       const ids = [...new Set([...reportingIds, ...activityIds])]
-        .filter((id) => !exempt.has(id))
+        .filter((id) => reportingIdSet.has(id) || !exempt.has(id))
         .filter((id) => profileMap.has(id));
 
       const roster = ids

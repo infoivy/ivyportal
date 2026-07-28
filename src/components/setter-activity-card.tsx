@@ -51,7 +51,7 @@ export function SetterActivityCard() {
   const profilesQ = useQuery({
     queryKey: ["profiles-lite"],
     staleTime: 10 * 60_000,
-    queryFn: async () => (await supabase.from("profiles").select("id, display_name")).data ?? [],
+    queryFn: async () => (await supabase.from("profiles").select("id, display_name").eq("is_demo", false)).data ?? [],
   });
   const idByName = new Map((profilesQ.data ?? []).filter((p: any) => p.display_name).map((p: any) => [String(p.display_name).toLowerCase(), p.id as string]));
 

@@ -55,6 +55,7 @@ function KnowledgeDoc() {
         const { data: p } = await supabase
           .from("profiles")
           .select("display_name")
+          .eq("is_demo", false)
           .eq("id", data.updated_by)
           .maybeSingle();
         setUpdatedByName(p?.display_name ?? null);

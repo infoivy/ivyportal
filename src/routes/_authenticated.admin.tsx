@@ -67,11 +67,11 @@ function AdminConsole() {
     const from = format(subDays(new Date(), days - 1), "yyyy-MM-dd");
     {
       const [eodRes, profRes, roleRes, studRes, callsRes, ratesRes, fsRes, auditRes] = await Promise.all([
-        supabase.from("eods").select("id, user_id, report_date").gte("report_date", from),
-        supabase.from("profiles").select("id, display_name"),
+        supabase.from("eods_activity_real").select("id, user_id, report_date").gte("report_date", from),
+        supabase.from("profiles").select("id, display_name").eq("is_demo", false),
         supabase.from("user_roles").select("user_id, role"),
-        supabase.from("students").select("id, full_name, email, coach_id, status, first_win_at, testimonial_collected, trustpilot_collected"),
-        supabase.from("student_calls").select("id, student_id, call_date, coach_id, progress_rating").eq("status", "completed").is("progress_rating", null).order("call_date", { ascending: false }).limit(50),
+        supabase.from("students").select("id, full_name, email, coach_id, status, first_win_at, testimonial_collected, trustpilot_collected").eq("is_demo", false),
+        supabase.from("student_calls").select("id, student_id, call_date, coach_id, progress_rating, students!inner(is_demo)").eq("students.is_demo", false).eq("status", "completed").is("progress_rating", null).order("call_date", { ascending: false }).limit(50),
         supabase.from("commission_rates").select("*").eq("active", true),
         supabase.from("founder_settings").select("id, crm_enabled, monthly_cash_goal, quarterly_goals").maybeSingle(),
 

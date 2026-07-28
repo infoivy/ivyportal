@@ -29,7 +29,7 @@ export function CashLeaderboard({ compact = false }: { compact?: boolean }) {
       const totals = await fetchCollectedCashByCloser(startISO, endISO);
       const userIds = Array.from(totals.keys());
       if (userIds.length === 0) return [];
-      const { data: profiles } = await supabase.from("profiles").select("id, display_name").in("id", userIds);
+      const { data: profiles } = await supabase.from("profiles").select("id, display_name").eq("is_demo", false).in("id", userIds);
       const nameMap = new Map((profiles ?? []).map((p) => [p.id, p.display_name || "Unknown"]));
       return userIds.map((id) => ({
         user_id: id, name: nameMap.get(id) ?? "Unknown",

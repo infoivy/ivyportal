@@ -151,31 +151,32 @@ function HomePage() {
         supabase
           .from("student_action_items")
           .select("id, text, due_date, created_at")
+          .eq("is_demo", false)
           .eq("assignee_id", user!.id)
           .eq("done", false)
           .order("due_date", { ascending: true, nullsFirst: false })
           .order("created_at", { ascending: false })
           .limit(6),
         canSeeCustomers
-          ? supabase.from("students").select("id, phase, eod_exempt").eq("status", "active")
+          ? supabase.from("students").select("id, phase, eod_exempt").eq("is_demo", false).eq("status", "active")
           : emptyRows,
         canSeeCustomers
-          ? supabase.from("student_calls").select("id", { count: "exact", head: true }).eq("status", "scheduled").gte("call_date", today).lte("call_date", inSevenDays)
+          ? supabase.from("student_calls").select("id, students!inner(is_demo)", { count: "exact", head: true }).eq("students.is_demo", false).eq("status", "scheduled").gte("call_date", today).lte("call_date", inSevenDays)
           : emptyCount,
         canSeeCustomers
-          ? supabase.from("student_calls").select("student_id, call_date").eq("status", "completed").gte("call_date", callRiskFrom)
+          ? supabase.from("student_calls").select("student_id, call_date, students!inner(is_demo)").eq("students.is_demo", false).eq("status", "completed").gte("call_date", callRiskFrom)
           : emptyRows,
         canSeeCustomers
-          ? supabase.from("student_eods").select("student_id, report_date").gte("report_date", studentEodFrom)
+          ? supabase.from("student_eods").select("student_id, report_date, students!inner(is_demo)").eq("students.is_demo", false).gte("report_date", studentEodFrom)
           : emptyRows,
         canSeeFinance
-          ? supabase.from("installment_payments").select("id", { count: "exact", head: true }).eq("status", "upcoming").lt("due_date", today)
+          ? supabase.from("installment_payments").select("id, installments!inner(students!inner(is_demo))", { count: "exact", head: true }).eq("installments.students.is_demo", false).eq("status", "upcoming").lt("due_date", today)
           : emptyCount,
         canSeeFinance
-          ? supabase.from("installment_payments").select("id", { count: "exact", head: true }).eq("status", "upcoming").gte("due_date", today).lte("due_date", inThreeDays)
+          ? supabase.from("installment_payments").select("id, installments!inner(students!inner(is_demo))", { count: "exact", head: true }).eq("installments.students.is_demo", false).eq("status", "upcoming").gte("due_date", today).lte("due_date", inThreeDays)
           : emptyCount,
         canSeeCustomers
-          ? supabase.from("students").select("id", { count: "exact", head: true }).eq("status", "active").eq("testimonial_collected", false).not("first_win_at", "is", null)
+          ? supabase.from("students").select("id", { count: "exact", head: true }).eq("is_demo", false).eq("status", "active").eq("testimonial_collected", false).not("first_win_at", "is", null)
           : emptyCount,
         canApprove
           ? supabase.rpc("pending_signups")
@@ -191,15 +192,12 @@ function HomePage() {
       const profiles = (profilesRes.data ?? []) as TeamProfile[];
       const todayRows = activities.filter((row) => row.report_date === today);
       const reportingRows = (reportingRolesRes.data ?? []) as { user_id: string; role: string }[];
-      const exemptUsers = new Set(
-        reportingRows.filter((row) => row.role === "founder" || row.role === "cofounder").map((row) => row.user_id),
-      );
       const reportingUsers = new Set(
         reportingRows.filter((row) => ["setter", "closer", "coach", "csm"].includes(row.role)).map((row) => row.user_id),
       );
       const activeUsers = new Set(profiles.filter((profile) => profile.active !== false).map((profile) => profile.id));
       const expectedUsers = new Set(
-        [...reportingUsers].filter((id) => activeUsers.has(id) && !exemptUsers.has(id)),
+        [...reportingUsers].filter((id) => activeUsers.has(id)),
       );
       const submittedUsers = new Set(todayRows.map((row) => row.user_id).filter((id) => expectedUsers.has(id)));
 

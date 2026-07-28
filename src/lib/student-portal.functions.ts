@@ -28,9 +28,10 @@ export const getStudentLeaderboard = createServerFn({ method: "GET" })
       // Locked students can't log EODs — an all-zero "board of 19" where 18
       // can't compete is meaningless. They join at unlock.
       supabaseAdmin.from("students").select("id, full_name, user_id, status, timezone")
-        .eq("status", "active").not("onboarding_completed_at", "is", null),
+        .eq("is_demo", false).eq("status", "active").not("onboarding_completed_at", "is", null),
       supabaseAdmin.from("student_eods")
-        .select("student_id, report_date, applications_submitted, looms_sent, interviews")
+        .select("student_id, report_date, applications_submitted, looms_sent, interviews, students!inner(is_demo)")
+        .eq("students.is_demo", false)
         .gte("report_date", fetchSince),
     ]);
 

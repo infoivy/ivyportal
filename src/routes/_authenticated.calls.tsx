@@ -60,8 +60,8 @@ function CallsPage() {
 
   const fetchPage = async () => {
     const [cRes, sRes, roleRes] = await Promise.all([
-      supabase.from("student_calls").select("*").order("call_date", { ascending: false }).limit(500),
-      supabase.from("students").select("id, full_name, calls_allotted").order("full_name"),
+      supabase.from("student_calls").select("*, students!inner(is_demo)").eq("students.is_demo", false).order("call_date", { ascending: false }).limit(500),
+      supabase.from("students").select("id, full_name, calls_allotted").eq("is_demo", false).order("full_name"),
       supabase.from("user_roles").select("user_id, role").in("role", ["coach", "admin"]),
     ]);
     const coachIds = Array.from(new Set((roleRes.data ?? []).map(r => r.user_id)));
@@ -71,6 +71,7 @@ function CallsPage() {
       const { data: profs } = await supabase
         .from("profiles")
         .select("id, display_name, avatar_path" as any)
+        .eq("is_demo", false)
         .in("id", coachIds);
       coachList = ((profs ?? []) as any[]).map(p => ({
         id: p.id, display_name: p.display_name, avatar_path: p.avatar_path ?? null,

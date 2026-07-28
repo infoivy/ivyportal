@@ -14,9 +14,11 @@ export async function fetchCollectedCashByCloser(startISO: string, endISO: strin
   const [dealsRes, paidRes] = await Promise.all([
     supabase.from("deals")
       .select("closer_id, cash_collected_upfront, deal_date")
+      .eq("is_demo", false)
       .gte("deal_date", startISO).lte("deal_date", endISO),
     supabase.from("installment_payments")
-      .select("amount, paid_at, installments!inner(closer_id)")
+      .select("amount, paid_at, installments!inner(closer_id, students!inner(is_demo))")
+      .eq("installments.students.is_demo", false)
       .eq("status", "paid")
       .gte("paid_at", `${startISO}T00:00:00Z`)
       .lte("paid_at", `${endISO}T23:59:59Z`),

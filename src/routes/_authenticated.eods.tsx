@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { CheckCircle2, Clock, AlertTriangle, ChevronRight, ChevronDown, Trash2, Pencil, Flame } from "lucide-react";
+import { CheckCircle2, Clock, AlertTriangle, ChevronRight, ChevronDown, Flame } from "lucide-react";
 import { computeStreak } from "@/lib/streak";
 import { todayLocal } from "@/lib/dates";
 import confetti from "canvas-confetti";
@@ -80,9 +80,8 @@ function EODsPage() {
   const today = todayLocal();
   const yesterday = shiftDay(today, -1);
 
-  // Which day this report is FOR. Reps who finish after midnight (or whose
-  // device clock is off) were silently filing onto the next day's date, and
-  // the upsert then wiped that day's real EOD.
+  // Which day this report is for. Reps who finish after midnight, or whose
+  // device clock is off, still need an explicit Today or Yesterday choice.
   const [reportDate, setReportDate] = useState(today);
 
   const [form, setForm] = useState(emptyForm);
@@ -94,7 +93,7 @@ function EODsPage() {
   const loadMine = useCallback(async () => {
     if (!user) return;
     const [{ data }, { data: prof }] = await Promise.all([
-      supabase.from("eods").select("*").eq("user_id", user.id).order("report_date", { ascending: false }).limit(120),
+      supabase.from("eods").select("*").eq("is_demo", false).eq("user_id", user.id).order("report_date", { ascending: false }).limit(120),
       supabase.from("profiles").select("setter_type, csm_daily_target" as never).eq("id", user.id).maybeSingle(),
     ]);
     setMySetterType(((prof as { setter_type?: string } | null)?.setter_type ?? null) as SetterType);
@@ -152,6 +151,7 @@ function EODsPage() {
 
   const submit = async () => {
     if (!user) return;
+    if (existingId) return toast.error("Submitted reports are locked. Contact a founder if a correction is needed.");
     if (!form.wins.trim()) return toast.error("Add a wins / summary before submitting.");
     const cleaned = isCsm
       ? { ...form, dms_sent: 0, convos_started: 0, calls_booked: 0, calls_scheduled: 0, shows: 0, no_shows: 0, calls_taken: 0, closes: 0, deposits: 0, cash_collected: 0, deferred_cash: 0, follow_ups_done: 0, dials: 0, leads_contacted: 0 }
@@ -167,35 +167,27 @@ function EODsPage() {
     if (warnings.length && !confirm(warnings.join("\n") + "\n\nSubmit anyway?")) return;
 
     setSaving(true);
-    const wasNew = !existingId;
     const payload = { user_id: user.id, report_date: reportDate, ...cleaned };
-    const { error } = await supabase.from("eods").upsert(payload, { onConflict: "user_id,report_date" });
+    const { error } = await supabase.from("eods").insert(payload);
     setSaving(false);
+    if (error?.code === "23505") {
+      void loadMine();
+      return toast.error("An EOD is already submitted for this date. Submitted reports are locked.");
+    }
     if (error) return toast.error(error.message);
-    toast.success(existingId ? `EOD updated for ${fmtLong(reportDate)}` : `EOD submitted for ${fmtLong(reportDate)}`);
+    toast.success(`EOD submitted for ${fmtLong(reportDate)}`);
     // Clears the "EOD due" chip in the top bar without a reload
     if (reportDate === today) {
       window.dispatchEvent(new CustomEvent("isa:eod-submitted", { detail: { userId: user.id } }));
     }
-    if (wasNew) {
-      confetti({ particleCount: 120, spread: 80, origin: { y: 0.7 }, colors: ["#171717", "#525252", "#A3A3A3", "#F5F5F5"] });
-      if (draftKey) { try { localStorage.removeItem(draftKey); } catch {} }
-    }
-    loadMine();
+    confetti({ particleCount: 120, spread: 80, origin: { y: 0.7 }, colors: ["#171717", "#525252", "#A3A3A3", "#F5F5F5"] });
+    if (draftKey) { try { localStorage.removeItem(draftKey); } catch {} }
+    void loadMine();
     // Sales HQ tiles, admin counts, dashboard nudges, and the team board all
     // read eods — refresh them everywhere, not just this page.
     invalidateForTables(qc, ["eods"]);
   };
 
-  const deleteEod = async (id: string) => {
-    if (!confirm("Delete this EOD? This can't be undone.")) return;
-    const { error } = await supabase.from("eods").delete().eq("id", id);
-    if (error) return toast.error(error.message);
-    toast.success("EOD deleted");
-    if (existingId === id) { setExistingId(null); setForm(emptyForm); }
-    loadMine();
-    invalidateForTables(qc, ["eods"]);
-  };
 
   const setNum = (k: keyof typeof form) => (v: string) => setForm(f => ({ ...f, [k]: parseInt(v) || 0 }));
   const setFloat = (k: keyof typeof form) => (v: string) => setForm(f => ({ ...f, [k]: parseFloat(v) || 0 }));
@@ -281,13 +273,13 @@ function EODsPage() {
             <div className="lg:col-span-2 border border-[var(--border)] bg-[var(--card)] rounded-sm p-5 space-y-5">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <h2 className="text-sm font-semibold">{existingId ? "Update numbers" : "Submit numbers"} · {fmtLong(reportDate)}
+                  <h2 className="text-sm font-semibold">{existingId ? "Submitted and locked" : "Submit numbers"} · {fmtLong(reportDate)}
                     {!existingId && draftSavedAt && (
                       <span className="ml-2 text-[10px] font-normal text-muted-foreground">Draft saved ✓</span>
                     )}
                   </h2>
                   <p className="text-[11px] text-muted-foreground">
-                    {existingId ? "Already submitted for this day · saving replaces it." : "Zero is a valid answer."}
+                    {existingId ? "Submitted reports are locked. Contact a founder if a correction is needed." : "Zero is a valid answer."}
                   </p>
                 </div>
                 <div className="inline-flex rounded-sm border border-[var(--border)] bg-[var(--background)] p-0.5">
@@ -302,6 +294,7 @@ function EODsPage() {
                 </div>
               </div>
 
+              <fieldset disabled={Boolean(existingId)} className={`m-0 min-w-0 border-0 p-0 ${existingId ? "space-y-5 opacity-70" : "space-y-5"}`}>
               {isSetter && !mySetterType && (
                 <div className="rounded-sm border border-warning/25 bg-warning-bg p-3">
                   <div className="text-[11px] text-warning-fg mb-2">Pick your setter type · this drives your daily KPI.</div>
@@ -399,10 +392,11 @@ function EODsPage() {
               </div>
 
               <div className="flex items-center justify-end pt-2 border-t border-[var(--border)]">
-                <Button onClick={submit} disabled={saving} className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium h-8 rounded-sm text-xs">
-                  {saving ? "Saving…" : existingId ? "Update EOD" : "Submit EOD"}
+                <Button onClick={submit} disabled={saving || Boolean(existingId)} className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium h-8 rounded-sm text-xs">
+                  {saving ? "Saving…" : existingId ? "Submitted and locked" : "Submit EOD"}
                 </Button>
               </div>
+              </fieldset>
             </div>
 
             <aside className="space-y-3">
@@ -416,7 +410,7 @@ function EODsPage() {
         </TabsContent>
 
         <TabsContent value="mine">
-          <MyHistory myEods={myEods} setterType={mySetterType} isSetter={isSetter} isCloser={isCloser} csmTarget={isCsm ? csmTarget : null} onDelete={deleteEod} />
+          <MyHistory myEods={myEods} setterType={mySetterType} isSetter={isSetter} isCloser={isCloser} csmTarget={isCsm ? csmTarget : null} />
         </TabsContent>
 
       </Tabs>}
@@ -461,7 +455,7 @@ function dayStatus(e: EOD | undefined, st: SetterType, csmTarget?: number | null
 
 // ---------- My history (grouped by week) ----------
 
-function MyHistory({ myEods, setterType, isSetter, isCloser, csmTarget = null, onDelete }: { myEods: EOD[]; setterType: SetterType; isSetter: boolean; isCloser: boolean; csmTarget?: number | null; onDelete: (id: string) => void }) {
+function MyHistory({ myEods, setterType, isSetter, isCloser, csmTarget = null }: { myEods: EOD[]; setterType: SetterType; isSetter: boolean; isCloser: boolean; csmTarget?: number | null }) {
   const groups = useMemo(() => {
     const m = new Map<string, EOD[]>();
     myEods.forEach(e => {
@@ -509,7 +503,7 @@ function MyHistory({ myEods, setterType, isSetter, isCloser, csmTarget = null, o
             {isOpen && (
               <div className="border-t border-[var(--border)]">
                 {rows.sort((a, b) => b.report_date.localeCompare(a.report_date)).map(e => (
-                  <HistoryDayRow key={e.id} eod={e} setterType={setterType} isSetter={isSetter} isCloser={isCloser} onDelete={onDelete} />
+                  <HistoryDayRow key={e.id} eod={e} setterType={setterType} isSetter={isSetter} isCloser={isCloser} />
                 ))}
               </div>
             )}
@@ -520,15 +514,14 @@ function MyHistory({ myEods, setterType, isSetter, isCloser, csmTarget = null, o
   );
 }
 
-function HistoryDayRow({ eod, setterType, isSetter, isCloser, onDelete }: { eod: EOD; setterType: SetterType; isSetter: boolean; isCloser: boolean; onDelete: (id: string) => void }) {
+function HistoryDayRow({ eod, setterType, isSetter, isCloser }: { eod: EOD; setterType: SetterType; isSetter: boolean; isCloser: boolean }) {
   const [open, setOpen] = useState(false);
   const kpi = setterType ? didHitKpi(eod, setterType) : null;
   const dotClass = kpi === null ? "bg-muted" : kpi ? "bg-success" : "bg-warning";
   const rawConv = eod.convos_started > 0 ? (eod.calls_booked / eod.convos_started) * 100 : 0;
   const dataError = eod.calls_booked > eod.convos_started && eod.convos_started > 0;
   const convDisplay = Math.min(100, Math.round(rawConv));
-  const today = todayLocal();
-  const canDelete = eod.report_date === today;
+
   return (
     <div className="border-b border-[var(--accent)] last:border-0">
       <button onClick={() => setOpen(o => !o)} className="w-full flex items-center gap-3 p-3 text-left hover:bg-[var(--muted)]">
@@ -550,7 +543,7 @@ function HistoryDayRow({ eod, setterType, isSetter, isCloser, onDelete }: { eod:
       </button>
       {open && (
         <div className="px-4 pb-4 space-y-2 text-xs bg-[var(--background)]">
-          {dataError && <div className="text-warning-fg text-[11px]">⚠ Booked exceeds convos · this report may have an error. Consider editing.</div>}
+          {dataError && <div className="text-warning-fg text-[11px]">⚠ Booked exceeds convos. This submitted report stays locked; contact a founder to record the issue.</div>}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             <RowStat label="DMs" value={eod.dms_sent} />
             <RowStat label="Convos" value={eod.convos_started} />
@@ -562,13 +555,7 @@ function HistoryDayRow({ eod, setterType, isSetter, isCloser, onDelete }: { eod:
           {eod.wins && <p><span className="text-success-fg">Wins:</span> {eod.wins}</p>}
           {eod.blockers && <p><span className="text-warning-fg">Blockers:</span> {eod.blockers}</p>}
           {(eod.summary || eod.tomorrow_focus) && <p className="text-muted-foreground italic">{eod.summary || eod.tomorrow_focus}</p>}
-          <div className="flex justify-end gap-2 pt-1">
-            {canDelete && (
-              <button onClick={() => { if (confirm("Delete this EOD?")) onDelete(eod.id); }} className="text-[11px] text-muted-foreground hover:text-danger-fg flex items-center gap-1">
-                <Trash2 className="h-3 w-3" /> Delete
-              </button>
-            )}
-          </div>
+
         </div>
       )}
     </div>

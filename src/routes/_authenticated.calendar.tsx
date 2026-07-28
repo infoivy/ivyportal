@@ -195,7 +195,7 @@ function CalendarPage() {
       const { data: roleRows } = await supabase.from("user_roles").select("user_id, role").in("role", ["setter", "closer", "admin"]);
       const ids = Array.from(new Set((roleRows ?? []).map((r: { user_id: string }) => r.user_id)));
       if (!ids.length) return [] as { id: string; display_name: string | null }[];
-      const { data: profs } = await supabase.from("profiles").select("id, display_name").in("id", ids);
+      const { data: profs } = await supabase.from("profiles").select("id, display_name").eq("is_demo", false).in("id", ids);
       return (profs ?? []) as { id: string; display_name: string | null }[];
     },
   });

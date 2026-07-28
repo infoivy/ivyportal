@@ -32,7 +32,7 @@ export function SetterLeaderboard({ compact = false }: { compact?: boolean }) {
         const endISO = isoDay(endOfWeekSun(new Date()));
 
         const [dealsRes, ratesRes] = await Promise.all([
-          supabase.from("deals").select("*").not("setter_id", "is", null)
+          supabase.from("deals").select("*").eq("is_demo", false).not("setter_id", "is", null)
             .gte("deal_date", startISO).lte("deal_date", endISO),
           supabase.from("commission_rates").select("key, rate").eq("active", true),
         ]);
@@ -55,7 +55,7 @@ export function SetterLeaderboard({ compact = false }: { compact?: boolean }) {
 
         const userIds = Array.from(totals.keys());
         if (userIds.length === 0) { setRows([]); return; }
-        const { data: profiles } = await supabase.from("profiles").select("id, display_name").in("id", userIds);
+        const { data: profiles } = await supabase.from("profiles").select("id, display_name").eq("is_demo", false).in("id", userIds);
         const nameMap = new Map((profiles ?? []).map((p) => [p.id, p.display_name || "Unknown"]));
         setRows(userIds
           .map((id) => ({ user_id: id, name: nameMap.get(id) ?? "Unknown", ...totals.get(id)! }))

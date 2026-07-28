@@ -552,12 +552,14 @@ export const getFinanceRevenue = createServerFn({ method: "GET" })
     const [dealsRes, paysRes] = await Promise.all([
       supabaseAdmin.from("deals")
         .select("deal_date, cash_collected_upfront, student_name")
+        .eq("is_demo", false)
         .gte("deal_date", data.from).lte("deal_date", data.to)
         .gt("cash_collected_upfront", 0),
       // Paid installments belong to the day the money ARRIVED (paid_at), not
       // the day it was due — a payment due in June but paid in July is July cash.
       supabaseAdmin.from("installment_payments")
-        .select("due_date, paid_at, amount, status, installments(students(full_name))")
+        .select("due_date, paid_at, amount, status, installments!inner(students!inner(full_name, is_demo))")
+        .eq("installments.students.is_demo", false)
         .eq("status", "paid")
         .gte("paid_at", data.from + "T00:00:00").lte("paid_at", data.to + "T23:59:59"),
     ]);

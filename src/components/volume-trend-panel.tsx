@@ -47,11 +47,11 @@ export function VolumeTrendPanel() {
       const pf = prevFrom.toISOString().slice(0, 10);
       const pt = prevTo.toISOString().slice(0, 10);
       const [r, prev, p] = await Promise.all([
-        supabase.from("eods").select("id, user_id, report_date, dms_sent, convos_started, calls_booked, calls_scheduled, shows, no_shows, closes").gte("report_date", fromISO).lte("report_date", toISO).order("report_date"),
+        supabase.from("eods_activity_real").select("id, user_id, report_date, dms_sent, convos_started, calls_booked, calls_scheduled, shows, no_shows, closes").gte("report_date", fromISO).lte("report_date", toISO).order("report_date"),
         compare
-          ? supabase.from("eods").select("*").gte("report_date", pf).lte("report_date", pt).order("report_date")
+          ? supabase.from("eods_activity_real").select("*").gte("report_date", pf).lte("report_date", pt).order("report_date")
           : Promise.resolve({ data: [] as TrendsRow[] }),
-        supabase.from("profiles").select("id, display_name"),
+        supabase.from("profiles").select("id, display_name").eq("is_demo", false),
       ]);
       const map: Record<string, { id: string; display_name: string | null }> = {};
       ((p.data as { id: string; display_name: string | null }[]) ?? []).forEach((x) => { map[x.id] = x; });

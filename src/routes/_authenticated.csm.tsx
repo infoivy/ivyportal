@@ -144,14 +144,15 @@ function CsmPage() {
   const fetchPage = async () => {
     if (!user) return null;
     const since = new Date(Date.now() - 14 * 86400000).toISOString();
-    const [studentsRes, notesRes, tallyRes, callsRes, sEodRes, weeklyEodRes, adhocRes, targetRes] = await Promise.all([
-      supabase.from("students").select("id, full_name, email, phase, status, coach_id, timezone").order("full_name", { ascending: true }),
-      supabase.from("csm_student_notes").select("*").order("created_at", { ascending: false }).limit(200),
-      supabase.from("csm_tally").select("*").eq("user_id", user.id).gte("created_at", since).order("created_at", { ascending: false }),
-      supabase.from("student_calls").select("id, student_id, call_date, action_items_json, next_call_date").order("call_date", { ascending: false }).limit(600),
-      supabase.from("student_eods").select("student_id, report_date, roleplays, looms_sent, applications_submitted, interviews, wins, blockers").order("report_date", { ascending: false }).limit(1000),
-      supabase.from("student_weekly_eods").select("student_id, week_start, group_calls_attended, calls_attended, one_on_one_calls, implementation, biggest_win, biggest_blocker, next_week_commitment").order("week_start", { ascending: false }).limit(1000),
-      supabase.from("student_action_items").select("id, student_id, text, done, due_date, created_at, created_by").order("created_at", { ascending: false }).limit(500),
+    const [studentsRes, notesRes, genericTallyRes, studentTallyRes, callsRes, sEodRes, weeklyEodRes, adhocRes, targetRes] = await Promise.all([
+      supabase.from("students").select("id, full_name, email, phase, status, coach_id, timezone").eq("is_demo", false).order("full_name", { ascending: true }),
+      supabase.from("csm_student_notes").select("*, students!inner(is_demo)").eq("students.is_demo", false).order("created_at", { ascending: false }).limit(200),
+      supabase.from("csm_tally").select("*").eq("user_id", user.id).is("student_id", null).gte("created_at", since).order("created_at", { ascending: false }),
+      supabase.from("csm_tally").select("*, students!inner(is_demo)").eq("user_id", user.id).eq("students.is_demo", false).gte("created_at", since).order("created_at", { ascending: false }),
+      supabase.from("student_calls").select("id, student_id, call_date, action_items_json, next_call_date, students!inner(is_demo)").eq("students.is_demo", false).order("call_date", { ascending: false }).limit(600),
+      supabase.from("student_eods").select("student_id, report_date, roleplays, looms_sent, applications_submitted, interviews, wins, blockers, students!inner(is_demo)").eq("students.is_demo", false).order("report_date", { ascending: false }).limit(1000),
+      supabase.from("student_weekly_eods").select("student_id, week_start, group_calls_attended, calls_attended, one_on_one_calls, implementation, biggest_win, biggest_blocker, next_week_commitment, students!inner(is_demo)").eq("students.is_demo", false).order("week_start", { ascending: false }).limit(1000),
+      supabase.from("student_action_items").select("id, student_id, text, done, due_date, created_at, created_by, students!inner(is_demo)").eq("is_demo", false).eq("students.is_demo", false).order("created_at", { ascending: false }).limit(500),
       // Per-CSM daily check-in KPI (part-time vs full-time, founder-set on Team)
       supabase.from("profiles").select("csm_daily_target" as never).eq("id", user.id).maybeSingle(),
     ]);
@@ -159,14 +160,15 @@ function CsmPage() {
     const noteRows = (notesRes.data ?? []) as CsmNote[];
     const userIds = Array.from(new Set(noteRows.map(n => n.user_id)));
     const { data: profs } = userIds.length
-      ? await supabase.from("profiles").select("id, display_name").in("id", userIds)
+      ? await supabase.from("profiles").select("id, display_name").eq("is_demo", false).in("id", userIds)
       : { data: [] as { id: string; display_name: string | null }[] };
     const names = new Map((profs ?? []).map(p => [p.id, p.display_name ?? "Unknown"]));
     const studentNames = new Map(studentRows.map(s => [s.id, s.full_name]));
     return {
       studentRows,
       notes: noteRows.map(n => ({ ...n, author: names.get(n.user_id) ?? "Unknown", student_name: studentNames.get(n.student_id) ?? "Student" })),
-      tally: (tallyRes.data ?? []) as TallyRow[],
+      tally: ([...(genericTallyRes.data ?? []), ...(studentTallyRes.data ?? [])] as TallyRow[])
+        .sort((a, b) => b.created_at.localeCompare(a.created_at)),
       calls: (callsRes.data ?? []) as StudentCall[],
       studentEods: (sEodRes.data ?? []) as StudentEodLite[],
       studentWeeklyEods: (weeklyEodRes.data ?? []) as StudentWeeklyEodLite[],
@@ -330,7 +332,8 @@ function CsmPage() {
       dials: 0, leads_contacted: 0,
       wins: `CSM day: ${todayCounts.loom} looms, ${todayCounts.roleplay} roleplays, ${todayCounts.checkin} check-ins, ${todayCounts.escalation} escalations`,
     };
-    const { error } = await supabase.from("eods").upsert(payload, { onConflict: "user_id,report_date" });
+    const { error } = await supabase.from("eods").insert(payload);
+    if (error?.code === "23505") return toast.error("Today’s EOD is already submitted and locked.");
     if (error) return toast.error(error.message);
     toast.success("EOD submitted → Team Reports ✓");
     // Clears the top-bar "EOD due" chip and refreshes Team Reports/Sales HQ.

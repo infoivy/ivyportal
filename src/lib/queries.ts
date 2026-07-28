@@ -8,9 +8,9 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const studentsQuery = () =>
   queryOptions({
-    queryKey: ["students", "all"],
+    queryKey: ["students", "real"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("students").select("*").order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("students").select("*").eq("is_demo", false).order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
     },
@@ -19,12 +19,12 @@ export const studentsQuery = () =>
 
 export const coachesQuery = () =>
   queryOptions({
-    queryKey: ["coaches", "all"],
+    queryKey: ["coaches", "real"],
     queryFn: async () => {
       // Both tables are small — fetch in parallel and join client-side
       const [rolesRes, profsRes] = await Promise.all([
         supabase.from("user_roles").select("user_id, role").in("role", ["coach", "admin"]),
-        supabase.from("profiles").select("id, display_name"),
+        supabase.from("profiles").select("id, display_name").eq("is_demo", false),
       ]);
       if (rolesRes.error) throw rolesRes.error;
       if (profsRes.error) throw profsRes.error;
@@ -36,10 +36,11 @@ export const coachesQuery = () =>
 
 export const studentCallsAggQuery = () =>
   queryOptions({
-    queryKey: ["student_calls", "agg"],
+    queryKey: ["student_calls", "real", "agg"],
     queryFn: async () => {
       const { data, error } = await supabase.from("student_calls")
-        .select("student_id, call_date, status")
+        .select("student_id, call_date, status, students!inner(is_demo)")
+        .eq("students.is_demo", false)
         .order("call_date", { ascending: false })
         .limit(2000);
       if (error) throw error;
@@ -56,10 +57,11 @@ export const studentCallsAggQuery = () =>
 
 export const studentEodsAggQuery = () =>
   queryOptions({
-    queryKey: ["student_eods", "agg"],
+    queryKey: ["student_eods", "real", "agg"],
     queryFn: async () => {
       const { data, error } = await supabase.from("student_eods")
-        .select("student_id, report_date, applications_submitted")
+        .select("student_id, report_date, applications_submitted, students!inner(is_demo)")
+        .eq("students.is_demo", false)
         .order("report_date", { ascending: false })
         .limit(3000);
       if (error) throw error;

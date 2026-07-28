@@ -91,8 +91,8 @@ function OperationsTab() {
     const [profsRes, rolesRes, todayRes, yestRes] = await Promise.all([
       supabase.from("profiles").select("id, display_name, setter_type, active" as any).eq("is_demo", false),
       supabase.from("user_roles").select("user_id, role"),
-      supabase.from("eods").select("id, user_id, report_date, dials, leads_contacted, dms_sent, calls_booked").eq("is_demo", false).eq("report_date", today),
-      supabase.from("eods").select("id, user_id, report_date, dials, leads_contacted, dms_sent, calls_booked").eq("is_demo", false).eq("report_date", yesterday),
+      supabase.from("eods_activity_real").select("id, user_id, report_date, dials, leads_contacted, dms_sent, calls_booked").eq("report_date", today),
+      supabase.from("eods_activity_real").select("id, user_id, report_date, dials, leads_contacted, dms_sent, calls_booked").eq("report_date", yesterday),
     ]);
 
     const profs: any[] = profsRes.data ?? [];
