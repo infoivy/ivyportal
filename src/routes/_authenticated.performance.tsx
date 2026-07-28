@@ -1,4 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
+import { TeamWeekSection } from "@/components/team-week";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, subDays } from "date-fns";
@@ -25,7 +26,7 @@ export const Route = createFileRoute("/_authenticated/performance")({
   head: () => ({ meta: [{ title: "Performance · Ivy Portal" }] }),
   validateSearch: (search: Record<string, unknown>): { member?: string } =>
     typeof search.member === "string" && search.member ? { member: search.member } : {},
-  component: PerformancePage,
+  component: PerformanceGate,
 });
 
 type RangeDays = 7 | 30 | 90;
@@ -94,10 +95,20 @@ function formatMetric(value: number | null) {
   return value == null ? "Unavailable" : value.toLocaleString();
 }
 
+// Leadership view only (founder-directed 2026-07-28): reps see their own
+// numbers on Home, never the whole team's accountability.
+function PerformanceGate() {
+  const { roles } = useAuth();
+  const isLeader = roles.some((r) => ["admin", "founder", "cofounder"].includes(r));
+  if (roles.length > 0 && !isLeader) return <Navigate to="/dashboard" replace />;
+  return <PerformancePage />;
+}
+
 function PerformancePage() {
   const { user, roles } = useAuth();
   const search = Route.useSearch();
-  const [days, setDays] = useState<RangeDays>(30);
+  // 7 days is the base view (founder-directed 2026-07-28)
+  const [days, setDays] = useState<RangeDays>(7);
   const [metric, setMetric] = useState<MetricKey>("calls_booked");
   const [memberId, setMemberId] = useState(search.member ?? "all");
   const canSubmitEod = roles.some((role) => (REPORTING_ROLES as readonly string[]).includes(role));
@@ -487,6 +498,10 @@ function PerformancePage() {
           )}
         </div>
       </section>
+
+      {/* The founder's per-member week view: day chips + role footers
+          (rebuilt after the command-center merge dropped it) */}
+      <TeamWeekSection />
 
       <section className="card-surface overflow-hidden" aria-labelledby="team-accountability-title">
         <div className="border-b border-border px-4 py-4 sm:px-5">

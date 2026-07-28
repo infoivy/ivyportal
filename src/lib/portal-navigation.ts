@@ -33,23 +33,18 @@ export const STAFF_ROLES = [
 
 // Keep these capability sets independent even when their current members overlap.
 // Directory visibility, personal analytics, and account mutation must not drift together.
+// Directory is a leadership surface (founder-directed 2026-07-28).
 export const TEAM_DIRECTORY_ROLES = [
   "admin",
   "founder",
   "cofounder",
-  "closer",
-  "setter",
-  "coach",
-  "csm",
 ] as const;
+// Performance is a leadership view (founder-directed 2026-07-28): reps get
+// their own numbers on Home, not the whole team's accountability.
 export const SELF_PERFORMANCE_ROLES = [
   "admin",
   "founder",
   "cofounder",
-  "closer",
-  "setter",
-  "coach",
-  "csm",
 ] as const;
 export const ACCOUNT_ADMIN_ROLES = ["admin"] as const;
 
