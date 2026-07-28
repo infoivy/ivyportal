@@ -126,8 +126,6 @@ function Dashboard() {
   const [ops, setOps] = useState<OpsCounts | null>(null);
   const [loading, setLoading] = useState(true);
   const { prefs, save: savePrefs } = useDashboardPrefs(user?.id);
-  const [igReminderDismissed, setIgReminderDismissed] = useState(false);
-  const [igLoggedThisMonth, setIgLoggedThisMonth] = useState(true);
   const [eodsTodayCount, setEodsTodayCount] = useState(0);
   const [cashMtd, setCashMtd] = useState(0);
   const [nextDue, setNextDue] = useState<{ date: string; amount: number; currency: string; studentName: string } | null>(null);
@@ -272,18 +270,6 @@ function Dashboard() {
     const first = cashQ.data.firstDue;
     if (first) setNextDue({ date: first.due_date, amount: first.amount, currency: first.currency, studentName: first.installments?.students?.full_name ?? "Unknown" });
   }, [cashQ.data]);
-
-  // E20: Check if IG snapshot logged this month (only for founder/admin)
-  const igQ = useQuery({
-    queryKey: ["page", "dashboard", "ig-logged", new Date().toISOString().slice(0, 7)],
-    enabled: roles.includes("founder") || roles.includes("admin"),
-    queryFn: async () => {
-      const thisMonth = new Date().toISOString().slice(0, 7);
-      const { count } = await supabase.from("ig_monthly_snapshots").select("id", { count: "exact", head: true }).eq("month", `${thisMonth}-01`);
-      return (count ?? 0) > 0;
-    },
-  });
-  useEffect(() => { if (igQ.data != null) setIgLoggedThisMonth(igQ.data); }, [igQ.data]);
 
   // Whop is the revenue source of truth — the cash hero reads it directly,
   // NET of fees, and refreshes itself (founder rule 2026-07-14).
@@ -494,17 +480,6 @@ function Dashboard() {
         {/* The collective goal — whole team sees the same bar */}
         <TeamGoalCard />
 
-        {/* IG monthly log reminder */}
-        {roles.includes("founder") && !igLoggedThisMonth && !igReminderDismissed && (
-          <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-muted text-[13px] text-foreground">
-            <span>No IG analytics logged this month · keep your growth data up to date.</span>
-            <div className="flex items-center gap-2 shrink-0">
-              <a href="/content?tab=instagram" className="font-medium text-primary hover:underline">Log now →</a>
-              <button onClick={() => setIgReminderDismissed(true)} className="text-muted-foreground hover:text-foreground">✕</button>
-            </div>
-          </div>
-        )}
-
         {/* Cash MTD hero — admin/founder only */}
         {(roles.includes("admin") || roles.includes("founder")) && (
           <div className="card-surface px-6 py-5 flex items-end justify-between">
@@ -548,31 +523,12 @@ function Dashboard() {
           </div>
         )}
 
-        {/* KPI Row — 4 primary metrics + secondary inline */}
-        {prefs.showKpis && (
-          <>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              <Kpi label="DMs Sent"   value={totals.dms_sent}    onClick={() => setDrilldown("dms_sent")}    delta={compare ? { value: totals.dms_sent - prevTotals.dms_sent, format: "count" } : null} />
-              <Kpi label="Booked"     value={totals.calls_booked} onClick={() => setDrilldown("calls_booked")} delta={compare ? { value: totals.calls_booked - prevTotals.calls_booked, format: "count" } : null} />
-              <Kpi label="Shows"      value={totals.shows}        onClick={() => setDrilldown("shows")}       delta={compare ? { value: totals.shows - prevTotals.shows, format: "count" } : null} />
-              <Kpi label="Show Rate"  value={showRate} suffix="%" delta={compare ? { value: showRate - prevShowRateOf(prevTotals), format: "pct" } : null} />
-            </div>
-            {/* Secondary stats — compact inline row */}
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 px-1">
-              <SecondaryKpi label="Convos" value={totals.convos_started} onClick={() => setDrilldown("convos_started")} delta={compare ? totals.convos_started - prevTotals.convos_started : null} />
-              <SecondaryKpi label="No-Shows" value={totals.no_shows} onClick={() => setDrilldown("no_shows")} />
-              <SecondaryKpi label="Scheduled" value={totals.calls_scheduled} onClick={() => setDrilldown("calls_scheduled")} />
-              <SecondaryKpi label="Active setters" value={activeSetters} />
-              <SecondaryKpi label="EODs filed" value={totalEods} onClick={() => navigate({ to: "/eods" })} />
-            </div>
-          </>
-        )}
+        {/* DMs/booked/shows live on the CRM page now — the dashboard keeps
+            money, the IG funnel, ops, and setter activity (founder-directed
+            2026-07-28: "make things simpler here"). */}
 
         {/* Instagram funnel — live from Mochi CRM */}
         {canSeeCrm && <MochiIgSection />}
-
-        {/* Per-rep dials, call durations & DMs — Close + Mochi */}
-        {canSeeCrm && <SetterActivityCard />}
 
         {/* Ops strip */}
         {prefs.showOps && (
@@ -599,6 +555,9 @@ function Dashboard() {
 
         {prefs.showMyDay && <MyDayBlock roles={roles} />}
 
+        {/* Per-rep dials, call durations & DMs — Close + Mochi. Below the
+            ops strip per founder ("put it down more"). */}
+        {canSeeCrm && <SetterActivityCard />}
 
         {prefs.showInstallmentReminders && <InstallmentReminders />}
 

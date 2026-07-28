@@ -5,7 +5,6 @@ import type { DashboardPrefs } from "@/lib/dashboard-prefs";
 import { DEFAULT_PREFS } from "@/lib/dashboard-prefs";
 
 const SECTIONS: { key: keyof DashboardPrefs; label: string; description: string }[] = [
-  { key: "showKpis", label: "KPI row", description: "The 9 headline metric tiles at the top" },
   { key: "showOps", label: "Ops today", description: "At-risk students, overdue installments, etc." },
   { key: "showMyDay", label: "My day", description: "Your personal task list" },
   { key: "showInstallmentReminders", label: "Installment reminders", description: "Payments due soon" },
