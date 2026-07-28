@@ -334,7 +334,9 @@ function OperationsTab() {
 // ─── TRENDS TAB ─────────────────────────────────────────────────────────────
 
 function TrendsTab() {
-  const [dateRange, setDateRange] = useState<DateRange>(() => rangeFor("24h"));
+  // Trends need a trend: 24h collapses the chart to one bucket (bars, no
+  // line), so the tab opens on a week (founder-directed 2026-07-28).
+  const [dateRange, setDateRange] = useState<DateRange>(() => rangeFor("7d"));
   const [compare, setCompare] = useState(false);
   const [rows, setRows] = useState<TrendsRow[]>([]);
   const [prevRows, setPrevRows] = useState<TrendsRow[]>([]);
