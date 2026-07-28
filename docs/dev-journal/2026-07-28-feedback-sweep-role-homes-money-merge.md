@@ -54,3 +54,7 @@ Founder asked for a no-questions sweep: data, leftovers, own suggestions, UI pol
 **Left for the founder**
 - Enable leaked-password protection in the Supabase Auth dashboard (advisor warning; dashboard toggle only).
 - Setter installments-read policy decision still parked; Trustpilot URL still pending.
+
+## Addendum · DM setter KPI raise (founder-directed, same day)
+
+DM setter daily KPI raised from 125 DMs · 3 sets to **300 DMs · 6 sets**, effective 2026-07-29. Implemented as a date-resolved target (`kpiTargetsFor` in `src/lib/eod-kpi.ts`): rows before the effective date keep judging under 125/3, so history does not repaint under a bar that did not exist (same philosophy as the leads_contacted fallback). Killed the EOD page's private copy of the KPI config (it now imports the shared lib) and made the home target card derive from the same source. Copy updated: EOD form bars, invite modal, team admin setter-type labels, EOD policy table (sections.tsx), DM Setting Mastery SOP, CLAUDE.md business rules. Commit 656232b.
