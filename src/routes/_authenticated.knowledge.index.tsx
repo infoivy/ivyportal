@@ -136,6 +136,13 @@ function KnowledgeIndex() {
                         "The full 8-stage setting system: openers, conversation flow, objection handling, follow-ups, psychology, engagement, and ops.",
                       to: "/sops/isa-setting-process",
                     },
+                    {
+                      key: "dm-setting-mastery",
+                      title: "DM Setting Mastery",
+                      description:
+                        "The DM setting canvas: ICP and lead types, the 8 stages, inbound and outbound scripts, objection library, booking, and closer handoff.",
+                      to: "/sops/dm-setting-mastery",
+                    },
                   ]
                 : value === "team_ops" &&
                   !roles.every((r) => r === "student")

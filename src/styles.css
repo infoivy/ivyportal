@@ -447,6 +447,38 @@
   .today-dot-pulse { animation: today-dot-breathe 2s ease-in-out infinite; }
 }
 
+/* DM Setting Mastery canvas board (ported 1:1 from the founder's Lovable
+   build). Category/route colors are HSL triplets so the board components can
+   keep their hsl(var(--cat-*)) inline styles byte-identical. Scoped names:
+   nothing else uses --cat-*/--route-*. */
+:root {
+  --cat-scripts: 48 96% 53%;
+  --cat-openers: 152 75% 23%;
+  --cat-objections: 0 72% 58%;
+  --cat-qualifying: 220 80% 56%;
+  --cat-closing: 268 100% 58%;
+  --cat-templates: 25 72% 47%;
+  --cat-psychology: 165 60% 40%;
+  --cat-engagement: 32 85% 55%;
+  --cat-tracking: 260 50% 55%;
+  --cat-frameworks: 180 55% 42%;
+  --route-green: 152 65% 40%;
+  --route-amber: 38 92% 50%;
+  --route-red: 0 72% 52%;
+  --route-manager: 220 70% 55%;
+}
+.canvas-grid {
+  background-image: radial-gradient(circle, hsl(152 75% 23% / 0.12) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+.dark .canvas-grid {
+  background-image: radial-gradient(circle, hsl(152 60% 45% / 0.15) 1px, transparent 1px);
+}
+.sop-shadow-card { box-shadow: 0 1px 4px hsl(0 0% 0% / 0.08), 0 0 1px hsl(0 0% 0% / 0.1); }
+.sop-shadow-elevated { box-shadow: 0 8px 24px hsl(0 0% 0% / 0.12), 0 2px 8px hsl(0 0% 0% / 0.06); }
+.dark .sop-shadow-card { box-shadow: 0 1px 4px hsl(0 0% 0% / 0.4), 0 0 1px hsl(0 0% 0% / 0.5); }
+.dark .sop-shadow-elevated { box-shadow: 0 8px 24px hsl(0 0% 0% / 0.5), 0 2px 8px hsl(0 0% 0% / 0.3); }
+
 /* react-phone-number-input · match the app's form tokens */
 .isa-phone-input .PhoneInputCountry {
   display: flex; align-items: center; gap: 4px;

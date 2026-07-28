@@ -47,6 +47,7 @@ import { Route as AuthenticatedTeamIdRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedStudentsRequestsRouteImport } from './routes/_authenticated.students.requests'
 import { Route as AuthenticatedStudentsIdRouteImport } from './routes/_authenticated.students.$id'
 import { Route as AuthenticatedSopsIsaSettingProcessRouteImport } from './routes/_authenticated.sops.isa-setting-process'
+import { Route as AuthenticatedSopsDmSettingMasteryRouteImport } from './routes/_authenticated.sops.dm-setting-mastery'
 import { Route as AuthenticatedPoliciesEodHygieneRouteImport } from './routes/_authenticated.policies.eod-hygiene'
 import { Route as AuthenticatedPoliciesCrmHygieneRouteImport } from './routes/_authenticated.policies.crm-hygiene'
 import { Route as AuthenticatedKnowledgeNewRouteImport } from './routes/_authenticated.knowledge.new'
@@ -253,6 +254,12 @@ const AuthenticatedSopsIsaSettingProcessRoute =
     path: '/isa-setting-process',
     getParentRoute: () => AuthenticatedSopsRoute,
   } as any)
+const AuthenticatedSopsDmSettingMasteryRoute =
+  AuthenticatedSopsDmSettingMasteryRouteImport.update({
+    id: '/dm-setting-mastery',
+    path: '/dm-setting-mastery',
+    getParentRoute: () => AuthenticatedSopsRoute,
+  } as any)
 const AuthenticatedPoliciesEodHygieneRoute =
   AuthenticatedPoliciesEodHygieneRouteImport.update({
     id: '/eod-hygiene',
@@ -319,6 +326,7 @@ export interface FileRoutesByFullPath {
   '/knowledge/new': typeof AuthenticatedKnowledgeNewRoute
   '/policies/crm-hygiene': typeof AuthenticatedPoliciesCrmHygieneRoute
   '/policies/eod-hygiene': typeof AuthenticatedPoliciesEodHygieneRoute
+  '/sops/dm-setting-mastery': typeof AuthenticatedSopsDmSettingMasteryRoute
   '/sops/isa-setting-process': typeof AuthenticatedSopsIsaSettingProcessRoute
   '/students/$id': typeof AuthenticatedStudentsIdRoute
   '/students/requests': typeof AuthenticatedStudentsRequestsRoute
@@ -361,6 +369,7 @@ export interface FileRoutesByTo {
   '/knowledge/new': typeof AuthenticatedKnowledgeNewRoute
   '/policies/crm-hygiene': typeof AuthenticatedPoliciesCrmHygieneRoute
   '/policies/eod-hygiene': typeof AuthenticatedPoliciesEodHygieneRoute
+  '/sops/dm-setting-mastery': typeof AuthenticatedSopsDmSettingMasteryRoute
   '/sops/isa-setting-process': typeof AuthenticatedSopsIsaSettingProcessRoute
   '/students/$id': typeof AuthenticatedStudentsIdRoute
   '/students/requests': typeof AuthenticatedStudentsRequestsRoute
@@ -407,6 +416,7 @@ export interface FileRoutesById {
   '/_authenticated/knowledge/new': typeof AuthenticatedKnowledgeNewRoute
   '/_authenticated/policies/crm-hygiene': typeof AuthenticatedPoliciesCrmHygieneRoute
   '/_authenticated/policies/eod-hygiene': typeof AuthenticatedPoliciesEodHygieneRoute
+  '/_authenticated/sops/dm-setting-mastery': typeof AuthenticatedSopsDmSettingMasteryRoute
   '/_authenticated/sops/isa-setting-process': typeof AuthenticatedSopsIsaSettingProcessRoute
   '/_authenticated/students/$id': typeof AuthenticatedStudentsIdRoute
   '/_authenticated/students/requests': typeof AuthenticatedStudentsRequestsRoute
@@ -453,6 +463,7 @@ export interface FileRouteTypes {
     | '/knowledge/new'
     | '/policies/crm-hygiene'
     | '/policies/eod-hygiene'
+    | '/sops/dm-setting-mastery'
     | '/sops/isa-setting-process'
     | '/students/$id'
     | '/students/requests'
@@ -495,6 +506,7 @@ export interface FileRouteTypes {
     | '/knowledge/new'
     | '/policies/crm-hygiene'
     | '/policies/eod-hygiene'
+    | '/sops/dm-setting-mastery'
     | '/sops/isa-setting-process'
     | '/students/$id'
     | '/students/requests'
@@ -540,6 +552,7 @@ export interface FileRouteTypes {
     | '/_authenticated/knowledge/new'
     | '/_authenticated/policies/crm-hygiene'
     | '/_authenticated/policies/eod-hygiene'
+    | '/_authenticated/sops/dm-setting-mastery'
     | '/_authenticated/sops/isa-setting-process'
     | '/_authenticated/students/$id'
     | '/_authenticated/students/requests'
@@ -826,6 +839,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSopsIsaSettingProcessRouteImport
       parentRoute: typeof AuthenticatedSopsRoute
     }
+    '/_authenticated/sops/dm-setting-mastery': {
+      id: '/_authenticated/sops/dm-setting-mastery'
+      path: '/dm-setting-mastery'
+      fullPath: '/sops/dm-setting-mastery'
+      preLoaderRoute: typeof AuthenticatedSopsDmSettingMasteryRouteImport
+      parentRoute: typeof AuthenticatedSopsRoute
+    }
     '/_authenticated/policies/eod-hygiene': {
       id: '/_authenticated/policies/eod-hygiene'
       path: '/eod-hygiene'
@@ -915,10 +935,13 @@ const AuthenticatedPoliciesRouteWithChildren =
   )
 
 interface AuthenticatedSopsRouteChildren {
+  AuthenticatedSopsDmSettingMasteryRoute: typeof AuthenticatedSopsDmSettingMasteryRoute
   AuthenticatedSopsIsaSettingProcessRoute: typeof AuthenticatedSopsIsaSettingProcessRoute
 }
 
 const AuthenticatedSopsRouteChildren: AuthenticatedSopsRouteChildren = {
+  AuthenticatedSopsDmSettingMasteryRoute:
+    AuthenticatedSopsDmSettingMasteryRoute,
   AuthenticatedSopsIsaSettingProcessRoute:
     AuthenticatedSopsIsaSettingProcessRoute,
 }
