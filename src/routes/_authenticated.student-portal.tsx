@@ -18,6 +18,8 @@ import { getStudentLeaderboard } from "@/lib/student-portal.functions";
 import { completeStudentOnboarding } from "@/lib/student-onboarding.functions";
 import { saveStudentWhatsapp, syncStudentTimezone } from "@/lib/student-timezone.functions";
 import { timeIn, timezoneOptions } from "@/components/student-local-time";
+import { PhoneInput, isValidPhoneNumber } from "@/components/ui/phone-input";
+import { TimezoneCombobox } from "@/components/ui/timezone-combobox";
 import { getStudentNextCall } from "@/lib/student-next-call.functions";
 import { getMyGraduationReview, reportOfferLanded, submitGraduationReview } from "@/lib/student-review.functions";
 import { WALKTHROUGH_VIDEOS, beginPortalWalkthrough, completePortalWalkthrough } from "@/lib/student-walkthrough.functions";
@@ -1421,7 +1423,8 @@ function DetailsGate({ first, needTimezone, needWhatsapp, onConfirm }: {
   }, []);
   const options = useMemo(() => timezoneOptions(), []);
   const [tz, setTz] = useState(browserTz && options.includes(browserTz) ? browserTz : "");
-  const [whatsapp, setWhatsapp] = useState("");
+  const [whatsapp, setWhatsapp] = useState<string | undefined>(undefined);
+  const [touchedPhone, setTouchedPhone] = useState(false);
   const [saving, setSaving] = useState(false);
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
@@ -1429,13 +1432,13 @@ function DetailsGate({ first, needTimezone, needWhatsapp, onConfirm }: {
     return () => clearInterval(idInt);
   }, []);
   const preview = needTimezone && tz ? timeIn(tz, now) : null;
-  const whatsappOk = /^\+[1-9][\d\s\-().]{7,18}$/.test(whatsapp.trim());
+  const whatsappOk = !!whatsapp && isValidPhoneNumber(whatsapp);
   const ready = (!needTimezone || !!tz) && (!needWhatsapp || whatsappOk);
 
   const confirm = async () => {
     if (!ready) return;
     setSaving(true);
-    try { await onConfirm(needTimezone ? tz : null, needWhatsapp ? whatsapp.trim() : null); }
+    try { await onConfirm(needTimezone ? tz : null, needWhatsapp ? (whatsapp ?? "") : null); }
     catch (e) { toast.error(String((e as Error).message ?? e)); }
     finally { setSaving(false); }
   };
@@ -1460,14 +1463,7 @@ function DetailsGate({ first, needTimezone, needWhatsapp, onConfirm }: {
             <>
               <div className="space-y-1.5">
                 <label className="text-[12px] text-muted-foreground">Your timezone</label>
-                <select
-                  value={tz}
-                  onChange={e => setTz(e.target.value)}
-                  className="w-full h-10 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-sm focus:outline-none focus:border-ring"
-                >
-                  <option value="" disabled>Select your timezone…</option>
-                  {options.map(z => <option key={z} value={z}>{z.replace(/_/g, " ")}</option>)}
-                </select>
+                <TimezoneCombobox value={tz} onChange={setTz} />
               </div>
               {preview && (
                 <div className="rounded-sm border border-[var(--border)] bg-[var(--background)] px-3 py-2.5 flex items-center justify-between">
@@ -1481,14 +1477,13 @@ function DetailsGate({ first, needTimezone, needWhatsapp, onConfirm }: {
           {needWhatsapp && (
             <div className="space-y-1.5">
               <label className="text-[12px] text-muted-foreground">Your WhatsApp number</label>
-              <input
-                type="tel"
-                value={whatsapp}
-                onChange={e => setWhatsapp(e.target.value)}
-                placeholder="+44 7700 900123"
-                className="w-full h-10 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-sm focus:outline-none focus:border-ring"
-              />
-              <p className="text-[10px] text-muted-foreground">Include your country code (+44, +1, +966…). This is where loom feedback and check-ins reach you.</p>
+              <div onBlur={() => setTouchedPhone(true)}>
+                <PhoneInput value={whatsapp} onChange={setWhatsapp} placeholder="7700 900123" />
+              </div>
+              {touchedPhone && !!whatsapp && !whatsappOk && (
+                <p className="text-[11px] text-danger-fg">That doesn't look like a valid number for the selected country.</p>
+              )}
+              <p className="text-[10px] text-muted-foreground">Pick your country, type the rest. This is where loom feedback and check-ins reach you.</p>
             </div>
           )}
 

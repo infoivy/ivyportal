@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { UserCircle, Save, Camera, Upload, Trash2 } from "lucide-react";
 import { signAvatar, uploadAvatar } from "@/lib/avatars";
 import { syncStudentTimezone } from "@/lib/student-timezone.functions";
-import { StudentLocalTime, timezoneOptions } from "@/components/student-local-time";
+import { TimezoneCombobox } from "@/components/ui/timezone-combobox";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({ meta: [{ title: "Profile · ISA" }] }),
@@ -173,12 +173,10 @@ function StudentTimezoneCard() {
           Your coach and success team use this to reach you at sane hours. Moved or travelling? Update it here.
         </p>
       </div>
-      <div className="flex flex-wrap items-center gap-3">
-        <select
+      <div className={`max-w-sm ${saving ? "opacity-60 pointer-events-none" : ""}`}>
+        <TimezoneCombobox
           value={tz ?? ""}
-          disabled={saving}
-          onChange={async e => {
-            const next = e.target.value;
+          onChange={async next => {
             if (!next || next === tz) return;
             setSaving(true);
             try {
@@ -191,12 +189,7 @@ function StudentTimezoneCard() {
               setSaving(false);
             }
           }}
-          className="h-9 min-w-[220px] px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-sm focus:outline-none focus:border-ring disabled:opacity-60"
-        >
-          <option value="" disabled>Select your timezone…</option>
-          {timezoneOptions().map(z => <option key={z} value={z}>{z.replace(/_/g, " ")}</option>)}
-        </select>
-        {tz && <StudentLocalTime tz={tz} className="text-xs" />}
+        />
       </div>
     </div>
   );

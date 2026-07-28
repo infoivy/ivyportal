@@ -436,3 +436,13 @@
 @media (prefers-reduced-motion: no-preference) {
   .today-dot-pulse { animation: today-dot-breathe 2s ease-in-out infinite; }
 }
+
+/* react-phone-number-input · match the app's form tokens */
+.isa-phone-input .PhoneInputCountry {
+  display: flex; align-items: center; gap: 4px;
+  height: 2.5rem; padding: 0 8px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm, 4px);
+  background: var(--background);
+}
+.isa-phone-input .PhoneInputCountryIcon { box-shadow: none; }
+.isa-phone-input .PhoneInputCountrySelectArrow { opacity: 0.5; }
