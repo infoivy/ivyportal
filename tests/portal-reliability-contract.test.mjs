@@ -71,6 +71,27 @@ test("Home is action-first and does not duplicate the canonical analytics worksp
   assert.doesNotMatch(dashboard, /\.insert\(|\.update\(|\.delete\(/);
 });
 
+test("Home splits by role: setter reps get their own week, leaders get the money strip", () => {
+  const setterWeek = readFileSync(new URL("src/components/home-setter-week.tsx", root), "utf8");
+  const moneyStrip = readFileSync(new URL("src/components/home-money-strip.tsx", root), "utf8");
+  // Setter reps: no Team pulse, no EOD-status aside; their week instead.
+  assert.match(dashboard, /const isSetterRep = roles\.includes\("setter"\) && !isLeader/);
+  assert.match(dashboard, /\{!isSetterRep && \(/);
+  assert.match(dashboard, /isSetterRep \? \(/);
+  assert.match(setterWeek, /from\("eods_activity_real"\)/);
+  assert.doesNotMatch(setterWeek, /cash_collected|from\("deals"\)|from\("installment_payments"\)|from\("eods"\)/);
+  // Leaders: payout banner + money numbers live OUTSIDE the home route file,
+  // keyed to the same admin/founder/cofounder gate.
+  assert.match(dashboard, /<PayoutAlertBanner \/>/);
+  assert.match(dashboard, /<HomeMoneyStrip \/>/);
+  assert.match(moneyStrip, /\["admin", "founder", "cofounder"\]/);
+  assert.doesNotMatch(moneyStrip, /from\("installment_payments"\)|from\("deals"\)|from\("eods"\)/);
+  assert.match(moneyStrip, /BlurMoney/);
+  // The loud pulse is gone for good (founder 2026-07-28).
+  const styles = readFileSync(new URL("src/styles.css", root), "utf8");
+  assert.doesNotMatch(styles, /payout-pulse|payout-border-breathe/);
+});
+
 test("Home preserves unavailable operational values and ranks urgent exceptions first", () => {
   assert.match(dashboard, /rows\.some\(\(row\) => row\[key\] == null\)/);
   assert.match(dashboard, /result\.count == null/);

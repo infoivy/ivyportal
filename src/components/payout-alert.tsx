@@ -19,10 +19,12 @@ export type PayoutAlertPeriod = {
   unconfirmed: OwedMember[];
 };
 
-async function fetchPeriodStatus(offset: number): Promise<PayoutAlertPeriod | null> {
-  const period = getPeriod(offset);
-  if (todayLocal() <= period.end) return null; // payout date not reached yet
-  const [dealsRes, profilesRes, ratesRes, ipRes, instRes, cofRes, confRes] = await Promise.all([
+/**
+ * Everyone owed money for a period, live from the same math the Payouts page
+ * uses. Shared by the overdue-payout banner and the founder home money strip.
+ */
+export async function fetchPeriodOwed(period: PayoutPeriod): Promise<OwedMember[]> {
+  const [dealsRes, profilesRes, ratesRes, ipRes, instRes, cofRes] = await Promise.all([
     supabase
       .from("deals")
       .select("id, closer_id, setter_id, total_value, cash_collected_upfront, deal_date, payment_type")
@@ -41,7 +43,6 @@ async function fetchPeriodStatus(offset: number): Promise<PayoutAlertPeriod | nu
       .not("paid_at", "is", null),
     supabase.from("installments").select("id, setter_id, closer_id, student_name, students!inner(is_demo)").eq("students.is_demo", false),
     supabase.from("user_roles").select("user_id").eq("role", "cofounder"),
-    (supabase.from("payout_confirmations" as any).select("user_id").eq("period_start", period.start) as any),
   ]);
   const rates: CommissionRates = { ...DEFAULT_RATES };
   for (const row of (ratesRes.data ?? [])) {
@@ -58,8 +59,17 @@ async function fetchPeriodStatus(offset: number): Promise<PayoutAlertPeriod | nu
     rates,
     cofounderIds: new Set(((cofRes.data ?? []) as { user_id: string }[]).map(r => r.user_id)),
   }, period);
-  const owed = memberPayoutTotals(rows, profileMap, period);
-  const confirmedIds = new Set(((confRes.data ?? []) as { user_id: string }[]).map(r => r.user_id));
+  return memberPayoutTotals(rows, profileMap, period);
+}
+
+async function fetchPeriodStatus(offset: number): Promise<PayoutAlertPeriod | null> {
+  const period = getPeriod(offset);
+  if (todayLocal() <= period.end) return null; // payout date not reached yet
+  const [owed, confRes] = await Promise.all([
+    fetchPeriodOwed(period),
+    (supabase.from("payout_confirmations" as any).select("user_id").eq("period_start", period.start) as any),
+  ]);
+  const confirmedIds = new Set(((confRes.data ?? []) as { user_id: string }[]).map((r: { user_id: string }) => r.user_id));
   return { period, offset, owed, unconfirmed: owed.filter(m => !confirmedIds.has(m.id)) };
 }
 
@@ -84,8 +94,10 @@ export function usePayoutAlert() {
 }
 
 /**
- * Full-width pulsing red banner for unconfirmed payouts past their date.
- * Rendered on the Dashboard and the Payouts page for admin/founder/cofounder.
+ * Full-width red banner for unconfirmed payouts past their date. Calm frame,
+ * unmistakably red (founder 2026-07-28: keep the urgency and hover, drop the
+ * loud animated bordering). Rendered on the Dashboard and the Payouts page
+ * for admin/founder/cofounder.
  */
 export function PayoutAlertBanner({ onJumpToPeriod }: { onJumpToPeriod?: (offset: number) => void }) {
   const { alerts, canSee } = usePayoutAlert();
@@ -97,7 +109,7 @@ export function PayoutAlertBanner({ onJumpToPeriod }: { onJumpToPeriod?: (offset
   return (
     <div className="space-y-2">
       {alerts.map(a => (
-        <div key={a.period.start} className="payout-pulse rounded-sm border-2 border-danger/40 bg-danger-bg px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+        <div key={a.period.start} className="rounded-lg border border-danger/25 bg-danger-bg hover:bg-danger-bg/80 motion-safe:transition-colors px-4 py-3 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-start gap-3 min-w-0">
             <AlertOctagon className="h-5 w-5 text-danger-fg shrink-0 mt-0.5" />
             <div className="min-w-0">
@@ -112,14 +124,14 @@ export function PayoutAlertBanner({ onJumpToPeriod }: { onJumpToPeriod?: (offset
           {onJumpToPeriod ? (
             <button
               onClick={() => onJumpToPeriod(a.offset)}
-              className="inline-flex items-center gap-1.5 text-[12px] font-medium bg-danger text-white hover:opacity-90 px-3 py-1.5 rounded-sm shrink-0"
+              className="inline-flex items-center gap-1.5 text-[12px] font-medium bg-danger text-white hover:opacity-90 px-3 py-1.5 rounded-md shrink-0"
             >
               Confirm now <ArrowRight className="h-3.5 w-3.5" />
             </button>
           ) : (
             <Link
               to={"/payouts" as string}
-              className="inline-flex items-center gap-1.5 text-[12px] font-medium bg-danger text-white hover:opacity-90 px-3 py-1.5 rounded-sm shrink-0"
+              className="inline-flex items-center gap-1.5 text-[12px] font-medium bg-danger text-white hover:opacity-90 px-3 py-1.5 rounded-md shrink-0"
             >
               Confirm now <ArrowRight className="h-3.5 w-3.5" />
             </Link>

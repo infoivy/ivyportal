@@ -430,16 +430,6 @@
   .todo-pulse { animation: todo-border-breathe 2.6s var(--ease-out-quad, ease-in-out) infinite; }
 }
 
-/* Unconfirmed payouts past the payout date are the loudest thing in the app:
-   a danger-tinted border/glow breath. Motion-safe; still red when reduced. */
-@keyframes payout-border-breathe {
-  0%, 100% { border-color: color-mix(in srgb, var(--danger) 40%, transparent); box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger) 0%, transparent); }
-  50% { border-color: color-mix(in srgb, var(--danger) 90%, transparent); box-shadow: 0 0 14px 0 color-mix(in srgb, var(--danger) 28%, transparent); }
-}
-@media (prefers-reduced-motion: no-preference) {
-  .payout-pulse { animation: payout-border-breathe 1.8s var(--ease-out-quad, ease-in-out) infinite; }
-}
-
 /* Today's week-dot breathes until the day is logged. */
 @keyframes today-dot-breathe {
   0%, 100% { box-shadow: 0 0 0 2px color-mix(in srgb, var(--warning) 30%, transparent); }

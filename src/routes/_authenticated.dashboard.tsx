@@ -19,9 +19,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { PageShell } from "@/components/ui/page-shell";
 import { Skeleton } from "@/components/ui/skeletons";
+import { HomeMoneyStrip } from "@/components/home-money-strip";
+import { HomeSetterWeek } from "@/components/home-setter-week";
+import { PayoutAlertBanner } from "@/components/payout-alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { humanDue, todayLocal } from "@/lib/dates";
+import type { SetterType } from "@/lib/eod-kpi";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Home · Ivy Portal" }] }),
@@ -33,6 +37,7 @@ type EodActivity = {
   report_date: string;
   dials: number | null;
   dms_sent: number | null;
+  leads_contacted: number | null;
   convos_started: number | null;
   calls_booked: number | null;
   shows: number | null;
@@ -110,6 +115,9 @@ function HomePage() {
   const canSeeCustomers = roles.some((role) => ["admin", "founder", "cofounder", "closer", "coach", "csm"].includes(role));
   const canSeeFinance = roles.some((role) => ["admin", "founder", "cofounder", "closer", "coach"].includes(role));
   const canApprove = roles.some((role) => ["admin", "closer", "csm"].includes(role));
+  const isLeader = roles.some((role) => ["admin", "founder", "cofounder"].includes(role));
+  // Reps get their own week, not the team's pulse (founder-directed 2026-07-28).
+  const isSetterRep = roles.includes("setter") && !isLeader;
 
   const homeQ = useQuery({
     queryKey: ["page", "home", user?.id, roleKey],
@@ -142,7 +150,7 @@ function HomePage() {
       ] = await Promise.all([
         supabase
           .from("eods_activity_real")
-          .select("user_id, report_date, dials, dms_sent, convos_started, calls_booked, shows, no_shows, closes")
+          .select("user_id, report_date, dials, dms_sent, leads_contacted, convos_started, calls_booked, shows, no_shows, closes")
           .gte("report_date", recentFrom)
           .lte("report_date", today)
           .order("report_date", { ascending: true }),
@@ -241,7 +249,6 @@ function HomePage() {
     const today = todayLocal();
     const ownToday = data.activities.some((row) => row.user_id === user?.id && row.report_date === today);
     const hasOperatingRole = roles.some((role) => ["setter", "closer", "coach", "csm"].includes(role));
-    const isLeader = roles.some((role) => ["admin", "founder", "cofounder"].includes(role));
 
     if (hasOperatingRole && !ownToday) {
       items.push({
@@ -323,7 +330,7 @@ function HomePage() {
     }
 
     return items.sort((a, b) => Number(b.urgent) - Number(a.urgent)).slice(0, 6);
-  }, [canApprove, canSeeCustomers, canSeeFinance, homeQ.data, roles, user?.id]);
+  }, [canApprove, canSeeCustomers, canSeeFinance, homeQ.data, isLeader, roles, user?.id]);
 
   if (homeQ.isLoading) return <HomeLoading />;
 
@@ -379,6 +386,13 @@ function HomePage() {
         </Button>
       </header>
 
+      {isLeader && (
+        <>
+          <PayoutAlertBanner />
+          <HomeMoneyStrip />
+        </>
+      )}
+
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.65fr)_minmax(300px,0.75fr)]">
         <main className="space-y-5">
           <section className="card-surface overflow-hidden" aria-labelledby="next-actions-title">
@@ -413,6 +427,7 @@ function HomePage() {
             </div>
           </section>
 
+          {!isSetterRep && (
           <section className="card-surface p-5 sm:p-6" aria-labelledby="team-pulse-title">
             <div className="grid gap-6 sm:grid-cols-[minmax(190px,0.75fr)_minmax(0,1.25fr)] sm:items-center">
               <div>
@@ -437,9 +452,18 @@ function HomePage() {
               </dl>
             </div>
           </section>
+          )}
         </main>
 
         <aside className="space-y-5">
+          {isSetterRep ? (
+            <HomeSetterWeek
+              userId={user!.id}
+              setterType={(ownProfile?.setter_type ?? null) as SetterType}
+              activities={data.activities}
+              profiles={data.profiles}
+            />
+          ) : (
           <section className="card-surface p-5" aria-labelledby="your-day-title">
             <div className="flex items-center gap-2 text-muted-foreground">
               <ClipboardCheck className="h-4 w-4" />
@@ -481,6 +505,7 @@ function HomePage() {
               </Link>
             </Button>
           </section>
+          )}
 
           <section className="card-surface p-5" aria-labelledby="signal-title">
             <div className="flex items-center gap-2 text-muted-foreground">
@@ -490,9 +515,11 @@ function HomePage() {
             <h2 id="signal-title" className="sr-only">Activity signal</h2>
             <p className="mt-4 text-[16px] font-medium leading-6 text-foreground">{activitySignal.title}</p>
             <p className="mt-2 text-caption leading-5 text-muted-foreground">{activitySignal.detail}</p>
-            <Link to={"/performance" as never} className="mt-4 inline-flex min-h-10 items-center gap-2 text-body font-semibold text-foreground hover:opacity-70">
-              Open Performance <ArrowRight className="h-4 w-4" />
-            </Link>
+            {isLeader && (
+              <Link to={"/performance" as never} className="mt-4 inline-flex min-h-10 items-center gap-2 text-body font-semibold text-foreground hover:opacity-70">
+                Open Performance <ArrowRight className="h-4 w-4" />
+              </Link>
+            )}
           </section>
 
           <p className="px-1 text-micro text-muted-foreground">
