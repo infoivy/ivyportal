@@ -3,7 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { format, subDays } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { VolumeAreaChart, VolumeLegend } from "@/components/ui/volume-area-chart";
-import { type DateRange, daysBetween } from "@/components/range-picker";
+import { FilterToolbar } from "@/components/ui/filter-toolbar";
+import { type DateRange, rangeFor, daysBetween } from "@/components/range-picker";
 
 type TrendsRow = {
   id: string;
@@ -21,10 +22,14 @@ type TrendsRow = {
 /**
  * The Sales-page volume trend, copied 1:1 (founder-directed 2026-07-28:
  * "should be copied over 1:1 to overview and replace the volume trend in
- * there"). Pure EOD data, same buckets, same series, same colors. Shares the
- * Sales trends query key so both pages hit one cache.
+ * there"). Pure EOD data, same buckets, series, colors, AND its own 7-day
+ * default with its own range/compare controls — the dashboard's global 24H
+ * picker collapsed it to one empty bucket. Shares the Sales trends query key
+ * so both pages hit one cache.
  */
-export function VolumeTrendPanel({ dateRange, compare }: { dateRange: DateRange; compare: boolean }) {
+export function VolumeTrendPanel() {
+  const [dateRange, setDateRange] = useState<DateRange>(() => rangeFor("7d"));
+  const [compare, setCompare] = useState(false);
   const [rows, setRows] = useState<TrendsRow[]>([]);
   const [prevRows, setPrevRows] = useState<TrendsRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -99,9 +104,12 @@ export function VolumeTrendPanel({ dateRange, compare }: { dateRange: DateRange;
 
   return (
     <div className="card-surface p-5">
-      <div className="mb-3">
-        <div className="text-[15px] font-semibold">Volume trend</div>
-        <div className="text-[13px] text-muted-foreground mt-0.5">DMs, convos, booked &amp; shows{compare ? " vs prev period" : ""}</div>
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <div className="text-[15px] font-semibold">Volume trend</div>
+          <div className="text-[13px] text-muted-foreground mt-0.5">DMs, convos, booked &amp; shows{compare ? " vs prev period" : ""}</div>
+        </div>
+        <FilterToolbar value={dateRange} onChange={setDateRange} compare={compare} onCompareToggle={() => setCompare(c => !c)} />
       </div>
       {loading ? <div className="h-60 w-full bg-muted rounded-xl animate-pulse" /> : (
         <>

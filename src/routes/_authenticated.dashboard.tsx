@@ -567,7 +567,7 @@ function Dashboard() {
           <div className={`grid gap-3 ${hasPrev ? "lg:grid-cols-[1.2fr_1fr_1fr]" : "lg:grid-cols-[1.5fr_1fr]"}`}>
             {/* The Sales-page trend chart, 1:1 (founder: the old source-mixed
                 one was "kinda messed up") */}
-            {prefs.showGrowth && <VolumeTrendPanel dateRange={dateRange} compare={compare} />}
+            {prefs.showGrowth && <VolumeTrendPanel />}
 
 
             {prefs.showFunnel && (
