@@ -80,7 +80,7 @@ function FinanceInner() {
         supabase.from("founder_settings").select("id, processor_balance, processor_balance_updated_at, monthly_cash_goal, base_pay_day").maybeSingle(),
         supabase.from("installment_payments").select("amount, paid_at, installment_id").eq("status", "paid").gte("paid_at", iso(monthStart) + "T00:00:00").lte("paid_at", iso(monthEnd) + "T23:59:59").not("paid_at", "is", null),
         supabase.from("installments").select("id, setter_id, closer_id"),
-        supabase.from("profiles").select("id, display_name, commission_cap_pct, base_pay_monthly"),
+        supabase.from("profiles").select("id, display_name, commission_cap_pct, base_pay_monthly, base_pay_day"),
         supabase.from("commission_rates").select("key, rate").eq("active", true),
         supabase.from("user_roles").select("user_id").eq("role", "cofounder"),
       ]);
@@ -139,12 +139,20 @@ function FinanceInner() {
     const expensesTotal = monthExpenses.reduce((a, e) => a + Number(e.amount), 0);
     // Base pay presents as a business expense (founder-directed 2026-07-28)
     // but stays OUT of expensesTotal — calcMonthPayouts already counts it, so
-    // profit would double-subtract otherwise.
-    const basePayDayRaw = Number((d.settings as { base_pay_day?: number } | null)?.base_pay_day) || 1;
-    const basePayDate = iso(new Date(monthStart.getFullYear(), monthStart.getMonth(), Math.min(basePayDayRaw, daysInMonth)));
-    const basePayRows = (d.profiles as { id: string; display_name?: string | null; base_pay_monthly?: number | null }[])
+    // profit would double-subtract otherwise. Each member lands on THEIR own
+    // pay day (profiles.base_pay_day, anchored to their start date).
+    const basePayRows = (d.profiles as { id: string; display_name?: string | null; base_pay_monthly?: number | null; base_pay_day?: number | null }[])
       .filter(p => (p.base_pay_monthly ?? 0) > 0)
-      .map(p => ({ id: p.id, name: p.display_name ?? "Team member", amount: Number(p.base_pay_monthly), date: basePayDate }));
+      .map(p => {
+        const day = Math.min(Math.max(Number(p.base_pay_day) || 1, 1), daysInMonth);
+        return {
+          id: p.id,
+          name: p.display_name ?? "Team member",
+          amount: Number(p.base_pay_monthly),
+          day,
+          date: iso(new Date(monthStart.getFullYear(), monthStart.getMonth(), day)),
+        };
+      });
     // Collected = upfronts logged this month + installments PAID this month
     // (by paid_at — a payment due in May but paid in June is June cash).
     const collected = d.deals.reduce((a, x) => a + (Number(x.cash_collected_upfront) || 0), 0)
@@ -191,7 +199,7 @@ function FinanceInner() {
     const mrrNow = mrrSeries[0]?.value ?? 0;
 
     return {
-      monthExpenses, expensesTotal, basePayRows, basePayDay: basePayDayRaw, collected, expectedRest, projectedIn,
+      monthExpenses, expensesTotal, basePayRows, collected, expectedRest, projectedIn,
       profitSoFar, profitProjected, flowWithBalance, startBalance, mrrSeries, mrrNow,
       endBalance: startBalance != null ? running : null,
     };
@@ -479,7 +487,7 @@ function FinanceInner() {
                   <span className="ml-2 text-caption text-muted-foreground">team base pay</span>
                 </div>
                 <span className="tabular-nums text-right">{money(b.amount)}</span>
-                <span className="text-muted-foreground text-right hidden sm:block">monthly · day {calc.basePayDay}</span>
+                <span className="text-muted-foreground text-right hidden sm:block">monthly · day {b.day}</span>
                 <span className="text-caption text-right hidden sm:block text-success-fg">active</span>
                 <span className="flex justify-end">
                   <Link to={"/payouts" as string} className="text-caption text-primary hover:underline px-1.5 py-1">edit →</Link>

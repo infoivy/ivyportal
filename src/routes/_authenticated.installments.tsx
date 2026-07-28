@@ -47,7 +47,7 @@ type Installment = {
   created_at: string;
 };
 type Student = { id: string; full_name: string };
-type Person = { id: string; display_name: string | null; base_pay_monthly?: number | null };
+type Person = { id: string; display_name: string | null; base_pay_monthly?: number | null; base_pay_day?: number | null };
 type Expense = {
   id: string;
   name: string;
@@ -97,30 +97,25 @@ function InstallmentsPage() {
   const pageQ = useQuery({
     queryKey: keys.installmentsPage,
     queryFn: async () => {
-      const [iRes, pRes, sRes, tRes, eRes, fsRes] = await Promise.all([
+      const [iRes, pRes, sRes, tRes, eRes] = await Promise.all([
         (supabase.from("installments" as any).select("*").order("created_at", { ascending: false }) as any),
         (supabase.from("installment_payments" as any).select("*").order("due_date", { ascending: true }) as any),
         supabase.from("students").select("id, full_name").order("full_name"),
-        supabase.from("profiles").select("id, display_name, base_pay_monthly" as any),
+        supabase.from("profiles").select("id, display_name, base_pay_monthly, base_pay_day" as any),
         // Recurring costs for the calendar's money-out layer. RLS keeps this
         // founder/cofounder-only; everyone else silently gets zero rows.
         (supabase.from("business_expenses").select("*").eq("active", true) as any),
-        (supabase.from("founder_settings").select("id, base_pay_day").maybeSingle() as any),
       ]);
       return {
         installments: (iRes.data ?? []) as Installment[],
         payments: (pRes.data ?? []) as Payment[],
         students: (sRes.data ?? []) as Student[],
-        team: ((tRes.data ?? []) as any[]).map(p => ({ id: p.id, display_name: p.display_name, base_pay_monthly: p.base_pay_monthly ?? null })) as Person[],
+        team: ((tRes.data ?? []) as any[]).map(p => ({ id: p.id, display_name: p.display_name, base_pay_monthly: p.base_pay_monthly ?? null, base_pay_day: p.base_pay_day ?? 1 })) as Person[],
         expenses: (eRes.data ?? []) as Expense[],
-        settingsId: (fsRes.data?.id ?? null) as string | null,
-        basePayDay: Number(fsRes.data?.base_pay_day) || 1,
       };
     },
   });
   const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [basePayDay, setBasePayDay] = useState(1);
-  const [settingsId, setSettingsId] = useState<string | null>(null);
   useEffect(() => {
     if (!pageQ.data) return;
     setInstallments(pageQ.data.installments);
@@ -128,20 +123,7 @@ function InstallmentsPage() {
     setStudents(pageQ.data.students);
     setTeam(pageQ.data.team);
     setExpenses(pageQ.data.expenses);
-    setBasePayDay(pageQ.data.basePayDay);
-    setSettingsId(pageQ.data.settingsId);
   }, [pageQ.data]);
-
-  const saveBasePayDay = async (day: number) => {
-    const clamped = Math.min(31, Math.max(1, Math.round(day) || 1));
-    setBasePayDay(clamped);
-    const { error } = settingsId
-      ? await (supabase.from("founder_settings") as any).update({ base_pay_day: clamped }).eq("id", settingsId)
-      : await (supabase.from("founder_settings") as any).insert({ base_pay_day: clamped });
-    if (error) return toast.error(error.message);
-    toast.success(`Base pay lands on day ${clamped}`);
-    invalidateForTables(qc, ["founder_settings"]);
-  };
 
   const paymentsByInstallment = useMemo(() => {
     const map = new Map<string, Payment[]>();
@@ -261,9 +243,7 @@ function InstallmentsPage() {
         // Money-out layer is finance data: founder/cofounder eyes only
         // (RLS already blanks expenses for others; base pay follows the gate).
         expenses={canSeeMoneyOut ? expenses : []}
-        basePays={canSeeMoneyOut ? team.filter(t => (t.base_pay_monthly ?? 0) > 0).map(t => ({ label: t.display_name ?? "Team member", amount: Number(t.base_pay_monthly) })) : []}
-        basePayDay={basePayDay}
-        onBasePayDayChange={canSeeMoneyOut ? saveBasePayDay : undefined}
+        basePays={canSeeMoneyOut ? team.filter(t => (t.base_pay_monthly ?? 0) > 0).map(t => ({ label: t.display_name ?? "Team member", amount: Number(t.base_pay_monthly), day: Number(t.base_pay_day) || 1 })) : []}
       />
 
       {/* Reminder queue */}
@@ -600,13 +580,11 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
  * to land (upcoming/late/missed still expected · paid shown as collected).
  * Click a day for the payment breakdown.
  */
-function CashInCalendar({ payments, nameFor, expenses, basePays, basePayDay, onBasePayDayChange }: {
+function CashInCalendar({ payments, nameFor, expenses, basePays }: {
   payments: Payment[];
   nameFor: (p: Payment) => string;
   expenses: Expense[];
-  basePays: { label: string; amount: number }[];
-  basePayDay: number;
-  onBasePayDayChange?: (day: number) => void;
+  basePays: { label: string; amount: number; day: number }[];
 }) {
   const [monthStart, setMonthStart] = useState(() => {
     const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1);
@@ -639,8 +617,8 @@ function CashInCalendar({ payments, nameFor, expenses, basePays, basePayDay, onB
   ];
 
   // Money going out: recurring costs land on their due day (clamped to the
-  // month's length), one-offs on their date, and team base pay on the
-  // founder-chosen pay day (founder_settings.base_pay_day).
+  // month's length), one-offs on their date, and each member's base pay on
+  // THEIR own pay day (profiles.base_pay_day, from their start date).
   const outByDay = useMemo(() => {
     const m = new Map<string, { general: number; team: number; items: OutItem[] }>();
     const add = (day: string, item: OutItem) => {
@@ -660,12 +638,12 @@ function CashInCalendar({ payments, nameFor, expenses, basePays, basePayDay, onB
         add(e.one_off_date, { label: e.name + (e.category ? ` · ${e.category}` : ""), short: e.name, amount, kind: "general" });
       }
     }
-    const payDay = Math.min(Math.max(basePayDay, 1), daysInMonth);
     for (const b of basePays) {
+      const payDay = Math.min(Math.max(b.day || 1, 1), daysInMonth);
       add(`${monthKey}-${String(payDay).padStart(2, "0")}`, { label: `${b.label} · base pay`, short: b.label, amount: b.amount, kind: "team" });
     }
     return m;
-  }, [expenses, basePays, basePayDay, monthStart, daysInMonth]);
+  }, [expenses, basePays, monthStart, daysInMonth]);
 
   const hasOutLayer = expenses.length > 0 || basePays.length > 0;
 
@@ -773,20 +751,7 @@ function CashInCalendar({ payments, nameFor, expenses, basePays, basePayDay, onB
             <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-warning" /> expected, not confirmed</span>
             <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full cal-out-general-dot" /> costs out</span>
             <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full cal-out-team-dot" /> team base pay out</span>
-            {onBasePayDayChange && (
-              <label className="ml-auto inline-flex items-center gap-1.5">
-                Base pay day
-                <select
-                  value={Math.min(basePayDay, 31)}
-                  onChange={e => onBasePayDayChange(Number(e.target.value))}
-                  className="h-6 rounded-sm border border-[var(--border)] bg-[var(--background)] px-1 text-[11px] tabular-nums focus:outline-none focus:border-ring"
-                >
-                  {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
-                    <option key={d} value={d}>{d}</option>
-                  ))}
-                </select>
-              </label>
-            )}
+            <span className="ml-auto opacity-70">pay days per member · edit on Payouts</span>
           </div>
         )}
         {(sel || selOut) && selected && (

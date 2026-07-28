@@ -54,13 +54,13 @@ function PayoutsInner() {
     queryKey: [...keys.payoutsPage, period.monthStart],
     placeholderData: (prev) => prev,
     queryFn: async () => {
-      const [dealsRes, profilesRes, ratesRes, ipRes, instRes, cofRes, teamRes, fsRes] = await Promise.all([
+      const [dealsRes, profilesRes, ratesRes, ipRes, instRes, cofRes, teamRes] = await Promise.all([
         supabase
           .from("deals")
           .select("id, closer_id, setter_id, total_value, cash_collected_upfront, deal_date, payment_type")
           .gte("deal_date", period.monthStart)
           .lte("deal_date", period.monthEnd),
-        supabase.from("profiles").select("id, display_name, commission_cap_pct, base_pay_monthly"),
+        supabase.from("profiles").select("id, display_name, commission_cap_pct, base_pay_monthly, base_pay_day"),
         supabase.from("commission_rates").select("key, rate").eq("active", true),
         supabase
           .from("installment_payments")
@@ -72,7 +72,6 @@ function PayoutsInner() {
         supabase.from("installments").select("id, setter_id, closer_id, student_name"),
         supabase.from("user_roles").select("user_id").eq("role", "cofounder"),
         supabase.from("user_roles").select("user_id").in("role", ["admin", "founder", "cofounder", "closer", "setter", "coach", "csm"]),
-        supabase.from("founder_settings").select("id, base_pay_day").maybeSingle(),
       ]);
       const ratesOut: CommissionRates = { ...DEFAULT_RATES };
       for (const row of (ratesRes.data ?? [])) {
@@ -87,8 +86,6 @@ function PayoutsInner() {
         installments: (instRes.data ?? []) as Installment[],
         cofounderIds: ((cofRes.data ?? []) as { user_id: string }[]).map((r) => r.user_id),
         teamIds: Array.from(new Set(((teamRes.data ?? []) as { user_id: string }[]).map((r) => r.user_id))),
-        settingsId: (fsRes.data?.id ?? null) as string | null,
-        basePayDay: Number((fsRes.data as { base_pay_day?: number } | null)?.base_pay_day) || 1,
       };
     },
   });
@@ -130,8 +127,8 @@ function PayoutsInner() {
   });
   const confirmations = confirmQ.data ?? [];
   const owed = useMemo(
-    () => memberPayoutTotals(rows, profileMap, period.isSecondHalf),
-    [rows, profileMap, period.isSecondHalf],
+    () => memberPayoutTotals(rows, profileMap, period),
+    [rows, profileMap, period],
   );
   const periodEnded = todayLocal() > period.end;
   const confirmedBy = new Map(confirmations.map(c => [c.user_id, c]));
@@ -193,17 +190,6 @@ function PayoutsInner() {
         <BasePayPanel
           profileMap={profileMap}
           teamIds={data?.teamIds ?? []}
-          isSecondHalf={period.isSecondHalf}
-          basePayDay={data?.basePayDay ?? 1}
-          onBasePayDayChange={async (day) => {
-            const clamped = Math.min(31, Math.max(1, Math.round(day) || 1));
-            const { error } = data?.settingsId
-              ? await (supabase.from("founder_settings") as any).update({ base_pay_day: clamped }).eq("id", data.settingsId)
-              : await (supabase.from("founder_settings") as any).insert({ base_pay_day: clamped });
-            if (error) return toast.error(error.message);
-            toast.success(`Base pay lands on day ${clamped}`);
-            invalidateForTables(qc, ["founder_settings"]);
-          }}
           onChanged={() => {
             invalidateForTables(qc, ["profiles"]);
             qc.invalidateQueries({ queryKey: ["payout-alert"] });
@@ -365,22 +351,36 @@ function PayoutsInner() {
   );
 }
 
-/** Base pay lives on profiles.base_pay_monthly (same field the Team page
- *  edits). Add, adjust inline, or remove; changes flow to Finance, the
- *  confirmation card, and the cash-in calendar via invalidation. */
-function BasePayPanel({ profileMap, teamIds, isSecondHalf, basePayDay, onBasePayDayChange, onChanged }: {
+const DAY_OPTIONS = Array.from({ length: 31 }, (_, i) => i + 1);
+
+function PayDaySelect({ value, onChange, className }: { value: number; onChange: (d: number) => void; className?: string }) {
+  return (
+    <select
+      value={Math.min(Math.max(value || 1, 1), 31)}
+      onChange={e => onChange(Number(e.target.value))}
+      className={`h-7 rounded-sm border border-[var(--border)] bg-[var(--background)] px-1 text-[12px] tabular-nums text-foreground focus:outline-none focus:border-ring ${className ?? ""}`}
+    >
+      {DAY_OPTIONS.map(day => <option key={day} value={day}>{day}</option>)}
+    </select>
+  );
+}
+
+/** Base pay lives on profiles (base_pay_monthly + base_pay_day). It's paid
+ *  once a month PER MEMBER on their own day, anchored to when they started
+ *  (founder-corrected 2026-07-28) — not tied to the commission halves.
+ *  Changes flow to Finance, the confirmation card, and the calendar. */
+function BasePayPanel({ profileMap, teamIds, onChanged }: {
   profileMap: Map<string, Profile>;
   teamIds: string[];
-  isSecondHalf: boolean;
-  basePayDay: number;
-  onBasePayDayChange: (day: number) => void;
   onChanged: () => void;
 }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
+  const [draftDay, setDraftDay] = useState(1);
   const [adding, setAdding] = useState(false);
   const [addId, setAddId] = useState("");
   const [addAmount, setAddAmount] = useState("");
+  const [addDay, setAddDay] = useState(1);
   const [saving, setSaving] = useState(false);
 
   const withBase = [...profileMap.values()].filter((p) => (p.base_pay_monthly ?? 0) > 0);
@@ -389,36 +389,28 @@ function BasePayPanel({ profileMap, teamIds, isSecondHalf, basePayDay, onBasePay
     .filter((p): p is Profile => !!p && (p.base_pay_monthly ?? 0) <= 0)
     .sort((a, b) => (a.display_name ?? "").localeCompare(b.display_name ?? ""));
 
-  const save = async (id: string, amount: number | null) => {
+  const save = async (id: string, amount: number | null, day: number) => {
     setSaving(true);
-    const { error } = await supabase.from("profiles").update({ base_pay_monthly: amount } as never).eq("id", id);
+    const clampedDay = Math.min(Math.max(Math.round(day) || 1, 1), 31);
+    const { error } = await supabase.from("profiles")
+      .update({ base_pay_monthly: amount, base_pay_day: clampedDay } as never)
+      .eq("id", id);
     setSaving(false);
     if (error) return toast.error(error.message);
-    toast.success(amount == null ? "Base pay removed" : `Base pay set · $${amount.toLocaleString()}/month`);
-    setEditingId(null); setAdding(false); setAddId(""); setAddAmount("");
+    toast.success(amount == null ? "Base pay removed" : `Base pay set · $${amount.toLocaleString()}/month on day ${clampedDay}`);
+    setEditingId(null); setAdding(false); setAddId(""); setAddAmount(""); setAddDay(1);
     onChanged();
   };
 
   return (
     <div className="card-surface px-4 py-3.5">
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+      <div className="flex flex-wrap items-baseline justify-between gap-3 mb-2">
         <span className="text-[13px] font-medium text-foreground">Base pay</span>
-        <label className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
-          monthly · paid with the 2nd half{isSecondHalf ? " (this period)" : ""} · lands on day
-          <select
-            value={Math.min(basePayDay, 31)}
-            onChange={e => onBasePayDayChange(Number(e.target.value))}
-            className="h-6 rounded-sm border border-[var(--border)] bg-[var(--background)] px-1 text-[11px] tabular-nums text-foreground focus:outline-none focus:border-ring"
-          >
-            {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
-              <option key={day} value={day}>{day}</option>
-            ))}
-          </select>
-        </label>
+        <span className="text-[11px] text-muted-foreground">once a month · each member on their own day (from their start date)</span>
       </div>
       <div className="space-y-1">
         {withBase.map((p) => (
-          <div key={p.id} className="flex items-center justify-between gap-2 text-[13px] rounded-md px-2 py-1.5 hover:bg-muted/60 motion-safe:transition-colors group">
+          <div key={p.id} className="flex items-center justify-between gap-2 text-[13px] rounded-md px-2 py-1.5 hover:bg-muted/60 motion-safe:transition-colors">
             <span className="text-foreground">{p.display_name}</span>
             {editingId === p.id ? (
               <span className="flex items-center gap-1.5">
@@ -426,30 +418,33 @@ function BasePayPanel({ profileMap, teamIds, isSecondHalf, basePayDay, onBasePay
                   autoFocus
                   value={draft}
                   onChange={e => setDraft(e.target.value.replace(/[^0-9.]/g, ""))}
-                  onKeyDown={e => { if (e.key === "Enter" && Number(draft) > 0) void save(p.id, Number(draft)); if (e.key === "Escape") setEditingId(null); }}
+                  onKeyDown={e => { if (e.key === "Enter" && Number(draft) > 0) void save(p.id, Number(draft), draftDay); if (e.key === "Escape") setEditingId(null); }}
                   className="h-7 w-24 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-right text-[13px] tabular-nums focus:outline-none focus:border-ring"
                 />
-                <button disabled={saving || !(Number(draft) > 0)} onClick={() => save(p.id, Number(draft))} className="text-[11px] font-medium text-primary hover:underline disabled:opacity-40">Save</button>
+                <span className="text-[11px] text-muted-foreground">on day</span>
+                <PayDaySelect value={draftDay} onChange={setDraftDay} />
+                <button disabled={saving || !(Number(draft) > 0)} onClick={() => save(p.id, Number(draft), draftDay)} className="text-[11px] font-medium text-primary hover:underline disabled:opacity-40">Save</button>
                 <button onClick={() => setEditingId(null)} className="text-[11px] text-muted-foreground hover:text-foreground">Cancel</button>
               </span>
             ) : (
               <span className="flex items-center gap-1.5">
                 <button
-                  onClick={() => { setEditingId(p.id); setDraft(String(p.base_pay_monthly ?? "")); }}
+                  onClick={() => { setEditingId(p.id); setDraft(String(p.base_pay_monthly ?? "")); setDraftDay(Number(p.base_pay_day) || 1); }}
                   className="tabular-nums font-medium hover:underline underline-offset-2"
-                  title="Edit amount"
+                  title="Edit amount and pay day"
                 >
-                  ${Number(p.base_pay_monthly).toLocaleString()}<span className="text-muted-foreground font-normal"> / month</span>
+                  ${Number(p.base_pay_monthly).toLocaleString()}
+                  <span className="text-muted-foreground font-normal"> / month · day {Number(p.base_pay_day) || 1}</span>
                 </button>
                 <button
-                  onClick={() => { setEditingId(p.id); setDraft(String(p.base_pay_monthly ?? "")); }}
+                  onClick={() => { setEditingId(p.id); setDraft(String(p.base_pay_monthly ?? "")); setDraftDay(Number(p.base_pay_day) || 1); }}
                   className="p-1 rounded-sm text-muted-foreground hover:text-foreground hover:bg-muted"
-                  title="Edit amount"
+                  title="Edit amount and pay day"
                 >
                   <Pencil className="h-3 w-3" />
                 </button>
                 <button
-                  onClick={() => { if (confirm(`Remove ${p.display_name}'s base pay?`)) void save(p.id, null); }}
+                  onClick={() => { if (confirm(`Remove ${p.display_name}'s base pay?`)) void save(p.id, null, Number(p.base_pay_day) || 1); }}
                   className="p-1 rounded-sm text-muted-foreground hover:text-danger-fg hover:bg-danger-bg"
                   title="Remove base pay"
                 >
@@ -477,14 +472,16 @@ function BasePayPanel({ profileMap, teamIds, isSecondHalf, basePayDay, onBasePay
             onChange={e => setAddAmount(e.target.value.replace(/[^0-9.]/g, ""))}
             className="h-8 w-24 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-right text-[12px] tabular-nums focus:outline-none focus:border-ring"
           />
+          <span className="text-[11px] text-muted-foreground">paid on day</span>
+          <PayDaySelect value={addDay} onChange={setAddDay} className="h-8" />
           <button
             disabled={saving || !addId || !(Number(addAmount) > 0)}
-            onClick={() => save(addId, Number(addAmount))}
+            onClick={() => save(addId, Number(addAmount), addDay)}
             className="h-8 px-3 rounded-sm bg-primary text-primary-foreground text-[12px] font-medium hover:bg-primary/90 disabled:opacity-40"
           >
             Add
           </button>
-          <button onClick={() => { setAdding(false); setAddId(""); setAddAmount(""); }} className="text-[11px] text-muted-foreground hover:text-foreground">Cancel</button>
+          <button onClick={() => { setAdding(false); setAddId(""); setAddAmount(""); setAddDay(1); }} className="text-[11px] text-muted-foreground hover:text-foreground">Cancel</button>
         </div>
       ) : (
         <button onClick={() => setAdding(true)} className="mt-2 text-[11px] font-medium text-primary hover:underline">+ Add base pay</button>

@@ -29,7 +29,7 @@ export function getPeriod(offset = 0) {
 
 export type PayoutPeriod = ReturnType<typeof getPeriod>;
 
-export type PayoutProfile = { id: string; display_name: string; commission_cap_pct?: number | null; base_pay_monthly?: number | null };
+export type PayoutProfile = { id: string; display_name: string; commission_cap_pct?: number | null; base_pay_monthly?: number | null; base_pay_day?: number | null };
 
 export type PayoutInstallmentPayment = {
   id: string;
@@ -211,15 +211,25 @@ export function buildPayoutRows(data: PayoutData, period: Pick<PayoutPeriod, "st
 
 export type OwedMember = { id: string; name: string; commission: number; basePay: number; total: number };
 
+/** A member's base pay lands once a month on their own day (anchored to when
+ *  they started — founder-corrected 2026-07-28), clamped to the month's
+ *  length. */
+export function basePayDateFor(p: PayoutProfile, monthStart: string): string {
+  const [y, m] = monthStart.split("-").map(Number);
+  const daysInMonth = new Date(y, m, 0).getDate();
+  const day = Math.min(Math.max(Number(p.base_pay_day) || 1, 1), daysInMonth);
+  return `${monthStart.slice(0, 7)}-${String(day).padStart(2, "0")}`;
+}
+
 /**
  * Everything a member is owed for a period: setter + closer commission, plus
- * monthly base pay when the period is the second half. This is the unit one
- * payout confirmation covers.
+ * monthly base pay when THEIR pay day falls inside the period. This is the
+ * unit one payout confirmation covers.
  */
 export function memberPayoutTotals(
   rows: { setterRows: SetterRow[]; closerRows: CloserRow[] },
   profileMap: Map<string, PayoutProfile>,
-  isSecondHalf: boolean,
+  period: Pick<PayoutPeriod, "start" | "end" | "monthStart">,
 ): OwedMember[] {
   const map = new Map<string, OwedMember>();
   const bump = (id: string, name: string, commission: number) => {
@@ -229,13 +239,13 @@ export function memberPayoutTotals(
   };
   for (const r of rows.setterRows) bump(r.id, r.name, r.total);
   for (const r of rows.closerRows) bump(r.id, r.name, r.total);
-  if (isSecondHalf) {
-    for (const p of profileMap.values()) {
-      if ((p.base_pay_monthly ?? 0) <= 0) continue;
-      const cur = map.get(p.id) ?? { id: p.id, name: p.display_name ?? p.id.slice(0, 8), commission: 0, basePay: 0, total: 0 };
-      cur.basePay = Number(p.base_pay_monthly);
-      map.set(p.id, cur);
-    }
+  for (const p of profileMap.values()) {
+    if ((p.base_pay_monthly ?? 0) <= 0) continue;
+    const payDate = basePayDateFor(p, period.monthStart);
+    if (payDate < period.start || payDate > period.end) continue;
+    const cur = map.get(p.id) ?? { id: p.id, name: p.display_name ?? p.id.slice(0, 8), commission: 0, basePay: 0, total: 0 };
+    cur.basePay = Number(p.base_pay_monthly);
+    map.set(p.id, cur);
   }
   return [...map.values()]
     .map(m => ({ ...m, total: m.commission + m.basePay }))

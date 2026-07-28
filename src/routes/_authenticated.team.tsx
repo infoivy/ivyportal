@@ -25,6 +25,7 @@ type AppRole = "admin" | "closer" | "setter" | "coach" | "csm" | "founder" | "co
 type SetterType = "phone" | "dm" | "full_cycle" | null;
 type Member = {
   timezone: string | null;
+  base_pay_day: number;
   id: string;
   display_name: string | null;
   avatar_path: string | null;
@@ -67,7 +68,7 @@ function TeamPage() {
 
   const fetchPage = async () => {
     const [{ data: profs }, { data: rolesData }, tpls, { data: progressRows }] = await Promise.all([
-      supabase.from("profiles").select("id, display_name, avatar_path, active, phone, timezone, setter_type, base_pay_monthly, csm_daily_target" as any),
+      supabase.from("profiles").select("id, display_name, avatar_path, active, phone, timezone, setter_type, base_pay_monthly, base_pay_day, csm_daily_target" as any),
       supabase.from("user_roles").select("user_id, role"),
       fetchAllTemplates(),
       supabase.from("onboarding_progress").select("user_id, role, step_id"),
@@ -85,6 +86,7 @@ function TeamPage() {
       phone: p.phone ?? null,
       timezone: p.timezone ?? null,
       base_pay_monthly: p.base_pay_monthly ?? null,
+      base_pay_day: p.base_pay_day ?? 1,
       csm_daily_target: (p as any).csm_daily_target ?? null,
       active: p.active ?? true,
       roles: rolesByUser.get(p.id) ?? [],
@@ -366,6 +368,7 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
   const [phone, setPhone] = useState(member.phone ?? "");
   const [tz, setTz] = useState(member.timezone ?? "");
   const [basePay, setBasePay] = useState(member.base_pay_monthly != null ? String(member.base_pay_monthly) : "");
+  const [basePayDay, setBasePayDay] = useState(String(member.base_pay_day || 1));
   const [csmTarget, setCsmTarget] = useState(String((member as any).csm_daily_target ?? 10));
   const [setterType, setSetterType] = useState<SetterType>(member.setter_type);
   const [avatarPath, setAvatarPath] = useState<string | null>(member.avatar_path);
@@ -404,6 +407,7 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
       timezone: tz || null,
       setter_type: setterType,
       base_pay_monthly: basePay.trim() ? Number(basePay) : null,
+      base_pay_day: Math.min(31, Math.max(1, Math.round(Number(basePayDay)) || 1)),
       csm_daily_target: Math.max(1, Number(csmTarget) || 10),
     } as any).eq("id", member.id);
     setSaving(false);
@@ -448,10 +452,19 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
           <label className="text-[12px] text-muted-foreground">Timezone (they can also set it on their Profile)</label>
           <TimezoneCombobox value={tz} onChange={setTz} />
         </div>
-        <div className="space-y-1">
-          <label className="text-[12px] text-muted-foreground">Base pay · $/month (optional)</label>
-          <input value={basePay} onChange={e => setBasePay(e.target.value.replace(/[^0-9.]/g, ""))} placeholder="500" inputMode="decimal"
-            className="w-full h-9 px-3 rounded-sm border border-[var(--border)] bg-[var(--background)] text-sm outline-none focus:border-ring" />
+        <div className="grid grid-cols-[1fr_auto] gap-2">
+          <div className="space-y-1">
+            <label className="text-[12px] text-muted-foreground">Base pay · $/month (optional)</label>
+            <input value={basePay} onChange={e => setBasePay(e.target.value.replace(/[^0-9.]/g, ""))} placeholder="500" inputMode="decimal"
+              className="w-full h-9 px-3 rounded-sm border border-[var(--border)] bg-[var(--background)] text-sm outline-none focus:border-ring" />
+          </div>
+          <div className="space-y-1">
+            <label className="text-[12px] text-muted-foreground">Paid on day</label>
+            <select value={basePayDay} onChange={e => setBasePayDay(e.target.value)}
+              className="h-9 rounded-sm border border-[var(--border)] bg-[var(--background)] px-2 text-sm tabular-nums outline-none focus:border-ring">
+              {Array.from({ length: 31 }, (_, i) => i + 1).map(day => <option key={day} value={day}>{day}</option>)}
+            </select>
+          </div>
         </div>
         <div className="space-y-1.5">
           <label className="text-[12px] text-muted-foreground">Roles</label>

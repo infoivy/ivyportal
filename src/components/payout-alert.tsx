@@ -28,7 +28,7 @@ async function fetchPeriodStatus(offset: number): Promise<PayoutAlertPeriod | nu
       .select("id, closer_id, setter_id, total_value, cash_collected_upfront, deal_date, payment_type")
       .gte("deal_date", period.monthStart)
       .lte("deal_date", period.monthEnd),
-    supabase.from("profiles").select("id, display_name, commission_cap_pct, base_pay_monthly"),
+    supabase.from("profiles").select("id, display_name, commission_cap_pct, base_pay_monthly, base_pay_day"),
     supabase.from("commission_rates").select("key, rate").eq("active", true),
     supabase
       .from("installment_payments")
@@ -56,7 +56,7 @@ async function fetchPeriodStatus(offset: number): Promise<PayoutAlertPeriod | nu
     rates,
     cofounderIds: new Set(((cofRes.data ?? []) as { user_id: string }[]).map(r => r.user_id)),
   }, period);
-  const owed = memberPayoutTotals(rows, profileMap, period.isSecondHalf);
+  const owed = memberPayoutTotals(rows, profileMap, period);
   const confirmedIds = new Set(((confRes.data ?? []) as { user_id: string }[]).map(r => r.user_id));
   return { period, offset, owed, unconfirmed: owed.filter(m => !confirmedIds.has(m.id)) };
 }
