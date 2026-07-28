@@ -92,19 +92,31 @@ export const approveAsStudent = createServerFn({ method: "POST" })
     const { data: au } = await supabaseAdmin.auth.admin.getUserById(data.userId);
     const email = au?.user?.email ?? null;
     const { data: prof } = await supabaseAdmin
-      .from("profiles").select("display_name").eq("id", data.userId).maybeSingle();
+      .from("profiles").select("display_name, phone, timezone").eq("id", data.userId).maybeSingle();
 
     await supabaseAdmin.from("user_roles")
       .upsert({ user_id: data.userId, role: "student" }, { onConflict: "user_id,role" });
+
+    // Details the signup already gave on the Application-pending screen
+    // (founder-directed 2026-07-28) — carried into the student record so the
+    // portal's timezone/WhatsApp soft locks never re-ask.
+    const carried: Record<string, string> = {};
+    if (prof?.phone) carried.whatsapp = prof.phone;
+    if (prof?.timezone) carried.timezone = prof.timezone;
 
     // Reuse an existing student record (matched by email) or create one
     let studentId: string | null = null;
     if (email) {
       const { data: existing } = await supabaseAdmin
-        .from("students").select("id").eq("email", email).maybeSingle();
+        .from("students").select("id, whatsapp, timezone").eq("email", email).maybeSingle();
       if (existing) {
         studentId = existing.id;
-        await supabaseAdmin.from("students").update({ user_id: data.userId }).eq("id", existing.id);
+        await supabaseAdmin.from("students").update({
+          user_id: data.userId,
+          // Never overwrite details a coach already recorded
+          ...(existing.whatsapp ? {} : (carried.whatsapp ? { whatsapp: carried.whatsapp } : {})),
+          ...(existing.timezone ? {} : (carried.timezone ? { timezone: carried.timezone } : {})),
+        }).eq("id", existing.id);
       }
     }
     if (!studentId) {
@@ -121,6 +133,7 @@ export const approveAsStudent = createServerFn({ method: "POST" })
           // 1:1 Pathway package or the Program chip grants the allotment.
           calls_included: 0,
           calls_allotted: 0,
+          ...carried,
         } as never)
         .select("id")
         .single();

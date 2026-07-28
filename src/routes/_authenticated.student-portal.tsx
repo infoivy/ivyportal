@@ -27,6 +27,7 @@ import { WALKTHROUGH_VIDEOS, beginPortalWalkthrough, completePortalWalkthrough }
 import { humanDue } from "@/lib/dates";
 import { signAvatar } from "@/lib/avatars";
 import { START_HERE_STEPS, isStartHereComplete } from "@/lib/student-guide-steps";
+import { ApplicationPending } from "@/components/application-pending";
 import {
   DEFAULT_GROUP_CALL_SCHEDULE,
   countStudentDailyEods,
@@ -550,16 +551,10 @@ function StudentPortal() {
   if (loading) return <PageSkeleton />;
 
   if (!student) {
-    return (
-      <div className="p-6 max-w-2xl mx-auto">
-        <div className="border border-warning/25 bg-warning-bg rounded-sm p-8 text-center">
-          <div className="text-warning-fg text-sm font-medium mb-2">Your account isn't linked to a student profile yet</div>
-          <p className="text-xs text-muted-foreground">
-            Contact your coach so they can add you (email: <span className="text-foreground">{user?.email}</span>). Once linked, this page becomes your daily hub.
-          </p>
-        </div>
-      </div>
-    );
+    // Not linked yet: collect phone + timezone, then "Application pending."
+    // (founder-directed 2026-07-28). Approval copies the details into the
+    // student record and this page opens on its own.
+    return <ApplicationPending email={user?.email ?? ""} onRecheck={load} />;
   }
 
   const bump = (k: keyof typeof empty, d: number) =>
@@ -952,7 +947,7 @@ function StudentPortal() {
                 <TextField label="Blockers" value={form.blockers} onChange={v => setForm(f => ({ ...f, blockers: v }))} />
                 <TextField label="Tomorrow's focus" value={form.tomorrow_focus} onChange={v => setForm(f => ({ ...f, tomorrow_focus: v }))} />
 
-                <button onClick={submit} disabled={saving} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium h-9 rounded-sm text-sm">
+                <button onClick={submit} disabled={saving} className="w-full inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold h-11 rounded-md text-sm disabled:opacity-50">
                   {saving ? "Saving…" : existingId ? "Update EOD" : "Submit EOD"}
                 </button>
               </div>
@@ -2121,8 +2116,9 @@ function SubmittedRecap({ form, streak, loomApproved, onEdit }: { form: typeof e
         </div>
       </div>
       <div>
-        <div className="text-sm font-semibold text-success-fg">Submitted ✓</div>
-        <div className="text-[11px] text-muted-foreground mt-1">See you tomorrow.</div>
+        <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-success-fg">Daily log · submitted</div>
+        <div className="mt-1.5 text-[22px] font-semibold tracking-tight text-foreground">Done for today.</div>
+        <div className="text-[12px] text-muted-foreground mt-1">See you tomorrow.</div>
       </div>
       <div className="flex justify-center gap-6 text-xs flex-wrap">
         {loomApproved ? (

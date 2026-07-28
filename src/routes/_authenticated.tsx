@@ -19,6 +19,7 @@ import { NotificationsBell } from "@/components/notifications-bell";
 import { CommandPalette } from "@/components/command-palette";
 import { StudentBottomNav } from "@/components/student-bottom-nav";
 import { StaffBottomNav } from "@/components/staff-bottom-nav";
+import { ApplicationPending } from "@/components/application-pending";
 import { setStudentPortalTab, getStudentPortalTab, onStudentPortalTab } from "@/lib/student-portal-bus";
 import { todayLocal } from "@/lib/dates";
 import {
@@ -219,8 +220,15 @@ function AuthedLayout() {
   const studentOnly = isStudent && !isTeam;
 
   // New signups have no role until an admin approves them — no team shell.
+  // They fill in phone + timezone first, then wait on "Application pending."
   if (state.user && state.roles.length === 0) {
-    return <PendingApproval email={state.user.email ?? ""} onSignOut={signOut} />;
+    return (
+      <AuthContext.Provider value={state}>
+        <div className="min-h-screen bg-background">
+          <ApplicationPending email={state.user.email ?? ""} onSignOut={signOut} />
+        </div>
+      </AuthContext.Provider>
+    );
   }
 
   return (
@@ -313,34 +321,16 @@ function AuthedLayout() {
   );
 }
 
-function PendingApproval({ email, onSignOut }: { email: string; onSignOut: () => void }) {
-  // Re-check roles when approval might have happened
-  useEffect(() => {
-    const recheck = () => window.dispatchEvent(new CustomEvent("isa:roles-changed"));
-    const t = setInterval(recheck, 30_000);
-    window.addEventListener("focus", recheck);
-    return () => { clearInterval(t); window.removeEventListener("focus", recheck); };
-  }, []);
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-6">
-      <div className="card-surface max-w-sm w-full p-8 text-center space-y-4">
-        <div className="mx-auto h-12 w-12 rounded-full bg-warning-bg flex items-center justify-center">
-          <span className="text-xl">⏳</span>
-        </div>
-        <div>
-          <h1 className="text-title text-foreground">Waiting for approval</h1>
-          <p className="text-body text-muted-foreground mt-1.5">
-            Your account <span className="text-foreground">{email}</span> is created and waiting
-            to be approved. This page updates automatically once that happens.
-          </p>
-        </div>
-        <Button variant="outline" size="sm" onClick={onSignOut}>
-          <LogOut className="h-3.5 w-3.5 mr-1.5" /> Sign out
-        </Button>
-      </div>
-    </div>
-  );
-}
+const PAGE_LABELS: Array<[string, string]> = [
+  ["/dashboard", "Overview"], ["/eods", "Performance"], ["/action-items", "Action Items"], ["/chat", "Team Chat"],
+  ["/sales", "Sales"], ["/revenue", "Deals"], ["/installments", "Installments"],
+  ["/payouts", "Payouts"], ["/closer-resources", "Closer Resources"],
+  ["/calendar", "Calendar"], ["/crm", "CRM"], ["/finance", "Finance"], ["/mochi", "Mochi"], ["/students", "Students"], ["/calls", "1-on-1 Calls"],
+  ["/student-success", "Student Success"], ["/csm", "CSM"],
+  ["/testimonials", "Testimonials"], ["/knowledge", "Knowledge"], ["/policies", "Knowledge"],
+  ["/sops", "Knowledge"], ["/admin", "Admin"],
+  ["/team", "Team"], ["/profile", "Profile"], ["/student-portal", "My Portal"],
+];
 
 function PageContextLabel() {
   const path = useRouterState({ select: (s) => s.location.pathname });

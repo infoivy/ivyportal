@@ -216,8 +216,9 @@ function EODsPage() {
     <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3 pb-5 mb-1">
         <div>
-          <h1 className="text-display text-foreground">End of Day</h1>
-          <p className="text-body text-muted-foreground mt-1">Submit today’s report. Performance now lives in its own workspace.</p>
+          <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">Performance</div>
+          <h1 className="mt-2 text-[28px] sm:text-[34px] font-semibold tracking-tight leading-[1.12] text-foreground">End of day</h1>
+          <p className="text-[15px] text-muted-foreground mt-1.5">Submit today's report. Performance now lives in its own workspace.</p>
         </div>
         <div className="flex items-center gap-2">
           {!isFounder && (() => {
