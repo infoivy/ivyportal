@@ -271,7 +271,14 @@ function StudentsLayout() {
   const deleteStudent = async (id: string) => {
     if (!confirm("Delete this student and all their data?")) return;
     const { error } = await supabase.from("students").delete().eq("id", id);
-    if (error) return toast.error(error.message);
+    if (error) {
+      // FK RESTRICT (2026-07-28): money rows must be handled explicitly, not
+      // silently detached when a student goes.
+      if (/installments|foreign key/i.test(error.message)) {
+        return toast.error("This student has a payment plan. Delete the plan on Money in · Payment plans first, then delete the student.");
+      }
+      return toast.error(error.message);
+    }
     toast.success("Student deleted");
     invalidateAll();
   };
@@ -599,8 +606,8 @@ function StudentsLayout() {
                     {visibleCols.has("badges") && (
                       <td className="px-2 py-3">
                         <div className="flex gap-1">
-                          <span title="Testimonial" className={s.testimonial_collected ? "text-warning-fg" : "text-[#2a3140]"}><Award className="h-3.5 w-3.5" /></span>
-                          <span title="Trustpilot" className={s.trustpilot_collected ? "text-success-fg" : "text-[#2a3140]"}><MessageSquare className="h-3.5 w-3.5" /></span>
+                          <span title="Testimonial" className={s.testimonial_collected ? "text-warning-fg" : "text-muted-foreground/30"}><Award className="h-3.5 w-3.5" /></span>
+                          <span title="Trustpilot" className={s.trustpilot_collected ? "text-success-fg" : "text-muted-foreground/30"}><MessageSquare className="h-3.5 w-3.5" /></span>
                         </div>
                       </td>
                     )}
@@ -702,7 +709,7 @@ function GraduationKanban({ students }: { students: Student[] }) {
             <div className="space-y-1.5">
               {inStage.map(s => (
                 <Link key={s.id} to={"/students/$id" as any} params={{ id: s.id } as any}
-                  className="block p-2 rounded-sm bg-[var(--muted)] border border-[var(--border)] hover:border-[#2a3140]">
+                  className="block p-2 rounded-sm bg-[var(--muted)] border border-[var(--border)] hover:border-ring/50">
                   <div className="text-xs font-medium truncate">{s.full_name}</div>
                   <div className="flex items-center gap-1 mt-1">
                     {s.first_win_at && <span title="First win" className="text-warning-fg text-[10px]">★</span>}
@@ -728,7 +735,7 @@ function StudentCard({ s, canDrag, coachName, atRisk }: { s: Student; canDrag: b
       params={{ id: s.id } as any}
       draggable={canDrag}
       onDragStart={e => e.dataTransfer.setData("text/plain", s.id)}
-      className={`block p-2 rounded-sm bg-[var(--muted)] border transition cursor-pointer ${atRisk ? "border-danger/25 hover:border-danger/25" : "border-[var(--border)] hover:border-[#2a3140]"}`}
+      className={`block p-2 rounded-sm bg-[var(--muted)] border transition cursor-pointer ${atRisk ? "border-danger/25 hover:border-danger/25" : "border-[var(--border)] hover:border-ring/50"}`}
     >
       <div className="flex items-center gap-1.5">
         {atRisk && <AlertTriangle className="h-3 w-3 text-danger-fg shrink-0" />}
@@ -989,7 +996,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
             <button
               type="button"
               onClick={() => setPkg("one_on_one")}
-              className={`text-left p-3 rounded-sm border transition ${pkg === "one_on_one" ? "border-border bg-muted" : "border-[var(--border)] hover:border-[#2a3140]"}`}
+              className={`text-left p-3 rounded-sm border transition ${pkg === "one_on_one" ? "border-border bg-muted" : "border-[var(--border)] hover:border-ring/50"}`}
             >
               <div className="text-xs font-medium">1:1 Pathway</div>
               <div className="text-[10px] text-muted-foreground mt-0.5">Up to 10 coaching calls (2/week × 5 weeks) + group access</div>
@@ -997,7 +1004,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
             <button
               type="button"
               onClick={() => setPkg("group_only")}
-              className={`text-left p-3 rounded-sm border transition ${pkg === "group_only" ? "border-border bg-muted" : "border-[var(--border)] hover:border-[#2a3140]"}`}
+              className={`text-left p-3 rounded-sm border transition ${pkg === "group_only" ? "border-border bg-muted" : "border-[var(--border)] hover:border-ring/50"}`}
             >
               <div className="text-xs font-medium">Group Expertise Pathway</div>
               <div className="text-[10px] text-muted-foreground mt-0.5">Group calls only, no 1:1s</div>
@@ -1013,7 +1020,7 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
                 key={m}
                 type="button"
                 onClick={() => setPayMode(m)}
-                className={`p-2 rounded-sm border text-xs transition ${payMode === m ? "border-success/25 bg-success-bg text-success-fg" : "border-[var(--border)] text-muted-foreground hover:border-[#2a3140]"}`}
+                className={`p-2 rounded-sm border text-xs transition ${payMode === m ? "border-success/25 bg-success-bg text-success-fg" : "border-[var(--border)] text-muted-foreground hover:border-ring/50"}`}
               >
                 {m === "pif" ? "Paid in full" : m === "installments" ? "Installments" : m === "scholarship" ? "Scholarship" : "Skip for now"}
               </button>
@@ -1045,12 +1052,12 @@ function AddStudentModal({ onClose, onCreated, coaches }: { onClose: () => void;
                     <button
                       type="button"
                       onClick={() => setScheduleMode("even")}
-                      className={`flex-1 p-2 rounded-sm border text-xs transition ${scheduleMode === "even" ? "border-border bg-muted text-muted-foreground" : "border-[var(--border)] text-muted-foreground hover:border-[#2a3140]"}`}
+                      className={`flex-1 p-2 rounded-sm border text-xs transition ${scheduleMode === "even" ? "border-border bg-muted text-muted-foreground" : "border-[var(--border)] text-muted-foreground hover:border-ring/50"}`}
                     >Split evenly</button>
                     <button
                       type="button"
                       onClick={() => setScheduleMode("custom")}
-                      className={`flex-1 p-2 rounded-sm border text-xs transition ${scheduleMode === "custom" ? "border-border bg-muted text-muted-foreground" : "border-[var(--border)] text-muted-foreground hover:border-[#2a3140]"}`}
+                      className={`flex-1 p-2 rounded-sm border text-xs transition ${scheduleMode === "custom" ? "border-border bg-muted text-muted-foreground" : "border-[var(--border)] text-muted-foreground hover:border-ring/50"}`}
                     >Custom schedule</button>
                   </div>
 

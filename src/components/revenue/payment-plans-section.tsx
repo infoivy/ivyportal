@@ -378,7 +378,6 @@ function PlanEditor({
   onSaved: () => void;
 }) {
   const [studentId, setStudentId] = useState<string>(initial?.student_id ?? "");
-  const [studentName, setStudentName] = useState<string>(initial?.student_name ?? "");
   const [coachId, setCoachId] = useState<string>(initial?.coach_id ?? "");
   const [closerId, setCloserId] = useState<string>(initial?.closer_id ?? "");
   const [currency, setCurrency] = useState<string>(initial?.currency ?? "USD");
@@ -414,14 +413,17 @@ function PlanEditor({
   };
 
   const save = async () => {
-    const name = (studentId ? students.find(s => s.id === studentId)?.full_name : studentName) ?? studentName;
-    if (!name) { toast.error("Student name required"); return; }
+    // Plans must belong to a student row: without one the plan is invisible
+    // to every money surface (schema enforces this too, 2026-07-28).
+    if (!studentId) { toast.error("Pick the student · every plan belongs to a student"); return; }
+    const name = students.find(s => s.id === studentId)?.full_name ?? "";
+    if (!name) { toast.error("Pick the student · every plan belongs to a student"); return; }
     setSaving(true);
     try {
       let planId = initial?.id;
       if (!planId) {
         const { data, error } = await (supabase.from("installments" as any).insert({
-          student_id: studentId || null,
+          student_id: studentId,
           student_name: name,
           coach_id: coachId || null,
           closer_id: closerId || null,
@@ -434,7 +436,7 @@ function PlanEditor({
         planId = data.id as string;
       } else {
         const { error } = await (supabase.from("installments" as any).update({
-          student_id: studentId || null,
+          student_id: studentId,
           student_name: name,
           coach_id: coachId || null,
           closer_id: closerId || null,
@@ -479,11 +481,8 @@ function PlanEditor({
         </header>
         <div className="p-4 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <Field label="Existing student">
-              <SelectField value={studentId} onChange={(v) => setStudentId(v)} options={students.map((s) => ({ value: s.id, label: s.full_name }))} allowEmpty emptyLabel="– None (enter name manually) –" placeholder="– None (enter name manually) –" />
-            </Field>
-            <Field label="Student name">
-              <input value={studentName} onChange={e => setStudentName(e.target.value)} placeholder="e.g. Jane Doe" className="w-full px-2 py-1.5 rounded border border-border bg-background text-sm" />
+            <Field label="Student">
+              <SelectField value={studentId} onChange={(v) => setStudentId(v)} options={students.map((s) => ({ value: s.id, label: s.full_name }))} placeholder="Pick the student…" />
             </Field>
             <Field label="Closer">
               <SelectField value={closerId} onChange={(v) => setCloserId(v)} options={team.map((t) => ({ value: t.id, label: t.display_name ?? t.id.slice(0,8) }))} allowEmpty emptyLabel="Unassigned" placeholder="Unassigned" />
