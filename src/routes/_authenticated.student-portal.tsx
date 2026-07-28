@@ -13,6 +13,7 @@ import { computeStreak } from "@/lib/streak";
 import { setStudentPortalTab, onStudentPortalTab, getStudentPortalTab } from "@/lib/student-portal-bus";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { invalidateForTables } from "@/lib/query-keys";
 import { useServerFn } from "@tanstack/react-start";
 import { getStudentLeaderboard } from "@/lib/student-portal.functions";
 import { completeStudentOnboarding } from "@/lib/student-onboarding.functions";
@@ -441,9 +442,9 @@ function StudentPortal() {
     if (error) return toast.error(error.message);
     const wasNew = !existingId;
     toast.success(existingId ? "EOD updated" : "EOD submitted");
-    // The leaderboard and rank chip read the same EODs — refresh immediately
-    // so the rank moves the moment the log lands.
-    qc.invalidateQueries({ queryKey: ["student-leaderboard"] });
+    // The leaderboard, CSM hub, and staff risk tiles read the same EODs —
+    // refresh them the moment the log lands.
+    invalidateForTables(qc, ["student_eods"]);
     if (draftKey) try { localStorage.removeItem(draftKey); } catch {}
     if (wasNew) {
       setConfetti(true);
@@ -476,6 +477,7 @@ function StudentPortal() {
     if (error) return toast.error(error.message);
     if (weeklyDraftKey) try { localStorage.removeItem(weeklyDraftKey); } catch {}
     toast.success(weeklySubmission ? "Weekly EOD updated" : "Weekly EOD submitted");
+    invalidateForTables(qc, ["student_weekly_eods"]);
     await load();
   };
 

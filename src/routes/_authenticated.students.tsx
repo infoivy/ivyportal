@@ -4,6 +4,7 @@ import { useStudentHealth } from "@/lib/use-student-health";
 import { BAND_META } from "@/lib/student-health";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { invalidateForTables } from "@/lib/query-keys";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { useDebouncedValue } from "@/hooks/use-debounced";
@@ -163,13 +164,9 @@ function StudentsLayout() {
     });
   };
 
-  const invalidateAll = () => {
-    qc.invalidateQueries({ queryKey: ["students", "all"] });
-    qc.invalidateQueries({ queryKey: ["student_calls", "agg"] });
-    qc.invalidateQueries({ queryKey: ["student_eods", "agg"] });
-    // Roster edits (coach, phase, status) feed the CSM workspace's cached page
-    qc.invalidateQueries({ queryKey: ["page", "csm"] });
-  };
+  // Roster edits (coach, phase, status, add/delete) fan out to every surface
+  // that reads students; a new student can also carry a deal + plan.
+  const invalidateAll = () => invalidateForTables(qc, ["students", "deals", "installments", "installment_payments"]);
 
 
   const coachName = (id: string | null) => (id ? coaches.find(c => c.id === id)?.display_name ?? "–" : "Unassigned");

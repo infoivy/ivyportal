@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { invalidateForTables } from "@/lib/query-keys";
 import { toast } from "sonner";
 import { Briefcase, Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -52,7 +53,9 @@ export function PlacementsSection({ studentId, compact = false }: { studentId: s
       ((await supabase.from("student_placements").select("*").eq("student_id", studentId).order("created_at", { ascending: false })).data ?? []) as Placement[],
   });
   const rows = q.data ?? [];
-  const refresh = () => qc.invalidateQueries({ queryKey: ["placements", studentId] });
+  // Covers the per-student list, the board, CSM overview counts, health
+  // scores, and bell interview reminders in one call.
+  const refresh = () => invalidateForTables(qc, ["student_placements"]);
 
   const add = async () => {
     const name = bizName.trim();
@@ -75,7 +78,6 @@ export function PlacementsSection({ studentId, compact = false }: { studentId: s
     if (error) return toast.error(error.message);
     if (stage === "placed") toast.success("Placed! 🎉");
     refresh();
-    qc.invalidateQueries({ queryKey: ["placement-board"] });
   };
 
   const setInterview = async (id: string, when: string) => {

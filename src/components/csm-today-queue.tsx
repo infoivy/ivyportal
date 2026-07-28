@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { invalidateForTables } from "@/lib/query-keys";
 import { toast } from "sonner";
 import { ListTodo, PhoneCall, Plus, ArrowRight, CheckCircle2, CalendarDays } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -106,6 +107,7 @@ export function CsmTodayQueue() {
       return { ...o, checkedToday: new Set([...o.checkedToday, studentId]) };
     });
     toast.success("Check-in logged");
+    invalidateForTables(qc, ["csm_tally"]);
   };
 
   const localIso = (d: Date) =>
@@ -124,7 +126,7 @@ export function CsmTodayQueue() {
     setItemDue(undefined);
     setDueOpen(false);
     setNoteFor(null);
-    qc.invalidateQueries({ queryKey: ["student-health"] });
+    invalidateForTables(qc, ["student_action_items"]);
   };
 
   return (

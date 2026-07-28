@@ -6,8 +6,9 @@ import { PlacementBoard } from "@/components/student-placements";
 import { CsmTodayQueue } from "@/components/csm-today-queue";
 import { StudentSuccessInner } from "./_authenticated.student-success";
 import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { invalidateForTables } from "@/lib/query-keys";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import {
@@ -171,6 +172,7 @@ function CsmPage() {
     };
   };
 
+  const qc = useQueryClient();
   const pageQ = useQuery({ queryKey: ["page", "csm", user?.id], queryFn: fetchPage, enabled: !!user && canUse });
   useEffect(() => {
     const d = pageQ.data;
@@ -185,7 +187,6 @@ function CsmPage() {
     setWeeklyEodLoadError(d.weeklyEodLoadError);
     setAdhoc(d.adhoc);
   }, [pageQ.data]);
-  const load = () => pageQ.refetch();
 
   const filteredStudents = useMemo(() => {
     const q = query.toLowerCase().trim();
@@ -253,6 +254,7 @@ function CsmPage() {
     setAdhoc(prev => [data as AdHocItem, ...prev]);
     setNewAdhocText(""); setNewAdhocDue("");
     toast.success("Action item added");
+    invalidateForTables(qc, ["student_action_items"]);
   };
 
   const toggleAdhoc = async (it: AdHocItem) => {
@@ -263,6 +265,7 @@ function CsmPage() {
       .eq("id", it.id);
     if (error) return toast.error(error.message);
     setAdhoc(prev => prev.map(a => a.id === it.id ? { ...a, done: next } : a));
+    invalidateForTables(qc, ["student_action_items"]);
   };
 
   const deleteAdhoc = async (id: string) => {
@@ -271,6 +274,7 @@ function CsmPage() {
     if (error) return toast.error(error.message);
     setAdhoc(prev => prev.filter(a => a.id !== id));
     toast.success("Deleted");
+    invalidateForTables(qc, ["student_action_items"]);
   };
 
   const addTally = async (kind: TallyKind, opts?: { student_id?: string | null; note?: string | null }) => {
@@ -284,6 +288,7 @@ function CsmPage() {
     if (error) return toast.error(error.message);
     setTally(prev => [data as TallyRow, ...prev]);
     toast.success(`+1 ${KIND_META[kind].label}`);
+    invalidateForTables(qc, ["csm_tally"]);
   };
 
   const undoLast = async (kind: TallyKind) => {
@@ -294,6 +299,7 @@ function CsmPage() {
     if (error) return toast.error(error.message);
     setTally(prev => prev.filter(t => t.id !== last.id));
     toast.success("Undone");
+    invalidateForTables(qc, ["csm_tally"]);
   };
 
   const submitQuick = async () => {
@@ -322,6 +328,9 @@ function CsmPage() {
     const { error } = await supabase.from("eods").upsert(payload, { onConflict: "user_id,report_date" });
     if (error) return toast.error(error.message);
     toast.success("EOD submitted → Team Reports ✓");
+    // Clears the top-bar "EOD due" chip and refreshes Team Reports/Sales HQ.
+    window.dispatchEvent(new CustomEvent("isa:eod-submitted", { detail: { userId: user.id } }));
+    invalidateForTables(qc, ["eods"]);
   };
 
   // NOTE: Action items are owned by the coach → student flow. Coaches set them
@@ -337,14 +346,14 @@ function CsmPage() {
     if (error) return toast.error(error.message);
     setNote("");
     toast.success("CSM note saved");
-    load();
+    invalidateForTables(qc, ["csm_student_notes"]);
   };
 
   const deleteNote = async (id: string) => {
     const { error } = await supabase.from("csm_student_notes").delete().eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Note deleted");
-    load();
+    invalidateForTables(qc, ["csm_student_notes"]);
   };
 
   if (!canUse) return <div className="p-6 text-sm text-muted-foreground">CSM access required.</div>;

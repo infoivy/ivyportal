@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { TableSkeleton } from "@/components/ui/skeletons";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { invalidateForTables } from "@/lib/query-keys";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { humanDue } from "@/lib/dates";
@@ -94,7 +95,8 @@ function ActionItemsHub() {
     setTeam(pageQ.data.teamList);
     setLoading(false);
   }, [pageQ.data]);
-  const load = () => pageQ.refetch();
+  const qc = useQueryClient();
+  const load = () => invalidateForTables(qc, ["student_action_items"]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   const studentList = useMemo(
@@ -219,6 +221,7 @@ function ActionItemsHub() {
       .eq("id", r.adhocId);
     if (error) return toast.error(error.message);
     setAdhoc(prev => prev.map(a => a.id === r.adhocId ? { ...a, done: next, done_at: next ? new Date().toISOString() : null } : a));
+    invalidateForTables(qc, ["student_action_items"]);
   };
 
   const deleteAdhoc = async (id: string) => {
@@ -227,6 +230,7 @@ function ActionItemsHub() {
     if (error) return toast.error(error.message);
     toast.success("Deleted");
     setAdhoc(prev => prev.filter(a => a.id !== id));
+    invalidateForTables(qc, ["student_action_items"]);
   };
 
   return (

@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { PageSkeleton } from "@/components/ui/skeletons";
 import { PlacementsSection } from "@/components/student-placements";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { invalidateForTables } from "@/lib/query-keys";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
@@ -274,10 +275,9 @@ function StudentDetail() {
       const o = old as { student?: Student } | undefined;
       return o?.student ? { ...o, student: { ...o.student, ...patch } } : old;
     });
-    qc.invalidateQueries({ queryKey: ["students", "all"] });
-    // Coach/phase/status changes must show up in the CSM workspace too —
-    // it caches its own page query (founder-reported 2026-07-25).
-    qc.invalidateQueries({ queryKey: ["page", "csm"] });
+    // Coach/phase/status changes must reach the roster, CSM workspace,
+    // overview counts, health scores, and bell alike.
+    invalidateForTables(qc, ["students"]);
   };
 
   const toggleGradStep = async (key: string) => {
@@ -297,6 +297,7 @@ function StudentDetail() {
     const { error } = await supabase.from("student_calls").delete().eq("id", cid);
     if (error) return toast.error(error.message);
     toast.success("Call deleted");
+    invalidateForTables(qc, ["student_calls"]);
     load();
   };
 
@@ -311,7 +312,7 @@ function StudentDetail() {
     if (error) { toast.error(error.message); return; }
     await update({ next_action: text });
     toast.success(due ? `Action item added · ${humanDue(due)}` : "Action item added");
-    qc.invalidateQueries({ queryKey: ["page", "student", id] });
+    invalidateForTables(qc, ["student_action_items"]);
     load();
   };
 
@@ -320,6 +321,7 @@ function StudentDetail() {
       .update({ done, done_at: done ? new Date().toISOString() : null })
       .eq("id", itemId);
     if (error) { toast.error(error.message); return; }
+    invalidateForTables(qc, ["student_action_items"]);
     load();
   };
 
@@ -333,6 +335,7 @@ function StudentDetail() {
     await supabase.from("deals").update({ student_name: clean } as never).eq("student_id", student.id);
     await (supabase.from("installments") as any).update({ student_name: clean }).eq("student_id", student.id);
     toast.success("Name updated");
+    invalidateForTables(qc, ["students", "deals", "installments"]);
     load();
   };
   const saveGeneralNotes = async () => {

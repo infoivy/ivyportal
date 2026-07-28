@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { invalidateForTables } from "@/lib/query-keys";
 import { useAuth } from "@/lib/auth-context";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -81,6 +82,7 @@ const startOfWeek = (iso: string) => { const d = new Date(iso + "T00:00:00"); co
 
 function EODsPage() {
   const { user, roles } = useAuth();
+  const qc = useQueryClient();
   const isAdmin = roles.includes("admin");
   const canViewTeam = roles.includes("admin") || roles.includes("closer");
   const isCsm = roles.includes("csm");
@@ -198,7 +200,6 @@ function EODsPage() {
     setTeamEods(teamQ.data.teamEods);
     setTeamRoster(teamQ.data.roster);
   }, [teamQ.data]);
-  const loadTeam = () => teamQ.refetch();
 
   useEffect(() => { void loadMine(); }, [loadMine]);
 
@@ -257,7 +258,9 @@ function EODsPage() {
       if (draftKey) { try { localStorage.removeItem(draftKey); } catch {} }
     }
     loadMine();
-    if (canViewTeam) loadTeam();
+    // Sales HQ tiles, admin counts, dashboard nudges, and the team board all
+    // read eods — refresh them everywhere, not just this page.
+    invalidateForTables(qc, ["eods"]);
   };
 
   const deleteEod = async (id: string) => {
@@ -267,7 +270,7 @@ function EODsPage() {
     toast.success("EOD deleted");
     if (existingId === id) { setExistingId(null); setForm(emptyForm); }
     loadMine();
-    if (canViewTeam) loadTeam();
+    invalidateForTables(qc, ["eods"]);
   };
 
   const setNum = (k: keyof typeof form) => (v: string) => setForm(f => ({ ...f, [k]: parseInt(v) || 0 }));

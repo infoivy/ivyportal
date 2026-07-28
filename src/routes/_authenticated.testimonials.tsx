@@ -1,7 +1,8 @@
 import { StudentsTabBar } from "@/components/students-tab-bar";
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { invalidateForTables } from "@/lib/query-keys";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
@@ -104,7 +105,8 @@ function TestimonialsPage() {
     setSignedUrls(pageQ.data.signed);
     setLoading(false);
   }, [pageQ.data]);
-  const load = () => pageQ.refetch();
+  const qc = useQueryClient();
+  const load = () => invalidateForTables(qc, ["testimonials"]);
 
   const studentName = useCallback(
     (id: string | null) => id ? (students.find(s => s.id === id)?.full_name ?? "–") : "–",

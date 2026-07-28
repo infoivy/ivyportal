@@ -2,8 +2,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { getWhopCashWindow } from "@/lib/mochi.functions";
 import { useEffect, useMemo, useState } from "react";
 import { PageSkeleton } from "@/components/ui/skeletons";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { invalidateForTables } from "@/lib/query-keys";
 import { useAuth } from "@/lib/auth-context";
 import {
   Deal,
@@ -120,6 +121,7 @@ function RevenueInner() {
     };
   };
 
+  const qc = useQueryClient();
   const pageQ = useQuery({ queryKey: ["page", "revenue"], queryFn: fetchPage });
   useEffect(() => {
     if (!pageQ.data) return;
@@ -131,7 +133,6 @@ function RevenueInner() {
     setStudents(pageQ.data.students);
     setLoading(false);
   }, [pageQ.data]);
-  const load = () => pageQ.refetch();
 
   const fromISO = dateRange.from.toISOString().slice(0, 10);
   const toISO = dateRange.to.toISOString().slice(0, 10);
@@ -312,7 +313,7 @@ function RevenueInner() {
     const { error } = await supabase.from("deals").delete().eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Deleted");
-    load();
+    invalidateForTables(qc, ["deals", "installments", "installment_payments"]);
   };
 
   if (loading) return <PageSkeleton />;
@@ -578,7 +579,7 @@ function RevenueInner() {
         currentUserId={user?.id}
         isAdmin={isAdmin}
         editing={editing}
-        onSaved={() => { setLogOpen(false); setEditing(null); load(); }}
+        onSaved={() => { setLogOpen(false); setEditing(null); invalidateForTables(qc, ["deals", "installments", "installment_payments", "students"]); }}
       />
     </div>
   );

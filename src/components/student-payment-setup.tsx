@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { invalidateForTables } from "@/lib/query-keys";
 import { useAuth } from "@/lib/auth-context";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -28,6 +30,7 @@ export function StudentPaymentSetup({
   onDone: () => void;
 }) {
   const { user } = useAuth();
+  const qc = useQueryClient();
   const [closers, setClosers] = useState<Person[]>([]);
   const [setters, setSetters] = useState<Person[]>([]);
 
@@ -93,6 +96,7 @@ export function StudentPaymentSetup({
         } as never).eq("id", student.id);
         if (stuErr) throw new Error("Student: " + stuErr.message);
         toast.success("Scholarship set · no deal or installments created");
+        invalidateForTables(qc, ["students"]);
         onDone();
       } catch (e) {
         toast.error(String((e as Error).message ?? e));
@@ -197,6 +201,7 @@ export function StudentPaymentSetup({
       }
 
       toast.success("Payment set up · deal and installments created");
+      invalidateForTables(qc, ["deals", "installments", "installment_payments", "students"]);
       onDone();
     } catch (e) {
       toast.error(String((e as Error).message ?? e));
