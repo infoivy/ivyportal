@@ -479,6 +479,14 @@
 .dark .sop-shadow-card { box-shadow: 0 1px 4px hsl(0 0% 0% / 0.4), 0 0 1px hsl(0 0% 0% / 0.5); }
 .dark .sop-shadow-elevated { box-shadow: 0 8px 24px hsl(0 0% 0% / 0.5), 0 2px 8px hsl(0 0% 0% / 0.3); }
 
+/* Cash-in calendar money-out shades: two reds that read apart in both
+   themes. General costs use the danger foreground; team pay mixes toward
+   the page foreground (darker red in light mode, lighter in dark). */
+.cal-out-general { color: var(--danger-fg); }
+.cal-out-team { color: color-mix(in srgb, var(--danger-fg) 55%, var(--foreground)); }
+.cal-out-general-dot { background: var(--danger-fg); }
+.cal-out-team-dot { background: color-mix(in srgb, var(--danger-fg) 55%, var(--foreground)); }
+
 /* react-phone-number-input · match the app's form tokens */
 .isa-phone-input .PhoneInputCountry {
   display: flex; align-items: center; gap: 4px;

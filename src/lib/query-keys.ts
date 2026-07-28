@@ -93,7 +93,7 @@ const TABLE_KEYS = {
     keys.teamPage, keys.installmentsPage,
   ],
   commission_rates: [keys.revenue, keys.finance, keys.payoutsPage, keys.admin],
-  business_expenses: [keys.finance],
+  business_expenses: [keys.finance, keys.installmentsPage],
   founder_settings: [keys.finance, keys.admin, keys.dashboard],
   payout_confirmations: [keys.payoutsPage, keys.payoutAlert, keys.dashboard, keys.notifications],
 } satisfies Record<string, readonly QueryKey[]>;

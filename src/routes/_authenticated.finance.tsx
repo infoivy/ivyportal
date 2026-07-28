@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { invalidateForTables } from "@/lib/query-keys";
 import { useAuth } from "@/lib/auth-context";
 import { getFinanceRevenue } from "@/lib/mochi.functions";
 import { calcMonthPayouts } from "@/lib/payouts-calc";
@@ -224,7 +225,7 @@ function FinanceInner() {
     const { error } = await supabase.from("business_expenses").delete().eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Deleted");
-    qc.invalidateQueries({ queryKey: ["page", "finance"] });
+    invalidateForTables(qc, ["business_expenses"]);
   };
 
   const monthLabel = monthStart.toLocaleString("en", { month: "long", year: "numeric" });
@@ -467,7 +468,7 @@ function FinanceInner() {
         <ExpenseModal
           editing={expenseModal.editing}
           onClose={() => setExpenseModal({ open: false, editing: null })}
-          onSaved={() => { setExpenseModal({ open: false, editing: null }); qc.invalidateQueries({ queryKey: ["page", "finance"] }); }}
+          onSaved={() => { setExpenseModal({ open: false, editing: null }); invalidateForTables(qc, ["business_expenses"]); }}
         />
       )}
     </div>

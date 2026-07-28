@@ -47,7 +47,18 @@ type Installment = {
   created_at: string;
 };
 type Student = { id: string; full_name: string };
-type Person = { id: string; display_name: string | null };
+type Person = { id: string; display_name: string | null; base_pay_monthly?: number | null };
+type Expense = {
+  id: string;
+  name: string;
+  amount: number;
+  recurring: boolean;
+  due_day: number | null;
+  one_off_date: string | null;
+  category: string | null;
+  active: boolean;
+};
+type OutItem = { label: string; amount: number; kind: "general" | "team" };
 
 const STATUS_META: Record<PayStatus, { label: string; cls: string }> = {
   upcoming: { label: "Upcoming", cls: "text-muted-foreground border-border bg-muted" },
@@ -69,6 +80,7 @@ const daysUntil = (d: string) => {
 function InstallmentsPage() {
   const { user, roles } = useAuth();
   const canDelete = roles.includes("admin");
+  const canSeeMoneyOut = roles.includes("founder") || roles.includes("cofounder");
 
   const [installments, setInstallments] = useState<Installment[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -85,26 +97,32 @@ function InstallmentsPage() {
   const pageQ = useQuery({
     queryKey: keys.installmentsPage,
     queryFn: async () => {
-      const [iRes, pRes, sRes, tRes] = await Promise.all([
+      const [iRes, pRes, sRes, tRes, eRes] = await Promise.all([
         (supabase.from("installments" as any).select("*").order("created_at", { ascending: false }) as any),
         (supabase.from("installment_payments" as any).select("*").order("due_date", { ascending: true }) as any),
         supabase.from("students").select("id, full_name").order("full_name"),
-        supabase.from("profiles").select("id, display_name" as any),
+        supabase.from("profiles").select("id, display_name, base_pay_monthly" as any),
+        // Recurring costs for the calendar's money-out layer. RLS keeps this
+        // founder/cofounder-only; everyone else silently gets zero rows.
+        (supabase.from("business_expenses").select("*").eq("active", true) as any),
       ]);
       return {
         installments: (iRes.data ?? []) as Installment[],
         payments: (pRes.data ?? []) as Payment[],
         students: (sRes.data ?? []) as Student[],
-        team: ((tRes.data ?? []) as any[]).map(p => ({ id: p.id, display_name: p.display_name })) as Person[],
+        team: ((tRes.data ?? []) as any[]).map(p => ({ id: p.id, display_name: p.display_name, base_pay_monthly: p.base_pay_monthly ?? null })) as Person[],
+        expenses: (eRes.data ?? []) as Expense[],
       };
     },
   });
+  const [expenses, setExpenses] = useState<Expense[]>([]);
   useEffect(() => {
     if (!pageQ.data) return;
     setInstallments(pageQ.data.installments);
     setPayments(pageQ.data.payments);
     setStudents(pageQ.data.students);
     setTeam(pageQ.data.team);
+    setExpenses(pageQ.data.expenses);
   }, [pageQ.data]);
 
   const paymentsByInstallment = useMemo(() => {
@@ -219,7 +237,14 @@ function InstallmentsPage() {
       </div>
 
       {/* Cash-in calendar — every day, and the money that should land on it */}
-      <CashInCalendar payments={payments} nameFor={nameFor} />
+      <CashInCalendar
+        payments={payments}
+        nameFor={nameFor}
+        // Money-out layer is finance data: founder/cofounder eyes only
+        // (RLS already blanks expenses for others; base pay follows the gate).
+        expenses={canSeeMoneyOut ? expenses : []}
+        basePays={canSeeMoneyOut ? team.filter(t => (t.base_pay_monthly ?? 0) > 0).map(t => ({ label: t.display_name ?? "Team member", amount: Number(t.base_pay_monthly) })) : []}
+      />
 
       {/* Reminder queue */}
       {(dueIn3.length > 0 || dueIn1.length > 0 || overdue.length > 0) && (
@@ -555,7 +580,12 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
  * to land (upcoming/late/missed still expected · paid shown as collected).
  * Click a day for the payment breakdown.
  */
-function CashInCalendar({ payments, nameFor }: { payments: Payment[]; nameFor: (p: Payment) => string }) {
+function CashInCalendar({ payments, nameFor, expenses, basePays }: {
+  payments: Payment[];
+  nameFor: (p: Payment) => string;
+  expenses: Expense[];
+  basePays: { label: string; amount: number }[];
+}) {
   const [monthStart, setMonthStart] = useState(() => {
     const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1);
   });
@@ -586,13 +616,44 @@ function CashInCalendar({ payments, nameFor }: { payments: Payment[]; nameFor: (
     ...Array.from({ length: daysInMonth }, (_, i) => iso(new Date(monthStart.getFullYear(), monthStart.getMonth(), i + 1))),
   ];
 
+  // Money going out: recurring costs land on their due day (clamped to the
+  // month's length), one-offs on their date, and team base pay on the 1st
+  // (it's paid with the second-half payout, which lands on the 1st).
+  const outByDay = useMemo(() => {
+    const m = new Map<string, { general: number; team: number; items: OutItem[] }>();
+    const add = (day: string, item: OutItem) => {
+      const cur = m.get(day) ?? { general: 0, team: 0, items: [] };
+      if (item.kind === "team") cur.team += item.amount; else cur.general += item.amount;
+      cur.items.push(item);
+      m.set(day, cur);
+    };
+    const monthKey = iso(monthStart).slice(0, 7);
+    for (const e of expenses) {
+      const amount = Number(e.amount) || 0;
+      if (amount <= 0) continue;
+      if (e.recurring) {
+        const day = Math.min(Math.max(e.due_day ?? 1, 1), daysInMonth);
+        add(`${monthKey}-${String(day).padStart(2, "0")}`, { label: e.name + (e.category ? ` · ${e.category}` : ""), amount, kind: "general" });
+      } else if (e.one_off_date && e.one_off_date.slice(0, 7) === monthKey) {
+        add(e.one_off_date, { label: e.name + (e.category ? ` · ${e.category}` : ""), amount, kind: "general" });
+      }
+    }
+    for (const b of basePays) {
+      add(`${monthKey}-01`, { label: `${b.label} · base pay`, amount: b.amount, kind: "team" });
+    }
+    return m;
+  }, [expenses, basePays, monthStart, daysInMonth]);
+
+  const hasOutLayer = expenses.length > 0 || basePays.length > 0;
+
   const monthTotals = useMemo(() => {
-    let expected = 0, collected = 0;
+    let expected = 0, collected = 0, outGeneral = 0, outTeam = 0;
     for (const [day, v] of byDay) {
       if (day.slice(0, 7) === iso(monthStart).slice(0, 7)) { expected += v.expected; collected += v.collected; }
     }
-    return { expected, collected };
-  }, [byDay, monthStart]);
+    for (const v of outByDay.values()) { outGeneral += v.general; outTeam += v.team; }
+    return { expected, collected, outGeneral, outTeam };
+  }, [byDay, outByDay, monthStart]);
 
   const shiftMonth = (delta: number) => {
     setSelected(null);
@@ -600,6 +661,7 @@ function CashInCalendar({ payments, nameFor }: { payments: Payment[]; nameFor: (
   };
 
   const sel = selected ? byDay.get(selected) : null;
+  const selOut = selected ? outByDay.get(selected) : null;
   const compact = (n: number) => n >= 1000 ? `$${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}k` : `$${Math.round(n)}`;
 
   return (
@@ -609,6 +671,9 @@ function CashInCalendar({ payments, nameFor }: { payments: Payment[]; nameFor: (
         <h2 className="font-medium text-sm">Cash-in calendar</h2>
         <span className="text-xs text-muted-foreground">
           {fmtMoney(monthTotals.expected, "USD")} still expected · {fmtMoney(monthTotals.collected, "USD")} collected this month
+          {hasOutLayer && (monthTotals.outGeneral + monthTotals.outTeam) > 0 && (
+            <> · <span className="cal-out-general font-medium">{fmtMoney(monthTotals.outGeneral + monthTotals.outTeam, "USD")} going out</span></>
+          )}
         </span>
         <div className="ml-auto flex items-center gap-1">
           <button onClick={() => shiftMonth(-1)} className="grid h-7 w-7 place-items-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted" aria-label="Previous month">
@@ -628,6 +693,7 @@ function CashInCalendar({ payments, nameFor }: { payments: Payment[]; nameFor: (
           {cells.map((day, i) => {
             if (!day) return <div key={`b${i}`} />;
             const v = byDay.get(day);
+            const out = outByDay.get(day);
             const isToday = day === todayIso;
             const isSel = day === selected;
             const overdue = v && v.expected > 0 && day < todayIso;
@@ -638,6 +704,7 @@ function CashInCalendar({ payments, nameFor }: { payments: Payment[]; nameFor: (
                 className={`min-h-[64px] rounded-md border p-1.5 text-left align-top motion-safe:transition-colors ${
                   isSel ? "border-primary/40 bg-primary/10"
                   : v ? (overdue ? "border-danger/25 bg-danger-bg hover:bg-danger-bg/70" : v.expected > 0 ? "border-warning/25 bg-warning-bg/60 hover:bg-warning-bg" : "border-success/25 bg-success-bg/60 hover:bg-success-bg")
+                  : out ? "border-danger/20 bg-danger-bg/40 hover:bg-danger-bg/60"
                   : "border-[var(--border)] bg-[var(--background)] hover:bg-muted/50"
                 } ${isToday ? "ring-2 ring-ring/40" : ""}`}
               >
@@ -648,21 +715,46 @@ function CashInCalendar({ payments, nameFor }: { payments: Payment[]; nameFor: (
                 {v && v.collected > 0 && (
                   <div className="text-[10px] tabular-nums text-success-fg">✓ {compact(v.collected)}</div>
                 )}
+                {out && out.general > 0 && (
+                  <div className="text-[10px] tabular-nums cal-out-general">−{compact(out.general)}</div>
+                )}
+                {out && out.team > 0 && (
+                  <div className="text-[10px] tabular-nums cal-out-team">−{compact(out.team)}</div>
+                )}
               </button>
             );
           })}
         </div>
-        {sel && selected && (
+        {hasOutLayer && (
+          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-success" /> collected</span>
+            <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-warning" /> expected, not confirmed</span>
+            <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full cal-out-general-dot" /> costs out</span>
+            <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full cal-out-team-dot" /> team base pay out</span>
+          </div>
+        )}
+        {(sel || selOut) && selected && (
           <div className="mt-3 rounded-md border border-border bg-[var(--background)]">
             <div className="px-3 py-2 border-b border-border text-xs font-medium">
-              {selected} · {fmtMoney(sel.expected, "USD")} expected{sel.collected > 0 ? ` · ${fmtMoney(sel.collected, "USD")} collected` : ""}
+              {selected}
+              {sel && <> · {fmtMoney(sel.expected, "USD")} expected{sel.collected > 0 ? ` · ${fmtMoney(sel.collected, "USD")} collected` : ""}</>}
+              {selOut && <> · <span className="cal-out-general">{fmtMoney(selOut.general + selOut.team, "USD")} out</span></>}
             </div>
             <div className="divide-y divide-border">
-              {sel.rows.map(p => (
+              {sel?.rows.map(p => (
                 <div key={p.id} className="px-3 py-2 flex items-center gap-3 text-xs">
                   <span className="font-medium">{nameFor(p)}</span>
                   <span className="text-muted-foreground">#{p.sequence} · {fmtMoney(Number(p.amount), p.currency)}</span>
                   <span className={`ml-auto text-[10px] px-2 py-0.5 rounded-full border ${STATUS_META[p.status].cls}`}>{STATUS_META[p.status].label}</span>
+                </div>
+              ))}
+              {selOut?.items.map((it, i) => (
+                <div key={`out-${i}`} className="px-3 py-2 flex items-center gap-3 text-xs">
+                  <span className={`font-medium ${it.kind === "team" ? "cal-out-team" : "cal-out-general"}`}>{it.label}</span>
+                  <span className="text-muted-foreground">−{fmtMoney(it.amount, "USD")}</span>
+                  <span className={`ml-auto text-[10px] px-2 py-0.5 rounded-full border ${it.kind === "team" ? "cal-out-team border-current/25" : "cal-out-general border-current/25"}`}>
+                    {it.kind === "team" ? "Team pay" : "Cost"}
+                  </span>
                 </div>
               ))}
             </div>

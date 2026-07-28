@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { invalidateForTables } from "@/lib/query-keys";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -98,6 +99,7 @@ function TeamPage() {
     };
   };
 
+  const qc = useQueryClient();
   const pageQ = useQuery({ queryKey: ["page", "team"], queryFn: fetchPage });
   useEffect(() => {
     if (!pageQ.data) return;
@@ -325,7 +327,14 @@ function TeamPage() {
           initialUrl={editing.avatar_path ? avatarUrls[editing.avatar_path] ?? null : null}
           onToggleRole={toggleRole}
           onClose={() => setEditing(null)}
-          onSaved={() => { setEditing(null); load(); }}
+          onSaved={() => {
+            setEditing(null);
+            load();
+            // Base pay feeds Payouts, Finance, the payout banner, and the
+            // cash-in calendar's money-out layer.
+            invalidateForTables(qc, ["profiles"]);
+            qc.invalidateQueries({ queryKey: ["payout-alert"] });
+          }}
         />
       )}
       {inviteOpen && (
