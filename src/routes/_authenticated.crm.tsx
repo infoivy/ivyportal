@@ -84,6 +84,9 @@ function ClosePipelineSummary() {
   const [loading, setLoading] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
+  // Connected-but-failing is its own state (founder 2026-07-28: the card
+  // flipped to "not connected" on ANY error, hiding real sync failures).
+  const [syncError, setSyncError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -93,11 +96,18 @@ function ClosePipelineSummary() {
       setConnected(isConn);
       if (isConn) {
         const r = await listLeads({ data: { query: "" } });
-        setLeads(((r?.leads ?? []) as Lead[]));
-        setLastSyncedAt(new Date());
+        if (r?.error) {
+          setSyncError(r.error);
+        } else {
+          setSyncError(null);
+          setLeads(((r?.leads ?? []) as Lead[]));
+          setLastSyncedAt(new Date());
+        }
       }
-    } catch {
-      setConnected(false);
+    } catch (e) {
+      // The key status itself failed — the connection state is UNKNOWN,
+      // not "offline". Keep whatever we knew and surface the error.
+      setSyncError(e instanceof Error ? e.message : "Could not reach the server");
     } finally {
       setLoading(false);
     }
@@ -129,7 +139,8 @@ function ClosePipelineSummary() {
           <p className="text-[11px] text-muted-foreground mt-0.5">
             {connected === null ? "Loading…" : connected ? `${leads.length} leads` : "not connected"}
             {connected && lastSyncedAt && <> · synced {lastSyncedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</>}
-            {connected && <> · calls, notes & statuses live in Close</>}
+            {connected && !syncError && <> · calls, notes & statuses live in Close</>}
+            {syncError && <> · <span className="text-warning-fg">last sync failed: {syncError.slice(0, 80)}</span></>}
           </p>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
@@ -151,7 +162,9 @@ function ClosePipelineSummary() {
           >
             <ExternalLink className="h-3 w-3" /> Open Close
           </a>
-          {connected ? (
+          {connected && syncError ? (
+            <div className="text-[10px] font-semibold px-2 py-1 rounded-sm bg-warning-bg text-warning-fg border border-warning/25">Sync error</div>
+          ) : connected ? (
             <div className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-sm bg-success-bg text-success-fg border border-success/25">
               <CheckCircle2 className="h-3 w-3" /> Live
             </div>
@@ -206,16 +219,45 @@ function ClosePipelineSummary() {
  */
 function ContactComplianceCard() {
   const complianceFn = useServerFn(getCloseContactCompliance);
+  // The sweep pages the ENTIRE CRM (every lead, call, and email) — it runs
+  // only when asked (founder 2026-07-28: auto-running it hung the page).
+  // The last result stays cached for the session.
   const q = useQuery({
     queryKey: ["close-compliance"],
-    queryFn: () => complianceFn(),
-    staleTime: 4 * 60_000,
-    refetchInterval: 5 * 60_000,
-    retry: 1,
+    queryFn: async () => ({ ...(await complianceFn()), ranAt: new Date() }),
+    enabled: false,
+    staleTime: Infinity,
+    gcTime: 24 * 60 * 60 * 1000,
+    retry: 0,
   });
   const d = q.data;
-  if (q.isLoading) return <div className="text-[11px] text-muted-foreground py-2">Sweeping the CRM for outreach compliance…</div>;
-  if (!d?.configured || d.error) return null;
+
+  const runButton = (label: string) => (
+    <button
+      onClick={() => q.refetch()}
+      disabled={q.isFetching}
+      className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1.5 rounded-sm border border-border text-muted-foreground hover:text-foreground motion-safe:transition-colors disabled:opacity-50"
+    >
+      {q.isFetching ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+      {q.isFetching ? "Sweeping the whole CRM…" : label}
+    </button>
+  );
+
+  if (!d || q.isError || d.error || !d.configured) {
+    return (
+      <div className="pt-3 border-t border-border flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <div className="text-[12px] font-medium text-foreground">Outreach compliance</div>
+          <p className="text-[11px] text-muted-foreground mt-0.5">
+            {q.isError || d?.error
+              ? `Last sweep failed: ${d?.error ?? (q.error instanceof Error ? q.error.message : "unknown error")}`
+              : "Sweeps every lead, call, and email in Close against the no-pickup → double-dial → email SOP."}
+          </p>
+        </div>
+        {runButton(q.isError || d?.error ? "Retry sweep" : "Run compliance sweep")}
+      </div>
+    );
+  }
 
   const rows = [...d.tiers, d.overall];
   const cell = (n: number, danger = false, warn = false) => (
@@ -224,11 +266,15 @@ function ContactComplianceCard() {
 
   return (
     <div className="pt-3 border-t border-border space-y-2">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="text-[12px] font-medium text-foreground">Outreach compliance</div>
-        <span className="text-[10px] text-muted-foreground">
-          SOP: no pickup → double dial → email · {d.totalLeads} leads swept{d.truncated ? " (oldest activity truncated)" : ""}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-muted-foreground">
+            SOP: no pickup → double dial → email · {d.totalLeads} leads swept{d.truncated ? " (oldest activity truncated)" : ""}
+            {" · "}{d.ranAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+          </span>
+          {runButton("Run again")}
+        </div>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[560px] text-[11px]">

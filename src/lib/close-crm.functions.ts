@@ -5,6 +5,12 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const CLOSE_KEY_NAME = "close_api_key";
 
+// Close hangs were the CRM page hangs (founder 2026-07-28): every Close call
+// gets a hard 20s deadline so a stuck request fails fast instead of freezing
+// whatever awaits it.
+const closeFetch: typeof fetch = (url, init) =>
+  fetch(url, { ...init, signal: AbortSignal.timeout(20_000) });
+
 async function requireAdmin(context: { supabase: any; userId: string }) {
   const { data } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
   if (!data) throw new Error("Forbidden: admin only");
@@ -67,7 +73,7 @@ export const testCloseConnection = createServerFn({ method: "POST" })
     if (!key) return { ok: false, error: "No API key configured" };
     const basic = Buffer.from(`${key}:`).toString("base64");
     try {
-      const res = await fetch("https://api.close.com/api/v1/me/", {
+      const res = await closeFetch("https://api.close.com/api/v1/me/", {
         headers: { Authorization: `Basic ${basic}` },
       });
       if (!res.ok) {
@@ -100,7 +106,7 @@ export const listCloseLeads = createServerFn({ method: "GET" })
     params.set("_limit", String(data.limit));
     if (data.query) params.set("query", data.query);
     try {
-      const res = await fetch(`https://api.close.com/api/v1/lead/?${params.toString()}`, {
+      const res = await closeFetch(`https://api.close.com/api/v1/lead/?${params.toString()}`, {
         headers: { Authorization: `Basic ${basic}` },
       });
       if (!res.ok) return { configured: true, error: `Close API ${res.status}`, leads: [] };
@@ -186,7 +192,7 @@ export const getCloseActivityReport = createServerFn({ method: "GET" })
     const to = data.to ?? businessDay(new Date());
     const from = data.from ?? addIsoDays(to, -(data.days - 1));
     try {
-      const res = await fetch("https://api.close.com/api/v1/report/activity/", {
+      const res = await closeFetch("https://api.close.com/api/v1/report/activity/", {
         method: "POST",
         headers: {
           Authorization: `Basic ${basic}`,
@@ -294,7 +300,7 @@ export const getCloseCallStats = createServerFn({ method: "GET" })
           _skip: String(skip),
           _fields: "id,user_name,duration,direction,disposition,date_created",
         });
-        const res = await fetch(`https://api.close.com/api/v1/activity/call/?${params}`, {
+        const res = await closeFetch(`https://api.close.com/api/v1/activity/call/?${params}`, {
           headers: { Authorization: `Basic ${basic}` },
         });
         if (!res.ok) throw new Error(`Close calls failed (${res.status})`);
@@ -371,8 +377,8 @@ export const getCloseLeadDetail = createServerFn({ method: "GET" })
     const H = { headers: { Authorization: `Basic ${basic}` } };
     try {
       const [notesRes, callsRes] = await Promise.all([
-        fetch(`https://api.close.com/api/v1/activity/note/?lead_id=${data.leadId}&_limit=20&_fields=note,user_name,date_created`, H),
-        fetch(`https://api.close.com/api/v1/activity/call/?lead_id=${data.leadId}&_limit=20&_fields=user_name,duration,disposition,direction,date_created`, H),
+        closeFetch(`https://api.close.com/api/v1/activity/note/?lead_id=${data.leadId}&_limit=20&_fields=note,user_name,date_created`, H),
+        closeFetch(`https://api.close.com/api/v1/activity/call/?lead_id=${data.leadId}&_limit=20&_fields=user_name,duration,disposition,direction,date_created`, H),
       ]);
       const notes = notesRes.ok ? ((await notesRes.json()).data ?? []) : [];
       const calls = callsRes.ok ? ((await callsRes.json()).data ?? []) : [];
@@ -397,7 +403,7 @@ export const getCloseBookedCount = createServerFn({ method: "GET" })
     if (!key) return { configured: false, booked: 0 };
     const basic = Buffer.from(`${key}:`).toString("base64");
     try {
-      const res = await fetch(
+      const res = await closeFetch(
         `https://api.close.com/api/v1/lead/?query=${encodeURIComponent('status:"BOOKED APPOINTMENT"')}&_limit=1&_fields=id`,
         { headers: { Authorization: `Basic ${basic}` } },
       );
@@ -464,7 +470,7 @@ export const getCloseContactCompliance = createServerFn({ method: "GET" })
         const params = new URLSearchParams({
           _limit: "200", _skip: String(skip), _fields: `id,${LEAD_SCORE_FIELD}`,
         });
-        const res = await fetch(`https://api.close.com/api/v1/lead/?${params}`, H);
+        const res = await closeFetch(`https://api.close.com/api/v1/lead/?${params}`, H);
         if (!res.ok) return { ...empty, configured: true, error: `Close API ${res.status}` };
         const json = (await res.json()) as { data?: Record<string, unknown>[]; has_more?: boolean };
         for (const l of json.data ?? []) {
@@ -488,7 +494,7 @@ export const getCloseContactCompliance = createServerFn({ method: "GET" })
     const page = async <T,>(path: string, fields: string, cap: number, sink: T[]) => {
       for (let skip = 0; skip < cap; skip += 100) {
         const params = new URLSearchParams({ _limit: "100", _skip: String(skip), _fields: fields });
-        const res = await fetch(`https://api.close.com/api/v1/activity/${path}/?${params}`, H);
+        const res = await closeFetch(`https://api.close.com/api/v1/activity/${path}/?${params}`, H);
         if (!res.ok) break;
         const json = (await res.json()) as { data?: T[]; has_more?: boolean };
         sink.push(...(json.data ?? []));

@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Instagram, ArrowUpRight } from "lucide-react";
+import { Instagram, ArrowUpRight, RefreshCw } from "lucide-react";
 import { getMochiDashboard, getMochiDetail, getMochiHome, type MochiHomePeriod, type MochiPeriod } from "@/lib/mochi.functions";
 import { ResponsiveContainer, ComposedChart, Area, Bar, BarChart, Line, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, Legend } from "recharts";
 import { MochiFunnel } from "@/components/mochi-funnel";
@@ -97,6 +97,21 @@ export function MochiCrmInner({ embedded = false }: { embedded?: boolean }) {
       {d && !d.connected && (
         <div className="card-surface p-8 text-center text-sm text-muted-foreground">
           Mochi isn't connected. Ask Claude to re-run the Mochi authorization.
+        </div>
+      )}
+
+      {(detail.isError || home.isError || dash.isError) && (
+        <div className="rounded-lg border border-warning/25 bg-warning-bg px-4 py-3 flex flex-wrap items-center gap-3">
+          <p className="text-[12px] text-warning-fg flex-1 min-w-[200px]">
+            Some Mochi data failed to load, so tiles below may be incomplete or stale.
+          </p>
+          <button
+            onClick={() => { void detail.refetch(); void home.refetch(); void dash.refetch(); }}
+            disabled={detail.isFetching || home.isFetching || dash.isFetching}
+            className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1.5 rounded-sm border border-warning/25 text-warning-fg hover:bg-warning-bg/60 motion-safe:transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`h-3 w-3 ${detail.isFetching || home.isFetching || dash.isFetching ? "animate-spin" : ""}`} /> Retry
+          </button>
         </div>
       )}
 
