@@ -11,6 +11,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportClientError } from "../lib/error-reporting";
+import { installStaleChunkReload } from "../components/error-fallback";
 
 function NotFoundComponent() {
   return (
@@ -121,6 +122,10 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  // Old tab + new deploy = route chunks 404. Reload onto the fresh build
+  // instead of stranding the user on an error page.
+  useEffect(() => installStaleChunkReload(), []);
 
   return (
     <QueryClientProvider client={queryClient}>
