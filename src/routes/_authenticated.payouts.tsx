@@ -1,83 +1,32 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { keys } from "@/lib/query-keys";
+import { keys, invalidateForTables } from "@/lib/query-keys";
 import { useAuth } from "@/lib/auth-context";
-import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
-import { money, type Deal, type CommissionRates, commissionForDeal, setterWeekBonusIds, DEFAULT_RATES, isSelfSet } from "@/lib/revenue";
-import { cofounderCappedCommission, type CommissionEvent, COFOUNDER_RATE, COFOUNDER_WEEK_CAP, COFOUNDER_MONTH_CAP } from "@/lib/payouts-calc";
+import { Loader2, ChevronLeft, ChevronRight, CircleCheck, Undo2 } from "lucide-react";
+import { money, type Deal, type CommissionRates, DEFAULT_RATES } from "@/lib/revenue";
+import {
+  getPeriod, buildPayoutRows, memberPayoutTotals,
+  type PayoutProfile as Profile, type PayoutInstallmentPayment as InstallmentPayment,
+  type PayoutInstallment as Installment, type OwedMember,
+} from "@/lib/payout-period";
+import { todayLocal } from "@/lib/dates";
+import { toast } from "sonner";
 import { RevenueTabBar } from "@/components/revenue-tab-bar";
+import { PayoutAlertBanner } from "@/components/payout-alert";
 
 export const Route = createFileRoute("/_authenticated/payouts")({
   head: () => ({ meta: [{ title: "Payouts · ISA" }] }),
   component: Payouts,
 });
 
-// Pay periods: semi-monthly halves — 1st–15th and 16th–end of month.
-// Commissions are paid twice a month (founder-confirmed 2026-07-12);
-// monthly base pay is shown separately.
-function getPeriod(offset = 0) {
-  const now = new Date();
-  // Index halves absolutely: monthIndex * 2 + (0 for 1st–15th, 1 for 16th–end)
-  const half = (now.getFullYear() * 12 + now.getMonth()) * 2 + (now.getDate() <= 15 ? 0 : 1) + offset;
-  const monthAbs = Math.floor(half / 2);
-  const y = Math.floor(monthAbs / 12);
-  const m = monthAbs % 12;
-  const second = half % 2 !== 0;
-  const lastDay = new Date(y, m + 1, 0).getDate();
-  const pad = (n: number) => String(n).padStart(2, "0");
-  const startD = second ? 16 : 1;
-  const endD = second ? lastDay : 15;
-  const monthLabel = new Date(y, m, 1).toLocaleString("default", { month: "short", year: "numeric" });
-  return {
-    start: `${y}-${pad(m + 1)}-${pad(startD)}`,
-    end: `${y}-${pad(m + 1)}-${pad(endD)}`,
-    monthStart: `${y}-${pad(m + 1)}-01`,
-    monthEnd: `${y}-${pad(m + 1)}-${pad(lastDay)}`,
-    label: `${monthLabel.split(" ")[0]} ${startD}–${endD}, ${y}`,
-    isSecondHalf: second,
-  };
-}
-
-type Profile = { id: string; display_name: string; commission_cap_pct?: number | null; base_pay_monthly?: number | null };
-
-type InstallmentPayment = {
-  id: string;
-  amount: number;
-  paid_at: string | null;
-  installment_id: string;
-};
-
-type Installment = {
-  id: string;
-  setter_id: string | null;
-  closer_id: string | null;
-  student_name: string;
-};
-
-type SetterRow = {
-  id: string;
-  name: string;
-  deals: number;
-  cash: number;
-  commission: number;
-  weekBonus: boolean;
-  installmentCash: number;
-  installmentCommission: number;
-  total: number;
-};
-
-type CloserRow = {
-  id: string;
-  name: string;
-  deals: number;
-  cash: number;
-  commission: number;
-  installmentCash: number;
-  installmentCommission: number;
-  total: number;
-  capNote?: string;
+type PayoutConfirmation = {
+  period_start: string;
+  user_id: string;
+  amount_paid: number;
+  confirmed_at: string;
+  confirmed_by: string;
 };
 
 function Payouts() {
@@ -138,160 +87,71 @@ function PayoutsInner() {
       };
     },
   });
-  const deals = dataQ.data?.deals ?? [];
-  const rates = dataQ.data?.rates ?? DEFAULT_RATES;
-  const installmentPayments = dataQ.data?.installmentPayments ?? [];
-  const installments = dataQ.data?.installments ?? [];
+  const data = dataQ.data;
+  const rates = data?.rates ?? DEFAULT_RATES;
   const loading = dataQ.isPending;
   const profileMap = useMemo(() => {
     const pm = new Map<string, Profile>();
-    for (const p of dataQ.data?.profiles ?? []) pm.set(p.id, p);
+    for (const p of data?.profiles ?? []) pm.set(p.id, p);
     return pm;
-  }, [dataQ.data?.profiles]);
-  const cofounderIds = useMemo(() => new Set(dataQ.data?.cofounderIds ?? []), [dataQ.data?.cofounderIds]);
+  }, [data?.profiles]);
 
-  // Build installment map: id → installment
-  const installmentMap = useMemo(() => {
-    const m = new Map<string, Installment>();
-    for (const i of installments) m.set(i.id, i);
-    return m;
-  }, [installments]);
-
-  // The fetch is month-wide (co-founder caps span both halves); everything
-  // else is scoped to the visible period.
-  const periodDeals = useMemo(
-    () => deals.filter((d) => d.deal_date >= period.start && d.deal_date <= period.end),
-    [deals, period.start, period.end],
+  // The one payout computation, shared with the confirmation banner/bell
+  // (src/lib/payout-period.ts) so every surface shows identical numbers.
+  const rows = useMemo(
+    () => buildPayoutRows({
+      deals: data?.deals ?? [],
+      installmentPayments: data?.installmentPayments ?? [],
+      installments: data?.installments ?? [],
+      profileMap,
+      rates,
+      cofounderIds: new Set(data?.cofounderIds ?? []),
+    }, period),
+    [data, profileMap, rates, period],
   );
-  const periodPayments = useMemo(
-    () => installmentPayments.filter((ip) => {
-      const day = (ip.paid_at ?? "").slice(0, 10);
-      return day >= period.start && day <= period.end;
-    }),
-    [installmentPayments, period.start, period.end],
-  );
-
-  // Setter rows
-  const setterRows = useMemo((): SetterRow[] => {
-    const weekBonusIds = setterWeekBonusIds(periodDeals);
-
-    const map = new Map<string, { deals: Deal[]; weekBonus: boolean }>();
-    for (const d of periodDeals) {
-      if (!d.setter_id || isSelfSet(d)) continue; // self-set = closer's 15%, no setter credit
-      const entry = map.get(d.setter_id) ?? { deals: [], weekBonus: false };
-      entry.deals.push(d);
-      if (weekBonusIds.has(d.setter_id)) entry.weekBonus = true;
-      map.set(d.setter_id, entry);
-    }
-
-    // Add installment cash to setters
-    const instCash = new Map<string, number>();
-    for (const ip of periodPayments) {
-      const inst = installmentMap.get(ip.installment_id);
-      if (!inst?.setter_id || inst.setter_id === inst.closer_id) continue;
-      instCash.set(inst.setter_id, (instCash.get(inst.setter_id) ?? 0) + ip.amount);
-    }
-
-    const allSetterIds = new Set([...map.keys(), ...instCash.keys()]);
-    return Array.from(allSetterIds).map(sid => {
-      const entry = map.get(sid);
-      const dealsCash = entry?.deals.reduce((s, d) => s + (d.cash_collected_upfront ?? 0), 0) ?? 0;
-      const baseRate = rates.setter_base + (entry?.weekBonus ? 0.01 : 0);
-      const dealCommission = dealsCash * baseRate;
-      const iCash = instCash.get(sid) ?? 0;
-      const iCommission = iCash * baseRate;
-      return {
-        id: sid,
-        name: profileMap.get(sid)?.display_name ?? sid.slice(0, 8),
-        deals: entry?.deals.length ?? 0,
-        cash: dealsCash,
-        commission: dealCommission,
-        weekBonus: entry?.weekBonus ?? false,
-        installmentCash: iCash,
-        installmentCommission: iCommission,
-        total: dealCommission + iCommission,
-      };
-    }).sort((a, b) => b.total - a.total);
-  }, [periodDeals, periodPayments, installmentMap, profileMap, rates]);
-
-  // Closer rows
-  const closerRows = useMemo((): CloserRow[] => {
-    const map = new Map<string, Deal[]>();
-    for (const d of periodDeals) {
-      if (!d.closer_id) continue;
-      const entry = map.get(d.closer_id) ?? [];
-      entry.push(d);
-      map.set(d.closer_id, entry);
-    }
-
-    const instCash = new Map<string, number>();
-    const instSetSet = new Map<string, boolean>(); // closer_id → self-set installment this period (set+close rate)
-    for (const ip of periodPayments) {
-      const inst = installmentMap.get(ip.installment_id);
-      if (!inst?.closer_id) continue;
-      instCash.set(inst.closer_id, (instCash.get(inst.closer_id) ?? 0) + ip.amount);
-      if (inst.setter_id && inst.setter_id === inst.closer_id) instSetSet.set(inst.closer_id, true);
-    }
-
-    // Co-founders: flat 10% with $1k/week + $2k/month caps, computed over
-    // the whole month so this period shows its true slice.
-    const cofounderMonthEvents = new Map<string, CommissionEvent[]>();
-    for (const d of deals) {
-      if (!d.closer_id || !cofounderIds.has(d.closer_id)) continue;
-      const arr = cofounderMonthEvents.get(d.closer_id) ?? [];
-      arr.push({ date: d.deal_date, cash: d.cash_collected_upfront ?? 0 });
-      cofounderMonthEvents.set(d.closer_id, arr);
-    }
-    for (const ip of installmentPayments) {
-      const inst = installmentMap.get(ip.installment_id);
-      if (!inst?.closer_id || !cofounderIds.has(inst.closer_id) || !ip.paid_at) continue;
-      const arr = cofounderMonthEvents.get(inst.closer_id) ?? [];
-      arr.push({ date: ip.paid_at.slice(0, 10), cash: ip.amount });
-      cofounderMonthEvents.set(inst.closer_id, arr);
-    }
-
-    const allCloserIds = new Set([...map.keys(), ...instCash.keys()]);
-    return Array.from(allCloserIds).map(cid => {
-      const profile = profileMap.get(cid);
-      const cDeals = map.get(cid) ?? [];
-      const dealsCash = cDeals.reduce((s, d) => s + (d.cash_collected_upfront ?? 0), 0);
-      const iCash = instCash.get(cid) ?? 0;
-
-      if (cofounderIds.has(cid)) {
-        const capped = cofounderCappedCommission(cofounderMonthEvents.get(cid) ?? []);
-        const owed = period.isSecondHalf ? capped.secondHalf : capped.firstHalf;
-        return {
-          id: cid,
-          name: profileMap.get(cid)?.display_name ?? cid.slice(0, 8),
-          deals: cDeals.length,
-          cash: dealsCash,
-          commission: owed,
-          installmentCash: iCash,
-          installmentCommission: 0,
-          total: owed,
-          capNote: `co-founder · ${(COFOUNDER_RATE * 100).toFixed(0)}% flat · capped $${COFOUNDER_WEEK_CAP / 1000}k/wk · $${COFOUNDER_MONTH_CAP / 1000}k/mo${capped.capped ? " · cap hit" : ""}`,
-        };
-      }
-
-      const dealCommission = cDeals.reduce((s, d) => s + commissionForDeal(d, rates, profile?.commission_cap_pct), 0);
-      // Use set_close for installments where a setter was involved, cap applies
-      const iBaseRate = instSetSet.get(cid) ? rates.set_close : rates.new_close;
-      const iRate = profile?.commission_cap_pct != null ? Math.min(iBaseRate, profile.commission_cap_pct) : iBaseRate;
-      const iCommission = iCash * iRate;
-      return {
-        id: cid,
-        name: profileMap.get(cid)?.display_name ?? cid.slice(0, 8),
-        deals: cDeals.length,
-        cash: dealsCash,
-        commission: dealCommission,
-        installmentCash: iCash,
-        installmentCommission: iCommission,
-        total: dealCommission + iCommission,
-      };
-    }).sort((a, b) => b.total - a.total);
-  }, [deals, periodDeals, installmentPayments, periodPayments, installmentMap, profileMap, rates, cofounderIds, period.isSecondHalf]);
+  const { setterRows, closerRows, periodDeals, periodPayments } = rows;
 
   const totalPayouts = setterRows.reduce((s, r) => s + r.total, 0) + closerRows.reduce((s, r) => s + r.total, 0);
+
+  // Per-member payout confirmations (founder-requested 2026-07-28): once a
+  // period's payout date arrives, every member with a nonzero payout must be
+  // marked paid. The dashboard banner and bell stay loud until all are.
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const confirmQ = useQuery({
+    queryKey: [...keys.payoutsPage, "confirmations", period.start],
+    queryFn: async () =>
+      (((await (supabase.from("payout_confirmations" as any).select("*").eq("period_start", period.start) as any)).data ?? []) as PayoutConfirmation[]),
+  });
+  const confirmations = confirmQ.data ?? [];
+  const owed = useMemo(
+    () => memberPayoutTotals(rows, profileMap, period.isSecondHalf),
+    [rows, profileMap, period.isSecondHalf],
+  );
+  const periodEnded = todayLocal() > period.end;
+  const confirmedBy = new Map(confirmations.map(c => [c.user_id, c]));
+  const unconfirmed = owed.filter(m => !confirmedBy.has(m.id));
+
+  const markPaid = async (m: OwedMember) => {
+    if (!user) return;
+    const { error } = await (supabase.from("payout_confirmations" as any).upsert({
+      period_start: period.start,
+      user_id: m.id,
+      amount_paid: Math.round(m.total * 100) / 100,
+      confirmed_by: user.id,
+      confirmed_at: new Date().toISOString(),
+    }) as any);
+    if (error) return toast.error(error.message);
+    toast.success(`${m.name} marked paid · ${money(m.total)}`);
+    invalidateForTables(qc, ["payout_confirmations"]);
+  };
+
+  const undoPaid = async (userId: string, name: string) => {
+    const { error } = await (supabase.from("payout_confirmations" as any).delete().eq("period_start", period.start).eq("user_id", userId) as any);
+    if (error) return toast.error(error.message);
+    toast.success(`${name} unmarked`);
+    invalidateForTables(qc, ["payout_confirmations"]);
+  };
 
   if (loading) {
     return (
@@ -304,6 +164,7 @@ function PayoutsInner() {
   return (
     <div className="min-h-full">
       <div className="max-w-[1100px] mx-auto p-4 sm:p-6 space-y-6">
+        <PayoutAlertBanner onJumpToPeriod={setPeriodOffset} />
         {/* Header */}
         <div className="flex items-center justify-between gap-4">
           <div>
@@ -353,6 +214,52 @@ function PayoutsInner() {
           <SummaryChip label="Closer payouts" value={money(closerRows.reduce((s, r) => s + r.total, 0))} />
           <SummaryChip label="Deals in period" value={periodDeals.length} />
         </div>
+
+        {/* Payout confirmations: per member, from the payout date onward */}
+        {periodEnded && owed.length > 0 && (
+          <section className={`rounded-sm border p-4 space-y-3 ${unconfirmed.length ? "border-danger/40 bg-danger-bg" : "border-success/25 bg-success-bg"}`}>
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <div className="text-[13px] font-medium text-foreground">
+                {unconfirmed.length
+                  ? `Payout day: ${unconfirmed.length} of ${owed.length} payouts not confirmed`
+                  : "All payouts confirmed for this period"}
+              </div>
+              <span className="text-[11px] text-muted-foreground">Confirm each member once their money has actually left</span>
+            </div>
+            <div className="space-y-1">
+              {owed.map(m => {
+                const c = confirmedBy.get(m.id);
+                return (
+                  <div key={m.id} className="flex items-center justify-between gap-3 rounded-sm bg-[var(--card)]/70 border border-border px-3 py-2">
+                    <div className="min-w-0">
+                      <div className="text-[13px] font-medium text-foreground truncate">{m.name}</div>
+                      <div className="text-[11px] text-muted-foreground tabular-nums">
+                        {money(m.commission)} commission{m.basePay > 0 ? ` + ${money(m.basePay)} base` : ""}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-[13px] font-semibold tabular-nums">{money(m.total)}</span>
+                      {c ? (
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className="inline-flex items-center gap-1 text-[11px] text-success-fg border border-success/25 bg-success-bg px-2 py-1 rounded-sm">
+                            <CircleCheck className="h-3.5 w-3.5" /> Paid {new Date(c.confirmed_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                          </span>
+                          <button onClick={() => undoPaid(m.id, m.name)} title="Undo" className="p-1.5 rounded-sm text-muted-foreground hover:text-foreground hover:bg-muted motion-safe:transition-colors">
+                            <Undo2 className="h-3.5 w-3.5" />
+                          </button>
+                        </span>
+                      ) : (
+                        <button onClick={() => markPaid(m)} className="inline-flex items-center gap-1.5 text-[12px] font-medium bg-primary text-primary-foreground hover:bg-primary/90 px-2.5 py-1.5 rounded-sm">
+                          <CircleCheck className="h-3.5 w-3.5" /> Mark paid
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         {/* Setters table */}
         <section className="space-y-2">

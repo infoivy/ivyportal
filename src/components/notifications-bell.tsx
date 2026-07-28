@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Bell, DollarSign, HeartHandshake, UserPlus } from "lucide-react";
+import { AlertOctagon, Bell, DollarSign, HeartHandshake, UserPlus } from "lucide-react";
+import { usePayoutAlert } from "@/components/payout-alert";
 import { START_HERE_REQUIRED_KEYS } from "@/lib/student-guide-steps";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
@@ -235,13 +236,14 @@ export function NotificationsBell() {
     queryFn: fetchUnclaimedSets,
   });
   const unclaimedSets = unclaimedQ.data ?? [];
+  const { alerts: payoutAlerts } = usePayoutAlert();
 
   if (!isAdmin && !isCoach && !isFulfillment && !isSetter && !canApprove && setNudges.length === 0) return null;
 
   const overdue = items.filter(i => i.days < 0).length;
   const dueSoon = items.length - overdue;
-  const badgeCount = items.length + setNudges.length + studentAlerts.length + unclaimedSets.length + pendingSignups;
-  const badgeTone = overdue > 0 || setNudges.length > 0 || unclaimedSets.length > 0 || studentAlerts.some(a => a.tone.includes("danger")) ? "bg-danger" : dueSoon > 0 || studentAlerts.length > 0 || pendingSignups > 0 ? "bg-warning" : "";
+  const badgeCount = items.length + setNudges.length + studentAlerts.length + unclaimedSets.length + pendingSignups + payoutAlerts.length;
+  const badgeTone = payoutAlerts.length > 0 || overdue > 0 || setNudges.length > 0 || unclaimedSets.length > 0 || studentAlerts.some(a => a.tone.includes("danger")) ? "bg-danger" : dueSoon > 0 || studentAlerts.length > 0 || pendingSignups > 0 ? "bg-warning" : "";
 
   return (
     <Popover>
@@ -267,6 +269,23 @@ export function NotificationsBell() {
           </span>
         </div>
         <div className="max-h-96 overflow-auto">
+          {/* Unconfirmed payouts pin to the very top: payout dates are sacred */}
+          {payoutAlerts.map(a => (
+            <Link key={a.period.start} to={"/payouts" as string} className="flex items-start gap-2 px-3 py-2 border-b border-[var(--border)] bg-danger-bg hover:bg-danger-bg/70 transition">
+              <div className="mt-0.5 h-6 w-6 rounded-sm bg-danger/15 flex items-center justify-center">
+                <AlertOctagon className="h-3 w-3 text-danger-fg" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-medium text-danger-fg">
+                  {a.unconfirmed.length} payout{a.unconfirmed.length === 1 ? "" : "s"} not confirmed · {a.period.label}
+                </div>
+                <div className="text-[10px] text-muted-foreground truncate">
+                  {a.unconfirmed.map(m => m.name).join(", ")} · mark each one paid
+                </div>
+              </div>
+              <span className="text-[10px] font-semibold text-danger-fg whitespace-nowrap">confirm →</span>
+            </Link>
+          ))}
           {pendingSignups > 0 && (
             <Link to="/students/requests" className="flex items-start gap-2 px-3 py-2 border-b border-[var(--border)] hover:bg-muted/50 transition">
               <div className="mt-0.5 h-6 w-6 rounded-sm bg-warning-bg flex items-center justify-center">
@@ -332,7 +351,7 @@ export function NotificationsBell() {
               ))}
             </div>
           )}
-          {items.length === 0 && setNudges.length === 0 && studentAlerts.length === 0 && pendingSignups === 0 ? (
+          {items.length === 0 && setNudges.length === 0 && studentAlerts.length === 0 && pendingSignups === 0 && payoutAlerts.length === 0 ? (
             <div className="px-3 py-8 text-center text-xs text-muted-foreground">Nothing needs you right now</div>
           ) : (
             items.map(item => {

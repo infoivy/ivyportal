@@ -26,6 +26,7 @@ export const keys = {
   studentPages: ["page", "student"],
   installmentsPage: ["page", "installments"],
   payoutsPage: ["page", "payouts"],
+  payoutAlert: ["payout-alert"],
   teamPage: ["page", "team"],
   testimonialsPage: ["page", "testimonials"],
   csmOverview: ["csm-overview"],
@@ -48,15 +49,15 @@ export const keys = {
 const TABLE_KEYS = {
   deals: [
     keys.revenue, keys.weeklyLeaderboard, keys.dashboard, keys.finance,
-    keys.payoutsPage, keys.studentPages,
+    keys.payoutsPage, keys.payoutAlert, keys.studentPages,
   ],
   installments: [
-    keys.finance, keys.payoutsPage, keys.installmentsPage, keys.dashboard,
-    keys.weeklyLeaderboard, keys.studentPages, keys.notifications,
+    keys.finance, keys.payoutsPage, keys.payoutAlert, keys.installmentsPage,
+    keys.dashboard, keys.weeklyLeaderboard, keys.studentPages, keys.notifications,
   ],
   installment_payments: [
-    keys.finance, keys.payoutsPage, keys.installmentsPage, keys.dashboard,
-    keys.weeklyLeaderboard, keys.studentPages, keys.notifications,
+    keys.finance, keys.payoutsPage, keys.payoutAlert, keys.installmentsPage,
+    keys.dashboard, keys.weeklyLeaderboard, keys.studentPages, keys.notifications,
   ],
   students: [
     keys.studentsAll, keys.csmPage, keys.csmOverview, keys.csmTodayQueue,
@@ -94,7 +95,7 @@ const TABLE_KEYS = {
   commission_rates: [keys.revenue, keys.finance, keys.payoutsPage, keys.admin],
   business_expenses: [keys.finance],
   founder_settings: [keys.finance, keys.admin, keys.dashboard],
-  payout_confirmations: [keys.payoutsPage, keys.dashboard, keys.notifications],
+  payout_confirmations: [keys.payoutsPage, keys.payoutAlert, keys.dashboard, keys.notifications],
 } satisfies Record<string, readonly QueryKey[]>;
 
 export type WrittenTable = keyof typeof TABLE_KEYS;

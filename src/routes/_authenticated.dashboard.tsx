@@ -32,6 +32,7 @@ import { TeamGoalCard } from "@/components/team-goal-card";
 import { getMochiDashboard, getWhopCashWindow, type MochiPeriod } from "@/lib/mochi.functions";
 import { getCloseActivityReport } from "@/lib/close-crm.functions";
 import { SetterActivityCard } from "@/components/setter-activity-card";
+import { PayoutAlertBanner } from "@/components/payout-alert";
 import { DeltaChip } from "@/components/ui/delta-chip";
 import {
   buildDashboardTrend,
@@ -485,6 +486,9 @@ function Dashboard() {
         <MyAssignedItems />
 
         {/* Set reminders due — same urgency treatment */}
+        {/* Unconfirmed payouts past their date outrank everything on this page */}
+        <PayoutAlertBanner />
+
         <MySetNudges />
 
         {/* The collective goal — whole team sees the same bar */}

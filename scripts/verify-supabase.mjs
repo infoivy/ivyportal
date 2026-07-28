@@ -12,7 +12,7 @@ const expectedTables = [
   'csm_student_notes', 'csm_tally', 'deals', 'docs', 'eods', 'founder_settings',
   'ig_connections', 'ig_dashboards', 'ig_monthly_snapshots', 'ig_top_reels',
   'installment_payments', 'installments', 'notes', 'onboarding_progress',
-  'onboarding_templates', 'payment_links', 'profiles', 'service_credentials',
+  'onboarding_templates', 'payment_links', 'payout_confirmations', 'profiles', 'service_credentials',
   'student_action_items', 'student_calls', 'student_eods', 'student_weekly_eods', 'students',
   'testimonials', 'user_roles',
 ];
