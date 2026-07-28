@@ -299,7 +299,7 @@ function TeamPage() {
               {m.roles.length === 0 && (
                 <button
                   onClick={() => setEditing(m)}
-                  className="text-[10px] px-2 py-1 rounded-sm border border-dashed border-[#2a3140] text-muted-foreground hover:text-foreground"
+                  className="text-[10px] px-2 py-1 rounded-sm border border-dashed border-[var(--border)] text-muted-foreground hover:text-foreground"
                 >
                   Assign roles
                 </button>
@@ -430,7 +430,7 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
           <div className="flex-1 space-y-1.5">
             <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
             <button onClick={() => fileRef.current?.click()} disabled={uploading}
-              className="flex items-center gap-1 text-xs bg-[var(--accent)] hover:bg-[#232935] border border-[#2a3140] px-3 py-1.5 rounded-sm">
+              className="flex items-center gap-1 text-xs bg-[var(--accent)] hover:bg-muted border border-[var(--border)] px-3 py-1.5 rounded-sm">
               <Upload className="h-3 w-3" /> {uploading ? "Uploading…" : "Upload picture"}
             </button>
             <p className="text-[12px] text-muted-foreground">PNG or JPG, up to 5MB.</p>
@@ -472,7 +472,7 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
                   key={r.key}
                   onClick={() => toggle(r.key)}
                   className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded-sm border transition ${
-                    has ? r.color : "text-muted-foreground border-[var(--border)] bg-transparent hover:border-[#2a3140]"
+                    has ? r.color : "text-muted-foreground border-[var(--border)] bg-transparent hover:border-ring/50"
                   }`}
                 >
                   <Icon className="h-3 w-3" /> {roleLabel(r.key)}
@@ -504,7 +504,7 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
                   className={`text-[10px] px-2 py-1 rounded-sm border transition ${
                     setterType === opt.key
                       ? "border-success/25 bg-success-bg text-success-fg"
-                      : "border-[var(--border)] text-muted-foreground hover:border-[#2a3140]"
+                      : "border-[var(--border)] text-muted-foreground hover:border-ring/50"
                   }`}
                 >
                   {opt.label}

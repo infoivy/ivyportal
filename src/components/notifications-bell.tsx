@@ -360,8 +360,9 @@ export function NotificationsBell() {
               return (
                 <Link
                   key={item.id}
-                  to={item.student_id ? "/students/$id" : "/installments"}
+                  to={item.student_id ? "/students/$id" : "/revenue"}
                   params={item.student_id ? { id: item.student_id } : (undefined as any)}
+                  search={item.student_id ? (undefined as never) : ({ tab: "plans" } as never)}
                   className="flex items-start gap-2 px-3 py-2 border-b border-[var(--border)] hover:bg-muted/50 transition"
                 >
                   <div className="mt-0.5 h-6 w-6 rounded-sm bg-muted flex items-center justify-center">

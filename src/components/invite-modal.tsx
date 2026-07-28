@@ -244,7 +244,7 @@ export function InviteModal({ onClose }: { onClose: () => void }) {
                       key={r.key} type="button"
                       onClick={() => toggleRole(r.key)}
                       className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded-sm border transition ${
-                        has ? r.color : "text-muted-foreground border-[var(--border)] hover:border-[#2a3140]"
+                        has ? r.color : "text-muted-foreground border-[var(--border)] hover:border-ring/50"
                       }`}
                     >
                       <Icon className="h-3 w-3" /> {roleLabel(r.key)}
@@ -269,7 +269,7 @@ export function InviteModal({ onClose }: { onClose: () => void }) {
                       className={`text-[10px] px-2 py-1 rounded-sm border transition ${
                         setterType === opt.key
                           ? "border-success/25 bg-success-bg text-success-fg"
-                          : "border-[var(--border)] text-muted-foreground hover:border-[#2a3140]"
+                          : "border-[var(--border)] text-muted-foreground hover:border-ring/50"
                       }`}
                     >
                       {opt.label}
@@ -280,7 +280,7 @@ export function InviteModal({ onClose }: { onClose: () => void }) {
             )}
             <div className="flex justify-end gap-2 pt-2 border-t border-[var(--border)]">
               <button type="button" onClick={onClose} className="text-xs text-muted-foreground hover:text-foreground px-3 py-1.5">Cancel</button>
-              <button type="submit" disabled={saving} className="text-xs bg-primary hover:bg-primary text-black font-medium px-3 py-1.5 rounded-sm disabled:opacity-50">
+              <button type="submit" disabled={saving} className="text-xs bg-primary hover:bg-primary/90 text-primary-foreground font-medium px-3 py-1.5 rounded-sm disabled:opacity-50">
                 {saving ? "Creating…" : "Create invite link"}
               </button>
             </div>

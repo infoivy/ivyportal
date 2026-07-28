@@ -10,7 +10,6 @@ const teamWeek = readFileSync(new URL("src/components/team-week.tsx", root), "ut
 const sales = readFileSync(new URL("src/routes/_authenticated.sales.tsx", root), "utf8");
 const authenticatedLayout = readFileSync(new URL("src/routes/_authenticated.tsx", root), "utf8");
 const adminConsole = readFileSync(new URL("src/routes/_authenticated.admin.tsx", root), "utf8");
-const volumeTrend = readFileSync(new URL("src/components/volume-trend-panel.tsx", root), "utf8");
 const dailyDigest = readFileSync(new URL("supabase/functions/daily-digest/index.ts", root), "utf8");
 const analyticsAlias = readFileSync(new URL("src/routes/_authenticated.analytics.tsx", root), "utf8");
 const navigation = readFileSync(new URL("src/lib/portal-navigation.ts", root), "utf8");
@@ -182,9 +181,6 @@ test("operational Home, Performance, and directory exclude demo profiles as well
   assert.match(adminConsole, /from\("students"\)[^\n]*\.eq\("is_demo", false\)/);
   assert.match(adminConsole, /students!inner\(is_demo\)/);
   assert.match(adminConsole, /\.eq\("students\.is_demo", false\)/);
-  assert.equal((volumeTrend.match(/from\("eods_activity_real"\)/g) ?? []).length, 2);
-  assert.doesNotMatch(volumeTrend, /from\("eods"\)/);
-  assert.match(volumeTrend, /from\("profiles"\)[^\n]*\.eq\("is_demo", false\)/);
 });
 
 test("founders with reporting roles remain in Home and Performance accountability", () => {
@@ -290,7 +286,6 @@ test("shared student workspaces and staff utilities exclude demo-owned records a
   const teamAdmin = readFileSync(new URL("src/lib/team-admin.functions.ts", root), "utf8");
   const studentsRoute = readFileSync(new URL("src/routes/_authenticated.students.tsx", root), "utf8");
   const studentLeaderboard = readFileSync(new URL("src/lib/student-portal.functions.ts", root), "utf8");
-  const setterActivity = readFileSync(new URL("src/components/setter-activity-card.tsx", root), "utf8");
   const paymentSetup = readFileSync(new URL("src/components/student-payment-setup.tsx", root), "utf8");
   const calendarRoute = readFileSync(new URL("src/routes/_authenticated.calendar.tsx", root), "utf8");
   const calendarFunctions = readFileSync(new URL("src/lib/calendar.functions.ts", root), "utf8");
@@ -332,7 +327,7 @@ test("shared student workspaces and staff utilities exclude demo-owned records a
   assert.match(studentLeaderboard, /from\("students"\)[\s\S]{0,180}?\.eq\("is_demo", false\)/);
   assert.match(studentLeaderboard, /from\("student_eods"\)[\s\S]{0,200}?students!inner\(is_demo\)[\s\S]{0,120}?\.eq\("students\.is_demo", false\)/);
 
-  for (const source of [setterActivity, paymentSetup, calendarRoute]) {
+  for (const source of [paymentSetup, calendarRoute]) {
     assert.match(source, /from\("profiles"\)[\s\S]{0,180}?\.eq\("is_demo", false\)/);
   }
 

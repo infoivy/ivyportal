@@ -87,6 +87,7 @@ type PriorityItem = {
   title: string;
   detail: string;
   url: string;
+  search?: Record<string, string>;
   icon: typeof AlertCircle;
   urgent?: boolean;
   count?: number;
@@ -301,7 +302,8 @@ function HomePage() {
         key: "payments",
         title: "Resolve overdue installments",
         detail: `${data.overdueInstallments} ${data.overdueInstallments === 1 ? "payment is" : "payments are"} past due.`,
-        url: "/installments",
+        url: "/revenue",
+        search: { tab: "plans" },
         icon: AlertCircle,
         urgent: true,
         count: data.overdueInstallments,
@@ -408,6 +410,7 @@ function HomePage() {
                 <Link
                   key={item.key}
                   to={item.url as never}
+                  search={(item.search ?? undefined) as never}
                   preload="intent"
                   className="group grid min-h-[76px] grid-cols-[36px_minmax(0,1fr)_auto_24px] items-center gap-3 px-4 py-3.5 hover:bg-muted/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset motion-safe:transition-colors sm:px-5"
                 >
@@ -614,6 +617,8 @@ function MiniMetric({ label, value }: { label: string; value: number | null }) {
 }
 
 function HomeLoading() {
+  const { roles } = useAuth();
+  const isLeader = roles.some((role) => ["admin", "founder", "cofounder"].includes(role));
   return (
     <PageShell className="pb-24 sm:pb-7">
       <div className="space-y-3 pt-3">
@@ -621,6 +626,12 @@ function HomeLoading() {
         <Skeleton className="h-9 w-72 max-w-full" />
         <Skeleton className="h-4 w-[440px] max-w-full" />
       </div>
+      {isLeader && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Skeleton className="h-[110px] w-full rounded-md" />
+          <Skeleton className="h-[110px] w-full rounded-md" />
+        </div>
+      )}
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1.65fr)_minmax(300px,0.75fr)]">
         <div className="space-y-5">
           <Skeleton className="h-[390px] w-full rounded-md" />

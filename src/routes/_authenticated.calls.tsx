@@ -171,7 +171,7 @@ function CallsPage() {
       <div className="flex flex-wrap gap-1.5 items-center">
         <button
           onClick={() => setCoachFilter("all")}
-          className={`text-[10px] px-2.5 py-1 rounded-sm border ${coachFilter === "all" ? "text-foreground border-[#2a3140] bg-[var(--accent)]" : "text-muted-foreground border-[var(--border)]"}`}
+          className={`text-[10px] px-2.5 py-1 rounded-sm border ${coachFilter === "all" ? "text-foreground border-ring/50 bg-[var(--accent)]" : "text-muted-foreground border-[var(--border)]"}`}
         >All coaches · {calls.length}</button>
         <button
           onClick={() => setCoachFilter("mine")}
@@ -219,7 +219,7 @@ function CallsPage() {
                 <span className="hidden sm:block text-xs text-muted-foreground truncate">{coachName(c.coach_id)}</span>
                 <span className="hidden sm:flex items-center gap-0.5 text-xs" title="Progress rating: 1 (stuck) – 5 (crushing it)">
                   {c.progress_rating ? Array.from({ length: 5 }).map((_, i) => (
-                    <Star key={i} className={`h-3 w-3 ${i < c.progress_rating! ? "fill-amber-400 text-warning-fg" : "text-[#2a3140]"}`} />
+                    <Star key={i} className={`h-3 w-3 ${i < c.progress_rating! ? "fill-amber-400 text-warning-fg" : "text-muted-foreground/30"}`} />
                   )) : <span className="text-muted-foreground">–</span>}
                 </span>
                 <span className={`hidden sm:block text-xs ${openA > 0 ? "text-warning-fg" : "text-muted-foreground"}`} title="Open / total action items from this call">
@@ -257,7 +257,7 @@ function CallsPage() {
                       <button
                         key={c.id}
                         onClick={() => setEditing(c)}
-                        className="w-full text-left p-2 rounded-sm bg-[var(--muted)] border border-[var(--border)] hover:border-[#2a3140]"
+                        className="w-full text-left p-2 rounded-sm bg-[var(--muted)] border border-[var(--border)] hover:border-ring/50"
                       >
                         <div className="text-xs font-medium truncate">{studentName(c.student_id)}</div>
                         <div className="flex items-center justify-between mt-1 text-[10px] text-muted-foreground">
@@ -400,7 +400,7 @@ function CallModal({ call, onClose, onSaved, students, coaches, defaultCoachId }
             <div className="flex items-center gap-1">
               {[1, 2, 3, 4, 5].map(n => (
                 <button key={n} type="button" onClick={() => setForm(f => ({ ...f, progress_rating: f.progress_rating === n ? 0 : n }))}>
-                  <Star className={`h-5 w-5 ${n <= form.progress_rating ? "fill-amber-400 text-warning-fg" : "text-[#2a3140]"}`} />
+                  <Star className={`h-5 w-5 ${n <= form.progress_rating ? "fill-amber-400 text-warning-fg" : "text-muted-foreground/30"}`} />
                 </button>
               ))}
               <span className="text-[10px] text-muted-foreground ml-2">{form.progress_rating ? `${form.progress_rating}/5` : "not rated"}</span>
@@ -421,7 +421,7 @@ function CallModal({ call, onClose, onSaved, students, coaches, defaultCoachId }
                   key={t.key}
                   type="button"
                   onClick={() => setForm(f => ({ ...f, coach_notes: f.coach_notes ? `${f.coach_notes}\n\n${t.body}` : t.body }))}
-                  className="text-[10px] px-1.5 py-0.5 rounded-sm border border-[var(--border)] bg-[var(--background)] text-muted-foreground hover:text-foreground hover:border-[#2a3140]"
+                  className="text-[10px] px-1.5 py-0.5 rounded-sm border border-[var(--border)] bg-[var(--background)] text-muted-foreground hover:text-foreground hover:border-ring/50"
                 >{t.label}</button>
               ))}
             </div>

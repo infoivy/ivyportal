@@ -268,8 +268,8 @@ function ActionItemsHub() {
             className={`text-[10px] px-2.5 py-1 rounded-sm border transition ${
               filt === k
                 ? k === "overdue" ? "text-danger-fg border-danger/25 bg-danger-bg"
-                : "text-foreground border-[#2a3140] bg-[var(--accent)]"
-                : "text-muted-foreground border-[var(--border)] hover:border-[#2a3140]"
+                : "text-foreground border-ring/50 bg-[var(--accent)]"
+                : "text-muted-foreground border-[var(--border)] hover:border-ring/50"
             }`}
           >
             {k === "open" ? `Open · ${counts.open}` : k === "mine" ? `Mine · ${counts.mine}` : k === "overdue" ? `Overdue · ${counts.overdue}` : `All · ${counts.all}`}
@@ -350,7 +350,7 @@ function ActionItemsHub() {
                 </span>
               )}
               <span className="hidden sm:block text-xs text-muted-foreground truncate" title={r.ownerLabel}>{r.ownerName}</span>
-              <span className={`hidden sm:block text-[11px] text-right ${overdue ? "text-danger-fg" : r.due ? "text-muted-foreground" : "text-[#2a3140]"}`}>
+              <span className={`hidden sm:block text-[11px] text-right ${overdue ? "text-danger-fg" : r.due ? "text-muted-foreground" : "text-muted-foreground/30"}`}>
                 {r.due ? (overdue ? <span className="inline-flex items-center gap-1" title={r.due}><AlertTriangle className="h-3 w-3" />{humanDue(r.due)}</span> : <span title={r.due}>{humanDue(r.due)}</span>) : "–"}
               </span>
               <span className="flex justify-end">

@@ -176,7 +176,7 @@ export function RouteChip({
         color: `hsl(var(--route-${kind}))`,
       }}
     >
-      {label} — {children}
+      {label} · {children}
     </span>
   );
 }

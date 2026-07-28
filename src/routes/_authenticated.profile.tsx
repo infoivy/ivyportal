@@ -103,7 +103,7 @@ function ProfilePage() {
               <button
                 onClick={() => fileRef.current?.click()}
                 disabled={uploading}
-                className="flex items-center gap-1 text-xs bg-[var(--accent)] hover:bg-[#232935] border border-[#2a3140] px-3 py-1.5 rounded-sm"
+                className="flex items-center gap-1 text-xs bg-[var(--accent)] hover:bg-muted border border-[var(--border)] px-3 py-1.5 rounded-sm"
               >
                 <Upload className="h-3 w-3" /> {uploading ? "Uploading…" : "Upload image"}
               </button>

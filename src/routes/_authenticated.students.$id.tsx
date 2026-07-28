@@ -593,7 +593,7 @@ function StudentDetail() {
                 className={`flex items-center gap-2 p-2.5 rounded-sm border text-left transition ${
                   step.done
                     ? "border-warning/25 bg-warning-bg text-warning-fg"
-                    : "border-[var(--border)] bg-[var(--muted)] text-muted-foreground hover:border-[#2a3140]"
+                    : "border-[var(--border)] bg-[var(--muted)] text-muted-foreground hover:border-ring/50"
                 } ${!canManage ? "cursor-default" : "cursor-pointer"}`}
               >
                 {step.done ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <Circle className="h-4 w-4 shrink-0" />}
@@ -691,7 +691,7 @@ function StudentDetail() {
                     {c.progress_rating && (
                       <span className="flex items-center gap-0.5">
                         {Array.from({ length: 5 }).map((_, i) => (
-                          <Star key={i} className={`h-3 w-3 ${i < c.progress_rating! ? "fill-amber-400 text-warning-fg" : "text-[#2a3140]"}`} />
+                          <Star key={i} className={`h-3 w-3 ${i < c.progress_rating! ? "fill-amber-400 text-warning-fg" : "text-muted-foreground/30"}`} />
                         ))}
                       </span>
                     )}
@@ -1088,7 +1088,7 @@ function CallForm({ studentId, onCancel, onDone }: { studentId: string; onCancel
         <div className="flex items-center gap-1">
           {[1, 2, 3, 4, 5].map(n => (
             <button key={n} type="button" onClick={() => setForm(f => ({ ...f, progress_rating: n }))} className="p-0.5">
-              <Star className={`h-4 w-4 ${n <= form.progress_rating ? "fill-amber-400 text-warning-fg" : "text-[#2a3140]"}`} />
+              <Star className={`h-4 w-4 ${n <= form.progress_rating ? "fill-amber-400 text-warning-fg" : "text-muted-foreground/30"}`} />
             </button>
           ))}
         </div>
