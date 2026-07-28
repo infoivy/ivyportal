@@ -33,6 +33,7 @@ type Member = {
   phone: string | null;
   base_pay_monthly: number | null;
   csm_daily_target: number | null;
+  eod_exempt: boolean;
   active: boolean;
   roles: string[];
   setter_type: SetterType;
@@ -55,7 +56,7 @@ function TeamPage() {
 
   const fetchPage = async () => {
     const [{ data: profs }, { data: rolesData }, tpls, { data: progressRows }] = await Promise.all([
-      supabase.from("profiles").select("id, display_name, avatar_path, active, phone, timezone, setter_type, base_pay_monthly, base_pay_day, started_on, csm_daily_target" as any).eq("is_demo", false),
+      supabase.from("profiles").select("id, display_name, avatar_path, active, phone, timezone, setter_type, base_pay_monthly, base_pay_day, started_on, csm_daily_target, eod_exempt" as any).eq("is_demo", false),
       supabase.from("user_roles").select("user_id, role"),
       fetchAllTemplates(),
       supabase.from("onboarding_progress").select("user_id, role, step_id"),
@@ -76,6 +77,7 @@ function TeamPage() {
       base_pay_day: p.base_pay_day ?? 1,
       started_on: p.started_on ?? null,
       csm_daily_target: (p as any).csm_daily_target ?? null,
+      eod_exempt: (p as any).eod_exempt === true,
       active: p.active ?? true,
       roles: rolesByUser.get(p.id) ?? [],
       setter_type: (p.setter_type ?? null) as SetterType,
@@ -365,6 +367,7 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
   const [basePay, setBasePay] = useState(member.base_pay_monthly != null ? String(member.base_pay_monthly) : "");
   const [startedOn, setStartedOn] = useState(member.started_on ?? "");
   const [csmTarget, setCsmTarget] = useState(String((member as any).csm_daily_target ?? 10));
+  const [eodExempt, setEodExempt] = useState(member.eod_exempt === true);
   const [setterType, setSetterType] = useState<SetterType>(member.setter_type);
   const [avatarPath, setAvatarPath] = useState<string | null>(member.avatar_path);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(initialUrl);
@@ -407,6 +410,7 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
         base_pay_day: Math.min(31, Math.max(1, Number(startedOn.slice(8, 10)) || 1)),
       } : {}),
       csm_daily_target: Math.max(1, Number(csmTarget) || 10),
+      eod_exempt: eodExempt,
     } as any).eq("id", member.id);
     setSaving(false);
     if (error) return toast.error(error.message);
@@ -481,6 +485,13 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
             })}
           </div>
         </div>
+        <label className="flex items-start gap-2.5 rounded-md border border-[var(--border)] px-3 py-2.5 cursor-pointer hover:border-ring/50 transition">
+          <input type="checkbox" checked={eodExempt} onChange={e => setEodExempt(e.target.checked)} className="mt-0.5 accent-[var(--primary)]" />
+          <span>
+            <span className="block text-[13px] text-foreground font-medium">Exempt from EODs</span>
+            <span className="block text-[11px] text-muted-foreground mt-0.5">Removed from expected filers, missed-day nudges, and Performance cards. They can still submit if they want.</span>
+          </span>
+        </label>
         {localRoles.includes("csm") && (
           <div className="space-y-1">
             <label className="text-[12px] text-muted-foreground">CSM daily target · students reached (10 full-time, 5 part-time)</label>

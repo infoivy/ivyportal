@@ -185,8 +185,15 @@ test("operational Home, Performance, and directory exclude demo profiles as well
 
 test("founders with reporting roles remain in Home and Performance accountability", () => {
   const performance = readFileSync(performanceUrl, "utf8");
-  assert.doesNotMatch(dashboard, /activeUsers\.has\(id\) && !exemptUsers\.has\(id\)/);
-  assert.match(dashboard, /\[\.\.\.reportingUsers\]\.filter\(\(id\) => activeUsers\.has\(id\)\)/);
+  // Staff EOD exemption (founder-directed 2026-07-29): expected filers are
+  // reporting roles ∩ active ∩ not exempt; exemption comes from the STAFF
+  // profile flag plus the founder role, never from student records.
+  assert.match(dashboard, /activeUsers\.has\(id\) && !exemptUsers\.has\(id\)/);
+  assert.match(dashboard, /profile\.eod_exempt === true/);
+  assert.match(dashboard, /row\.role === "founder"/);
+  assert.ok(existsSync(new URL("supabase/migrations/20260729000000_profiles_eod_exempt.sql", root)));
+  const teamWeekSrc = readFileSync(new URL("src/components/team-week.tsx", root), "utf8");
+  assert.match(teamWeekSrc, /p\.eod_exempt !== true/);
   assert.match(performance, /const reportingIdSet = new Set\(reportingIds\)/);
   assert.match(performance, /reportingIdSet\.has\(id\) \|\| !exempt\.has\(id\)/);
 });

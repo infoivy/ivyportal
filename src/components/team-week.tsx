@@ -61,7 +61,7 @@ export function TeamWeekSection() {
           .select("id, user_id, report_date, dials, leads_contacted, dms_sent, calls_booked, calls_taken, closes, cash_collected, student_checkins, looms_reviewed, wins, blockers")
           .eq("is_demo", false)
           .gte("report_date", fromIso),
-        supabase.from("profiles").select("id, display_name, setter_type, csm_daily_target, active" as never).eq("is_demo", false),
+        supabase.from("profiles").select("id, display_name, setter_type, csm_daily_target, active, eod_exempt" as never).eq("is_demo", false),
         supabase.from("user_roles").select("user_id, role").in("role", ["setter", "closer", "coach", "csm"]),
         // Founders/cofounders are exempt from EODs; user_roles founder check:
       ]);
@@ -72,9 +72,9 @@ export function TeamWeekSection() {
         const arr = roleMap.get(r.user_id) ?? []; arr.push(r.role); roleMap.set(r.user_id, arr);
       });
       const priority = ["csm", "closer", "coach", "setter"];
-      const profs = (profsRes.data ?? []) as unknown as { id: string; display_name: string | null; setter_type: SetterType; csm_daily_target: number | null; active: boolean | null }[];
+      const profs = (profsRes.data ?? []) as unknown as { id: string; display_name: string | null; setter_type: SetterType; csm_daily_target: number | null; active: boolean | null; eod_exempt: boolean | null }[];
       const roster: RosterEntry[] = profs
-        .filter(p => roleMap.has(p.id) && !exempt.has(p.id) && p.active !== false)
+        .filter(p => roleMap.has(p.id) && !exempt.has(p.id) && p.active !== false && p.eod_exempt !== true)
         .map(p => {
           const rs = roleMap.get(p.id)!;
           const primary = priority.find(x => rs.includes(x)) ?? rs[0];

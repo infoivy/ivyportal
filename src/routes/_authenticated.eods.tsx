@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -65,6 +65,7 @@ function EODsPage() {
   const isCloser = roles.includes("closer") || roles.includes("coach");
   const filesEods = isSetter || isCloser || isCsm;
   const isFounder = isAdmin && !filesEods;
+  const [ownExempt, setOwnExempt] = useState(false);
   const today = todayLocal();
   const yesterday = shiftDay(today, -1);
 
@@ -82,10 +83,11 @@ function EODsPage() {
     if (!user) return;
     const [{ data }, { data: prof }] = await Promise.all([
       supabase.from("eods").select("*").eq("is_demo", false).eq("user_id", user.id).order("report_date", { ascending: false }).limit(120),
-      supabase.from("profiles").select("setter_type, csm_daily_target" as never).eq("id", user.id).maybeSingle(),
+      supabase.from("profiles").select("setter_type, csm_daily_target, eod_exempt" as never).eq("id", user.id).maybeSingle(),
     ]);
     setMySetterType(((prof as { setter_type?: string } | null)?.setter_type ?? null) as SetterType);
     setCsmTarget(Number((prof as { csm_daily_target?: number } | null)?.csm_daily_target) || 10);
+      setOwnExempt((prof as { eod_exempt?: boolean } | null)?.eod_exempt === true);
     const rows = (data ?? []) as EOD[];
     setMyEods(rows);
     const target = rows.find(e => e.report_date === reportDate);
@@ -209,6 +211,8 @@ function EODsPage() {
 
   const defaultTab = "submit";
 
+  if (roles.includes("founder")) return <Navigate to="/performance" replace />;
+
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3 pb-5 mb-1">
@@ -257,6 +261,12 @@ function EODsPage() {
       {isFounder && (
         <div className="card-surface px-4 py-3 text-[13px] text-muted-foreground">
           This account has no reporting role. Open Performance to review submitted team activity.
+        </div>
+      )}
+
+      {ownExempt && filesEods && (
+        <div className="card-surface px-4 py-3 text-[13px] text-muted-foreground">
+          You are marked exempt from daily EODs. Submitting is optional; nothing counts you as missing.
         </div>
       )}
 

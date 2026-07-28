@@ -17,14 +17,21 @@ Deno.serve(async (_req) => {
     const today = new Date().toISOString().slice(0, 10);
     const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
 
-    // Missed EODs yesterday
-    const [setterRolesRes, yesterdayEodsRes] = await Promise.all([
+    // Missed EODs yesterday · deactivated and EOD-exempt members owe nothing
+    // (founder-directed 2026-07-29)
+    const [setterRolesRes, yesterdayEodsRes, profilesRes] = await Promise.all([
       supabase.from("user_roles").select("user_id").eq("role", "setter"),
       supabase.from("eods").select("user_id").eq("is_demo", false).eq("report_date", yesterday),
+      supabase.from("profiles").select("id, active, eod_exempt").eq("is_demo", false),
     ]);
+    const excused = new Set(
+      (profilesRes.data ?? [])
+        .filter((p: any) => p.active === false || p.eod_exempt === true)
+        .map((p: any) => p.id),
+    );
     const setterIds = new Set((setterRolesRes.data ?? []).map((r: any) => r.user_id));
     const filedYesterday = new Set((yesterdayEodsRes.data ?? []).map((r: any) => r.user_id));
-    const missedCount = [...setterIds].filter(id => !filedYesterday.has(id)).length;
+    const missedCount = [...setterIds].filter(id => !filedYesterday.has(id) && !excused.has(id)).length;
 
     // MTD cash
     const monthStart = today.slice(0, 8) + "01";

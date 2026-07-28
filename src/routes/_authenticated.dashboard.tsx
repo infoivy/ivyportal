@@ -50,6 +50,7 @@ type TeamProfile = {
   display_name: string | null;
   setter_type: string | null;
   active: boolean | null;
+  eod_exempt: boolean | null;
 };
 
 type ActiveStudent = {
@@ -155,7 +156,7 @@ function HomePage() {
           .gte("report_date", recentFrom)
           .lte("report_date", today)
           .order("report_date", { ascending: true }),
-        supabase.from("profiles").select("id, display_name, setter_type, active").eq("is_demo", false),
+        supabase.from("profiles").select("id, display_name, setter_type, active, eod_exempt").eq("is_demo", false),
         supabase.from("user_roles").select("user_id, role").in("role", ["founder", "cofounder", "setter", "closer", "coach", "csm"]),
         supabase
           .from("student_action_items")
@@ -198,15 +199,21 @@ function HomePage() {
       if (assignedRes.error) throw new Error(`Assigned work failed: ${assignedRes.error.message}`);
 
       const activities = (activityRes.data ?? []) as EodActivity[];
-      const profiles = (profilesRes.data ?? []) as TeamProfile[];
+      const profiles = (profilesRes.data ?? []) as unknown as TeamProfile[];
       const todayRows = activities.filter((row) => row.report_date === today);
       const reportingRows = (reportingRolesRes.data ?? []) as { user_id: string; role: string }[];
       const reportingUsers = new Set(
         reportingRows.filter((row) => ["setter", "closer", "coach", "csm"].includes(row.role)).map((row) => row.user_id),
       );
       const activeUsers = new Set(profiles.filter((profile) => profile.active !== false).map((profile) => profile.id));
+      // Founder-role accounts and profiles.eod_exempt members owe no EODs
+      // (founder-directed 2026-07-29).
+      const exemptUsers = new Set([
+        ...reportingRows.filter((row) => row.role === "founder").map((row) => row.user_id),
+        ...profiles.filter((profile) => profile.eod_exempt === true).map((profile) => profile.id),
+      ]);
       const expectedUsers = new Set(
-        [...reportingUsers].filter((id) => activeUsers.has(id)),
+        [...reportingUsers].filter((id) => activeUsers.has(id) && !exemptUsers.has(id)),
       );
       const submittedUsers = new Set(todayRows.map((row) => row.user_id).filter((id) => expectedUsers.has(id)));
 
@@ -250,8 +257,9 @@ function HomePage() {
     const today = todayLocal();
     const ownToday = data.activities.some((row) => row.user_id === user?.id && row.report_date === today);
     const hasOperatingRole = roles.some((role) => ["setter", "closer", "coach", "csm"].includes(role));
+    const ownEodExempt = roles.includes("founder") || data.profiles.find((profile) => profile.id === user?.id)?.eod_exempt === true;
 
-    if (hasOperatingRole && !ownToday) {
+    if (hasOperatingRole && !ownToday && !ownEodExempt) {
       items.push({
         key: "eod",
         title: "Submit today’s EOD",
@@ -365,6 +373,7 @@ function HomePage() {
   const previousBooked = sum(previousRows, "calls_booked");
   const recentBookedAverage = previousDays && previousBooked != null ? previousBooked / previousDays : previousDays ? null : 0;
   const ownProfile = data.profiles.find((profile) => profile.id === user?.id);
+  const ownExempt = ownProfile?.eod_exempt === true;
   const ownDials = sum(ownTodayRows, "dials");
   const ownDms = sum(ownTodayRows, "dms_sent");
   const ownBooked = sum(ownTodayRows, "calls_booked");
@@ -466,7 +475,7 @@ function HomePage() {
               activities={data.activities}
               profiles={data.profiles}
             />
-          ) : (
+          ) : roles.includes("founder") ? null : (
           <section className="card-surface p-5" aria-labelledby="your-day-title">
             <div className="flex items-center gap-2 text-muted-foreground">
               <ClipboardCheck className="h-4 w-4" />
@@ -497,14 +506,14 @@ function HomePage() {
               </>
             ) : (
               <dl className="mt-5 divide-y divide-border border-y border-border">
-                <PulseRow label="EOD status" value={ownTodayRows.length ? "Submitted" : "Not submitted"} />
+                {ownExempt !== true && <PulseRow label="EOD status" value={ownTodayRows.length ? "Submitted" : "Not submitted"} />}
                 <PulseRow label="Assigned items" value={data.assignedItems.length} urgent={data.assignedItems.length > 0} />
                 {canSeeCustomers && <PulseRow label="Calls scheduled" value={data.callsThisWeek} />}
               </dl>
             )}
             <Button asChild variant="outline" className="mt-5 w-full">
-              <Link to={roles.some((role) => ["setter", "closer", "coach", "csm"].includes(role)) ? "/eods" : "/work"}>
-                {roles.some((role) => ["setter", "closer", "coach", "csm"].includes(role)) ? "Open EOD" : "Open Work"}
+              <Link to={ownExempt !== true && roles.some((role) => ["setter", "closer", "coach", "csm"].includes(role)) ? "/eods" : "/work"}>
+                {ownExempt !== true && roles.some((role) => ["setter", "closer", "coach", "csm"].includes(role)) ? "Open EOD" : "Open Work"}
               </Link>
             </Button>
           </section>
