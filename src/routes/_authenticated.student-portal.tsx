@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import {
   CheckCircle2, Clock, Award, Briefcase, MessageSquare, Users, ListChecks,
   Calendar, Trophy, TrendingUp, Flame, BookOpen, PartyPopper, ChevronRight, Lock,
-  Sparkles, AlertCircle, PlayCircle, FileText, Star } from "lucide-react";
+  Sparkles, AlertCircle, PlayCircle, FileText, Star, ArrowRight, Play } from "lucide-react";
 import { computeStreak } from "@/lib/streak";
 import { setStudentPortalTab, onStudentPortalTab, getStudentPortalTab } from "@/lib/student-portal-bus";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -648,18 +648,18 @@ function StudentPortal() {
   // Fresh student: Start Here is the whole portal until every step is done.
   if (locked) {
     return (
-      <div className="p-5 sm:p-8 max-w-3xl mx-auto relative">
+      <div className="px-5 sm:px-8 lg:px-12 pt-10 sm:pt-16 pb-24 sm:pb-32 max-w-[1100px] mx-auto relative">
         {confetti && <ConfettiBurst />}
         <div dir="rtl" className="text-[14px] text-muted-foreground/80">السلام عليكم ورحمة الله وبركاته</div>
-        <h1 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight leading-[1.15]">
+        <h1 className="mt-4 text-[34px] sm:text-5xl font-semibold tracking-[-0.03em] leading-[1.1]">
           Welcome, <span className="text-primary">{first}</span>.
           <br />
           Here is how to begin.
         </h1>
-        <p className="mt-4 text-[14px] text-muted-foreground leading-relaxed max-w-xl">
+        <p className="mt-5 sm:mt-6 text-base sm:text-lg text-muted-foreground leading-relaxed max-w-xl">
           Five steps into Ivy Sales Academy. Take them in order, and the moment the last one is done your full portal opens: daily logs, action items, and the leaderboard.
         </p>
-        <div className="mt-9">
+        <div className="mt-16 sm:mt-24">
           <StartHereGuide done={guideDone} locked unlocking={unlocking} onToggle={toggleGuideStep} />
         </div>
       </div>
@@ -1587,6 +1587,65 @@ function GraduationReviewCard({ first }: { first: string }) {
  * the video's runtime (an iframe can't report playback, but elapsed time
  * catches "watched a 12-minute video in 40 seconds").
  */
+/**
+ * Loom presented like a course platform (founder-referenced 2026-07-28):
+ * big rounded thumbnail, centered play circle, badge chip. Clicking swaps in
+ * the autoplaying embed. Thumbnail comes from Loom's CDN; if it 404s the
+ * facade falls back to a dark panel so it never looks broken.
+ */
+function LoomFacade({ embedUrl, title, badge, onPlay }: {
+  embedUrl: string;
+  title: string;
+  badge?: string;
+  onPlay?: () => void;
+}) {
+  const [playing, setPlaying] = useState(false);
+  const [thumbOk, setThumbOk] = useState(true);
+  const loomId = /loom\.com\/(?:embed|share)\/([a-f0-9]{16,})/i.exec(embedUrl)?.[1] ?? null;
+
+  if (playing) {
+    return (
+      <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-border bg-card">
+        <iframe
+          src={`${embedUrl}${embedUrl.includes("?") ? "&" : "?"}autoplay=true`}
+          title={title}
+          allow="autoplay; fullscreen"
+          allowFullScreen
+          className="absolute inset-0 h-full w-full"
+        />
+      </div>
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => { setPlaying(true); onPlay?.(); }}
+      className="group relative aspect-video w-full overflow-hidden rounded-xl border border-border bg-card text-left"
+      aria-label={`Play: ${title}`}
+    >
+      {loomId && thumbOk && (
+        <img
+          src={`https://cdn.loom.com/sessions/thumbnails/${loomId}-00001.jpg`}
+          alt=""
+          onError={() => setThumbOk(false)}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      )}
+      <span className="absolute inset-0 bg-black/25 group-hover:bg-black/15 motion-safe:transition-colors" />
+      <span className="absolute inset-0 grid place-items-center">
+        <span className="h-16 w-16 rounded-full bg-primary text-primary-foreground grid place-items-center shadow-lg group-hover:scale-105 motion-safe:transition-transform">
+          <Play className="h-6 w-6 translate-x-0.5" fill="currentColor" />
+        </span>
+      </span>
+      {badge && (
+        <span className="absolute left-3 bottom-3 text-[10px] font-semibold uppercase tracking-[0.14em] px-2 py-1 rounded-md bg-black/70 text-white">
+          {badge}
+        </span>
+      )}
+    </button>
+  );
+}
+
 function WalkthroughGate({ video, startedAt, onDone }: {
   video: { share: string; embed: string };
   startedAt: string | null;
@@ -1624,9 +1683,9 @@ function WalkthroughGate({ video, startedAt, onDone }: {
           Your portal is unlocked. Before you touch anything, watch this walkthrough in full — scroll along as it plays; everything below opens the moment you mark it done.
         </p>
       </div>
-      <div className="relative w-full overflow-hidden rounded-sm border border-[var(--border)]" style={{ paddingBottom: "56.25%" }}>
-        <iframe src={video.embed} title="Portal walkthrough" allowFullScreen className="absolute inset-0 h-full w-full" />
-      </div>
+      {/* Facade only — the watch floor arms on mount (begin), because the
+          server skips the dwell check when started_at is null. */}
+      <LoomFacade embedUrl={video.embed} title="Portal walkthrough" badge="Walkthrough" />
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-[11px] text-muted-foreground">Watched it all? Say the word.</span>
         <button
@@ -1771,81 +1830,147 @@ function StartHereGuide({ done, locked = false, unlocking = false, onToggle }: {
   const steps = START_HERE_STEPS;
   const doneCount = steps.filter(s => done.has(s.key)).length;
   const nextIdx = steps.findIndex(s => !done.has(s.key));
+  // Sequential (founder-directed 2026-07-28): a step opens only when
+  // everything before it is done. Done steps stay done and never re-lock.
+  const isRowLocked = (i: number) => !done.has(steps[i].key) && nextIdx !== -1 && i > nextIdx;
+
+  const featuredIdx = steps.findIndex(s => s.embedUrl);
+  const featured = featuredIdx === -1 ? null : steps[featuredIdx];
+  const featuredChecked = featured ? done.has(featured.key) : false;
+  const featuredLocked = featured ? isRowLocked(featuredIdx) : false;
+
   return (
     <div>
-      {/* Section header — kicker, big title, quiet progress */}
-      <div className="flex flex-wrap items-end justify-between gap-3 pb-4 border-b border-[var(--border)]">
-        <div>
-          <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Start here</div>
-          <h2 className="text-xl sm:text-2xl font-semibold tracking-tight mt-1.5">
-            {locked ? "Five steps to unlock your portal" : "Your onboarding, all done"}
-          </h2>
-        </div>
-        <div className="text-right shrink-0">
-          <span className={`text-[12px] font-medium tabular-nums ${doneCount === steps.length ? "text-success-fg" : "text-muted-foreground"}`}>
-            {doneCount} of {steps.length} done
-          </span>
-          <div className="h-1 w-28 rounded-full bg-muted overflow-hidden mt-1.5 ml-auto">
-            <div className="h-full rounded-full bg-primary motion-safe:transition-[width]" style={{ width: `${(doneCount / steps.length) * 100}%` }} />
+      {/* Featured video — the reference's "Begin here" split */}
+      {featured && (
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,5fr)_minmax(0,4fr)] gap-8 lg:gap-12 items-center">
+          <LoomFacade
+            embedUrl={featured.embedUrl!}
+            title={featured.title}
+            badge={`Step ${String(featuredIdx + 1).padStart(2, "0")}`}
+          />
+          <div className="min-w-0">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+              Step {String(featuredIdx + 1).padStart(2, "0")} of {String(steps.length).padStart(2, "0")} · Watch in full
+            </div>
+            <h3 className="mt-3 text-[24px] sm:text-[30px] font-semibold tracking-tight leading-[1.15]">{featured.title}</h3>
+            <p className="mt-3 text-[15px] sm:text-base text-muted-foreground leading-relaxed">{featured.body}</p>
+            <div className="mt-6 flex flex-wrap items-center gap-5">
+              {featuredChecked ? (
+                <>
+                  <span className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-success-fg">
+                    <CheckCircle2 className="h-3.5 w-3.5" /> Watched · done
+                  </span>
+                  <button
+                    onClick={() => onToggle(featured.key, false)}
+                    disabled={unlocking}
+                    className="text-[12px] text-muted-foreground hover:text-foreground underline underline-offset-4"
+                  >
+                    Undo
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => onToggle(featured.key, true)}
+                    disabled={unlocking || featuredLocked}
+                    className="inline-flex items-center justify-center gap-2 h-11 rounded-md bg-primary px-6 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                  >
+                    I watched it in full <ArrowRight className="h-4 w-4" />
+                  </button>
+                  <a
+                    href={featured.embedUrl!.replace("/embed/", "/share/")}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[12px] text-muted-foreground hover:text-foreground underline underline-offset-4"
+                  >
+                    Open in Loom
+                  </a>
+                </>
+              )}
+            </div>
+            {featuredLocked && !featuredChecked && (
+              <p className="mt-3 text-[11px] text-muted-foreground flex items-center gap-1.5">
+                <Lock className="h-3 w-3" /> Finish the steps before this one first.
+              </p>
+            )}
           </div>
         </div>
-      </div>
-      {unlocking && <div className="mt-3 text-[12px] text-muted-foreground">Unlocking your portal…</div>}
+      )}
 
-      {/* Journey rows */}
-      <div className="divide-y divide-[var(--border)]">
-        {steps.map((s, i) => {
-          const checked = done.has(s.key);
-          const isNext = i === nextIdx;
-          return (
-            <div key={s.key} className="py-6 grid gap-x-6 gap-y-3 sm:grid-cols-[76px_minmax(0,1fr)_auto] items-start">
-              <div className={`text-[11px] font-semibold uppercase tracking-[0.18em] tabular-nums pt-1 ${checked ? "text-success-fg" : isNext ? "text-primary" : "text-muted-foreground"}`}>
-                Step {String(i + 1).padStart(2, "0")}
-              </div>
-              <div className="min-w-0">
-                <div className="text-[15px] font-semibold text-foreground">{s.title}</div>
-                <p className="text-[13px] text-muted-foreground mt-1.5 leading-relaxed">{s.body}</p>
-                {s.embedUrl && (
-                  <div className="mt-4 relative w-full overflow-hidden rounded-lg border border-[var(--border)]" style={{ paddingBottom: "56.25%" }}>
-                    <iframe
-                      src={s.embedUrl}
-                      title={s.title}
-                      allowFullScreen
-                      className="absolute inset-0 h-full w-full"
-                    />
-                  </div>
-                )}
-                <div className="flex items-center gap-4 mt-3">
-                  {s.link && (
-                    <Link to={s.link.to} className="text-[12px] font-medium text-primary hover:underline">{s.link.label} →</Link>
+      {/* Journey */}
+      <div className={featured ? "mt-16 sm:mt-28 border-t border-border pt-10 sm:pt-14" : ""}>
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="min-w-0">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">Start here</div>
+            <h2 className="mt-2.5 text-[28px] sm:text-[38px] font-semibold tracking-tight leading-[1.12]">
+              {locked ? "Five steps to unlock your portal" : "Your onboarding, all done"}
+            </h2>
+            <p className="mt-2.5 text-[15px] text-muted-foreground max-w-xl">
+              Take them in order. The last tick opens your full portal.
+            </p>
+          </div>
+          <div className="text-right shrink-0 pb-1">
+            <span className={`text-[11px] font-semibold uppercase tracking-[0.16em] tabular-nums ${doneCount === steps.length ? "text-success-fg" : "text-muted-foreground"}`}>
+              {doneCount} of {steps.length} done
+            </span>
+            <div className="h-1 w-28 rounded-full bg-muted overflow-hidden mt-1.5 ml-auto">
+              <div className="h-full rounded-full bg-primary motion-safe:transition-[width]" style={{ width: `${(doneCount / steps.length) * 100}%` }} />
+            </div>
+          </div>
+        </div>
+        {unlocking && <div className="mt-3 text-[12px] text-muted-foreground">Unlocking your portal…</div>}
+
+        <div className="mt-8 sm:mt-10 border-t border-border divide-y divide-border">
+          {steps.map((s, i) => {
+            const checked = done.has(s.key);
+            const isNext = i === nextIdx;
+            const rowLocked = isRowLocked(i);
+            return (
+              <div key={s.key} className="py-7 sm:py-10 grid gap-x-8 gap-y-3 sm:grid-cols-[96px_minmax(0,1fr)_auto] items-start">
+                <div className={`text-[11px] font-semibold uppercase tracking-[0.2em] tabular-nums pt-1 ${checked ? "text-success-fg" : isNext ? "text-primary" : "text-muted-foreground"}`}>
+                  Step {String(i + 1).padStart(2, "0")}
+                </div>
+                <div className={`min-w-0 ${rowLocked ? "opacity-60" : ""}`}>
+                  <div className="text-[16px] sm:text-[17px] font-semibold text-foreground">{s.title}</div>
+                  <p className="mt-2 text-[13px] sm:text-sm text-muted-foreground leading-relaxed max-w-[560px]">{s.body}</p>
+                  {s.embedUrl && (
+                    <p className="text-[12px] text-muted-foreground mt-2">Featured above. Watch it there, then mark it done.</p>
                   )}
-                  <label className="flex items-center gap-1.5 text-[12px] text-muted-foreground cursor-pointer select-none">
-                    <Checkbox checked={checked} disabled={unlocking} onCheckedChange={(v) => onToggle(s.key, v === true)} className="h-3.5 w-3.5" />
-                    {checked ? "Done" : "Mark done"}
-                  </label>
+                  <div className="flex items-center gap-4 mt-3.5">
+                    {s.link && !rowLocked && (
+                      <Link to={s.link.to} className="text-[12px] font-medium text-primary hover:underline">{s.link.label} →</Link>
+                    )}
+                    <label className={`flex items-center gap-1.5 text-[12px] text-muted-foreground select-none ${rowLocked ? "cursor-not-allowed" : "cursor-pointer"}`}>
+                      <Checkbox checked={checked} disabled={unlocking || rowLocked} onCheckedChange={(v) => onToggle(s.key, v === true)} className="h-3.5 w-3.5" />
+                      {checked ? "Done" : "Mark done"}
+                    </label>
+                  </div>
+                </div>
+                <div className="justify-self-start sm:justify-self-end pt-1">
+                  {checked ? (
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-success-fg">
+                      <CheckCircle2 className="h-3 w-3" /> Done
+                    </span>
+                  ) : isNext ? (
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">Up next</span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/60">
+                      <Lock className="h-3 w-3" /> Locked
+                    </span>
+                  )}
                 </div>
               </div>
-              <div className="justify-self-start sm:justify-self-end pt-1">
-                {checked ? (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-success-fg">
-                    <CheckCircle2 className="h-3 w-3" /> Done
-                  </span>
-                ) : isNext ? (
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">Up next</span>
-                ) : (
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">To do</span>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
 
-      {locked && (
-        <p className="text-[12px] text-muted-foreground flex items-center gap-1.5 border-t border-[var(--border)] pt-4">
-          <Lock className="h-3 w-3" /> Your daily logs, action items, and the leaderboard appear here the moment your last step is ticked.
-        </p>
-      )}
+        {locked && (
+          <p className="text-[12px] text-muted-foreground flex items-center gap-1.5 border-t border-border pt-6">
+            <Lock className="h-3 w-3" /> Your daily logs, action items, and the leaderboard appear here the moment your last step is ticked.
+          </p>
+        )}
+      </div>
     </div>
   );
 }
