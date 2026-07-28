@@ -1,51 +1,80 @@
 import { useEffect, useState } from "react";
-import { Sun, Moon } from "lucide-react";
+import { Sun, Moon, Monitor, Check } from "lucide-react";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
-type Theme = "light" | "dark";
+type ThemeChoice = "light" | "dark" | "system";
 
-function getInitialTheme(): Theme {
+function systemPrefersDark() {
+  return window.matchMedia("(prefers-color-scheme: dark)").matches;
+}
+
+function getStoredChoice(): ThemeChoice {
   if (typeof window === "undefined") return "dark";
   const stored = localStorage.getItem("isa-theme");
-  if (stored === "light" || stored === "dark") return stored;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  if (stored === "light" || stored === "dark" || stored === "system") return stored;
+  return "system";
 }
 
-function applyTheme(theme: Theme) {
-  if (theme === "dark") {
-    document.documentElement.classList.add("dark");
-  } else {
-    document.documentElement.classList.remove("dark");
-  }
-  localStorage.setItem("isa-theme", theme);
+function applyChoice(choice: ThemeChoice) {
+  const dark = choice === "system" ? systemPrefersDark() : choice === "dark";
+  document.documentElement.classList.toggle("dark", dark);
+  localStorage.setItem("isa-theme", choice);
 }
 
+/**
+ * Theme picker: Light / Dark / System (founder-directed 2026-07-27 · a menu,
+ * not a blind toggle). "system" follows the OS live via the media query.
+ */
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>("dark");
+  const [choice, setChoice] = useState<ThemeChoice>("dark");
 
   useEffect(() => {
-    const t = getInitialTheme();
-    setTheme(t);
-    applyTheme(t);
+    const c = getStoredChoice();
+    setChoice(c);
+    applyChoice(c);
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const onChange = () => {
+      if (getStoredChoice() === "system") applyChoice("system");
+    };
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
   }, []);
 
-  const toggle = () => {
-    const next: Theme = theme === "dark" ? "light" : "dark";
-    setTheme(next);
-    applyTheme(next);
+  const pick = (c: ThemeChoice) => {
+    setChoice(c);
+    applyChoice(c);
   };
 
+  const effectiveDark = choice === "dark" || (choice === "system" && typeof window !== "undefined" && systemPrefersDark());
+
+  const OPTIONS: { value: ThemeChoice; label: string; icon: typeof Sun }[] = [
+    { value: "light", label: "Light", icon: Sun },
+    { value: "dark", label: "Dark", icon: Moon },
+    { value: "system", label: "System", icon: Monitor },
+  ];
+
   return (
-    <button
-      onClick={toggle}
-      className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground motion-safe:transition-colors motion-safe:duration-150 hover:text-foreground hover:bg-muted"
-      title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-      aria-label="Toggle theme"
-    >
-      {theme === "dark" ? (
-        <Sun className="h-4 w-4" />
-      ) : (
-        <Moon className="h-4 w-4" />
-      )}
-    </button>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground motion-safe:transition-colors motion-safe:duration-150 hover:text-foreground hover:bg-muted"
+          title="Theme"
+          aria-label="Theme"
+        >
+          {choice === "system" ? <Monitor className="h-4 w-4" /> : effectiveDark ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-[130px]">
+        {OPTIONS.map(o => (
+          <DropdownMenuItem key={o.value} onClick={() => pick(o.value)} className="text-xs gap-2">
+            <o.icon className="h-3.5 w-3.5 text-muted-foreground" />
+            {o.label}
+            {choice === o.value && <Check className="h-3 w-3 ml-auto" />}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
