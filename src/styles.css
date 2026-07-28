@@ -116,10 +116,12 @@
   --destructive-foreground: #FFFFFF;
   --ring:              rgba(28, 28, 30, 0.28);
 
-  /* Status — reserved for meaning: KPI hit/miss, paid/due/overdue, at-risk */
-  --success:     #1C1C1E;
-  --success-fg:  #1C1C1E;
-  --success-bg:  color-mix(in srgb, #1C1C1E 8%, transparent);
+  /* Status — reserved for meaning: KPI hit/miss, paid/due/overdue, at-risk.
+     Success is REAL green (founder-directed 2026-07-28: "we still want some
+     greens"); chrome stays monochrome. */
+  --success:     #16A34A;
+  --success-fg:  #15803D;
+  --success-bg:  color-mix(in srgb, #16A34A 10%, transparent);
   --warning:     #D97706;
   --warning-fg:  #B45309;
   --warning-bg:  color-mix(in srgb, #D97706 10%, transparent);
@@ -206,10 +208,10 @@
   --destructive-foreground: #EDEDF0;
   --ring:              rgba(255, 255, 255, 0.36);
 
-  /* Status */
-  --success:     #FAFAFA;
-  --success-fg:  #E5E5E5;
-  --success-bg:  color-mix(in srgb, #FAFAFA 12%, transparent);
+  /* Status — success is real green here too (founder 2026-07-28) */
+  --success:     #22C55E;
+  --success-fg:  #4ADE80;
+  --success-bg:  color-mix(in srgb, #22C55E 12%, transparent);
   --warning:     #F59E0B;
   --warning-fg:  #FBBF24;
   --warning-bg:  color-mix(in srgb, #F59E0B 12%, transparent);

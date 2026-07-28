@@ -12,13 +12,12 @@ import type { QueryClient, QueryKey } from "@tanstack/react-query";
  */
 export const keys = {
   revenue: ["page", "revenue"],
-  weeklyLeaderboard: ["page", "weekly-leaderboard"],
-  dashboard: ["page", "dashboard"],
+  dashboard: ["page", "home"],
   dashboardMyItems: ["dashboard", "my-items"],
   dashboardNudges: ["dashboard", "set-nudges"],
   finance: ["page", "finance"],
   financeRevenue: ["finance-revenue"],
-  sales: ["page", "sales"],
+  performance: ["page", "performance"],
   eodsTeam: ["page", "eods", "team"],
   actionItems: ["page", "action-items"],
   admin: ["page", "admin"],
@@ -49,17 +48,17 @@ export const keys = {
  */
 const TABLE_KEYS = {
   deals: [
-    keys.revenue, keys.weeklyLeaderboard, keys.dashboard, keys.finance,
+    keys.revenue, keys.dashboard, keys.finance,
     keys.payoutsPage, keys.payoutAlert, keys.studentPages, keys.cashCalendar,
   ],
   installments: [
     keys.finance, keys.payoutsPage, keys.payoutAlert, keys.installmentsPage,
-    keys.dashboard, keys.weeklyLeaderboard, keys.studentPages, keys.notifications,
+    keys.dashboard, keys.studentPages, keys.notifications,
     keys.cashCalendar,
   ],
   installment_payments: [
     keys.finance, keys.payoutsPage, keys.payoutAlert, keys.installmentsPage,
-    keys.dashboard, keys.weeklyLeaderboard, keys.studentPages, keys.notifications,
+    keys.dashboard, keys.studentPages, keys.notifications,
     keys.cashCalendar,
   ],
   students: [
@@ -68,7 +67,7 @@ const TABLE_KEYS = {
     keys.placementBoard, keys.studentPages, keys.installmentsPage,
     keys.dashboard,
   ],
-  eods: [keys.eodsTeam, keys.sales, keys.admin, keys.dashboard, keys.dashboardNudges],
+  eods: [keys.eodsTeam, keys.performance, keys.admin, keys.dashboard, keys.dashboardNudges],
   student_eods: [
     keys.studentEodsAgg, keys.csmPage, keys.csmOverview, keys.studentHealth,
     keys.notifications, keys.studentPages, keys.dashboard, keys.studentLeaderboard,
@@ -91,11 +90,11 @@ const TABLE_KEYS = {
   csm_student_notes: [keys.csmPage, keys.csmTodayQueue, keys.studentPages],
   testimonials: [keys.testimonialsPage, keys.dashboard],
   profiles: [
-    keys.revenue, keys.sales, keys.eodsTeam, keys.admin, keys.csmPage,
-    keys.actionItems, keys.weeklyLeaderboard, keys.finance, keys.payoutsPage,
+    keys.revenue, keys.performance, keys.eodsTeam, keys.admin, keys.csmPage,
+    keys.actionItems, keys.finance, keys.payoutsPage, keys.dashboard,
     keys.teamPage, keys.installmentsPage, keys.cashCalendar,
   ],
-  commission_rates: [keys.revenue, keys.finance, keys.payoutsPage, keys.admin, keys.cashCalendar],
+  commission_rates: [keys.revenue, keys.finance, keys.payoutsPage, keys.admin, keys.cashCalendar, keys.dashboard],
   business_expenses: [keys.finance, keys.installmentsPage, keys.cashCalendar],
   founder_settings: [keys.finance, keys.admin, keys.dashboard, keys.installmentsPage],
   payout_confirmations: [keys.payoutsPage, keys.payoutAlert, keys.dashboard, keys.notifications],
