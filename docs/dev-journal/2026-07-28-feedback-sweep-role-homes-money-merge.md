@@ -31,3 +31,26 @@ Nine pathspec commits (9d3e87f → e23189c) each gated by `npx tsc --noEmit`, es
 - Trustpilot URL and the Adem Fadil duplicate student rows cleanup remain open.
 - Compliance sweep result could persist across sessions (localStorage or a table) if the founder wants history rather than a session cache.
 - Consider surfacing signup notifications beyond the Requests tab badge.
+
+## Addendum · full-portal sweep (same day)
+
+Founder asked for a no-questions sweep: data, leftovers, own suggestions, UI polish.
+
+**Data findings and fixes**
+- The Adem Fadil plan ($3,000, 3 unpaid rows) was a ghost: his student row's deletion set `installments.student_id` NULL and every money reader inner-joins students, so the plan was invisible and undeletable everywhere. Deleted the ghost (nothing was paid on it), logged his $2,000 refund as a one-off business expense on 2026-07-28 (shows red on Finance and the Cash flow calendar), and hardened the schema: `student_id` NOT NULL + ON DELETE RESTRICT (migration 20260728204646). The plan editor now requires picking a student (the "enter name manually" path created exactly these ghosts) and deleting a student with a plan explains itself.
+- Security advisor: six internal trigger/maintenance functions were executable by anon/authenticated via /rest/v1/rpc. Revoked (migration 20260728204825); `npm run supabase:verify` still green (service role unaffected). The two definer views (eods_activity, eods_activity_real) are intentional (internally role-gated); left as designed.
+- RLS probe as a real setter: team activity via eods_activity_real 52 rows (chips + rank work), profiles visible, invitations 0, business_expenses 0, other people's base eods 0. Exactly right.
+- Data sanity: no paid-without-paid_at, no duplicate student emails, no orphaned payments, no base-pay-without-start-date. Two active setters (Adham Ibrahim, Osama Elsherbeny) have no setter_type and no recent EODs, so no KPI can be inferred; the admin setter-type select on Performance sets it when known.
+
+**Leftovers and dead code**
+- Deleted 8 never-imported components (hook-library, mochi-ig-section, onboarding-panel, setter-activity-card, stat-drilldown, team-goal-card, volume-trend-panel, weekly-plan · 1,700 lines) and their contract-test pins.
+- Overdue-installment links (home priority + bell rows) now land on /revenue?tab=plans directly instead of the /installments redirect stub.
+
+**UI polish**
+- Fixed the invite submit button: black text on near-black primary in light mode.
+- Purged the last 18 old dark-navy palette hexes (#2a3140, #232935) for theme tokens across calls, students, action-items, team, profile, invite modal; empty star tints and hover borders now read correctly in light mode.
+- sop-canvas legend em dash → " · " (copy rule). Leader home skeleton now mirrors the money strip.
+
+**Left for the founder**
+- Enable leaked-password protection in the Supabase Auth dashboard (advisor warning; dashboard toggle only).
+- Setter installments-read policy decision still parked; Trustpilot URL still pending.
