@@ -27,6 +27,7 @@ export const keys = {
   installmentsPage: ["page", "installments"],
   payoutsPage: ["page", "payouts"],
   payoutAlert: ["payout-alert"],
+  cashCalendar: ["cash-in-calendar"],
   teamPage: ["page", "team"],
   testimonialsPage: ["page", "testimonials"],
   csmOverview: ["csm-overview"],
@@ -49,15 +50,17 @@ export const keys = {
 const TABLE_KEYS = {
   deals: [
     keys.revenue, keys.weeklyLeaderboard, keys.dashboard, keys.finance,
-    keys.payoutsPage, keys.payoutAlert, keys.studentPages,
+    keys.payoutsPage, keys.payoutAlert, keys.studentPages, keys.cashCalendar,
   ],
   installments: [
     keys.finance, keys.payoutsPage, keys.payoutAlert, keys.installmentsPage,
     keys.dashboard, keys.weeklyLeaderboard, keys.studentPages, keys.notifications,
+    keys.cashCalendar,
   ],
   installment_payments: [
     keys.finance, keys.payoutsPage, keys.payoutAlert, keys.installmentsPage,
     keys.dashboard, keys.weeklyLeaderboard, keys.studentPages, keys.notifications,
+    keys.cashCalendar,
   ],
   students: [
     keys.studentsAll, keys.csmPage, keys.csmOverview, keys.csmTodayQueue,
@@ -90,10 +93,10 @@ const TABLE_KEYS = {
   profiles: [
     keys.revenue, keys.sales, keys.eodsTeam, keys.admin, keys.csmPage,
     keys.actionItems, keys.weeklyLeaderboard, keys.finance, keys.payoutsPage,
-    keys.teamPage, keys.installmentsPage,
+    keys.teamPage, keys.installmentsPage, keys.cashCalendar,
   ],
-  commission_rates: [keys.revenue, keys.finance, keys.payoutsPage, keys.admin],
-  business_expenses: [keys.finance, keys.installmentsPage],
+  commission_rates: [keys.revenue, keys.finance, keys.payoutsPage, keys.admin, keys.cashCalendar],
+  business_expenses: [keys.finance, keys.installmentsPage, keys.cashCalendar],
   founder_settings: [keys.finance, keys.admin, keys.dashboard, keys.installmentsPage],
   payout_confirmations: [keys.payoutsPage, keys.payoutAlert, keys.dashboard, keys.notifications],
 } satisfies Record<string, readonly QueryKey[]>;

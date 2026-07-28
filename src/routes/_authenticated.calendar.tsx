@@ -1,4 +1,5 @@
 import { createFileRoute, useSearch } from "@tanstack/react-router";
+import { CashInCalendarCard } from "@/components/cash-in-calendar";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -653,6 +654,11 @@ function CalendarPage() {
             }}
           />
         )}
+
+        {/* Money calendar — installments in, costs/base pay/commissions out
+            (founder-requested 2026-07-28: lives with team activity, not only
+            on Installments). Renders nothing for roles without access. */}
+        <CashInCalendarCard />
       </div>
       {setOpen && (
         <SetReminderDialog

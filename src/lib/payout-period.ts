@@ -221,6 +221,17 @@ export function basePayDateFor(p: PayoutProfile, monthStart: string): string {
   return `${monthStart.slice(0, 7)}-${String(day).padStart(2, "0")}`;
 }
 
+/** Base pay is owed only after a FULL month worked (founder 2026-07-28:
+ *  started June 30 → first payment July 30; started July 12 → first payment
+ *  August 12). Without a start date we can't know, so it's always eligible. */
+export function basePayEligibleOn(p: PayoutProfile, payDate: string): boolean {
+  if (!p.started_on) return true;
+  const start = new Date(p.started_on + "T00:00:00");
+  const first = new Date(start.getFullYear(), start.getMonth() + 1, Math.min(start.getDate(), new Date(start.getFullYear(), start.getMonth() + 2, 0).getDate()));
+  const firstIso = `${first.getFullYear()}-${String(first.getMonth() + 1).padStart(2, "0")}-${String(first.getDate()).padStart(2, "0")}`;
+  return payDate >= firstIso;
+}
+
 /**
  * Everything a member is owed for a period: setter + closer commission, plus
  * monthly base pay when THEIR pay day falls inside the period. This is the
@@ -243,6 +254,7 @@ export function memberPayoutTotals(
     if ((p.base_pay_monthly ?? 0) <= 0) continue;
     const payDate = basePayDateFor(p, period.monthStart);
     if (payDate < period.start || payDate > period.end) continue;
+    if (!basePayEligibleOn(p, payDate)) continue; // full month not worked yet
     const cur = map.get(p.id) ?? { id: p.id, name: p.display_name ?? p.id.slice(0, 8), commission: 0, basePay: 0, total: 0 };
     cur.basePay = Number(p.base_pay_monthly);
     map.set(p.id, cur);
