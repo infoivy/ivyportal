@@ -477,11 +477,5 @@
 .cal-out-general-dot { background: var(--danger-fg); }
 
 /* react-phone-number-input · match the app's form tokens */
-.isa-phone-input .PhoneInputCountry {
-  display: flex; align-items: center; gap: 4px;
-  height: 2.5rem; padding: 0 8px;
-  border: 1px solid var(--border); border-radius: var(--radius-sm, 4px);
-  background: var(--background);
-}
+/* Custom CountrySelect renders its own field; keep the lib's flex reset only. */
 .isa-phone-input .PhoneInputCountryIcon { box-shadow: none; }
-.isa-phone-input .PhoneInputCountrySelectArrow { opacity: 0.5; }

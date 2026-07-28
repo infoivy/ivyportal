@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertCircle, RefreshCw, UsersRound } from "lucide-react";
+import { AlertCircle, RefreshCw, UserPlus, UsersRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageShell } from "@/components/ui/page-shell";
@@ -8,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeletons";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { STAFF_ROLES, TEAM_DIRECTORY_ROLES } from "@/lib/portal-navigation";
+import { InviteModal } from "@/components/invite-modal";
 
 export const Route = createFileRoute("/_authenticated/directory")({
   head: () => ({ meta: [{ title: "Team directory · Ivy Portal" }] }),
@@ -26,6 +28,8 @@ const STAFF_ROLE_SET = new Set<string>(STAFF_ROLES);
 function TeamDirectoryPage() {
   const { user, roles } = useAuth();
   const canView = TEAM_DIRECTORY_ROLES.some((role) => roles.includes(role));
+  const isAdmin = roles.includes("admin");
+  const [inviteOpen, setInviteOpen] = useState(false);
 
   const directoryQ = useQuery({
     queryKey: ["page", "team-directory"],
@@ -92,6 +96,11 @@ function TeamDirectoryPage() {
         <PageHeader
           title="Team directory"
           subtitle="A read-only view of current staff membership. Account access and role changes remain in Admin."
+          actions={isAdmin ? (
+            <Button size="sm" variant="outline" onClick={() => setInviteOpen(true)}>
+              <UserPlus className="h-4 w-4" aria-hidden="true" /> Invite member
+            </Button>
+          ) : undefined}
         />
       </div>
 
@@ -171,6 +180,7 @@ function TeamDirectoryPage() {
         Source: active Portal profiles and assigned staff roles. This page cannot change account
         access.
       </p>
+      {inviteOpen && <InviteModal onClose={() => setInviteOpen(false)} />}
     </PageShell>
   );
 }

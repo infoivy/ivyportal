@@ -16,14 +16,13 @@ import {
 import { signAvatars, uploadAvatar } from "@/lib/avatars";
 import { deleteTeamMember, setMemberActive, approveAsStudent } from "@/lib/team-admin.functions";
 import { fetchAllTemplates, progressPercent, type OnboardingTemplate } from "@/lib/onboarding";
+import { InvitationsCard, InviteModal, ROLES, roleLabel, type AppRole, type SetterType } from "@/components/invite-modal";
 
 export const Route = createFileRoute("/_authenticated/team")({
   head: () => ({ meta: [{ title: "Team · ISA" }] }),
   component: TeamPage,
 });
 
-type AppRole = "admin" | "closer" | "setter" | "coach" | "csm" | "founder" | "cofounder" | "student";
-type SetterType = "phone" | "dm" | "full_cycle" | null;
 type Member = {
   timezone: string | null;
   base_pay_day: number;
@@ -38,20 +37,6 @@ type Member = {
   roles: string[];
   setter_type: SetterType;
 };
-// Every role needs a visibly distinct "on" state — a muted "on" reads as off.
-const roleLabel = (k: string) => (k === "cofounder" ? "co-founder" : k);
-
-const ROLES: { key: AppRole; icon: React.ComponentType<{ className?: string }>; color: string }[] = [
-  { key: "admin", icon: Shield, color: "text-danger-fg border-danger/25 bg-danger-bg" },
-  { key: "closer", icon: Phone, color: "text-chart-1 border-chart-1/25 bg-chart-1/10" },
-  { key: "setter", icon: UserCircle2, color: "text-success-fg border-success/25 bg-success-bg" },
-  { key: "coach", icon: GraduationCap, color: "text-chart-4 border-chart-4/25 bg-chart-4/10" },
-  { key: "csm", icon: HeartHandshake, color: "text-warning-fg border-warning/25 bg-warning-bg" },
-  { key: "founder", icon: Sparkles, color: "text-chart-6 border-chart-6/25 bg-chart-6/10" },
-  { key: "cofounder", icon: Sparkles, color: "text-chart-2 border-chart-2/25 bg-chart-2/10" },
-  { key: "student", icon: School, color: "text-foreground border-foreground/30 bg-muted" },
-];
-
 function TeamPage() {
   const { roles, user } = useAuth();
   const isAdmin = roles.includes("admin");
@@ -228,6 +213,8 @@ function TeamPage() {
         </div>
       )}
 
+      <InvitationsCard />
+
       <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
         <StatTile label="Members" value={counts.total} icon={<Users className="h-3 w-3" />} />
         <StatTile label="Admins" value={counts.admins} icon={<Shield className="h-3 w-3" />} accent="rose" />
@@ -359,7 +346,7 @@ function TeamPage() {
         />
       )}
       {inviteOpen && (
-        <InviteModal onClose={() => setInviteOpen(false)} invitedBy={user?.id ?? null} />
+        <InviteModal onClose={() => setInviteOpen(false)} />
       )}
     </div>
   );
@@ -533,138 +520,6 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
             {saving ? "Saving…" : "Save"}
           </button>
         </div>
-      </div>
-    </div>
-  );
-}
-
-function InviteModal({ onClose, invitedBy }: { onClose: () => void; invitedBy: string | null }) {
-  const [email, setEmail] = useState("");
-  const [selectedRoles, setSelectedRoles] = useState<AppRole[]>([]);
-  const [setterType, setSetterType] = useState<SetterType>(null);
-  const [saving, setSaving] = useState(false);
-  const [inviteLink, setInviteLink] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
-
-  const toggleRole = (role: AppRole) => {
-    setSelectedRoles(prev => prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role]);
-  };
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email.trim()) return toast.error("Email is required");
-    if (selectedRoles.length === 0) return toast.error("Select at least one role");
-    setSaving(true);
-
-    const { data, error } = await (supabase as any)
-      .from("invitations")
-      .insert({
-        email: email.trim().toLowerCase(),
-        roles: selectedRoles,
-        setter_type: selectedRoles.includes("setter") ? setterType : null,
-        invited_by: invitedBy,
-      })
-      .select("token")
-      .single();
-    setSaving(false);
-    if (error) { toast.error(error.message); return; }
-    setInviteLink(`${window.location.origin}/auth?invite=${data.token}`);
-    toast.success("Invitation created");
-  };
-
-  const copy = () => {
-    if (!inviteLink) return;
-    navigator.clipboard.writeText(inviteLink).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  };
-
-  return (
-    <div className="fixed inset-0 overflow-y-auto z-50 bg-black/60 backdrop-blur-sm flex p-4" onClick={onClose}>
-      <div className="m-auto bg-[var(--card)] border border-[var(--border)] rounded-sm max-w-md w-full p-5 space-y-4" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold">Invite team member</h2>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
-        </div>
-
-        {inviteLink ? (
-          <div className="space-y-3">
-            <p className="text-xs text-muted-foreground">Share this link. When they sign up with the invited email address, their roles are assigned automatically. Link expires in 30 days.</p>
-            <div className="flex items-center gap-2 p-3 rounded-sm bg-[var(--background)] border border-[var(--border)] text-[11px] break-all text-foreground font-mono">
-              {inviteLink}
-            </div>
-            <button
-              onClick={copy}
-              className="w-full flex items-center justify-center gap-2 text-xs font-medium px-3 py-2 rounded-sm bg-primary/10 border border-primary/25 text-primary hover:bg-primary/20 transition"
-            >
-              {copied ? <><Check className="h-3.5 w-3.5" /> Copied!</> : <><Copy className="h-3.5 w-3.5" /> Copy invite link</>}
-            </button>
-            <button onClick={onClose} className="w-full text-xs text-muted-foreground hover:text-foreground py-1">Done</button>
-          </div>
-        ) : (
-          <form onSubmit={submit} className="space-y-4">
-            <div className="space-y-1">
-              <label className="text-[12px] text-muted-foreground">Email address</label>
-              <input
-                type="email" value={email} onChange={e => setEmail(e.target.value)}
-                placeholder="name@example.com" required autoFocus
-                className="w-full h-9 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-sm focus:outline-none focus:border-primary/25"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-[12px] text-muted-foreground">Roles</label>
-              <div className="flex flex-wrap gap-1.5">
-                {ROLES.map(r => {
-                  const has = selectedRoles.includes(r.key);
-                  const Icon = r.icon;
-                  return (
-                    <button
-                      key={r.key} type="button"
-                      onClick={() => toggleRole(r.key)}
-                      className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded-sm border transition ${
-                        has ? r.color : "text-muted-foreground border-[var(--border)] hover:border-[#2a3140]"
-                      }`}
-                    >
-                      <Icon className="h-3 w-3" /> {roleLabel(r.key)}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-            {selectedRoles.includes("setter") && (
-              <div className="space-y-1">
-                <label className="text-[12px] text-muted-foreground">Setter type</label>
-                <div className="flex gap-1.5 flex-wrap">
-                  {([
-                    { key: null, label: "Not set" },
-                    { key: "phone" as const, label: "Phone (100 dials)" },
-                    { key: "dm" as const, label: "DM (125 leads)" },
-                    { key: "full_cycle" as const, label: "Full cycle (100 dials + 50 outreached)" },
-                  ]).map(opt => (
-                    <button
-                      key={String(opt.key)} type="button"
-                      onClick={() => setSetterType(opt.key as SetterType)}
-                      className={`text-[10px] px-2 py-1 rounded-sm border transition ${
-                        setterType === opt.key
-                          ? "border-success/25 bg-success-bg text-success-fg"
-                          : "border-[var(--border)] text-muted-foreground hover:border-[#2a3140]"
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-            <div className="flex justify-end gap-2 pt-2 border-t border-[var(--border)]">
-              <button type="button" onClick={onClose} className="text-xs text-muted-foreground hover:text-foreground px-3 py-1.5">Cancel</button>
-              <button type="submit" disabled={saving} className="text-xs bg-primary hover:bg-primary text-black font-medium px-3 py-1.5 rounded-sm disabled:opacity-50">
-                {saving ? "Creating…" : "Create invite link"}
-              </button>
-            </div>
-          </form>
-        )}
       </div>
     </div>
   );
