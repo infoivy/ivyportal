@@ -9,7 +9,9 @@ export const getRouter = () => {
       queries: {
         staleTime: 60_000,       // 1min · dashboards feel instant on nav
         gcTime: 5 * 60_000,      // 5min in memory
-        refetchOnWindowFocus: false,
+        // Internal tool: alt-tabbing back must self-heal stale pages. Focus
+        // refetch respects staleTime, so fresh pages stay quiet.
+        refetchOnWindowFocus: true,
         retry: 1,
       },
     },
