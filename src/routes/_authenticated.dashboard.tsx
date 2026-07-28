@@ -32,6 +32,7 @@ import { TeamGoalCard } from "@/components/team-goal-card";
 import { getMochiDashboard, getWhopCashWindow, type MochiPeriod } from "@/lib/mochi.functions";
 import { getCloseActivityReport } from "@/lib/close-crm.functions";
 import { SetterActivityCard } from "@/components/setter-activity-card";
+import { VolumeTrendPanel } from "@/components/volume-trend-panel";
 import { PayoutAlertBanner } from "@/components/payout-alert";
 import { DeltaChip } from "@/components/ui/delta-chip";
 import {
@@ -564,45 +565,9 @@ function Dashboard() {
         {/* Row 2: Growth + Format + Transformation */}
         {(prefs.showGrowth || prefs.showFunnel || hasPrev) && (
           <div className={`grid gap-3 ${hasPrev ? "lg:grid-cols-[1.2fr_1fr_1fr]" : "lg:grid-cols-[1.5fr_1fr]"}`}>
-            {prefs.showGrowth && (
-              <Panel>
-                <div className="mb-2 flex items-start justify-between gap-3">
-                  <div>
-                    <div className="text-[15px] font-semibold text-foreground">Volume trend</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">
-                      Source-separated activity · {rangeLabel}{days > 30 && selectedActivitySource !== "eod" ? " · Mochi covers the latest 30 days" : ""}
-                    </div>
-                  </div>
-                  {canSeeCrm && (
-                    <SourceTabs
-                      value={selectedActivitySource}
-                      options={[{ value: "all", label: "All" }, { value: "eod", label: "EOD" }, { value: "crm", label: "CRM" }]}
-                      onChange={setActivitySource}
-                    />
-                  )}
-                </div>
-                {volumeLoading ? <div className="h-[240px]"><Skeleton /></div> : !volumeHasData ? (
-                  <AnalyticsEmpty
-                    message={crmError && selectedActivitySource !== "eod"
-                      ? "CRM activity could not load. EOD data remains available under the EOD source."
-                      : `No ${selectedActivitySource === "all" ? "EOD or CRM" : selectedActivitySource.toUpperCase()} activity in this range.`}
-                    showSevenDayAction={dateRange.preset === "24h"}
-                    onViewSevenDays={() => setDateRange(rangeFor("7d"))}
-                  />
-                ) : (
-                  <>
-                    <VolumeAreaChart
-                      data={trend}
-                      series={chartVolumeSeries}
-                    />
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <VolumeLegend series={volumeSeries} />
-                      {selectedActivitySource === "eod" && hasPrev && <span className="text-micro text-muted-foreground">faded = previous {days}d</span>}
-                    </div>
-                  </>
-                )}
-              </Panel>
-            )}
+            {/* The Sales-page trend chart, 1:1 (founder: the old source-mixed
+                one was "kinda messed up") */}
+            {prefs.showGrowth && <VolumeTrendPanel dateRange={dateRange} compare={compare} />}
 
 
             {prefs.showFunnel && (
