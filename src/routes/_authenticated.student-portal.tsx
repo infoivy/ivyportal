@@ -667,7 +667,7 @@ function StudentPortal() {
   }
 
   return (
-    <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-5 relative">
+    <div className="p-4 sm:p-6 max-w-[1100px] mx-auto space-y-5 relative">
       {confetti && <ConfettiBurst />}
 
       {/* Post-unlock walkthrough: the whole portal is scrollable below, but
@@ -689,12 +689,12 @@ function StudentPortal() {
       <section className="pt-1 px-1">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="min-w-0">
-            <div dir="rtl" className="text-[13px] text-muted-foreground/80">السلام عليكم ورحمة الله وبركاته</div>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight leading-tight">
+            <div dir="rtl" className="text-[14px] text-muted-foreground/80">السلام عليكم ورحمة الله وبركاته</div>
+            <h1 className="mt-2.5 text-[30px] sm:text-[40px] font-semibold tracking-[-0.02em] leading-[1.1]">
               Welcome, <span className="text-primary">{first}</span>.
             </h1>
           </div>
-          <div className="flex items-center gap-2 pb-1">
+          <div className="flex items-center gap-2 pb-1.5">
             <RankChip onClick={() => setTab("leaderboard")} />
             {streak > 0 && (
               <div className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-sm border border-warning/25 bg-warning-bg text-warning-fg">
@@ -722,7 +722,7 @@ function StudentPortal() {
           <div className="mt-4 rounded-lg border border-warning/25 bg-warning-bg/50 p-3 space-y-1 todo-pulse">
             <div className="flex items-center justify-between gap-3 px-1">
               <div className="flex items-center gap-2 text-[12px] font-semibold text-foreground">
-                <ListChecks className="h-3.5 w-3.5 text-warning-fg" /> To do
+                <ListChecks className="h-3.5 w-3.5 text-warning-fg" /> <span className="text-[11px] font-semibold uppercase tracking-[0.16em]">To do</span>
                 {overdue.length > 0 && (
                   <span className="text-micro px-2 py-0.5 rounded-full bg-danger-bg text-danger-fg">{overdue.length} overdue</span>
                 )}
@@ -899,8 +899,9 @@ function StudentPortal() {
               <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-5 space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-sm font-semibold">{existingId ? "Update today's log" : "Submit today's log"}</h2>
-                    <p className="text-[11px] text-muted-foreground">{today}{!existingId && " · autosaves as you type"}</p>
+                    <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">Daily log</div>
+                    <h2 className="mt-1 text-[17px] font-semibold tracking-tight">{existingId ? "Update today's log" : "Submit today's log"}</h2>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">{today}{!existingId && " · autosaves as you type"}</p>
                   </div>
                   {existingId && (
                     <button onClick={() => setShowForm(false)} className="text-[11px] text-muted-foreground hover:text-foreground">Collapse</button>
@@ -1002,7 +1003,7 @@ function StudentPortal() {
             <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm">
               <div className="px-4 py-3 border-b border-[var(--border)] flex items-center gap-2">
                 <BookOpen className="h-3.5 w-3.5 text-muted-foreground" />
-                <div className="text-xs font-semibold">Resources for you</div>
+                <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Resources for you</div>
               </div>
               <div className="divide-y divide-[var(--accent)]">
                 {docs.map(d => (
@@ -1023,7 +1024,7 @@ function StudentPortal() {
 
           {/* Past EODs */}
           <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm">
-            <div className="px-4 py-3 border-b border-[var(--border)] text-xs font-semibold">Past EODs</div>
+            <div className="px-4 py-3 border-b border-[var(--border)] text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Past EODs</div>
             <div className="divide-y divide-[var(--accent)]">
               {eods.length === 0 && <div className="p-6 text-center text-xs text-muted-foreground">No EODs yet. Your first log starts your streak. 🔥</div>}
               {eods.map(e => (
@@ -1075,7 +1076,7 @@ function StudentPortal() {
           {/* Calls bar */}
           <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-5">
             <div className="flex items-center justify-between mb-2">
-              <div className="text-xs font-semibold">Coaching calls</div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Coaching calls</div>
               <div className="text-[11px] text-muted-foreground">{callsUsed}/{callsAllotted} used</div>
             </div>
             <div className="h-2 rounded-sm bg-[var(--accent)] overflow-hidden">
@@ -1093,7 +1094,7 @@ function StudentPortal() {
           {/* Trend */}
           <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-5">
             <div className="flex items-center justify-between mb-3">
-              <div className="text-xs font-semibold">Progress rating trend</div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Progress rating trend</div>
               <div className="text-[11px] text-muted-foreground">Latest {ratings.at(-1)?.rating ?? "–"}/5</div>
             </div>
             {ratings.length < 2 ? (
@@ -1107,7 +1108,7 @@ function StudentPortal() {
           {lastCallItems && lastCallItems.items.length > 0 && (
             <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm">
               <div className="px-4 py-3 border-b border-[var(--border)] flex items-center justify-between">
-                <div className="text-xs font-semibold">Last call action items</div>
+                <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Last call action items</div>
                 <div className="text-[10px] text-muted-foreground">{lastCallItems.date}</div>
               </div>
               <div className="divide-y divide-[var(--accent)]">
@@ -1123,7 +1124,7 @@ function StudentPortal() {
 
           {/* History */}
           <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm">
-            <div className="px-4 py-3 border-b border-[var(--border)] text-xs font-semibold">Your 1:1 history</div>
+            <div className="px-4 py-3 border-b border-[var(--border)] text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Your 1:1 history</div>
             <div className="divide-y divide-[var(--accent)]">
               {completedCalls.length === 0 && <div className="p-6 text-center text-xs text-muted-foreground">No completed calls yet.</div>}
               {completedCalls.map(c => (
@@ -1189,11 +1190,14 @@ function WeekCallTiles({ schedule, ticks, onToggle }: {
   return (
     <section className="rounded-sm border border-border bg-card p-5 space-y-3" aria-labelledby="week-calls-title">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Calendar className="h-4 w-4 text-muted-foreground" />
-          <h2 id="week-calls-title" className="text-sm font-semibold">This week's calls</h2>
+        <div>
+          <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">This week</div>
+          <div className="flex items-center gap-2 mt-1">
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <h2 id="week-calls-title" className="text-[16px] font-semibold tracking-tight">This week's calls</h2>
+          </div>
         </div>
-        <span className="text-[11px] tabular-nums text-muted-foreground">{ticks.length}/{schedule.length} attended</span>
+        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] tabular-nums text-muted-foreground">{ticks.length}/{schedule.length} attended</span>
       </div>
       <div className="grid gap-1.5 sm:grid-cols-2">
         {schedule.map((call) => {
@@ -1282,9 +1286,10 @@ function WeeklyAccountabilityCard({
     <section className={`rounded-sm border bg-card p-5 space-y-4 ${cardClass}`} aria-labelledby="weekly-eod-title">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">End of week</div>
+          <div className="flex items-center gap-2 mt-1">
             <Calendar className="h-4 w-4 text-muted-foreground" />
-            <h2 id="weekly-eod-title" className="text-sm font-semibold">Weekly EOD</h2>
+            <h2 id="weekly-eod-title" className="text-[16px] font-semibold tracking-tight">Weekly EOD</h2>
           </div>
           <p className="mt-1 text-[11px] text-muted-foreground">
             {reviewWindow.weekStart} to {reviewWindow.weekEnd} · daily EODs {dailyEods}/7
@@ -2311,7 +2316,7 @@ function WeekDots({ eodDates, today, hasToday }: { eodDates: string[]; today: st
   const count = days.filter(d => logged.has(d.key) || (d.key === today && hasToday)).length;
   return (
     <div className="mt-4 flex items-center gap-3 flex-wrap">
-      <span className="text-[11px] text-muted-foreground">This week</span>
+      <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">This week</span>
       <div className="flex items-center gap-1.5">
         {days.map(d => {
           const isToday = d.key === today;
