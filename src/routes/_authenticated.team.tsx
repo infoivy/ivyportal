@@ -5,6 +5,8 @@ import { invalidateForTables } from "@/lib/query-keys";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { timeIn } from "@/components/student-local-time";
+import { TimezoneCombobox } from "@/components/ui/timezone-combobox";
 import { toast } from "sonner";
 import {
   Users, Shield, Phone, UserCircle2, GraduationCap, Pencil, X, HeartHandshake, Sparkles, School,
@@ -22,6 +24,7 @@ export const Route = createFileRoute("/_authenticated/team")({
 type AppRole = "admin" | "closer" | "setter" | "coach" | "csm" | "founder" | "cofounder" | "student";
 type SetterType = "phone" | "dm" | "full_cycle" | null;
 type Member = {
+  timezone: string | null;
   id: string;
   display_name: string | null;
   avatar_path: string | null;
@@ -64,7 +67,7 @@ function TeamPage() {
 
   const fetchPage = async () => {
     const [{ data: profs }, { data: rolesData }, tpls, { data: progressRows }] = await Promise.all([
-      supabase.from("profiles").select("id, display_name, avatar_path, active, phone, setter_type, base_pay_monthly, csm_daily_target" as any),
+      supabase.from("profiles").select("id, display_name, avatar_path, active, phone, timezone, setter_type, base_pay_monthly, csm_daily_target" as any),
       supabase.from("user_roles").select("user_id, role"),
       fetchAllTemplates(),
       supabase.from("onboarding_progress").select("user_id, role, step_id"),
@@ -80,6 +83,7 @@ function TeamPage() {
       display_name: p.display_name,
       avatar_path: p.avatar_path ?? null,
       phone: p.phone ?? null,
+      timezone: p.timezone ?? null,
       base_pay_monthly: p.base_pay_monthly ?? null,
       csm_daily_target: (p as any).csm_daily_target ?? null,
       active: p.active ?? true,
@@ -257,6 +261,13 @@ function TeamPage() {
                       {m.setter_type === "phone" ? "Phone setter" : m.setter_type === "full_cycle" ? "Full cycle" : "DM setter"}
                     </span>
                   )}
+                  {m.timezone ? (
+                    <span className="tabular-nums" title={m.timezone.replace(/_/g, " ")}>
+                      {timeIn(m.timezone, new Date())} local
+                    </span>
+                  ) : (
+                    <span className="italic opacity-70">no timezone yet</span>
+                  )}
                   {m.roles.length === 0 && (
                     <span className="italic">No roles assigned</span>
                   )}
@@ -353,6 +364,7 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
 }) {
   const [displayName, setDisplayName] = useState(member.display_name ?? "");
   const [phone, setPhone] = useState(member.phone ?? "");
+  const [tz, setTz] = useState(member.timezone ?? "");
   const [basePay, setBasePay] = useState(member.base_pay_monthly != null ? String(member.base_pay_monthly) : "");
   const [csmTarget, setCsmTarget] = useState(String((member as any).csm_daily_target ?? 10));
   const [setterType, setSetterType] = useState<SetterType>(member.setter_type);
@@ -389,6 +401,7 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
       display_name: displayName.trim() || null,
       avatar_path: avatarPath,
       phone: phone.trim() || null,
+      timezone: tz || null,
       setter_type: setterType,
       base_pay_monthly: basePay.trim() ? Number(basePay) : null,
       csm_daily_target: Math.max(1, Number(csmTarget) || 10),
@@ -430,6 +443,10 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
           <label className="text-[12px] text-muted-foreground">Phone (optional)</label>
           <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="+1 555 123 4567" inputMode="tel"
                  className="w-full h-9 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-sm" />
+        </div>
+        <div className="space-y-1">
+          <label className="text-[12px] text-muted-foreground">Timezone (they can also set it on their Profile)</label>
+          <TimezoneCombobox value={tz} onChange={setTz} />
         </div>
         <div className="space-y-1">
           <label className="text-[12px] text-muted-foreground">Base pay · $/month (optional)</label>
