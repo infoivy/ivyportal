@@ -12,7 +12,7 @@ import { BlurMoney } from "@/components/blur-money";
 
 /**
  * Founder home money strip (founder-directed 2026-07-28: the home should
- * show the numbers): cash collected over the last 7 days and what the
+ * show the numbers): cash collected over the last 30 days and what the
  * current payout period owes, matching the Payouts headline. Leaders only;
  * lives outside the home route file so its money reads stay off that page.
  */
@@ -21,20 +21,20 @@ export function HomeMoneyStrip() {
   const canSee = roles.some(r => ["admin", "founder", "cofounder"].includes(r));
 
   const today = format(new Date(), "yyyy-MM-dd");
-  const from7 = format(subDays(new Date(), 6), "yyyy-MM-dd");
+  const from30 = format(subDays(new Date(), 29), "yyyy-MM-dd");
 
   const cashQ = useQuery({
-    queryKey: ["page", "home", "money-7d"],
+    queryKey: ["page", "home", "money-30d"],
     enabled: canSee,
     staleTime: 4 * 60_000,
     queryFn: async () => {
       // Whop is the cash truth; fall back to logged deals + paid installments
       // (labeled) only when Whop is not connected.
       try {
-        const w = await getWhopCashWindow({ data: { from: from7, to: today } });
+        const w = await getWhopCashWindow({ data: { from: from30, to: today } });
         if (w.connected) return { amount: w.net, source: "whop" as const };
       } catch { /* fall through to logged */ }
-      const byCloser = await fetchCollectedCashByCloser(from7, today);
+      const byCloser = await fetchCollectedCashByCloser(from30, today);
       let total = 0;
       for (const v of byCloser.values()) total += v.cash;
       return { amount: total, source: "logged" as const };
@@ -64,7 +64,7 @@ export function HomeMoneyStrip() {
         <div className="min-w-0">
           <div className="flex items-center gap-2 text-muted-foreground">
             <HandCoins className="h-4 w-4" />
-            <p className="text-micro font-semibold uppercase tracking-[0.1em]">Cash collected · last 7 days</p>
+            <p className="text-micro font-semibold uppercase tracking-[0.1em]">Cash collected · last 30 days</p>
           </div>
           <p className="mt-3 text-[28px] font-medium leading-none tracking-[-0.02em] tabular-nums text-foreground">
             {cashQ.isLoading ? "…" : <BlurMoney>{money(cashQ.data?.amount ?? 0)}</BlurMoney>}
