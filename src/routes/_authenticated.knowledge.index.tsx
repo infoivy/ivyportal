@@ -7,7 +7,29 @@ import { DOC_CATEGORIES, CATEGORY_LABEL, type DocCategory } from "@/lib/knowledg
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Search, Plus, Pin, ExternalLink as ExtIcon, ArrowRight } from "lucide-react";
+import { BookOpen, Search, Plus, Pin, ExternalLink as ExtIcon, ArrowRight, ClipboardCheck, Database } from "lucide-react";
+
+// The two operating policies are the BASE tier of Knowledge (founder
+// 2026-07-28: "without this you have nothing else") — first-class rows on
+// top, not pinned cards buried in a category.
+const FOUNDATIONS = [
+  {
+    key: "eod-hygiene",
+    title: "EOD & Meetings Policy",
+    description:
+      "The daily EOD standard for every role · 7 days a week, zero misses · plus meeting attendance rules and consequences.",
+    to: "/policies/eod-hygiene",
+    icon: ClipboardCheck,
+  },
+  {
+    key: "crm-hygiene",
+    title: "CRM Hygiene Policy",
+    description:
+      "How leads, stages, and notes must be kept in the CRM · the rules that keep pipeline data trustworthy.",
+    to: "/policies/crm-hygiene",
+    icon: Database,
+  },
+] as const;
 
 export const Route = createFileRoute("/_authenticated/knowledge/")({
   head: () => ({ meta: [{ title: "Knowledge Hub · ISA Team" }] }),
@@ -31,6 +53,7 @@ function KnowledgeIndex() {
   const { roles } = useAuth();
   const isAdmin = roles.includes("admin");
   const isCloser = roles.includes("closer");
+  const isStaff = roles.length > 0 && !roles.every((r) => r === "student");
   const [docs, setDocs] = useState<DocRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
@@ -114,7 +137,7 @@ function KnowledgeIndex() {
 
       {loading ? (
         <ListSkeleton rows={6} />
-      ) : docs.length === 0 && !(roles.includes("admin") || roles.includes("setter")) ? (
+      ) : docs.length === 0 && !isStaff ? (
         <Card className="p-8 text-center">
           <BookOpen className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
           <p className="text-sm text-muted-foreground">
@@ -123,6 +146,36 @@ function KnowledgeIndex() {
         </Card>
       ) : (
         <div className="space-y-8">
+          {isStaff && (() => {
+            const shown = q
+              ? FOUNDATIONS.filter((f) =>
+                  (f.title + " " + f.description).toLowerCase().includes(q.trim().toLowerCase()),
+                )
+              : [...FOUNDATIONS];
+            if (shown.length === 0) return null;
+            return (
+              <section>
+                <p className="text-micro font-semibold uppercase tracking-[0.1em] text-muted-foreground">Foundations</p>
+                <p className="mt-1 text-[13px] text-muted-foreground">The base. Everything else builds on these.</p>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  {shown.map((f) => (
+                    <Link key={f.key} to={f.to as string}>
+                      <Card className="p-5 h-full border-primary/25 hover:border-primary/60 transition group">
+                        <div className="flex items-center gap-2">
+                          <f.icon className="h-4 w-4 text-primary" />
+                          <h3 className="font-semibold text-sm group-hover:text-primary transition">{f.title}</h3>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2">{f.description}</p>
+                        <div className="mt-3 inline-flex items-center gap-1 text-[11px] text-primary">
+                          Read the policy <ArrowRight className="h-3 w-3" />
+                        </div>
+                      </Card>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            );
+          })()}
           {DOC_CATEGORIES.map(({ value, label }) => {
             const items = grouped.get(value) ?? [];
             const staticItems =
@@ -144,25 +197,7 @@ function KnowledgeIndex() {
                       to: "/sops/dm-setting-mastery",
                     },
                   ]
-                : value === "team_ops" &&
-                  !roles.every((r) => r === "student")
-                  ? [
-                      {
-                        key: "eod-hygiene",
-                        title: "EOD & Meetings Policy",
-                        description:
-                          "The daily EOD standard for every role · 7 days a week, zero misses · plus meeting attendance rules and consequences.",
-                        to: "/policies/eod-hygiene",
-                      },
-                      {
-                        key: "crm-hygiene",
-                        title: "CRM Hygiene Policy",
-                        description:
-                          "How leads, stages, and notes must be kept in the CRM · the rules that keep pipeline data trustworthy.",
-                        to: "/policies/crm-hygiene",
-                      },
-                    ]
-                  : [];
+                : [];
             if (items.length === 0 && staticItems.length === 0) return null;
             const showSection = q
               ? items.length > 0 ||
