@@ -196,7 +196,7 @@ function RevenueInner() {
     const deposit = rangeDeals.filter((d) => d.payment_type === "deposit").length;
     const split = rangeDeals.filter((d) => d.payment_type === "split").length;
     return [
-      { label: "PIF", value: pif, color: "#22c55e" },
+      { label: "PIF", value: pif, color: "#525252" },
       { label: "Deposit", value: deposit, color: "#3b82f6" },
       { label: "Split", value: split, color: "#f59e0b" },
     ];

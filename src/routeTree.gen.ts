@@ -13,6 +13,7 @@ import { Route as PrintRouteImport } from './routes/print'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedWorkRouteImport } from './routes/_authenticated.work'
 import { Route as AuthenticatedTestimonialsRouteImport } from './routes/_authenticated.testimonials'
 import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated.team'
 import { Route as AuthenticatedStudentsRouteImport } from './routes/_authenticated.students'
@@ -24,13 +25,16 @@ import { Route as AuthenticatedSalesRouteImport } from './routes/_authenticated.
 import { Route as AuthenticatedRevenueRouteImport } from './routes/_authenticated.revenue'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated.profile'
 import { Route as AuthenticatedPoliciesRouteImport } from './routes/_authenticated.policies'
+import { Route as AuthenticatedPerformanceRouteImport } from './routes/_authenticated.performance'
 import { Route as AuthenticatedPayoutsRouteImport } from './routes/_authenticated.payouts'
 import { Route as AuthenticatedMochiRouteImport } from './routes/_authenticated.mochi'
 import { Route as AuthenticatedKnowledgeRouteImport } from './routes/_authenticated.knowledge'
 import { Route as AuthenticatedInstallmentsRouteImport } from './routes/_authenticated.installments'
 import { Route as AuthenticatedFinanceRouteImport } from './routes/_authenticated.finance'
 import { Route as AuthenticatedEodsRouteImport } from './routes/_authenticated.eods'
+import { Route as AuthenticatedDirectoryRouteImport } from './routes/_authenticated.directory'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
+import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated.customers'
 import { Route as AuthenticatedCsmRouteImport } from './routes/_authenticated.csm'
 import { Route as AuthenticatedCrmRouteImport } from './routes/_authenticated.crm'
 import { Route as AuthenticatedCloserResourcesRouteImport } from './routes/_authenticated.closer-resources'
@@ -72,6 +76,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedWorkRoute = AuthenticatedWorkRouteImport.update({
+  id: '/work',
+  path: '/work',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedTestimonialsRoute =
   AuthenticatedTestimonialsRouteImport.update({
@@ -131,6 +140,12 @@ const AuthenticatedPoliciesRoute = AuthenticatedPoliciesRouteImport.update({
   path: '/policies',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedPerformanceRoute =
+  AuthenticatedPerformanceRouteImport.update({
+    id: '/performance',
+    path: '/performance',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedPayoutsRoute = AuthenticatedPayoutsRouteImport.update({
   id: '/payouts',
   path: '/payouts',
@@ -162,9 +177,19 @@ const AuthenticatedEodsRoute = AuthenticatedEodsRouteImport.update({
   path: '/eods',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedDirectoryRoute = AuthenticatedDirectoryRouteImport.update({
+  id: '/directory',
+  path: '/directory',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedCustomersRoute = AuthenticatedCustomersRouteImport.update({
+  id: '/customers',
+  path: '/customers',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedCsmRoute = AuthenticatedCsmRouteImport.update({
@@ -304,13 +329,16 @@ export interface FileRoutesByFullPath {
   '/closer-resources': typeof AuthenticatedCloserResourcesRoute
   '/crm': typeof AuthenticatedCrmRoute
   '/csm': typeof AuthenticatedCsmRoute
+  '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/directory': typeof AuthenticatedDirectoryRoute
   '/eods': typeof AuthenticatedEodsRoute
   '/finance': typeof AuthenticatedFinanceRoute
   '/installments': typeof AuthenticatedInstallmentsRoute
   '/knowledge': typeof AuthenticatedKnowledgeRouteWithChildren
   '/mochi': typeof AuthenticatedMochiRoute
   '/payouts': typeof AuthenticatedPayoutsRoute
+  '/performance': typeof AuthenticatedPerformanceRoute
   '/policies': typeof AuthenticatedPoliciesRouteWithChildren
   '/profile': typeof AuthenticatedProfileRoute
   '/revenue': typeof AuthenticatedRevenueRoute
@@ -322,6 +350,7 @@ export interface FileRoutesByFullPath {
   '/students': typeof AuthenticatedStudentsRouteWithChildren
   '/team': typeof AuthenticatedTeamRoute
   '/testimonials': typeof AuthenticatedTestimonialsRoute
+  '/work': typeof AuthenticatedWorkRoute
   '/knowledge/$slug': typeof AuthenticatedKnowledgeSlugRouteWithChildren
   '/knowledge/new': typeof AuthenticatedKnowledgeNewRoute
   '/policies/crm-hygiene': typeof AuthenticatedPoliciesCrmHygieneRoute
@@ -349,12 +378,15 @@ export interface FileRoutesByTo {
   '/closer-resources': typeof AuthenticatedCloserResourcesRoute
   '/crm': typeof AuthenticatedCrmRoute
   '/csm': typeof AuthenticatedCsmRoute
+  '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/directory': typeof AuthenticatedDirectoryRoute
   '/eods': typeof AuthenticatedEodsRoute
   '/finance': typeof AuthenticatedFinanceRoute
   '/installments': typeof AuthenticatedInstallmentsRoute
   '/mochi': typeof AuthenticatedMochiRoute
   '/payouts': typeof AuthenticatedPayoutsRoute
+  '/performance': typeof AuthenticatedPerformanceRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/revenue': typeof AuthenticatedRevenueRoute
   '/sales': typeof AuthenticatedSalesRoute
@@ -365,6 +397,7 @@ export interface FileRoutesByTo {
   '/students': typeof AuthenticatedStudentsRouteWithChildren
   '/team': typeof AuthenticatedTeamRoute
   '/testimonials': typeof AuthenticatedTestimonialsRoute
+  '/work': typeof AuthenticatedWorkRoute
   '/knowledge/$slug': typeof AuthenticatedKnowledgeSlugRouteWithChildren
   '/knowledge/new': typeof AuthenticatedKnowledgeNewRoute
   '/policies/crm-hygiene': typeof AuthenticatedPoliciesCrmHygieneRoute
@@ -394,13 +427,16 @@ export interface FileRoutesById {
   '/_authenticated/closer-resources': typeof AuthenticatedCloserResourcesRoute
   '/_authenticated/crm': typeof AuthenticatedCrmRoute
   '/_authenticated/csm': typeof AuthenticatedCsmRoute
+  '/_authenticated/customers': typeof AuthenticatedCustomersRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/directory': typeof AuthenticatedDirectoryRoute
   '/_authenticated/eods': typeof AuthenticatedEodsRoute
   '/_authenticated/finance': typeof AuthenticatedFinanceRoute
   '/_authenticated/installments': typeof AuthenticatedInstallmentsRoute
   '/_authenticated/knowledge': typeof AuthenticatedKnowledgeRouteWithChildren
   '/_authenticated/mochi': typeof AuthenticatedMochiRoute
   '/_authenticated/payouts': typeof AuthenticatedPayoutsRoute
+  '/_authenticated/performance': typeof AuthenticatedPerformanceRoute
   '/_authenticated/policies': typeof AuthenticatedPoliciesRouteWithChildren
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/revenue': typeof AuthenticatedRevenueRoute
@@ -412,6 +448,7 @@ export interface FileRoutesById {
   '/_authenticated/students': typeof AuthenticatedStudentsRouteWithChildren
   '/_authenticated/team': typeof AuthenticatedTeamRoute
   '/_authenticated/testimonials': typeof AuthenticatedTestimonialsRoute
+  '/_authenticated/work': typeof AuthenticatedWorkRoute
   '/_authenticated/knowledge/$slug': typeof AuthenticatedKnowledgeSlugRouteWithChildren
   '/_authenticated/knowledge/new': typeof AuthenticatedKnowledgeNewRoute
   '/_authenticated/policies/crm-hygiene': typeof AuthenticatedPoliciesCrmHygieneRoute
@@ -441,13 +478,16 @@ export interface FileRouteTypes {
     | '/closer-resources'
     | '/crm'
     | '/csm'
+    | '/customers'
     | '/dashboard'
+    | '/directory'
     | '/eods'
     | '/finance'
     | '/installments'
     | '/knowledge'
     | '/mochi'
     | '/payouts'
+    | '/performance'
     | '/policies'
     | '/profile'
     | '/revenue'
@@ -459,6 +499,7 @@ export interface FileRouteTypes {
     | '/students'
     | '/team'
     | '/testimonials'
+    | '/work'
     | '/knowledge/$slug'
     | '/knowledge/new'
     | '/policies/crm-hygiene'
@@ -486,12 +527,15 @@ export interface FileRouteTypes {
     | '/closer-resources'
     | '/crm'
     | '/csm'
+    | '/customers'
     | '/dashboard'
+    | '/directory'
     | '/eods'
     | '/finance'
     | '/installments'
     | '/mochi'
     | '/payouts'
+    | '/performance'
     | '/profile'
     | '/revenue'
     | '/sales'
@@ -502,6 +546,7 @@ export interface FileRouteTypes {
     | '/students'
     | '/team'
     | '/testimonials'
+    | '/work'
     | '/knowledge/$slug'
     | '/knowledge/new'
     | '/policies/crm-hygiene'
@@ -530,13 +575,16 @@ export interface FileRouteTypes {
     | '/_authenticated/closer-resources'
     | '/_authenticated/crm'
     | '/_authenticated/csm'
+    | '/_authenticated/customers'
     | '/_authenticated/dashboard'
+    | '/_authenticated/directory'
     | '/_authenticated/eods'
     | '/_authenticated/finance'
     | '/_authenticated/installments'
     | '/_authenticated/knowledge'
     | '/_authenticated/mochi'
     | '/_authenticated/payouts'
+    | '/_authenticated/performance'
     | '/_authenticated/policies'
     | '/_authenticated/profile'
     | '/_authenticated/revenue'
@@ -548,6 +596,7 @@ export interface FileRouteTypes {
     | '/_authenticated/students'
     | '/_authenticated/team'
     | '/_authenticated/testimonials'
+    | '/_authenticated/work'
     | '/_authenticated/knowledge/$slug'
     | '/_authenticated/knowledge/new'
     | '/_authenticated/policies/crm-hygiene'
@@ -600,6 +649,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/work': {
+      id: '/_authenticated/work'
+      path: '/work'
+      fullPath: '/work'
+      preLoaderRoute: typeof AuthenticatedWorkRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/testimonials': {
       id: '/_authenticated/testimonials'
@@ -678,6 +734,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPoliciesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/performance': {
+      id: '/_authenticated/performance'
+      path: '/performance'
+      fullPath: '/performance'
+      preLoaderRoute: typeof AuthenticatedPerformanceRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/payouts': {
       id: '/_authenticated/payouts'
       path: '/payouts'
@@ -720,11 +783,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEodsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/directory': {
+      id: '/_authenticated/directory'
+      path: '/directory'
+      fullPath: '/directory'
+      preLoaderRoute: typeof AuthenticatedDirectoryRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/customers': {
+      id: '/_authenticated/customers'
+      path: '/customers'
+      fullPath: '/customers'
+      preLoaderRoute: typeof AuthenticatedCustomersRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/csm': {
@@ -974,13 +1051,16 @@ interface AuthenticatedRouteChildren {
   AuthenticatedCloserResourcesRoute: typeof AuthenticatedCloserResourcesRoute
   AuthenticatedCrmRoute: typeof AuthenticatedCrmRoute
   AuthenticatedCsmRoute: typeof AuthenticatedCsmRoute
+  AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedDirectoryRoute: typeof AuthenticatedDirectoryRoute
   AuthenticatedEodsRoute: typeof AuthenticatedEodsRoute
   AuthenticatedFinanceRoute: typeof AuthenticatedFinanceRoute
   AuthenticatedInstallmentsRoute: typeof AuthenticatedInstallmentsRoute
   AuthenticatedKnowledgeRoute: typeof AuthenticatedKnowledgeRouteWithChildren
   AuthenticatedMochiRoute: typeof AuthenticatedMochiRoute
   AuthenticatedPayoutsRoute: typeof AuthenticatedPayoutsRoute
+  AuthenticatedPerformanceRoute: typeof AuthenticatedPerformanceRoute
   AuthenticatedPoliciesRoute: typeof AuthenticatedPoliciesRouteWithChildren
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedRevenueRoute: typeof AuthenticatedRevenueRoute
@@ -992,6 +1072,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedStudentsRoute: typeof AuthenticatedStudentsRouteWithChildren
   AuthenticatedTeamRoute: typeof AuthenticatedTeamRoute
   AuthenticatedTestimonialsRoute: typeof AuthenticatedTestimonialsRoute
+  AuthenticatedWorkRoute: typeof AuthenticatedWorkRoute
   AuthenticatedTeamIdRoute: typeof AuthenticatedTeamIdRoute
 }
 
@@ -1005,13 +1086,16 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedCloserResourcesRoute: AuthenticatedCloserResourcesRoute,
   AuthenticatedCrmRoute: AuthenticatedCrmRoute,
   AuthenticatedCsmRoute: AuthenticatedCsmRoute,
+  AuthenticatedCustomersRoute: AuthenticatedCustomersRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedDirectoryRoute: AuthenticatedDirectoryRoute,
   AuthenticatedEodsRoute: AuthenticatedEodsRoute,
   AuthenticatedFinanceRoute: AuthenticatedFinanceRoute,
   AuthenticatedInstallmentsRoute: AuthenticatedInstallmentsRoute,
   AuthenticatedKnowledgeRoute: AuthenticatedKnowledgeRouteWithChildren,
   AuthenticatedMochiRoute: AuthenticatedMochiRoute,
   AuthenticatedPayoutsRoute: AuthenticatedPayoutsRoute,
+  AuthenticatedPerformanceRoute: AuthenticatedPerformanceRoute,
   AuthenticatedPoliciesRoute: AuthenticatedPoliciesRouteWithChildren,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedRevenueRoute: AuthenticatedRevenueRoute,
@@ -1023,6 +1107,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedStudentsRoute: AuthenticatedStudentsRouteWithChildren,
   AuthenticatedTeamRoute: AuthenticatedTeamRoute,
   AuthenticatedTestimonialsRoute: AuthenticatedTestimonialsRoute,
+  AuthenticatedWorkRoute: AuthenticatedWorkRoute,
   AuthenticatedTeamIdRoute: AuthenticatedTeamIdRoute,
 }
 

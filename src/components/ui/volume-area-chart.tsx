@@ -16,13 +16,14 @@ function cssVar(name: string, fallback: string) {
 }
 
 export function VolumeAreaChart({
-  data, xKey = "label", series, height = 240, yTickCount = 5,
+  data, xKey = "label", series, height = 240, yTickCount = 5, showDots = false,
 }: {
   data: any[];
   xKey?: string;
   series: VolumeSeries[];
   height?: number;
   yTickCount?: number;
+  showDots?: boolean;
 }) {
   const gridColor = "var(--color-border)";
   const tickColor = "var(--color-muted-foreground)";
@@ -107,7 +108,7 @@ export function VolumeAreaChart({
               strokeLinecap="round"
               fill={s.ghost ? "none" : `url(#grad-${s.key})`}
               fillOpacity={s.ghost ? 0 : 1}
-              dot={false}
+              dot={showDots && !s.ghost ? { r: 2.75, strokeWidth: 0, fill: s.color } : false}
               activeDot={s.ghost ? false : { r: 3, strokeWidth: 0, fill: s.color }}
               isAnimationActive={false}
             />

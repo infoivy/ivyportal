@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { invalidateForTables } from "@/lib/query-keys";
 import { useAuth } from "@/lib/auth-context";
@@ -10,17 +10,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { CheckCircle2, Clock, AlertTriangle, ChevronRight, ChevronDown, Trash2, Pencil, Flame, Download, CalendarDays, X } from "lucide-react";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CheckCircle2, Clock, AlertTriangle, ChevronRight, ChevronDown, Trash2, Pencil, Flame } from "lucide-react";
 import { computeStreak } from "@/lib/streak";
 import { todayLocal } from "@/lib/dates";
-import { chooseTeamOverviewDate } from "@/lib/eod-performance-date";
-import { exportToCsv } from "@/lib/csv";
 import confetti from "canvas-confetti";
-import { VolumeAreaChart, VolumeLegend } from "@/components/ui/volume-area-chart";
-import { ResponsiveContainer, BarChart, Bar, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip as ReTooltip, Legend } from "recharts";
-import { SelectField } from "@/components/ui/select-field";
 import { MochiEodReference } from "@/components/mochi-eod-reference";
 
 export const Route = createFileRoute("/_authenticated/eods")({
@@ -42,8 +35,6 @@ type EOD = {
 };
 
 type SetterType = "phone" | "dm" | "full_cycle" | null;
-type RosterEntry = { user_id: string; display_name: string; primary_role: string; setter_type: SetterType; csm_target: number | null; joined_at: string };
-type GridEod = EOD & { display_name?: string; primary_role?: string; setter_type?: SetterType };
 
 // KPI defaults — plain numbers; adjust in Admin → Settings later
 const KPI = {
@@ -70,11 +61,8 @@ const emptyForm = {
 
 const WEEKDAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTH = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const ROLE_LABEL: Record<string, string> = { setter: "Setter", closer: "Closer", coach: "Coach", csm: "CSM", admin: "Admin" };
-const priorityRoles = ["csm", "closer", "coach", "setter", "admin"];
 
 const isoDate = (d: Date) => d.toISOString().slice(0, 10);
-const fmtDayShort = (d: Date) => `${WEEKDAY[d.getDay()]} ${d.getDate()}`;
 const fmtLong = (iso: string) => { const d = new Date(iso + "T00:00:00"); return `${WEEKDAY[d.getDay()]}, ${MONTH[d.getMonth()]} ${d.getDate()}`; };
 // Noon anchor so the local calendar date survives UTC conversion in any timezone
 const shiftDay = (iso: string, delta: number) => { const d = new Date(iso + "T12:00:00"); d.setDate(d.getDate() + delta); return new Intl.DateTimeFormat("en-CA").format(d); };
@@ -84,7 +72,6 @@ function EODsPage() {
   const { user, roles } = useAuth();
   const qc = useQueryClient();
   const isAdmin = roles.includes("admin");
-  const canViewTeam = roles.includes("admin") || roles.includes("closer");
   const isCsm = roles.includes("csm");
   const isSetter = roles.includes("setter");
   const isCloser = roles.includes("closer") || roles.includes("coach");
@@ -101,22 +88,9 @@ function EODsPage() {
   const [form, setForm] = useState(emptyForm);
   const [existingId, setExistingId] = useState<string | null>(null);
   const [myEods, setMyEods] = useState<EOD[]>([]);
-  const [teamEods, setTeamEods] = useState<GridEod[]>([]);
-  const [teamRoster, setTeamRoster] = useState<RosterEntry[]>([]);
-  // Team overview day selection: [] = auto (today, falling back to the
-  // latest submitted day); one entry = a specific day; several = an
-  // aggregated custom pick from the calendar.
-  const [teamDates, setTeamDates] = useState<string[]>([]);
   const [mySetterType, setMySetterType] = useState<SetterType>(null);
   const [csmTarget, setCsmTarget] = useState(10);
   const [saving, setSaving] = useState(false);
-  const latestTeamDate = chooseTeamOverviewDate(today, teamEods);
-  const selectedTeamDays = useMemo(
-    () => (teamDates.length ? teamDates : [latestTeamDate]),
-    [teamDates, latestTeamDate],
-  );
-  const teamDate = selectedTeamDays[selectedTeamDays.length - 1];
-
   const loadMine = useCallback(async () => {
     if (!user) return;
     const [{ data }, { data: prof }] = await Promise.all([
@@ -150,56 +124,6 @@ function EODsPage() {
       setForm(next);
     }
   }, [user, reportDate]);
-
-  const fetchTeam = async () => {
-    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 45);
-    const [{ data }, { data: rolesData }, { data: cofRows }] = await Promise.all([
-      supabase.from("eods").select("*").gte("report_date", isoDate(cutoff)).order("report_date", { ascending: false }),
-      supabase.from("user_roles").select("user_id, role").in("role", ["setter", "closer", "coach", "csm"]),
-      supabase.from("user_roles").select("user_id").in("role", ["cofounder", "founder"]),
-    ]);
-    const eods = (data ?? []) as EOD[];
-    // Cofounders/founders don't file EODs — keep them out of the roster and
-    // expected counts even when they also hold closer/csm roles.
-    const exempt = new Set((cofRows ?? []).map(r => r.user_id));
-    const userIds = Array.from(new Set([...(rolesData ?? []).map(r => r.user_id), ...eods.map(e => e.user_id)]));
-    const { data: profs } = await supabase.from("profiles").select("id, display_name, setter_type, csm_daily_target, created_at" as never).in("id", userIds);
-    const profMap = new Map(((profs ?? []) as unknown as { id: string; display_name: string; setter_type: SetterType; csm_daily_target: number | null; created_at: string }[]).map(p => [p.id, p]));
-    const roleMap = new Map<string, string[]>();
-    (rolesData ?? []).forEach(r => {
-      const arr = roleMap.get(r.user_id) ?? [];
-      arr.push(r.role); roleMap.set(r.user_id, arr);
-    });
-    const primaryRole = (uid: string) => {
-      const rs = roleMap.get(uid) ?? [];
-      for (const p of priorityRoles) if (rs.includes(p)) return p;
-      return rs[0] ?? "member";
-    };
-    return {
-      teamEods: eods.map(e => {
-        const p = profMap.get(e.user_id);
-        return { ...e, display_name: p?.display_name ?? "Unknown", primary_role: primaryRole(e.user_id), setter_type: p?.setter_type ?? null };
-      }) as GridEod[],
-      roster: userIds
-        // RLS hides other users' user_roles rows from non-admins, so a
-        // closer's roleMap only contains himself — anyone who actually filed
-        // an EOD in the window belongs on the board regardless.
-        .filter(uid => !exempt.has(uid) && ((roleMap.get(uid) ?? []).some(r => ["setter", "closer", "coach", "csm"].includes(r)) || eods.some(e => e.user_id === uid)))
-        .map(uid => {
-          const p = profMap.get(uid);
-          return { user_id: uid, display_name: p?.display_name ?? "Unknown", primary_role: primaryRole(uid), setter_type: p?.setter_type ?? null, csm_target: p?.csm_daily_target ?? null, joined_at: (p?.created_at ?? "").slice(0, 10) };
-        }) as RosterEntry[],
-    };
-  };
-
-  // NOTE: the submit form (loadMine) is intentionally NOT cached — form state
-  // must never hydrate from a stale cache. Only the read-only team view is.
-  const teamQ = useQuery({ queryKey: ["page", "eods", "team"], queryFn: fetchTeam, enabled: canViewTeam });
-  useEffect(() => {
-    if (!teamQ.data) return;
-    setTeamEods(teamQ.data.teamEods);
-    setTeamRoster(teamQ.data.roster);
-  }, [teamQ.data]);
 
   useEffect(() => { void loadMine(); }, [loadMine]);
 
@@ -254,7 +178,7 @@ function EODsPage() {
       window.dispatchEvent(new CustomEvent("isa:eod-submitted", { detail: { userId: user.id } }));
     }
     if (wasNew) {
-      confetti({ particleCount: 120, spread: 80, origin: { y: 0.7 }, colors: ["#10b981", "#f59e0b", "#3b82f6", "#a855f7"] });
+      confetti({ particleCount: 120, spread: 80, origin: { y: 0.7 }, colors: ["#171717", "#525252", "#A3A3A3", "#F5F5F5"] });
       if (draftKey) { try { localStorage.removeItem(draftKey); } catch {} }
     }
     loadMine();
@@ -290,32 +214,18 @@ function EODsPage() {
   }, [myEods, mySetterType, isCsm, csmTarget]);
   const streak = useMemo(() => computeStreak(myEods.map(e => e.report_date)), [myEods]);
 
-  // Team numbers for the selected reporting day(s). If nobody has filed
-  // today, Performance opens on the latest completed reporting day instead
-  // of making valid previous-day EODs look missing. Multiple calendar-picked
-  // days aggregate.
-  const teamDay = useMemo(() => {
-    const daySet = new Set(selectedTeamDays);
-    const rows = teamEods.filter(e => daySet.has(e.report_date));
-    const sum = (k: keyof EOD) => rows.reduce((a, e) => a + (Number(e[k]) || 0), 0);
-    return { submitted: rows.length, expected: teamRoster.length * selectedTeamDays.length,
-      dials: sum("dials") + rows.reduce((a, e) => a + outreachOf(e), 0),
-      booked: sum("calls_booked"),
-      cash: sum("cash_collected") };
-  }, [teamEods, teamRoster, selectedTeamDays]);
-
   const kpi = mySetterType ? KPI[mySetterType] : null;
   const primaryVal = mySetterType === "dm" ? form.dms_sent : form.dials;
   // full_cycle primary = dials; its outreach bar reads form.dms_sent directly
 
-  const defaultTab = isFounder ? "overview" : (canViewTeam ? "overview" : "submit");
+  const defaultTab = "submit";
 
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3 pb-5 mb-1">
         <div>
           <h1 className="text-display text-foreground">End of Day</h1>
-          <p className="text-body text-muted-foreground mt-1">Log your numbers. Track the funnel. Ship consistency.</p>
+          <p className="text-body text-muted-foreground mt-1">Submit today’s report. Performance now lives in its own workspace.</p>
         </div>
         <div className="flex items-center gap-2">
           {!isFounder && (() => {
@@ -328,88 +238,43 @@ function EODsPage() {
             );
           })()}
           <span className="text-[11px] text-muted-foreground">{fmtLong(today)}</span>
+          <Button asChild variant="outline" size="sm">
+            <Link to={"/performance" as never}>View Performance</Link>
+          </Button>
         </div>
       </header>
 
-      {/* Two titled groups: My week vs Team today */}
-      {(filesEods || canViewTeam) && (
-        <div className="grid md:grid-cols-2 gap-3">
-          {filesEods && (
-            <div className="card-surface p-3">
-              <div className="text-[13px] text-muted-foreground mb-2">My week (last 7 days)</div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <MiniChip label="Streak" value={`${streak}d`} tone="amber" icon={<Flame className="h-3 w-3" />} />
-                <MiniChip label="Reports" value={`${myWeek.submitted}/7`} />
-                <MiniChip label="KPI hit" value={`${myWeek.kpiHitDays}/7`} tone={myWeek.kpiHitDays >= 5 ? "green" : "default"} />
-                {isSetter && mySetterType === "dm" ? (
-                  <MiniChip label="Leads" value={myWeek.leads} />
-                ) : isSetter ? (
-                  <MiniChip label="Dials" value={myWeek.dials} />
-                ) : isCloser ? (
-                  <MiniChip label="Cash" value={`$${Math.round(myWeek.cash).toLocaleString()}`} tone="green" />
-                ) : (
-                  <MiniChip label="Sets" value={myWeek.sets} />
-                )}
-              </div>
-            </div>
-          )}
-          {canViewTeam && (
-            <div className="card-surface p-3">
-              <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                <div className="text-[13px] text-muted-foreground">
-                  {selectedTeamDays.length > 1
-                    ? <>Team · {selectedTeamDays.length} days</>
-                    : <>Team {teamDate === today ? "today" : fmtDayShort(new Date(teamDate + "T00:00:00"))}
-                      {teamDate !== today && teamDates.length === 0 && <span className="ml-1 text-[10px]">· latest submitted day</span>}</>}
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="inline-flex rounded-sm border border-[var(--border)] bg-[var(--background)] p-0.5">
-                    {[today, ...(latestTeamDate !== today ? [latestTeamDate] : [])].map(date => (
-                      <button
-                        key={date}
-                        type="button"
-                        onClick={() => setTeamDates([date])}
-                        className={`text-[10px] font-medium px-2 py-0.5 rounded-sm motion-safe:transition-colors ${selectedTeamDays.length === 1 && teamDate === date ? "bg-[var(--accent)] text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                      >
-                        {date === today ? "Today" : fmtDayShort(new Date(date + "T00:00:00"))}
-                      </button>
-                    ))}
-                  </div>
-                  <TeamDayPicker today={today} selected={teamDates} onChange={setTeamDates} />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <MiniChip label="Submitted" value={`${teamDay.submitted}/${teamDay.expected}`} tone={teamDay.submitted === teamDay.expected ? "green" : "amber"} />
-                <MiniChip label="Dials + leads" value={teamDay.dials.toLocaleString()} />
-                <MiniChip label="Booked" value={teamDay.booked} />
-                <MiniChip label="Cash" value={`$${Math.round(teamDay.cash).toLocaleString()}`} tone="green" />
-              </div>
-            </div>
-          )}
+      {filesEods && (
+        <div className="card-surface p-3">
+          <div className="text-[13px] text-muted-foreground mb-2">My week (last 7 days)</div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <MiniChip label="Streak" value={`${streak}d`} tone="amber" icon={<Flame className="h-3 w-3" />} />
+            <MiniChip label="Reports" value={`${myWeek.submitted}/7`} />
+            <MiniChip label="KPI hit" value={`${myWeek.kpiHitDays}/7`} />
+            {isSetter && mySetterType === "dm" ? (
+              <MiniChip label="Leads" value={myWeek.leads} />
+            ) : isSetter ? (
+              <MiniChip label="Dials" value={myWeek.dials} />
+            ) : isCloser ? (
+              <MiniChip label="Cash" value={`$${Math.round(myWeek.cash).toLocaleString()}`} />
+            ) : (
+              <MiniChip label="Sets" value={myWeek.sets} />
+            )}
+          </div>
         </div>
       )}
 
       {isFounder && (
         <div className="card-surface px-4 py-3 text-[13px] text-muted-foreground">
-          This account has no setter or closer role · you don't submit EODs. Use the tabs below to view team reports.
+          This account has no reporting role. Open Performance to review submitted team activity.
         </div>
       )}
 
-      <Tabs defaultValue={defaultTab} className="space-y-4">
+      {!isFounder && <Tabs defaultValue={defaultTab} className="space-y-4">
         <TabsList className="bg-[var(--card)] border border-[var(--border)] rounded-sm h-auto min-h-9 p-0.5 flex-wrap">
-          {canViewTeam && <TabsTrigger value="overview" className="text-xs h-8 rounded-sm data-[state=active]:bg-[var(--accent)]">Team Overview</TabsTrigger>}
           {!isFounder && <TabsTrigger value="submit" className="text-xs h-8 rounded-sm data-[state=active]:bg-[var(--accent)]">My EOD</TabsTrigger>}
           {!isFounder && <TabsTrigger value="mine" className="text-xs h-8 rounded-sm data-[state=active]:bg-[var(--accent)]">My history</TabsTrigger>}
-          {canViewTeam && <TabsTrigger value="grid" className="text-xs h-8 rounded-sm data-[state=active]:bg-[var(--accent)]">Compliance</TabsTrigger>}
-          {canViewTeam && <TabsTrigger value="graphs" className="text-xs h-8 rounded-sm data-[state=active]:bg-[var(--accent)]">Graphs</TabsTrigger>}
-          {canViewTeam && <TabsTrigger value="team" className="text-xs h-8 rounded-sm data-[state=active]:bg-[var(--accent)]">Team Feed</TabsTrigger>}
         </TabsList>
-
-        {canViewTeam && (
-          <TabsContent value="overview">
-            <TeamOverview roster={teamRoster} eods={teamEods} days={selectedTeamDays} />
-          </TabsContent>
-        )}
 
         <TabsContent value="submit" className="space-y-4">
           <div className="grid lg:grid-cols-3 gap-4">
@@ -541,11 +406,7 @@ function EODsPage() {
             </div>
 
             <aside className="space-y-3">
-              {isAdmin ? (
-                <SubmittedTodayPanel roster={teamRoster} eods={teamEods} today={today} />
-              ) : (
-                <MyLast7Panel myEods={myEods} today={today} setterType={mySetterType} csmTarget={isCsm ? csmTarget : null} />
-              )}
+              <MyLast7Panel myEods={myEods} today={today} setterType={mySetterType} csmTarget={isCsm ? csmTarget : null} />
               <div className="card-surface p-4 text-[13px] text-muted-foreground leading-relaxed">
                 <div className="text-[13px] font-medium text-primary mb-2">Pro tip</div>
                 Submit before <span className="text-foreground">23:59</span>. Missed days hurt the team's rolling average.
@@ -558,24 +419,7 @@ function EODsPage() {
           <MyHistory myEods={myEods} setterType={mySetterType} isSetter={isSetter} isCloser={isCloser} csmTarget={isCsm ? csmTarget : null} onDelete={deleteEod} />
         </TabsContent>
 
-        {canViewTeam && (
-          <TabsContent value="grid">
-            <ComplianceMatrix eods={teamEods} roster={teamRoster} />
-          </TabsContent>
-        )}
-
-        {canViewTeam && (
-          <TabsContent value="graphs">
-            <ComplianceGraphs eods={teamEods} roster={teamRoster} />
-          </TabsContent>
-        )}
-
-        {canViewTeam && (
-          <TabsContent value="team">
-            <TeamFeed eods={teamEods} isAdmin={isAdmin} onDelete={deleteEod} />
-          </TabsContent>
-        )}
-      </Tabs>
+      </Tabs>}
     </div>
   );
 }
@@ -613,247 +457,6 @@ function dayStatus(e: EOD | undefined, st: SetterType, csmTarget?: number | null
   if (st) return didHitKpi(e, st) ? "green" : "amber";
   if (csmTarget != null) return didHitCsmKpi(e, csmTarget) ? "green" : "amber";
   return "green"; // no KPI defined (closer/coach)
-}
-
-// ---------- Team Overview ----------
-
-/**
- * Calendar picker for the Team overview: pick any specific reporting day(s)
- * inside the loaded 45-day window. Multiple days aggregate; Clear returns to
- * the automatic today/latest behavior.
- */
-function TeamDayPicker({ today, selected, onChange }: {
-  today: string;
-  selected: string[];
-  onChange: (days: string[]) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const localIso = (d: Date) =>
-    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  const oldest = new Date(); oldest.setDate(oldest.getDate() - 45);
-  const custom = selected.length > 0;
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          aria-label="Pick specific days"
-          className={`h-[22px] w-[22px] inline-flex items-center justify-center rounded-sm border motion-safe:transition-colors ${custom && selected.length > 1 ? "border-primary/25 bg-primary/10 text-primary" : "border-[var(--border)] bg-[var(--background)] text-muted-foreground hover:text-foreground"}`}
-        >
-          <CalendarDays className="h-3 w-3" />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent align="end" className="w-auto p-0 bg-[var(--card)] border-[var(--border)]">
-        <Calendar
-          mode="multiple"
-          selected={selected.map(d => new Date(d + "T00:00:00"))}
-          onSelect={(dates) => onChange((dates ?? []).map(localIso).sort())}
-          disabled={{ after: new Date(today + "T23:59:59"), before: oldest }}
-          defaultMonth={new Date(today + "T00:00:00")}
-        />
-        <div className="flex items-center justify-between border-t border-[var(--border)] px-3 py-2">
-          <span className="text-[10px] text-muted-foreground">
-            {custom ? `${selected.length} day${selected.length === 1 ? "" : "s"} selected` : "Pick days to aggregate"}
-          </span>
-          {custom && (
-            <button
-              type="button"
-              onClick={() => { onChange([]); setOpen(false); }}
-              className="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-foreground"
-            >
-              <X className="h-3 w-3" /> Clear
-            </button>
-          )}
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
-}
-
-function TeamOverview({ roster, eods, days }: { roster: RosterEntry[]; eods: GridEod[]; days: string[] }) {
-  const single = days.length === 1 ? days[0] : null;
-  const weekDays = useMemo(() => {
-    const start = new Date(); start.setDate(start.getDate() - 6);
-    return Array.from({ length: 7 }, (_, i) => { const d = new Date(start); d.setDate(start.getDate() + i); return isoDate(d); });
-  }, []);
-  const byUserDate = useMemo(() => {
-    const m = new Map<string, EOD>();
-    eods.forEach(e => m.set(`${e.user_id}::${e.report_date}`, e));
-    return m;
-  }, [eods]);
-
-  const cards = roster.map(r => {
-    const st: SetterType = r.primary_role === "setter" ? r.setter_type : null;
-    const csmTarget = r.primary_role === "csm" ? (r.csm_target ?? 10) : null;
-    const dayRows = days.map(d => byUserDate.get(`${r.user_id}::${d}`));
-    const submittedRows = dayRows.filter((e): e is EOD => !!e);
-    const todayEod = single ? dayRows[0] : undefined;
-    const kpiHits = st ? submittedRows.filter(e => didHitKpi(e, st)).length
-      : csmTarget != null ? submittedRows.filter(e => didHitCsmKpi(e, csmTarget)).length
-      : submittedRows.length;
-    const status: "green" | "amber" | "red" =
-      submittedRows.length === 0 ? "red"
-        : submittedRows.length === days.length && kpiHits === submittedRows.length ? "green"
-        : r.primary_role === "setter" || r.primary_role === "csm" || submittedRows.length < days.length ? "amber"
-        : "green";
-    const week = weekDays.map(d => {
-      const e = byUserDate.get(`${r.user_id}::${d}`);
-      return { d, status: !e ? "red" as const : dayStatus(e, st, csmTarget), e };
-    });
-    let weeklyLabel = ""; let weeklyValue: string | number = "";
-    if (r.primary_role === "setter") {
-      weeklyLabel = "Sets this week";
-      weeklyValue = week.reduce((a, x) => a + (x.e?.calls_booked ?? 0), 0);
-    } else if (r.primary_role === "closer" || r.primary_role === "coach") {
-      weeklyLabel = "Cash this week";
-      weeklyValue = `$${Math.round(week.reduce((a, x) => a + Number(x.e?.cash_collected ?? 0), 0)).toLocaleString()}`;
-    } else if (r.primary_role === "csm") {
-      weeklyLabel = "Check-ins this week";
-      weeklyValue = week.reduce((a, x) => a + (x.e?.student_checkins ?? 0), 0);
-    }
-    const sum = (k: keyof EOD) => submittedRows.reduce((a, e) => a + (Number(e[k]) || 0), 0);
-    let todayLine: string;
-    if (single) {
-      todayLine = "No EOD submitted yet today";
-      if (todayEod) {
-        if (r.primary_role === "setter" && st) {
-          const cfg = KPI[st];
-          const primary = st === "dm" ? outreachOf(todayEod) : todayEod.dials;
-          if (didHitKpi(todayEod, st)) todayLine = `Submitted · hit KPI (${primary} ${cfg.primary.label.toLowerCase()}, ${todayEod.calls_booked} sets)`;
-          else todayLine = `Submitted · missed KPI (${primary} of ${cfg.primary.target} ${cfg.primary.label.toLowerCase()}, ${todayEod.calls_booked} of ${cfg.sets} sets)`;
-        } else if (r.primary_role === "closer" || r.primary_role === "coach") {
-          todayLine = `Submitted · ${todayEod.calls_taken} calls, ${todayEod.closes} closes, $${Math.round(Number(todayEod.cash_collected)).toLocaleString()} cash`;
-        } else if (r.primary_role === "csm") {
-          const t = csmTarget ?? 10;
-          todayLine = didHitCsmKpi(todayEod, t)
-            ? `Submitted · hit KPI (${todayEod.student_checkins} of ${t} check-ins, ${todayEod.looms_reviewed} looms)`
-            : `Submitted · missed KPI (${todayEod.student_checkins} of ${t} check-ins, ${todayEod.looms_reviewed} looms)`;
-        } else todayLine = "Submitted";
-      }
-    } else {
-      // Aggregated view across the calendar-picked days.
-      const base = `${submittedRows.length}/${days.length} days submitted`;
-      if (r.primary_role === "setter" && st) {
-        todayLine = `${base} · KPI hit ${kpiHits}/${days.length} · ${sum("calls_booked")} sets`;
-      } else if (r.primary_role === "closer" || r.primary_role === "coach") {
-        todayLine = `${base} · ${sum("closes")} closes · $${Math.round(sum("cash_collected")).toLocaleString()} cash`;
-      } else if (r.primary_role === "csm") {
-        todayLine = `${base} · KPI hit ${kpiHits}/${days.length} · ${sum("student_checkins")} check-ins · ${sum("looms_reviewed")} looms`;
-      } else {
-        todayLine = base;
-      }
-    }
-    return { r, status, todayLine, week, weeklyLabel, weeklyValue, todayEod };
-  });
-
-  // Sort red first, amber, green
-  const order = { red: 0, amber: 1, green: 2 } as const;
-  cards.sort((a, b) => order[a.status] - order[b.status] || a.r.display_name.localeCompare(b.r.display_name));
-
-  const totalSlots = cards.length * days.length;
-  const submittedSlots = cards.reduce((a, c) => a + days.filter(d => byUserDate.has(`${c.r.user_id}::${d}`)).length, 0);
-  const kpiSlots = cards.reduce((a, c) => {
-    const st: SetterType = c.r.primary_role === "setter" ? c.r.setter_type : null;
-    return a + days.filter(d => {
-      const e = byUserDate.get(`${c.r.user_id}::${d}`);
-      return e && (!st || didHitKpi(e, st));
-    }).length;
-  }, 0);
-  const headline = single
-    ? fmtLong(single)
-    : days.length <= 3
-      ? days.map(fmtLong).join(" · ")
-      : `${days.length} days · ${fmtLong(days[0])} → ${fmtLong(days[days.length - 1])}`;
-
-  return (
-    <div className="space-y-4">
-      <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-4">
-        <div className="text-sm">
-          <span className="font-semibold">{headline}</span> –{" "}
-          <span className="text-success-fg">{submittedSlots} of {totalSlots} reports in</span> ·{" "}
-          <span className="text-success-fg">{kpiSlots} hit KPI</span> ·{" "}
-          <span className="text-warning-fg">{totalSlots - submittedSlots} missing</span>
-        </div>
-      </div>
-      <div className="grid md:grid-cols-2 gap-3">
-        {cards.map(c => <OverviewCard key={c.r.user_id} card={c} />)}
-        {cards.length === 0 && <EmptyState text="No team members yet." />}
-      </div>
-    </div>
-  );
-}
-
-function OverviewCard({ card }: { card: {
-  r: RosterEntry; status: "green" | "amber" | "red"; todayLine: string;
-  week: { d: string; status: "green" | "amber" | "red"; e: EOD | undefined }[];
-  weeklyLabel: string; weeklyValue: string | number; todayEod: EOD | undefined;
-} }) {
-  const [open, setOpen] = useState(false);
-  const dotColor = card.status === "green" ? "bg-success" : card.status === "amber" ? "bg-warning" : "bg-danger";
-  const setterTypeLabel = card.r.setter_type === "phone" ? "Phone Setter" : card.r.setter_type === "dm" ? "DM Setter" : ROLE_LABEL[card.r.primary_role] ?? card.r.primary_role;
-  return (
-    <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-4 space-y-3">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-base font-semibold">{card.r.display_name}</div>
-          <div className="text-[11px] text-muted-foreground">{setterTypeLabel}</div>
-        </div>
-        <button onClick={() => setOpen(o => !o)} className="text-[11px] text-muted-foreground hover:text-foreground flex items-center gap-1">
-          {open ? "Hide" : "Detail"}{open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-        </button>
-      </div>
-      <div className="flex items-center gap-2">
-        <span className={`inline-block h-3 w-3 rounded-full ${dotColor}`} />
-        <span className="text-sm">{card.todayLine}</span>
-      </div>
-      <div>
-        <div className="text-[13px] text-muted-foreground mb-1.5">This week</div>
-        <div className="flex gap-1.5">
-          {card.week.map(w => {
-            const dt = new Date(w.d + "T00:00:00");
-            const bg = w.status === "green" ? "bg-success-bg border-success/25" : w.status === "amber" ? "bg-warning-bg border-warning/25" : "bg-danger-bg border-danger/25";
-            return (
-              <div key={w.d} className={`flex-1 border rounded-sm px-1 py-1 text-center ${bg}`} title={fmtLong(w.d)}>
-                <div className="text-[9px] text-muted-foreground">{WEEKDAY[dt.getDay()]}</div>
-                <div className="text-[10px]">{dt.getDate()}</div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-      {card.weeklyLabel && (
-        <div className="text-sm"><span className="text-muted-foreground">{card.weeklyLabel}:</span> <span className="font-semibold ml-1">{card.weeklyValue}</span></div>
-      )}
-      {open && (
-        <div className="border-t border-[var(--border)] pt-3 space-y-2 text-xs">
-          {card.week.map(w => (
-            <div key={w.d} className="flex items-start gap-2">
-              <span className={`mt-1 h-2 w-2 rounded-full shrink-0 ${w.status === "green" ? "bg-success" : w.status === "amber" ? "bg-warning" : "bg-danger"}`} />
-              <div className="flex-1">
-                <div className="text-muted-foreground">{fmtLong(w.d)}</div>
-                {w.e ? (
-                  <div>
-                    {card.r.primary_role === "setter" && (
-                      <span>{(card.r.setter_type === "dm" ? outreachOf(w.e) : w.e.dials)} {card.r.setter_type === "dm" ? "DMs" : "dials"}, {w.e.calls_booked} sets</span>
-                    )}
-                    {(card.r.primary_role === "closer" || card.r.primary_role === "coach") && (
-                      <span>{w.e.calls_taken} calls, {w.e.closes} closes, ${Math.round(Number(w.e.cash_collected)).toLocaleString()}</span>
-                    )}
-                    {card.r.primary_role === "csm" && (
-                      <span>{w.e.student_checkins} check-ins, {w.e.looms_reviewed} looms</span>
-                    )}
-                    {w.status === "amber" && <span className="text-warning-fg"> · missed KPI</span>}
-                    {w.e.wins && <div className="text-muted-foreground mt-0.5"><span className="text-success-fg">Wins:</span> {w.e.wins}</div>}
-                    {w.e.blockers && <div className="text-muted-foreground"><span className="text-warning-fg">Blockers:</span> {w.e.blockers}</div>}
-                  </div>
-                ) : <div className="text-danger-fg">No EOD</div>}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
 }
 
 // ---------- My history (grouped by week) ----------
@@ -972,444 +575,7 @@ function HistoryDayRow({ eod, setterType, isSetter, isCloser, onDelete }: { eod:
   );
 }
 
-// ---------- Compliance matrix (no Sunday exclusion) ----------
-
-const ROLE_GROUPS: { key: string; label: string; roles: string[] }[] = [
-  { key: "setters", label: "Setters", roles: ["setter"] },
-  { key: "closers", label: "Closers", roles: ["closer"] },
-  { key: "csm", label: "CSM", roles: ["csm"] },
-  { key: "coaches", label: "Coaches", roles: ["coach"] },
-];
-
-function buildDayList(days: number): string[] {
-  const list: string[] = [];
-  const today = new Date();
-  for (let i = 0; i < days; i++) { const d = new Date(today); d.setDate(d.getDate() - i); list.push(isoDate(d)); }
-  return list.reverse();
-}
-
-/**
- * Drop leading days from before there was any signal — a 30-day window when
- * everyone joined this week reads as a wall of empty squares. "Signal"
- * means the earliest of: first submitted EOD in the window, or the earliest
- * join date. Keeps a minimum of 7 columns so the widgets stay readable.
- */
-function trimToTeamStart(dayList: string[], roster: RosterEntry[], eods: GridEod[]): string[] {
-  const windowStart = dayList[0];
-  const signals: string[] = [];
-  const joins = roster.map((r) => r.joined_at).filter(Boolean) as string[];
-  if (joins.length === roster.length && joins.length > 0) signals.push(joins.reduce((a, b) => (a < b ? a : b)));
-  else return dayList; // someone has no join date · don't guess
-  const eodDates = eods.map((e) => e.report_date).filter((d) => d >= windowStart);
-  if (eodDates.length) signals.push(eodDates.reduce((a, b) => (a < b ? a : b)));
-  const first = signals.reduce((a, b) => (a < b ? a : b));
-  const trimmed = dayList.filter((d) => d >= first);
-  if (trimmed.length === dayList.length) return dayList;
-  return trimmed.length >= 7 ? trimmed : dayList.slice(-7);
-}
-
-function ComplianceMatrix({ eods, roster }: { eods: GridEod[]; roster: RosterEntry[] }) {
-  const [days, setDays] = useState<7 | 14 | 30 | 90>(14);
-  const dayList = useMemo(() => buildDayList(days), [days]);
-  const byUserDate = useMemo(() => { const m = new Map<string, EOD>(); eods.forEach(e => m.set(`${e.user_id}::${e.report_date}`, e)); return m; }, [eods]);
-
-  const rowStats = (r: RosterEntry) => {
-    const st: SetterType = r.primary_role === "setter" ? r.setter_type : null;
-    let streak = 0; let stopped = false; let required = 0; let submitted = 0;
-    const sorted = [...dayList].reverse();
-    sorted.forEach((d, idx) => {
-      const beforeJoin = r.joined_at && d < r.joined_at;
-      if (beforeJoin) return; // gray
-      required++;
-      const hit = byUserDate.has(`${r.user_id}::${d}`);
-      if (hit) submitted++;
-      if (!stopped) {
-        if (hit) streak++;
-        else if (idx === 0) { /* today grace */ }
-        else stopped = true;
-      }
-      void st;
-    });
-    return { streak, submitted, required, pct: required ? Math.round((submitted / required) * 100) : 0 };
-  };
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2 flex-wrap">
-        <div className="inline-flex rounded-lg bg-muted p-[3px]">
-          {[7, 14, 30, 90].map(n => (
-            <button key={n} onClick={() => setDays(n as 7 | 14 | 30 | 90)} className={`text-[13px] font-medium px-3 py-1.5 rounded-[8px] leading-none motion-safe:transition-colors ${days === n ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>{n}D</button>
-          ))}
-        </div>
-        <div className="text-[11px] text-muted-foreground">
-          🟢 submitted + KPI hit · 🟡 submitted, missed KPI · 🔴 missed · · before join date
-        </div>
-      </div>
-
-      <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm overflow-x-auto">
-        <table className="w-full min-w-[560px] text-xs">
-          <thead>
-            <tr className="border-b border-[var(--border)] text-[11px] text-muted-foreground">
-              <th className="text-left px-3 py-2 sticky left-0 bg-[var(--card)] z-10">Person</th>
-              {dayList.map(d => (<th key={d} className="px-1.5 py-2 text-center font-normal whitespace-nowrap">{fmtDayShort(new Date(d + "T00:00:00"))}</th>))}
-              <th className="px-3 py-2 text-right font-normal">Streak</th>
-              <th className="px-3 py-2 text-right font-normal">Compliance</th>
-            </tr>
-          </thead>
-          <tbody>
-            {ROLE_GROUPS.map(group => {
-              const members = roster.filter(r => group.roles.includes(r.primary_role));
-              if (!members.length) return null;
-              return (
-                <React.Fragment key={group.key}>
-                  <tr className="bg-[var(--background)]"><td colSpan={dayList.length + 3} className="px-3 py-1.5 text-[12px] text-muted-foreground">{group.label} · {members.length}</td></tr>
-                  {members.map(m => {
-                    const s = rowStats(m);
-                    const st: SetterType = m.primary_role === "setter" ? m.setter_type : null;
-                    const mCsmTarget = m.primary_role === "csm" ? (m.csm_target ?? 10) : null;
-                    return (
-                      <tr key={m.user_id} className="border-b border-[var(--accent)] last:border-0">
-                        <td className="px-3 py-2 sticky left-0 bg-[var(--card)] font-medium truncate max-w-[180px]">
-                          <div className="text-xs">{m.display_name}</div>
-                          <div className="text-[11px] text-muted-foreground">{m.setter_type ? `${m.setter_type} setter` : m.primary_role}</div>
-                        </td>
-                        {dayList.map(d => {
-                          const beforeJoin = m.joined_at && d < m.joined_at;
-                          const eod = byUserDate.get(`${m.user_id}::${d}`);
-                          if (beforeJoin) return <td key={d} className="px-1 py-1 text-center"><span className="text-[#3a3f4a] text-[11px]">–</span></td>;
-                          const status = dayStatus(eod, st, mCsmTarget);
-                          const cls = status === "green" ? "bg-success-bg border-success/25 text-success-fg" : status === "amber" ? "bg-warning-bg border-warning/25 text-warning-fg" : "bg-danger-bg border-danger/25 text-danger-fg";
-                          const glyph = status === "red" ? "✗" : status === "amber" ? "!" : "✓";
-                          return (<td key={d} className="px-1 py-1 text-center"><span title={`${m.display_name} · ${fmtLong(d)} · ${status}`} className={`inline-flex items-center justify-center h-5 w-5 rounded-sm border text-[11px] ${cls}`}>{glyph}</span></td>);
-                        })}
-                        <td className="px-3 py-2 text-right text-xs">
-                          <span className={s.streak >= 3 ? "text-warning-fg" : "text-foreground"}>{s.streak}</span>
-                          <span className="text-muted-foreground text-[10px] ml-1">d</span>
-                        </td>
-                        <td className="px-3 py-2 text-right text-xs">
-                          <span className={s.pct >= 90 ? "text-success-fg" : s.pct >= 70 ? "text-warning-fg" : "text-danger-fg"}>{s.pct}%</span>
-                          <span className="text-muted-foreground text-[10px] ml-1">({s.submitted}/{s.required})</span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </React.Fragment>
-              );
-            })}
-            {roster.length === 0 && <tr><td colSpan={dayList.length + 3} className="p-8 text-center text-xs text-muted-foreground">No team members with a reporting role yet.</td></tr>}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-// ---------- Graphs (with per-person filter, github-grid) ----------
-
-function buildDayListFrom(days: number, anchorDate: Date): string[] {
-  const list: string[] = [];
-  for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(anchorDate); d.setDate(d.getDate() - i);
-    list.push(isoDate(d));
-  }
-  return list;
-}
-
-function ComplianceGraphs({ eods, roster }: { eods: GridEod[]; roster: RosterEntry[] }) {
-  const [days, setDays] = useState<7 | 30 | 90>(30);
-  const [compare, setCompare] = useState(false);
-  const [personFilter, setPersonFilter] = useState<string>("all");
-  const rawDayList = useMemo(() => buildDayList(days), [days]);
-  const dayList = useMemo(() => trimToTeamStart(rawDayList, roster, eods), [rawDayList, roster, eods]);
-  const filteredEods = useMemo(() => personFilter === "all" ? eods : eods.filter(e => e.user_id === personFilter), [eods, personFilter]);
-  const filteredRoster = useMemo(() => personFilter === "all" ? roster : roster.filter(r => r.user_id === personFilter), [roster, personFilter]);
-
-  const prevDay = useCallback((d: string) => {
-    const dt = new Date(d + "T00:00:00");
-    dt.setDate(dt.getDate() - days);
-    return isoDate(dt);
-  }, [days]);
-
-  const submissionsData = useMemo(() => dayList.map(d => {
-    const submitted = filteredEods.filter(e => e.report_date === d).length;
-    const expected = personFilter === "all" ? roster.filter(r => !r.joined_at || d >= r.joined_at).length : 1;
-    return { date: d, label: fmtDayShort(new Date(d + "T00:00:00")), submitted, expected };
-  }), [dayList, filteredEods, roster, personFilter]);
-
-  // Sets vs expected: every setter owes 3 sets a day
-  const setsData = useMemo(() => dayList.map(d => {
-    const dayEods = filteredEods.filter(e => e.report_date === d);
-    const setters = (personFilter === "all" ? roster : filteredRoster)
-      .filter(r => r.primary_role === "setter" && (!r.joined_at || d >= r.joined_at));
-    return {
-      date: d, label: fmtDayShort(new Date(d + "T00:00:00")),
-      submitted: dayEods.reduce((a, e) => a + (e.calls_booked ?? 0), 0),
-      expected: setters.length * 3,
-    };
-  }), [dayList, filteredEods, roster, filteredRoster, personFilter]);
-
-  const funnelData = useMemo(() => dayList.map(d => {
-    const dayEods = filteredEods.filter(e => e.report_date === d);
-    const prevEods = compare ? filteredEods.filter(e => e.report_date === prevDay(d)) : [];
-    return {
-      date: d, label: fmtDayShort(new Date(d + "T00:00:00")),
-      dms: dayEods.reduce((a, e) => a + (e.dms_sent ?? 0), 0),
-      convos: dayEods.reduce((a, e) => a + (e.convos_started ?? 0), 0),
-      booked: dayEods.reduce((a, e) => a + (e.calls_booked ?? 0), 0),
-      shows: dayEods.reduce((a, e) => a + (e.shows ?? 0), 0),
-      prev_dms: prevEods.reduce((a, e) => a + (e.dms_sent ?? 0), 0),
-      prev_convos: prevEods.reduce((a, e) => a + (e.convos_started ?? 0), 0),
-      prev_booked: prevEods.reduce((a, e) => a + (e.calls_booked ?? 0), 0),
-      prev_shows: prevEods.reduce((a, e) => a + (e.shows ?? 0), 0),
-    };
-  }), [dayList, filteredEods, compare, prevDay]);
-
-  const totalReports = filteredEods.filter(e => dayList.includes(e.report_date)).length;
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 flex-wrap">
-        <div className="inline-flex rounded-lg bg-muted p-[3px]">
-          {[7, 30, 90].map(n => (
-            <button key={n} onClick={() => setDays(n as 7 | 30 | 90)} className={`text-[13px] font-medium px-3 py-1.5 rounded-[8px] leading-none motion-safe:transition-colors ${days === n ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>{n}D</button>
-          ))}
-        </div>
-        <SelectField value={personFilter} onChange={(v) => setPersonFilter(v)} options={[{ value: "all", label: "All team" }, ...roster.map((r) => ({ value: r.user_id, label: r.display_name }))]} />
-        <button
-          onClick={() => setCompare(c => !c)}
-          className={`inline-flex items-center gap-1.5 text-[13px] font-medium px-3 py-1.5 rounded-md motion-safe:transition-colors ${compare ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground hover:text-foreground"}`}
-        >
-          Compare prev
-        </button>
-      </div>
-
-      <GraphCard title="Reports submitted vs expected" subtitle="Green = submitted, gray = expected total">
-        {totalReports === 0 ? <NoData /> : <SubmissionsChart data={submissionsData} />}
-      </GraphCard>
-
-      <GraphCard title="Sets booked vs expected" subtitle="Green = sets booked, gray = target (3 per setter per day)">
-        {totalReports === 0 ? <NoData /> : <SubmissionsChart data={setsData} />}
-      </GraphCard>
-
-      <GraphCard title="Funnel volume · daily totals" subtitle={`DMs · convos · booked · shows${compare ? " (ghost = prev period)" : ""}`}>
-        {totalReports === 0 ? <NoData /> : <FunnelChart data={funnelData} compare={compare} />}
-      </GraphCard>
-
-      <GraphCard title="EOD submissions per person" subtitle="One square per day · green = submitted + hit KPI, amber = submitted only, red = missed" auto>
-        <SubmissionsGrid dayList={dayList} roster={filteredRoster} eods={eods} />
-      </GraphCard>
-    </div>
-  );
-}
-
-function SubmissionsGrid({ dayList, roster, eods }: { dayList: string[]; roster: RosterEntry[]; eods: GridEod[] }) {
-  const byUserDate = useMemo(() => { const m = new Map<string, EOD>(); eods.forEach(e => m.set(`${e.user_id}::${e.report_date}`, e)); return m; }, [eods]);
-  if (!roster.length) return <NoData />;
-  return (
-    <div className="overflow-x-auto -mx-4 px-4">
-      <div className="space-y-1 min-w-fit">
-        {roster.map(r => {
-          const st: SetterType = r.primary_role === "setter" ? r.setter_type : null;
-          return (
-            <div key={r.user_id} className="flex items-center gap-2">
-              <div className="text-[11px] text-muted-foreground w-28 shrink-0 truncate">{r.display_name}</div>
-              <div className="flex gap-0.5">
-                {dayList.map(d => {
-                  const eod = byUserDate.get(`${r.user_id}::${d}`);
-                  const beforeJoin = !eod && r.joined_at && d < r.joined_at;
-                  const bg = eod
-                    ? (st ? (didHitKpi(eod, st) ? "bg-success/35" : "bg-warning/30") : "bg-success/35")
-                    : beforeJoin ? "bg-muted" : "bg-danger/25";
-                  return <div key={d} className={`h-3 w-3 rounded-[2px] ${bg}`} title={`${r.display_name} · ${fmtLong(d)} · ${!eod ? "missed" : "submitted"}`} />;
-                })}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function NoData() { return <div className="h-full flex items-center justify-center text-[11px] text-muted-foreground">No reports in this period.</div>; }
-
-function GraphCard({ title, subtitle, children, auto }: { title: string; subtitle?: string; children: React.ReactNode; auto?: boolean }) {
-  return (
-    <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-4">
-      <div className="mb-3">
-        <div className="text-xs font-semibold text-foreground">{title}</div>
-        {subtitle && <div className="text-[10px] text-muted-foreground mt-0.5">{subtitle}</div>}
-      </div>
-      {/* Charts want a fixed drawing height; the per-person grid grows with the roster. */}
-      <div className={auto ? "" : "h-64"}>{children}</div>
-    </div>
-  );
-}
-
-function SubmissionsChart({ data }: { data: { label: string; submitted: number; expected: number }[] }) {
-  return (
-    <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={data}>
-        <CartesianGrid strokeDasharray="2 4" stroke="var(--color-border)" vertical={false} />
-        <XAxis dataKey="label" tick={{ fontSize: 10, fill: "var(--color-muted-foreground)" }} />
-        <YAxis tick={{ fontSize: 10, fill: "var(--color-muted-foreground)" }} allowDecimals={false} />
-        <ReTooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, fontSize: 11 }} />
-        <Legend wrapperStyle={{ fontSize: 10 }} />
-        {/* muted-foreground at low opacity stays visible on the dark theme where --border vanished */}
-        <Bar dataKey="expected" fill="var(--muted-foreground)" fillOpacity={0.35} name="Expected" isAnimationActive={false} />
-        <Bar dataKey="submitted" fill="var(--chart-2)" name="Submitted" isAnimationActive={false} />
-      </BarChart>
-    </ResponsiveContainer>
-  );
-}
-
-function FunnelChart({ data, compare }: { data: any[]; compare?: boolean }) {
-  const series = [
-    ...(compare ? [
-      { key: "prev_dms",    label: "", color: "var(--color-muted-foreground)", strokeWidth: 1, strokeOpacity: 0.35, ghost: true },
-      { key: "prev_convos", label: "", color: "var(--chart-1)", strokeWidth: 1, strokeOpacity: 0.35, ghost: true },
-      { key: "prev_booked", label: "", color: "var(--chart-2)", strokeWidth: 1, strokeOpacity: 0.35, ghost: true },
-      { key: "prev_shows",  label: "", color: "var(--chart-3)", strokeWidth: 1, strokeOpacity: 0.35, ghost: true },
-    ] : []),
-    { key: "dms",    label: "DMs",    color: "var(--color-muted-foreground)" },
-    { key: "convos", label: "Convos", color: "var(--chart-1)" },
-    { key: "booked", label: "Booked", color: "var(--chart-2)", strokeWidth: 2 },
-    { key: "shows",  label: "Shows",  color: "var(--chart-3)" },
-  ];
-  const legend = series.filter(s => !s.ghost);
-  return (
-    <div className="h-full flex flex-col">
-      <div className="flex-1 min-h-0">
-        <VolumeAreaChart data={data} series={series} height={210} />
-      </div>
-      <VolumeLegend series={legend} />
-    </div>
-  );
-}
-
-// ---------- Team feed ----------
-
-function TeamFeed({ eods, isAdmin, onDelete }: { eods: GridEod[]; isAdmin: boolean; onDelete: (id: string) => void }) {
-  const [days, setDays] = useState<7 | 14 | 30>(7);
-  const [role, setRole] = useState<string>("all");
-  const [person, setPerson] = useState<string>("all");
-  const cutoff = useMemo(() => { const d = new Date(); d.setDate(d.getDate() - days); return isoDate(d); }, [days]);
-  const filtered = useMemo(() => eods
-    .filter(e => e.report_date >= cutoff)
-    .filter(e => role === "all" ? true : e.primary_role === role)
-    .filter(e => person === "all" ? true : e.user_id === person), [eods, cutoff, role, person]);
-
-  const grouped = useMemo(() => {
-    const m = new Map<string, GridEod[]>();
-    filtered.forEach(e => { const arr = m.get(e.report_date) ?? []; arr.push(e); m.set(e.report_date, arr); });
-    return Array.from(m.entries()).sort((a, b) => b[0].localeCompare(a[0]));
-  }, [filtered]);
-
-  const people = useMemo(() => Array.from(new Map(eods.map(e => [e.user_id, e.display_name])).entries()), [eods]);
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2 flex-wrap">
-        <div className="inline-flex rounded-sm border border-border bg-card p-0.5">
-          {[7, 14, 30].map(n => (
-            <button key={n} onClick={() => setDays(n as 7 | 14 | 30)} className={`text-[11px] font-semibold px-2.5 py-1 rounded-[2px] transition ${days === n ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"}`}>{n}D</button>
-          ))}
-        </div>
-        <SelectField value={role} onChange={(v) => setRole(v)} options={[{ value: "all", label: "All roles" }]} />
-        <SelectField value={person} onChange={(v) => setPerson(v)} options={[{ value: "all", label: "Everyone" }]} />
-        <button
-          onClick={() => exportToCsv(`eods-${days}d.csv`, filtered.map(e => ({
-            date: e.report_date, name: e.display_name, role: e.primary_role,
-            dials: e.dials, leads: e.leads_contacted, sets: e.calls_booked,
-            shows: e.shows, no_shows: e.no_shows,
-          })))}
-          className="ml-auto h-7 px-2.5 flex items-center gap-1.5 rounded-sm border border-[var(--border)] text-[11px] text-muted-foreground hover:text-foreground hover:border-foreground/30 transition"
-        >
-          <Download className="h-3 w-3" /> Export CSV
-        </button>
-      </div>
-
-      {grouped.length === 0 && <EmptyState text="No EODs in this range." />}
-      {grouped.map(([day, rows]) => (
-        <div key={day} className="space-y-2">
-          <div className="text-[13px] text-muted-foreground border-b border-[var(--border)] pb-1">
-            {fmtLong(day)} · {rows.length} submitted
-          </div>
-          <div className="grid md:grid-cols-2 gap-2">
-            {rows.map(e => <div key={e.id} className="cv-auto"><FeedCard e={e} isAdmin={isAdmin} onDelete={onDelete} /></div>)}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function FeedCard({ e, isAdmin, onDelete }: { e: GridEod; isAdmin: boolean; onDelete: (id: string) => void }) {
-  const st: SetterType = e.primary_role === "setter" ? (e.setter_type ?? null) : null;
-  const kpi = st ? didHitKpi(e, st) : null;
-  const chips: { label: string; value: string | number }[] = [];
-  if (e.primary_role === "setter") {
-    if (st === "dm") chips.push({ label: "Leads", value: e.leads_contacted });
-    else chips.push({ label: "Dials", value: e.dials });
-    chips.push({ label: "Sets", value: e.calls_booked });
-    chips.push({ label: "Shows", value: e.shows });
-  } else if (e.primary_role === "closer" || e.primary_role === "coach") {
-    chips.push({ label: "Calls", value: e.calls_taken });
-    chips.push({ label: "Closes", value: e.closes });
-    chips.push({ label: "Cash", value: `$${Math.round(Number(e.cash_collected)).toLocaleString()}` });
-  } else if (e.primary_role === "csm") {
-    chips.push({ label: "Check-ins", value: e.student_checkins });
-    chips.push({ label: "Looms", value: e.looms_reviewed });
-    chips.push({ label: "Roleplays", value: e.roleplays_reviewed });
-  }
-  return (
-    <div className="card-surface p-3 space-y-2">
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <div className="text-[15px] font-semibold">{e.display_name}</div>
-          <div className="text-[12px] text-muted-foreground">{st ? `${st} setter` : e.primary_role}</div>
-        </div>
-        <div className="flex items-center gap-2">
-          {kpi !== null && <span className={`text-[10px] px-1.5 py-0.5 rounded-sm ${kpi ? "bg-success-bg text-success-fg" : "bg-warning-bg text-warning-fg"}`}>KPI {kpi ? "✓" : "✗"}</span>}
-          {isAdmin && (
-            <button onClick={() => { if (confirm("Delete this EOD?")) onDelete(e.id); }} className="text-muted-foreground hover:text-danger-fg" title="Delete">
-              <Trash2 className="h-3 w-3" />
-            </button>
-          )}
-        </div>
-      </div>
-      <div className="flex gap-2 flex-wrap">
-        {chips.map(c => (
-          <span key={c.label} className="text-[11px] bg-[var(--background)] border border-[var(--border)] px-2 py-0.5 rounded-sm">
-            <span className="text-muted-foreground">{c.label}</span> <span className="">{c.value}</span>
-          </span>
-        ))}
-      </div>
-      {e.wins && <p className="text-[11px]"><span className="text-success-fg">Wins:</span> {e.wins}</p>}
-      {e.blockers && <p className="text-[11px]"><span className="text-warning-fg">Blockers:</span> {e.blockers}</p>}
-    </div>
-  );
-}
-
-// ---------- Side panels ----------
-
-function SubmittedTodayPanel({ roster, eods, today }: { roster: RosterEntry[]; eods: GridEod[]; today: string }) {
-  const submittedIds = new Set(eods.filter(e => e.report_date === today).map(e => e.user_id));
-  return (
-    <div className="card-surface p-4">
-      <div className="text-[13px] text-muted-foreground mb-3">Who's submitted today</div>
-      <div className="space-y-1.5 text-xs max-h-64 overflow-y-auto">
-        {roster.map(r => (
-          <div key={r.user_id} className="flex items-center justify-between">
-            <span className="truncate">{r.display_name}</span>
-            {submittedIds.has(r.user_id) ? <span className="text-success-fg text-[11px]">✓</span> : <span className="text-warning-fg text-[11px]">pending</span>}
-          </div>
-        ))}
-        {roster.length === 0 && <div className="text-muted-foreground">No team yet.</div>}
-      </div>
-    </div>
-  );
-}
+// ---------- Personal last-7 panel ----------
 
 function MyLast7Panel({ myEods, today, setterType, csmTarget = null }: { myEods: EOD[]; today: string; setterType: SetterType; csmTarget?: number | null }) {
   const days = useMemo(() => { const list: string[] = []; const t = new Date(today + "T00:00:00"); for (let i = 6; i >= 0; i--) { const d = new Date(t); d.setDate(t.getDate() - i); list.push(isoDate(d)); } return list; }, [today]);
@@ -1436,8 +602,8 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   return <div className="text-[13px] font-medium text-muted-foreground border-b border-[var(--border)] pb-1.5">{children}</div>;
 }
 
-function MiniChip({ label, value, tone, icon }: { label: string; value: number | string; tone?: "green" | "amber" | "default"; icon?: React.ReactNode }) {
-  const valueColor = tone === "green" ? "text-primary" : tone === "amber" ? "text-warning-fg" : "text-foreground";
+function MiniChip({ label, value, tone, icon }: { label: string; value: number | string; tone?: "amber" | "default"; icon?: React.ReactNode }) {
+  const valueColor = tone === "amber" ? "text-warning-fg" : "text-foreground";
   return (
     <div className="card-surface p-2">
       <div className="flex items-center gap-1 text-[12px] text-muted-foreground mb-0.5">{icon}{label}</div>

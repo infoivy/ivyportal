@@ -93,11 +93,11 @@ export function VolumeTrendPanel() {
     ...(compare ? [
       { key: "prev_dms",    label: "DMs (prev)",    color: "#9CA3AF", strokeWidth: 1, strokeOpacity: 0.35, ghost: true },
       { key: "prev_convos", label: "Convos (prev)",  color: "#6366F1", strokeWidth: 1, strokeOpacity: 0.35, ghost: true },
-      { key: "prev_booked", label: "Booked (prev)",  color: "#22C55E", strokeWidth: 1, strokeOpacity: 0.35, ghost: true },
+      { key: "prev_booked", label: "Booked (prev)", color: "var(--chart-2)", strokeWidth: 1, strokeOpacity: 0.35, ghost: true },
     ] : []),
     { key: "dms",    label: "DMs",    color: "#9CA3AF" },
     { key: "convos", label: "Convos", color: "#6366F1" },
-    { key: "booked", label: "Booked", color: "#22C55E", strokeWidth: 2 },
+    { key: "booked", label: "Booked", color: "var(--chart-2)", strokeWidth: 2 },
     { key: "shows",  label: "Shows",  color: "#F59E0B" },
     { key: "closes", label: "Closes", color: "#A855F7" },
   ], [compare]);
@@ -117,7 +117,7 @@ export function VolumeTrendPanel() {
           <VolumeLegend series={[
             { key: "dms", label: "DMs", color: "#9CA3AF" },
             { key: "convos", label: "Convos", color: "#6366F1" },
-            { key: "booked", label: "Booked", color: "#22C55E" },
+            { key: "booked", label: "Booked", color: "var(--chart-2)" },
             { key: "shows", label: "Shows", color: "#F59E0B" },
           ]} />
         </>

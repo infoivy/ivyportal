@@ -249,7 +249,7 @@ export function NotificationsBell() {
     <Popover>
       <PopoverTrigger asChild>
         <button
-          className="relative h-8 w-8 flex items-center justify-center rounded-sm border border-[var(--border)] bg-[var(--card)] text-muted-foreground hover:text-foreground transition"
+          className="relative h-12 w-12 sm:h-8 sm:w-8 flex items-center justify-center rounded-md border border-[var(--border)] bg-[var(--card)] text-muted-foreground hover:text-foreground transition"
           aria-label="Notifications"
         >
           <Bell className="h-3.5 w-3.5" />
