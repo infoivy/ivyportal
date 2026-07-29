@@ -46,13 +46,19 @@ export const getTeamCalendarStatus = createServerFn({ method: "GET" })
       .select("user_id, google_email, color_hex, connected_at");
     if (!conns) return [];
     const ids = conns.map((c) => c.user_id);
+    const { data: statusRoles } = await supabaseAdmin
+      .from("user_roles")
+      .select("user_id, role")
+      .in("user_id", ids);
+    const statusRolesBy = new Map<string, string[]>();
+    (statusRoles ?? []).forEach((r) => statusRolesBy.set(r.user_id, [...(statusRolesBy.get(r.user_id) ?? []), r.role]));
     const { data: profs } = await supabaseAdmin
       .from("profiles")
       .select("id, display_name, avatar_url")
       .eq("is_demo", false)
       .in("id", ids);
     const pmap = new Map((profs ?? []).map((p) => [p.id, p]));
-    return conns.filter((c) => pmap.has(c.user_id)).map((c) => ({
+    return conns.filter((c) => pmap.has(c.user_id) && (statusRolesBy.get(c.user_id) ?? []).some((r) => ["admin", "founder", "cofounder", "closer", "coach", "csm"].includes(r))).map((c) => ({
       user_id: c.user_id,
       email: c.google_email,
       color: c.color_hex,
@@ -106,7 +112,18 @@ export const getTeamCalendarEvents = createServerFn({ method: "POST" })
       .eq("is_demo", false)
       .in("id", ids);
     const pmap = new Map((profs ?? []).map((p) => [p.id, p.display_name ?? "Unknown"]));
-    const realConnections = conns.filter((c) => pmap.has(c.user_id));
+    const { data: roleRows } = await supabaseAdmin
+      .from("user_roles")
+      .select("user_id, role")
+      .in("user_id", ids);
+    const rolesBy = new Map<string, string[]>();
+    (roleRows ?? []).forEach((r) => rolesBy.set(r.user_id, [...(rolesBy.get(r.user_id) ?? []), r.role]));
+    const feedsTeamCalendar = (id: string) => {
+      const rs = rolesBy.get(id) ?? [];
+      // setter-only calendars stay personal (founder-directed 2026-07-29)
+      return rs.some((r) => ["admin", "founder", "cofounder", "closer", "coach", "csm"].includes(r));
+    };
+    const realConnections = conns.filter((c) => pmap.has(c.user_id) && feedsTeamCalendar(c.user_id));
 
     const now = Date.now();
 

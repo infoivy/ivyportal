@@ -305,6 +305,27 @@ function CalendarPage() {
     setTypeFilter(t);
     try { localStorage.setItem("isa-cal-type", t); } catch { /* ignore */ }
   };
+  type GroupedEvent = TeamEvent & { members: { name: string; color: string }[] };
+  // The same meeting mirrored on several connected calendars collapses to one
+  // chip carrying every member (founder 2026-07-29: the team meeting once,
+  // with a shaded color or tag per person to distinguish).
+  const groupEvents = (list: TeamEvent[]): GroupedEvent[] => {
+    const out: GroupedEvent[] = [];
+    const byKey = new Map<string, GroupedEvent>();
+    for (const e of list) {
+      const key = `${e.start}|${(e.summary ?? "").trim().toLowerCase()}`;
+      const g = byKey.get(key);
+      if (g) {
+        if (!g.members.some(m => m.name === e.display_name)) g.members.push({ name: e.display_name, color: e.color });
+      } else {
+        const ng = { ...e, members: [{ name: e.display_name, color: e.color }] };
+        byKey.set(key, ng);
+        out.push(ng);
+      }
+    }
+    return out;
+  };
+  const firstName = (n: string) => n.trim().split(/\s+/)[0];
   const visibleEvents = (events.data ?? []).filter((e) =>
     !hiddenUsers.has(e.user_id) && (typeFilter === "all" || classify(e.summary ?? "") === typeFilter));
 
@@ -466,9 +487,9 @@ function CalendarPage() {
               {Array.from({ length: Math.round((monthGridEnd.getTime() - monthGridStart.getTime()) / 86400000) + 1 }, (_, i) => addDays(monthGridStart, i)).map((day, i) => {
                 const inMonth = day.getMonth() === monthAnchor.getMonth();
                 const isToday = isSameDay(day, toLocal(new Date()));
-                const dayEvents = visibleEvents
+                const dayEvents = groupEvents(visibleEvents
                   .filter(e => isSameDay(toLocal(new Date(e.start)), day))
-                  .sort((a, b) => a.start.localeCompare(b.start));
+                  .sort((a, b) => a.start.localeCompare(b.start)));
                 const shown = dayEvents.slice(0, 4);
                 const drill = () => { changeCalView("week"); setWeekStart(daySpan === 7 ? startOfWeek(day, { weekStartsOn: 1 }) : day); };
                 return (
@@ -478,22 +499,23 @@ function CalendarPage() {
                         {day.getDate() === 1 ? format(day, "MMM d") : day.getDate()}
                       </span>
                     </button>
-                    {shown.map(e => {
-                      const kind = classify(e.summary ?? "");
-                      const dot = kind === "closing" ? "bg-success" : kind === "coaching" ? "bg-[var(--chart-1)]" : kind === "team" ? "bg-warning" : "bg-muted-foreground/50";
-                      return (
-                        <button
-                          key={e.id}
-                          onClick={() => setSelectedEvent(e)}
-                          className="flex items-center gap-1.5 rounded px-1 py-0.5 text-left text-[11px] leading-4 hover:bg-muted/60 motion-safe:transition-colors min-w-0"
-                          title={e.summary ?? ""}
-                        >
-                          <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${dot}`} />
-                          <span className="tabular-nums text-muted-foreground shrink-0">{format(toLocal(new Date(e.start)), "HH:mm")}</span>
-                          <span className="truncate text-foreground">{e.summary ?? "Untitled"}</span>
-                        </button>
-                      );
-                    })}
+                    {shown.map(e => (
+                      <button
+                        key={e.id}
+                        onClick={() => setSelectedEvent(e)}
+                        className="flex items-center gap-1.5 rounded px-1 py-0.5 text-left text-[11px] leading-4 hover:bg-muted/60 motion-safe:transition-colors min-w-0"
+                        style={{ borderLeft: `2px solid ${e.members[0]?.color ?? "var(--border)"}` }}
+                        title={`${e.summary ?? ""} · ${e.members.map(m => m.name).join(", ")}`}
+                      >
+                        <span className="flex shrink-0 -space-x-0.5">
+                          {e.members.slice(0, 3).map(m => (
+                            <span key={m.name} className="h-1.5 w-1.5 rounded-full ring-1 ring-[var(--card)]" style={{ background: m.color }} />
+                          ))}
+                        </span>
+                        <span className="tabular-nums text-muted-foreground shrink-0">{format(toLocal(new Date(e.start)), "HH:mm")}</span>
+                        <span className="truncate text-foreground">{e.summary ?? "Untitled"}</span>
+                      </button>
+                    ))}
                     {dayEvents.length > shown.length && (
                       <button onClick={drill} className="text-left text-[10px] text-muted-foreground hover:text-foreground px-1">
                         +{dayEvents.length - shown.length} more
@@ -519,9 +541,14 @@ function CalendarPage() {
           <div className="grid" style={{ gridTemplateColumns: `repeat(${daySpan}, minmax(0, 1fr))` }}>
             {days.map((d, ci) => {
               const today = isSameDay(d, toLocal(new Date()));
-              const dayEvents = visibleEvents
+              const dayEvents = groupEvents(visibleEvents
                 .filter(e => isSameDay(toLocal(new Date(e.start)), d))
-                .sort((a, b) => a.start.localeCompare(b.start));
+                .sort((a, b) => a.start.localeCompare(b.start)));
+              const slots: (typeof dayEvents)[] = [];
+              for (const g of dayEvents) {
+                const last = slots[slots.length - 1];
+                if (last && last[0].start === g.start) last.push(g); else slots.push([g]);
+              }
               return (
                 <div key={d.toISOString()} className={`min-w-0 flex flex-col ${ci > 0 ? "border-l border-border/40" : ""}`}>
                   <div className="border-b border-border/60 bg-card px-2 py-2 text-center">
@@ -531,24 +558,39 @@ function CalendarPage() {
                     </span>
                   </div>
                   <div className="flex-1 min-h-[52vh] max-h-[68vh] overflow-y-auto overscroll-contain p-1.5 space-y-1">
-                    {dayEvents.map(e => {
-                      const kind = classify(e.summary ?? "");
-                      const dot = kind === "closing" ? "bg-success" : kind === "coaching" ? "bg-[var(--chart-1)]" : kind === "team" ? "bg-warning" : "bg-muted-foreground/50";
-                      return (
-                        <button
-                          key={e.id}
-                          onClick={() => setSelectedEvent(e)}
-                          className="w-full rounded-md border border-border/50 bg-muted/30 hover:bg-muted/60 px-1.5 py-1.5 text-left motion-safe:transition-colors min-w-0"
-                          title={e.summary ?? ""}
-                        >
-                          <span className="flex items-center gap-1.5 text-[11px] leading-4">
-                            <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${dot}`} />
-                            <span className="tabular-nums text-muted-foreground shrink-0">{format(toLocal(new Date(e.start)), "HH:mm")}</span>
-                          </span>
-                          <span className="mt-0.5 block truncate text-[12px] leading-4 text-foreground">{e.summary ?? "Untitled"}</span>
-                        </button>
-                      );
-                    })}
+                    {slots.map((slot, si) => (
+                      <div key={si} className={slot.length > 1 ? "grid grid-cols-2 gap-1" : ""}>
+                        {slot.map(e => (
+                          <button
+                            key={e.id}
+                            onClick={() => setSelectedEvent(e)}
+                            className="w-full rounded-md border border-border/50 hover:bg-muted/60 px-1.5 py-1.5 text-left motion-safe:transition-colors min-w-0"
+                            style={{
+                              borderLeft: `2px solid ${e.members[0]?.color ?? "var(--border)"}`,
+                              background: e.members.length === 1 ? `color-mix(in srgb, ${e.members[0].color} 7%, transparent)` : "var(--muted)",
+                            }}
+                            title={`${e.summary ?? ""} · ${e.members.map(m => m.name).join(", ")}`}
+                          >
+                            <span className="flex items-center gap-1.5 text-[11px] leading-4 min-w-0">
+                              <span className="tabular-nums text-muted-foreground shrink-0">{format(toLocal(new Date(e.start)), "HH:mm")}</span>
+                              {e.members.length === 1 ? (
+                                <span className="truncate font-medium" style={{ color: e.members[0].color }}>{firstName(e.members[0].name)}</span>
+                              ) : (
+                                <span className="flex items-center gap-1 shrink-0">
+                                  <span className="flex -space-x-1">
+                                    {e.members.slice(0, 4).map(m => (
+                                      <span key={m.name} className="h-2 w-2 rounded-full ring-1 ring-[var(--card)]" style={{ background: m.color }} />
+                                    ))}
+                                  </span>
+                                  <span className="text-muted-foreground">×{e.members.length}</span>
+                                </span>
+                              )}
+                            </span>
+                            <span className="mt-0.5 block truncate text-[12px] leading-4 text-foreground">{e.summary ?? "Untitled"}</span>
+                          </button>
+                        ))}
+                      </div>
+                    ))}
                     {dayEvents.length === 0 && (
                       <div className="pt-4 text-center text-[11px] text-muted-foreground/60">–</div>
                     )}
