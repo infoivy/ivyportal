@@ -189,8 +189,33 @@ function KnowledgeIndex() {
                         "The complete setting system in one place: guided workflow, the full script library, and the DM mastery board · openers, qualification, objections, follow-ups, psychology, and ops.",
                       to: "/sops/isa-setting-process",
                     },
+                    {
+                      key: "simple-discovery-framework",
+                      title: "Simple Discovery Framework",
+                      description:
+                        "The phone-setter discovery call, step by step: opening, intent, situation, gap, and the handoff. By Abu Bilal.",
+                      to: "/sops/simple-discovery-framework",
+                    },
                   ]
-                : [];
+                : value === "closing" &&
+                  (roles.includes("admin") || roles.includes("closer") || roles.includes("coach") || roles.includes("founder"))
+                  ? [
+                      {
+                        key: "objection-handling-playbook",
+                        title: "Objection Handling Playbook",
+                        description:
+                          "Every closing objection and its handling path: think-about-it, partner, money, logistics, fear, and the closes that resolve them.",
+                        to: "/sops/objection-handling-playbook",
+                      },
+                      {
+                        key: "objection-think-about-it",
+                        title: "Objection · Think About It",
+                        description:
+                          "The deep dive on the number-one smokescreen: what sits behind it and the exact language that opens each layer.",
+                        to: "/sops/objection-think-about-it",
+                      },
+                    ]
+                  : [];
             if (items.length === 0 && staticItems.length === 0) return null;
             const showSection = q
               ? items.length > 0 ||

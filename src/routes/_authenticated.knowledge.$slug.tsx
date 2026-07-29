@@ -1,8 +1,18 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { PageSkeleton } from "@/components/ui/skeletons";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+
+// DB docs that became styled static pages (portal sweep 2026-07-29): old
+// /knowledge/<slug> bookmarks land on the new routes.
+const MOVED_TO_STATIC: Record<string, string> = {
+  "simple-discovery-framework-phone-setters": "/sops/simple-discovery-framework",
+  "objection-handling-playbook": "/sops/objection-handling-playbook",
+  "objection-think-about-it": "/sops/objection-think-about-it",
+  "isa-setting-process": "/sops/isa-setting-process",
+  "dm-setting-mastery": "/sops/isa-setting-process",
+};
 import { CATEGORY_LABEL, type DocCategory } from "@/lib/knowledge";
 import { MarkdownView, useToc } from "@/components/markdown-view";
 import { DocShell } from "@/components/doc-shell";
@@ -14,7 +24,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/knowledge/$slug")({
   head: () => ({ meta: [{ title: "Knowledge · ISA Team" }] }),
-  component: KnowledgeDoc,
+  component: KnowledgeDocGate,
 });
 
 type DocRow = {
@@ -30,6 +40,13 @@ type DocRow = {
   external_links: { label: string; url: string }[] | null;
   embed_url: string | null;
 };
+
+function KnowledgeDocGate() {
+  const { slug } = Route.useParams();
+  const movedTo = MOVED_TO_STATIC[slug];
+  if (movedTo) return <Navigate to={movedTo as never} replace />;
+  return <KnowledgeDoc />;
+}
 
 function KnowledgeDoc() {
   const { slug } = Route.useParams();

@@ -50,6 +50,9 @@ import { Route as ApiPublicGoogleOauthCallbackRouteImport } from './routes/api/p
 import { Route as AuthenticatedTeamIdRouteImport } from './routes/_authenticated.team_.$id'
 import { Route as AuthenticatedStudentsRequestsRouteImport } from './routes/_authenticated.students.requests'
 import { Route as AuthenticatedStudentsIdRouteImport } from './routes/_authenticated.students.$id'
+import { Route as AuthenticatedSopsSimpleDiscoveryFrameworkRouteImport } from './routes/_authenticated.sops.simple-discovery-framework'
+import { Route as AuthenticatedSopsObjectionThinkAboutItRouteImport } from './routes/_authenticated.sops.objection-think-about-it'
+import { Route as AuthenticatedSopsObjectionHandlingPlaybookRouteImport } from './routes/_authenticated.sops.objection-handling-playbook'
 import { Route as AuthenticatedSopsIsaSettingProcessRouteImport } from './routes/_authenticated.sops.isa-setting-process'
 import { Route as AuthenticatedSopsDmSettingMasteryRouteImport } from './routes/_authenticated.sops.dm-setting-mastery'
 import { Route as AuthenticatedPoliciesEodHygieneRouteImport } from './routes/_authenticated.policies.eod-hygiene'
@@ -273,6 +276,24 @@ const AuthenticatedStudentsIdRoute = AuthenticatedStudentsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AuthenticatedStudentsRoute,
 } as any)
+const AuthenticatedSopsSimpleDiscoveryFrameworkRoute =
+  AuthenticatedSopsSimpleDiscoveryFrameworkRouteImport.update({
+    id: '/simple-discovery-framework',
+    path: '/simple-discovery-framework',
+    getParentRoute: () => AuthenticatedSopsRoute,
+  } as any)
+const AuthenticatedSopsObjectionThinkAboutItRoute =
+  AuthenticatedSopsObjectionThinkAboutItRouteImport.update({
+    id: '/objection-think-about-it',
+    path: '/objection-think-about-it',
+    getParentRoute: () => AuthenticatedSopsRoute,
+  } as any)
+const AuthenticatedSopsObjectionHandlingPlaybookRoute =
+  AuthenticatedSopsObjectionHandlingPlaybookRouteImport.update({
+    id: '/objection-handling-playbook',
+    path: '/objection-handling-playbook',
+    getParentRoute: () => AuthenticatedSopsRoute,
+  } as any)
 const AuthenticatedSopsIsaSettingProcessRoute =
   AuthenticatedSopsIsaSettingProcessRouteImport.update({
     id: '/isa-setting-process',
@@ -357,6 +378,9 @@ export interface FileRoutesByFullPath {
   '/policies/eod-hygiene': typeof AuthenticatedPoliciesEodHygieneRoute
   '/sops/dm-setting-mastery': typeof AuthenticatedSopsDmSettingMasteryRoute
   '/sops/isa-setting-process': typeof AuthenticatedSopsIsaSettingProcessRoute
+  '/sops/objection-handling-playbook': typeof AuthenticatedSopsObjectionHandlingPlaybookRoute
+  '/sops/objection-think-about-it': typeof AuthenticatedSopsObjectionThinkAboutItRoute
+  '/sops/simple-discovery-framework': typeof AuthenticatedSopsSimpleDiscoveryFrameworkRoute
   '/students/$id': typeof AuthenticatedStudentsIdRoute
   '/students/requests': typeof AuthenticatedStudentsRequestsRoute
   '/team/$id': typeof AuthenticatedTeamIdRoute
@@ -404,6 +428,9 @@ export interface FileRoutesByTo {
   '/policies/eod-hygiene': typeof AuthenticatedPoliciesEodHygieneRoute
   '/sops/dm-setting-mastery': typeof AuthenticatedSopsDmSettingMasteryRoute
   '/sops/isa-setting-process': typeof AuthenticatedSopsIsaSettingProcessRoute
+  '/sops/objection-handling-playbook': typeof AuthenticatedSopsObjectionHandlingPlaybookRoute
+  '/sops/objection-think-about-it': typeof AuthenticatedSopsObjectionThinkAboutItRoute
+  '/sops/simple-discovery-framework': typeof AuthenticatedSopsSimpleDiscoveryFrameworkRoute
   '/students/$id': typeof AuthenticatedStudentsIdRoute
   '/students/requests': typeof AuthenticatedStudentsRequestsRoute
   '/team/$id': typeof AuthenticatedTeamIdRoute
@@ -455,6 +482,9 @@ export interface FileRoutesById {
   '/_authenticated/policies/eod-hygiene': typeof AuthenticatedPoliciesEodHygieneRoute
   '/_authenticated/sops/dm-setting-mastery': typeof AuthenticatedSopsDmSettingMasteryRoute
   '/_authenticated/sops/isa-setting-process': typeof AuthenticatedSopsIsaSettingProcessRoute
+  '/_authenticated/sops/objection-handling-playbook': typeof AuthenticatedSopsObjectionHandlingPlaybookRoute
+  '/_authenticated/sops/objection-think-about-it': typeof AuthenticatedSopsObjectionThinkAboutItRoute
+  '/_authenticated/sops/simple-discovery-framework': typeof AuthenticatedSopsSimpleDiscoveryFrameworkRoute
   '/_authenticated/students/$id': typeof AuthenticatedStudentsIdRoute
   '/_authenticated/students/requests': typeof AuthenticatedStudentsRequestsRoute
   '/_authenticated/team_/$id': typeof AuthenticatedTeamIdRoute
@@ -506,6 +536,9 @@ export interface FileRouteTypes {
     | '/policies/eod-hygiene'
     | '/sops/dm-setting-mastery'
     | '/sops/isa-setting-process'
+    | '/sops/objection-handling-playbook'
+    | '/sops/objection-think-about-it'
+    | '/sops/simple-discovery-framework'
     | '/students/$id'
     | '/students/requests'
     | '/team/$id'
@@ -553,6 +586,9 @@ export interface FileRouteTypes {
     | '/policies/eod-hygiene'
     | '/sops/dm-setting-mastery'
     | '/sops/isa-setting-process'
+    | '/sops/objection-handling-playbook'
+    | '/sops/objection-think-about-it'
+    | '/sops/simple-discovery-framework'
     | '/students/$id'
     | '/students/requests'
     | '/team/$id'
@@ -603,6 +639,9 @@ export interface FileRouteTypes {
     | '/_authenticated/policies/eod-hygiene'
     | '/_authenticated/sops/dm-setting-mastery'
     | '/_authenticated/sops/isa-setting-process'
+    | '/_authenticated/sops/objection-handling-playbook'
+    | '/_authenticated/sops/objection-think-about-it'
+    | '/_authenticated/sops/simple-discovery-framework'
     | '/_authenticated/students/$id'
     | '/_authenticated/students/requests'
     | '/_authenticated/team_/$id'
@@ -909,6 +948,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStudentsIdRouteImport
       parentRoute: typeof AuthenticatedStudentsRoute
     }
+    '/_authenticated/sops/simple-discovery-framework': {
+      id: '/_authenticated/sops/simple-discovery-framework'
+      path: '/simple-discovery-framework'
+      fullPath: '/sops/simple-discovery-framework'
+      preLoaderRoute: typeof AuthenticatedSopsSimpleDiscoveryFrameworkRouteImport
+      parentRoute: typeof AuthenticatedSopsRoute
+    }
+    '/_authenticated/sops/objection-think-about-it': {
+      id: '/_authenticated/sops/objection-think-about-it'
+      path: '/objection-think-about-it'
+      fullPath: '/sops/objection-think-about-it'
+      preLoaderRoute: typeof AuthenticatedSopsObjectionThinkAboutItRouteImport
+      parentRoute: typeof AuthenticatedSopsRoute
+    }
+    '/_authenticated/sops/objection-handling-playbook': {
+      id: '/_authenticated/sops/objection-handling-playbook'
+      path: '/objection-handling-playbook'
+      fullPath: '/sops/objection-handling-playbook'
+      preLoaderRoute: typeof AuthenticatedSopsObjectionHandlingPlaybookRouteImport
+      parentRoute: typeof AuthenticatedSopsRoute
+    }
     '/_authenticated/sops/isa-setting-process': {
       id: '/_authenticated/sops/isa-setting-process'
       path: '/isa-setting-process'
@@ -1014,6 +1074,9 @@ const AuthenticatedPoliciesRouteWithChildren =
 interface AuthenticatedSopsRouteChildren {
   AuthenticatedSopsDmSettingMasteryRoute: typeof AuthenticatedSopsDmSettingMasteryRoute
   AuthenticatedSopsIsaSettingProcessRoute: typeof AuthenticatedSopsIsaSettingProcessRoute
+  AuthenticatedSopsObjectionHandlingPlaybookRoute: typeof AuthenticatedSopsObjectionHandlingPlaybookRoute
+  AuthenticatedSopsObjectionThinkAboutItRoute: typeof AuthenticatedSopsObjectionThinkAboutItRoute
+  AuthenticatedSopsSimpleDiscoveryFrameworkRoute: typeof AuthenticatedSopsSimpleDiscoveryFrameworkRoute
 }
 
 const AuthenticatedSopsRouteChildren: AuthenticatedSopsRouteChildren = {
@@ -1021,6 +1084,12 @@ const AuthenticatedSopsRouteChildren: AuthenticatedSopsRouteChildren = {
     AuthenticatedSopsDmSettingMasteryRoute,
   AuthenticatedSopsIsaSettingProcessRoute:
     AuthenticatedSopsIsaSettingProcessRoute,
+  AuthenticatedSopsObjectionHandlingPlaybookRoute:
+    AuthenticatedSopsObjectionHandlingPlaybookRoute,
+  AuthenticatedSopsObjectionThinkAboutItRoute:
+    AuthenticatedSopsObjectionThinkAboutItRoute,
+  AuthenticatedSopsSimpleDiscoveryFrameworkRoute:
+    AuthenticatedSopsSimpleDiscoveryFrameworkRoute,
 }
 
 const AuthenticatedSopsRouteWithChildren =
