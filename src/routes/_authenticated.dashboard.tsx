@@ -25,6 +25,7 @@ import { PayoutAlertBanner } from "@/components/payout-alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { humanDue, todayLocal } from "@/lib/dates";
+import { shortName } from "@/lib/names";
 import { KPI, kpiTargetsFor, owesEods, type SetterType } from "@/lib/eod-kpi";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -383,7 +384,7 @@ function HomePage() {
 
   const data = homeQ.data;
   const now = new Date();
-  const firstName = (displayName || user?.email?.split("@")[0] || "there").trim().split(/\s+/)[0];
+  const firstName = shortName(displayName || user?.email?.split("@")[0]);
   const today = todayLocal();
   const ownTodayRows = data.activities.filter((row) => row.user_id === user?.id && row.report_date === today);
   const ownProfile = data.profiles.find((profile) => profile.id === user?.id);

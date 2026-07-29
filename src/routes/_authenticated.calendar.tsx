@@ -1,5 +1,6 @@
 import { createFileRoute, useSearch } from "@tanstack/react-router";
 import { CashInCalendarCard } from "@/components/cash-in-calendar";
+import { shortName } from "@/lib/names";
 import { useServerFn } from "@tanstack/react-start";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -334,7 +335,7 @@ function CalendarPage() {
     }
     return out;
   };
-  const firstName = (n: string) => n.trim().split(/\s+/)[0];
+
   const visibleEvents = (events.data ?? []).filter((e) =>
     !hiddenUsers.has(e.user_id) && (typeFilter === "all" || classify(e.summary ?? "") === typeFilter));
 
@@ -583,7 +584,7 @@ function CalendarPage() {
                             <span className="flex items-center gap-1.5 text-[11px] leading-4 min-w-0">
                               <span className="tabular-nums text-muted-foreground shrink-0">{format(toLocal(new Date(e.start)), "HH:mm")}</span>
                               {e.members.length === 1 ? (
-                                <span className="truncate text-muted-foreground">{firstName(e.members[0].name)}</span>
+                                <span className="truncate text-muted-foreground">{shortName(e.members[0].name)}</span>
                               ) : (
                                 <span className="flex items-center gap-1 shrink-0">
                                   <span className="flex -space-x-1">
