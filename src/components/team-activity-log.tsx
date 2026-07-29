@@ -31,6 +31,30 @@ const ENTITY: Record<string, string> = {
 
 const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
 
+// Timestamps churn on every write and explain nothing.
+const NOISY = new Set(["updated_at", "created_at", "reminded_3d_at", "reminded_1d_at"]);
+
+const fmtVal = (v: unknown): string =>
+  v == null || v === "" ? "empty"
+  : typeof v === "boolean" ? (v ? "yes" : "no")
+  : typeof v === "object" ? "…"
+  : String(v).replaceAll("_", " ").slice(0, 40);
+
+/** What actually changed: up to three "field: old → new" fragments. */
+function changesOf(row: AuditRow): string | null {
+  if (row.action !== "UPDATE" || !row.old_value || !row.new_value) return null;
+  const parts: string[] = [];
+  for (const key of Object.keys(row.new_value)) {
+    if (NOISY.has(key)) continue;
+    const before = row.old_value[key];
+    const after = row.new_value[key];
+    if (JSON.stringify(before) === JSON.stringify(after)) continue;
+    if (parts.length === 3) { parts.push("…"); break; }
+    parts.push(`${key.replaceAll("_", " ")}: ${fmtVal(before)} → ${fmtVal(after)}`);
+  }
+  return parts.length ? parts.join(" · ") : null;
+}
+
 function describe(row: AuditRow): string {
   const v = (row.new_value ?? row.old_value ?? {}) as Record<string, unknown>;
   const entity = ENTITY[row.table_name] ?? row.table_name.replaceAll("_", " ");
@@ -91,6 +115,7 @@ export function TeamActivityLog() {
             <span className="text-micro tabular-nums text-muted-foreground w-[96px] shrink-0">{format(new Date(row.created_at), "MMM d · HH:mm")}</span>
             <span className="font-medium text-foreground">{row.user_id ? q.data.names.get(row.user_id) ?? "Former member" : "System"}</span>
             <span className="text-muted-foreground">{describe(row)}</span>
+            {changesOf(row) && <span className="text-micro text-muted-foreground/80">{changesOf(row)}</span>}
           </div>
         ))}
       </div>
