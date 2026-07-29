@@ -17,6 +17,8 @@ import { signAvatars, uploadAvatar } from "@/lib/avatars";
 import { deleteTeamMember, setMemberActive, approveAsStudent } from "@/lib/team-admin.functions";
 import { fetchAllTemplates, progressPercent, type OnboardingTemplate } from "@/lib/onboarding";
 import { InvitationsCard, InviteModal, ROLES, roleLabel, type AppRole, type SetterType } from "@/components/invite-modal";
+import { TeamActivityLog } from "@/components/team-activity-log";
+import { formatDistanceToNowStrict } from "date-fns";
 
 export const Route = createFileRoute("/_authenticated/team")({
   head: () => ({ meta: [{ title: "Team · ISA" }] }),
@@ -55,12 +57,14 @@ function TeamPage() {
   const setActiveFn = useServerFn(setMemberActive);
 
   const fetchPage = async () => {
-    const [{ data: profs }, { data: rolesData }, tpls, { data: progressRows }] = await Promise.all([
+    const [{ data: profs }, { data: rolesData }, tpls, { data: progressRows }, lastActRes] = await Promise.all([
       supabase.from("profiles").select("id, display_name, avatar_path, active, phone, timezone, setter_type, base_pay_monthly, base_pay_day, started_on, csm_daily_target, eod_exempt" as any).eq("is_demo", false),
       supabase.from("user_roles").select("user_id, role"),
       fetchAllTemplates(),
       supabase.from("onboarding_progress").select("user_id, role, step_id"),
+      (supabase.from("team_last_activity" as never).select("actor_id, last_at") as unknown as Promise<{ data: { actor_id: string; last_at: string }[] | null }>),
     ]);
+    const lastActivity = new Map(((lastActRes.data ?? []) as { actor_id: string; last_at: string }[]).map(r => [r.actor_id, r.last_at]));
     const rolesByUser = new Map<string, string[]>();
     (rolesData ?? []).forEach(r => {
       const arr = rolesByUser.get(r.user_id) ?? [];
@@ -91,7 +95,7 @@ function TeamPage() {
     });
     return {
       members: list.filter(m => !(m.roles.length === 1 && m.roles[0] === "student")),
-      avatars, templates: tpls, pmap,
+      avatars, templates: tpls, pmap, lastActivity,
     };
   };
 
@@ -163,6 +167,7 @@ function TeamPage() {
   }
 
   const filtered = members.filter(m => (m.display_name ?? "").toLowerCase().includes(q.toLowerCase()));
+  const lastActivity = pageQ.data?.lastActivity ?? new Map<string, string>();
 
   return (
     <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-5">
@@ -248,6 +253,12 @@ function TeamPage() {
                     const color = pct === 100 ? "text-success-fg" : pct >= 50 ? "text-warning-fg" : "text-danger-fg";
                     return <span className={color} title="Onboarding progress">· onboarding {pct}%</span>;
                   })()}
+                  {(() => {
+                    const last = lastActivity.get(m.id);
+                    if (!last) return <span className="italic opacity-70">· no activity logged</span>;
+                    const stale = Date.now() - new Date(last).getTime() > 2 * 86400000;
+                    return <span className={stale ? "text-warning-fg" : ""} title={new Date(last).toLocaleString()}>· active {formatDistanceToNowStrict(new Date(last))} ago</span>;
+                  })()}
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-1">
@@ -281,6 +292,8 @@ function TeamPage() {
           ))}
         </div>
       </div>
+
+      <TeamActivityLog />
 
       {editing && (
         <EditProfileModal
