@@ -366,19 +366,28 @@ function HomePage() {
   const firstName = (displayName || user?.email?.split("@")[0] || "there").trim().split(/\s+/)[0];
   const today = todayLocal();
   const ownTodayRows = data.activities.filter((row) => row.user_id === user?.id && row.report_date === today);
-  const todayRows = data.activities.filter((row) => row.report_date === today);
-  const previousRows = data.activities.filter((row) => row.report_date !== today);
-  const previousDays = new Set(previousRows.map((row) => row.report_date)).size;
-  const todayBooked = sum(todayRows, "calls_booked");
-  const previousBooked = sum(previousRows, "calls_booked");
-  const recentBookedAverage = previousDays && previousBooked != null ? previousBooked / previousDays : previousDays ? null : 0;
   const ownProfile = data.profiles.find((profile) => profile.id === user?.id);
   const ownExempt = ownProfile?.eod_exempt === true;
+  const sevenDaysAgo = format(subDays(new Date(), 6), "yyyy-MM-dd");
+  const team7Rows = data.activities.filter((row) => row.report_date >= sevenDaysAgo);
+  const team7Shows = sum(team7Rows, "shows");
+  const team7NoShows = sum(team7Rows, "no_shows");
+  const team7 = {
+    dials: sum(team7Rows, "dials"),
+    dms: team7Rows.some((row) => row.dms_sent == null && row.leads_contacted == null)
+      ? null
+      : team7Rows.reduce((total, row) => total + Math.max(row.dms_sent ?? 0, row.leads_contacted ?? 0), 0),
+    sets: sum(team7Rows, "calls_booked"),
+    shows: team7Shows,
+    closes: sum(team7Rows, "closes"),
+    showRate: team7Shows != null && team7NoShows != null && team7Shows + team7NoShows > 0
+      ? `${Math.round((team7Shows / (team7Shows + team7NoShows)) * 100)}%`
+      : null,
+  };
   const ownDials = sum(ownTodayRows, "dials");
   const ownDms = sum(ownTodayRows, "dms_sent");
   const ownBooked = sum(ownTodayRows, "calls_booked");
   const target = setterTarget(ownProfile?.setter_type, ownDials, ownDms, ownBooked);
-  const activitySignal = buildActivitySignal(todayBooked, recentBookedAverage, previousDays);
 
   return (
     <PageShell className="pb-24 sm:pb-7">
@@ -519,20 +528,26 @@ function HomePage() {
           </section>
           )}
 
-          <section className="card-surface p-5" aria-labelledby="signal-title">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <CalendarDays className="h-4 w-4" />
-              <p className="text-micro font-semibold uppercase tracking-[0.1em]">One useful signal</p>
-            </div>
-            <h2 id="signal-title" className="sr-only">Activity signal</h2>
-            <p className="mt-4 text-[16px] font-medium leading-6 text-foreground">{activitySignal.title}</p>
-            <p className="mt-2 text-caption leading-5 text-muted-foreground">{activitySignal.detail}</p>
-            {isLeader && (
-              <Link to={"/performance" as never} className="mt-4 inline-flex min-h-10 items-center gap-2 text-body font-semibold text-foreground hover:opacity-70">
+          {isLeader && (
+            <section className="card-surface p-5" aria-labelledby="team-7d-title">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <CalendarDays className="h-4 w-4" />
+                <p className="text-micro font-semibold uppercase tracking-[0.1em]">Team · last 7 days</p>
+              </div>
+              <h2 id="team-7d-title" className="sr-only">Team activity, last 7 days</h2>
+              <dl className="mt-4 grid grid-cols-3 gap-x-3 gap-y-4">
+                <MiniMetric label="Dials" value={team7.dials} />
+                <MiniMetric label="DMs" value={team7.dms} />
+                <MiniMetric label="Sets" value={team7.sets} />
+                <MiniMetric label="Shows" value={team7.shows} />
+                <MiniMetric label="Closes" value={team7.closes} />
+                <MiniMetric label="Show rate" value={team7.showRate} />
+              </dl>
+              <Link to={"/performance" as never} className="mt-5 inline-flex min-h-10 items-center gap-2 text-body font-semibold text-foreground hover:opacity-70">
                 Open Performance <ArrowRight className="h-4 w-4" />
               </Link>
-            )}
-          </section>
+            </section>
+          )}
 
           <p className="px-1 text-micro text-muted-foreground">
             Updated {format(new Date(data.fetchedAt), "h:mm a")}. Activity comes from submitted EOD records.
@@ -588,28 +603,6 @@ function setterTarget(
   return { progress, label };
 }
 
-function buildActivitySignal(todayBooked: number | null, recentAverage: number | null, previousDays: number) {
-  if (todayBooked == null || recentAverage == null) {
-    return {
-      title: "Booking pace is unavailable.",
-      detail: "One or more submitted EOD records is missing a verified calls-booked value.",
-    };
-  }
-  if (!previousDays) {
-    return todayBooked > 0
-      ? { title: `${todayBooked} ${todayBooked === 1 ? "call" : "calls"} booked today.`, detail: "More reporting history is needed before a reliable pace comparison is available." }
-      : { title: "No bookings are reported yet today.", detail: "The signal updates automatically as team EODs are submitted." };
-  }
-  const delta = todayBooked - recentAverage;
-  if (Math.abs(delta) < 0.5) {
-    return { title: "Bookings are tracking near the recent daily pace.", detail: `${todayBooked} today compared with a ${recentAverage.toFixed(1)} call daily average over the visible reporting history.` };
-  }
-  if (delta > 0) {
-    return { title: `Booking pace is ${Math.abs(delta).toFixed(1)} above the recent daily average.`, detail: `${todayBooked} calls are reported today compared with a ${recentAverage.toFixed(1)} daily average.` };
-  }
-  return { title: `Booking pace is ${Math.abs(delta).toFixed(1)} below the recent daily average.`, detail: `${todayBooked} calls are reported today compared with a ${recentAverage.toFixed(1)} daily average. Review the Work queue before treating this as a trend.` };
-}
-
 function PulseRow({ label, value, urgent = false }: { label: string; value: number | string | null; urgent?: boolean }) {
   return (
     <div className="flex min-h-12 items-center justify-between gap-4 py-3">
@@ -621,12 +614,12 @@ function PulseRow({ label, value, urgent = false }: { label: string; value: numb
   );
 }
 
-function MiniMetric({ label, value }: { label: string; value: number | null }) {
+function MiniMetric({ label, value }: { label: string; value: number | string | null }) {
   return (
     <div>
       <dt className="text-micro text-muted-foreground">{label}</dt>
       <dd className="mt-1 text-body font-semibold tabular-nums text-foreground">
-        {value == null ? "Unavailable" : value.toLocaleString()}
+        {value == null ? "–" : typeof value === "number" ? value.toLocaleString() : value}
       </dd>
     </div>
   );

@@ -94,7 +94,8 @@ test("Home splits by role: setter reps get their own week, leaders get the money
 test("Home preserves unavailable operational values and ranks urgent exceptions first", () => {
   assert.match(dashboard, /rows\.some\(\(row\) => row\[key\] == null\)/);
   assert.match(dashboard, /result\.count == null/);
-  assert.match(dashboard, /todayBooked == null \|\| recentAverage == null/);
+  assert.doesNotMatch(dashboard, /buildActivitySignal|One useful signal/);
+  assert.match(dashboard, /Team · last 7 days/);
   assert.match(dashboard, /select\("user_id, role"\)\.in\("role", \["founder", "cofounder", "setter", "closer", "coach", "csm"\]\)/);
   assert.match(dashboard, /const reportingUsers = new Set/);
   assert.doesNotMatch(dashboard, /const recentFilers = new Set/);
