@@ -124,14 +124,14 @@ export function StudentSuccessInner() {
     return students.filter(s => {
       // Only students still in the active journey can be at-risk; the 1:1
       // cadence check only applies while they are actually in coaching.
-      if (!["onboarding", "coaching_1on1", "applying"].includes(s.phase)) return false;
+      if (!["onboarding", "training", "coaching_1on1", "applying"].includes(s.phase)) return false;
       const isGhosting = s.status === "ghosting";
       const paymentLate = lateStudentIds.has(s.id);
       // Locked in Start Here: no EODs or 1:1s can exist yet — only ghosting
       // and payment problems count against them here.
       if (!s.onboarding_completed_at) return isGhosting || paymentLate;
       const lastCall = recentCallByStudent.get(s.id);
-      const noRecentCall = s.phase === "coaching_1on1" && (!lastCall || lastCall < fourteenDaysAgo);
+      const noRecentCall = ["training", "coaching_1on1"].includes(s.phase) && (!lastCall || lastCall < fourteenDaysAgo);
       const noRecentEod = !eodsByStudent.has(s.id);
       return noRecentCall || isGhosting || noRecentEod || paymentLate;
     });
@@ -165,7 +165,7 @@ export function StudentSuccessInner() {
   const pendingTestimonials = useMemo(() =>
     students.filter(s =>
       !s.testimonial_collected &&
-      ["coaching_1on1", "applying", "offer_won"].includes(s.phase)
+      ["training", "coaching_1on1", "applying", "offer_won"].includes(s.phase)
     ),
     [students]
   );

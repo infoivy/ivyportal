@@ -1160,9 +1160,9 @@ function StudentPortal() {
               }
             />
             <MilestoneCard
-              done={student.phase === "graduated"}
+              done={student.testimonial_collected === true}
               label="Graduated from The Ivy Sales Academy"
-              detail={student.phase === "graduated" ? "Done. Go be great." : "Offer signed, story shared · your coach marks you graduated"}
+              detail={student.testimonial_collected ? "Done. Go be great." : "Offer signed · share your story with the team"}
             />
           </div>
         </div>

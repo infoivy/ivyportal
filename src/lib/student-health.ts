@@ -103,7 +103,7 @@ export function computeStudentHealth(i: HealthInputs): StudentHealth {
   // 1-on-1 cadence (15) — only judged once they're in coaching or later
   let callScore = 15;
   const callDays = daysSince(i.lastCallDate);
-  if (["coaching_1on1", "applying"].includes(i.phase)) {
+  if (["training", "coaching_1on1", "applying"].includes(i.phase)) {
     if (callDays == null) { callScore = 4; reasons.push("No 1-on-1 on record"); }
     else if (callDays > 14) { callScore = 4; reasons.push(`No 1-on-1 in ${callDays} days`); }
     else if (callDays > 9) callScore = 10;
@@ -134,7 +134,7 @@ export function computeStudentHealth(i: HealthInputs): StudentHealth {
   else if (i.placementStages.includes("interviewing")) placementScore = 12;
   else if (i.placementActivity14) placementScore = 8;
   else if (i.placementStages.length > 0) placementScore = 5;
-  if (["applying", "coaching_1on1"].includes(i.phase) && i.placementStages.length === 0) {
+  if (["applying", "training", "coaching_1on1"].includes(i.phase) && i.placementStages.length === 0) {
     reasons.push("No placement opportunities in play");
   }
 

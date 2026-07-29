@@ -71,7 +71,7 @@ type Installment = { id: string; total_amount: number; currency: string; notes: 
 type Payment = { id: string; installment_id: string; sequence: number; amount: number; currency: string; due_date: string; status: string; paid_at: string | null };
 type Coach = { id: string; display_name: string | null };
 
-const PHASES: Phase[] = ["uncategorized", "onboarding", "coaching_1on1", "applying", "offer_won", "testimonial", "graduated", "paused"];
+const PHASES: Phase[] = ["onboarding", "training", "applying", "offer_won", "paused"];
 const STATUSES: Status[] = ["active", "inactive", "ghosting"];
 const GRADES = ["A", "B", "C", "D", "At Risk"];
 const PAYMENT_STATES: { key: PaymentState; label: string; color: string }[] = [

@@ -46,15 +46,14 @@ type Student = {
 };
 type Coach = { id: string; display_name: string | null };
 
+// The journey (founder-simplified 2026-07-29): pay → onboarding → training
+// (looms + roleplays) → applying → offer won, khalas. Testimonial is a flag,
+// not a phase; legacy values (coaching_1on1 etc.) still render if present.
 const PHASES: { key: Phase; label: string; color: string }[] = [
-  { key: "uncategorized", label: "Uncategorized", color: "text-muted-foreground border-border bg-slate-500/5" },
   { key: "onboarding", label: "Onboarding", color: "text-muted-foreground border-border bg-muted" },
-  { key: "coaching_1on1", label: "1:1 Coaching", color: "text-muted-foreground border-border bg-muted" },
-  { key: "applying", label: "Applying", color: "text-success-fg border-success/25 bg-success-bg" },
   { key: "training", label: "Training", color: "text-muted-foreground border-border bg-muted" },
-  { key: "offer_won", label: "Offer Won", color: "text-warning-fg border-warning/25 bg-warning-bg" },
-  { key: "testimonial", label: "Testimonial", color: "text-success-fg border-success/25 bg-success-bg" },
-  { key: "graduated", label: "Graduated", color: "text-success-fg border-success/25 bg-success-bg" },
+  { key: "applying", label: "Applying", color: "text-success-fg border-success/25 bg-success-bg" },
+  { key: "offer_won", label: "Offer won", color: "text-warning-fg border-warning/25 bg-warning-bg" },
   { key: "paused", label: "Paused", color: "text-muted-foreground border-border bg-zinc-500/5" },
 ];
 const STATUSES: { key: Status; label: string; color: string }[] = [
@@ -176,7 +175,7 @@ function StudentsLayout() {
   const atRiskInfo = (s: Student): { risky: boolean; reasons: string[] } => {
     const reasons: string[] = [];
     // Past coaching (offer won, testimonial) or dormant — not in the risk pool.
-    if (!["onboarding", "coaching_1on1", "applying"].includes(s.phase)) return { risky: false, reasons };
+    if (!["onboarding", "training", "coaching_1on1", "applying"].includes(s.phase)) return { risky: false, reasons };
     // Locked in Start Here: EODs/calls/apps can't exist yet — the roster lock
     // badge and the "stuck in Start Here" bell alert own that population.
     if (!s.onboarding_completed_at) {
@@ -191,7 +190,7 @@ function StudentsLayout() {
     } else if (eodDays != null && eodDays >= 5) {
       reasons.push(`No EOD ${eodDays}d`);
     }
-    if (s.phase === "coaching_1on1" && s.calls_allotted > 0) {
+    if (["training", "coaching_1on1"].includes(s.phase) && s.calls_allotted > 0) {
       const last = lastCallByStudent[s.id];
       const d = last ? daysSince(last) : null;
       if (d == null) reasons.push("No 1:1 yet");
@@ -298,7 +297,7 @@ function StudentsLayout() {
         <div>
           <h1 className="text-display text-foreground">Students</h1>
           <p className="text-body text-muted-foreground mt-1">
-            {filtered.length} shown · {students.length} total · {students.filter(s => s.phase === "coaching_1on1").length} in 1:1
+            {filtered.length} shown · {students.length} total · {students.filter(s => ["training", "coaching_1on1"].includes(s.phase)).length} in training
           </p>
         </div>
         <div className="flex items-center gap-2">

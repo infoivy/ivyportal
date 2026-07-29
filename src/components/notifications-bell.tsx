@@ -105,7 +105,7 @@ async function fetchStudentAlerts(): Promise<StudentAlert[]> {
     // 1:1 cadence only applies once they're through onboarding — the
     // "book your calls" push starts at unlock — and only to the 1:1
     // pathway: group-coaching students (calls_allotted 0) have no 1:1s.
-    if (st.onboarding_completed_at && (st.calls_allotted ?? 0) > 0 && ["coaching_1on1", "applying"].includes(st.phase)) {
+    if (st.onboarding_completed_at && (st.calls_allotted ?? 0) > 0 && ["training", "coaching_1on1", "applying"].includes(st.phase)) {
       const callDate = lastCall.get(st.id);
       const callDays = callDate ? Math.floor((now - new Date(callDate).getTime()) / DAY) : null;
       if (callDays == null || callDays > 14) {

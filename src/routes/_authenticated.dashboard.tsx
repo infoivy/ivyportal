@@ -219,9 +219,9 @@ function HomePage() {
         const recentlyReported = new Set((studentEodsRes.data ?? []).map((row) => row.student_id));
         activeStudents = students.length;
         atRiskStudents = students.filter((student) => (
-          ["onboarding", "coaching_1on1", "applying"].includes(student.phase) &&
+          ["onboarding", "training", "coaching_1on1", "applying"].includes(student.phase) &&
           ((!student.eod_exempt && !recentlyReported.has(student.id)) ||
-            (student.phase === "coaching_1on1" && !recentlyCalled.has(student.id)))
+            (["training", "coaching_1on1"].includes(student.phase) && !recentlyCalled.has(student.id)))
         )).length;
       }
 

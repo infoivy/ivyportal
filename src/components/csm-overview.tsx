@@ -11,10 +11,11 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
 
 const PHASE_LABEL: Record<string, string> = {
   onboarding: "Onboarding",
-  coaching_1on1: "1-on-1 coaching",
+  training: "Training",
+  coaching_1on1: "Training",
   applying: "Applying",
   offer_won: "Offer won",
-  graduated: "Graduated",
+  graduated: "Offer won",
 };
 
 const SUCCESS_TARGET = 95;

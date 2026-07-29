@@ -35,7 +35,7 @@ export const completeStudentOnboarding = createServerFn({ method: "POST" })
 
     const oneOnOne = (student.calls_allotted ?? student.calls_included ?? 0) > 0;
     // Only advance students still at the start; never regress a staff-set phase.
-    const phase = ["uncategorized", "onboarding"].includes(student.phase) ? "coaching_1on1" : student.phase;
+    const phase = ["uncategorized", "onboarding"].includes(student.phase) ? "training" : student.phase;
 
     const { error: updateErr } = await supabaseAdmin
       .from("students")
@@ -64,7 +64,7 @@ export const completeStudentOnboarding = createServerFn({ method: "POST" })
     // Best-effort: the unlock must not fail because the announcement did.
     const pathway = oneOnOne ? "1:1 Pathway" : "Group Expertise Pathway";
     await supabaseAdmin.from("team_chat").insert({
-      body: `🎓 ${student.full_name} completed Start Here onboarding (${pathway}). Portal unlocked, now in ${phase === "coaching_1on1" ? "coaching" : phase.replace("_", " ")}.`,
+      body: `🎓 ${student.full_name} completed Start Here onboarding (${pathway}). Portal unlocked, now in ${phase.replace("_", " ")}.`,
       kind: "general",
       created_by: context.userId,
       student_id: student.id,
