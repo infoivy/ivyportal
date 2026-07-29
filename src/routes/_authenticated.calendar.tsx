@@ -42,8 +42,6 @@ export const Route = createFileRoute("/_authenticated/calendar")({
   component: CalendarPage,
 });
 
-const DEFAULT_HOUR_START = 7; // 7am
-const ROW_PX = 44;
 
 /** Google Calendar descriptions arrive as HTML (Zoom invites etc.) — flatten to text. */
 function cleanDescription(html: string): string {
@@ -118,11 +116,11 @@ function CalendarPage() {
   // Month grid is the default view (founder 2026-07-29: full view, see calls
   // daily); the week time-grid stays as the drill-down.
   const [calView, setCalView] = useState<"month" | "week">(() => {
-    try { return (localStorage.getItem("isa-cal-view") as "month" | "week") ?? "month"; } catch { return "month"; }
+    try { return (localStorage.getItem("isa-cal-view2") as "month" | "week") ?? "week"; } catch { return "week"; }
   });
   const changeCalView = (v: "month" | "week") => {
     setCalView(v);
-    try { localStorage.setItem("isa-cal-view", v); } catch { /* ignore */ }
+    try { localStorage.setItem("isa-cal-view2", v); } catch { /* ignore */ }
   };
   const [monthAnchor, setMonthAnchor] = useState(() => {
     const n = shiftToTz(new Date(), (() => { try { return localStorage.getItem("isa-cal-tz") ?? Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return Intl.DateTimeFormat().resolvedOptions().timeZone; } })());
@@ -310,14 +308,6 @@ function CalendarPage() {
   const visibleEvents = (events.data ?? []).filter((e) =>
     !hiddenUsers.has(e.user_id) && (typeFilter === "all" || classify(e.summary ?? "") === typeFilter));
 
-  // Full 24-hour grid, scrolled to the working day by default
-  const hourStart = 0;
-  const hourRows = 24;
-  const gridScrollRef = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    gridScrollRef.current?.scrollTo({ top: DEFAULT_HOUR_START * ROW_PX });
-  }, [weekStart]);
-
   const toggleUser = (uid: string) => {
     setHiddenUsers((prev) => {
       const n = new Set(prev);
@@ -422,7 +412,7 @@ function CalendarPage() {
             </div>
             <div className="flex flex-wrap items-center gap-1">
               <div className="inline-flex rounded-lg bg-muted p-[3px] mr-1">
-                {(["month", "week"] as const).map(v => (
+                {(["week", "month"] as const).map(v => (
                   <button
                     key={v}
                     onClick={() => changeCalView(v)}
@@ -524,61 +514,55 @@ function CalendarPage() {
           </Card>
         )}
 
-        {/* Week grid — full 24h, scrollable, opens at the working day */}
         {calView === "week" && (
         <Card className="p-0 border-border/60 overflow-hidden relative">
-          <div ref={gridScrollRef} className="max-h-[68vh] overflow-y-auto overscroll-contain">
-          <div className="grid" style={{ gridTemplateColumns: `${isMobile ? 40 : 48}px repeat(${daySpan}, minmax(0, 1fr))` }}>
-            {/* header row */}
-            <div className="sticky top-0 z-20 border-b border-border/60 bg-card" />
-            {days.map((d) => {
+          <div className="grid" style={{ gridTemplateColumns: `repeat(${daySpan}, minmax(0, 1fr))` }}>
+            {days.map((d, ci) => {
               const today = isSameDay(d, toLocal(new Date()));
+              const dayEvents = visibleEvents
+                .filter(e => isSameDay(toLocal(new Date(e.start)), d))
+                .sort((a, b) => a.start.localeCompare(b.start));
               return (
-                <div key={d.toISOString()} className="sticky top-0 z-20 border-b border-l border-border/60 bg-card px-2 py-2 text-center">
-                  <div className="text-[10px] uppercase text-muted-foreground tracking-wide">{format(d, "EEE")}</div>
-                  <div className={`text-sm font-semibold tabular-nums ${today ? "text-primary" : ""}`}>{format(d, "d")}</div>
+                <div key={d.toISOString()} className={`min-w-0 flex flex-col ${ci > 0 ? "border-l border-border/40" : ""}`}>
+                  <div className="border-b border-border/60 bg-card px-2 py-2 text-center">
+                    <div className="text-[10px] uppercase text-muted-foreground tracking-wide">{format(d, "EEE")}</div>
+                    <span className={`mx-auto mt-0.5 grid h-6 min-w-6 place-items-center rounded-full px-1 text-sm font-semibold tabular-nums ${today ? "bg-danger text-white" : ""}`}>
+                      {format(d, "d")}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-h-[52vh] max-h-[68vh] overflow-y-auto overscroll-contain p-1.5 space-y-1">
+                    {dayEvents.map(e => {
+                      const kind = classify(e.summary ?? "");
+                      const dot = kind === "closing" ? "bg-success" : kind === "coaching" ? "bg-[var(--chart-1)]" : kind === "team" ? "bg-warning" : "bg-muted-foreground/50";
+                      return (
+                        <button
+                          key={e.id}
+                          onClick={() => setSelectedEvent(e)}
+                          className="w-full rounded-md border border-border/50 bg-muted/30 hover:bg-muted/60 px-1.5 py-1.5 text-left motion-safe:transition-colors min-w-0"
+                          title={e.summary ?? ""}
+                        >
+                          <span className="flex items-center gap-1.5 text-[11px] leading-4">
+                            <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${dot}`} />
+                            <span className="tabular-nums text-muted-foreground shrink-0">{format(toLocal(new Date(e.start)), "HH:mm")}</span>
+                          </span>
+                          <span className="mt-0.5 block truncate text-[12px] leading-4 text-foreground">{e.summary ?? "Untitled"}</span>
+                        </button>
+                      );
+                    })}
+                    {dayEvents.length === 0 && (
+                      <div className="pt-4 text-center text-[11px] text-muted-foreground/60">–</div>
+                    )}
+                  </div>
                 </div>
               );
             })}
-
-            {/* hour rows */}
-            <div className="relative">
-              {Array.from({ length: hourRows }, (_, i) => (
-                <div
-                  key={i}
-                  className="border-b border-border/40 pr-1 text-right text-[10px] text-muted-foreground"
-                  style={{ height: ROW_PX }}
-                >
-                  <span className="pr-1">{formatHour(hourStart + i)}</span>
-                </div>
-              ))}
-            </div>
-            {days.map((d) => (
-              <DayColumn
-                key={d.toISOString()}
-                day={d}
-                events={visibleEvents}
-                onSelect={setSelectedEvent}
-                toLocal={toLocal}
-                hourStart={hourStart}
-                hourRows={hourRows}
-              />
-            ))}
           </div>
-          </div>
-
           {events.isLoading && (
-            <div className="p-6 text-center text-sm text-muted-foreground border-t border-border/60">
-              Loading team calendar…
-            </div>
+            <div className="p-4 text-center text-sm text-muted-foreground border-t border-border/60">Loading team calendar…</div>
           )}
           {!events.isLoading && (events.data?.length ?? 0) === 0 && (
-            <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center p-6">
-              <div className="rounded-md border border-border/60 bg-card/95 px-4 py-3 text-sm text-muted-foreground shadow-sm text-center">
-                {teamList.length === 0
-                  ? "Connect your Google Calendar to start seeing events here."
-                  : "No events for this week."}
-              </div>
+            <div className="p-4 text-center text-sm text-muted-foreground border-t border-border/60">
+              {teamList.length === 0 ? "Connect your Google Calendar to start seeing events here." : "No events this week."}
             </div>
           )}
         </Card>
@@ -775,117 +759,6 @@ function CalendarPage() {
   );
 }
 
-function formatHour(h: number) {
-  const suffix = h < 12 || h === 24 ? "am" : "pm";
-  const hh = h % 12 === 0 ? 12 : h % 12;
-  return `${hh}${suffix}`;
-}
-
-function DayColumn({ day, events, onSelect, toLocal, hourStart, hourRows }: { day: Date; events: TeamEvent[]; onSelect: (e: TeamEvent) => void; toLocal: (iso: string | Date) => Date; hourStart: number; hourRows: number }) {
-  const dayEvents = events.filter((e) => isSameDay(toLocal(e.start), day) && !e.all_day);
-  const allDay = events.filter((e) => isSameDay(toLocal(e.start), day) && e.all_day);
-
-  return (
-    <div className="relative border-l border-border/60" style={{ height: hourRows * ROW_PX }}>
-      {/* hour grid lines */}
-      {Array.from({ length: hourRows }, (_, i) => (
-        <div key={i} className="border-b border-border/40" style={{ height: ROW_PX }} />
-      ))}
-      {/* All-day chips at the top */}
-      {allDay.length > 0 && (
-        <div className="absolute top-1 left-1 right-1 flex flex-col gap-1 z-10">
-          {allDay.map((e) => (
-            <button
-              key={e.id}
-              onClick={() => onSelect(e)}
-              className="text-left text-[10px] px-1.5 py-0.5 rounded-md truncate"
-              style={{ background: `${e.color}33`, color: e.color, borderLeft: `2px solid ${e.color}` }}
-              title={`${e.display_name}: ${e.summary}`}
-            >
-              {e.summary}
-            </button>
-          ))}
-        </div>
-      )}
-      {(() => {
-        // A shared meeting appears once per connected member calendar —
-        // collapse identical (title, start, end) copies into one chip.
-        const seen = new Set<string>();
-        const deduped = dayEvents.filter((e) => {
-          const k = `${e.summary}|${e.start}|${e.end}`;
-          if (seen.has(k)) return false;
-          seen.add(k);
-          return true;
-        });
-        // Lane layout: overlapping events share the width instead of stacking
-        const sorted = [...deduped].sort((a, b) => a.start.localeCompare(b.start));
-        const lanes: { end: number }[] = [];
-        const placed = sorted.map((e) => {
-          const startMs = new Date(e.start).getTime();
-          const endMs = new Date(e.end).getTime();
-          let lane = lanes.findIndex((l) => l.end <= startMs);
-          if (lane === -1) { lanes.push({ end: endMs }); lane = lanes.length - 1; }
-          else lanes[lane] = { end: endMs };
-          return { e, lane };
-        });
-        // events overlapping in time share the max lane count of their cluster
-        return placed.map(({ e, lane }) => {
-          const s = toLocal(e.start);
-          const en = toLocal(e.end);
-          // Overlap must compare RAW instants — mixing the tz-shifted display
-          // date with raw dates broke clustering whenever a timezone was set,
-          // which stacked concurrent events at full width.
-          const sRaw = new Date(e.start).getTime();
-          const enRaw = new Date(e.end).getTime();
-          const overlapping = placed.filter(({ e: o }) =>
-            new Date(o.start).getTime() < enRaw && new Date(o.end).getTime() > sRaw);
-          const cols = Math.max(1, ...overlapping.map((o) => o.lane + 1));
-          const startMin = s.getHours() * 60 + s.getMinutes();
-          const endMin = en.getHours() * 60 + en.getMinutes();
-          const top = ((startMin - hourStart * 60) / 60) * ROW_PX;
-          const height = Math.max(20, ((endMin - startMin) / 60) * ROW_PX);
-          if (top + height < 0 || top > hourRows * ROW_PX) return null;
-          const compact = height < 36; // one line only · no clipped second line
-          const widthPct = 100 / cols;
-          return (
-            <button
-              key={e.id}
-              onClick={() => onSelect(e)}
-              className="absolute rounded px-1.5 text-left text-[11px] leading-tight overflow-hidden hover:brightness-110 motion-safe:transition-[filter]"
-              style={{
-                top: Math.max(0, top),
-                height,
-                left: `calc(${lane * widthPct}% + 3px)`,
-                width: `calc(${widthPct}% - 5px)`,
-                background: `${e.color}26`,
-                boxShadow: `inset 3px 0 0 ${e.color}`,
-                color: "var(--foreground)",
-                paddingTop: compact ? 0 : 3,
-                display: compact ? "flex" : "block",
-                alignItems: compact ? "center" : undefined,
-              }}
-              title={`${e.display_name}: ${e.summary} · ${format(s, "h:mma").toLowerCase()}–${format(en, "h:mma").toLowerCase()}`}
-            >
-              {compact ? (
-                <span className="truncate w-full">
-                  <span className="opacity-75 tabular-nums">{format(s, "h:mm")}</span>{" "}
-                  <span className="font-medium">{e.summary}</span>
-                </span>
-              ) : (
-                <>
-                  <div className="font-medium truncate">{e.summary}</div>
-                  <div className="text-[10px] opacity-75 truncate tabular-nums">
-                    {format(s, "h:mma").toLowerCase()} · {e.display_name}
-                  </div>
-                </>
-              )}
-            </button>
-          );
-        });
-      })()}
-    </div>
-  );
-}
 
 function EventModal({ e, onClose, canClaim, onClaim, toLocal }: {
   e: TeamEvent; onClose: () => void;
