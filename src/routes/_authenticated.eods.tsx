@@ -66,7 +66,13 @@ function EODsPage() {
   const filesEods = isSetter || isCloser || isCsm;
   const isFounder = isAdmin && !filesEods;
   const [ownExempt, setOwnExempt] = useState(false);
-  const today = todayLocal();
+  // The EOD day follows the member's PROFILE timezone when they set one
+  // (founder 2026-07-29: submit until midnight YOUR time); otherwise the
+  // device day. A device clock set to another region no longer points the
+  // form at an already-filed date.
+  const [tzToday, setTzToday] = useState<string | null>(null);
+  const [ownTz, setOwnTz] = useState<string | null>(null);
+  const today = tzToday ?? todayLocal();
   const yesterday = shiftDay(today, -1);
 
   // Which day this report is for. Reps who finish after midnight, or whose
@@ -83,11 +89,20 @@ function EODsPage() {
     if (!user) return;
     const [{ data }, { data: prof }] = await Promise.all([
       supabase.from("eods").select("*").eq("is_demo", false).eq("user_id", user.id).order("report_date", { ascending: false }).limit(120),
-      supabase.from("profiles").select("setter_type, csm_daily_target, eod_exempt" as never).eq("id", user.id).maybeSingle(),
+      supabase.from("profiles").select("setter_type, csm_daily_target, eod_exempt, timezone" as never).eq("id", user.id).maybeSingle(),
     ]);
     setMySetterType(((prof as { setter_type?: string } | null)?.setter_type ?? null) as SetterType);
     setCsmTarget(Number((prof as { csm_daily_target?: number } | null)?.csm_daily_target) || 10);
       setOwnExempt((prof as { eod_exempt?: boolean } | null)?.eod_exempt === true);
+      const tz = (prof as { timezone?: string | null } | null)?.timezone ?? null;
+      setOwnTz(tz);
+      if (tz) {
+        try {
+          const tzDay = new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(new Date());
+          setTzToday(tzDay);
+          setReportDate(prev => (prev === tzDay || prev === shiftDay(tzDay, -1) ? prev : tzDay));
+        } catch { /* unknown timezone string · stay on the device day */ }
+      }
     const rows = (data ?? []) as EOD[];
     setMyEods(rows);
     const target = rows.find(e => e.report_date === reportDate);
@@ -261,6 +276,12 @@ function EODsPage() {
       {isFounder && (
         <div className="card-surface px-4 py-3 text-[13px] text-muted-foreground">
           This account has no reporting role. Open Performance to review submitted team activity.
+        </div>
+      )}
+
+      {filesEods && !ownTz && (
+        <div className="card-surface px-4 py-3 text-[13px] text-muted-foreground">
+          Your EOD day currently follows this device's clock. Set your timezone on <Link to="/profile" className="text-primary hover:underline">Profile</Link> so it always follows your own midnight.
         </div>
       )}
 

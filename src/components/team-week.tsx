@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, LockOpen } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -161,6 +161,16 @@ export function TeamWeekSection() {
   }, []);
   const filedToday = setters.filter(s => byUserDate.has(`${s.user_id}::${today}`));
   const missedYesterday = setters.filter(s => !byUserDate.has(`${s.user_id}::${yesterday}`));
+  // Founder-approved 2026-07-29: delete a trapped report so the member can
+  // resubmit (wrong-date submissions from lagging device clocks).
+  const unlockEod = async (eodId: string, name: string, day: string) => {
+    if (!confirm(`Unlock ${day} for ${name}? The submitted report is DELETED and they submit again fresh.`)) return;
+    const { error } = await (supabase.from("eods") as never as { delete: () => { eq: (c: string, v: string) => Promise<{ error: { message: string } | null }> } }).delete().eq("id", eodId);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Unlocked · they can resubmit now");
+    invalidateForTables(qc, ["eods"]);
+    void qc.invalidateQueries({ queryKey: ["page", "performance", "team-week"] });
+  };
   const updateSetterType = async (id: string, type: "phone" | "dm" | "full_cycle") => {
     const { error } = await (supabase.from("profiles") as never as { update: (v: object) => { eq: (c: string, v: string) => Promise<{ error: { message: string } | null }> } }).update({ setter_type: type }).eq("id", id);
     if (error) { toast.error(error.message); return; }
@@ -211,6 +221,7 @@ export function TeamWeekSection() {
               key={c.r.user_id}
               card={c}
               onSetterType={canEditSetterType && c.r.primary_role === "setter" ? (t) => void updateSetterType(c.r.user_id, t) : undefined}
+              onUnlock={canEditSetterType ? (eodId, day) => void unlockEod(eodId, c.r.display_name, day) : undefined}
             />
           ))}
           {cards.length === 0 && (
@@ -222,11 +233,11 @@ export function TeamWeekSection() {
   );
 }
 
-function MemberWeekCard({ card, onSetterType }: { card: {
+function MemberWeekCard({ card, onSetterType, onUnlock }: { card: {
   r: RosterEntry; status: "green" | "amber" | "red"; todayLine: string;
   week: { d: string; status: "green" | "amber" | "red"; e: EOD | undefined }[];
   weeklyLabel: string; weeklyValue: string | number;
-}; onSetterType?: (t: "phone" | "dm" | "full_cycle") => void }) {
+}; onSetterType?: (t: "phone" | "dm" | "full_cycle") => void; onUnlock?: (eodId: string, day: string) => void }) {
   const [open, setOpen] = useState(false);
   const dotColor = card.status === "green" ? "bg-success" : card.status === "amber" ? "bg-warning" : "bg-danger";
   const roleLabel = card.r.setter_type === "phone" ? "Phone Setter" : card.r.setter_type === "dm" ? "DM Setter" : card.r.setter_type === "full_cycle" ? "Full Cycle Setter" : ROLE_LABEL[card.r.primary_role] ?? card.r.primary_role;
@@ -297,6 +308,14 @@ function MemberWeekCard({ card, onSetterType }: { card: {
                     {w.status === "amber" && <span className="text-warning-fg"> · missed KPI</span>}
                     {w.e.wins && <div className="text-muted-foreground mt-0.5"><span className="text-success-fg">Wins:</span> {w.e.wins}</div>}
                     {w.e.blockers && <div className="text-muted-foreground"><span className="text-warning-fg">Blockers:</span> {w.e.blockers}</div>}
+                    {onUnlock && (
+                      <button
+                        onClick={() => onUnlock(w.e!.id, fmtLong(w.d))}
+                        className="mt-1 inline-flex items-center gap-1 text-micro text-muted-foreground hover:text-danger-fg"
+                      >
+                        <LockOpen className="h-3 w-3" /> Unlock · delete this report so they can resubmit
+                      </button>
+                    )}
                   </div>
                 ) : <div className="text-danger-fg">No EOD</div>}
               </div>
