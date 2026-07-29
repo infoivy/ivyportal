@@ -1455,54 +1455,178 @@ export type Database = {
         }
         Relationships: []
       }
+      set_follow_ups: {
+        Row: {
+          channel: string
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          created_by: string
+          due_at: string
+          id: string
+          note: string | null
+          set_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          channel?: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          created_by: string
+          due_at: string
+          id?: string
+          note?: string | null
+          set_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          created_by?: string
+          due_at?: string
+          id?: string
+          note?: string | null
+          set_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "set_follow_ups_set_id_fkey"
+            columns: ["set_id"]
+            isOneToOne: false
+            referencedRelation: "set_reminders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      set_reminder_events: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          event_type: string
+          from_value: Json | null
+          id: string
+          set_id: string
+          to_value: Json
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          event_type: string
+          from_value?: Json | null
+          id?: string
+          set_id: string
+          to_value: Json
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          event_type?: string
+          from_value?: Json | null
+          id?: string
+          set_id?: string
+          to_value?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "set_reminder_events_set_id_fkey"
+            columns: ["set_id"]
+            isOneToOne: false
+            referencedRelation: "set_reminders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       set_reminders: {
         Row: {
+          attendance_status: string
+          calendar_sync_error: string | null
+          calendar_sync_status: string
+          calendar_sync_token: string | null
+          calendar_sync_updated_at: string
           calendly_event_uri: string | null
           confirmed_at: string | null
           created_at: string
           duration_min: number
           event_start: string
           gcal_event_id: string | null
+          gcal_event_owner_id: string | null
           gcal_html_link: string | null
           id: string
+          lead_channel: string
           notes: string | null
+          outcome_recorded_at: string | null
           owner_id: string | null
           prospect: string
+          qualification_status: string
           reminder_log: Json
+          sales_outcome: string
           source: string
           status: string
+          transition_actor_id: string | null
+          updated_at: string
         }
         Insert: {
+          attendance_status?: string
+          calendar_sync_error?: string | null
+          calendar_sync_status?: string
+          calendar_sync_token?: string | null
+          calendar_sync_updated_at?: string
           calendly_event_uri?: string | null
           confirmed_at?: string | null
           created_at?: string
           duration_min?: number
           event_start: string
           gcal_event_id?: string | null
+          gcal_event_owner_id?: string | null
           gcal_html_link?: string | null
           id?: string
+          lead_channel?: string
           notes?: string | null
+          outcome_recorded_at?: string | null
           owner_id?: string | null
           prospect: string
+          qualification_status?: string
           reminder_log?: Json
+          sales_outcome?: string
           source?: string
           status?: string
+          transition_actor_id?: string | null
+          updated_at?: string
         }
         Update: {
+          attendance_status?: string
+          calendar_sync_error?: string | null
+          calendar_sync_status?: string
+          calendar_sync_token?: string | null
+          calendar_sync_updated_at?: string
           calendly_event_uri?: string | null
           confirmed_at?: string | null
           created_at?: string
           duration_min?: number
           event_start?: string
           gcal_event_id?: string | null
+          gcal_event_owner_id?: string | null
           gcal_html_link?: string | null
           id?: string
+          lead_channel?: string
           notes?: string | null
+          outcome_recorded_at?: string | null
           owner_id?: string | null
           prospect?: string
+          qualification_status?: string
           reminder_log?: Json
+          sales_outcome?: string
           source?: string
           status?: string
+          transition_actor_id?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -2322,6 +2446,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_real_staff_profile: { Args: { _user_id: string }; Returns: boolean }
       pending_signups: {
         Args: never
         Returns: {

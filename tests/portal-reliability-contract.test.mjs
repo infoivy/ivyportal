@@ -339,8 +339,10 @@ test("shared student workspaces and staff utilities exclude demo-owned records a
     assert.match(source, /from\("profiles"\)[\s\S]{0,180}?\.eq\("is_demo", false\)/);
   }
 
-  assert.equal((calendarFunctions.match(/from\("profiles"\)/g) ?? []).length, 3);
-  assert.equal((calendarFunctions.match(/\.eq\("is_demo", false\)/g) ?? []).length, 3);
+  const calendarProfileReads = (calendarFunctions.match(/from\("profiles"\)/g) ?? []).length;
+  const calendarRealProfileGuards = (calendarFunctions.match(/\.eq\("is_demo", false\)/g) ?? []).length;
+  assert.equal(calendarProfileReads, 4);
+  assert.equal(calendarRealProfileGuards, calendarProfileReads);
   assert.match(calendarFunctions, /const realConnections = conns\.filter/);
   assert.match(calendarFunctions, /!r\.owner_id \|\| pmap\.has\(r\.owner_id\)/);
 

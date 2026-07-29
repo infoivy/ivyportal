@@ -33,7 +33,13 @@ const { data: list } = await sb.auth.admin.listUsers({ perPage: 500 });
 for (const u of list.users) {
   if (u.email?.endsWith("@isa.demo")) {
     await sb.from("csm_tally").delete().eq("user_id", u.id);
-    await sb.from("set_reminders").delete().eq("owner_id", u.id);
+    const { data: demoSets } = await sb.from("set_reminders").select("id").eq("owner_id", u.id);
+    const setIds = (demoSets ?? []).map((set) => set.id);
+    if (setIds.length) {
+      await sb.from("set_reminder_events").delete().in("set_id", setIds);
+      await sb.from("set_follow_ups").delete().in("set_id", setIds);
+      await sb.from("set_reminders").delete().in("id", setIds);
+    }
     await sb.from("team_chat").delete().eq("created_by", u.id);
     await sb.from("student_alerts").delete().eq("created_by", u.id);
     await sb.from("user_roles").delete().eq("user_id", u.id);
