@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
-  addDays, addWeeks, endOfWeek, format, isSameDay, startOfWeek, subWeeks,
+  addDays, addWeeks, endOfMonth, endOfWeek, format, isSameDay, startOfWeek, subMonths, subWeeks, addMonths,
 } from "date-fns";
 import {
   CalendarClock, Check, ChevronLeft, ChevronRight, ExternalLink, Link2Off, Plus, X,
@@ -115,6 +115,19 @@ function CalendarPage() {
     setWeekStart(startOfWeek(shiftToTz(new Date(), next), { weekStartsOn: 1 }));
   };
   const toLocal = (iso: string | Date) => shiftToTz(iso, tz);
+  // Month grid is the default view (founder 2026-07-29: full view, see calls
+  // daily); the week time-grid stays as the drill-down.
+  const [calView, setCalView] = useState<"month" | "week">(() => {
+    try { return (localStorage.getItem("isa-cal-view") as "month" | "week") ?? "month"; } catch { return "month"; }
+  });
+  const changeCalView = (v: "month" | "week") => {
+    setCalView(v);
+    try { localStorage.setItem("isa-cal-view", v); } catch { /* ignore */ }
+  };
+  const [monthAnchor, setMonthAnchor] = useState(() => {
+    const n = shiftToTz(new Date(), (() => { try { return localStorage.getItem("isa-cal-tz") ?? Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return Intl.DateTimeFormat().resolvedOptions().timeZone; } })());
+    return new Date(n.getFullYear(), n.getMonth(), 1);
+  });
   const search = useSearch({ from: "/_authenticated/calendar" });
   const [weekStart, setWeekStart] = useState(() => {
     let saved = "";
@@ -234,10 +247,14 @@ function CalendarPage() {
   // Team calendars fan out to Google per teammate — don't pay for that while
   // the user is on the Sets view.
   const team = useQuery({ queryKey: ["cal", "team"], queryFn: () => teamStatusFn(), enabled: pageView === "calendar" });
+  const monthGridStart = useMemo(() => startOfWeek(monthAnchor, { weekStartsOn: 1 }), [monthAnchor]);
+  const monthGridEnd = useMemo(() => endOfWeek(endOfMonth(monthAnchor), { weekStartsOn: 1 }), [monthAnchor]);
+  const rangeStart = calView === "month" ? monthGridStart : weekStart;
+  const rangeEnd = calView === "month" ? monthGridEnd : weekEnd;
   const events = useQuery({
-    queryKey: ["cal", "events", weekStart.toISOString(), daySpan],
+    queryKey: ["cal", "events", calView, rangeStart.toISOString(), rangeEnd.toISOString(), daySpan],
     queryFn: () => teamEventsFn({
-      data: { timeMin: weekStart.toISOString(), timeMax: addDays(weekEnd, 1).toISOString() },
+      data: { timeMin: rangeStart.toISOString(), timeMax: addDays(rangeEnd, 1).toISOString() },
     }),
     staleTime: 30_000,
     enabled: pageView === "calendar",
@@ -311,7 +328,7 @@ function CalendarPage() {
 
   return (
     <div className="min-h-full bg-background">
-      <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-5">
+      <div className="max-w-none p-4 sm:p-6 space-y-5">
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -405,6 +422,17 @@ function CalendarPage() {
             </div>
             <div className="flex flex-wrap items-center gap-1">
               <div className="inline-flex rounded-lg bg-muted p-[3px] mr-1">
+                {(["month", "week"] as const).map(v => (
+                  <button
+                    key={v}
+                    onClick={() => changeCalView(v)}
+                    className={`text-caption font-medium px-2.5 py-1 rounded-[7px] capitalize motion-safe:transition-colors ${calView === v ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    {v}
+                  </button>
+                ))}
+              </div>
+              <div className="inline-flex rounded-lg bg-muted p-[3px] mr-1">
                 {([
                   ["all", "All"],
                   ["closing", "Closing"],
@@ -421,23 +449,83 @@ function CalendarPage() {
                 ))}
               </div>
               <TzPicker value={tz} onChange={changeTz} />
-              <Button size="icon" variant="ghost" onClick={() => setWeekStart((w) => (daySpan === 7 ? subWeeks(w, 1) : addDays(w, -daySpan)))}>
+              <Button size="icon" variant="ghost" onClick={() => calView === "month" ? setMonthAnchor(a => subMonths(a, 1)) : setWeekStart((w) => (daySpan === 7 ? subWeeks(w, 1) : addDays(w, -daySpan)))}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <Button size="sm" variant="ghost" onClick={() => { const now = shiftToTz(new Date(), tz); now.setHours(0, 0, 0, 0); setWeekStart(daySpan === 7 ? startOfWeek(now, { weekStartsOn: 1 }) : now); }}>
+              <Button size="sm" variant="ghost" onClick={() => { const now = shiftToTz(new Date(), tz); if (calView === "month") { setMonthAnchor(new Date(now.getFullYear(), now.getMonth(), 1)); } else { now.setHours(0, 0, 0, 0); setWeekStart(daySpan === 7 ? startOfWeek(now, { weekStartsOn: 1 }) : now); } }}>
                 Today
               </Button>
-              <Button size="icon" variant="ghost" onClick={() => setWeekStart((w) => (daySpan === 7 ? addWeeks(w, 1) : addDays(w, daySpan)))}>
+              <Button size="icon" variant="ghost" onClick={() => calView === "month" ? setMonthAnchor(a => addMonths(a, 1)) : setWeekStart((w) => (daySpan === 7 ? addWeeks(w, 1) : addDays(w, daySpan)))}>
                 <ChevronRight className="h-4 w-4" />
               </Button>
               <span className="ml-1 sm:ml-2 basis-full sm:basis-auto text-sm text-muted-foreground tabular-nums">
-                {format(weekStart, "MMM d")} – {format(weekEnd, "MMM d, yyyy")}
+                {calView === "month" ? format(monthAnchor, "MMMM yyyy") : `${format(weekStart, "MMM d")} – ${format(weekEnd, "MMM d, yyyy")}`}
               </span>
             </div>
           </div>
         </Card>
 
+        {calView === "month" && (
+          <Card className="p-0 border-border/60 overflow-hidden relative">
+            <div className="grid grid-cols-7 border-b border-border/60 bg-card">
+              {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(d => (
+                <div key={d} className="px-2 py-2 text-[11px] uppercase tracking-wide text-muted-foreground text-center">{d}</div>
+              ))}
+            </div>
+            <div className="grid grid-cols-7" style={{ gridAutoRows: "minmax(118px, 1fr)", minHeight: "60vh" }}>
+              {Array.from({ length: Math.round((monthGridEnd.getTime() - monthGridStart.getTime()) / 86400000) + 1 }, (_, i) => addDays(monthGridStart, i)).map((day, i) => {
+                const inMonth = day.getMonth() === monthAnchor.getMonth();
+                const isToday = isSameDay(day, toLocal(new Date()));
+                const dayEvents = visibleEvents
+                  .filter(e => isSameDay(toLocal(new Date(e.start)), day))
+                  .sort((a, b) => a.start.localeCompare(b.start));
+                const shown = dayEvents.slice(0, 4);
+                const drill = () => { changeCalView("week"); setWeekStart(daySpan === 7 ? startOfWeek(day, { weekStartsOn: 1 }) : day); };
+                return (
+                  <div key={i} className={`border-b border-l border-border/40 [&:nth-child(7n+1)]:border-l-0 px-1.5 py-1.5 min-w-0 flex flex-col gap-1 ${inMonth ? "" : "bg-muted/30"}`}>
+                    <button onClick={drill} className="self-end" title="Open this week">
+                      <span className={`grid h-6 min-w-6 place-items-center rounded-full px-1 text-[12px] tabular-nums ${isToday ? "bg-danger text-white font-semibold" : inMonth ? "text-foreground" : "text-muted-foreground/60"}`}>
+                        {day.getDate() === 1 ? format(day, "MMM d") : day.getDate()}
+                      </span>
+                    </button>
+                    {shown.map(e => {
+                      const kind = classify(e.summary ?? "");
+                      const dot = kind === "closing" ? "bg-success" : kind === "coaching" ? "bg-[var(--chart-1)]" : kind === "team" ? "bg-warning" : "bg-muted-foreground/50";
+                      return (
+                        <button
+                          key={e.id}
+                          onClick={() => setSelectedEvent(e)}
+                          className="flex items-center gap-1.5 rounded px-1 py-0.5 text-left text-[11px] leading-4 hover:bg-muted/60 motion-safe:transition-colors min-w-0"
+                          title={e.summary ?? ""}
+                        >
+                          <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${dot}`} />
+                          <span className="tabular-nums text-muted-foreground shrink-0">{format(toLocal(new Date(e.start)), "HH:mm")}</span>
+                          <span className="truncate text-foreground">{e.summary ?? "Untitled"}</span>
+                        </button>
+                      );
+                    })}
+                    {dayEvents.length > shown.length && (
+                      <button onClick={drill} className="text-left text-[10px] text-muted-foreground hover:text-foreground px-1">
+                        +{dayEvents.length - shown.length} more
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            {events.isLoading && (
+              <div className="p-4 text-center text-sm text-muted-foreground border-t border-border/60">Loading team calendar…</div>
+            )}
+            {!events.isLoading && (events.data?.length ?? 0) === 0 && (
+              <div className="p-4 text-center text-sm text-muted-foreground border-t border-border/60">
+                {teamList.length === 0 ? "Connect your Google Calendar to start seeing events here." : "No events this month."}
+              </div>
+            )}
+          </Card>
+        )}
+
         {/* Week grid — full 24h, scrollable, opens at the working day */}
+        {calView === "week" && (
         <Card className="p-0 border-border/60 overflow-hidden relative">
           <div ref={gridScrollRef} className="max-h-[68vh] overflow-y-auto overscroll-contain">
           <div className="grid" style={{ gridTemplateColumns: `${isMobile ? 40 : 48}px repeat(${daySpan}, minmax(0, 1fr))` }}>
@@ -494,6 +582,7 @@ function CalendarPage() {
             </div>
           )}
         </Card>
+        )}
 
         </>)}
 
