@@ -91,6 +91,22 @@ test("Home splits by role: setter reps get their own week, leaders get the money
   assert.doesNotMatch(styles, /payout-pulse|payout-border-breathe/);
 });
 
+test("Founder Home uses its existing operational reads for a useful leadership brief", () => {
+  assert.match(dashboard, /function LeadershipBrief/);
+  assert.match(dashboard, /<LeadershipBrief data=\{data\}/);
+  for (const label of [
+    "Active students",
+    "Calls next 7 days",
+    "Payments due next 3 days",
+    "Testimonials ready",
+  ]) {
+    assert.match(dashboard, new RegExp(label));
+  }
+  assert.match(dashboard, /Prepare upcoming installments/);
+  assert.match(dashboard, /Collect ready testimonials/);
+  assert.doesNotMatch(dashboard, /buildActivitySignal|One useful signal|Team · last 7 days/);
+});
+
 test("Home preserves unavailable operational values and ranks urgent exceptions first", () => {
   assert.match(dashboard, /rows\.some\(\(row\) => row\[key\] == null\)/);
   assert.match(dashboard, /result\.count == null/);

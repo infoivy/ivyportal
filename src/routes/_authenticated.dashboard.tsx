@@ -5,6 +5,7 @@ import { addDays, format, subDays } from "date-fns";
 import {
   AlertCircle,
   ArrowRight,
+  CalendarDays,
   CheckCircle2,
   ClipboardCheck,
   FileText,
@@ -13,6 +14,7 @@ import {
   RefreshCw,
   ShieldCheck,
   Users,
+  WalletCards,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageShell } from "@/components/ui/page-shell";
@@ -266,10 +268,11 @@ function HomePage() {
 
     data.assignedItems.slice(0, 3).forEach((item) => {
       const overdue = Boolean(item.due_date && item.due_date < today);
+      const due = item.due_date ? humanDue(item.due_date) : null;
       items.push({
         key: `item-${item.id}`,
         title: item.text,
-        detail: item.due_date ? `${overdue ? "Overdue" : "Due"} ${humanDue(item.due_date)}` : "Assigned action item",
+        detail: due ? `${due.charAt(0).toUpperCase()}${due.slice(1)}` : "Assigned action item",
         url: "/action-items",
         icon: ListChecks,
         urgent: overdue,
@@ -320,6 +323,29 @@ function HomePage() {
         url: "/performance",
         icon: Users,
         count: data.missingToday,
+      });
+    }
+
+    if (canSeeFinance && data.dueSoonInstallments != null && data.dueSoonInstallments > 0) {
+      items.push({
+        key: "upcoming-payments",
+        title: "Prepare upcoming installments",
+        detail: `${data.dueSoonInstallments} ${data.dueSoonInstallments === 1 ? "payment is" : "payments are"} due within the next 3 days.`,
+        url: "/revenue",
+        search: { tab: "plans" },
+        icon: CalendarDays,
+        count: data.dueSoonInstallments,
+      });
+    }
+
+    if (canSeeCustomers && data.pendingTestimonials != null && data.pendingTestimonials > 0) {
+      items.push({
+        key: "testimonials",
+        title: "Collect ready testimonials",
+        detail: `${data.pendingTestimonials} active ${data.pendingTestimonials === 1 ? "student has" : "students have"} a recorded first win without a collected testimonial.`,
+        url: "/testimonials",
+        icon: GraduationCap,
+        count: data.pendingTestimonials,
       });
     }
 
@@ -414,7 +440,7 @@ function HomePage() {
                     <item.icon className="h-4 w-4" aria-hidden="true" />
                   </span>
                   <span className="min-w-0">
-                    <span className="block truncate text-body font-semibold text-foreground">{item.title}</span>
+                    <span className="block text-body font-semibold text-foreground sm:truncate">{item.title}</span>
                     <span className="mt-0.5 block text-caption leading-5 text-muted-foreground">{item.detail}</span>
                   </span>
                   {item.count != null && (
@@ -443,12 +469,6 @@ function HomePage() {
                   style={{ width: `${Math.min(100, Math.round((data.submittedToday / Math.max(1, data.expectedFilers || data.submittedToday)) * 100))}%` }}
                 />
               </div>
-              <dl className="mt-4 divide-y divide-border border-t border-border">
-                <PulseRow label="Calls scheduled, next 7 days" value={data.callsThisWeek} />
-                <PulseRow label="Students needing attention" value={data.atRiskStudents} urgent={data.atRiskStudents != null && data.atRiskStudents > 0} />
-                {canSeeFinance && <PulseRow label="Overdue installments" value={data.overdueInstallments} urgent={data.overdueInstallments != null && data.overdueInstallments > 0} />}
-                {canApprove && <PulseRow label="Pending access requests" value={data.pendingApprovals} />}
-              </dl>
               {isLeader && (
                 <Link to={"/performance" as never} className="mt-4 inline-flex min-h-10 items-center gap-2 text-body font-semibold text-foreground hover:opacity-70">
                   Open Performance <ArrowRight className="h-4 w-4" />
@@ -463,7 +483,9 @@ function HomePage() {
               activities={data.activities}
               profiles={data.profiles}
             />
-          ) : roles.includes("founder") ? null : (
+          ) : isLeader ? (
+            <LeadershipBrief data={data} />
+          ) : (
           <section className="card-surface p-5" aria-labelledby="your-day-title">
             <div className="flex items-center gap-2 text-muted-foreground">
               <ClipboardCheck className="h-4 w-4" />
@@ -570,6 +592,70 @@ function PulseRow({ label, value, urgent = false }: { label: string; value: numb
         {value == null ? "Unavailable" : value}
       </dd>
     </div>
+  );
+}
+
+function LeadershipBrief({ data }: { data: HomeData }) {
+  const rows = [
+    {
+      label: "Active students",
+      detail: "Current delivery roster",
+      value: data.activeStudents,
+      url: "/students",
+      icon: Users,
+    },
+    {
+      label: "Calls next 7 days",
+      detail: "Scheduled coaching and support",
+      value: data.callsThisWeek,
+      url: "/calls",
+      icon: CalendarDays,
+    },
+    {
+      label: "Payments due next 3 days",
+      detail: "Upcoming installment follow-up",
+      value: data.dueSoonInstallments,
+      url: "/revenue",
+      search: { tab: "plans" },
+      icon: WalletCards,
+    },
+    {
+      label: "Testimonials ready",
+      detail: "First win recorded, not collected",
+      value: data.pendingTestimonials,
+      url: "/testimonials",
+      icon: GraduationCap,
+    },
+  ];
+
+  return (
+    <section className="card-surface overflow-hidden" aria-labelledby="leadership-brief-title">
+      <div className="border-b border-border px-5 py-4">
+        <p className="text-micro font-semibold uppercase tracking-[0.1em] text-muted-foreground">Leadership</p>
+        <h2 id="leadership-brief-title" className="mt-1 text-title font-semibold text-foreground">Operating picture</h2>
+      </div>
+      <div className="divide-y divide-border">
+        {rows.map((row) => (
+          <Link
+            key={row.label}
+            to={row.url as never}
+            search={(row.search ?? undefined) as never}
+            preload="intent"
+            className="group grid min-h-16 grid-cols-[28px_minmax(0,1fr)_auto_18px] items-center gap-3 px-5 py-3 hover:bg-muted/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset motion-safe:transition-colors"
+          >
+            <row.icon className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+            <span className="min-w-0">
+              <span className="block text-caption font-semibold text-foreground">{row.label}</span>
+              <span className="mt-0.5 block truncate text-micro text-muted-foreground">{row.detail}</span>
+            </span>
+            <span className="text-body font-semibold tabular-nums text-foreground">
+              {row.value == null ? "Unavailable" : row.value.toLocaleString()}
+            </span>
+            <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground" aria-hidden="true" />
+          </Link>
+        ))}
+      </div>
+    </section>
   );
 }
 
