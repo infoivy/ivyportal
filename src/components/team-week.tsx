@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, ChevronRight, Copy, Check } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -161,15 +161,6 @@ export function TeamWeekSection() {
   }, []);
   const filedToday = setters.filter(s => byUserDate.has(`${s.user_id}::${today}`));
   const missedYesterday = setters.filter(s => !byUserDate.has(`${s.user_id}::${yesterday}`));
-  const [copiedId, setCopiedId] = useState<string | null>(null);
-  const copyNudge = (name: string, id: string) => {
-    const msg = `Hey ${name.split(" ")[0]}, no EOD logged yesterday. Please submit today's report before EOD. 🙏`;
-    void navigator.clipboard.writeText(msg).then(() => {
-      setCopiedId(id);
-      setTimeout(() => setCopiedId(null), 2000);
-      toast.success("Nudge copied");
-    });
-  };
   const updateSetterType = async (id: string, type: "phone" | "dm" | "full_cycle") => {
     const { error } = await (supabase.from("profiles") as never as { update: (v: object) => { eq: (c: string, v: string) => Promise<{ error: { message: string } | null }> } }).update({ setter_type: type }).eq("id", id);
     if (error) { toast.error(error.message); return; }
@@ -207,35 +198,21 @@ export function TeamWeekSection() {
         </div>
 
         {missedYesterday.length > 0 && (
-          <div className="rounded-lg border border-warning/25 bg-warning-bg p-3 space-y-1.5">
-            <div className="text-caption font-semibold text-warning-fg">Missed yesterday · send a nudge</div>
-            {missedYesterday.map(s => (
-              <div key={s.user_id} className="flex items-center justify-between gap-3 text-body">
-                <span>{s.display_name}</span>
-                <span className="flex items-center gap-2">
-                  {canEditSetterType && (
-                    <SelectField
-                      value={s.setter_type ?? "dm"}
-                      onChange={(v) => void updateSetterType(s.user_id, v as "phone" | "dm" | "full_cycle")}
-                      options={[{ value: "phone", label: "Phone" }, { value: "dm", label: "DM" }, { value: "full_cycle", label: "Full cycle" }]}
-                      className="h-7 text-caption"
-                    />
-                  )}
-                  <button
-                    onClick={() => copyNudge(s.display_name, s.user_id)}
-                    className="inline-flex items-center gap-1 text-caption text-muted-foreground hover:text-foreground"
-                  >
-                    {copiedId === s.user_id ? <Check className="h-3 w-3 text-success-fg" /> : <Copy className="h-3 w-3" />} Copy nudge
-                  </button>
-                </span>
-              </div>
-            ))}
+          <div className="rounded-lg border border-warning/25 bg-warning-bg px-3 py-2.5 text-body">
+            <span className="text-caption font-semibold text-warning-fg">Missed yesterday</span>
+            <span className="text-foreground ml-2">{missedYesterday.map(s => s.display_name).join(" · ")}</span>
           </div>
         )}
 
         {/* Member cards */}
         <div className="grid md:grid-cols-2 gap-3">
-          {cards.map(c => <MemberWeekCard key={c.r.user_id} card={c} />)}
+          {cards.map(c => (
+            <MemberWeekCard
+              key={c.r.user_id}
+              card={c}
+              onSetterType={canEditSetterType && c.r.primary_role === "setter" ? (t) => void updateSetterType(c.r.user_id, t) : undefined}
+            />
+          ))}
           {cards.length === 0 && (
             <div className="text-body text-muted-foreground p-4">No team members yet.</div>
           )}
@@ -245,11 +222,11 @@ export function TeamWeekSection() {
   );
 }
 
-function MemberWeekCard({ card }: { card: {
+function MemberWeekCard({ card, onSetterType }: { card: {
   r: RosterEntry; status: "green" | "amber" | "red"; todayLine: string;
   week: { d: string; status: "green" | "amber" | "red"; e: EOD | undefined }[];
   weeklyLabel: string; weeklyValue: string | number;
-} }) {
+}; onSetterType?: (t: "phone" | "dm" | "full_cycle") => void }) {
   const [open, setOpen] = useState(false);
   const dotColor = card.status === "green" ? "bg-success" : card.status === "amber" ? "bg-warning" : "bg-danger";
   const roleLabel = card.r.setter_type === "phone" ? "Phone Setter" : card.r.setter_type === "dm" ? "DM Setter" : card.r.setter_type === "full_cycle" ? "Full Cycle Setter" : ROLE_LABEL[card.r.primary_role] ?? card.r.primary_role;
@@ -260,9 +237,22 @@ function MemberWeekCard({ card }: { card: {
           <div className="text-body font-semibold text-foreground">{card.r.display_name}</div>
           <div className="text-micro text-muted-foreground">{roleLabel}</div>
         </div>
-        <button onClick={() => setOpen(o => !o)} className="text-micro text-muted-foreground hover:text-foreground flex items-center gap-1">
-          {open ? "Hide" : "Detail"}{open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-        </button>
+        <span className="flex items-center gap-2">
+          {onSetterType && (
+            <SelectField
+              value={card.r.setter_type ?? ""}
+              onChange={(v) => { if (v) onSetterType(v as "phone" | "dm" | "full_cycle"); }}
+              options={[{ value: "phone", label: "Phone" }, { value: "dm", label: "DM" }, { value: "full_cycle", label: "Full cycle" }]}
+              allowEmpty
+              emptyLabel="Type…"
+              placeholder="Type…"
+              className="h-7 text-caption"
+            />
+          )}
+          <button onClick={() => setOpen(o => !o)} className="text-micro text-muted-foreground hover:text-foreground flex items-center gap-1">
+            {open ? "Hide" : "Detail"}{open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+          </button>
+        </span>
       </div>
       <div className="flex items-center gap-2">
         <span className={`inline-block h-2.5 w-2.5 rounded-full ${dotColor}`} />
