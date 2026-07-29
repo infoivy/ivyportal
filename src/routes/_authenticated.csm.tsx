@@ -98,7 +98,7 @@ function CsmHub() {
 
   const active = tab === "workspace" ? "workspace" : tab === "success" ? "success" : "overview";
   return (
-    <div className="p-4 sm:p-6 max-w-[1400px] mx-auto space-y-5">
+    <div className="w-full max-w-none p-4 sm:p-6 space-y-5">
       <StudentsTabBar />
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
@@ -150,7 +150,7 @@ function CsmPage() {
       supabase.from("csm_student_notes").select("*, students!inner(is_demo)").eq("students.is_demo", false).order("created_at", { ascending: false }).limit(200),
       supabase.from("csm_tally").select("*").eq("user_id", user.id).is("student_id", null).gte("created_at", since).order("created_at", { ascending: false }),
       supabase.from("csm_tally").select("*, students!inner(is_demo)").eq("user_id", user.id).eq("students.is_demo", false).gte("created_at", since).order("created_at", { ascending: false }),
-      supabase.from("student_calls").select("id, student_id, call_date, action_items_json, next_call_date, students!inner(is_demo)").eq("students.is_demo", false).order("call_date", { ascending: false }).limit(600),
+      supabase.from("student_calls").select("id, student_id, call_date, action_items_json, next_call_date, students!inner(is_demo)").eq("students.is_demo", false).is("voided_at", null).order("call_date", { ascending: false }).limit(600),
       supabase.from("student_eods").select("student_id, report_date, roleplays, looms_sent, applications_submitted, interviews, wins, blockers, students!inner(is_demo)").eq("students.is_demo", false).order("report_date", { ascending: false }).limit(1000),
       supabase.from("student_weekly_eods").select("student_id, week_start, group_calls_attended, calls_attended, one_on_one_calls, implementation, biggest_win, biggest_blocker, next_week_commitment, students!inner(is_demo)").eq("students.is_demo", false).order("week_start", { ascending: false }).limit(1000),
       supabase.from("student_action_items").select("id, student_id, text, done, due_date, created_at, created_by, students!inner(is_demo)").eq("is_demo", false).eq("students.is_demo", false).order("created_at", { ascending: false }).limit(500),

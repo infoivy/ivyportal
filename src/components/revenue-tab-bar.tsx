@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 // Each tab only shows for roles its route admits.
 const TABS = [
   { label: "Overview", url: "/finance", roles: ["founder", "cofounder"] },
-  { label: "Money in", url: "/revenue", roles: ["admin", "closer", "coach", "founder"] },
+  { label: "Money in", url: "/revenue", roles: ["admin", "closer", "founder"] },
   { label: "Payouts", url: "/payouts", roles: ["admin", "cofounder"] },
 ] as const;
 

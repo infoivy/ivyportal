@@ -534,7 +534,7 @@ function getWorkflowCard(ref: WorkflowCardRef) {
 const WorkflowView = React.memo(function WorkflowView({ headerH, guideCollapsed }: { headerH: number; guideCollapsed: boolean }) {
   return (
     <main className="min-h-screen bg-background overflow-y-auto pb-28" style={{ paddingTop: headerH + 24 }}>
-      <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
+      <div className="w-full max-w-none px-4 sm:px-6">
         <section className="mb-12 max-w-3xl">
           <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">New setter start here</p>
           <h2 className="mt-3 text-2xl sm:text-3xl font-semibold tracking-tight text-foreground">One conversation. Seven steps. Follow them in order.</h2>
@@ -600,7 +600,7 @@ const WorkflowView = React.memo(function WorkflowView({ headerH, guideCollapsed 
 const LibraryView = React.memo(function LibraryView({ headerH, matched, query }: { headerH: number; matched: Set<TabId> | null; query: string }) {
   return (
     <main className="min-h-screen bg-background pb-28" style={{ paddingTop: headerH + 24 }}>
-      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
+      <div className="w-full max-w-none px-4 sm:px-6">
         <section className="mb-12 max-w-3xl">
           <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Live conversation reference</p>
           <h2 className="mt-3 text-2xl sm:text-3xl font-semibold tracking-tight text-foreground">Find the stage you are in. Use only what comes next.</h2>

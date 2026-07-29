@@ -29,6 +29,7 @@ export async function fetchPeriodOwed(period: PayoutPeriod): Promise<OwedMember[
       .from("deals")
       .select("id, closer_id, setter_id, total_value, cash_collected_upfront, deal_date, payment_type")
       .eq("is_demo", false)
+      .is("voided_at", null)
       .gte("deal_date", period.monthStart)
       .lte("deal_date", period.monthEnd),
     supabase.from("profiles").select("id, display_name, commission_cap_pct, base_pay_monthly, base_pay_day").eq("is_demo", false),

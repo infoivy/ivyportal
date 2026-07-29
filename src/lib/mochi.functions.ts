@@ -155,7 +155,9 @@ export type MochiDashboard = {
 export const getMochiStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const creds = await readCreds(context as Ctx);
+    const ctx = context as Ctx;
+    await requireFounderAnalyticsAccess(ctx);
+    const creds = await readCreds(ctx);
     return { configured: !!(creds.access && creds.refresh) };
   });
 
@@ -553,6 +555,7 @@ export const getFinanceRevenue = createServerFn({ method: "GET" })
       supabaseAdmin.from("deals")
         .select("deal_date, cash_collected_upfront, student_name")
         .eq("is_demo", false)
+        .is("voided_at", null)
         .gte("deal_date", data.from).lte("deal_date", data.to)
         .gt("cash_collected_upfront", 0),
       // Paid installments belong to the day the money ARRIVED (paid_at), not

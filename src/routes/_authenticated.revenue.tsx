@@ -26,7 +26,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { PaymentPlansSection } from "@/components/revenue/payment-plans-section";
 import { toast } from "sonner";
 import {
-  Plus, DollarSign, TrendingUp, Trophy, ClipboardList, Pencil, Trash2,
+  Plus, DollarSign, TrendingUp, Trophy, ClipboardList, Pencil, Ban, Trash2,
   Save, Percent, Download,
 } from "lucide-react";
 import { RevenueTabBar } from "@/components/revenue-tab-bar";
@@ -54,11 +54,11 @@ type PaymentType = Deal["payment_type"];
 
 function RevenuePage() {
   const { roles } = useAuth();
-  const canView = roles.includes("admin") || roles.includes("closer") || roles.includes("coach") || roles.includes("founder");
+  const canView = roles.includes("admin") || roles.includes("closer") || roles.includes("founder");
   if (!canView) {
     return (
       <div className="p-8 max-w-2xl mx-auto">
-        <div className="card-surface p-8 text-center text-[13px] text-muted-foreground">Admin, closer, or coach access required.</div>
+        <div className="card-surface p-8 text-center text-[13px] text-muted-foreground">Founder, admin, or closer access required.</div>
       </div>
     );
   }
@@ -70,7 +70,7 @@ function RevenueInner() {
   const tab = search.tab ?? "deals";
   const { user, roles } = useAuth();
   const isAdmin = roles.includes("admin");
-  const canLog = isAdmin || roles.includes("closer") || roles.includes("coach");
+  const canLog = isAdmin || roles.includes("closer");
 
   const [deals, setDeals] = useState<Deal[]>([]);
   const [rates, setRates] = useState<CommissionRates>(DEFAULT_RATES);
@@ -87,7 +87,7 @@ function RevenueInner() {
 
   const fetchPage = async () => {
     const [dealsRes, ratesRes, rolesRes, studentsRes] = await Promise.all([
-      supabase.from("deals").select("*").eq("is_demo", false).order("deal_date", { ascending: false }).limit(500),
+      supabase.from("deals").select("*").eq("is_demo", false).is("voided_at", null).order("deal_date", { ascending: false }).limit(500),
       supabase.from("commission_rates").select("*").eq("active", true),
       supabase
         .from("user_roles")
@@ -301,18 +301,23 @@ function RevenueInner() {
     return buckets;
   }, [deals, trendMode]);
 
-  const deleteDeal = async (id: string) => {
-    if (!confirm("Delete this deal? This does NOT delete the linked student.")) return;
-    const { error } = await supabase.from("deals").delete().eq("id", id);
+  const voidDeal = async (id: string) => {
+    const reason = prompt("Why is this deal being voided?", "Incorrect revenue record");
+    if (!reason?.trim()) return;
+    const { error } = await supabase.from("deals").update({
+      voided_at: new Date().toISOString(),
+      voided_by: user?.id ?? null,
+      void_reason: reason.trim(),
+    }).eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success("Deleted");
+    toast.success("Deal voided · original record preserved");
     invalidateForTables(qc, ["deals", "installments", "installment_payments"]);
   };
 
   if (loading) return <PageSkeleton />;
 
   return (
-    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-5">
+    <div className="w-full max-w-none p-4 sm:p-6 space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3 pb-5 mb-1">
         <div>
           <h1 className="text-display text-foreground">Money in</h1>
@@ -360,9 +365,9 @@ function RevenueInner() {
           value={<BlurMoney>{whopQ.isLoading ? "…" : money(whopCash ?? stats.cash)}</BlurMoney>}
           icon={<DollarSign className="h-3.5 w-3.5" />}
           accent
-          sparkData={cashSparkData}
-          delta={compare ? { value: stats.cash - prevStats.cash, format: "money" } : undefined}
-          noData={rangeDeals.length === 0}
+          sparkData={whopCash == null ? cashSparkData : undefined}
+          delta={whopCash == null && compare ? { value: stats.cash - prevStats.cash, format: "money" } : undefined}
+          noData={!whopQ.isLoading && whopCash == null && rangeDeals.length === 0}
         />
         <StatCard
           label="Booked value"
@@ -529,8 +534,8 @@ function RevenueInner() {
                             <Pencil className="h-3.5 w-3.5" />
                           </Button>
                           {isAdmin && (
-                            <Button size="icon" variant="ghost" onClick={() => deleteDeal(d.id)} className="text-destructive">
-                              <Trash2 className="h-3.5 w-3.5" />
+                            <Button size="icon" variant="ghost" onClick={() => voidDeal(d.id)} className="text-destructive" title="Void deal and preserve history">
+                              <Ban className="h-3.5 w-3.5" />
                             </Button>
                           )}
                         </div>

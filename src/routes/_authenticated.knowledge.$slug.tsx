@@ -89,7 +89,7 @@ function KnowledgeDoc() {
   if (loading) return <PageSkeleton />;
   if (notFound || !doc) {
     return (
-      <div className="p-6 max-w-3xl mx-auto space-y-4">
+      <div className="w-full max-w-none p-6 space-y-4">
         <p className="text-sm text-muted-foreground">Doc not found or you don't have access.</p>
         <Link to={"/knowledge" as string}>
           <Button variant="outline" size="sm">

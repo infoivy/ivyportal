@@ -10,6 +10,21 @@ export type LeaderboardRow = {
   isYou: boolean;
 };
 
+async function requireActiveStudentPortalAccess(context: { userId: string }) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data: student, error } = await supabaseAdmin
+    .from("students")
+    .select("id")
+    .eq("user_id", context.userId)
+    .eq("is_demo", false)
+    .eq("status", "active")
+    .not("onboarding_completed_at", "is", null)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!student) throw new Error("Forbidden: active student portal access required");
+  return supabaseAdmin;
+}
+
 /**
  * Student leaderboard: last-7-day activity across ALL active students,
  * aggregated server-side because RLS (correctly) blocks students from
@@ -18,7 +33,7 @@ export type LeaderboardRow = {
 export const getStudentLeaderboard = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const supabaseAdmin = await requireActiveStudentPortalAccess(context);
     // Over-fetch by 2 days, then trim per student to THEIR local last-7-days —
     // report_date is each student's local day, so a shared UTC window
     // drifts out of sync with what their own EOD tab shows.

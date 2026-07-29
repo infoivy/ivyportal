@@ -59,7 +59,7 @@ function CrmPage() {
 
   return (
     <div className="min-h-full">
-      <div className="max-w-[1400px] mx-auto p-3 sm:p-4 space-y-4">
+      <div className="w-full max-w-none p-3 sm:p-4 space-y-4">
         <header className="pt-1">
           <h1 className="text-display text-foreground">CRM</h1>
           <p className="text-[13px] text-muted-foreground mt-0.5">

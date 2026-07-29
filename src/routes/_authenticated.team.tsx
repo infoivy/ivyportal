@@ -171,7 +171,7 @@ function TeamPage() {
   const lastActivity = pageQ.data?.lastActivity ?? new Map<string, string>();
 
   return (
-    <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-5">
+    <div className="w-full max-w-none p-4 sm:p-6 space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-display text-foreground">Team</h1>

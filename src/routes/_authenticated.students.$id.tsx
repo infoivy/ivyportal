@@ -18,7 +18,7 @@ import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { humanDue } from "@/lib/dates";
 import {
-  ArrowLeft, Video, Trash2, Plus, Save, Calendar as CalIcon,
+  ArrowLeft, Video, Trash2, ArchiveX, Plus, Save, Calendar as CalIcon,
   Phone, FileText, User, Pencil, ExternalLink, CheckCircle2, Circle,
   Star, HeartHandshake, DollarSign, Trophy, Award, MessageSquare, Link2,
   AlertTriangle, MessageCircle, GraduationCap, Activity, Briefcase } from "lucide-react";
@@ -160,13 +160,13 @@ function StudentDetail() {
   const fetchPage = async () => {
     const [sRes, cRes, eRes, weeklyRes, coachRes, csmRes, instRes, dealRes, aiRes] = await Promise.all([
       supabase.from("students").select("*").eq("is_demo", false).eq("id", id).maybeSingle(),
-      supabase.from("student_calls").select("*, students!inner(is_demo)").eq("students.is_demo", false).eq("student_id", id).order("call_date", { ascending: false }),
+      supabase.from("student_calls").select("*, students!inner(is_demo)").eq("students.is_demo", false).eq("student_id", id).is("voided_at", null).order("call_date", { ascending: false }),
       supabase.from("student_eods").select("*, students!inner(is_demo)").eq("students.is_demo", false).eq("student_id", id).order("report_date", { ascending: false }),
       supabase.from("student_weekly_eods").select("*, students!inner(is_demo)").eq("students.is_demo", false).eq("student_id", id).order("week_start", { ascending: false }),
       supabase.from("user_roles").select("user_id, role").in("role", ["coach", "admin"]),
       supabase.from("csm_student_notes").select("*, students!inner(is_demo)").eq("students.is_demo", false).eq("student_id", id).order("created_at", { ascending: false }),
-      supabase.from("installments").select("*, students!inner(is_demo)").eq("students.is_demo", false).eq("student_id", id).maybeSingle(),
-      supabase.from("deals").select("id").eq("is_demo", false).eq("student_id", id).limit(1),
+      supabase.from("installments").select("*, students!inner(is_demo)").eq("students.is_demo", false).is("voided_at", null).eq("student_id", id).maybeSingle(),
+      supabase.from("deals").select("id").eq("is_demo", false).is("voided_at", null).eq("student_id", id).limit(1),
       supabase.from("student_action_items").select("id, text, done, due_date, created_at, students!inner(is_demo)").eq("is_demo", false).eq("students.is_demo", false).eq("student_id", id).order("created_at", { ascending: false }).limit(50),
     ]);
     const coachIds = Array.from(new Set((coachRes.data ?? []).map(r => r.user_id)));
@@ -253,7 +253,7 @@ function StudentDetail() {
   // this view of themselves (grades, next actions, pathway internals).
   if (!["admin", "closer", "csm", "coach", "founder", "cofounder"].some(r => roles.includes(r))) {
     return (
-      <div className="p-4 sm:p-6 max-w-[1500px] mx-auto">
+      <div className="w-full max-w-none p-4 sm:p-6">
         <div className="card-surface p-8 text-center text-[13px] text-muted-foreground">Staff access required.</div>
       </div>
     );
@@ -293,10 +293,12 @@ function StudentDetail() {
   };
 
   const deleteCall = async (cid: string) => {
-    if (!confirm("Delete this call record?")) return;
-    const { error } = await supabase.from("student_calls").delete().eq("id", cid);
+    const reason = prompt("Why should this call be removed from active records?")?.trim();
+    if (!reason) return;
+    if (reason.length < 3) return toast.error("Enter a short correction reason.");
+    const { error } = await supabase.rpc("void_student_call", { p_call_id: cid, p_reason: reason });
     if (error) return toast.error(error.message);
-    toast.success("Call deleted");
+    toast.success("Call removed from active records · history preserved");
     invalidateForTables(qc, ["student_calls"]);
     load();
   };
@@ -330,10 +332,8 @@ function StudentDetail() {
     if (!clean || !student || clean === student.full_name) return;
     const { error } = await supabase.from("students").update({ full_name: clean }).eq("id", student.id);
     if (error) return toast.error(error.message);
-    // deals/installments carry a denormalized student_name — keep them in step
-    // so Revenue and Installments show the corrected name too (best effort).
-    await supabase.from("deals").update({ student_name: clean } as never).eq("student_id", student.id);
-    await (supabase.from("installments") as any).update({ student_name: clean }).eq("student_id", student.id);
+    // The database trigger keeps denormalized money labels in sync without
+    // granting student-success roles direct write access to finance records.
     toast.success("Name updated");
     invalidateForTables(qc, ["students", "deals", "installments"]);
     load();
@@ -353,7 +353,7 @@ function StudentDetail() {
   };
 
   return (
-    <div className="p-4 sm:p-6 max-w-[1400px] mx-auto space-y-5">
+    <div className="w-full max-w-none p-4 sm:p-6 space-y-5">
       <div className="flex items-center justify-between border-b border-[var(--border)] pb-4">
         <button onClick={() => nav({ to: "/students" })} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-3.5 w-3.5" /> Back to students
@@ -703,7 +703,7 @@ function StudentDetail() {
                       </a>
                     )}
                     {canManage && (
-                      <button onClick={() => deleteCall(c.id)} className="p-0.5 text-muted-foreground hover:text-danger-fg"><Trash2 className="h-3 w-3" /></button>
+                      <button onClick={() => deleteCall(c.id)} className="p-0.5 text-muted-foreground hover:text-danger-fg" title="Remove call from active records"><ArchiveX className="h-3 w-3" /></button>
                     )}
                   </div>
                 </div>
@@ -749,19 +749,24 @@ function StudentDetail() {
                     <td className="p-2 max-w-[200px] truncate">{e.wins}</td>
                     <td className="p-2 max-w-[200px] truncate text-warning-fg/80">{e.blockers}</td>
                     <td className="p-2 text-right">
-                      {/* Students can only adjust their EODs; deleting a bogus
-                          row is a CSM/coach/admin action (founder 2026-07-25). */}
-                      {canManage && (
+                      {/* Corrections preserve the source row in the archive and
+                          remain admin-only. */}
+                      {roles.includes("admin") && (
                         <button
                           onClick={async () => {
-                            if (!confirm(`Delete the ${e.report_date} EOD? This cannot be undone.`)) return;
-                            const { error } = await supabase.from("student_eods").delete().eq("id", e.id);
+                            const reason = prompt(`Why is the ${e.report_date} EOD being unlocked?`, "Incorrect submission");
+                            if (!reason?.trim()) return;
+                            const { error } = await (supabase.rpc as any)("archive_and_unlock_eod", {
+                              p_record_type: "student_daily",
+                              p_source_id: e.id,
+                              p_reason: reason.trim(),
+                            });
                             if (error) return toast.error(error.message);
-                            toast.success("EOD deleted");
+                            toast.success("EOD archived and unlocked");
                             load();
                           }}
                           className="p-1 rounded hover:bg-danger-bg text-muted-foreground hover:text-danger-fg"
-                          title="Delete this EOD"
+                          title="Archive and unlock this EOD"
                         >
                           <Trash2 className="h-3 w-3" />
                         </button>
@@ -1134,7 +1139,7 @@ function TimelineFeed({ student, calls, eods, csmNotes, csmAuthors, coachName, p
     queryKey: ["placements", student.id],
     staleTime: 60_000,
     queryFn: async () =>
-      ((await supabase.from("student_placements").select("*, students!inner(is_demo)").eq("students.is_demo", false).eq("student_id", student.id).order("created_at", { ascending: false })).data ?? []) as PlacementRow[],
+      ((await supabase.from("student_placements").select("*, students!inner(is_demo)").eq("students.is_demo", false).eq("student_id", student.id).is("voided_at", null).order("created_at", { ascending: false })).data ?? []) as PlacementRow[],
   });
   const events: TimelineEvent[] = [];
   for (const pl of placementsQ.data ?? []) {

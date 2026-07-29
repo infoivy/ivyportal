@@ -61,7 +61,7 @@ export function MochiCrmInner({ embedded = false }: { embedded?: boolean }) {
   const pct = (v: number | null) => (v == null ? "–" : `${Math.round(v * 100)}%`);
 
   return (
-    <div className={embedded ? "space-y-5" : "p-4 sm:p-6 max-w-[1200px] mx-auto space-y-5"}>
+    <div className={embedded ? "space-y-5" : "w-full max-w-none p-4 sm:p-6 space-y-5"}>
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-display text-foreground flex items-center gap-2.5">

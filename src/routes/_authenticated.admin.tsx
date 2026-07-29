@@ -71,7 +71,7 @@ function AdminConsole() {
         supabase.from("profiles").select("id, display_name").eq("is_demo", false),
         supabase.from("user_roles").select("user_id, role"),
         supabase.from("students").select("id, full_name, email, coach_id, status, first_win_at, testimonial_collected, trustpilot_collected").eq("is_demo", false),
-        supabase.from("student_calls").select("id, student_id, call_date, coach_id, progress_rating, students!inner(is_demo)").eq("students.is_demo", false).eq("status", "completed").is("progress_rating", null).order("call_date", { ascending: false }).limit(50),
+        supabase.from("student_calls").select("id, student_id, call_date, coach_id, progress_rating, students!inner(is_demo)").eq("students.is_demo", false).is("voided_at", null).eq("status", "completed").is("progress_rating", null).order("call_date", { ascending: false }).limit(50),
         supabase.from("commission_rates").select("*").eq("active", true),
         supabase.from("founder_settings").select("id, crm_enabled, monthly_cash_goal, quarterly_goals").maybeSingle(),
 
@@ -179,7 +179,7 @@ function AdminConsole() {
   }
 
   return (
-    <div className="p-4 sm:p-6 max-w-[1400px] mx-auto space-y-5">
+    <div className="w-full max-w-none p-4 sm:p-6 space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--border)] pb-4">
         <div>
           <h1 className="text-display text-foreground">Admin</h1>

@@ -103,7 +103,7 @@ function ProfilePage() {
   const memberSince = user?.created_at ? format(new Date(user.created_at), "MMMM d, yyyy") : null;
 
   return (
-    <div className="p-4 sm:p-6 max-w-3xl mx-auto space-y-5">
+    <div className="w-full max-w-none p-4 sm:p-6 space-y-5">
       <header>
         <h1 className="text-display text-foreground">Profile & settings</h1>
         <p className="text-body text-muted-foreground mt-1">{roles.map(r => r === "cofounder" ? "co-founder" : r).join(" · ") || "member"}</p>

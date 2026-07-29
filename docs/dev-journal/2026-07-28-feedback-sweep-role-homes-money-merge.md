@@ -62,5 +62,5 @@ DM setter daily KPI raised from 125 DMs · 3 sets to **300 DMs · 6 sets**, effe
 ## Addendum · founder EOD removal, per-member exemption, profile redesign (2026-07-29)
 
 - Founder-role accounts carry no EOD surfaces: no Your day card, no submit-EOD priority, /eods redirects to Performance.
-- New `profiles.eod_exempt` (migration 20260729000000, admin checkbox in the Team member editor) removes any member from expected filers on the home pulse, Performance Team week cards, and the daily digest missed count; exempt members see an optional-submission note on /eods. Contract test re-pinned to enforce the staff-flag rule.
+- New `profiles.eod_exempt` (migration 20260728223044, admin checkbox in the Team member editor) removes any member from expected filers on the home pulse, Performance Team week cards, and the daily digest missed count; exempt members see an optional-submission note on /eods. Contract test re-pinned to enforce the staff-flag rule.
 - Profile page rebuilt to the S.O.K. reference: single Personal information card (circular avatar, labeled field grid, email row with inline change, member-since footer) with a Security tab holding password and org management.

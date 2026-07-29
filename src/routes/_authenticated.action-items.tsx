@@ -74,7 +74,7 @@ function ActionItemsHub() {
 
   const fetchPage = async () => {
     const [cRes, aRes, sRes, pRes, teamList] = await Promise.all([
-      supabase.from("student_calls").select("id, student_id, coach_id, call_date, action_items_json, students!inner(is_demo)").eq("students.is_demo", false).order("call_date", { ascending: false }).limit(2000),
+      supabase.from("student_calls").select("id, student_id, coach_id, call_date, action_items_json, students!inner(is_demo)").eq("students.is_demo", false).is("voided_at", null).order("call_date", { ascending: false }).limit(2000),
       supabase.from("student_action_items").select("*").eq("is_demo", false).order("created_at", { ascending: false }).limit(2000),
       supabase.from("students").select("id, full_name").eq("is_demo", false),
       supabase.from("profiles").select("id, display_name").eq("is_demo", false),
@@ -234,7 +234,7 @@ function ActionItemsHub() {
   };
 
   return (
-    <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-5">
+    <div className="w-full max-w-none p-4 sm:p-6 space-y-5">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] pb-4 mb-1">
         <div>
           <div className="flex items-center gap-2 text-[10px] text-muted-foreground mb-1">

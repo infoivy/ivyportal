@@ -39,6 +39,7 @@ type Expense = {
 type Payment = {
   id?: string; installment_id?: string; sequence?: number;
   amount: number; due_date: string; status: string;
+  notes?: string | null;
   installments?: { student_name: string | null } | null;
 };
 
@@ -86,8 +87,8 @@ function FinanceInner() {
       const in6mo = new Date(now.getFullYear(), now.getMonth() + 6, 0);
       const [expensesRes, dealsRes, paysRes, futurePaysRes, settingsRes, paidRes, instRes, profRes, ratesRes, cofRes] = await Promise.all([
         supabase.from("business_expenses").select("*").order("recurring", { ascending: false }).order("due_day"),
-        supabase.from("deals").select("id, closer_id, setter_id, cash_collected_upfront, deal_date").eq("is_demo", false).gte("deal_date", iso(monthStart)).lte("deal_date", iso(monthEnd)),
-        supabase.from("installment_payments").select("id, installment_id, sequence, amount, due_date, status, installments!inner(student_name, students!inner(is_demo))").eq("installments.students.is_demo", false).gte("due_date", iso(monthStart)).lte("due_date", iso(monthEnd)),
+        supabase.from("deals").select("id, closer_id, setter_id, cash_collected_upfront, deal_date").eq("is_demo", false).is("voided_at", null).gte("deal_date", iso(monthStart)).lte("deal_date", iso(monthEnd)),
+        supabase.from("installment_payments").select("id, installment_id, sequence, amount, due_date, status, notes, installments!inner(student_name, students!inner(is_demo))").eq("installments.students.is_demo", false).gte("due_date", iso(monthStart)).lte("due_date", iso(monthEnd)),
         supabase.from("installment_payments").select("amount, due_date, status, installments!inner(students!inner(is_demo))").eq("installments.students.is_demo", false).neq("status", "waived").gte("due_date", iso(mrrFrom)).lte("due_date", iso(mrrTo)),
         supabase.from("founder_settings").select("id, processor_balance, processor_balance_updated_at, monthly_cash_goal, base_pay_day").maybeSingle(),
         supabase.from("installment_payments").select("amount, paid_at, installment_id, installments!inner(students!inner(is_demo))").eq("installments.students.is_demo", false).eq("status", "paid").gte("paid_at", iso(monthStart) + "T00:00:00").lte("paid_at", iso(monthEnd) + "T23:59:59").not("paid_at", "is", null),
@@ -267,6 +268,7 @@ function FinanceInner() {
   const PAY_STATUSES = ["upcoming", "paid", "late", "missed", "waived"] as const;
   const setPayStatus = async (pay: Payment, status: string) => {
     if (!pay.id) return;
+    if (pay.status === "paid" && status !== "paid") return toast.error("Paid history is immutable");
     const patch: { status: string; paid_at: string | null } = { status, paid_at: null };
     if (status === "paid") {
       // Cash only counts once it's actually in Whop (founder rule 2026-07-14).
@@ -290,6 +292,7 @@ function FinanceInner() {
 
   const savePayment = async (pay: Payment) => {
     if (!pay.id || !payDraft) return;
+    if (pay.status === "paid") return toast.error("Paid history is immutable");
     const amt = Number(payDraft.amount);
     if (!(amt > 0) || !payDraft.due) return toast.error("Amount and due date required");
     const { error } = await (supabase.from("installment_payments") as never as { update: (v: object) => { eq: (c: string, v: string) => Promise<{ error: { message: string } | null }> } }).update({ amount: amt, due_date: payDraft.due }).eq("id", pay.id);
@@ -299,24 +302,29 @@ function FinanceInner() {
     invalidateForTables(qc, ["installment_payments"]);
   };
 
-  const deletePayment = async (pay: Payment) => {
+  const waivePayment = async (pay: Payment) => {
     if (!pay.id) return;
-    if (!confirm(`Delete this ${money(Number(pay.amount))} installment for ${pay.installments?.student_name ?? "this student"}? This can't be undone.`)) return;
-    const { error } = await (supabase.from("installment_payments") as never as { delete: () => { eq: (c: string, v: string) => Promise<{ error: { message: string } | null }> } }).delete().eq("id", pay.id);
+    if (pay.status === "paid") return toast.error("Paid history cannot be waived");
+    const reason = prompt(`Why is this ${money(Number(pay.amount))} installment for ${pay.installments?.student_name ?? "this student"} being waived?`, "Schedule correction");
+    if (!reason?.trim()) return;
+    const notes = [pay.notes, `Waived: ${reason.trim()}`].filter(Boolean).join("\n");
+    const { error } = await (supabase.from("installment_payments") as any).update({ status: "waived", paid_at: null, notes }).eq("id", pay.id);
     if (error) return toast.error(error.message);
-    toast.success("Installment deleted");
+    toast.success("Installment waived · row preserved");
     setOpenFlow(null);
     invalidateForTables(qc, ["installment_payments"]);
   };
 
-  const deleteFollowing = async (pay: Payment) => {
+  const waiveFollowing = async (pay: Payment) => {
     if (!pay.installment_id || pay.sequence == null) return;
     const name = pay.installments?.student_name ?? "this student";
-    if (!confirm(`Delete this and EVERY later unpaid installment for ${name} (from #${pay.sequence} on)? Paid history stays. This can't be undone.`)) return;
-    const { data, error } = await (supabase.from("installment_payments") as never as { delete: () => { eq: (c: string, v: string) => { gte: (c: string, v: number) => { neq: (c: string, v: string) => { select: (c: string) => Promise<{ data: { id: string }[] | null; error: { message: string } | null }> } } } } })
-      .delete().eq("installment_id", pay.installment_id).gte("sequence", pay.sequence).neq("status", "paid").select("id");
+    const reason = prompt(`Why are this and all later unpaid installments for ${name} being waived?`, "Schedule ended");
+    if (!reason?.trim()) return;
+    const { data, error } = await (supabase.from("installment_payments") as any)
+      .update({ status: "waived", paid_at: null, notes: `Waived with future schedule: ${reason.trim()}` })
+      .eq("installment_id", pay.installment_id).gte("sequence", pay.sequence).neq("status", "paid").select("id");
     if (error) return toast.error(error.message);
-    toast.success(`${(data ?? []).length} installment${(data ?? []).length === 1 ? "" : "s"} deleted for ${name}`);
+    toast.success(`${(data ?? []).length} installment${(data ?? []).length === 1 ? "" : "s"} waived for ${name}`);
     setOpenFlow(null);
     invalidateForTables(qc, ["installment_payments"]);
   };
@@ -332,7 +340,7 @@ function FinanceInner() {
   const monthLabel = monthStart.toLocaleString("en", { month: "long", year: "numeric" });
 
   return (
-    <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-5">
+    <div className="w-full max-w-none p-4 sm:p-6 space-y-5">
       <RevenueTabBar />
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
@@ -488,6 +496,7 @@ function FinanceInner() {
                           value={f.pay.status}
                           onChange={v => void setPayStatus(f.pay!, v)}
                           options={PAY_STATUSES.map(st => ({ value: st, label: st }))}
+                          disabled={f.pay.status === "paid"}
                           className="w-auto text-xs capitalize"
                         />
                       ) : (
@@ -497,7 +506,7 @@ function FinanceInner() {
                         Open full plan →
                       </Link>
                     </div>
-                    {canEditMoney && payDraft && (
+                    {canEditMoney && payDraft && f.pay.status !== "paid" && (
                       <div className="flex flex-wrap items-end gap-3">
                         <div className="space-y-1">
                           <Label className="text-caption text-muted-foreground">Amount ($)</Label>
@@ -509,8 +518,8 @@ function FinanceInner() {
                         </div>
                         <Button size="sm" variant="outline" onClick={() => void savePayment(f.pay!)}>Save changes</Button>
                         <span className="flex-1" />
-                        <button onClick={() => void deletePayment(f.pay!)} className="text-caption text-danger-fg hover:underline">Delete this installment</button>
-                        <button onClick={() => void deleteFollowing(f.pay!)} className="text-caption text-danger-fg hover:underline">Delete this + all following</button>
+                        <button onClick={() => void waivePayment(f.pay!)} className="text-caption text-danger-fg hover:underline">Waive this installment</button>
+                        <button onClick={() => void waiveFollowing(f.pay!)} className="text-caption text-danger-fg hover:underline">Waive this + all following</button>
                       </div>
                     )}
                   </div>

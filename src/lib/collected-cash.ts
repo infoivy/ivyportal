@@ -15,6 +15,7 @@ export async function fetchCollectedCashByCloser(startISO: string, endISO: strin
     supabase.from("deals")
       .select("closer_id, cash_collected_upfront, deal_date")
       .eq("is_demo", false)
+      .is("voided_at", null)
       .gte("deal_date", startISO).lte("deal_date", endISO),
     supabase.from("installment_payments")
       .select("amount, paid_at, installments!inner(closer_id, students!inner(is_demo))")

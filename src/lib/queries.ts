@@ -41,6 +41,7 @@ export const studentCallsAggQuery = () =>
       const { data, error } = await supabase.from("student_calls")
         .select("student_id, call_date, status, students!inner(is_demo)")
         .eq("students.is_demo", false)
+        .is("voided_at", null)
         .order("call_date", { ascending: false })
         .limit(2000);
       if (error) throw error;

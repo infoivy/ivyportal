@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Pencil, Plus, Trash2 } from "lucide-react";
+import { Ban, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -26,6 +26,7 @@ type Payment = {
   due_date: string;
   status: PayStatus;
   paid_at: string | null;
+  notes: string | null;
 };
 type OutItem = {
   label: string;
@@ -66,7 +67,7 @@ export function CashInCalendarCard({ foundersOnly = false }: { foundersOnly?: bo
   // visible to the money roles.
   const canSeeIn = foundersOnly
     ? isFounderSide
-    : roles.some(r => ["admin", "closer", "coach", "founder", "cofounder"].includes(r));
+    : roles.some(r => ["admin", "closer", "founder", "cofounder"].includes(r));
   const canSeeMoneyOut = isFounderSide;
   // Writing installment rows is closer/admin territory (RLS enforces it);
   // don't render controls that would silently fail for anyone else.
@@ -82,7 +83,7 @@ export function CashInCalendarCard({ foundersOnly = false }: { foundersOnly?: bo
         // RLS blanks these for anyone who isn't founder/cofounder
         (supabase.from("business_expenses").select("*").eq("active", true) as unknown as Promise<{ data: BusinessExpense[] | null }>),
         supabase.from("profiles").select("id, display_name, commission_cap_pct, base_pay_monthly, base_pay_day, started_on").eq("is_demo", false),
-        supabase.from("deals").select("id, closer_id, setter_id, total_value, cash_collected_upfront, deal_date, payment_type").eq("is_demo", false).gte("deal_date", new Date(new Date().getFullYear(), new Date().getMonth() - 2, 1).toISOString().slice(0, 10)),
+        supabase.from("deals").select("id, closer_id, setter_id, total_value, cash_collected_upfront, deal_date, payment_type").eq("is_demo", false).is("voided_at", null).gte("deal_date", new Date(new Date().getFullYear(), new Date().getMonth() - 2, 1).toISOString().slice(0, 10)),
         supabase.from("commission_rates").select("key, rate").eq("active", true),
         supabase.from("user_roles").select("user_id").eq("role", "cofounder"),
       ]);
@@ -120,11 +121,12 @@ export function CashInCalendarCard({ foundersOnly = false }: { foundersOnly?: bo
   const findWhopMatchFn = useServerFn(findWhopMatch);
 
   const setStatus = async (id: string, status: PayStatus) => {
+    const row = payments.find(p => p.id === id);
+    if (row?.status === "paid" && status !== "paid") return toast.error("Paid history is immutable");
     const patch: { status: PayStatus; paid_at: string | null } = { status, paid_at: null };
     if (status === "paid") {
       // Cash only counts once it's actually in Whop (founder rule 2026-07-14).
       // Check for a matching charge before letting the row flip to paid.
-      const row = payments.find(p => p.id === id);
       if (row) {
         try {
           const m = await findWhopMatchFn({ data: { amount: Number(row.amount) } });
@@ -145,9 +147,14 @@ export function CashInCalendarCard({ foundersOnly = false }: { foundersOnly?: bo
   };
 
   const removePayment = async (id: string) => {
-    if (!confirm("Delete this payment row? This can't be undone.")) return;
-    const { error } = await (supabase.from("installment_payments" as never) as unknown as { delete: () => { eq: (c: string, v: string) => Promise<{ error: { message: string } | null }> } }).delete().eq("id", id);
+    const row = payments.find(p => p.id === id);
+    if (!row || row.status === "paid") return toast.error("Paid history cannot be waived");
+    const reason = prompt("Why is this scheduled payment being waived?", "Schedule correction");
+    if (!reason?.trim()) return;
+    const notes = [row.notes, `Waived: ${reason.trim()}`].filter(Boolean).join("\n");
+    const { error } = await (supabase.from("installment_payments" as any).update({ status: "waived", paid_at: null, notes }).eq("id", id) as any);
     if (error) return toast.error(error.message);
+    toast.success("Payment waived · row preserved");
     invalidateForTables(qc, ["installment_payments"]);
   };
 
@@ -365,11 +372,14 @@ export function CashInCalendarCard({ foundersOnly = false }: { foundersOnly?: bo
                           value={p.status}
                           onChange={v => setStatus(p.id, v as PayStatus)}
                           options={(Object.keys(STATUS_LABEL) as PayStatus[]).map(s => ({ value: s, label: STATUS_LABEL[s].label }))}
+                          disabled={p.status === "paid"}
                           className={`w-auto text-xs ${STATUS_LABEL[p.status].cls}`}
                         />
-                        <button onClick={() => removePayment(p.id)} className="text-danger-fg hover:underline" aria-label="Delete payment row">
-                          <Trash2 className="h-3 w-3" />
-                        </button>
+                        {p.status !== "paid" && p.status !== "waived" && (
+                          <button onClick={() => removePayment(p.id)} className="text-danger-fg hover:underline inline-flex items-center gap-1" aria-label="Waive scheduled payment">
+                            <Ban className="h-3 w-3" /> Waive
+                          </button>
+                        )}
                       </>
                     ) : (
                       <span className={`text-[10px] px-2 py-0.5 rounded-full border ${STATUS_LABEL[p.status].cls}`}>{STATUS_LABEL[p.status].label}</span>

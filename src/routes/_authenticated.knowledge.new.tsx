@@ -127,7 +127,7 @@ export function DocForm(props: {
   } = props;
 
   return (
-    <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-4">
+    <div className="w-full max-w-none p-4 sm:p-6 space-y-4">
       <div className="flex items-center justify-between">
         <Link to={"/knowledge" as string}>
           <Button variant="ghost" size="sm">

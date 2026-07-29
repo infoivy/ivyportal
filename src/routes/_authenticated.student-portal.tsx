@@ -164,7 +164,7 @@ function StudentPortal() {
     const [{ data: e }, weeklyRes, { data: c }, { data: ah }, coachRes, docsRes, guideRes, orgRes, attendRes] = await Promise.all([
       supabase.from("student_eods").select("*").eq("student_id", st.id).order("report_date", { ascending: false }).limit(60),
       supabase.from("student_weekly_eods").select("*").eq("student_id", st.id).order("week_start", { ascending: false }).limit(16),
-      supabase.from("student_calls").select("id, call_date, status, progress_rating, next_call_date, action_items_json").eq("student_id", st.id).order("call_date", { ascending: false }),
+      supabase.from("student_calls").select("id, call_date, status, progress_rating, next_call_date, action_items_json").eq("student_id", st.id).is("voided_at", null).order("call_date", { ascending: false }),
       supabase.from("student_action_items").select("id, student_id, text, done, due_date, created_at, source_call_id").eq("student_id", st.id).order("created_at", { ascending: false }),
       st.coach_id ? supabase.from("profiles").select("id, display_name, avatar_url, avatar_path").eq("id", st.coach_id).maybeSingle() : Promise.resolve({ data: null }),
       supabase.from("docs").select("slug, title, category").contains("role_visibility", ["student"]).order("pinned", { ascending: false }).order("sort_order").limit(8),
@@ -588,7 +588,7 @@ function StudentPortal() {
   // celebration plus the two asks that remain (testimonial, Trustpilot).
   if (["offer_won", "testimonial", "graduated"].includes(student.phase)) {
     return (
-      <div className="p-4 sm:p-6 max-w-3xl mx-auto space-y-5 relative">
+      <div className="w-full max-w-none p-4 sm:p-6 space-y-5 relative">
         <section className="card-surface p-6 text-center">
           <div className="text-4xl mb-2">🎉</div>
           <h1 className="text-2xl font-semibold tracking-tight">
@@ -643,7 +643,7 @@ function StudentPortal() {
   // Fresh student: Start Here is the whole portal until every step is done.
   if (locked) {
     return (
-      <div className="px-5 sm:px-8 lg:px-12 pt-10 sm:pt-16 pb-24 sm:pb-32 max-w-[1100px] mx-auto relative">
+      <div className="w-full max-w-none px-5 sm:px-8 lg:px-12 pt-10 sm:pt-16 pb-24 sm:pb-32 relative">
         {confetti && <ConfettiBurst />}
         <div dir="rtl" className="text-[14px] text-muted-foreground/80">السلام عليكم ورحمة الله وبركاته</div>
         <h1 className="mt-4 text-[34px] sm:text-5xl font-semibold tracking-[-0.03em] leading-[1.1]">
@@ -662,7 +662,7 @@ function StudentPortal() {
   }
 
   return (
-    <div className="p-4 sm:p-6 max-w-[1100px] mx-auto space-y-5 relative">
+    <div className="w-full max-w-none p-4 sm:p-6 space-y-5 relative">
       {confetti && <ConfettiBurst />}
 
       {/* Post-unlock walkthrough: the whole portal is scrollable below, but
@@ -1454,7 +1454,7 @@ function DetailsGate({ first, needTimezone, needWhatsapp, onConfirm }: {
       : "One quick thing before your portal opens: confirm your timezone. Your coach and success team use it to reach you at sane hours.";
 
   return (
-    <div className="p-4 sm:p-6 max-w-xl mx-auto space-y-5">
+    <div className="w-full max-w-none p-4 sm:p-6 space-y-5">
       <section className="card-surface p-6">
         <div className="text-[10px] text-muted-foreground mb-1">Student portal</div>
         <h1 className="text-2xl font-semibold tracking-tight">
@@ -1798,6 +1798,7 @@ function GraduationPlacement({ studentId }: { studentId: string }) {
         .from("student_placements")
         .select("business_name, role_title, started_at")
         .eq("student_id", studentId)
+        .is("voided_at", null)
         .eq("stage", "placed")
         .order("started_at", { ascending: false, nullsFirst: false })
         .limit(1)

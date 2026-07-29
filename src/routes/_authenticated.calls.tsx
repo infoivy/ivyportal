@@ -60,7 +60,7 @@ function CallsPage() {
 
   const fetchPage = async () => {
     const [cRes, sRes, roleRes] = await Promise.all([
-      supabase.from("student_calls").select("*, students!inner(is_demo)").eq("students.is_demo", false).order("call_date", { ascending: false }).limit(500),
+      supabase.from("student_calls").select("*, students!inner(is_demo)").eq("students.is_demo", false).is("voided_at", null).order("call_date", { ascending: false }).limit(500),
       supabase.from("students").select("id, full_name, calls_allotted").eq("is_demo", false).order("full_name"),
       supabase.from("user_roles").select("user_id, role").in("role", ["coach", "admin"]),
     ]);
@@ -126,14 +126,14 @@ function CallsPage() {
 
   if (!isStaff) {
     return (
-      <div className="p-4 sm:p-6 max-w-[1500px] mx-auto">
+      <div className="w-full max-w-none p-4 sm:p-6">
         <div className="card-surface p-8 text-center text-[13px] text-muted-foreground">Staff access required.</div>
       </div>
     );
   }
 
   return (
-    <div className="p-4 sm:p-6 max-w-[1500px] mx-auto space-y-5">
+    <div className="w-full max-w-none p-4 sm:p-6 space-y-5">
       <StudentsTabBar />
       <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--border)] pb-4">
         <div>
@@ -366,10 +366,13 @@ function CallModal({ call, onClose, onSaved, students, coaches, defaultCoachId }
   };
 
   const del = async () => {
-    if (!call || !confirm("Delete this call record?")) return;
-    const { error } = await supabase.from("student_calls").delete().eq("id", call.id);
+    if (!call) return;
+    const reason = prompt("Why should this call be removed from active records?")?.trim();
+    if (!reason) return;
+    if (reason.length < 3) return toast.error("Enter a short correction reason.");
+    const { error } = await supabase.rpc("void_student_call", { p_call_id: call.id, p_reason: reason });
     if (error) return toast.error(error.message);
-    toast.success("Deleted");
+    toast.success("Call removed from active records · history preserved");
     onSaved();
   };
 
@@ -467,7 +470,7 @@ function CallModal({ call, onClose, onSaved, students, coaches, defaultCoachId }
         <div className="flex justify-between gap-2 pt-3 border-t border-[var(--border)]">
           <div>
             {call && (
-              <button onClick={del} className="text-xs text-danger-fg hover:text-danger-fg px-2 py-1.5">Delete call</button>
+              <button onClick={del} className="text-xs text-danger-fg hover:text-danger-fg px-2 py-1.5">Remove from active records</button>
             )}
           </div>
           <div className="flex gap-2">

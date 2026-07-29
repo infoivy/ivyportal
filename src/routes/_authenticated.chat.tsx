@@ -117,7 +117,7 @@ function ChatInner({ userId, isAdmin }: { userId: string; isAdmin: boolean }) {
   };
 
   return (
-    <div className="p-4 sm:p-6 max-w-3xl mx-auto flex flex-col" style={{ height: "calc(100vh - 52px)" }}>
+    <div className="w-full max-w-none p-4 sm:p-6 flex flex-col" style={{ height: "calc(100vh - 52px)" }}>
       <header className="pb-4 shrink-0">
         <div className="flex items-center gap-2 text-[10px] text-muted-foreground mb-1">
           <MessagesSquare className="h-3 w-3" /> Team channel

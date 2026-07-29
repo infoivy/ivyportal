@@ -172,10 +172,10 @@ function HomePage() {
           ? supabase.from("students").select("id, phase, eod_exempt").eq("is_demo", false).eq("status", "active")
           : emptyRows,
         canSeeCustomers
-          ? supabase.from("student_calls").select("id, students!inner(is_demo)", { count: "exact", head: true }).eq("students.is_demo", false).eq("status", "scheduled").gte("call_date", today).lte("call_date", inSevenDays)
+          ? supabase.from("student_calls").select("id, students!inner(is_demo)", { count: "exact", head: true }).eq("students.is_demo", false).is("voided_at", null).eq("status", "scheduled").gte("call_date", today).lte("call_date", inSevenDays)
           : emptyCount,
         canSeeCustomers
-          ? supabase.from("student_calls").select("student_id, call_date, students!inner(is_demo)").eq("students.is_demo", false).eq("status", "completed").gte("call_date", callRiskFrom)
+          ? supabase.from("student_calls").select("student_id, call_date, students!inner(is_demo)").eq("students.is_demo", false).is("voided_at", null).eq("status", "completed").gte("call_date", callRiskFrom)
           : emptyRows,
         canSeeCustomers
           ? supabase.from("student_eods").select("student_id, report_date, students!inner(is_demo)").eq("students.is_demo", false).gte("report_date", studentEodFrom)
@@ -415,6 +415,7 @@ function HomePage() {
         <>
           <PayoutAlertBanner />
           <HomeMoneyStrip />
+          <LeadershipBrief data={data} />
         </>
       )}
 
@@ -484,9 +485,7 @@ function HomePage() {
               activities={data.activities}
               profiles={data.profiles}
             />
-          ) : isLeader ? (
-            <LeadershipBrief data={data} />
-          ) : (
+          ) : !isLeader && (
           <section className="card-surface p-5" aria-labelledby="your-day-title">
             <div className="flex items-center gap-2 text-muted-foreground">
               <ClipboardCheck className="h-4 w-4" />
@@ -635,14 +634,19 @@ function LeadershipBrief({ data }: { data: HomeData }) {
         <p className="text-micro font-semibold uppercase tracking-[0.1em] text-muted-foreground">Leadership</p>
         <h2 id="leadership-brief-title" className="mt-1 text-title font-semibold text-foreground">Operating picture</h2>
       </div>
-      <div className="divide-y divide-border">
-        {rows.map((row) => (
+      <div className="grid sm:grid-cols-2 xl:grid-cols-4">
+        {rows.map((row, index) => (
           <Link
             key={row.label}
             to={row.url as never}
             search={(row.search ?? undefined) as never}
             preload="intent"
-            className="group grid min-h-16 grid-cols-[28px_minmax(0,1fr)_auto_18px] items-center gap-3 px-5 py-3 hover:bg-muted/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset motion-safe:transition-colors"
+            className={`group grid min-h-16 grid-cols-[28px_minmax(0,1fr)_auto_18px] items-center gap-3 px-5 py-3 hover:bg-muted/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset motion-safe:transition-colors ${[
+              "",
+              "border-t border-border sm:border-l sm:border-t-0",
+              "border-t border-border xl:border-l xl:border-t-0",
+              "border-t border-border sm:border-l xl:border-t-0",
+            ][index]}`}
           >
             <row.icon className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
             <span className="min-w-0">

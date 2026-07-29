@@ -229,7 +229,7 @@ function EODsPage() {
   if (roles.includes("founder")) return <Navigate to="/performance" replace />;
 
   return (
-    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-5">
+    <div className="w-full max-w-none p-4 sm:p-6 space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3 pb-5 mb-1">
         <div>
           <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">Performance</div>

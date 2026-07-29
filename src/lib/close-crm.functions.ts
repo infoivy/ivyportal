@@ -16,8 +16,17 @@ async function requireAdmin(context: { supabase: any; userId: string }) {
   if (!data) throw new Error("Forbidden: admin only");
 }
 
-async function readCloseKey(context: { supabase: any }): Promise<string | null> {
-  const { data } = await context.supabase
+async function requireClosePipelineAccess(context: { supabase: any; userId: string }): Promise<void> {
+  const checks = await Promise.all(
+    ["admin", "closer", "cofounder"].map((role) =>
+      context.supabase.rpc("has_role", { _user_id: context.userId, _role: role }),
+    ),
+  );
+  if (!checks.some((check) => check.data)) throw new Error("Forbidden: Close pipeline access required");
+}
+
+async function readCloseKeyPrivileged(): Promise<string | null> {
+  const { data } = await supabaseAdmin
     .from("service_credentials")
     .select("value")
     .eq("key", CLOSE_KEY_NAME)
@@ -25,11 +34,12 @@ async function readCloseKey(context: { supabase: any }): Promise<string | null> 
   return data?.value ?? null;
 }
 
-/** Whether the Close key is configured. Any signed-in user can call this. */
+/** Whether the Close key is configured for an authorized pipeline user. */
 export const getCloseStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const key = await readCloseKey(context);
+    await requireClosePipelineAccess(context);
+    const key = await readCloseKeyPrivileged();
     return { configured: !!key };
   });
 
@@ -69,7 +79,7 @@ export const testCloseConnection = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await requireAdmin(context);
-    const key = await readCloseKey(context);
+    const key = await readCloseKeyPrivileged();
     if (!key) return { ok: false, error: "No API key configured" };
     const basic = Buffer.from(`${key}:`).toString("base64");
     try {
@@ -99,7 +109,8 @@ export const listCloseLeads = createServerFn({ method: "GET" })
     limit: Math.min(Math.max(input?.limit ?? 200, 1), 500),
   }))
   .handler(async ({ context, data }) => {
-    const key = await readCloseKey(context);
+    await requireClosePipelineAccess(context);
+    const key = await readCloseKeyPrivileged();
     if (!key) return { configured: false, leads: [] };
     const basic = Buffer.from(`${key}:`).toString("base64");
     const params = new URLSearchParams();
@@ -145,15 +156,6 @@ async function requireCrmAnalyticsAccess(context: { supabase: any; userId: strin
   if (!checks.some((check) => check.data)) throw new Error("Forbidden: CRM analytics access required");
 }
 
-async function readCloseKeyForAnalytics(): Promise<string | null> {
-  const { data } = await supabaseAdmin
-    .from("service_credentials")
-    .select("value")
-    .eq("key", CLOSE_KEY_NAME)
-    .maybeSingle();
-  return data?.value ?? null;
-}
-
 function addIsoDays(isoDate: string, days: number): string {
   const date = new Date(`${isoDate}T12:00:00Z`);
   date.setUTCDate(date.getUTCDate() + days);
@@ -186,7 +188,7 @@ export const getCloseActivityReport = createServerFn({ method: "GET" })
   .handler(async ({ context, data }): Promise<CloseActivityReport> => {
     await requireCrmAnalyticsAccess(context);
     const empty: CloseActivityReport = { configured: false, totalDials: 0, totalLeads: 0, avgDurationSec: null, daily: [] };
-    const key = await readCloseKeyForAnalytics();
+    const key = await readCloseKeyPrivileged();
     if (!key) return empty;
     const basic = Buffer.from(`${key}:`).toString("base64");
     const to = data.to ?? businessDay(new Date());
@@ -272,7 +274,7 @@ export const getCloseCallStats = createServerFn({ method: "GET" })
   .handler(async ({ context, data }): Promise<CloseCallStats> => {
     await requireCrmAnalyticsAccess(context);
     const empty: CloseCallStats = { configured: false, incomplete: false, totalDials: 0, totalAnswered: 0, avgDurationSec: null, perUser: [], daily: [] };
-    const key = await readCloseKeyForAnalytics();
+    const key = await readCloseKeyPrivileged();
     if (!key) return empty;
     const basic = Buffer.from(`${key}:`).toString("base64");
     const since = data.date
@@ -371,7 +373,8 @@ export const getCloseLeadDetail = createServerFn({ method: "GET" })
     return { leadId: input.leadId };
   })
   .handler(async ({ context, data }): Promise<CloseLeadDetail> => {
-    const key = await readCloseKey(context);
+    await requireClosePipelineAccess(context);
+    const key = await readCloseKeyPrivileged();
     if (!key) return { notes: [], calls: [] };
     const basic = Buffer.from(`${key}:`).toString("base64");
     const H = { headers: { Authorization: `Basic ${basic}` } };
@@ -399,7 +402,7 @@ export const getCloseBookedCount = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await requireCrmAnalyticsAccess(context);
-    const key = await readCloseKeyForAnalytics();
+    const key = await readCloseKeyPrivileged();
     if (!key) return { configured: false, booked: 0 };
     const basic = Buffer.from(`${key}:`).toString("base64");
     try {
@@ -449,6 +452,7 @@ export type ContactCompliance = {
 export const getCloseContactCompliance = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<ContactCompliance> => {
+    await requireClosePipelineAccess(context);
     const emptyTier = (tier: string): ComplianceTier => ({
       tier, total: 0, uncontacted: 0, contactedToday: 0, calledOnce: 0,
       doubleDialed: 0, singleDialNoRetry: 0, doubleDialNoEmail: 0,
@@ -456,7 +460,7 @@ export const getCloseContactCompliance = createServerFn({ method: "GET" })
     const empty: ContactCompliance = {
       configured: false, truncated: false, totalLeads: 0, tiers: [], overall: emptyTier("All"),
     };
-    const key = await readCloseKey(context);
+    const key = await readCloseKeyPrivileged();
     if (!key) return empty;
     const basic = Buffer.from(`${key}:`).toString("base64");
     const H = { headers: { Authorization: `Basic ${basic}` } };

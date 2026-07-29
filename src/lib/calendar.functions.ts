@@ -8,14 +8,43 @@ import {
   refreshAccessToken,
   listCalendarEvents,
   insertCalendarEvent,
+  deleteCalendarEvent,
   type GCalEvent,
 } from "@/lib/calendar.server";
-import { randomBytes } from "crypto";
+import { randomBytes, randomUUID } from "crypto";
+
+const CALENDAR_STAFF_ROLES = new Set(["admin", "founder", "cofounder", "closer", "setter", "csm", "coach"]);
+const SET_OPERATIONS_ROLES = new Set(["admin", "founder", "cofounder", "closer", "setter"]);
+const SET_LEADERSHIP_ROLES = ["admin", "founder", "cofounder", "closer"] as const;
+
+type CalendarAuthContext = {
+  supabase: { from: (table: string) => any };
+  userId: string;
+};
+
+async function requireCalendarRole(context: CalendarAuthContext, allowed: Set<string>): Promise<Set<string>> {
+  const { data, error } = await context.supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", context.userId);
+  if (error) throw new Error("Could not verify calendar access");
+  const roles = new Set<string>(((data ?? []) as { role: string }[]).map((row) => row.role));
+  if (![...roles].some((role) => allowed.has(role))) throw new Error("Forbidden");
+  return roles;
+}
+
+const requireStaffCalendarAccess = (context: CalendarAuthContext) => requireCalendarRole(context, CALENDAR_STAFF_ROLES);
+const requireSetOperationsAccess = (context: CalendarAuthContext) => requireCalendarRole(context, SET_OPERATIONS_ROLES);
+
+function hasSetLeadership(roles: Set<string>) {
+  return SET_LEADERSHIP_ROLES.some((role) => roles.has(role));
+}
 
 /** Return Google OAuth authorize URL for the signed-in user. */
 export const startGoogleCalendarAuth = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await requireStaffCalendarAccess(context);
     const req = getRequest();
     const redirectUri = getRedirectUri(req.url);
     const nonce = randomBytes(12).toString("hex");
@@ -28,6 +57,7 @@ export const startGoogleCalendarAuth = createServerFn({ method: "POST" })
 export const getMyCalendarConnection = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await requireStaffCalendarAccess(context);
     const { data } = await context.supabase
       .from("calendar_connections")
       .select("id, google_email, calendar_id, color_hex, connected_at")
@@ -36,14 +66,15 @@ export const getMyCalendarConnection = createServerFn({ method: "GET" })
     return data;
   });
 
-/** Team-wide list: everyone connected + their color + display name. Any signed-in user can read. */
+/** Team-wide list: everyone connected + their color + display name. */
 export const getTeamCalendarStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async () => {
+  .handler(async ({ context }) => {
+    await requireStaffCalendarAccess(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: conns } = await supabaseAdmin
       .from("calendar_connections")
-      .select("user_id, google_email, color_hex, connected_at");
+      .select("user_id, color_hex, connected_at");
     if (!conns) return [];
     const ids = conns.map((c) => c.user_id);
     const { data: statusRoles } = await supabaseAdmin
@@ -60,7 +91,6 @@ export const getTeamCalendarStatus = createServerFn({ method: "GET" })
     const pmap = new Map((profs ?? []).map((p) => [p.id, p]));
     return conns.filter((c) => pmap.has(c.user_id) && (statusRolesBy.get(c.user_id) ?? []).some((r) => ["admin", "founder", "cofounder", "closer", "coach", "csm"].includes(r))).map((c) => ({
       user_id: c.user_id,
-      email: c.google_email,
       color: c.color_hex,
       connected_at: c.connected_at,
       display_name: pmap.get(c.user_id)?.display_name ?? "Unknown",
@@ -71,6 +101,7 @@ export const getTeamCalendarStatus = createServerFn({ method: "GET" })
 export const disconnectMyCalendar = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await requireStaffCalendarAccess(context);
     const { error } = await context.supabase
       .from("calendar_connections")
       .delete()
@@ -97,7 +128,12 @@ export type TeamEvent = {
 export const getTeamCalendarEvents = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: { timeMin: string; timeMax: string }) => data)
-  .handler(async ({ data }) => {
+  .handler(async ({ context, data }) => {
+    await requireStaffCalendarAccess(context);
+    const timeMin = new Date(data.timeMin);
+    const timeMax = new Date(data.timeMax);
+    if (Number.isNaN(timeMin.getTime()) || Number.isNaN(timeMax.getTime()) || timeMax <= timeMin) throw new Error("Invalid calendar range");
+    if (timeMax.getTime() - timeMin.getTime() > 45 * 86_400_000) throw new Error("Calendar range cannot exceed 45 days");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: conns, error } = await supabaseAdmin
       .from("calendar_connections")
@@ -190,7 +226,18 @@ export const createSetReminder = createServerFn({ method: "POST" })
     source?: "manual" | "claimed";
   }) => data)
   .handler(async ({ context, data }) => {
-    const { data: conn } = await context.supabase
+    await requireSetOperationsAccess(context);
+    const prospect = data.prospect.trim();
+    const start = new Date(data.startISO);
+    const durationMin = Math.max(15, Math.min(240, Math.round(data.durationMin)));
+    if (!prospect || prospect.length > 200) throw new Error("Prospect must be between 1 and 200 characters");
+    if (Number.isNaN(start.getTime())) throw new Error("A valid set time is required");
+    if (!Number.isFinite(data.durationMin) || data.durationMin < 15 || data.durationMin > 240) throw new Error("Duration must be between 15 and 240 minutes");
+    if ((data.notes?.length ?? 0) > 4_000) throw new Error("Notes must be 4,000 characters or fewer");
+    if (data.source && !["manual", "claimed"].includes(data.source)) throw new Error("Invalid set source");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: conn } = await supabaseAdmin
       .from("calendar_connections")
       .select("*")
       .eq("user_id", context.userId)
@@ -202,17 +249,15 @@ export const createSetReminder = createServerFn({ method: "POST" })
     if (!accessToken || exp - 60_000 < Date.now()) {
       const r = await refreshAccessToken(conn.refresh_token);
       accessToken = r.access_token;
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       await supabaseAdmin
         .from("calendar_connections")
         .update({ access_token: accessToken, access_token_expires_at: new Date(Date.now() + r.expires_in * 1000).toISOString() })
         .eq("id", conn.id);
     }
 
-    const start = new Date(data.startISO);
-    const end = new Date(start.getTime() + Math.max(15, data.durationMin) * 60_000);
+    const end = new Date(start.getTime() + durationMin * 60_000);
     const event = await insertCalendarEvent(accessToken!, conn.calendar_id, {
-      summary: `Set: ${data.prospect}`,
+      summary: `Set: ${prospect}`,
       description: [data.notes, "Reminders: 2 days · 1 day · 3 hours · 1 hour before. Confirm, remind, call, follow up."]
         .filter(Boolean)
         .join("\n\n"),
@@ -225,15 +270,23 @@ export const createSetReminder = createServerFn({ method: "POST" })
 
     const { error: insErr } = await (context.supabase as any).from("set_reminders").insert({
       owner_id: context.userId,
-      prospect: data.prospect,
+      prospect,
       event_start: start.toISOString(),
-      duration_min: Math.max(15, data.durationMin),
+      duration_min: durationMin,
       notes: data.notes ?? null,
       source: data.source ?? "manual",
       gcal_event_id: event.id,
+      gcal_event_owner_id: context.userId,
       gcal_html_link: event.htmlLink ?? null,
     });
-    if (insErr) console.error("[set_reminders] insert failed:", insErr.message);
+    if (insErr) {
+      try {
+        await deleteCalendarEvent(accessToken!, conn.calendar_id, event.id);
+      } catch (cleanupError) {
+        console.error("[set_reminders] failed to compensate Google Calendar insert:", cleanupError);
+      }
+      throw new Error(`Could not save the set: ${insErr.message}`);
+    }
 
     return { ok: true, htmlLink: event.htmlLink ?? null };
   });
@@ -251,16 +304,18 @@ export type UpcomingSet = {
   reminder_log: Partial<Record<"48h" | "24h" | "3h" | "1h", "reminded" | "confirmed" | "no_response">>;
   confirmed_at: string | null;
   status: "active" | "cancelled" | "completed";
+  calendar_sync_status: "synced" | "pending" | "error" | "not_connected";
+  calendar_sync_error: string | null;
 };
 
 /** Upcoming sets across the sales team, soonest first. */
 export const listUpcomingSets = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-
+    await requireSetOperationsAccess(context);
     const { data: rows, error } = await (context.supabase as any)
       .from("set_reminders")
-      .select("*")
+      .select("id, owner_id, prospect, event_start, duration_min, notes, source, gcal_html_link, reminder_log, confirmed_at, status, calendar_sync_status, calendar_sync_error")
       .gte("event_start", new Date(Date.now() - 60 * 60 * 1000).toISOString())
       .order("event_start", { ascending: true })
       .limit(200);
@@ -276,17 +331,6 @@ export const listUpcomingSets = createServerFn({ method: "GET" })
       ...r,
       owner_name: r.owner_id ? (pmap.get(r.owner_id) ?? "Unknown") : "Unclaimed",
       })) as UpcomingSet[];
-  });
-
-/** Remove a set reminder row (own or admin; the calendar event stays). */
-export const deleteSetReminder = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .validator((data: { id: string }) => data)
-  .handler(async ({ context, data }) => {
-
-    const { error } = await (context.supabase as any).from("set_reminders").delete().eq("id", data.id);
-    if (error) throw new Error(error.message);
-    return { ok: true };
   });
 
 // ── Calendly ────────────────────────────────────────────────────────────────
@@ -309,7 +353,8 @@ const CLOSING_CALL_NAMES = ["45-60min ISA Call"];
  */
 export const syncCalendlySets = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async () => {
+  .handler(async ({ context }) => {
+    await requireSetOperationsAccess(context);
     const key = process.env.CALENDLY_API_KEY;
     if (!key) return { ok: true, imported: 0, reason: "no-key" };
     const H = { Authorization: `Bearer ${key}` };
@@ -385,6 +430,105 @@ export const syncCalendlySets = createServerFn({ method: "POST" })
     return { ok: true, imported };
   });
 
+type CalendarSyncAdmin = { from: (table: string) => any };
+
+async function withFreshUserCalendar<T>(
+  ownerId: string,
+  operation: (accessToken: string, calendarId: string) => Promise<T>,
+): Promise<{ connected: false } | { connected: true; value: T }> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data: connection } = await supabaseAdmin
+    .from("calendar_connections")
+    .select("*")
+    .eq("user_id", ownerId)
+    .maybeSingle();
+  if (!connection) return { connected: false };
+
+  let accessToken = connection.access_token as string | null;
+  const expiresAt = connection.access_token_expires_at
+    ? new Date(connection.access_token_expires_at).getTime()
+    : 0;
+  if (!accessToken || expiresAt - 60_000 < Date.now()) {
+    const refreshed = await refreshAccessToken(connection.refresh_token);
+    accessToken = refreshed.access_token;
+    await supabaseAdmin
+      .from("calendar_connections")
+      .update({
+        access_token: accessToken,
+        access_token_expires_at: new Date(Date.now() + refreshed.expires_in * 1_000).toISOString(),
+      })
+      .eq("id", connection.id);
+  }
+
+  return {
+    connected: true,
+    value: await operation(accessToken!, connection.calendar_id),
+  };
+}
+
+async function finishCalendarSync(
+  admin: CalendarSyncAdmin,
+  setId: string,
+  operationId: string,
+  actorId: string,
+  patch: Record<string, unknown>,
+): Promise<boolean> {
+  const { data, error } = await admin
+    .from("set_reminders")
+    .update({
+      ...patch,
+      calendar_sync_token: null,
+      calendar_sync_error: null,
+      transition_actor_id: actorId,
+    })
+    .eq("id", setId)
+    .eq("calendar_sync_token", operationId)
+    .select("id")
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return Boolean(data);
+}
+
+async function failCalendarSync(
+  admin: CalendarSyncAdmin,
+  setId: string,
+  operationId: string,
+  actorId: string,
+  message: string,
+): Promise<void> {
+  const { error } = await admin
+    .from("set_reminders")
+    .update({
+      calendar_sync_status: "error",
+      calendar_sync_error: message.slice(0, 500),
+      calendar_sync_token: null,
+      transition_actor_id: actorId,
+    })
+    .eq("id", setId)
+    .eq("calendar_sync_token", operationId);
+  if (error) throw new Error(error.message);
+}
+
+function calendarEventInput(row: {
+  prospect: string;
+  notes: string | null;
+  event_start: string;
+  duration_min: number;
+}) {
+  const start = new Date(row.event_start);
+  const end = new Date(start.getTime() + row.duration_min * 60_000);
+  return {
+    summary: `Set: ${row.prospect}`,
+    description: [
+      row.notes,
+      "Reminders: 2 days · 1 day · 3 hours · 1 hour before. Confirm, remind, call, follow up.",
+    ].filter(Boolean).join("\n\n"),
+    startISO: start.toISOString(),
+    endISO: end.toISOString(),
+    reminderMinutes: SET_REMINDER_MINUTES,
+  };
+}
+
 /**
  * Claim an unclaimed (Calendly) set: takes ownership and puts the call on the
  * claimer's Google Calendar with the standard reminder cadence.
@@ -393,55 +537,77 @@ export const claimSet = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: { id: string }) => data)
   .handler(async ({ context, data }) => {
-
+    await requireSetOperationsAccess(context);
     const sr = context.supabase as any;
-    const { data: row, error } = await sr.from("set_reminders").select("*").eq("id", data.id).maybeSingle();
+    const { data: row, error } = await sr
+      .from("set_reminders").select("*").eq("id", data.id).maybeSingle();
     if (error || !row) throw new Error("set not found");
     if (row.owner_id) throw new Error("already claimed");
 
-    // RLS "claim unclaimed" policy enforces the caller may take it
-    const { error: upErr } = await sr
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = supabaseAdmin as CalendarSyncAdmin;
+    const operationId = randomUUID();
+    // The authenticated read establishes access. The service write carries the
+    // verified actor and uses compare-and-set so only one caller can win.
+    const { data: claimed, error: upErr } = await admin
       .from("set_reminders")
-      .update({ owner_id: context.userId })
+      .update({
+        owner_id: context.userId,
+        calendar_sync_status: "pending",
+        calendar_sync_error: null,
+        calendar_sync_token: operationId,
+        transition_actor_id: context.userId,
+      })
       .eq("id", data.id)
-      .is("owner_id", null);
+      .is("owner_id", null)
+      .select("id")
+      .maybeSingle();
     if (upErr) throw new Error(upErr.message);
+    if (!claimed) throw new Error("This set was claimed by someone else");
 
-    // Best effort: put it on the claimer's calendar with reminders
-    const { data: conn } = await context.supabase
-      .from("calendar_connections").select("*").eq("user_id", context.userId).maybeSingle();
-    if (!conn) return { ok: true, calendar: false };
     try {
-      let accessToken = conn.access_token as string | null;
-      const exp = conn.access_token_expires_at ? new Date(conn.access_token_expires_at).getTime() : 0;
-      if (!accessToken || exp - 60_000 < Date.now()) {
-        const r = await refreshAccessToken(conn.refresh_token);
-        accessToken = r.access_token;
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        await supabaseAdmin.from("calendar_connections")
-          .update({ access_token: accessToken, access_token_expires_at: new Date(Date.now() + r.expires_in * 1000).toISOString() })
-          .eq("id", conn.id);
+      const created = await withFreshUserCalendar(context.userId, (token, calendarId) =>
+        insertCalendarEvent(token, calendarId, calendarEventInput(row)));
+      if (!created.connected) {
+        await finishCalendarSync(admin, data.id, operationId, context.userId, {
+          calendar_sync_status: "not_connected",
+          gcal_event_id: null,
+          gcal_event_owner_id: null,
+          gcal_html_link: null,
+        });
+        return {
+          ok: true,
+          calendar: false,
+          warning: "Set claimed, but your Google Calendar is not connected.",
+        };
       }
-      const start = new Date(row.event_start);
-      const end = new Date(start.getTime() + row.duration_min * 60_000);
-      const event = await insertCalendarEvent(accessToken!, conn.calendar_id, {
-        summary: `Set: ${row.prospect}`,
-        description: [row.notes, "Reminders: 2 days · 1 day · 3 hours · 1 hour before. Confirm, remind, call, follow up."].filter(Boolean).join("\n\n"),
-        startISO: start.toISOString(),
-        endISO: end.toISOString(),
-        reminderMinutes: SET_REMINDER_MINUTES,
-      });
-      {
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-        await (supabaseAdmin as any).from("set_reminders")
-          .update({ gcal_event_id: event.id, gcal_html_link: event.htmlLink ?? null })
-          .eq("id", data.id);
+      const committed = await finishCalendarSync(admin, data.id, operationId, context.userId, {
+        calendar_sync_status: "synced",
+        gcal_event_id: created.value.id,
+        gcal_event_owner_id: context.userId,
+        gcal_html_link: created.value.htmlLink ?? null,
+      });
+      if (!committed) {
+        await withFreshUserCalendar(context.userId, (token, calendarId) =>
+          deleteCalendarEvent(token, calendarId, created.value.id));
+        throw new Error("Set ownership changed during calendar sync");
       }
-      return { ok: true, calendar: true, htmlLink: event.htmlLink ?? null };
+      return { ok: true, calendar: true, htmlLink: created.value.htmlLink ?? null };
     } catch (err) {
       console.error("[claimSet] calendar event failed:", err);
-      return { ok: true, calendar: false };
+      await failCalendarSync(
+        admin,
+        data.id,
+        operationId,
+        context.userId,
+        "Google Calendar event could not be created.",
+      );
+      return {
+        ok: true,
+        calendar: false,
+        warning: "Set claimed, but Google Calendar needs attention.",
+      };
     }
   });
 
@@ -457,7 +623,10 @@ export const updateSetTracking = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: { id: string; window?: ReminderWindow | string; state?: ReminderState | null; confirm?: boolean; notes?: string }) => data)
   .handler(async ({ context, data }) => {
-
+    await requireSetOperationsAccess(context);
+    if (data.window && !["48h", "24h", "3h", "1h"].includes(data.window)) throw new Error("Invalid reminder window");
+    if (data.state !== undefined && data.state !== null && !["reminded", "confirmed", "no_response"].includes(data.state)) throw new Error("Invalid reminder state");
+    if ((data.notes?.length ?? 0) > 4_000) throw new Error("Notes must be 4,000 characters or fewer");
     const sr = context.supabase as any;
     const { data: row, error } = await sr.from("set_reminders").select("id, reminder_log, confirmed_at").eq("id", data.id).maybeSingle();
     if (error || !row) throw new Error("set not found");
@@ -478,56 +647,72 @@ export const updateSetTracking = createServerFn({ method: "POST" })
     if (data.notes !== undefined) {
       patch.notes = data.notes.trim() || null;
     }
+    if (Object.keys(patch).length === 0) throw new Error("No tracking change was provided");
     const { error: upErr } = await sr.from("set_reminders").update(patch).eq("id", data.id);
     if (upErr) throw new Error(upErr.message);
     return { ok: true };
   });
 
-/**
- * Cancel a set (unconfirmed by the 6-hour cutoff, or manually): marks the row
- * cancelled and best-effort removes the claimer's Google Calendar event so
- * the hour opens back up.
- */
+/** Explicitly cancel a set and remove its linked Calendar event when present. */
 export const cancelSet = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: { id: string; reason?: string }) => data)
   .handler(async ({ context, data }) => {
-
+    const roles = await requireSetOperationsAccess(context);
     const sr = context.supabase as any;
     const { data: row, error } = await sr.from("set_reminders").select("*").eq("id", data.id).maybeSingle();
     if (error || !row) throw new Error("set not found");
-
-    const { error: upErr } = await sr.from("set_reminders").update({
-      status: "cancelled",
-      notes: [row.notes, data.reason ? `Cancelled: ${data.reason}` : "Cancelled · lead did not confirm"].filter(Boolean).join("\n"),
-    }).eq("id", data.id);
-    if (upErr) throw new Error(upErr.message);
-
-    // Best effort: remove from the claimer's Google Calendar
-    if (row.owner_id && row.gcal_event_id) {
-      try {
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const { data: conn } = await supabaseAdmin
-          .from("calendar_connections").select("*").eq("user_id", row.owner_id).maybeSingle();
-        if (conn) {
-          let accessToken = conn.access_token as string | null;
-          const exp = conn.access_token_expires_at ? new Date(conn.access_token_expires_at).getTime() : 0;
-          if (!accessToken || exp - 60_000 < Date.now()) {
-            const r = await refreshAccessToken(conn.refresh_token);
-            accessToken = r.access_token;
-            await supabaseAdmin.from("calendar_connections")
-              .update({ access_token: accessToken, access_token_expires_at: new Date(Date.now() + r.expires_in * 1000).toISOString() })
-              .eq("id", conn.id);
-          }
-          const { deleteCalendarEvent } = await import("@/lib/calendar.server");
-          await deleteCalendarEvent(accessToken!, conn.calendar_id, row.gcal_event_id);
-          return { ok: true, calendarRemoved: true };
-        }
-      } catch (err) {
-        console.error("[cancelSet] gcal delete failed:", err);
-      }
+    if (row.owner_id !== context.userId && !hasSetLeadership(roles)) {
+      throw new Error("Only the owner or a sales leader can cancel this set");
     }
-    return { ok: true, calendarRemoved: false };
+
+    const operationId = row.gcal_event_id ? randomUUID() : null;
+    const reason = data.reason?.trim().slice(0, 500);
+    const note = row.status === "cancelled"
+      ? row.notes
+      : [row.notes, reason ? `Cancelled: ${reason}` : "Cancelled manually"].filter(Boolean).join("\n");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = supabaseAdmin as CalendarSyncAdmin;
+    const { data: cancelled, error: upErr } = await admin.from("set_reminders").update({
+      status: "cancelled",
+      attendance_status: "cancelled",
+      notes: note,
+      calendar_sync_status: operationId ? "pending" : "synced",
+      calendar_sync_error: null,
+      calendar_sync_token: operationId,
+      transition_actor_id: context.userId,
+    }).eq("id", data.id).eq("status", row.status).select("id").maybeSingle();
+    if (upErr) throw new Error(upErr.message);
+    if (!cancelled) throw new Error("Set changed. Refresh and try again.");
+    if (!operationId || !row.gcal_event_id) return { ok: true, calendarRemoved: false };
+
+    const calendarOwnerId = row.gcal_event_owner_id ?? row.owner_id;
+    if (!calendarOwnerId) {
+      await failCalendarSync(admin, data.id, operationId, context.userId, "Calendar event owner is unknown.");
+      return { ok: true, calendarRemoved: false, warning: "Set cancelled, but Calendar cleanup needs attention." };
+    }
+
+    try {
+      const removed = await withFreshUserCalendar(calendarOwnerId, async (token, calendarId) => {
+        await deleteCalendarEvent(token, calendarId, row.gcal_event_id);
+        return true;
+      });
+      if (!removed.connected) {
+        await failCalendarSync(admin, data.id, operationId, context.userId, "Calendar owner is not connected.");
+        return { ok: true, calendarRemoved: false, warning: "Set cancelled, but the Calendar event could not be reached." };
+      }
+      await finishCalendarSync(admin, data.id, operationId, context.userId, {
+        calendar_sync_status: "synced",
+        gcal_event_id: null,
+        gcal_event_owner_id: null,
+        gcal_html_link: null,
+      });
+      return { ok: true, calendarRemoved: true };
+    } catch (err) {
+      console.error("[cancelSet] gcal delete failed:", err);
+      await failCalendarSync(admin, data.id, operationId, context.userId, "Google Calendar event could not be removed.");
+      return { ok: true, calendarRemoved: false, warning: "Set cancelled, but Calendar cleanup needs attention." };
+    }
   });
 
 /** Undo a cancellation: reactivate the set and re-create the claimer's
@@ -536,75 +721,66 @@ export const restoreSet = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: { id: string }) => data)
   .handler(async ({ context, data }) => {
-
+    const roles = await requireSetOperationsAccess(context);
     const sr = context.supabase as any;
     const { data: row, error } = await sr.from("set_reminders").select("*").eq("id", data.id).maybeSingle();
     if (error || !row) throw new Error("set not found");
     if (row.status !== "cancelled") throw new Error("set is not cancelled");
+    if (row.owner_id !== context.userId && !hasSetLeadership(roles)) {
+      throw new Error("Only the owner or a sales leader can restore this set");
+    }
 
-    const { error: upErr } = await sr.from("set_reminders").update({
+    const operationId = row.owner_id && !row.gcal_event_id ? randomUUID() : null;
+    const alreadyLinked = Boolean(
+      row.owner_id
+      && row.gcal_event_id
+      && (row.gcal_event_owner_id ?? row.owner_id) === row.owner_id,
+    );
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = supabaseAdmin as CalendarSyncAdmin;
+    const { data: restored, error: upErr } = await admin.from("set_reminders").update({
       status: "active",
       notes: [row.notes, "Restored"].filter(Boolean).join("\n"),
-    }).eq("id", data.id);
+      calendar_sync_status: alreadyLinked ? "synced" : operationId ? "pending" : "synced",
+      calendar_sync_error: null,
+      calendar_sync_token: operationId,
+      transition_actor_id: context.userId,
+    }).eq("id", data.id).eq("status", "cancelled").select("id").maybeSingle();
     if (upErr) throw new Error(upErr.message);
+    if (!restored) throw new Error("Set changed. Refresh and try again.");
+    if (alreadyLinked) return { ok: true, calendarRestored: true };
+    if (!row.owner_id || !operationId) return { ok: true, calendarRestored: false };
 
-    // Recreate the calendar event on the claimer's calendar (best effort)
-    if (row.owner_id) {
-      try {
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const { data: conn } = await supabaseAdmin
-          .from("calendar_connections").select("*").eq("user_id", row.owner_id).maybeSingle();
-        if (conn) {
-          let accessToken = conn.access_token as string | null;
-          const exp = conn.access_token_expires_at ? new Date(conn.access_token_expires_at).getTime() : 0;
-          if (!accessToken || exp - 60_000 < Date.now()) {
-            const r = await refreshAccessToken(conn.refresh_token);
-            accessToken = r.access_token;
-            await supabaseAdmin.from("calendar_connections")
-              .update({ access_token: accessToken, access_token_expires_at: new Date(Date.now() + r.expires_in * 1000).toISOString() })
-              .eq("id", conn.id);
-          }
-          const start = new Date(row.event_start);
-          const end = new Date(start.getTime() + row.duration_min * 60_000);
-          const event = await insertCalendarEvent(accessToken!, conn.calendar_id, {
-            summary: `Set: ${row.prospect}`,
-            description: [row.notes, "Reminders: 2 days · 1 day · 3 hours · 1 hour before."].filter(Boolean).join("\n\n"),
-            startISO: start.toISOString(),
-            endISO: end.toISOString(),
-            reminderMinutes: SET_REMINDER_MINUTES,
-          });
-          await (supabaseAdmin as any).from("set_reminders")
-            .update({ gcal_event_id: event.id, gcal_html_link: event.htmlLink ?? null })
-            .eq("id", data.id);
-          return { ok: true, calendarRestored: true };
-        }
-      } catch (err) {
-        console.error("[restoreSet] gcal insert failed:", err);
+    try {
+      const created = await withFreshUserCalendar(row.owner_id, (token, calendarId) =>
+        insertCalendarEvent(token, calendarId, calendarEventInput(row)));
+      if (!created.connected) {
+        await finishCalendarSync(admin, data.id, operationId, context.userId, {
+          calendar_sync_status: "not_connected",
+          gcal_event_id: null,
+          gcal_event_owner_id: null,
+          gcal_html_link: null,
+        });
+        return { ok: true, calendarRestored: false, warning: "Set restored, but the owner has no connected Google Calendar." };
       }
+      const committed = await finishCalendarSync(admin, data.id, operationId, context.userId, {
+        calendar_sync_status: "synced",
+        gcal_event_id: created.value.id,
+        gcal_event_owner_id: row.owner_id,
+        gcal_html_link: created.value.htmlLink ?? null,
+      });
+      if (!committed) {
+        await withFreshUserCalendar(row.owner_id, (token, calendarId) =>
+          deleteCalendarEvent(token, calendarId, created.value.id));
+        throw new Error("Set changed during Calendar restoration");
+      }
+      return { ok: true, calendarRestored: true };
+    } catch (err) {
+      console.error("[restoreSet] gcal insert failed:", err);
+      await failCalendarSync(admin, data.id, operationId, context.userId, "Google Calendar event could not be restored.");
+      return { ok: true, calendarRestored: false, warning: "Set restored, but Google Calendar needs attention." };
     }
-    return { ok: true, calendarRestored: false };
   });
-
-// Internal: run a Google Calendar operation with a user's fresh access token.
-async function withUserCalendar<T>(
-  ownerId: string,
-  fn: (accessToken: string, calendarId: string) => Promise<T>,
-): Promise<T | null> {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data: conn } = await supabaseAdmin
-    .from("calendar_connections").select("*").eq("user_id", ownerId).maybeSingle();
-  if (!conn) return null;
-  let accessToken = conn.access_token as string | null;
-  const exp = conn.access_token_expires_at ? new Date(conn.access_token_expires_at).getTime() : 0;
-  if (!accessToken || exp - 60_000 < Date.now()) {
-    const r = await refreshAccessToken(conn.refresh_token);
-    accessToken = r.access_token;
-    await supabaseAdmin.from("calendar_connections")
-      .update({ access_token: accessToken, access_token_expires_at: new Date(Date.now() + r.expires_in * 1000).toISOString() })
-      .eq("id", conn.id);
-  }
-  return fn(accessToken!, conn.calendar_id);
-}
 
 /** Give a claimed set back to the pool (owner or admin/founder). Removes the
  *  previous owner's calendar event. */
@@ -612,28 +788,64 @@ export const unclaimSet = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: { id: string }) => data)
   .handler(async ({ context, data }) => {
-
+    const roles = await requireSetOperationsAccess(context);
     const sr = context.supabase as any;
     const { data: row, error } = await sr.from("set_reminders").select("*").eq("id", data.id).maybeSingle();
     if (error || !row) throw new Error("set not found");
-    if (!row.owner_id) return { ok: true };
-    const { data: myRoles } = await context.supabase.from("user_roles").select("role").eq("user_id", context.userId);
-    const elevated = (myRoles ?? []).some(r => r.role === "admin" || r.role === "founder");
-    if (row.owner_id !== context.userId && !elevated) throw new Error("Only the owner or an admin can unclaim");
-
-    if (row.gcal_event_id) {
-      try {
-        const { deleteCalendarEvent } = await import("@/lib/calendar.server");
-        await withUserCalendar(row.owner_id, (t, cal) => deleteCalendarEvent(t, cal, row.gcal_event_id));
-      } catch (err) { console.error("[unclaimSet] gcal delete failed:", err); }
+    const elevated = ["admin", "founder", "cofounder", "closer"].some((role) => roles.has(role));
+    if (!row.owner_id && !row.gcal_event_id) return { ok: true, calendar: true };
+    if (row.owner_id !== context.userId && !elevated) {
+      throw new Error("Only the owner or a sales leader can unclaim this set");
     }
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { error: upErr } = await (supabaseAdmin as any).from("set_reminders")
-      .update({ owner_id: null, gcal_event_id: null, gcal_html_link: null })
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = supabaseAdmin as CalendarSyncAdmin;
+    const operationId = randomUUID();
+    let transition = admin.from("set_reminders")
+      .update({
+        owner_id: null,
+        calendar_sync_status: "pending",
+        calendar_sync_error: null,
+        calendar_sync_token: operationId,
+        transition_actor_id: context.userId,
+      })
       .eq("id", data.id);
+    transition = row.owner_id
+      ? transition.eq("owner_id", row.owner_id)
+      : transition.is("owner_id", null);
+    const { data: moved, error: upErr } = await transition.select("id").maybeSingle();
     if (upErr) throw new Error(upErr.message);
-    return { ok: true };
+    if (!moved) throw new Error("Set ownership changed. Refresh and try again.");
+
+    const calendarOwnerId = row.gcal_event_owner_id ?? row.owner_id;
+    if (row.gcal_event_id) {
+      if (!calendarOwnerId) {
+        await failCalendarSync(admin, data.id, operationId, context.userId, "Calendar event owner is unknown.");
+        return { ok: true, calendar: false, warning: "Set unclaimed, but Calendar cleanup needs attention." };
+      }
+      try {
+        const removed = await withFreshUserCalendar(calendarOwnerId, async (token, calendarId) => {
+          await deleteCalendarEvent(token, calendarId, row.gcal_event_id);
+          return true;
+        });
+        if (!removed.connected) {
+          await failCalendarSync(admin, data.id, operationId, context.userId, "Calendar owner is not connected.");
+          return { ok: true, calendar: false, warning: "Set unclaimed, but the old Calendar event could not be reached." };
+        }
+      } catch (err) {
+        console.error("[unclaimSet] gcal delete failed:", err);
+        await failCalendarSync(admin, data.id, operationId, context.userId, "Old Google Calendar event could not be removed.");
+        return { ok: true, calendar: false, warning: "Set unclaimed, but Calendar cleanup needs attention." };
+      }
+    }
+
+    await finishCalendarSync(admin, data.id, operationId, context.userId, {
+      calendar_sync_status: "synced",
+      gcal_event_id: null,
+      gcal_event_owner_id: null,
+      gcal_html_link: null,
+    });
+    return { ok: true, calendar: true };
   });
 
 /** Assign a set to a specific setter (admin/founder, or the current owner
@@ -642,48 +854,109 @@ export const assignSet = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: { id: string; userId: string }) => data)
   .handler(async ({ context, data }) => {
-
+    const roles = await requireSetOperationsAccess(context);
     const sr = context.supabase as any;
     const { data: row, error } = await sr.from("set_reminders").select("*").eq("id", data.id).maybeSingle();
     if (error || !row) throw new Error("set not found");
-    const { data: myRoles } = await context.supabase.from("user_roles").select("role").eq("user_id", context.userId);
-    const elevated = (myRoles ?? []).some(r => r.role === "admin" || r.role === "founder");
+    const elevated = ["admin", "founder", "cofounder", "closer"].some((role) => roles.has(role));
     if (!elevated && row.owner_id !== context.userId) throw new Error("Only an admin or the current owner can assign");
 
-    // remove from the previous owner's calendar
-    if (row.owner_id && row.owner_id !== data.userId && row.gcal_event_id) {
-      try {
-        const { deleteCalendarEvent } = await import("@/lib/calendar.server");
-        await withUserCalendar(row.owner_id, (t, cal) => deleteCalendarEvent(t, cal, row.gcal_event_id));
-      } catch (err) { console.error("[assignSet] old gcal delete failed:", err); }
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const [{ data: targetProfile }, { data: targetRoles }] = await Promise.all([
+      supabaseAdmin.from("profiles").select("id").eq("id", data.userId).eq("is_demo", false).eq("active", true).maybeSingle(),
+      supabaseAdmin.from("user_roles").select("role").eq("user_id", data.userId),
+    ]);
+    const targetCanOwnSets = (targetRoles ?? []).some((entry) => ["setter", "closer", "admin"].includes(entry.role));
+    if (!targetProfile || !targetCanOwnSets) throw new Error("Sets can only be assigned to an active real sales profile");
+
+    if (
+      row.owner_id === data.userId
+      && row.calendar_sync_status === "synced"
+      && (!row.gcal_event_id || row.gcal_event_owner_id === data.userId)
+    ) {
+      return { ok: true, calendar: Boolean(row.gcal_event_id) };
     }
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-    const admin = supabaseAdmin as any;
-    const { error: upErr } = await admin.from("set_reminders")
-      .update({ owner_id: data.userId, gcal_event_id: null, gcal_html_link: null })
+    const admin = supabaseAdmin as CalendarSyncAdmin;
+    const operationId = randomUUID();
+    let transition = admin.from("set_reminders")
+      .update({
+        calendar_sync_status: "pending",
+        calendar_sync_error: null,
+        calendar_sync_token: operationId,
+        transition_actor_id: context.userId,
+      })
       .eq("id", data.id);
+    transition = row.owner_id
+      ? transition.eq("owner_id", row.owner_id)
+      : transition.is("owner_id", null);
+    const { data: moved, error: upErr } = await transition.select("id").maybeSingle();
     if (upErr) throw new Error(upErr.message);
+    if (!moved) throw new Error("Set ownership changed. Refresh and try again.");
 
-    // create the event on the new owner's calendar (best effort)
-    try {
-      const start = new Date(row.event_start);
-      const end = new Date(start.getTime() + row.duration_min * 60_000);
-      const event = await withUserCalendar(data.userId, (t, cal) =>
-        insertCalendarEvent(t, cal, {
-          summary: `Set: ${row.prospect}`,
-          description: [row.notes, "Reminders: 2 days · 1 day · 3 hours · 1 hour before."].filter(Boolean).join("\n\n"),
-          startISO: start.toISOString(),
-          endISO: end.toISOString(),
-          reminderMinutes: SET_REMINDER_MINUTES,
-        }));
-      if (event) {
-        await admin.from("set_reminders")
-          .update({ gcal_event_id: event.id, gcal_html_link: event.htmlLink ?? null })
-          .eq("id", data.id);
-        return { ok: true, calendar: true };
+    const calendarOwnerId = row.gcal_event_owner_id ?? row.owner_id;
+    if (row.gcal_event_id) {
+      if (!calendarOwnerId) {
+        await failCalendarSync(admin, data.id, operationId, context.userId, "Calendar event owner is unknown.");
+        return { ok: false, calendar: false, warning: "Assignment was not changed because the old Calendar event owner is unknown." };
       }
-    } catch (err) { console.error("[assignSet] gcal insert failed:", err); }
-    return { ok: true, calendar: false };
+      try {
+        const removed = await withFreshUserCalendar(calendarOwnerId, async (token, calendarId) => {
+          await deleteCalendarEvent(token, calendarId, row.gcal_event_id);
+          return true;
+        });
+        if (!removed.connected) {
+          await failCalendarSync(admin, data.id, operationId, context.userId, "Previous Calendar owner is not connected.");
+          return { ok: false, calendar: false, warning: "Assignment was not changed because the old Calendar event could not be reached." };
+        }
+      } catch (err) {
+        console.error("[assignSet] old gcal delete failed:", err);
+        await failCalendarSync(admin, data.id, operationId, context.userId, "Old Google Calendar event could not be removed.");
+        return { ok: false, calendar: false, warning: "Assignment was not changed because Calendar cleanup failed." };
+      }
+    }
+
+    const { data: cleared, error: clearError } = await admin
+      .from("set_reminders")
+      .update({
+        owner_id: data.userId,
+        gcal_event_id: null,
+        gcal_event_owner_id: null,
+        gcal_html_link: null,
+        transition_actor_id: context.userId,
+      })
+      .eq("id", data.id)
+      .eq("calendar_sync_token", operationId)
+      .select("id")
+      .maybeSingle();
+    if (clearError) throw new Error(clearError.message);
+    if (!cleared) throw new Error("Set ownership changed during Calendar cleanup");
+
+    try {
+      const created = await withFreshUserCalendar(data.userId, (token, calendarId) =>
+        insertCalendarEvent(token, calendarId, calendarEventInput(row)));
+      if (!created.connected) {
+        await finishCalendarSync(admin, data.id, operationId, context.userId, {
+          calendar_sync_status: "not_connected",
+        });
+        return { ok: true, calendar: false, warning: "Set assigned, but the new owner has no connected Google Calendar." };
+      }
+
+      const committed = await finishCalendarSync(admin, data.id, operationId, context.userId, {
+        calendar_sync_status: "synced",
+        gcal_event_id: created.value.id,
+        gcal_event_owner_id: data.userId,
+        gcal_html_link: created.value.htmlLink ?? null,
+      });
+      if (!committed) {
+        await withFreshUserCalendar(data.userId, (token, calendarId) =>
+          deleteCalendarEvent(token, calendarId, created.value.id));
+        throw new Error("Set ownership changed during Calendar creation");
+      }
+      return { ok: true, calendar: true };
+    } catch (err) {
+      console.error("[assignSet] gcal insert failed:", err);
+      await failCalendarSync(admin, data.id, operationId, context.userId, "Google Calendar event could not be created.");
+      return { ok: true, calendar: false, warning: "Set assigned, but Google Calendar needs attention." };
+    }
   });

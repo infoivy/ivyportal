@@ -12,7 +12,7 @@ import { studentsQuery, coachesQuery, studentCallsAggQuery, studentEodsAggQuery 
 import { signAvatars } from "@/lib/avatars";
 import { toast } from "sonner";
 import {
-  School, Search, Plus, LayoutGrid, Table as TableIcon, Trash2, X,
+  School, Search, Plus, LayoutGrid, Table as TableIcon, Archive, X,
   ChevronRight, Users, AlertTriangle, Columns3, Award, MessageSquare, Trophy, Download, Lock,
 } from "lucide-react";
 import { START_HERE_REQUIRED_KEYS } from "@/lib/student-guide-steps";
@@ -267,31 +267,24 @@ function StudentsLayout() {
     toast.success(`Assigned to ${coachId ? coachName(coachId) : "Unassigned"}`);
   };
 
-  const deleteStudent = async (id: string) => {
-    if (!confirm("Delete this student and all their data?")) return;
-    const { error } = await supabase.from("students").delete().eq("id", id);
-    if (error) {
-      // FK RESTRICT (2026-07-28): money rows must be handled explicitly, not
-      // silently detached when a student goes.
-      if (/installments|foreign key/i.test(error.message)) {
-        return toast.error("This student has a payment plan. Delete the plan on Money in · Payment plans first, then delete the student.");
-      }
-      return toast.error(error.message);
-    }
-    toast.success("Student deleted");
+  const archiveStudent = async (id: string) => {
+    if (!confirm("Archive this student? Their calls, EODs, payments, and placement history will be preserved.")) return;
+    const { error } = await supabase.from("students").update({ status: "inactive" }).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Student archived · history preserved");
     invalidateAll();
   };
 
   if (!isStaff) {
     return (
-      <div className="p-4 sm:p-6 max-w-[1500px] mx-auto">
+      <div className="w-full max-w-none p-4 sm:p-6">
         <div className="card-surface p-8 text-center text-[13px] text-muted-foreground">Staff access required.</div>
       </div>
     );
   }
 
   return (
-    <div className="p-4 sm:p-6 max-w-[1500px] mx-auto space-y-5">
+    <div className="w-full max-w-none p-4 sm:p-6 space-y-5">
       <StudentsTabBar />
       <header className="flex flex-wrap items-end justify-between gap-3 pb-5 mb-1">
         <div>
@@ -616,8 +609,8 @@ function StudentsLayout() {
                           <ChevronRight className="h-3.5 w-3.5" />
                         </Link>
                         {canManage && roles.includes("admin") && (
-                          <button onClick={() => deleteStudent(s.id)} className="p-1 rounded hover:bg-danger-bg text-muted-foreground hover:text-danger-fg" title="Delete student">
-                            <Trash2 className="h-3.5 w-3.5" />
+                          <button onClick={() => archiveStudent(s.id)} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground" title="Archive student">
+                            <Archive className="h-3.5 w-3.5" />
                           </button>
                         )}
                       </div>

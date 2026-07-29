@@ -24,8 +24,8 @@ export function useStudentHealth() {
         supabase.from("students").select("id, status, phase, payment_state, eod_exempt, onboarding_completed_at").eq("is_demo", false),
         supabase.from("student_eods").select("student_id, report_date, roleplays, looms_sent, applications_submitted, students!inner(is_demo)").eq("students.is_demo", false).gte("report_date", sixty),
         supabase.from("student_action_items").select("student_id, due_date, done, students!inner(is_demo)").eq("is_demo", false).eq("students.is_demo", false).eq("done", false),
-        supabase.from("student_calls").select("student_id, call_date, status, students!inner(is_demo)").eq("students.is_demo", false).eq("status", "completed").gte("call_date", sixty),
-        supabase.from("student_placements").select("student_id, stage, updated_at, interview_at, students!inner(is_demo)").eq("students.is_demo", false),
+        supabase.from("student_calls").select("student_id, call_date, status, students!inner(is_demo)").eq("students.is_demo", false).is("voided_at", null).eq("status", "completed").gte("call_date", sixty),
+        supabase.from("student_placements").select("student_id, stage, updated_at, interview_at, students!inner(is_demo)").eq("students.is_demo", false).is("voided_at", null),
       ]);
 
       const today = iso(new Date());

@@ -561,6 +561,9 @@ export type Database = {
           student_name: string
           total_value: number
           updated_at: string
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
         }
         Insert: {
           cash_collected_upfront?: number
@@ -581,6 +584,9 @@ export type Database = {
           student_name: string
           total_value?: number
           updated_at?: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Update: {
           cash_collected_upfront?: number
@@ -601,6 +607,9 @@ export type Database = {
           student_name?: string
           total_value?: number
           updated_at?: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Relationships: [
           {
@@ -1092,6 +1101,9 @@ export type Database = {
           student_name: string
           total_amount: number
           updated_at: string
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
         }
         Insert: {
           closer_id?: string | null
@@ -1106,6 +1118,9 @@ export type Database = {
           student_name: string
           total_amount?: number
           updated_at?: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Update: {
           closer_id?: string | null
@@ -1120,6 +1135,9 @@ export type Database = {
           student_name?: string
           total_amount?: number
           updated_at?: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Relationships: [
           {
@@ -1455,54 +1473,178 @@ export type Database = {
         }
         Relationships: []
       }
+      set_follow_ups: {
+        Row: {
+          channel: string
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          created_by: string
+          due_at: string
+          id: string
+          note: string | null
+          set_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          channel?: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          created_by: string
+          due_at: string
+          id?: string
+          note?: string | null
+          set_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          created_by?: string
+          due_at?: string
+          id?: string
+          note?: string | null
+          set_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "set_follow_ups_set_id_fkey"
+            columns: ["set_id"]
+            isOneToOne: false
+            referencedRelation: "set_reminders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      set_reminder_events: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          event_type: string
+          from_value: Json | null
+          id: string
+          set_id: string
+          to_value: Json
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          event_type: string
+          from_value?: Json | null
+          id?: string
+          set_id: string
+          to_value: Json
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          event_type?: string
+          from_value?: Json | null
+          id?: string
+          set_id?: string
+          to_value?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "set_reminder_events_set_id_fkey"
+            columns: ["set_id"]
+            isOneToOne: false
+            referencedRelation: "set_reminders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       set_reminders: {
         Row: {
+          attendance_status: string
+          calendar_sync_error: string | null
+          calendar_sync_status: string
+          calendar_sync_token: string | null
+          calendar_sync_updated_at: string
           calendly_event_uri: string | null
           confirmed_at: string | null
           created_at: string
           duration_min: number
           event_start: string
           gcal_event_id: string | null
+          gcal_event_owner_id: string | null
           gcal_html_link: string | null
           id: string
+          lead_channel: string
           notes: string | null
+          outcome_recorded_at: string | null
           owner_id: string | null
           prospect: string
+          qualification_status: string
           reminder_log: Json
+          sales_outcome: string
           source: string
           status: string
+          transition_actor_id: string | null
+          updated_at: string
         }
         Insert: {
+          attendance_status?: string
+          calendar_sync_error?: string | null
+          calendar_sync_status?: string
+          calendar_sync_token?: string | null
+          calendar_sync_updated_at?: string
           calendly_event_uri?: string | null
           confirmed_at?: string | null
           created_at?: string
           duration_min?: number
           event_start: string
           gcal_event_id?: string | null
+          gcal_event_owner_id?: string | null
           gcal_html_link?: string | null
           id?: string
+          lead_channel?: string
           notes?: string | null
+          outcome_recorded_at?: string | null
           owner_id?: string | null
           prospect: string
+          qualification_status?: string
           reminder_log?: Json
+          sales_outcome?: string
           source?: string
           status?: string
+          transition_actor_id?: string | null
+          updated_at?: string
         }
         Update: {
+          attendance_status?: string
+          calendar_sync_error?: string | null
+          calendar_sync_status?: string
+          calendar_sync_token?: string | null
+          calendar_sync_updated_at?: string
           calendly_event_uri?: string | null
           confirmed_at?: string | null
           created_at?: string
           duration_min?: number
           event_start?: string
           gcal_event_id?: string | null
+          gcal_event_owner_id?: string | null
           gcal_html_link?: string | null
           id?: string
+          lead_channel?: string
           notes?: string | null
+          outcome_recorded_at?: string | null
           owner_id?: string | null
           prospect?: string
+          qualification_status?: string
           reminder_log?: Json
+          sales_outcome?: string
           source?: string
           status?: string
+          transition_actor_id?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1651,6 +1793,9 @@ export type Database = {
           status: string
           student_id: string
           updated_at: string
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
         }
         Insert: {
           action_items?: string | null
@@ -1669,6 +1814,9 @@ export type Database = {
           status?: string
           student_id: string
           updated_at?: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Update: {
           action_items?: string | null
@@ -1687,6 +1835,9 @@ export type Database = {
           status?: string
           student_id?: string
           updated_at?: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Relationships: [
           {
@@ -1855,6 +2006,7 @@ export type Database = {
           id: string
           interview_at: string | null
           notes: string | null
+          offer_counted_at: string | null
           pay_notes: string | null
           role_title: string
           source: string
@@ -1862,6 +2014,9 @@ export type Database = {
           started_at: string | null
           student_id: string
           updated_at: string
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
         }
         Insert: {
           business_name: string
@@ -1871,6 +2026,7 @@ export type Database = {
           id?: string
           interview_at?: string | null
           notes?: string | null
+          offer_counted_at?: string | null
           pay_notes?: string | null
           role_title?: string
           source?: string
@@ -1878,6 +2034,9 @@ export type Database = {
           started_at?: string | null
           student_id: string
           updated_at?: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Update: {
           business_name?: string
@@ -1887,6 +2046,7 @@ export type Database = {
           id?: string
           interview_at?: string | null
           notes?: string | null
+          offer_counted_at?: string | null
           pay_notes?: string | null
           role_title?: string
           source?: string
@@ -1894,6 +2054,9 @@ export type Database = {
           started_at?: string | null
           student_id?: string
           updated_at?: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Relationships: [
           {
@@ -2314,6 +2477,10 @@ export type Database = {
       }
     }
     Functions: {
+      archive_and_unlock_eod: {
+        Args: { p_reason: string; p_record_type: string; p_source_id: string }
+        Returns: undefined
+      }
       auto_submit_student_weekly_eods: { Args: never; Returns: number }
       has_role: {
         Args: {
@@ -2322,6 +2489,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_real_staff_profile: { Args: { _user_id: string }; Returns: boolean }
       pending_signups: {
         Args: never
         Returns: {
@@ -2333,6 +2501,18 @@ export type Database = {
       student_toggle_action_item: {
         Args: { _call_id: string; _done: boolean; _index: number }
         Returns: Json
+      }
+      void_installment_plan: {
+        Args: { p_installment_id: string; p_reason: string }
+        Returns: undefined
+      }
+      void_student_call: {
+        Args: { p_call_id: string; p_reason: string }
+        Returns: undefined
+      }
+      void_student_placement: {
+        Args: { p_placement_id: string; p_reason: string }
+        Returns: undefined
       }
       verify_security_schema: {
         Args: never

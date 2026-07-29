@@ -39,7 +39,7 @@ export function TableSkeleton({ rows = 8 }: { rows?: number }) {
 
 export function PageSkeleton() {
   return (
-    <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-5">
+    <div className="w-full max-w-none p-4 sm:p-6 space-y-5">
       <div className="flex items-end justify-between border-b border-[var(--border)] pb-4">
         <div className="space-y-2">
           <Skeleton className="h-2.5 w-24" />

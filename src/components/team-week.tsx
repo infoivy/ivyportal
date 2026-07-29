@@ -158,13 +158,18 @@ export function TeamWeekSection() {
   }, []);
   const filedToday = setters.filter(s => byUserDate.has(`${s.user_id}::${today}`));
   const missedYesterday = setters.filter(s => !byUserDate.has(`${s.user_id}::${yesterday}`));
-  // Founder-approved 2026-07-29: delete a trapped report so the member can
-  // resubmit (wrong-date submissions from lagging device clocks).
+  // Archive a trapped wrong-date report so the member can resubmit without
+  // losing the original operational record.
   const unlockEod = async (eodId: string, name: string, day: string) => {
-    if (!confirm(`Unlock ${day} for ${name}? The submitted report is DELETED and they submit again fresh.`)) return;
-    const { error } = await (supabase.from("eods") as never as { delete: () => { eq: (c: string, v: string) => Promise<{ error: { message: string } | null }> } }).delete().eq("id", eodId);
+    const reason = prompt(`Why is ${day} being unlocked for ${name}?`, "Wrong report date");
+    if (!reason?.trim()) return;
+    const { error } = await (supabase.rpc as any)("archive_and_unlock_eod", {
+      p_record_type: "staff",
+      p_source_id: eodId,
+      p_reason: reason.trim(),
+    });
     if (error) { toast.error(error.message); return; }
-    toast.success("Unlocked · they can resubmit now");
+    toast.success("Archived and unlocked · they can resubmit now");
     invalidateForTables(qc, ["eods"]);
     void qc.invalidateQueries({ queryKey: ["page", "performance", "team-week"] });
   };
@@ -310,7 +315,7 @@ function MemberWeekCard({ card, onSetterType, onUnlock }: { card: {
                         onClick={() => onUnlock(w.e!.id, fmtLong(w.d))}
                         className="mt-1 inline-flex items-center gap-1 text-micro text-muted-foreground hover:text-danger-fg"
                       >
-                        <LockOpen className="h-3 w-3" /> Unlock · delete this report so they can resubmit
+                        <LockOpen className="h-3 w-3" /> Archive and unlock for resubmission
                       </button>
                     )}
                   </div>

@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { invalidateForTables } from "@/lib/query-keys";
 import { toast } from "sonner";
-import { Briefcase, Plus, Trash2 } from "lucide-react";
+import { ArchiveX, Briefcase, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { SelectField } from "@/components/ui/select-field";
 import { Input } from "@/components/ui/input";
@@ -50,7 +50,7 @@ export function PlacementsSection({ studentId, compact = false }: { studentId: s
     queryKey: ["placements", studentId],
     staleTime: 60_000,
     queryFn: async () =>
-      ((await supabase.from("student_placements").select("*, students!inner(is_demo)").eq("students.is_demo", false).eq("student_id", studentId).order("created_at", { ascending: false })).data ?? []) as Placement[],
+      ((await supabase.from("student_placements").select("*, students!inner(is_demo)").eq("students.is_demo", false).eq("student_id", studentId).is("voided_at", null).order("created_at", { ascending: false })).data ?? []) as Placement[],
   });
   const rows = q.data ?? [];
   // Covers the per-student list, the board, CSM overview counts, health
@@ -87,9 +87,12 @@ export function PlacementsSection({ studentId, compact = false }: { studentId: s
   };
 
   const remove = async (id: string) => {
-    if (!confirm("Remove this opportunity?")) return;
-    const { error } = await supabase.from("student_placements").delete().eq("id", id);
+    const reason = prompt("Why should this opportunity be removed from active records?")?.trim();
+    if (!reason) return;
+    if (reason.length < 3) return toast.error("Enter a short correction reason.");
+    const { error } = await supabase.rpc("void_student_placement", { p_placement_id: id, p_reason: reason });
     if (error) return toast.error(error.message);
+    toast.success("Opportunity removed from active records · history preserved");
     refresh();
   };
 
@@ -160,9 +163,9 @@ export function PlacementsSection({ studentId, compact = false }: { studentId: s
                 <button
                   onClick={() => remove(p.id)}
                   className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-danger-fg motion-safe:transition-opacity"
-                  title="Remove"
+                  title="Remove from active records"
                 >
-                  <Trash2 className="h-3.5 w-3.5" />
+                  <ArchiveX className="h-3.5 w-3.5" />
                 </button>
               </div>
             );
@@ -180,7 +183,7 @@ export function PlacementBoard() {
     staleTime: 60_000,
     queryFn: async () => {
       const [placements, students] = await Promise.all([
-        supabase.from("student_placements").select("*, students!inner(is_demo)").eq("students.is_demo", false).neq("stage", "lost").order("updated_at", { ascending: false }),
+        supabase.from("student_placements").select("*, students!inner(is_demo)").eq("students.is_demo", false).is("voided_at", null).neq("stage", "lost").order("updated_at", { ascending: false }),
         supabase.from("students").select("id, full_name").eq("is_demo", false),
       ]);
       const names = new Map(((students.data ?? []) as { id: string; full_name: string }[]).map((s) => [s.id, s.full_name]));

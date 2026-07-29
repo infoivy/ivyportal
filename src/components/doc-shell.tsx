@@ -60,7 +60,7 @@ export function DocShell({
 
   return (
     <div className="min-h-full">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-24">
+      <div className="w-full max-w-none px-4 sm:px-6 pt-6 pb-24">
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
           <Link to={breadcrumb.to} className="inline-flex items-center gap-1 hover:text-foreground">
             <ArrowLeft className="h-3.5 w-3.5" /> {breadcrumb.label}

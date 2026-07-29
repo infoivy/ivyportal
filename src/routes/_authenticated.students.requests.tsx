@@ -72,7 +72,7 @@ function RequestsPage() {
 
   if (!canApprove) {
     return (
-      <div className="p-4 sm:p-6 max-w-[1500px] mx-auto">
+      <div className="w-full max-w-none p-4 sm:p-6">
         <StudentsTabBar />
         <div className="card-surface p-8 text-center text-[13px] text-muted-foreground">
           Admin, closer, or CSM access required.
@@ -82,7 +82,7 @@ function RequestsPage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 max-w-[1500px] mx-auto space-y-5">
+    <div className="w-full max-w-none p-4 sm:p-6 space-y-5">
       <StudentsTabBar />
       <header className="pb-2">
         <h1 className="text-display text-foreground">Access requests</h1>

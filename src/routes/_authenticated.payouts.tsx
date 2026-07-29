@@ -60,6 +60,7 @@ function PayoutsInner() {
           .from("deals")
           .select("id, closer_id, setter_id, total_value, cash_collected_upfront, deal_date, payment_type")
           .eq("is_demo", false)
+          .is("voided_at", null)
           .gte("deal_date", period.monthStart)
           .lte("deal_date", period.monthEnd),
         supabase.from("profiles").select("id, display_name, commission_cap_pct, base_pay_monthly, base_pay_day, started_on").eq("is_demo", false),
@@ -168,7 +169,7 @@ function PayoutsInner() {
 
   return (
     <div className="min-h-full">
-      <div className="max-w-[1100px] mx-auto p-4 sm:p-6 space-y-6">
+      <div className="w-full max-w-none p-4 sm:p-6 space-y-6">
         <PayoutAlertBanner onJumpToPeriod={setPeriodOffset} />
         {/* Header */}
         <div className="flex items-center justify-between gap-4">

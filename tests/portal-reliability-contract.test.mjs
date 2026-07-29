@@ -94,6 +94,9 @@ test("Home splits by role: setter reps get their own week, leaders get the money
 test("Founder Home uses its existing operational reads for a useful leadership brief", () => {
   assert.match(dashboard, /function LeadershipBrief/);
   assert.match(dashboard, /<LeadershipBrief data=\{data\}/);
+  const founderStart = dashboard.indexOf("<LeadershipBrief data={data} />");
+  const commandGridStart = dashboard.indexOf('<div className="grid items-start');
+  assert.ok(founderStart >= 0 && founderStart < commandGridStart);
   for (const label of [
     "Active students",
     "Calls next 7 days",
@@ -202,7 +205,7 @@ test("one shared owesEods rule: founders, co-founders, and exempt members owe no
   // Staff EOD exemption (founder-directed 2026-07-29): ONE shared rule,
   // owesEods (roles ∩ active ∩ not exempt ∩ not founder/cofounder), used by
   // every expected-filer surface so a toggle can never half-apply.
-  assert.ok(existsSync(new URL("supabase/migrations/20260729000000_profiles_eod_exempt.sql", root)));
+  assert.ok(existsSync(new URL("supabase/migrations/20260728223044_profiles_eod_exempt.sql", root)));
   const eodKpiSrc = readFileSync(new URL("src/lib/eod-kpi.ts", root), "utf8");
   assert.match(eodKpiSrc, /export function owesEods/);
   assert.match(dashboard, /owesEods\(\{/);
@@ -356,8 +359,10 @@ test("shared student workspaces and staff utilities exclude demo-owned records a
     assert.match(source, /from\("profiles"\)[\s\S]{0,180}?\.eq\("is_demo", false\)/);
   }
 
-  assert.equal((calendarFunctions.match(/from\("profiles"\)/g) ?? []).length, 3);
-  assert.equal((calendarFunctions.match(/\.eq\("is_demo", false\)/g) ?? []).length, 3);
+  const calendarProfileReads = (calendarFunctions.match(/from\("profiles"\)/g) ?? []).length;
+  const calendarRealProfileGuards = (calendarFunctions.match(/\.eq\("is_demo", false\)/g) ?? []).length;
+  assert.equal(calendarProfileReads, 4);
+  assert.equal(calendarRealProfileGuards, calendarProfileReads);
   assert.match(calendarFunctions, /const realConnections = conns\.filter/);
   assert.match(calendarFunctions, /!r\.owner_id \|\| pmap\.has\(r\.owner_id\)/);
 

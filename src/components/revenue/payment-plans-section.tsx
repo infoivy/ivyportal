@@ -13,7 +13,7 @@ import { keys, invalidateForTables } from "@/lib/query-keys";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import {
-  Plus, Trash2, X, AlertTriangle, Bell, CheckCircle2,
+  Plus, Trash2, Ban, X, AlertTriangle, Bell, CheckCircle2,
   Calendar as CalendarIcon, Edit3, Search, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { CashInCalendarCard } from "@/components/cash-in-calendar";
@@ -68,6 +68,7 @@ const daysUntil = (d: string) => {
 
 export function PaymentPlansSection() {
   const { user, roles } = useAuth();
+  const canEdit = roles.includes("admin") || roles.includes("closer");
   const canDelete = roles.includes("admin");
 
   const [installments, setInstallments] = useState<Installment[]>([]);
@@ -86,7 +87,7 @@ export function PaymentPlansSection() {
     queryKey: keys.installmentsPage,
     queryFn: async () => {
       const [iRes, pRes, sRes, tRes] = await Promise.all([
-        (supabase.from("installments" as any).select("*, students!inner(is_demo)").eq("students.is_demo", false).order("created_at", { ascending: false }) as any),
+        (supabase.from("installments" as any).select("*, students!inner(is_demo)").eq("students.is_demo", false).is("voided_at", null).order("created_at", { ascending: false }) as any),
         (supabase.from("installment_payments" as any).select("*, installments!inner(students!inner(is_demo))").eq("installments.students.is_demo", false).order("due_date", { ascending: true }) as any),
         supabase.from("students").select("id, full_name").eq("is_demo", false).order("full_name"),
         supabase.from("profiles").select("id, display_name" as any).eq("is_demo", false),
@@ -137,6 +138,11 @@ export function PaymentPlansSection() {
   const findWhopMatchFn = useServerFn(findWhopMatch);
 
   const setStatus = async (id: string, status: PayStatus) => {
+    const existing = payments.find(p => p.id === id);
+    if (existing?.status === "paid" && status !== "paid") {
+      toast.error("Paid history is immutable · add a documented correction instead");
+      return;
+    }
     const patch: any = { status };
     if (status === "paid") {
       // Cash only counts once it's actually in Whop (founder rule 2026-07-14).
@@ -167,19 +173,28 @@ export function PaymentPlansSection() {
   };
 
   const removePayment = async (id: string) => {
-    if (!confirm("Delete this payment row? This can't be undone.")) return;
-    const { error } = await (supabase.from("installment_payments" as any).delete().eq("id", id) as any);
+    const row = payments.find(p => p.id === id);
+    if (row?.status === "paid") return toast.error("Paid history cannot be removed");
+    const reason = prompt("Why is this scheduled payment being waived?", "Schedule correction");
+    if (!reason?.trim()) return;
+    const notes = [row?.notes, `Waived: ${reason.trim()}`].filter(Boolean).join("\n");
+    const { error } = await (supabase.from("installment_payments" as any).update({ status: "waived", paid_at: null, notes }).eq("id", id) as any);
     if (error) return toast.error(error.message);
-    setPayments(prev => prev.filter(p => p.id !== id));
+    setPayments(x => x.map(p => p.id === id ? { ...p, status: "waived", paid_at: null, notes } : p));
+    toast.success("Payment waived · row preserved");
     invalidateForTables(qc, ["installment_payments"]);
   };
-
   const removeInstallment = async (id: string) => {
-    if (!confirm("Delete this installment plan and all its payments?")) return;
-    const { error } = await (supabase.from("installments" as any).delete().eq("id", id) as any);
+    const reason = prompt("Why is this installment plan being voided?", "Incorrect payment plan");
+    if (!reason?.trim()) return;
+    const { error } = await (supabase.rpc as any)("void_installment_plan", {
+      p_installment_id: id,
+      p_reason: reason.trim(),
+    });
     if (error) return toast.error(error.message);
-    setInstallments(prev => prev.filter(i => i.id !== id));
-    setPayments(prev => prev.filter(p => p.installment_id !== id));
+    setInstallments(x => x.filter(i => i.id !== id));
+    setPayments(x => x.map(p => p.installment_id === id && p.status !== "paid" ? { ...p, status: "waived", paid_at: null } : p));
+    toast.success("Plan voided · paid history preserved");
     invalidateForTables(qc, ["installments", "installment_payments"]);
   };
 
@@ -200,9 +215,11 @@ export function PaymentPlansSection() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <p className="text-sm text-muted-foreground">Payment plans, follow-ups, and the cash flow calendar.</p>
-        <button onClick={() => { setEditing(null); setAddOpen(true); }} className="inline-flex items-center gap-2 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm hover:opacity-90">
-          <Plus className="h-4 w-4" /> New installment plan
-        </button>
+        {canEdit && (
+          <button onClick={() => { setEditing(null); setAddOpen(true); }} className="inline-flex items-center gap-2 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm hover:opacity-90">
+            <Plus className="h-4 w-4" /> New installment plan
+          </button>
+        )}
       </div>
 
       {/* Stat cards */}
@@ -285,9 +302,9 @@ export function PaymentPlansSection() {
                   <span className="text-muted-foreground"> / {fmtMoney(Number(inst.total_amount), inst.currency)}</span>
                 </div>
                 <div className="w-40 h-1.5 bg-muted rounded-full overflow-hidden"><div className="h-full bg-success" style={{ width: `${pct}%` }} /></div>
-                <button onClick={() => { setEditing(inst); setAddOpen(true); }} className="text-xs px-2 py-1 rounded border border-border hover:bg-accent inline-flex items-center gap-1"><Edit3 className="h-3 w-3" />Edit</button>
+                {canEdit && <button onClick={() => { setEditing(inst); setAddOpen(true); }} className="text-xs px-2 py-1 rounded border border-border hover:bg-accent inline-flex items-center gap-1"><Edit3 className="h-3 w-3" />Edit</button>}
                 {canDelete && (
-                  <button onClick={() => removeInstallment(inst.id)} className="text-xs px-2 py-1 rounded border border-border hover:bg-accent text-danger-fg inline-flex items-center gap-1"><Trash2 className="h-3 w-3" />Delete</button>
+                  <button onClick={() => removeInstallment(inst.id)} className="text-xs px-2 py-1 rounded border border-border hover:bg-accent text-danger-fg inline-flex items-center gap-1"><Ban className="h-3 w-3" />Void</button>
                 )}
               </header>
               {inst.notes && <div className="px-4 py-2 text-xs text-muted-foreground border-b border-border">{inst.notes}</div>}
@@ -305,17 +322,22 @@ export function PaymentPlansSection() {
                           </span>
                         )}
                       </span>
-                      <SelectField
-                        value={p.status}
-                        onChange={v => setStatus(p.id, v as PayStatus)}
-                        options={(Object.keys(STATUS_META) as PayStatus[]).map(s => ({ value: s, label: STATUS_META[s].label }))}
-                        className={`w-auto text-xs ${STATUS_META[p.status].cls}`}
-                      />
+                      {canEdit ? (
+                        <SelectField
+                          value={p.status}
+                          onChange={v => setStatus(p.id, v as PayStatus)}
+                          options={(Object.keys(STATUS_META) as PayStatus[]).map(s => ({ value: s, label: STATUS_META[s].label }))}
+                          disabled={p.status === "paid"}
+                          className={`w-auto text-xs ${STATUS_META[p.status].cls}`}
+                        />
+                      ) : (
+                        <span className={`rounded border px-2 py-1 text-xs ${STATUS_META[p.status].cls}`}>{STATUS_META[p.status].label}</span>
+                      )}
                       {p.payment_method && <span className="text-xs text-muted-foreground">{p.payment_method}</span>}
                       {p.notes && <span className="text-xs text-muted-foreground italic truncate max-w-[240px]">"{p.notes}"</span>}
                       <div className="ml-auto flex items-center gap-2">
-                        {canDelete && (
-                          <button onClick={() => removePayment(p.id)} className="text-xs text-danger-fg hover:underline"><Trash2 className="h-3 w-3" /></button>
+                        {canDelete && p.status !== "paid" && p.status !== "waived" && (
+                          <button onClick={() => removePayment(p.id)} className="text-xs text-danger-fg hover:underline inline-flex items-center gap-1" title="Waive scheduled payment"><Ban className="h-3 w-3" />Waive</button>
                         )}
                       </div>
                     </div>
@@ -359,11 +381,13 @@ function StatCard({ icon, label, value, tone }: { icon: React.ReactNode; label: 
 }
 
 type Draft = {
+  id: string | null;
   amount: string;
   due_date: string;
   payment_method: string;
   notes: string;
   status: PayStatus;
+  paid_at: string | null;
 };
 
 function PlanEditor({
@@ -385,27 +409,33 @@ function PlanEditor({
   const [notes, setNotes] = useState<string>(initial?.notes ?? "");
   const [drafts, setDrafts] = useState<Draft[]>(
     initialPayments.length
-      ? initialPayments
+      ? [...initialPayments]
           .sort((a,b) => a.sequence - b.sequence)
           .map(p => ({
+            id: p.id,
             amount: String(p.amount),
             due_date: p.due_date,
             payment_method: p.payment_method ?? "",
             notes: p.notes ?? "",
             status: p.status,
+            paid_at: p.paid_at,
           }))
-      : [{ amount: "", due_date: new Date().toISOString().slice(0,10), payment_method: "", notes: "", status: "upcoming" }]
+      : [{ id: null, amount: "", due_date: new Date().toISOString().slice(0,10), payment_method: "", notes: "", status: "upcoming", paid_at: null }]
   );
   const [saving, setSaving] = useState(false);
 
-  const addDraft = () => setDrafts(d => [...d, { amount: "", due_date: new Date().toISOString().slice(0,10), payment_method: "", notes: "", status: "upcoming" }]);
-  const removeDraft = (i: number) => setDrafts(d => d.filter((_, idx) => idx !== i));
+  const addDraft = () => setDrafts(d => [...d, { id: null, amount: "", due_date: new Date().toISOString().slice(0,10), payment_method: "", notes: "", status: "upcoming", paid_at: null }]);
+  const removeDraft = (i: number) => {
+    if (drafts[i]?.status === "paid") return toast.error("Paid history cannot be removed from a schedule");
+    setDrafts(d => d.filter((_, idx) => idx !== i));
+  };
 
   const generateMonthly = () => {
     const t = Number(total) || 0;
     const n = drafts.length || 1;
     const each = (t / n).toFixed(2);
     setDrafts(d => d.map((row, i) => {
+      if (row.status === "paid") return row;
       const base = new Date(); base.setHours(0,0,0,0);
       base.setMonth(base.getMonth() + i);
       return { ...row, amount: each, due_date: base.toISOString().slice(0,10) };
@@ -445,22 +475,48 @@ function PlanEditor({
           notes: notes || null,
         }).eq("id", planId) as any);
         if (error) throw error;
-        await (supabase.from("installment_payments" as any).delete().eq("installment_id", planId) as any);
       }
-      const rows = drafts
-        .filter(d => d.amount && d.due_date)
-        .map((d, i) => ({
-          installment_id: planId,
+
+      const validDrafts = drafts.filter(d => d.amount && d.due_date);
+      const retainedIds = new Set(validDrafts.flatMap(d => d.id ? [d.id] : []));
+
+      // Removing an unpaid row from the editor waives it. Paid rows remain
+      // immutable and are always retained even if stale UI state omits them.
+      for (const payment of initialPayments) {
+        if (retainedIds.has(payment.id) || payment.status === "paid") continue;
+        const correctionNote = [payment.notes, "Waived when installment schedule was edited"].filter(Boolean).join("\n");
+        const { error } = await (supabase.from("installment_payments" as any)
+          .update({ status: "waived", paid_at: null, notes: correctionNote })
+          .eq("id", payment.id) as any);
+        if (error) throw error;
+      }
+
+      const newRows: any[] = [];
+      for (const [i, draft] of validDrafts.entries()) {
+        const row = {
+          installment_id: planId as string,
           sequence: i + 1,
-          amount: Number(d.amount) || 0,
+          amount: Number(draft.amount) || 0,
           currency,
-          due_date: d.due_date,
-          status: d.status,
-          payment_method: d.payment_method || null,
-          notes: d.notes || null,
-        }));
-      if (rows.length) {
-        const { error } = await (supabase.from("installment_payments" as any).insert(rows) as any);
+          due_date: draft.due_date,
+          status: draft.status,
+          payment_method: draft.payment_method || null,
+          notes: draft.notes || null,
+        };
+        if (!draft.id) {
+          if (draft.status === "paid") throw new Error("New payments must be verified from the payment row before being marked paid");
+          newRows.push(row);
+          continue;
+        }
+        const original = initialPayments.find(p => p.id === draft.id);
+        if (original?.status === "paid") continue;
+        if (draft.status === "paid") throw new Error("Use the payment-row status action so Whop can verify collected cash");
+        const { error } = await (supabase.from("installment_payments" as any).update(row).eq("id", draft.id) as any);
+        if (error) throw error;
+      }
+
+      if (newRows.length) {
+        const { error } = await (supabase.from("installment_payments" as any).insert(newRows) as any);
         if (error) throw error;
       }
       toast.success("Installment plan saved");
@@ -509,16 +565,16 @@ function PlanEditor({
             </div>
             <div className="space-y-2">
               {drafts.map((d, i) => (
-                <div key={i} className="grid grid-cols-2 sm:grid-cols-12 gap-2 items-center">
+                <div key={d.id ?? `new-${i}`} className="grid grid-cols-2 sm:grid-cols-12 gap-2 items-center">
                   <div className="col-span-2 sm:col-span-1 flex items-center justify-between sm:block">
                     <span className="text-xs text-muted-foreground">#{i+1}</span>
-                    <button onClick={() => removeDraft(i)} className="sm:hidden p-1.5 rounded hover:bg-accent text-danger-fg"><Trash2 className="h-3.5 w-3.5" /></button>
+                    {d.status !== "paid" && <button onClick={() => removeDraft(i)} className="sm:hidden p-1.5 rounded hover:bg-accent text-danger-fg"><Trash2 className="h-3.5 w-3.5" /></button>}
                   </div>
-                  <input type="number" min="0" step="0.01" value={d.amount} onChange={e => setDrafts(list => list.map((r,idx) => idx === i ? { ...r, amount: e.target.value } : r))} placeholder="Amount" className="col-span-1 sm:col-span-3 px-2 py-1.5 rounded border border-border bg-background text-sm" />
-                  <DateField value={d.due_date} onChange={v => setDrafts(list => list.map((r,idx) => idx === i ? { ...r, due_date: v } : r))} clearable={false} className="col-span-1 sm:col-span-3 h-9 text-sm" />
-                  <SelectField value={d.status} onChange={v => setDrafts(list => list.map((r,idx) => idx === i ? { ...r, status: v as PayStatus } : r))} options={(Object.keys(STATUS_META) as PayStatus[]).map(s => ({ value: s, label: STATUS_META[s].label }))} className="col-span-1 sm:col-span-2 h-9 text-sm" />
-                  <input value={d.payment_method} onChange={e => setDrafts(list => list.map((r,idx) => idx === i ? { ...r, payment_method: e.target.value } : r))} placeholder="Method" className="col-span-1 sm:col-span-2 px-2 py-1.5 rounded border border-border bg-background text-sm" />
-                  <button onClick={() => removeDraft(i)} className="hidden sm:block sm:col-span-1 p-1.5 rounded hover:bg-accent text-danger-fg justify-self-end"><Trash2 className="h-3.5 w-3.5" /></button>
+                  <input disabled={d.status === "paid"} type="number" min="0" step="0.01" value={d.amount} onChange={e => setDrafts(list => list.map((r,idx) => idx === i ? { ...r, amount: e.target.value } : r))} placeholder="Amount" className="col-span-1 sm:col-span-3 px-2 py-1.5 rounded border border-border bg-background text-sm disabled:opacity-60" />
+                  <DateField disabled={d.status === "paid"} value={d.due_date} onChange={v => setDrafts(list => list.map((r,idx) => idx === i ? { ...r, due_date: v } : r))} clearable={false} className="col-span-1 sm:col-span-3 h-9 text-sm" />
+                  <SelectField disabled={d.status === "paid"} value={d.status} onChange={v => setDrafts(list => list.map((r,idx) => idx === i ? { ...r, status: v as PayStatus } : r))} options={(d.status === "paid" ? ["paid"] : (Object.keys(STATUS_META) as PayStatus[]).filter(s => s !== "paid")).map(s => ({ value: s as PayStatus, label: STATUS_META[s as PayStatus].label }))} className="col-span-1 sm:col-span-2 h-9 text-sm" />
+                  <input disabled={d.status === "paid"} value={d.payment_method} onChange={e => setDrafts(list => list.map((r,idx) => idx === i ? { ...r, payment_method: e.target.value } : r))} placeholder="Method" className="col-span-1 sm:col-span-2 px-2 py-1.5 rounded border border-border bg-background text-sm disabled:opacity-60" />
+                  {d.status !== "paid" && <button onClick={() => removeDraft(i)} className="hidden sm:block sm:col-span-1 p-1.5 rounded hover:bg-accent text-danger-fg justify-self-end"><Trash2 className="h-3.5 w-3.5" /></button>}
                 </div>
               ))}
             </div>

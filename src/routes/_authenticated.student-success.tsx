@@ -72,8 +72,8 @@ export function StudentSuccessInner() {
     setLoading(true);
     const [studRes, callsRes, instRes, payRes, adhocRes, eodRes, noteRes, profRes] = await Promise.all([
       supabase.from("students").select("id, full_name, email, phase, status, coach_id, join_date, testimonial_collected, payment_state, onboarding_completed_at").eq("is_demo", false).order("full_name"),
-      supabase.from("student_calls").select("student_id, call_date, next_call_date, students!inner(is_demo)").eq("students.is_demo", false).order("call_date", { ascending: false }).limit(2000),
-      supabase.from("installments").select("id, student_id, students!inner(is_demo)").eq("students.is_demo", false),
+      supabase.from("student_calls").select("student_id, call_date, next_call_date, students!inner(is_demo)").eq("students.is_demo", false).is("voided_at", null).order("call_date", { ascending: false }).limit(2000),
+      supabase.from("installments").select("id, student_id, students!inner(is_demo)").eq("students.is_demo", false).is("voided_at", null),
       supabase.from("installment_payments").select("id, installment_id, status, due_date, installments!inner(students!inner(is_demo))").eq("installments.students.is_demo", false),
       supabase.from("student_action_items").select("id, student_id, text, done, due_date, created_at, students!inner(is_demo)").eq("is_demo", false).eq("students.is_demo", false).eq("done", false).order("due_date", { ascending: true }),
       supabase.from("student_eods").select("student_id, report_date, students!inner(is_demo)").eq("students.is_demo", false).gte("report_date", sevenDaysAgo),
@@ -191,7 +191,7 @@ export function StudentSuccessInner() {
 
   return (
     <div className="min-h-full">
-      <div className="p-4 sm:p-6 max-w-[1400px] mx-auto space-y-5">
+      <div className="w-full max-w-none p-4 sm:p-6 space-y-5">
         <div>
           <h1 className="text-display text-foreground">Student Success</h1>
           <p className="text-body text-muted-foreground mt-1">At-risk flags, this week's calls, open action items, testimonial pipeline.</p>
