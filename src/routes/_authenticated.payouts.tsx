@@ -13,7 +13,7 @@ import {
 } from "@/lib/payout-period";
 import { todayLocal } from "@/lib/dates";
 import { toast } from "sonner";
-import { RevenueTabBar } from "@/components/revenue-tab-bar";
+import { MoneyShell } from "@/components/money-shell";
 import { PayoutAlertBanner } from "@/components/payout-alert";
 import { DateField } from "@/components/ui/date-field";
 
@@ -169,25 +169,20 @@ function PayoutsInner() {
 
   return (
     <div className="min-h-full">
-      <div className="w-full max-w-none p-4 sm:p-6 space-y-6">
-        <PayoutAlertBanner onJumpToPeriod={setPeriodOffset} />
-        {/* Header */}
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <div className="text-[10px] text-muted-foreground mb-1">Admin</div>
-            <h1 className="text-xl font-semibold">Payout Ledger</h1>
-            <p className="text-xs text-muted-foreground mt-0.5">Commission owed per period</p>
-          </div>
+      <MoneyShell
+        actions={
           <div className="flex items-center gap-1">
-            <button onClick={() => setPeriodOffset(o => o - 1)} className="h-8 w-8 flex items-center justify-center rounded-sm border border-border hover:bg-accent transition">
+            <button onClick={() => setPeriodOffset(o => o - 1)} className="h-9 w-9 flex items-center justify-center rounded-md border border-border bg-card hover:bg-muted motion-safe:transition-colors" aria-label="Previous period">
               <ChevronLeft className="h-4 w-4" />
             </button>
-            <span className="text-xs font-medium px-3 py-1.5 border border-border rounded-sm bg-card whitespace-nowrap">{period.label}</span>
-            <button onClick={() => setPeriodOffset(o => Math.min(0, o + 1))} className="h-8 w-8 flex items-center justify-center rounded-sm border border-border hover:bg-accent transition" disabled={periodOffset >= 0}>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium px-3 py-2 border border-border rounded-md bg-card whitespace-nowrap tabular-nums min-w-[130px] text-center">{period.label}</span>
+            <button onClick={() => setPeriodOffset(o => Math.min(0, o + 1))} className="h-9 w-9 flex items-center justify-center rounded-md border border-border bg-card hover:bg-muted motion-safe:transition-colors disabled:opacity-40" disabled={periodOffset >= 0} aria-label="Next period">
+              <ChevronRight className="h-4 w-4" />
             </button>
           </div>
-        </div>
+        }
+      >
+        <PayoutAlertBanner onJumpToPeriod={setPeriodOffset} />
 
         {/* One number for the whole period: commissions due + base pay whose
             day falls inside it (founder-requested 2026-07-28). */}
@@ -230,7 +225,6 @@ function PayoutsInner() {
           }}
         />
 
-        <RevenueTabBar />
 
         {/* Summary */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -380,7 +374,7 @@ function PayoutsInner() {
             {periodPayments.length} installment payment{periodPayments.length !== 1 ? "s" : ""} collected in this period are included in commission calculations above.
           </p>
         )}
-      </div>
+      </MoneyShell>
     </div>
   );
 }

@@ -7,7 +7,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useServerFn } from "@tanstack/react-start";
 import { getFinanceRevenue, findWhopMatch } from "@/lib/mochi.functions";
 import { calcMonthPayouts } from "@/lib/payouts-calc";
-import { RevenueTabBar } from "@/components/revenue-tab-bar";
+import { MoneyShell } from "@/components/money-shell";
 import { ExpenseModal } from "@/components/expense-modal";
 import { DEFAULT_RATES } from "@/lib/revenue";
 import { money } from "@/lib/revenue";
@@ -340,16 +340,8 @@ function FinanceInner() {
   const monthLabel = monthStart.toLocaleString("en", { month: "long", year: "numeric" });
 
   return (
-    <div className="w-full max-w-none p-4 sm:p-6 space-y-5">
-      <RevenueTabBar />
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2 text-[10px] text-muted-foreground mb-1">
-            <Wallet className="h-3 w-3" /> Founder finance
-          </div>
-          <h1 className="text-display text-foreground">Finance</h1>
-          <p className="text-body text-muted-foreground mt-1">Cash in, expenses out, profit split, and recurring revenue.</p>
-        </div>
+    <MoneyShell
+      actions={
         <div className="flex items-center gap-1">
           <button onClick={() => setMonthOffset(o => o - 1)} className="h-9 w-9 flex items-center justify-center rounded-md border border-border bg-card hover:bg-muted motion-safe:transition-colors" aria-label="Previous month">
             <ChevronLeft className="h-4 w-4" />
@@ -362,7 +354,8 @@ function FinanceInner() {
             <Button size="sm" variant="ghost" onClick={() => setMonthOffset(0)}>Today</Button>
           )}
         </div>
-      </header>
+      }
+    >
 
       {/* Top strip */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
@@ -667,7 +660,7 @@ function FinanceInner() {
           onSaved={() => { setExpenseModal({ open: false, editing: null }); invalidateForTables(qc, ["business_expenses"]); }}
         />
       )}
-    </div>
+    </MoneyShell>
   );
 }
 
