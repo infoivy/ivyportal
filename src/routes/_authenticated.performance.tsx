@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/sheet";
 import { VolumeAreaChart } from "@/components/ui/volume-area-chart";
 import { supabase } from "@/integrations/supabase/client";
+import { owesEods } from "@/lib/eod-kpi";
 import { useAuth } from "@/lib/auth-context";
 import { todayLocal } from "@/lib/dates";
 
@@ -48,6 +49,7 @@ type ProfileRow = {
   id: string;
   display_name: string | null;
   active: boolean | null;
+  eod_exempt: boolean | null;
   created_at: string;
 };
 
@@ -132,7 +134,7 @@ function PerformancePage() {
           .order("report_date", { ascending: true }),
         supabase
           .from("profiles")
-          .select("id, display_name, active, created_at")
+          .select("id, display_name, active, eod_exempt, created_at")
           .eq("is_demo", false),
         supabase
           .from("user_roles")
@@ -147,26 +149,23 @@ function PerformancePage() {
       if (roleRes.error) throw new Error(`Performance roles failed: ${roleRes.error.message}`);
 
       const activities = (activityRes.data ?? []) as ActivityRow[];
-      const profiles = (profileRes.data ?? []) as ProfileRow[];
+      const profiles = (profileRes.data ?? []) as unknown as ProfileRow[];
       const roleRows = (roleRes.data ?? []) as RoleRow[];
       const profileMap = new Map(profiles.map((profile) => [profile.id, profile]));
       const roleMap = new Map<string, string[]>();
       roleRows.forEach((row) =>
         roleMap.set(row.user_id, [...(roleMap.get(row.user_id) ?? []), row.role]),
       );
-      const exempt = new Set(
-        roleRows
-          .filter((row) => ["founder", "cofounder"].includes(row.role))
-          .map((row) => row.user_id),
-      );
       const reportingIds = roleRows
         .filter((row) => (REPORTING_ROLES as readonly string[]).includes(row.role))
         .map((row) => row.user_id);
-      const reportingIdSet = new Set(reportingIds);
       const activityIds = activities.map((row) => row.user_id);
       const ids = [...new Set([...reportingIds, ...activityIds])]
-        .filter((id) => reportingIdSet.has(id) || !exempt.has(id))
-        .filter((id) => profileMap.has(id));
+        .filter((id) => profileMap.has(id))
+        .filter((id) => {
+          const profile = profileMap.get(id)!;
+          return owesEods({ roles: roleMap.get(id) ?? [], active: profile.active, eod_exempt: profile.eod_exempt });
+        });
 
       const roster = ids
         .map((id): RosterMember => {

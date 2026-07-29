@@ -8,7 +8,7 @@ import { invalidateForTables } from "@/lib/query-keys";
 import { todayLocal } from "@/lib/dates";
 import { SelectField } from "@/components/ui/select-field";
 import {
-  KPI, kpiTargetsFor, outreachOf, didHitKpi, didHitCsmKpi, dayStatus, type SetterType, type EodKpiRow,
+  KPI, kpiTargetsFor, outreachOf, didHitKpi, didHitCsmKpi, dayStatus, owesEods, type SetterType, type EodKpiRow,
 } from "@/lib/eod-kpi";
 
 /**
@@ -62,11 +62,8 @@ export function TeamWeekSection() {
           .eq("is_demo", false)
           .gte("report_date", fromIso),
         supabase.from("profiles").select("id, display_name, setter_type, csm_daily_target, active, eod_exempt" as never).eq("is_demo", false),
-        supabase.from("user_roles").select("user_id, role").in("role", ["setter", "closer", "coach", "csm"]),
-        // Founders/cofounders are exempt from EODs; user_roles founder check:
+        supabase.from("user_roles").select("user_id, role").in("role", ["setter", "closer", "coach", "csm", "founder", "cofounder"]),
       ]);
-      const exemptRes = await supabase.from("user_roles").select("user_id").in("role", ["founder", "cofounder"]);
-      const exempt = new Set((exemptRes.data ?? []).map(r => r.user_id));
       const roleMap = new Map<string, string[]>();
       (rolesRes.data ?? []).forEach(r => {
         const arr = roleMap.get(r.user_id) ?? []; arr.push(r.role); roleMap.set(r.user_id, arr);
@@ -74,7 +71,7 @@ export function TeamWeekSection() {
       const priority = ["csm", "closer", "coach", "setter"];
       const profs = (profsRes.data ?? []) as unknown as { id: string; display_name: string | null; setter_type: SetterType; csm_daily_target: number | null; active: boolean | null; eod_exempt: boolean | null }[];
       const roster: RosterEntry[] = profs
-        .filter(p => roleMap.has(p.id) && !exempt.has(p.id) && p.active !== false && p.eod_exempt !== true)
+        .filter(p => owesEods({ roles: roleMap.get(p.id) ?? [], active: p.active, eod_exempt: p.eod_exempt }))
         .map(p => {
           const rs = roleMap.get(p.id)!;
           const primary = priority.find(x => rs.includes(x)) ?? rs[0];

@@ -68,6 +68,23 @@ export function didHitCsmKpi(e: EodKpiRow, target: number | null | undefined): b
   return (e.student_checkins ?? 0) >= Math.max(1, Number(target) || 10);
 }
 
+/**
+ * The ONE answer to "does this member owe EODs?". Every surface (home pulse,
+ * Performance accountability, Team week cards) must use it so an exemption
+ * toggled in Team admin applies everywhere at once (founder-directed
+ * 2026-07-29 after a half-applied toggle). Founder and co-founder roles
+ * never owe; deactivation and profiles.eod_exempt excuse anyone else.
+ */
+export function owesEods(input: {
+  roles: readonly string[];
+  active?: boolean | null;
+  eod_exempt?: boolean | null;
+}): boolean {
+  if (input.active === false || input.eod_exempt === true) return false;
+  if (input.roles.includes("founder") || input.roles.includes("cofounder")) return false;
+  return input.roles.some((r) => ["setter", "closer", "coach", "csm"].includes(r));
+}
+
 export function dayStatus(e: EodKpiRow | undefined, st: SetterType, csmTarget?: number | null): "green" | "amber" | "red" {
   if (!e) return "red";
   if (st) return didHitKpi(e, st) ? "green" : "amber";

@@ -23,7 +23,7 @@ import { PayoutAlertBanner } from "@/components/payout-alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { humanDue, todayLocal } from "@/lib/dates";
-import { KPI, kpiTargetsFor, type SetterType } from "@/lib/eod-kpi";
+import { KPI, kpiTargetsFor, owesEods, type SetterType } from "@/lib/eod-kpi";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Home · Ivy Portal" }] }),
@@ -200,18 +200,14 @@ function HomePage() {
       const profiles = (profilesRes.data ?? []) as unknown as TeamProfile[];
       const todayRows = activities.filter((row) => row.report_date === today);
       const reportingRows = (reportingRolesRes.data ?? []) as { user_id: string; role: string }[];
-      const reportingUsers = new Set(
-        reportingRows.filter((row) => ["setter", "closer", "coach", "csm"].includes(row.role)).map((row) => row.user_id),
-      );
-      const activeUsers = new Set(profiles.filter((profile) => profile.active !== false).map((profile) => profile.id));
-      // Founder-role accounts and profiles.eod_exempt members owe no EODs
-      // (founder-directed 2026-07-29).
-      const exemptUsers = new Set([
-        ...reportingRows.filter((row) => row.role === "founder").map((row) => row.user_id),
-        ...profiles.filter((profile) => profile.eod_exempt === true).map((profile) => profile.id),
-      ]);
+      const rolesByUser = new Map<string, string[]>();
+      reportingRows.forEach((row) => rolesByUser.set(row.user_id, [...(rolesByUser.get(row.user_id) ?? []), row.role]));
+      // ONE rule for who owes EODs — owesEods — shared with Performance and
+      // Team week so a toggle applies everywhere (founder-directed 2026-07-29).
       const expectedUsers = new Set(
-        [...reportingUsers].filter((id) => activeUsers.has(id) && !exemptUsers.has(id)),
+        profiles
+          .filter((profile) => owesEods({ roles: rolesByUser.get(profile.id) ?? [], active: profile.active, eod_exempt: profile.eod_exempt }))
+          .map((profile) => profile.id),
       );
       const submittedUsers = new Set(todayRows.map((row) => row.user_id).filter((id) => expectedUsers.has(id)));
 
@@ -255,7 +251,7 @@ function HomePage() {
     const today = todayLocal();
     const ownToday = data.activities.some((row) => row.user_id === user?.id && row.report_date === today);
     const hasOperatingRole = roles.some((role) => ["setter", "closer", "coach", "csm"].includes(role));
-    const ownEodExempt = roles.includes("founder") || data.profiles.find((profile) => profile.id === user?.id)?.eod_exempt === true;
+    const ownEodExempt = !owesEods({ roles, active: true, eod_exempt: data.profiles.find((profile) => profile.id === user?.id)?.eod_exempt });
 
     if (hasOperatingRole && !ownToday && !ownEodExempt) {
       items.push({

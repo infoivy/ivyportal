@@ -96,7 +96,7 @@ test("Home preserves unavailable operational values and ranks urgent exceptions 
   assert.match(dashboard, /result\.count == null/);
   assert.doesNotMatch(dashboard, /buildActivitySignal|One useful signal|Team pulse|Team · last 7 days/);
   assert.match(dashboard, /select\("user_id, role"\)\.in\("role", \["founder", "cofounder", "setter", "closer", "coach", "csm"\]\)/);
-  assert.match(dashboard, /const reportingUsers = new Set/);
+  assert.match(dashboard, /const rolesByUser = new Map/);
   assert.doesNotMatch(dashboard, /const recentFilers = new Set/);
   assert.match(dashboard, /items\.sort\(\(a, b\) => Number\(b\.urgent\) - Number\(a\.urgent\)\)/);
 });
@@ -181,19 +181,23 @@ test("operational Home, Performance, and directory exclude demo profiles as well
   assert.match(adminConsole, /\.eq\("students\.is_demo", false\)/);
 });
 
-test("founders with reporting roles remain in Home and Performance accountability", () => {
+test("one shared owesEods rule: founders, co-founders, and exempt members owe nothing anywhere", () => {
   const performance = readFileSync(performanceUrl, "utf8");
-  // Staff EOD exemption (founder-directed 2026-07-29): expected filers are
-  // reporting roles ∩ active ∩ not exempt; exemption comes from the STAFF
-  // profile flag plus the founder role, never from student records.
-  assert.match(dashboard, /activeUsers\.has\(id\) && !exemptUsers\.has\(id\)/);
-  assert.match(dashboard, /profile\.eod_exempt === true/);
-  assert.match(dashboard, /row\.role === "founder"/);
+  // Staff EOD exemption (founder-directed 2026-07-29): ONE shared rule,
+  // owesEods (roles ∩ active ∩ not exempt ∩ not founder/cofounder), used by
+  // every expected-filer surface so a toggle can never half-apply.
   assert.ok(existsSync(new URL("supabase/migrations/20260729000000_profiles_eod_exempt.sql", root)));
+  const eodKpiSrc = readFileSync(new URL("src/lib/eod-kpi.ts", root), "utf8");
+  assert.match(eodKpiSrc, /export function owesEods/);
+  assert.match(dashboard, /owesEods\(\{/);
+  assert.match(readFileSync(performanceUrl, "utf8"), /owesEods\(\{/);
   const teamWeekSrc = readFileSync(new URL("src/components/team-week.tsx", root), "utf8");
-  assert.match(teamWeekSrc, /p\.eod_exempt !== true/);
-  assert.match(performance, /const reportingIdSet = new Set\(reportingIds\)/);
-  assert.match(performance, /reportingIdSet\.has\(id\) \|\| !exempt\.has\(id\)/);
+  assert.match(teamWeekSrc, /owesEods\(\{/);
+  assert.doesNotMatch(dashboard, /exemptUsers/);
+  // The old accountability filter let a reporting role OVERRIDE the
+  // founder/cofounder exemption (the half-applied-toggle bug); it must
+  // never come back.
+  assert.doesNotMatch(performance, /reportingIdSet\.has\(id\) \|\| !exempt\.has\(id\)/);
 });
 
 test("Home and Student Success exclude demo students and their dependent records", () => {
