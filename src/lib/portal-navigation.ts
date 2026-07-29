@@ -32,13 +32,7 @@ export const STAFF_ROLES = [
 ] as const;
 
 // Keep these capability sets independent even when their current members overlap.
-// Directory visibility, personal analytics, and account mutation must not drift together.
-// Directory is a leadership surface (founder-directed 2026-07-28).
-export const TEAM_DIRECTORY_ROLES = [
-  "admin",
-  "founder",
-  "cofounder",
-] as const;
+// Personal analytics and account mutation must not drift together.
 // Performance is a leadership view (founder-directed 2026-07-28): reps get
 // their own numbers on Home, not the whole team's accountability.
 export const SELF_PERFORMANCE_ROLES = [
@@ -83,7 +77,6 @@ export const PRIMARY_NAV_ITEMS: PortalNavItem[] = [
       "/action-items",
       "/calendar",
       "/chat",
-      "/directory",
       "/crm",
       "/eods",
       "/revenue",
@@ -143,15 +136,6 @@ export const WORK_NAV_ITEMS: PortalNavItem[] = [
     url: "/action-items",
     icon: ListChecks,
     roles: STAFF_ROLES,
-    group: "work",
-  },
-  {
-    key: "team-directory",
-    title: "Team directory",
-    description: "Read-only names, roles, and current team membership.",
-    url: "/directory",
-    icon: Users,
-    roles: TEAM_DIRECTORY_ROLES,
     group: "work",
   },
   {

@@ -139,17 +139,16 @@ test("Sales dissolved into Performance; the ops strip lives in Team week", () =>
   assert.doesNotMatch(analyticsAlias, /tab: "trends"/);
 });
 
-test("directory, performance, and account administration have independent access models", () => {
+test("directory merged into team administration; performance and account admin stay independent", () => {
+  // Founder-directed 2026-07-29: the read-only directory is gone; /directory
+  // redirects into admin-only /team, which wears the directory look.
   assert.ok(existsSync(directoryUrl));
-  assert.match(navigation, /TEAM_DIRECTORY_ROLES/);
+  assert.match(directory, /redirect\(\{ to: "\/team"/);
+  assert.doesNotMatch(directory, /from\(/);
+  assert.doesNotMatch(navigation, /team-directory|TEAM_DIRECTORY_ROLES/);
   assert.match(navigation, /SELF_PERFORMANCE_ROLES/);
   assert.match(navigation, /ACCOUNT_ADMIN_ROLES/);
-  assert.doesNotMatch(navigation, /TEAM_DIRECTORY_ROLES\s*=\s*STAFF_ROLES/);
   assert.doesNotMatch(navigation, /SELF_PERFORMANCE_ROLES\s*=\s*STAFF_ROLES/);
-  assert.match(navigation, /key: "team-directory"/);
-  assert.match(directory, /from\("profiles"\)/);
-  assert.match(directory, /from\("user_roles"\)/);
-  assert.doesNotMatch(directory, /phone|\.insert\(|\.update\(|\.delete\(/);
 });
 
 test("legacy member analytics resolves to canonical Performance without demo-capable queries", () => {
@@ -170,7 +169,6 @@ test("operational Home, Performance, and directory exclude demo profiles as well
   assert.match(dashboard, /from\("profiles"\)[\s\S]*?\.eq\("is_demo", false\)/);
   assert.match(performance, /from\("profiles"\)[\s\S]*?\.eq\("is_demo", false\)/);
   assert.match(performance, /filter\(\(id\) => profileMap\.has\(id\)\)/);
-  assert.match(directory, /from\("profiles"\)[\s\S]*?\.eq\("is_demo", false\)/);
   assert.match(teamWeek, /from\("profiles"\)[\s\S]{0,160}?\.eq\("is_demo", false\)/);
   assert.match(teamWeek, /from\("eods"\)[\s\S]{0,400}?\.eq\("is_demo", false\)/);
   assert.match(teamAdminRoute, /from\("profiles"\)[^\n]*\.eq\("is_demo", false\)/);

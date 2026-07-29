@@ -163,14 +163,6 @@ function TeamPage() {
   }
 
   const filtered = members.filter(m => (m.display_name ?? "").toLowerCase().includes(q.toLowerCase()));
-  const counts = {
-    total: members.length,
-    admins: members.filter(m => m.roles.includes("admin")).length,
-    coaches: members.filter(m => m.roles.includes("coach")).length,
-    closers: members.filter(m => m.roles.includes("closer")).length,
-    setters: members.filter(m => m.roles.includes("setter")).length,
-    csms: members.filter(m => m.roles.includes("csm")).length,
-  };
 
   return (
     <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-5">
@@ -217,118 +209,77 @@ function TeamPage() {
 
       <InvitationsCard />
 
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
-        <StatTile label="Members" value={counts.total} icon={<Users className="h-3 w-3" />} />
-        <StatTile label="Admins" value={counts.admins} icon={<Shield className="h-3 w-3" />} accent="rose" />
-        <StatTile label="Coaches" value={counts.coaches} icon={<GraduationCap className="h-3 w-3" />} accent="fuchsia" />
-        <StatTile label="Closers" value={counts.closers} icon={<Phone className="h-3 w-3" />} accent="sky" />
-        <StatTile label="Setters" value={counts.setters} icon={<UserCircle2 className="h-3 w-3" />} accent="emerald" />
-        <StatTile label="CSMs" value={counts.csms} icon={<HeartHandshake className="h-3 w-3" />} accent="amber" />
-      </div>
-
       <div className="card-surface overflow-hidden">
-        <div className="grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_auto_auto] items-center px-4 py-2 border-b border-[var(--border)] text-[12px] text-muted-foreground gap-4">
-          <span>Member</span>
-          <span className="hidden sm:block">Roles</span>
-          <span>Actions</span>
-        </div>
-        {filtered.length === 0 && <div className="p-6 text-center text-xs text-muted-foreground">No members match "{q}"</div>}
-        {filtered.map(m => (
-          <div key={m.id} className={`grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[1fr_auto_auto] items-center gap-x-4 gap-y-2 px-4 py-3 border-b border-[var(--accent)] last:border-0 hover:bg-[var(--muted)] transition ${!m.active ? "opacity-50" : ""}`}>
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="h-9 w-9 rounded-sm bg-[var(--accent)] border border-[var(--border)] overflow-hidden flex items-center justify-center text-xs font-semibold text-muted-foreground shrink-0">
+        <div className="divide-y divide-border">
+          {filtered.length === 0 && <div className="p-6 text-center text-xs text-muted-foreground">No members match "{q}"</div>}
+          {filtered.map(m => (
+            <article key={m.id} className={`flex min-h-[76px] items-center gap-3 px-4 py-3.5 sm:min-h-[82px] sm:px-5 ${!m.active ? "opacity-50" : ""}`}>
+              <div className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-muted text-body font-semibold text-foreground">
                 {m.avatar_path && avatarUrls[m.avatar_path]
                   ? <img src={avatarUrls[m.avatar_path]} alt="" className="h-full w-full object-cover" />
-                  : (m.display_name ?? "?").slice(0, 2).toUpperCase()}
+                  : (m.display_name ?? "?").trim().slice(0, 1).toUpperCase()}
               </div>
-              <div className="min-w-0">
-                <div className="text-sm font-medium truncate flex items-center gap-2">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
                   <Link
                     to="/performance"
                     search={{ member: m.id }}
-                    className="hover:underline underline-offset-4 decoration-border hover:decoration-foreground"
+                    className="truncate text-body font-semibold text-foreground hover:underline underline-offset-4 decoration-border hover:decoration-foreground"
                     title="Open Performance"
                   >
                     {m.display_name ?? "Unnamed"}
                   </Link>
-                  {!m.active && <span className="text-[9px] text-danger-fg border border-danger/25 bg-danger-bg px-1.5 py-0.5 rounded-sm">Inactive</span>}
-                  <button onClick={() => setEditing(m)} className="text-muted-foreground hover:text-foreground"><Pencil className="h-3 w-3" /></button>
+                  {!m.active && <span className="text-[9px] text-danger-fg border border-danger/25 bg-danger-bg px-1.5 py-0.5 rounded-full">Inactive</span>}
+                  {m.eod_exempt && <span className="text-[9px] text-muted-foreground border border-border bg-muted px-1.5 py-0.5 rounded-full">EOD exempt</span>}
                 </div>
-                <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-caption text-muted-foreground">
+                  <span className="capitalize">{m.roles.map(roleLabel).join(" · ") || "No roles yet"}</span>
                   {m.roles.includes("setter") && m.setter_type && (
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm border border-success/25 bg-success-bg text-success-fg">
-                      {m.setter_type === "phone" ? "Phone setter" : m.setter_type === "full_cycle" ? "Full cycle" : "DM setter"}
-                    </span>
+                    <span>· {m.setter_type === "phone" ? "phone" : m.setter_type === "full_cycle" ? "full cycle" : "DM"}</span>
                   )}
                   {m.timezone ? (
-                    <span className="tabular-nums" title={m.timezone.replace(/_/g, " ")}>
-                      {timeIn(m.timezone, new Date())} local
-                    </span>
+                    <span className="tabular-nums" title={m.timezone.replace(/_/g, " ")}>· {timeIn(m.timezone, new Date())} local</span>
                   ) : (
-                    <span className="italic opacity-70">no timezone yet</span>
-                  )}
-                  {m.roles.length === 0 && (
-                    <span className="italic">No roles assigned</span>
+                    <span className="italic opacity-70">· no timezone yet</span>
                   )}
                   {(() => {
                     const pct = memberOnboardingPct(m);
                     if (pct === null) return null;
-                    const color = pct === 100 ? "text-success-fg border-success/25 bg-success-bg"
-                      : pct >= 50 ? "text-warning-fg border-warning/25 bg-warning-bg"
-                      : "text-danger-fg border-danger/25 bg-danger-bg";
-                    return (
-                      <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm border ${color}`} title="Onboarding progress">
-                        <GraduationCap className="h-2.5 w-2.5" /> {pct}%
-                      </span>
-                    );
+                    const color = pct === 100 ? "text-success-fg" : pct >= 50 ? "text-warning-fg" : "text-danger-fg";
+                    return <span className={color} title="Onboarding progress">· onboarding {pct}%</span>;
                   })()}
                 </div>
               </div>
-            </div>
-            <div className="col-span-2 sm:col-span-1 order-last sm:order-none flex gap-1.5 flex-wrap justify-start sm:justify-end">
-              {ROLES.filter(r => m.roles.includes(r.key)).map(r => {
-                const Icon = r.icon;
-                return (
-                  <span
-                    key={r.key}
-                    className={`inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-sm border ${r.color}`}
-                  >
-                    <Icon className="h-3 w-3" />
-                    {roleLabel(r.key)}
-                  </span>
-                );
-              })}
-              {m.roles.length === 0 && (
+              <div className="flex shrink-0 items-center gap-1">
                 <button
                   onClick={() => setEditing(m)}
-                  className="text-[10px] px-2 py-1 rounded-sm border border-dashed border-[var(--border)] text-muted-foreground hover:text-foreground"
+                  title="Edit roles & profile"
+                  className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted motion-safe:transition-colors"
                 >
-                  Assign roles
+                  <Pencil className="h-4 w-4" />
                 </button>
-              )}
-            </div>
-            <div className="flex items-center gap-1">
-              {m.id !== user?.id && (
-                <>
-                  <button
-                    onClick={() => toggleActive(m)}
-                    title={m.active ? "Deactivate (block login)" : "Reactivate"}
-                    className={`p-1.5 rounded-sm border ${m.active ? "border-[var(--border)] text-muted-foreground hover:text-warning-fg hover:border-warning/25" : "border-success/25 text-success-fg hover:bg-success-bg"}`}
-                  >
-                    {m.active ? <PowerOff className="h-3.5 w-3.5" /> : <Power className="h-3.5 w-3.5" />}
-                  </button>
-                  <button
-                    onClick={() => deleteMember(m)}
-                    title="Permanently delete"
-                    className="p-1.5 rounded-sm border border-[var(--border)] text-muted-foreground hover:text-danger-fg hover:border-danger/25"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-        ))}
+                {m.id !== user?.id && (
+                  <>
+                    <button
+                      onClick={() => toggleActive(m)}
+                      title={m.active ? "Deactivate (block login)" : "Reactivate"}
+                      className={`p-2 rounded-md motion-safe:transition-colors ${m.active ? "text-muted-foreground hover:text-warning-fg hover:bg-muted" : "text-success-fg hover:bg-success-bg"}`}
+                    >
+                      {m.active ? <PowerOff className="h-4 w-4" /> : <Power className="h-4 w-4" />}
+                    </button>
+                    <button
+                      onClick={() => deleteMember(m)}
+                      title="Permanently delete"
+                      className="p-2 rounded-md text-muted-foreground hover:text-danger-fg hover:bg-danger-bg motion-safe:transition-colors"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </>
+                )}
+              </div>
+            </article>
+          ))}
+        </div>
       </div>
 
       {editing && (
@@ -532,21 +483,6 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
           </button>
         </div>
       </div>
-    </div>
-  );
-}
-
-function StatTile({ label, value, icon, accent }: { label: string; value: number; icon: React.ReactNode; accent?: "emerald" | "sky" | "rose" | "fuchsia" | "amber" }) {
-  const color =
-    accent === "emerald" ? "text-success-fg" :
-    accent === "sky" ? "text-muted-foreground" :
-    accent === "rose" ? "text-danger-fg" :
-    accent === "amber" ? "text-warning-fg" :
-    accent === "fuchsia" ? "text-muted-foreground" : "text-foreground";
-  return (
-    <div className="card-surface p-3">
-      <div className="flex items-center gap-1 text-[12px] text-muted-foreground mb-1">{icon}{label}</div>
-      <div className="text-[20px] font-semibold tabular-nums text-foreground">{value}</div>
     </div>
   );
 }
