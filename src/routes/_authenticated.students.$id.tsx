@@ -368,7 +368,7 @@ function StudentDetail() {
           </div>
           <div className="flex-1 min-w-[240px]">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl font-semibold flex items-center gap-2.5">
+              <h1 className="text-display text-foreground flex items-center gap-2.5">
                 <EditableName
                   value={student.full_name}
                   canEdit={canManage || roles.includes("closer")}

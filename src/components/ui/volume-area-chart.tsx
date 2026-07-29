@@ -1,4 +1,5 @@
 import { ResponsiveContainer, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export type VolumeSeries = {
   key: string;
@@ -27,6 +28,12 @@ export function VolumeAreaChart({
 }) {
   const gridColor = "var(--color-border)";
   const tickColor = "var(--color-muted-foreground)";
+  // Phones get a shorter plot, thinned date labels, and no dot clutter — the
+  // desktop chart squeezed into 375px read as cramped (founder 2026-07-29).
+  const isMobile = useIsMobile();
+  const chartHeight = isMobile ? Math.min(height, 200) : height;
+  const xInterval = isMobile ? ("preserveStartEnd" as const) : (data.length > 40 ? ("preserveStartEnd" as const) : 0);
+  const dots = showDots && !isMobile;
 
   const tooltipProps = {
     contentStyle: {
@@ -43,7 +50,7 @@ export function VolumeAreaChart({
   // degenerates to floating dots. Render grouped bars instead.
   if (data.length === 1) {
     return (
-      <div className="w-full" style={{ height }}>
+      <div className="w-full" style={{ height: chartHeight }}>
         <ResponsiveContainer>
           <BarChart data={data} margin={{ top: 10, right: 12, left: -10, bottom: 0 }} barCategoryGap="28%">
             <CartesianGrid strokeDasharray="2 4" stroke={gridColor} vertical={false} />
@@ -69,9 +76,9 @@ export function VolumeAreaChart({
   }
 
   return (
-    <div className="w-full" style={{ height }}>
+    <div className="w-full" style={{ height: chartHeight }}>
       <ResponsiveContainer>
-        <AreaChart data={data} margin={{ top: 10, right: 12, left: -10, bottom: 0 }}>
+        <AreaChart data={data} margin={{ top: 10, right: isMobile ? 6 : 12, left: isMobile ? -16 : -10, bottom: 0 }}>
           <defs>
             {series.map(s => (
               <linearGradient key={s.key} id={`grad-${s.key}`} x1="0" y1="0" x2="0" y2="1">
@@ -83,17 +90,18 @@ export function VolumeAreaChart({
           <CartesianGrid strokeDasharray="2 4" stroke={gridColor} vertical={false} />
           <XAxis
             dataKey={xKey}
-            tick={{ fontSize: 11, fill: tickColor }}
+            tick={{ fontSize: isMobile ? 10 : 11, fill: tickColor }}
             tickLine={false}
             axisLine={false}
             tickMargin={8}
+            interval={xInterval}
           />
           <YAxis
             tick={{ fontSize: 11, fill: tickColor }}
             tickLine={false}
             axisLine={false}
             tickCount={yTickCount}
-            width={38}
+            width={isMobile ? 32 : 38}
           />
           <Tooltip {...tooltipProps} cursor={{ stroke: "var(--color-border)", strokeWidth: 1 }} />
           {series.map(s => (
@@ -108,7 +116,7 @@ export function VolumeAreaChart({
               strokeLinecap="round"
               fill={s.ghost ? "none" : `url(#grad-${s.key})`}
               fillOpacity={s.ghost ? 0 : 1}
-              dot={showDots && !s.ghost ? { r: 2.75, strokeWidth: 0, fill: s.color } : false}
+              dot={dots && !s.ghost ? { r: 2.75, strokeWidth: 0, fill: s.color } : false}
               activeDot={s.ghost ? false : { r: 3, strokeWidth: 0, fill: s.color }}
               isAnimationActive={false}
             />

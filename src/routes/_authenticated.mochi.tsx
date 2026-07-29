@@ -1,24 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Instagram } from "lucide-react";
-import { useAuth } from "@/lib/auth-context";
-import { MochiCrmInner } from "@/components/mochi-crm";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
+// The standalone Mochi page merged into the CRM page's Mochi view long ago;
+// this stub catches old bookmarks (portal sweep 2026-07-29).
 export const Route = createFileRoute("/_authenticated/mochi")({
-  head: () => ({ meta: [{ title: "Instagram CRM · ISA Portal" }] }),
-  component: MochiPage,
+  beforeLoad: () => {
+    throw redirect({ to: "/crm", replace: true });
+  },
 });
-
-function MochiPage() {
-  const { roles } = useAuth();
-  const canView = roles.includes("admin") || roles.includes("founder");
-  if (!canView) {
-    return (
-      <div className="p-8 max-w-md mx-auto text-center space-y-2">
-        <Instagram className="h-8 w-8 mx-auto text-muted-foreground" />
-        <div className="text-title">Instagram CRM</div>
-        <p className="text-caption text-muted-foreground">Admin or founder access required.</p>
-      </div>
-    );
-  }
-  return <MochiCrmInner />;
-}

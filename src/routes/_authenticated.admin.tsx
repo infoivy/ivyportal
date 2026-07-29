@@ -332,7 +332,7 @@ function AdminConsole() {
                 <Save className="h-3.5 w-3.5 mr-1" /> Save goal
               </Button>
             </div>
-            <p className="text-[10px] text-muted-foreground">Shown on the Founder HQ command view progress bar.</p>
+            <p className="text-[10px] text-muted-foreground">Feeds the goal and pace line on the Finance cash card.</p>
           </div>
 
           {/* Quarterly team goals */}
@@ -375,15 +375,15 @@ function AdminConsole() {
           </div>
 
           {/* Weekly group coaching call names — the student weekly EOD checklist */}
-          <div className="space-y-2 py-3 border-t border-border">
+          <div className="py-3 border-t border-border">
             <Label className="text-xs">Group coaching calls (Mon–Sun)</Label>
-            <p className="text-[10px] text-muted-foreground">
+            <p className="mt-1 text-[10px] text-muted-foreground">
               Names only, no times · students tick these off in their weekly EOD. Keep them matching the Skool calendar.
             </p>
-            <div className="grid sm:grid-cols-2 gap-2">
+            <div className="mt-3 grid sm:grid-cols-2 gap-2">
               {callSchedule.map((call, i) => (
                 <div key={call.day} className="flex items-center gap-2">
-                  <span className="w-9 text-[10px] uppercase tracking-wider text-muted-foreground shrink-0">{call.day}</span>
+                  <span className="w-10 text-[10px] uppercase tracking-wider text-muted-foreground shrink-0">{call.day}</span>
                   <Input
                     value={call.name}
                     onChange={e => setCallSchedule(cs => cs.map((c, j) => j === i ? { ...c, name: e.target.value } : c))}
@@ -394,6 +394,7 @@ function AdminConsole() {
             </div>
             <Button
               size="sm"
+              className="mt-4"
               disabled={savingSettings || !orgSettingsId || callSchedule.some(c => !c.name.trim())}
               onClick={async () => {
                 if (!orgSettingsId) return;

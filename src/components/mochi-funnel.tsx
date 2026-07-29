@@ -67,7 +67,7 @@ export function MochiFunnel({ pipeline }: { pipeline: { stage: string; count: nu
   return (
     <div>
       {/* Stage columns */}
-      <div className="grid grid-cols-5">
+      <div className="grid grid-cols-2 sm:grid-cols-5">
         {STAGES.map((s, i) => (
           <div key={s.key} className={`px-3 py-2 ${i > 0 ? "border-l border-border/60" : ""}`}>
             <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">

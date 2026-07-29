@@ -91,8 +91,10 @@ export function DocShell({
           {actions && <div className="flex items-center gap-2 shrink-0">{actions}</div>}
         </header>
 
-        <div className="grid gap-8 lg:grid-cols-[220px_minmax(0,1fr)]">
-          <aside className="hidden lg:block">
+        <div className={sections.length > 0 ? "grid gap-8 lg:grid-cols-[220px_minmax(0,1fr)]" : ""}>
+          {/* No sections (e.g. an embedded live doc) → no empty rail: content
+              takes the full width instead of loading "on the right side". */}
+          <aside className={sections.length > 0 ? "hidden lg:block" : "hidden"}>
             <nav className="sticky top-4 space-y-1">
               {sections.map((s) => {
                 const isActive = active === s.id;

@@ -325,7 +325,7 @@ export function CashInCalendarCard({ foundersOnly = false }: { foundersOnly?: bo
               <button
                 key={day}
                 onClick={() => setSelected(isSel ? null : day)}
-                className={`min-h-[64px] rounded-md border p-1.5 text-left align-top motion-safe:transition-colors ${
+                className={`min-h-[52px] sm:min-h-[64px] rounded-md border p-1 sm:p-1.5 text-left align-top motion-safe:transition-colors ${
                   isSel ? "border-primary/40 bg-primary/10"
                   : v ? (overdue ? "border-danger/25 bg-danger-bg hover:bg-danger-bg/70" : v.expected > 0 ? "border-warning/25 bg-warning-bg/60 hover:bg-warning-bg" : "border-success/25 bg-success-bg/60 hover:bg-success-bg")
                   : out ? "border-danger/20 bg-danger-bg/40 hover:bg-danger-bg/60"

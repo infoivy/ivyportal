@@ -379,7 +379,7 @@ function FinanceInner() {
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Scheduled installment revenue chart */}
         <div className="card-surface p-5">
-          <div className="flex items-center justify-between gap-2 mb-1">
+          <div className="flex items-center justify-between gap-2 mb-2.5">
             <h2 className="text-sm font-semibold">Scheduled installment revenue</h2>
             <span className="flex items-center gap-1">
               <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setMrrPage(p => p - 1)} aria-label="Previous 6 months"><ChevronLeft className="h-3.5 w-3.5" /></Button>
@@ -389,11 +389,11 @@ function FinanceInner() {
               <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setMrrPage(p => p + 1)} aria-label="Next 6 months"><ChevronRight className="h-3.5 w-3.5" /></Button>
             </span>
           </div>
-          <div className="text-[28px] font-medium tabular-nums tracking-[-0.02em]">{calc ? money(calc.mrrNow.value) : "–"}</div>
-          <div className="text-caption text-muted-foreground mb-3">
+          <div className="text-[28px] font-medium tabular-nums tracking-[-0.02em] leading-none">{calc ? money(calc.mrrNow.value) : "–"}</div>
+          <div className="mt-1.5 text-caption text-muted-foreground">
             {calc ? `${money(calc.mrrNow.collected)} collected · ${money(calc.mrrNow.value - calc.mrrNow.collected)} still due · paid installments stay counted` : ""}
           </div>
-          <div className="h-40">
+          <div className="mt-3 h-40">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={calc?.mrrSeries ?? []} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
                 <defs>

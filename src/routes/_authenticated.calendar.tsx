@@ -483,7 +483,7 @@ function CalendarPage() {
                 <div key={d} className="px-2 py-2 text-[11px] uppercase tracking-wide text-muted-foreground text-center">{d}</div>
               ))}
             </div>
-            <div className="grid grid-cols-7" style={{ gridAutoRows: "minmax(118px, 1fr)", minHeight: "60vh" }}>
+            <div className="grid grid-cols-7" style={{ gridAutoRows: isMobile ? "minmax(84px, 1fr)" : "minmax(118px, 1fr)", minHeight: isMobile ? "48vh" : "60vh" }}>
               {Array.from({ length: Math.round((monthGridEnd.getTime() - monthGridStart.getTime()) / 86400000) + 1 }, (_, i) => addDays(monthGridStart, i)).map((day, i) => {
                 const inMonth = day.getMonth() === monthAnchor.getMonth();
                 const isToday = isSameDay(day, toLocal(new Date()));

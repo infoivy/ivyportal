@@ -165,7 +165,7 @@ function TestimonialsPage() {
       <StudentsTabBar />
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Testimonials</h1>
+          <h1 className="text-display text-foreground">Testimonials</h1>
           <p className="text-sm text-muted-foreground mt-1">Social proof library · video, image, text, and Trustpilot.</p>
         </div>
         <div className="flex gap-2">

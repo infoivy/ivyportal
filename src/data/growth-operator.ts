@@ -628,6 +628,5 @@ export const FUNNEL_STAGE_CHECKS: StageCheck[] = [
   },
 ];
 
-export const CONTENT_PLAN_URL = "https://portal.ivysalesacademy.com/content?tab=plan";
 export const DOCTRINE_NOTE =
   "Doctrine: Documents/knowledge/IVY_OPERATING_BIBLE.md · Catalog: GA_SOURCE_CATALOG.md";

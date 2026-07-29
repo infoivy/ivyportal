@@ -377,7 +377,7 @@ function CsmPage() {
           <div className="flex items-center gap-2 text-[10px] text-warning-fg mb-1">
             <HeartHandshake className="h-3 w-3" /> Client success
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight">CSM Workspace</h1>
+          <h1 className="text-display text-foreground">CSM Workspace</h1>
           <p className="text-xs text-muted-foreground mt-0.5">Tally today's work, chase accountability, log notes.</p>
         </div>
         <button onClick={submitCsmEod} className="inline-flex items-center gap-1.5 h-8 px-3 rounded-sm bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium">
