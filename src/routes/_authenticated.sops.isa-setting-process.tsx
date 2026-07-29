@@ -1,5 +1,6 @@
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth-context";
+import { DmMasteryBoard } from "@/components/dm-mastery-board";
 import { TransformWrapper, TransformComponent, useControls, useTransformEffect, type ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
 import React, { useRef, useState, useEffect, useCallback, useMemo, useDeferredValue } from "react";
 import { type TabId } from "@/data/content";
@@ -10,10 +11,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/sops/isa-setting-process")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    mode: search.mode === "dm" ? ("dm" as const) : undefined,
+  }),
   head: () => ({
     meta: [
-      { title: "Ivy Sales Academy · Setting Mastery" },
-      { name: "description", content: "Complete system: conversation flows, scripts, objection handling, psychology, engagement & operations" },
+      { title: "Ivy Sales Academy · Setting Process" },
+      { name: "description", content: "The complete setting system: workflow, script library, and the DM mastery board · conversations, qualification, objections, psychology, and operations" },
     ],
   }),
   component: SettingProcessGate,
@@ -69,7 +73,7 @@ const SEARCH_TAGS: Record<TabId, string[]> = {
   pacing: ["pacing", "ops", "operations", "schedule", "tracking", "crm", "targets", "kpi", "metrics", "daily", "sunday", "non-negotiable", "personality", "empathy phrases", "handoff", "closer", "benchmark", "stats", "feedback"],
 };
 
-type PageMode = "workflow" | "library";
+type PageMode = "workflow" | "library" | "dm";
 type WorkflowCardRef = { section: TabId; title: string; label?: string };
 type WorkflowStep = {
   id: string;
@@ -294,7 +298,7 @@ function Toolbar({ dark, setDark, onNotes, counter, setCounter, onReset, onHelp 
   );
 }
 
-function Header({ onJumpGroup, onOpenWorkflow, query, setQuery, innerRef }: { onJumpGroup: (id: string) => void; onOpenWorkflow: () => void; query: string; setQuery: (v: string) => void; innerRef?: React.RefObject<HTMLDivElement | null> }) {
+function Header({ onJumpGroup, onOpenWorkflow, onOpenDm, query, setQuery, innerRef }: { onJumpGroup: (id: string) => void; onOpenWorkflow: () => void; onOpenDm: () => void; query: string; setQuery: (v: string) => void; innerRef?: React.RefObject<HTMLDivElement | null> }) {
   return (
     <div ref={innerRef} className="fixed top-0 left-0 right-0 z-40 px-3 sm:px-6 py-2 sm:py-3 bg-background/95 backdrop-blur-md border-b border-border shadow-sm">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 sm:gap-3">
@@ -307,6 +311,7 @@ function Header({ onJumpGroup, onOpenWorkflow, query, setQuery, innerRef }: { on
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <button onClick={onOpenWorkflow} className="px-2.5 sm:px-3 py-2 rounded-md border border-border bg-card text-xs font-semibold hover:bg-muted transition" type="button">← Workflow</button>
+          <button onClick={onOpenDm} className="hidden sm:block px-2.5 sm:px-3 py-2 rounded-md border border-border bg-card text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition" type="button">DM Board</button>
           <div className="relative">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
               <circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/>
@@ -377,7 +382,7 @@ function Header({ onJumpGroup, onOpenWorkflow, query, setQuery, innerRef }: { on
   );
 }
 
-function WorkflowHeader({ onJump, onOpenLibrary, guideCollapsed, onToggleGuide, innerRef }: { onJump: (id: string) => void; onOpenLibrary: () => void; guideCollapsed: boolean; onToggleGuide: () => void; innerRef?: React.RefObject<HTMLDivElement | null> }) {
+function WorkflowHeader({ onJump, onOpenLibrary, onOpenDm, guideCollapsed, onToggleGuide, innerRef }: { onJump: (id: string) => void; onOpenLibrary: () => void; onOpenDm: () => void; guideCollapsed: boolean; onToggleGuide: () => void; innerRef?: React.RefObject<HTMLDivElement | null> }) {
   return (
     <header ref={innerRef} className="fixed top-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-md border-b border-border shadow-sm">
       <div className="px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
@@ -393,6 +398,7 @@ function WorkflowHeader({ onJump, onOpenLibrary, guideCollapsed, onToggleGuide, 
           <div className="flex items-center gap-1 rounded-lg border border-border bg-muted/50 p-1">
             <span className="px-3 py-2 rounded-md bg-background shadow-sm text-xs font-semibold text-foreground">Workflow</span>
             <button onClick={onOpenLibrary} className="px-3 py-2 rounded-md text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-background/70 transition" type="button">Script Library</button>
+            <button onClick={onOpenDm} className="px-3 py-2 rounded-md text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-background/70 transition" type="button">DM Board</button>
           </div>
         </div>
       </div>
@@ -963,7 +969,8 @@ function Index() {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const headerRef = useRef<HTMLDivElement | null>(null);
   const [headerH, setHeaderH] = useState(HEADER_HEIGHT_DESKTOP);
-  const [mode, setMode] = useState<PageMode>("workflow");
+  const initialMode = Route.useSearch().mode;
+  const [mode, setMode] = useState<PageMode>(initialMode === "dm" ? "dm" : "workflow");
   const [guideCollapsed, setGuideCollapsed] = useState(false);
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
@@ -1087,11 +1094,15 @@ function Index() {
     return () => window.removeEventListener("keydown", onKey);
   }, [helpOpen, notesOpen, query]);
 
+  if (mode === "dm") {
+    return <DmMasteryBoard onExit={() => setMode("workflow")} />;
+  }
+
   if (mode === "workflow") {
     return (
       <div ref={containerRef} className="relative min-h-screen bg-background">
         <WorkflowView headerH={headerH} guideCollapsed={guideCollapsed} />
-        <WorkflowHeader innerRef={headerRef} onJump={jumpToWorkflow} onOpenLibrary={() => setMode("library")} guideCollapsed={guideCollapsed} onToggleGuide={() => setGuideCollapsed(value => !value)} />
+        <WorkflowHeader innerRef={headerRef} onJump={jumpToWorkflow} onOpenLibrary={() => setMode("library")} onOpenDm={() => setMode("dm")} guideCollapsed={guideCollapsed} onToggleGuide={() => setGuideCollapsed(value => !value)} />
         <NotesModal open={notesOpen} onClose={() => setNotesOpen(false)} counter={counter} setCounter={setCounter} />
         <HelpOverlay open={helpOpen} onClose={() => setHelpOpen(false)} />
       </div>
@@ -1101,7 +1112,7 @@ function Index() {
   return (
     <div ref={containerRef} className="relative min-h-screen bg-background">
       <LibraryView headerH={headerH} matched={matched} query={deferredQuery} />
-      <Header innerRef={headerRef} onJumpGroup={jumpToLibraryGroup} onOpenWorkflow={() => setMode("workflow")} query={query} setQuery={setQuery} />
+      <Header innerRef={headerRef} onJumpGroup={jumpToLibraryGroup} onOpenWorkflow={() => setMode("workflow")} onOpenDm={() => setMode("dm")} query={query} setQuery={setQuery} />
       <MobileToolbar dark={dark} setDark={setDark} onNotes={() => setNotesOpen(true)} counter={counter} setCounter={setCounter} onHelp={() => setHelpOpen(true)} />
       <NotesModal open={notesOpen} onClose={() => setNotesOpen(false)} counter={counter} setCounter={setCounter} />
       <HelpOverlay open={helpOpen} onClose={() => setHelpOpen(false)} />

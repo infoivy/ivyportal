@@ -183,18 +183,11 @@ function KnowledgeIndex() {
               (roles.includes("admin") || roles.includes("setter"))
                 ? [
                     {
-                      key: "isa-setting-process",
-                      title: "ISA Setting Process",
+                      key: "setting-process",
+                      title: "Setting Process",
                       description:
-                        "The full 8-stage setting system: openers, conversation flow, objection handling, follow-ups, psychology, engagement, and ops.",
+                        "The complete setting system in one place: guided workflow, the full script library, and the DM mastery board · openers, qualification, objections, follow-ups, psychology, and ops.",
                       to: "/sops/isa-setting-process",
-                    },
-                    {
-                      key: "dm-setting-mastery",
-                      title: "DM Setting Mastery",
-                      description:
-                        "The DM setting canvas: ICP and lead types, the 8 stages, inbound and outbound scripts, objection library, booking, and closer handoff.",
-                      to: "/sops/dm-setting-mastery",
                     },
                   ]
                 : [];
