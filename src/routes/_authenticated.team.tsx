@@ -18,6 +18,7 @@ import { deleteTeamMember, setMemberActive, approveAsStudent } from "@/lib/team-
 import { fetchAllTemplates, progressPercent, type OnboardingTemplate } from "@/lib/onboarding";
 import { InvitationsCard, InviteModal, ROLES, roleLabel, type AppRole, type SetterType } from "@/components/invite-modal";
 import { TeamActivityLog } from "@/components/team-activity-log";
+import { AvatarCropDialog } from "@/components/avatar-crop-dialog";
 import { formatDistanceToNowStrict } from "date-fns";
 
 export const Route = createFileRoute("/_authenticated/team")({
@@ -346,18 +347,25 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
     await onToggleRole(member.id, role, has);
   };
 
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [cropFile, setCropFile] = useState<File | null>(null);
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
+    if (fileRef.current) fileRef.current.value = "";
     if (!f) return;
-    if (f.size > 5 * 1024 * 1024) return toast.error("Max 5MB");
+    if (f.size > 10 * 1024 * 1024) return toast.error("Max 10MB");
+    setCropFile(f);
+  };
+  const uploadCropped = async (f: File) => {
     setUploading(true);
     try {
       const path = await uploadAvatar(member.id, f);
       setAvatarPath(path);
-      const { data } = await supabase.storage.from("avatars").createSignedUrl(path, 60 * 60);
-      setAvatarPreview(data?.signedUrl ?? null);
-    } catch (err: any) { toast.error(err.message); }
-    finally { setUploading(false); if (fileRef.current) fileRef.current.value = ""; }
+      setAvatarPreview(URL.createObjectURL(f));
+      setCropFile(null);
+      toast.success("Photo updated · save to keep it");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed");
+    } finally { setUploading(false); }
   };
 
   const save = async () => {
@@ -386,6 +394,7 @@ function EditProfileModal({ member, initialUrl, onToggleRole, onClose, onSaved }
 
   return (
     <div className="fixed inset-0 overflow-y-auto z-50 bg-black/60 backdrop-blur-sm flex p-4" onClick={onClose}>
+      {cropFile && <AvatarCropDialog file={cropFile} onCancel={() => setCropFile(null)} onCropped={uploadCropped} />}
       <div className="m-auto bg-[var(--card)] border border-[var(--border)] rounded-sm max-w-md w-full p-5 space-y-4" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold">Edit member profile</h2>

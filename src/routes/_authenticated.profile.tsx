@@ -12,6 +12,7 @@ import { signAvatar, uploadAvatar } from "@/lib/avatars";
 import { syncStudentTimezone } from "@/lib/student-timezone.functions";
 import { TimezoneCombobox } from "@/components/ui/timezone-combobox";
 import { PhoneInput, isValidPhoneNumber } from "@/components/ui/phone-input";
+import { AvatarCropDialog } from "@/components/avatar-crop-dialog";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({ meta: [{ title: "Profile · ISA" }] }),
@@ -32,6 +33,7 @@ function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [emailOpen, setEmailOpen] = useState(false);
+  const [cropFile, setCropFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const isTeam = roles.some(r => ["admin", "founder", "cofounder", "closer", "setter", "coach", "csm"].includes(r));
 
@@ -50,10 +52,17 @@ function ProfilePage() {
       });
   }, [user]);
 
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
+    if (fileRef.current) fileRef.current.value = "";
     if (!f || !user) return;
-    if (f.size > 5 * 1024 * 1024) return toast.error("Max 5MB");
+    if (f.size > 10 * 1024 * 1024) return toast.error("Max 10MB");
+    // Crop first (founder 2026-07-29): pick the visible area, then upload.
+    setCropFile(f);
+  };
+
+  const uploadCropped = async (f: File) => {
+    if (!user) return;
     setUploading(true);
     try {
       const path = await uploadAvatar(user.id, f);
@@ -61,12 +70,12 @@ function ProfilePage() {
       if (error) throw error;
       setAvatarPath(path);
       setAvatarSignedUrl(await signAvatar(path));
+      setCropFile(null);
       toast.success("Avatar updated");
     } catch (err: any) {
       toast.error(err.message);
     } finally {
       setUploading(false);
-      if (fileRef.current) fileRef.current.value = "";
     }
   };
 
@@ -111,6 +120,10 @@ function ProfilePage() {
           </button>
         ))}
       </div>
+
+      {cropFile && (
+        <AvatarCropDialog file={cropFile} onCancel={() => setCropFile(null)} onCropped={uploadCropped} />
+      )}
 
       {tab === "profile" ? (
         <section className="card-surface overflow-hidden">
