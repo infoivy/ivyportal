@@ -4,7 +4,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { invalidateForTables } from "@/lib/query-keys";
 import { useAuth } from "@/lib/auth-context";
-import { getFinanceRevenue } from "@/lib/mochi.functions";
+import { useServerFn } from "@tanstack/react-start";
+import { getFinanceRevenue, findWhopMatch } from "@/lib/mochi.functions";
 import { calcMonthPayouts } from "@/lib/payouts-calc";
 import { RevenueTabBar } from "@/components/revenue-tab-bar";
 import { ExpenseModal } from "@/components/expense-modal";
@@ -22,6 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DateField } from "@/components/ui/date-field";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { SelectField } from "@/components/ui/select-field";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
 export const Route = createFileRoute("/_authenticated/finance")({
@@ -34,7 +36,11 @@ type Expense = {
   due_day: number | null; one_off_date: string | null; category: string | null;
   notes: string | null; active: boolean;
 };
-type Payment = { amount: number; due_date: string; status: string };
+type Payment = {
+  id?: string; installment_id?: string; sequence?: number;
+  amount: number; due_date: string; status: string;
+  installments?: { student_name: string | null } | null;
+};
 
 // Profit split after expenses — the agreed structure.
 const SPLIT = [
@@ -81,7 +87,7 @@ function FinanceInner() {
       const [expensesRes, dealsRes, paysRes, futurePaysRes, settingsRes, paidRes, instRes, profRes, ratesRes, cofRes] = await Promise.all([
         supabase.from("business_expenses").select("*").order("recurring", { ascending: false }).order("due_day"),
         supabase.from("deals").select("id, closer_id, setter_id, cash_collected_upfront, deal_date").eq("is_demo", false).gte("deal_date", iso(monthStart)).lte("deal_date", iso(monthEnd)),
-        supabase.from("installment_payments").select("amount, due_date, status, installments!inner(students!inner(is_demo))").eq("installments.students.is_demo", false).gte("due_date", iso(monthStart)).lte("due_date", iso(monthEnd)),
+        supabase.from("installment_payments").select("id, installment_id, sequence, amount, due_date, status, installments!inner(student_name, students!inner(is_demo))").eq("installments.students.is_demo", false).gte("due_date", iso(monthStart)).lte("due_date", iso(monthEnd)),
         supabase.from("installment_payments").select("amount, due_date, status, installments!inner(students!inner(is_demo))").eq("installments.students.is_demo", false).neq("status", "waived").gte("due_date", iso(mrrFrom)).lte("due_date", iso(mrrTo)),
         supabase.from("founder_settings").select("id, processor_balance, processor_balance_updated_at, monthly_cash_goal, base_pay_day").maybeSingle(),
         supabase.from("installment_payments").select("amount, paid_at, installment_id, installments!inner(students!inner(is_demo))").eq("installments.students.is_demo", false).eq("status", "paid").gte("paid_at", iso(monthStart) + "T00:00:00").lte("paid_at", iso(monthEnd) + "T23:59:59").not("paid_at", "is", null),
@@ -98,8 +104,8 @@ function FinanceInner() {
       return {
         expenses: (expensesRes.data ?? []) as Expense[],
         deals: (dealsRes.data ?? []) as { id: string; closer_id: string | null; setter_id: string | null; cash_collected_upfront: number; deal_date: string }[],
-        monthPays: (paysRes.data ?? []) as Payment[],
-        futurePays: (futurePaysRes.data ?? []) as Payment[],
+        monthPays: (paysRes.data ?? []) as unknown as Payment[],
+        futurePays: (futurePaysRes.data ?? []) as unknown as Payment[],
         settings: settingsRes.data as { id: string; processor_balance: number | null; processor_balance_updated_at: string | null; monthly_cash_goal: number | null } | null,
         paidPays: (paidRes.data ?? []) as { amount: number; paid_at: string | null; installment_id: string }[],
         installments: (instRes.data ?? []) as { id: string; setter_id: string | null; closer_id: string | null }[],
@@ -172,16 +178,16 @@ function FinanceInner() {
     const profitProjected = projectedIn - expensesTotal;
 
     // day-by-day flow for the rest of the month (projection = scheduled items only)
-    const flow: { date: string; label: string; amount: number; kind: "in" | "out" }[] = [];
+    const flow: { date: string; label: string; amount: number; kind: "in" | "out"; pay?: Payment; expense?: Expense; basePay?: boolean }[] = [];
     d.monthPays
       .filter(p => p.status === "upcoming" && (!isCurrentMonth || p.due_date >= today))
-      .forEach(p => flow.push({ date: p.due_date, label: "Installment due", amount: Number(p.amount), kind: "in" }));
+      .forEach(p => flow.push({ date: p.due_date, label: `${p.installments?.student_name ?? "Installment"} · #${p.sequence ?? "?"} due`, amount: Number(p.amount), kind: "in", pay: p }));
     monthExpenses
       .filter(e => !isCurrentMonth || e.date >= today)
-      .forEach(e => flow.push({ date: e.date, label: e.name, amount: Number(e.amount), kind: "out" }));
+      .forEach(e => flow.push({ date: e.date, label: e.name, amount: Number(e.amount), kind: "out", expense: e }));
     basePayRows
       .filter(b => !isCurrentMonth || b.date >= today)
-      .forEach(b => flow.push({ date: b.date, label: `${b.name} · base pay`, amount: b.amount, kind: "out" }));
+      .forEach(b => flow.push({ date: b.date, label: `${b.name} · base pay`, amount: b.amount, kind: "out", basePay: true }));
     flow.sort((a, b) => a.date.localeCompare(b.date) || (a.kind === "in" ? -1 : 1));
 
     const startBalance = d.settings?.processor_balance != null ? Number(d.settings.processor_balance) : null;
@@ -249,6 +255,70 @@ function FinanceInner() {
     if (error) return toast.error(error.message);
     toast.success("Balance saved");
     qc.invalidateQueries({ queryKey: ["page", "finance"] });
+  };
+
+  const { roles: myRoles } = useAuth();
+  // Installment writes are closer/admin territory (RLS enforces it).
+  const canEditMoney = myRoles.includes("admin") || myRoles.includes("closer");
+  const [openFlow, setOpenFlow] = useState<number | null>(null);
+  const [payDraft, setPayDraft] = useState<{ amount: string; due: string } | null>(null);
+  const findWhopMatchFn = useServerFn(findWhopMatch);
+
+  const PAY_STATUSES = ["upcoming", "paid", "late", "missed", "waived"] as const;
+  const setPayStatus = async (pay: Payment, status: string) => {
+    if (!pay.id) return;
+    const patch: { status: string; paid_at: string | null } = { status, paid_at: null };
+    if (status === "paid") {
+      // Cash only counts once it's actually in Whop (founder rule 2026-07-14).
+      try {
+        const m = await findWhopMatchFn({ data: { amount: Number(pay.amount) } });
+        if (m.connected && !m.matched) {
+          const go = confirm(
+            `No Whop payment of ~$${Number(pay.amount).toLocaleString()} found in the last few days.\n\n` +
+            `Money only counts once it's in Whop. Mark paid anyway? (Only for verified off-Whop money, e.g. a Wise transfer.)`,
+          );
+          if (!go) return;
+        }
+      } catch { /* verification unavailable · reconciliation will flag it */ }
+      patch.paid_at = new Date().toISOString();
+    }
+    const { error } = await (supabase.from("installment_payments") as never as { update: (v: object) => { eq: (c: string, v: string) => Promise<{ error: { message: string } | null }> } }).update(patch).eq("id", pay.id);
+    if (error) return toast.error(error.message);
+    toast.success("Status updated");
+    invalidateForTables(qc, ["installment_payments"]);
+  };
+
+  const savePayment = async (pay: Payment) => {
+    if (!pay.id || !payDraft) return;
+    const amt = Number(payDraft.amount);
+    if (!(amt > 0) || !payDraft.due) return toast.error("Amount and due date required");
+    const { error } = await (supabase.from("installment_payments") as never as { update: (v: object) => { eq: (c: string, v: string) => Promise<{ error: { message: string } | null }> } }).update({ amount: amt, due_date: payDraft.due }).eq("id", pay.id);
+    if (error) return toast.error(error.message);
+    toast.success("Installment updated");
+    setOpenFlow(null); setPayDraft(null);
+    invalidateForTables(qc, ["installment_payments"]);
+  };
+
+  const deletePayment = async (pay: Payment) => {
+    if (!pay.id) return;
+    if (!confirm(`Delete this ${money(Number(pay.amount))} installment for ${pay.installments?.student_name ?? "this student"}? This can't be undone.`)) return;
+    const { error } = await (supabase.from("installment_payments") as never as { delete: () => { eq: (c: string, v: string) => Promise<{ error: { message: string } | null }> } }).delete().eq("id", pay.id);
+    if (error) return toast.error(error.message);
+    toast.success("Installment deleted");
+    setOpenFlow(null);
+    invalidateForTables(qc, ["installment_payments"]);
+  };
+
+  const deleteFollowing = async (pay: Payment) => {
+    if (!pay.installment_id || pay.sequence == null) return;
+    const name = pay.installments?.student_name ?? "this student";
+    if (!confirm(`Delete this and EVERY later unpaid installment for ${name} (from #${pay.sequence} on)? Paid history stays. This can't be undone.`)) return;
+    const { data, error } = await (supabase.from("installment_payments") as never as { delete: () => { eq: (c: string, v: string) => { gte: (c: string, v: number) => { neq: (c: string, v: string) => { select: (c: string) => Promise<{ data: { id: string }[] | null; error: { message: string } | null }> } } } } })
+      .delete().eq("installment_id", pay.installment_id).gte("sequence", pay.sequence).neq("status", "paid").select("id");
+    if (error) return toast.error(error.message);
+    toast.success(`${(data ?? []).length} installment${(data ?? []).length === 1 ? "" : "s"} deleted for ${name}`);
+    setOpenFlow(null);
+    invalidateForTables(qc, ["installment_payments"]);
   };
 
   const deleteExpense = async (id: string) => {
@@ -394,15 +464,72 @@ function FinanceInner() {
         ) : (
           <div className="divide-y divide-[var(--accent)]">
             {calc?.flowWithBalance.map((f, i) => (
-              <div key={i} className="grid grid-cols-[90px_minmax(0,1fr)_110px_120px] gap-3 items-center py-2 text-[13px]">
-                <span className="text-muted-foreground tabular-nums">{format(new Date(f.date + "T00:00:00"), "EEE d MMM")}</span>
-                <span className="truncate">{f.label}</span>
-                <span className={`text-right tabular-nums ${f.kind === "in" ? "text-success-fg" : "text-danger-fg"}`}>
-                  {f.kind === "in" ? "+" : "−"}{money(f.amount)}
-                </span>
-                <span className="text-right tabular-nums text-muted-foreground">
-                  {calc.startBalance != null ? money(f.balance) : "–"}
-                </span>
+              <div key={i}>
+                <button
+                  onClick={() => { setOpenFlow(openFlow === i ? null : i); setPayDraft(f.pay ? { amount: String(f.pay.amount), due: f.pay.due_date } : null); }}
+                  className={`w-full grid grid-cols-[90px_minmax(0,1fr)_110px_120px] gap-3 items-center py-2 text-[13px] text-left hover:bg-muted/40 motion-safe:transition-colors ${openFlow === i ? "bg-muted/40" : ""}`}
+                >
+                  <span className="text-muted-foreground tabular-nums">{format(new Date(f.date + "T00:00:00"), "EEE d MMM")}</span>
+                  <span className="truncate">{f.label}</span>
+                  <span className={`text-right tabular-nums ${f.kind === "in" ? "text-success-fg" : "text-danger-fg"}`}>
+                    {f.kind === "in" ? "+" : "−"}{money(f.amount)}
+                  </span>
+                  <span className="text-right tabular-nums text-muted-foreground">
+                    {calc.startBalance != null ? money(f.balance) : "–"}
+                  </span>
+                </button>
+                {openFlow === i && f.pay && (
+                  <div className="mx-1 mb-2 rounded-md border border-border bg-[var(--background)] px-3 py-3 space-y-3 text-[13px]">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                      <span className="font-medium">{f.pay.installments?.student_name ?? "Unknown student"}</span>
+                      <span className="text-muted-foreground">installment #{f.pay.sequence ?? "?"}</span>
+                      {canEditMoney ? (
+                        <SelectField
+                          value={f.pay.status}
+                          onChange={v => void setPayStatus(f.pay!, v)}
+                          options={PAY_STATUSES.map(st => ({ value: st, label: st }))}
+                          className="w-auto text-xs capitalize"
+                        />
+                      ) : (
+                        <span className="text-caption text-muted-foreground capitalize">{f.pay.status}</span>
+                      )}
+                      <Link to="/revenue" search={{ tab: "plans" } as never} className="ml-auto text-caption text-primary hover:underline">
+                        Open full plan →
+                      </Link>
+                    </div>
+                    {canEditMoney && payDraft && (
+                      <div className="flex flex-wrap items-end gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-caption text-muted-foreground">Amount ($)</Label>
+                          <Input type="number" min="0" step="0.01" value={payDraft.amount} onChange={e => setPayDraft(dft => dft ? { ...dft, amount: e.target.value } : dft)} className="h-8 w-28 tabular-nums" />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-caption text-muted-foreground">Due date</Label>
+                          <DateField value={payDraft.due} onChange={v => setPayDraft(dft => dft ? { ...dft, due: v } : dft)} clearable={false} className="h-8" />
+                        </div>
+                        <Button size="sm" variant="outline" onClick={() => void savePayment(f.pay!)}>Save changes</Button>
+                        <span className="flex-1" />
+                        <button onClick={() => void deletePayment(f.pay!)} className="text-caption text-danger-fg hover:underline">Delete this installment</button>
+                        <button onClick={() => void deleteFollowing(f.pay!)} className="text-caption text-danger-fg hover:underline">Delete this + all following</button>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {openFlow === i && f.expense && (
+                  <div className="mx-1 mb-2 rounded-md border border-border bg-[var(--background)] px-3 py-2.5 flex flex-wrap items-center gap-3 text-[13px]">
+                    <span className="text-muted-foreground">{f.expense.recurring ? `Recurring · day ${f.expense.due_day ?? 1} monthly` : `One-off · ${f.expense.one_off_date ?? "–"}`}{f.expense.category ? ` · ${f.expense.category}` : ""}</span>
+                    <span className="ml-auto flex items-center gap-3">
+                      <button onClick={() => setExpenseModal({ open: true, editing: f.expense! })} className="text-caption text-muted-foreground hover:text-foreground">Edit</button>
+                      <button onClick={() => void deleteExpense(f.expense!.id)} className="text-caption text-danger-fg hover:underline">Remove</button>
+                    </span>
+                  </div>
+                )}
+                {openFlow === i && f.basePay && (
+                  <div className="mx-1 mb-2 rounded-md border border-border bg-[var(--background)] px-3 py-2.5 flex flex-wrap items-center gap-3 text-[13px]">
+                    <span className="text-muted-foreground">Monthly base pay · anchored to their start date, first payment after a full month.</span>
+                    <Link to="/payouts" className="ml-auto text-caption text-primary hover:underline">Manage on Payouts →</Link>
+                  </div>
+                )}
               </div>
             ))}
             {calc && calc.endBalance != null && (
