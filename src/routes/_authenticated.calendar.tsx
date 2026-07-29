@@ -1,7 +1,7 @@
 import { createFileRoute, useSearch } from "@tanstack/react-router";
 import { CashInCalendarCard } from "@/components/cash-in-calendar";
 import { useServerFn } from "@tanstack/react-start";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -247,14 +247,23 @@ function CalendarPage() {
   const team = useQuery({ queryKey: ["cal", "team"], queryFn: () => teamStatusFn(), enabled: pageView === "calendar" });
   const monthGridStart = useMemo(() => startOfWeek(monthAnchor, { weekStartsOn: 1 }), [monthAnchor]);
   const monthGridEnd = useMemo(() => endOfWeek(endOfMonth(monthAnchor), { weekStartsOn: 1 }), [monthAnchor]);
-  const rangeStart = calView === "month" ? monthGridStart : weekStart;
-  const rangeEnd = calView === "month" ? monthGridEnd : weekEnd;
+  // ONE shared 6-week span serves both views (founder 2026-07-29: loads were
+  // slow): week and month toggle and week-nav inside the same month all hit
+  // the cache; previous events stay on screen while a new span refetches.
+  const spanAnchor = useMemo(
+    () => (calView === "month" ? monthAnchor : new Date(weekStart.getFullYear(), weekStart.getMonth(), 1)),
+    [calView, monthAnchor, weekStart],
+  );
+  const rangeStart = useMemo(() => startOfWeek(spanAnchor, { weekStartsOn: 1 }), [spanAnchor]);
+  const rangeEnd = useMemo(() => endOfWeek(endOfMonth(spanAnchor), { weekStartsOn: 1 }), [spanAnchor]);
   const events = useQuery({
-    queryKey: ["cal", "events", calView, rangeStart.toISOString(), rangeEnd.toISOString(), daySpan],
+    queryKey: ["cal", "events", rangeStart.toISOString()],
     queryFn: () => teamEventsFn({
       data: { timeMin: rangeStart.toISOString(), timeMax: addDays(rangeEnd, 1).toISOString() },
     }),
-    staleTime: 30_000,
+    staleTime: 3 * 60_000,
+    refetchOnWindowFocus: false,
+    placeholderData: keepPreviousData,
     enabled: pageView === "calendar",
   });
 
@@ -564,17 +573,17 @@ function CalendarPage() {
                           <button
                             key={e.id}
                             onClick={() => setSelectedEvent(e)}
-                            className="w-full rounded-md border border-border/50 hover:bg-muted/60 px-1.5 py-1.5 text-left motion-safe:transition-colors min-w-0"
+                            className="w-full rounded-[5px] hover:bg-muted/70 px-1.5 py-1.5 text-left motion-safe:transition-colors min-w-0"
                             style={{
-                              borderLeft: `2px solid ${e.members[0]?.color ?? "var(--border)"}`,
-                              background: e.members.length === 1 ? `color-mix(in srgb, ${e.members[0].color} 7%, transparent)` : "var(--muted)",
+                              borderLeft: `2px solid color-mix(in srgb, ${e.members[0]?.color ?? "var(--border)"} 60%, var(--border))`,
+                              background: e.members.length === 1 ? `color-mix(in srgb, ${e.members[0].color} 5%, transparent)` : "var(--muted)",
                             }}
                             title={`${e.summary ?? ""} · ${e.members.map(m => m.name).join(", ")}`}
                           >
                             <span className="flex items-center gap-1.5 text-[11px] leading-4 min-w-0">
                               <span className="tabular-nums text-muted-foreground shrink-0">{format(toLocal(new Date(e.start)), "HH:mm")}</span>
                               {e.members.length === 1 ? (
-                                <span className="truncate font-medium" style={{ color: e.members[0].color }}>{firstName(e.members[0].name)}</span>
+                                <span className="truncate text-muted-foreground">{firstName(e.members[0].name)}</span>
                               ) : (
                                 <span className="flex items-center gap-1 shrink-0">
                                   <span className="flex -space-x-1">
@@ -772,7 +781,7 @@ function CalendarPage() {
 
         {/* Cash flow calendar — founder/cofounder ONLY on this page
             (founder-directed 2026-07-28); everyone else sees nothing here. */}
-        <CashInCalendarCard foundersOnly />
+        {pageView === "calendar" && <CashInCalendarCard foundersOnly />}
       </div>
       {setOpen && (
         <SetReminderDialog

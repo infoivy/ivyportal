@@ -151,7 +151,9 @@ export function getRedirectUri(requestUrl: string): string {
   return `${u.origin}/api/public/google-oauth-callback`;
 }
 
-const CLOSER_COLORS = ["#525252", "#737373", "#8A8A8A", "#A3A3A3", "#B0B0B0", "#C0C0C0", "#D4D4D4", "#E5E5E5"];
+// Dusty, desaturated tones (founder 2026-07-29: distinguishable but clean,
+// not neon): calm enough for the black theme, distinct enough to tell apart.
+const CLOSER_COLORS = ["#7B93B8", "#7FA98C", "#A38FB8", "#B89F7B", "#7BA8A8", "#B87B8C", "#9BA87B", "#8C8FB8"];
 export function pickColorForIndex(i: number): string {
   return CLOSER_COLORS[i % CLOSER_COLORS.length];
 }
