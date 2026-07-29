@@ -370,10 +370,9 @@ function EODsPage() {
                 <>
                   <div className="space-y-3">
                     <SectionLabel>Call activity</SectionLabel>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                       <NumField label="Calls taken" value={form.calls_taken} onChange={setNum("calls_taken")} />
                       <NumField label="Closes" value={form.closes} onChange={setNum("closes")} />
-                      <NumField label="Deposits" value={form.deposits} onChange={setNum("deposits")} />
                       <NumField label="Follow-ups done" value={form.follow_ups_done} onChange={setNum("follow_ups_done")} />
                     </div>
                   </div>
@@ -383,10 +382,6 @@ function EODsPage() {
                       <div className="space-y-1">
                         <Label className="text-[13px] text-muted-foreground">Cash collected today ($)</Label>
                         <Input type="number" min={0} step="0.01" value={form.cash_collected} onChange={e => setFloat("cash_collected")(e.target.value)} onFocus={e => e.currentTarget.select()} className="bg-[var(--background)] border-[var(--border)] rounded-sm h-9 text-sm" />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-[13px] text-muted-foreground">Deferred cash · PIF &lt;30d ($)</Label>
-                        <Input type="number" min={0} step="0.01" value={form.deferred_cash} onChange={e => setFloat("deferred_cash")(e.target.value)} onFocus={e => e.currentTarget.select()} className="bg-[var(--background)] border-[var(--border)] rounded-sm h-9 text-sm" />
                       </div>
                     </div>
                   </div>
