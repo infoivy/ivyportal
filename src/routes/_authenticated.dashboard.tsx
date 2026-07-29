@@ -5,8 +5,6 @@ import { addDays, format, subDays } from "date-fns";
 import {
   AlertCircle,
   ArrowRight,
-  BriefcaseBusiness,
-  CalendarDays,
   CheckCircle2,
   ClipboardCheck,
   FileText,
@@ -368,22 +366,6 @@ function HomePage() {
   const ownTodayRows = data.activities.filter((row) => row.user_id === user?.id && row.report_date === today);
   const ownProfile = data.profiles.find((profile) => profile.id === user?.id);
   const ownExempt = ownProfile?.eod_exempt === true;
-  const sevenDaysAgo = format(subDays(new Date(), 6), "yyyy-MM-dd");
-  const team7Rows = data.activities.filter((row) => row.report_date >= sevenDaysAgo);
-  const team7Shows = sum(team7Rows, "shows");
-  const team7NoShows = sum(team7Rows, "no_shows");
-  const team7 = {
-    dials: sum(team7Rows, "dials"),
-    dms: team7Rows.some((row) => row.dms_sent == null && row.leads_contacted == null)
-      ? null
-      : team7Rows.reduce((total, row) => total + Math.max(row.dms_sent ?? 0, row.leads_contacted ?? 0), 0),
-    sets: sum(team7Rows, "calls_booked"),
-    shows: team7Shows,
-    closes: sum(team7Rows, "closes"),
-    showRate: team7Shows != null && team7NoShows != null && team7Shows + team7NoShows > 0
-      ? `${Math.round((team7Shows / (team7Shows + team7NoShows)) * 100)}%`
-      : null,
-  };
   const ownDials = sum(ownTodayRows, "dials");
   const ownDms = sum(ownTodayRows, "dms_sent");
   const ownBooked = sum(ownTodayRows, "calls_booked");
@@ -448,35 +430,36 @@ function HomePage() {
             </div>
           </section>
 
-          {!isSetterRep && (
-          <section className="card-surface p-5 sm:p-6" aria-labelledby="team-pulse-title">
-            <div className="grid gap-6 sm:grid-cols-[minmax(190px,0.75fr)_minmax(0,1.25fr)] sm:items-center">
-              <div>
-                <p className="text-micro font-semibold uppercase tracking-[0.1em] text-muted-foreground">Today</p>
-                <h2 id="team-pulse-title" className="mt-1 text-title font-semibold text-foreground">Team pulse</h2>
-                <div className="mt-5 flex items-end gap-2">
-                  <span className="text-[42px] font-semibold leading-none tracking-[-0.04em] tabular-nums text-foreground">{data.submittedToday}</span>
-                  <span className="pb-1 text-body text-muted-foreground">of {data.expectedFilers || data.submittedToday} EODs</span>
-                </div>
-                <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-muted" aria-label="Team EOD completion">
-                  <div
-                    className="h-full rounded-full bg-foreground motion-safe:transition-[width]"
-                    style={{ width: `${Math.min(100, Math.round((data.submittedToday / Math.max(1, data.expectedFilers || data.submittedToday)) * 100))}%` }}
-                  />
-                </div>
-              </div>
-              <dl className="divide-y divide-border border-y border-border">
-                <PulseRow label="Calls scheduled, next 7 days" value={data.callsThisWeek} />
-                <PulseRow label="Active students needing attention" value={data.atRiskStudents} urgent={data.atRiskStudents != null && data.atRiskStudents > 0} />
-                {canSeeFinance && <PulseRow label="Overdue installments" value={data.overdueInstallments} urgent={data.overdueInstallments != null && data.overdueInstallments > 0} />}
-                {canApprove && <PulseRow label="Pending access requests" value={data.pendingApprovals} />}
-              </dl>
-            </div>
-          </section>
-          )}
         </main>
 
         <aside className="space-y-5">
+          {!isSetterRep && (
+            <section className="card-surface p-5" aria-labelledby="eods-today-title">
+              <p className="text-micro font-semibold uppercase tracking-[0.1em] text-muted-foreground">Today</p>
+              <h2 id="eods-today-title" className="mt-1 text-title font-semibold text-foreground">EODs today</h2>
+              <div className="mt-4 flex items-end gap-2">
+                <span className="text-[34px] font-semibold leading-none tracking-[-0.03em] tabular-nums text-foreground">{data.submittedToday}</span>
+                <span className="pb-0.5 text-body text-muted-foreground">of {data.expectedFilers || data.submittedToday} filed</span>
+              </div>
+              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted" aria-label="Team EOD completion">
+                <div
+                  className="h-full rounded-full bg-foreground motion-safe:transition-[width]"
+                  style={{ width: `${Math.min(100, Math.round((data.submittedToday / Math.max(1, data.expectedFilers || data.submittedToday)) * 100))}%` }}
+                />
+              </div>
+              <dl className="mt-4 divide-y divide-border border-t border-border">
+                <PulseRow label="Calls scheduled, next 7 days" value={data.callsThisWeek} />
+                <PulseRow label="Students needing attention" value={data.atRiskStudents} urgent={data.atRiskStudents != null && data.atRiskStudents > 0} />
+                {canSeeFinance && <PulseRow label="Overdue installments" value={data.overdueInstallments} urgent={data.overdueInstallments != null && data.overdueInstallments > 0} />}
+                {canApprove && <PulseRow label="Pending access requests" value={data.pendingApprovals} />}
+              </dl>
+              {isLeader && (
+                <Link to={"/performance" as never} className="mt-4 inline-flex min-h-10 items-center gap-2 text-body font-semibold text-foreground hover:opacity-70">
+                  Open Performance <ArrowRight className="h-4 w-4" />
+                </Link>
+              )}
+            </section>
+          )}
           {isSetterRep ? (
             <HomeSetterWeek
               userId={user!.id}
@@ -528,26 +511,6 @@ function HomePage() {
           </section>
           )}
 
-          {isLeader && (
-            <section className="card-surface p-5" aria-labelledby="team-7d-title">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <CalendarDays className="h-4 w-4" />
-                <p className="text-micro font-semibold uppercase tracking-[0.1em]">Team · last 7 days</p>
-              </div>
-              <h2 id="team-7d-title" className="sr-only">Team activity, last 7 days</h2>
-              <dl className="mt-4 grid grid-cols-3 gap-x-3 gap-y-4">
-                <MiniMetric label="Dials" value={team7.dials} />
-                <MiniMetric label="DMs" value={team7.dms} />
-                <MiniMetric label="Sets" value={team7.sets} />
-                <MiniMetric label="Shows" value={team7.shows} />
-                <MiniMetric label="Closes" value={team7.closes} />
-                <MiniMetric label="Show rate" value={team7.showRate} />
-              </dl>
-              <Link to={"/performance" as never} className="mt-5 inline-flex min-h-10 items-center gap-2 text-body font-semibold text-foreground hover:opacity-70">
-                Open Performance <ArrowRight className="h-4 w-4" />
-              </Link>
-            </section>
-          )}
 
           <p className="px-1 text-micro text-muted-foreground">
             Updated {format(new Date(data.fetchedAt), "h:mm a")}. Activity comes from submitted EOD records.

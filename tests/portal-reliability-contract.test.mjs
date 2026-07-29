@@ -61,7 +61,7 @@ const packageJson = JSON.parse(readFileSync(new URL("package.json", root), "utf8
 
 test("Home is action-first and does not duplicate the canonical analytics workspace", () => {
   assert.match(dashboard, /Next actions/);
-  assert.match(dashboard, /Team pulse/);
+  assert.match(dashboard, /EODs today/);
   assert.match(dashboard, /Your day/);
   assert.match(dashboard, /from\("eods_activity_real"\)/);
   assert.doesNotMatch(dashboard, /recharts|RangePicker|buildDashboardTrend/);
@@ -94,8 +94,7 @@ test("Home splits by role: setter reps get their own week, leaders get the money
 test("Home preserves unavailable operational values and ranks urgent exceptions first", () => {
   assert.match(dashboard, /rows\.some\(\(row\) => row\[key\] == null\)/);
   assert.match(dashboard, /result\.count == null/);
-  assert.doesNotMatch(dashboard, /buildActivitySignal|One useful signal/);
-  assert.match(dashboard, /Team · last 7 days/);
+  assert.doesNotMatch(dashboard, /buildActivitySignal|One useful signal|Team pulse|Team · last 7 days/);
   assert.match(dashboard, /select\("user_id, role"\)\.in\("role", \["founder", "cofounder", "setter", "closer", "coach", "csm"\]\)/);
   assert.match(dashboard, /const reportingUsers = new Set/);
   assert.doesNotMatch(dashboard, /const recentFilers = new Set/);

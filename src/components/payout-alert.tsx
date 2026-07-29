@@ -62,8 +62,13 @@ export async function fetchPeriodOwed(period: PayoutPeriod): Promise<OwedMember[
   return memberPayoutTotals(rows, profileMap, period);
 }
 
+// Commissions before the Jul 16-31 period were paid outside the portal
+// (founder-declared 2026-07-29): the alert system starts here.
+const PAYOUT_TRACKING_FROM = "2026-07-16";
+
 async function fetchPeriodStatus(offset: number): Promise<PayoutAlertPeriod | null> {
   const period = getPeriod(offset);
+  if (period.start < PAYOUT_TRACKING_FROM) return null; // settled pre-portal
   if (todayLocal() <= period.end) return null; // payout date not reached yet
   const [owed, confRes] = await Promise.all([
     fetchPeriodOwed(period),
