@@ -33,53 +33,50 @@ const PERSONAS = {
 
 // name → { persona, path, action?, fullPage? }
 const SHOTS = [
-  { name: "setter-eod", persona: "setter", path: "/eods" },
+  // setter
   { name: "dashboard-setter", persona: "setter", path: "/dashboard" },
+  { name: "setter-eod", persona: "setter", path: "/eods" },
+  { name: "setter-calendar", persona: "setter", path: "/calendar" },
   { name: "set-tracker", persona: "setter", path: "/calendar", action: async (page) => {
-      await page.getByRole("button", { name: "Sets", exact: true }).click();
+      await page.getByRole("button", { name: "Sets", exact: true }).click().catch(() => {});
       await page.waitForTimeout(2500);
-      // Show the whole pool so the shot demonstrates owner badges
-      await page.getByRole("button", { name: "All sets" }).click().catch(() => {});
     } },
-  { name: "sales-today", persona: "closer", path: "/sales?tab=operations", fullPage: false },
+  { name: "setter-knowledge", persona: "setter", path: "/knowledge" },
+  { name: "setting-process", persona: "setter", path: "/sops/isa-setting-process" },
+  // closer
+  { name: "money-in", persona: "closer", path: "/revenue" },
   { name: "log-a-close", persona: "closer", path: "/revenue", action: async (page) => {
       await page.getByRole("button", { name: /log a close/i }).click();
     } },
-  { name: "installments", persona: "closer", path: "/installments" },
+  { name: "payment-plans", persona: "closer", path: "/revenue?tab=plans" },
+  { name: "closer-crm", persona: "closer", path: "/crm" },
   { name: "closer-resources", persona: "closer", path: "/closer-resources" },
-  { name: "csm-workspace", persona: "csm", path: "/csm?tab=workspace" },
+  // csm
+  { name: "csm-workspace", persona: "csm", path: "/csm" },
   { name: "student-success", persona: "csm", path: "/student-success" },
   { name: "action-items", persona: "csm", path: "/action-items" },
-  { name: "action-item-new", persona: "csm", path: "/action-items", action: async (page) => {
-      await page.getByRole("button", { name: /add ad-hoc item/i }).click();
-    } },
   { name: "testimonials", persona: "csm", path: "/testimonials" },
   { name: "students-csm", persona: "csm", path: "/students" },
   { name: "student-detail", persona: "csm", path: "/students", action: async (page) => {
       await page.getByText("Ahmed Malik (Demo)", { exact: false }).first().click();
       await page.waitForTimeout(3500);
     } },
+  // coach
   { name: "calls", persona: "coach", path: "/calls" },
   { name: "log-call-modal", persona: "coach", path: "/calls", action: async (page) => {
-      await page.getByRole("button", { name: /log call/i }).first().click();
+      await page.getByRole("button", { name: /log call|add call/i }).first().click().catch(() => {});
+      await page.waitForTimeout(1200);
     } },
-  { name: "students", persona: "coach", path: "/students" },
-  { name: "student-detail-coach", persona: "coach", path: "/students", action: async (page) => {
-      await page.getByText("Ahmed Malik (Demo)", { exact: false }).first().click();
-      await page.waitForTimeout(3500);
-    } },
+  { name: "students-coach", persona: "coach", path: "/students" },
+  // admin / founders
   { name: "dashboard", persona: "admin", path: "/dashboard" },
+  { name: "performance", persona: "admin", path: "/performance" },
+  { name: "founder-money-in", persona: "admin", path: "/revenue" },
+  { name: "payouts", persona: "admin", path: "/payouts" },
+  { name: "finance", persona: "admin", path: "/finance" },
   { name: "team", persona: "admin", path: "/team" },
   { name: "admin", persona: "admin", path: "/admin" },
-  { name: "access-defaults", persona: "admin", path: "/admin", action: async (page) => {
-      await page.getByText("Access defaults", { exact: false }).first().scrollIntoViewIfNeeded().catch(() => {});
-      await page.waitForTimeout(800);
-    } },
-  { name: "finance", persona: "admin", path: "/finance" },
-  { name: "content", persona: "admin", path: "/content" },
-  { name: "add-student", persona: "admin", path: "/students", action: async (page) => {
-      await page.getByRole("button", { name: /add student/i }).click();
-    } },
+  { name: "admin-calendar", persona: "admin", path: "/calendar" },
   { name: "knowledge", persona: "admin", path: "/knowledge" },
 ];
 
@@ -107,11 +104,11 @@ const demoStudentIds = [];
 const iso = (d) => d.toISOString().slice(0, 10);
 const daysAgo = (n) => new Date(Date.now() - n * 86400000);
 const DEMO_STUDENTS = [
-  { full_name: "Ahmed Malik (Demo)", phase: "coaching_1on1", payment_state: "installments", grade: "B" },
+  { full_name: "Ahmed Malik (Demo)", phase: "training", payment_state: "installments", grade: "B" },
   { full_name: "Yusuf Rahman (Demo)", phase: "applying", payment_state: "paid_in_full", grade: "A" },
   { full_name: "Ibrahim Diallo (Demo)", phase: "onboarding", payment_state: "installments", grade: null },
   { full_name: "Zaid Hussain (Demo)", phase: "applying", payment_state: "scholarship", grade: "B" },
-  { full_name: "Hamza Ali (Demo)", phase: "coaching_1on1", payment_state: "paid_in_full", grade: "C" },
+  { full_name: "Hamza Ali (Demo)", phase: "training", payment_state: "paid_in_full", grade: "C" },
   { full_name: "Bilal Osman (Demo)", phase: "onboarding", payment_state: "installments", grade: null },
 ];
 const csmId = () => PERSONAS.csm.id;
@@ -180,6 +177,7 @@ try {
     const shots = SHOTS.filter((s) => s.persona === personaKey);
     if (!shots.length) continue;
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2, colorScheme: "dark" });
+    await ctx.addInitScript(() => { try { localStorage.setItem("isa-theme", "dark"); } catch {} });
     const page = await ctx.newPage();
     // sign in
     await page.goto(`${BASE}/auth`, { waitUntil: "networkidle" });
