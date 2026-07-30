@@ -74,6 +74,7 @@ const TABLE_KEYS = {
   ],
   student_weekly_eods: [keys.csmPage, keys.studentPages],
   student_checkins: [keys.csmPage, keys.csmOverview, keys.csmTodayQueue, keys.studentPages],
+  setter_daily_logs: [],
   student_calls: [
     keys.studentCallsAgg, keys.csmPage, keys.csmOverview, keys.csmTodayQueue,
     keys.studentHealth, keys.notifications, keys.actionItems, keys.admin,

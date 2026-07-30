@@ -23,8 +23,9 @@ test("Calendar is a refined three-view workspace with explicit failure handling"
   assert.match(calendar, /calView === "week"/);
   assert.match(calendar, /"calendar" \| "sets" \| "tracker"/);
   assert.match(calendar, />Schedule</);
-  assert.match(calendar, />Sets</);
-  assert.match(calendar, />Tracker</);
+  assert.doesNotMatch(calendar, />Sets</);
+  assert.match(calendar, />Setter tracker</);
+  assert.match(calendar, /<SetterDailyTracker/);
   assert.match(calendar, /<SetterTrackingSheet/);
   assert.match(calendar, /events\.isError/);
   assert.match(calendar, /min-h-12/);

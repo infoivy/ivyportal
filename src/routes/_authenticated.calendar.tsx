@@ -2,6 +2,7 @@ import { createFileRoute, useSearch } from "@tanstack/react-router";
 import { CashInCalendarCard } from "@/components/cash-in-calendar";
 import { shortName } from "@/lib/names";
 import { SetterTrackingSheet } from "@/components/setter-tracking-sheet";
+import { SetterDailyTracker } from "@/components/setter-daily-tracker";
 import { useServerFn } from "@tanstack/react-start";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
@@ -199,6 +200,8 @@ function CalendarPage() {
   };
   useEffect(() => {
     if (myRoles.length > 0 && pageView === "tracker" && !canUseTracker) changePageView("calendar");
+    // Sets merged into the tracker (founder-directed 2026-07-30)
+    if (pageView === "sets") changePageView(canUseTracker ? "tracker" : "calendar");
   }, [canUseTracker, myRoles.length, pageView]);
   const syncCalendlyFn = useServerFn(syncCalendlySets);
   const claimSetFn = useServerFn(claimSet);
@@ -370,14 +373,13 @@ function CalendarPage() {
         />
 
         <div
-          className={`card-surface grid w-full gap-1 border-0 p-1 shadow-none sm:w-fit ${canUseTracker ? "grid-cols-3" : "grid-cols-2"}`}
+          className={`card-surface grid w-full gap-1 border-0 p-1 shadow-none sm:w-fit ${canUseTracker ? "grid-cols-2" : "grid-cols-1"}`}
           role="tablist"
           aria-label="Calendar workspace views"
         >
           <button role="tab" aria-selected={pageView === "calendar"} onClick={() => changePageView("calendar")} className={`min-h-12 rounded-lg px-5 text-body font-medium transition-colors ${pageView === "calendar" ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>Schedule</button>
-          <button role="tab" aria-selected={pageView === "sets"} onClick={() => changePageView("sets")} className={`min-h-12 rounded-lg px-5 text-body font-medium transition-colors ${pageView === "sets" ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>Sets</button>
           {canUseTracker && (
-            <button role="tab" aria-selected={pageView === "tracker"} onClick={() => changePageView("tracker")} className={`min-h-12 rounded-lg px-5 text-body font-medium transition-colors ${pageView === "tracker" ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>Tracker</button>
+            <button role="tab" aria-selected={pageView === "tracker"} onClick={() => changePageView("tracker")} className={`min-h-12 rounded-lg px-5 text-body font-medium transition-colors ${pageView === "tracker" ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>Setter tracker</button>
           )}
         </div>
 
@@ -622,7 +624,7 @@ function CalendarPage() {
         </>)}
 
         {/* Set reminders — every upcoming set and its reminder schedule */}
-        {pageView === "sets" && (
+        {pageView === "tracker" && canUseTracker && (
         <Card className="card-surface space-y-4 border-0 p-5 shadow-none">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
@@ -752,7 +754,7 @@ function CalendarPage() {
         </Card>
         )}
 
-        {pageView === "tracker" && canUseTracker && <SetterTrackingSheet />}
+        {pageView === "tracker" && canUseTracker && (<div className="space-y-5"><SetterDailyTracker /><SetterTrackingSheet /></div>)}
 
         {/* Detail modal */}
         {selectedEvent && (

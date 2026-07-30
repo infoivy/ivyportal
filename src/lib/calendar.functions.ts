@@ -960,3 +960,47 @@ export const assignSet = createServerFn({ method: "POST" })
       return { ok: true, calendar: false, warning: "Set assigned, but Google Calendar needs attention." };
     }
   });
+
+
+/**
+ * Auto-attribution for closes (founder 2026-07-30): when a logged close's
+ * name matches a tracked set, the deal pre-fills that set's setter so
+ * commission lands without manual bookkeeping. Admin client because a
+ * closer's RLS can't see another setter's claimed sets; only the minimal
+ * match (setter id + name + date) leaves the server.
+ */
+export const matchSetterForProspect = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((data: { name: string }) => {
+    const name = (data?.name ?? "").trim();
+    if (!name || name.length > 200) throw new Error("name required");
+    return { name };
+  })
+  .handler(async ({ context, data }) => {
+    const ctx = context as { supabase: { rpc: (fn: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown }> }; userId: string };
+    const checks = await Promise.all(
+      ["admin", "closer", "founder", "cofounder"].map((role) =>
+        ctx.supabase.rpc("has_role", { _user_id: ctx.userId, _role: role }),
+      ),
+    );
+    if (!checks.some((c) => c.data)) throw new Error("Forbidden");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: sets } = await supabaseAdmin
+      .from("set_reminders")
+      .select("prospect, owner_id, event_start")
+      .ilike("prospect", `%${data.name}%`)
+      .order("event_start", { ascending: false })
+      .limit(1);
+    const hit = sets?.[0];
+    if (!hit) return { matched: false as const };
+    const setterId = (hit.owner_id as string | null);
+    if (!setterId) return { matched: false as const };
+    const { data: prof } = await supabaseAdmin.from("profiles").select("display_name").eq("is_demo", false).eq("id", setterId).maybeSingle();
+    return {
+      matched: true as const,
+      setter_id: setterId,
+      setter_name: prof?.display_name ?? "Unknown",
+      prospect: hit.prospect as string,
+      set_date: String(hit.event_start).slice(0, 10),
+    };
+  });

@@ -361,7 +361,7 @@ test("shared student workspaces and staff utilities exclude demo-owned records a
 
   const calendarProfileReads = (calendarFunctions.match(/from\("profiles"\)/g) ?? []).length;
   const calendarRealProfileGuards = (calendarFunctions.match(/\.eq\("is_demo", false\)/g) ?? []).length;
-  assert.equal(calendarProfileReads, 4);
+  assert.equal(calendarProfileReads, 5);
   assert.equal(calendarRealProfileGuards, calendarProfileReads);
   assert.match(calendarFunctions, /const realConnections = conns\.filter/);
   assert.match(calendarFunctions, /!r\.owner_id \|\| pmap\.has\(r\.owner_id\)/);

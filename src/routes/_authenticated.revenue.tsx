@@ -1,8 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { getWhopCashWindow } from "@/lib/mochi.functions";
+import { matchSetterForProspect } from "@/lib/calendar.functions";
 import { useEffect, useMemo, useState } from "react";
 import { PageSkeleton } from "@/components/ui/skeletons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { invalidateForTables } from "@/lib/query-keys";
 import { useAuth } from "@/lib/auth-context";
@@ -598,6 +600,7 @@ function LogDealDialog({
   const [paymentType, setPaymentType] = useState<PaymentType>("pif");
   const [dealDate, setDealDate] = useState<string>(new Date().toISOString().slice(0, 10));
   const [contractUrl, setContractUrl] = useState("");
+  const [setterMatch, setSetterMatch] = useState<{ name: string; date: string } | null>(null);
   const [fathomUrl, setFathomUrl] = useState("");
   const [notes, setNotes] = useState("");
   const [autoCreateStudent, setAutoCreateStudent] = useState(true);
@@ -659,6 +662,27 @@ function LogDealDialog({
     }
 
   }, [open, editing, currentUserId]);
+
+  const matchSetterFn = useServerFn(matchSetterForProspect);
+  useEffect(() => {
+    // Close name matches a tracked set → the setter fills in automatically
+    // (founder 2026-07-30). Manual choice always wins; the effect never
+    // overwrites a non-empty selection.
+    const name = (studentMode === "existing" ? students.find(st => st.id === studentId)?.full_name : studentName)?.trim();
+    if (!name || name.length < 3 || setterId || editing) return;
+    const t = setTimeout(() => {
+      void matchSetterFn({ data: { name } })
+        .then(m => {
+          if (m.matched) {
+            setSetterId(m.setter_id);
+            setSetterMatch({ name: m.setter_name, date: m.set_date });
+          }
+        })
+        .catch(() => { /* matching is best-effort */ });
+    }, 600);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studentId, studentName, studentMode, editing]);
 
   const submit = async () => {
     if (!currentUserId) return;
@@ -872,13 +896,17 @@ function LogDealDialog({
               <Label>Setter (optional)</Label>
               <SelectField
                 value={setterId}
-                onChange={setSetterId}
+                onChange={(v) => { setSetterId(v); setSetterMatch(null); }}
                 options={setters.map((s) => ({ value: s.id, label: s.display_name || s.id.slice(0, 8) }))}
                 allowEmpty
                 placeholder="– None –"
                 className="h-9 text-sm"
               />
-              <p className="text-[10px] text-muted-foreground">Attribute to a setter for base + PIF-bonus commission.</p>
+              {setterMatch ? (
+                <p className="text-[10px] text-success-fg">Auto-matched from the setter tracker · {setterMatch.name} set this call on {setterMatch.date}. Change it if that's wrong.</p>
+              ) : (
+                <p className="text-[10px] text-muted-foreground">Attribute to a setter for base + PIF-bonus commission. Names that match a tracked set fill this automatically.</p>
+              )}
             </div>
           </div>
 
