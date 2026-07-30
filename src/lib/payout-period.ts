@@ -45,6 +45,17 @@ export type PayoutInstallment = {
   student_name: string;
 };
 
+export type PayoutLine = {
+  kind: "deal" | "installment";
+  refId: string;
+  student: string;
+  date: string;
+  detail: string;
+  cash: number;
+  rate: number | null;
+  commission: number | null;
+};
+
 export type SetterRow = {
   id: string;
   name: string;
@@ -55,6 +66,7 @@ export type SetterRow = {
   installmentCash: number;
   installmentCommission: number;
   total: number;
+  lines: PayoutLine[];
 };
 
 export type CloserRow = {
@@ -67,6 +79,7 @@ export type CloserRow = {
   installmentCommission: number;
   total: number;
   capNote?: string;
+  lines: PayoutLine[];
 };
 
 export type PayoutData = {
@@ -106,10 +119,12 @@ export function buildPayoutRows(data: PayoutData, period: Pick<PayoutPeriod, "st
     setterMap.set(d.setter_id, entry);
   }
   const setterInstCash = new Map<string, number>();
+  const setterInstPays = new Map<string, { ip: PayoutInstallmentPayment; inst: PayoutInstallment }[]>();
   for (const ip of periodPayments) {
     const inst = installmentMap.get(ip.installment_id);
     if (!inst?.setter_id || inst.setter_id === inst.closer_id) continue;
     setterInstCash.set(inst.setter_id, (setterInstCash.get(inst.setter_id) ?? 0) + ip.amount);
+    setterInstPays.set(inst.setter_id, [...(setterInstPays.get(inst.setter_id) ?? []), { ip, inst }]);
   }
   const allSetterIds = new Set([...setterMap.keys(), ...setterInstCash.keys()]);
   const setterRows: SetterRow[] = Array.from(allSetterIds).map(sid => {
@@ -119,6 +134,28 @@ export function buildPayoutRows(data: PayoutData, period: Pick<PayoutPeriod, "st
     const dealCommission = dealsCash * baseRate;
     const iCash = setterInstCash.get(sid) ?? 0;
     const iCommission = iCash * baseRate;
+    const lines: PayoutLine[] = [
+      ...(entry?.deals ?? []).map((d): PayoutLine => ({
+        kind: "deal",
+        refId: d.id,
+        student: (d as { student_name?: string }).student_name ?? "Deal",
+        date: d.deal_date,
+        detail: "deal upfront",
+        cash: d.cash_collected_upfront ?? 0,
+        rate: baseRate,
+        commission: (d.cash_collected_upfront ?? 0) * baseRate,
+      })),
+      ...(setterInstPays.get(sid) ?? []).map(({ ip, inst }): PayoutLine => ({
+        kind: "installment",
+        refId: ip.id,
+        student: (inst as { student_name?: string }).student_name ?? "Installment",
+        date: (ip.paid_at ?? "").slice(0, 10),
+        detail: "installment marked paid",
+        cash: ip.amount,
+        rate: baseRate,
+        commission: ip.amount * baseRate,
+      })),
+    ].sort((a, b) => a.date.localeCompare(b.date));
     return {
       id: sid,
       name: profileMap.get(sid)?.display_name ?? sid.slice(0, 8),
@@ -129,6 +166,7 @@ export function buildPayoutRows(data: PayoutData, period: Pick<PayoutPeriod, "st
       installmentCash: iCash,
       installmentCommission: iCommission,
       total: dealCommission + iCommission,
+      lines,
     };
   }).sort((a, b) => b.total - a.total);
 
@@ -141,11 +179,13 @@ export function buildPayoutRows(data: PayoutData, period: Pick<PayoutPeriod, "st
     closerMap.set(d.closer_id, entry);
   }
   const closerInstCash = new Map<string, number>();
+  const closerInstPays = new Map<string, { ip: PayoutInstallmentPayment; inst: PayoutInstallment }[]>();
   const instSetSet = new Map<string, boolean>(); // closer_id → self-set installment this period (set+close rate)
   for (const ip of periodPayments) {
     const inst = installmentMap.get(ip.installment_id);
     if (!inst?.closer_id) continue;
     closerInstCash.set(inst.closer_id, (closerInstCash.get(inst.closer_id) ?? 0) + ip.amount);
+    closerInstPays.set(inst.closer_id, [...(closerInstPays.get(inst.closer_id) ?? []), { ip, inst }]);
     if (inst.setter_id && inst.setter_id === inst.closer_id) instSetSet.set(inst.closer_id, true);
   }
 
@@ -176,6 +216,20 @@ export function buildPayoutRows(data: PayoutData, period: Pick<PayoutPeriod, "st
     if (cofounderIds.has(cid)) {
       const capped = cofounderCappedCommission(cofounderMonthEvents.get(cid) ?? []);
       const owed = period.isSecondHalf ? capped.secondHalf : capped.firstHalf;
+      const cofLines: PayoutLine[] = [
+        ...cDeals.map((d): PayoutLine => ({
+          kind: "deal", refId: d.id,
+          student: (d as { student_name?: string }).student_name ?? "Deal",
+          date: d.deal_date, detail: "deal upfront",
+          cash: d.cash_collected_upfront ?? 0, rate: COFOUNDER_RATE, commission: null,
+        })),
+        ...(closerInstPays.get(cid) ?? []).map(({ ip, inst }): PayoutLine => ({
+          kind: "installment", refId: ip.id,
+          student: (inst as { student_name?: string }).student_name ?? "Installment",
+          date: (ip.paid_at ?? "").slice(0, 10), detail: "installment marked paid",
+          cash: ip.amount, rate: COFOUNDER_RATE, commission: null,
+        })),
+      ].sort((a, b) => a.date.localeCompare(b.date));
       return {
         id: cid,
         name: profileMap.get(cid)?.display_name ?? cid.slice(0, 8),
@@ -186,6 +240,7 @@ export function buildPayoutRows(data: PayoutData, period: Pick<PayoutPeriod, "st
         installmentCommission: 0,
         total: owed,
         capNote: `co-founder · ${(COFOUNDER_RATE * 100).toFixed(0)}% flat · capped $${COFOUNDER_WEEK_CAP / 1000}k/wk · $${COFOUNDER_MONTH_CAP / 1000}k/mo${capped.capped ? " · cap hit" : ""}`,
+        lines: cofLines,
       };
     }
 
@@ -194,6 +249,25 @@ export function buildPayoutRows(data: PayoutData, period: Pick<PayoutPeriod, "st
     const iBaseRate = instSetSet.get(cid) ? rates.set_close : rates.new_close;
     const iRate = profile?.commission_cap_pct != null ? Math.min(iBaseRate, profile.commission_cap_pct) : iBaseRate;
     const iCommission = iCash * iRate;
+    const closerLines: PayoutLine[] = [
+      ...cDeals.map((d): PayoutLine => {
+        const comm = commissionForDeal(d, rates, profile?.commission_cap_pct);
+        const cash = d.cash_collected_upfront ?? 0;
+        return {
+          kind: "deal", refId: d.id,
+          student: (d as { student_name?: string }).student_name ?? "Deal",
+          date: d.deal_date,
+          detail: isSelfSet(d) ? "deal upfront · set + close" : "deal upfront",
+          cash, rate: cash > 0 ? comm / cash : null, commission: comm,
+        };
+      }),
+      ...(closerInstPays.get(cid) ?? []).map(({ ip, inst }): PayoutLine => ({
+        kind: "installment", refId: ip.id,
+        student: (inst as { student_name?: string }).student_name ?? "Installment",
+        date: (ip.paid_at ?? "").slice(0, 10), detail: "installment marked paid",
+        cash: ip.amount, rate: iRate, commission: ip.amount * iRate,
+      })),
+    ].sort((a, b) => a.date.localeCompare(b.date));
     return {
       id: cid,
       name: profileMap.get(cid)?.display_name ?? cid.slice(0, 8),
@@ -203,6 +277,7 @@ export function buildPayoutRows(data: PayoutData, period: Pick<PayoutPeriod, "st
       installmentCash: iCash,
       installmentCommission: iCommission,
       total: dealCommission + iCommission,
+      lines: closerLines,
     };
   }).sort((a, b) => b.total - a.total);
 

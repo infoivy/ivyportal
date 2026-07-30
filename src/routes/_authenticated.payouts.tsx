@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { keys, invalidateForTables } from "@/lib/query-keys";
 import { useAuth } from "@/lib/auth-context";
 import { Loader2, ChevronLeft, ChevronRight, CircleCheck, Undo2, X, Pencil } from "lucide-react";
 import { money, type Deal, type CommissionRates, DEFAULT_RATES } from "@/lib/revenue";
+import { Link } from "@tanstack/react-router";
 import {
   getPeriod, buildPayoutRows, memberPayoutTotals,
   type PayoutProfile as Profile, type PayoutInstallmentPayment as InstallmentPayment,
@@ -30,6 +31,37 @@ type PayoutConfirmation = {
   confirmed_by: string;
 };
 
+const LinesPanel = ({ lines, colSpan, aggregate }: { lines: import("@/lib/payout-period").PayoutLine[]; colSpan: number; aggregate?: string }) => (
+  <tr className="border-b border-accent last:border-0 bg-muted/20">
+    <td colSpan={colSpan} className="px-4 py-2.5">
+      {lines.length === 0 ? (
+        <div className="text-[11px] text-muted-foreground py-1">No cash events this period.</div>
+      ) : (
+        <div className="space-y-1">
+          {lines.map(l => (
+            <div key={l.refId} className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px]">
+              <span className="tabular-nums text-muted-foreground w-[74px] shrink-0">{l.date}</span>
+              <span className="font-medium text-foreground">{l.student}</span>
+              <span className="text-muted-foreground">{l.detail}</span>
+              <span className="tabular-nums">{money(l.cash)}</span>
+              {l.rate != null && <span className="tabular-nums text-muted-foreground">× {(l.rate * 100).toFixed(1)}%</span>}
+              <span className="tabular-nums font-medium">{l.commission != null ? `= ${money(l.commission)}` : ""}</span>
+              <Link
+                to="/revenue"
+                search={(l.kind === "installment" ? { tab: "plans" } : {}) as never}
+                className="text-muted-foreground hover:text-foreground hover:underline"
+              >
+                {l.kind === "installment" ? "open plan →" : "open deal →"}
+              </Link>
+            </div>
+          ))}
+          {aggregate && <div className="pt-1 text-[10px] text-muted-foreground">{aggregate}</div>}
+        </div>
+      )}
+    </td>
+  </tr>
+);
+
 function Payouts() {
   const { roles } = useAuth();
   if (!roles.some((r) => ["admin", "cofounder"].includes(r))) {
@@ -46,6 +78,7 @@ function Payouts() {
 
 function PayoutsInner() {
   const [periodOffset, setPeriodOffset] = useState(0);
+  const [openRow, setOpenRow] = useState<string | null>(null);
   const period = useMemo(() => getPeriod(periodOffset), [periodOffset]);
 
   // Cached month-wide read (the co-founder monthly cap needs both halves).
@@ -58,7 +91,7 @@ function PayoutsInner() {
       const [dealsRes, profilesRes, ratesRes, ipRes, instRes, cofRes, teamRes] = await Promise.all([
         supabase
           .from("deals")
-          .select("id, closer_id, setter_id, total_value, cash_collected_upfront, deal_date, payment_type")
+          .select("id, student_name, closer_id, setter_id, total_value, cash_collected_upfront, deal_date, payment_type")
           .eq("is_demo", false)
           .is("voided_at", null)
           .gte("deal_date", period.monthStart)
@@ -300,7 +333,8 @@ function PayoutsInner() {
                 </thead>
                 <tbody>
                   {setterRows.map(r => (
-                    <tr key={r.id} className="border-b border-accent last:border-0">
+                    <Fragment key={r.id}>
+                    <tr onClick={() => setOpenRow(o => o === `s-${r.id}` ? null : `s-${r.id}`)} className="border-b border-accent last:border-0 cursor-pointer hover:bg-muted/30 motion-safe:transition-colors">
                       <td className="px-4 py-3 font-medium">
                         {r.name}
                         {r.weekBonus && <span className="ml-2 text-[10px] text-warning-fg border border-warning/25 bg-warning-bg px-1.5 py-0.5 rounded-sm">$5k week</span>}
@@ -311,6 +345,8 @@ function PayoutsInner() {
                       <td className="px-3 py-3 text-right tabular-nums">{r.weekBonus ? `${((rates.setter_base + 0.01) * 100).toFixed(1)}%` : `${(rates.setter_base * 100).toFixed(1)}%`}</td>
                       <td className="px-4 py-3 text-right tabular-nums font-semibold text-primary">{money(r.total)}</td>
                     </tr>
+                    {openRow === `s-${r.id}` && <LinesPanel lines={r.lines} colSpan={6} />}
+                    </Fragment>
                   ))}
                 </tbody>
                 <tfoot>
@@ -344,7 +380,8 @@ function PayoutsInner() {
                 </thead>
                 <tbody>
                   {closerRows.map(r => (
-                    <tr key={r.id} className="border-b border-accent last:border-0">
+                    <Fragment key={r.id}>
+                    <tr onClick={() => setOpenRow(o => o === `c-${r.id}` ? null : `c-${r.id}`)} className="border-b border-accent last:border-0 cursor-pointer hover:bg-muted/30 motion-safe:transition-colors">
                       <td className="px-4 py-3 font-medium">
                         {r.name}
                         {r.capNote && <div className="text-[10px] text-muted-foreground font-normal mt-0.5">{r.capNote}</div>}
@@ -355,6 +392,14 @@ function PayoutsInner() {
                       <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{money(r.commission)}</td>
                       <td className="px-4 py-3 text-right tabular-nums font-semibold text-primary">{money(r.total)}</td>
                     </tr>
+                    {openRow === `c-${r.id}` && (
+                      <LinesPanel
+                        lines={r.lines}
+                        colSpan={6}
+                        aggregate={r.capNote ? "Owed is the aggregate flat 10% with the weekly and monthly caps applied across the whole month; per-line commission is not additive." : undefined}
+                      />
+                    )}
+                    </Fragment>
                   ))}
                 </tbody>
                 <tfoot>
