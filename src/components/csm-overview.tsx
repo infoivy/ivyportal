@@ -5,6 +5,7 @@ import { format, subDays } from "date-fns";
 import { Target, Trophy, HeartPulse, AlertTriangle, Video, Users } from "lucide-react";
 import { BreakdownBar } from "@/components/ui/breakdown-bar";
 import { useStudentHealth } from "@/lib/use-student-health";
+import { StudentOutputCard } from "@/components/student-eod-pulse";
 import { ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis, Tooltip } from "recharts";
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
@@ -215,6 +216,10 @@ export function CsmOverview() {
             </ResponsiveContainer>
           </div>
         </div>
+
+        {/* What the students themselves produced (founder 2026-07-31:
+            "put student output in csm overview"). */}
+        <StudentOutputCard />
       </div>
     </div>
   );

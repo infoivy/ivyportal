@@ -24,10 +24,10 @@ type EodRow = {
   applications_submitted: number | null;
 };
 
-export function StudentEodPulse() {
-  const [q, setQ] = useState("");
-
-  const pulseQ = useQuery({
+/** One fetch shared by the chart card and the feed (same query key dedupes
+ *  when both are mounted). */
+function useStudentEodPulse() {
+  return useQuery({
     queryKey: ["page", "student", "eod-pulse"],
     staleTime: 2 * 60_000,
     queryFn: async () => {
@@ -40,23 +40,37 @@ export function StudentEodPulse() {
           .gte("report_date", eightWeeksAgo)
           .order("report_date", { ascending: false })
           .limit(2000),
-        supabase.from("students").select("id, full_name").eq("is_demo", false),
+        supabase.from("students").select("id, full_name, phase, status").eq("is_demo", false).is("archived_at" as never, null),
       ]);
+      const students = (studentsRes.data ?? []) as unknown as { id: string; full_name: string; phase: string; status: string }[];
+      // Expected weekly output if every reporting student hit their KPIs
+      // (founder 2026-07-31): 3 roleplays/day for everyone working, 3 looms/
+      // day in training, 5 applications/day in applying. Onboarding students
+      // are still locked to Start Here and graduated phases owe nothing.
+      const training = students.filter((s) => s.status === "active" && ["training", "coaching_1on1"].includes(s.phase)).length;
+      const applying = students.filter((s) => s.status === "active" && s.phase === "applying").length;
+      const expectedWeekly = 7 * (3 * (training + applying) + 3 * training + 5 * applying);
       return {
         eods: (eodsRes.data ?? []) as unknown as EodRow[],
-        names: new Map(((studentsRes.data ?? []) as { id: string; full_name: string }[]).map((s) => [s.id, s.full_name])),
+        names: new Map(students.map((s) => [s.id, s.full_name])),
+        expectedWeekly,
       };
     },
   });
+}
 
+/** The weekly output chart, shared by Student success and the CSM overview
+ *  (founder 2026-07-31: "put student output in csm overview"). The dashed
+ *  line is what a fully-on-KPI week would produce with today's roster. */
+export function StudentOutputCard() {
+  const pulseQ = useStudentEodPulse();
   const d = pulseQ.data;
-
   const weekly = useMemo(() => {
     if (!d) return [];
-    const weeks: { key: string; week: string; eods: number; roleplays: number; looms: number; applications: number }[] = [];
+    const weeks: { key: string; week: string; eods: number; roleplays: number; looms: number; applications: number; expected: number }[] = [];
     for (let i = 7; i >= 0; i--) {
       const start = startOfWeek(subWeeks(new Date(), i), { weekStartsOn: 1 });
-      weeks.push({ key: iso(start), week: format(start, "d MMM"), eods: 0, roleplays: 0, looms: 0, applications: 0 });
+      weeks.push({ key: iso(start), week: format(start, "d MMM"), eods: 0, roleplays: 0, looms: 0, applications: 0, expected: d.expectedWeekly });
     }
     const byKey = new Map(weeks.map((w) => [w.key, w]));
     for (const e of d.eods) {
@@ -71,6 +85,36 @@ export function StudentEodPulse() {
     return weeks;
   }, [d]);
 
+  return (
+    <div className="card-surface p-4">
+      <div className="text-[13px] font-medium text-foreground mb-1">Student output</div>
+      <div className="text-[11px] text-muted-foreground mb-3">weekly · EODs filed, roleplays, looms, applications · dashed = if every student hit KPIs</div>
+      <div className="h-56">
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={weekly} margin={{ top: 4, right: 4, bottom: 0, left: -22 }}>
+            <XAxis dataKey="week" tick={{ fontSize: 10 }} stroke="var(--muted-foreground)" tickLine={false} axisLine={false} />
+            <YAxis tick={{ fontSize: 10 }} stroke="var(--muted-foreground)" tickLine={false} axisLine={false} allowDecimals={false} />
+            <Tooltip
+              contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }}
+              labelStyle={{ color: "var(--foreground)" }}
+            />
+            <Bar dataKey="roleplays" name="Roleplays" stackId="a" fill="var(--chart-3)" />
+            <Bar dataKey="looms" name="Looms" stackId="a" fill="var(--chart-4)" />
+            <Bar dataKey="applications" name="Applications" stackId="a" fill="var(--chart-6)" radius={[3, 3, 0, 0]} />
+            <Line dataKey="eods" name="EODs filed" stroke="var(--chart-2)" strokeWidth={2} dot={false} />
+            <Line dataKey="expected" name="Expected at full KPIs" stroke="var(--muted-foreground)" strokeWidth={1.5} strokeDasharray="5 4" dot={false} />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
+export function StudentEodPulse() {
+  const [q, setQ] = useState("");
+  const pulseQ = useStudentEodPulse();
+  const d = pulseQ.data;
+
   const feed = useMemo(() => {
     if (!d) return [];
     const term = q.trim().toLowerCase();
@@ -82,26 +126,7 @@ export function StudentEodPulse() {
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <div className="card-surface p-4">
-        <div className="text-[13px] font-medium text-foreground mb-1">Student output</div>
-        <div className="text-[11px] text-muted-foreground mb-3">weekly · EODs filed, roleplays, looms, applications</div>
-        <div className="h-56">
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={weekly} margin={{ top: 4, right: 4, bottom: 0, left: -22 }}>
-              <XAxis dataKey="week" tick={{ fontSize: 10 }} stroke="var(--muted-foreground)" tickLine={false} axisLine={false} />
-              <YAxis tick={{ fontSize: 10 }} stroke="var(--muted-foreground)" tickLine={false} axisLine={false} allowDecimals={false} />
-              <Tooltip
-                contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }}
-                labelStyle={{ color: "var(--foreground)" }}
-              />
-              <Bar dataKey="roleplays" name="Roleplays" stackId="a" fill="var(--chart-3)" />
-              <Bar dataKey="looms" name="Looms" stackId="a" fill="var(--chart-4)" />
-              <Bar dataKey="applications" name="Applications" stackId="a" fill="var(--chart-6)" radius={[3, 3, 0, 0]} />
-              <Line dataKey="eods" name="EODs filed" stroke="var(--chart-2)" strokeWidth={2} dot={false} />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
+      <StudentOutputCard />
 
       <div className="card-surface p-4">
         <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
