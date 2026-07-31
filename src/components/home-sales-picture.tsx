@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
-  ArrowRight, CalendarCheck2, Eye, HandCoins, PhoneCall, Target, UserRound,
+  ArrowRight, CalendarCheck2, Eye, HandCoins, PhoneCall, Target, UserRound, Wallet,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { format, startOfWeek, subDays } from "date-fns";
@@ -14,13 +14,25 @@ import { listCloseLeads } from "@/lib/close-crm.functions";
 import { BlurMoney } from "@/components/blur-money";
 
 /**
- * Abu Bilal's home picture (founder 2026-07-31): he runs sales, so his
- * overview opens on the day's few load-bearing numbers — sets, show rate,
- * yesterday's volume vs target (his coaching trigger), closes, pipeline.
- * Deliberately LARGE and calm: six tiles, full words, no dense grids.
+ * Abu Bilal's home picture (founder 2026-07-31, expanded same day): he runs
+ * sales, so his overview opens on the day's load-bearing numbers — sets,
+ * show rate, yesterday's volume vs target (dials, DMs AND sets), cash, and
+ * pipeline — plus a per-setter week table for the "why is this not working"
+ * conversation. Deliberately LARGE and calm: full words, no dense grids.
  */
 
 const iso = (d: Date) => format(d, "yyyy-MM-dd");
+
+type SetterWeekRow = {
+  id: string;
+  name: string;
+  sets: number;
+  showed: number;
+  noShows: number;
+  showRate: number | null;
+  yesterday: string;
+  short: boolean;
+};
 
 export function HomeSalesPicture() {
   const closeLeadsFn = useServerFn(listCloseLeads);
@@ -33,7 +45,8 @@ export function HomeSalesPicture() {
       const yesterday = iso(subDays(new Date(), 1));
       const weekStart = iso(startOfWeek(new Date(), { weekStartsOn: 1 }));
       const period = getPeriod(0);
-      const [setsRes, eodsRes, profilesRes, setterRolesRes, dealsRes] = await Promise.all([
+      const dealsFrom = weekStart < period.start ? weekStart : period.start;
+      const [setsRes, eodsRes, profilesRes, setterRolesRes, dealsRes, weekPaysRes] = await Promise.all([
         (supabase.from("set_reminders" as never)
           .select("id, owner_id, status, attendance_status, event_start")
           .gte("event_start", weekStart + "T00:00:00") as any),
@@ -43,11 +56,16 @@ export function HomeSalesPicture() {
         supabase.from("profiles").select("id, display_name, setter_type, active").eq("is_demo", false),
         supabase.from("user_roles").select("user_id").eq("role", "setter"),
         supabase.from("deals")
-          .select("id, cash_collected_upfront")
+          .select("id, cash_collected_upfront, deal_date")
           .eq("is_demo", false)
           .is("voided_at", null)
-          .gte("deal_date", period.start)
+          .gte("deal_date", dealsFrom)
           .lte("deal_date", period.end),
+        supabase.from("installment_payments")
+          .select("amount, paid_at, installments!inner(students!inner(is_demo))")
+          .eq("installments.students.is_demo", false)
+          .eq("status", "paid")
+          .gte("paid_at", weekStart + "T00:00:00"),
       ]);
 
       const sets = ((setsRes.data ?? []) as { id: string; owner_id: string | null; status: string; attendance_status: string; event_start: string }[]);
@@ -58,31 +76,58 @@ export function HomeSalesPicture() {
       const showDen = showed + noShows;
       const unclaimed = liveSets.filter((s) => !s.owner_id).length;
 
-      // Yesterday's setter volume vs the targets that applied yesterday.
+      // Yesterday's setter volume vs the targets that applied yesterday —
+      // dials/DMs AND booked sets, judged per setter type like Performance.
       const setterIds = new Set(((setterRolesRes.data ?? []) as { user_id: string }[]).map((r) => r.user_id));
       const profiles = ((profilesRes.data ?? []) as { id: string; display_name: string | null; setter_type: string | null; active: boolean | null }[]);
       const setters = profiles.filter((p) => setterIds.has(p.id) && p.active !== false && p.setter_type);
-      const eods = ((eodsRes.data ?? []) as EodKpiRow[]);
-      let dials = 0, dms = 0, dialTarget = 0, dmTarget = 0;
+      const eods = ((eodsRes.data ?? []) as (EodKpiRow & { user_id?: string })[]);
+      let dials = 0, dms = 0, setsBookedYest = 0, dialTarget = 0, dmTarget = 0, setsTarget = 0;
       const missed: string[] = [];
+      const setterRows: SetterWeekRow[] = [];
       for (const p of setters) {
         const st = p.setter_type as Exclude<SetterType, null>;
         const t = kpiTargetsFor(st, yesterday);
-        const mine = eods.filter((e) => (e as { user_id?: string }).user_id === p.id);
+        const mine = eods.filter((e) => e.user_id === p.id);
         const myDials = mine.reduce((s, e) => s + (e.dials ?? 0), 0);
         const myDms = mine.reduce((s, e) => s + outreachOf(e), 0);
+        const mySets = mine.reduce((s, e) => s + (e.calls_booked ?? 0), 0);
         dials += myDials;
         dms += myDms;
+        setsBookedYest += mySets;
+        setsTarget += t.sets;
         if (st === "dm") dmTarget += t.primaryTarget;
         else if (st === "phone") dialTarget += t.primaryTarget;
         else { dialTarget += t.primaryTarget; dmTarget += t.secondaryTarget ?? 0; }
         const hitPrimary = st === "dm" ? myDms >= t.primaryTarget : myDials >= t.primaryTarget;
         const hitSecondary = st === "full_cycle" ? myDms >= (t.secondaryTarget ?? 0) : true;
-        if (mine.length === 0 || !hitPrimary || !hitSecondary) missed.push(p.display_name ?? "Unknown");
-      }
+        const hitSets = mySets >= t.sets;
+        const short = mine.length === 0 || !hitPrimary || !hitSecondary || !hitSets;
+        if (short) missed.push(p.display_name ?? "Unknown");
 
-      const deals = ((dealsRes.data ?? []) as { id: string; cash_collected_upfront: number | null }[]);
-      const periodCash = deals.reduce((s, d) => s + Number(d.cash_collected_upfront ?? 0), 0);
+        const mySetRows = liveSets.filter((s) => s.owner_id === p.id);
+        const myShowed = mySetRows.filter((s) => s.attendance_status === "showed").length;
+        const myNoShow = mySetRows.filter((s) => s.attendance_status === "no_show").length;
+        const den = myShowed + myNoShow;
+        const primaryLabel = st === "dm" ? `${myDms} DMs` : `${myDials} dials`;
+        setterRows.push({
+          id: p.id,
+          name: p.display_name ?? "Unknown",
+          sets: mySetRows.length,
+          showed: myShowed,
+          noShows: myNoShow,
+          showRate: den > 0 ? Math.round((myShowed / den) * 100) : null,
+          yesterday: mine.length === 0 ? "no report" : `${primaryLabel} · ${mySets} sets`,
+          short,
+        });
+      }
+      setterRows.sort((a, b) => b.sets - a.sets);
+
+      const deals = ((dealsRes.data ?? []) as { id: string; cash_collected_upfront: number | null; deal_date: string }[]);
+      const periodDeals = deals.filter((d) => d.deal_date >= period.start);
+      const periodCash = periodDeals.reduce((s, d) => s + Number(d.cash_collected_upfront ?? 0), 0);
+      const weekUpfront = deals.filter((d) => d.deal_date >= weekStart).reduce((s, d) => s + Number(d.cash_collected_upfront ?? 0), 0);
+      const weekInstall = ((weekPaysRes.data ?? []) as { amount: number }[]).reduce((s, p) => s + Number(p.amount), 0);
 
       let pipeline: { configured: boolean; active: number; value: number } = { configured: false, active: 0, value: 0 };
       try {
@@ -107,13 +152,19 @@ export function HomeSalesPicture() {
         unclaimed,
         dials,
         dms,
+        setsBookedYest,
         dialTarget,
         dmTarget,
+        setsTarget,
         missed,
-        closes: deals.length,
+        closes: periodDeals.length,
         periodCash,
         periodLabel: period.label,
+        weekCash: weekUpfront + weekInstall,
+        weekUpfront,
+        weekInstall,
         pipeline,
+        setterRows,
       };
     },
   });
@@ -145,11 +196,19 @@ export function HomeSalesPicture() {
         <BigTile
           icon={PhoneCall}
           label="Volume yesterday"
-          detail={d ? `${d.dials} dials of ${d.dialTarget} · ${d.dms} DMs of ${d.dmTarget}` : "…"}
+          detail={d ? `${d.dials} dials of ${d.dialTarget} · ${d.dms} DMs of ${d.dmTarget} · ${d.setsBookedYest} sets of ${d.setsTarget}` : "…"}
           value={d ? (d.missed.length === 0 ? "On target" : `${d.missed.length} short`) : "…"}
           to="/performance"
           tone={d && d.missed.length > 0 ? "warning" : undefined}
           small
+        />
+        <BigTile
+          icon={Wallet}
+          label="Cash collected this week"
+          detail={d ? `${money(d.weekUpfront)} upfront · ${money(d.weekInstall)} installments` : "…"}
+          value={d ? "" : "…"}
+          valueSub={d ? <span className="text-xl font-medium text-foreground"><BlurMoney>{money(d.weekCash)}</BlurMoney></span> : undefined}
+          to="/revenue"
         />
         <BigTile
           icon={HandCoins}
@@ -176,6 +235,40 @@ export function HomeSalesPicture() {
           tone={d && d.unclaimed > 0 ? "warning" : undefined}
         />
       </div>
+      {d && d.setterRows.length > 0 && (
+        <div className="border-t border-border px-5 py-4 sm:px-6">
+          <div className="flex items-baseline justify-between gap-3 mb-2">
+            <p className="text-caption font-medium text-foreground">Setters this week</p>
+            <Link to={"/performance" as string} className="text-caption text-muted-foreground hover:text-foreground inline-flex items-center gap-1">Open Performance <ArrowRight className="h-3 w-3" /></Link>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[560px] text-caption">
+              <thead>
+                <tr className="text-micro text-muted-foreground">
+                  <th className="text-left py-1.5 font-medium">Setter</th>
+                  <th className="text-right py-1.5 font-medium">Sets</th>
+                  <th className="text-right py-1.5 font-medium">Showed</th>
+                  <th className="text-right py-1.5 font-medium">No-show</th>
+                  <th className="text-right py-1.5 font-medium">Show rate</th>
+                  <th className="text-right py-1.5 font-medium">Yesterday</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {d.setterRows.map((r) => (
+                  <tr key={r.id}>
+                    <td className="py-2 font-medium text-foreground">{r.name}</td>
+                    <td className="py-2 text-right tabular-nums">{r.sets}</td>
+                    <td className="py-2 text-right tabular-nums">{r.showed}</td>
+                    <td className="py-2 text-right tabular-nums">{r.noShows}</td>
+                    <td className="py-2 text-right tabular-nums">{r.showRate != null ? `${r.showRate}%` : "–"}</td>
+                    <td className={`py-2 text-right tabular-nums ${r.short ? "text-warning-fg" : "text-muted-foreground"}`}>{r.yesterday}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
       {d && d.missed.length > 0 && (
         <div className="border-t border-border px-5 py-3 sm:px-6 text-caption text-muted-foreground">
           Short on volume yesterday: <span className="text-foreground font-medium">{d.missed.join(", ")}</span>
