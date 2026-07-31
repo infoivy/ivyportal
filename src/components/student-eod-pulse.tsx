@@ -40,37 +40,28 @@ function useStudentEodPulse() {
           .gte("report_date", eightWeeksAgo)
           .order("report_date", { ascending: false })
           .limit(2000),
-        supabase.from("students").select("id, full_name, phase, status").eq("is_demo", false).is("archived_at" as never, null),
+        supabase.from("students").select("id, full_name").eq("is_demo", false).is("archived_at" as never, null),
       ]);
-      const students = (studentsRes.data ?? []) as unknown as { id: string; full_name: string; phase: string; status: string }[];
-      // Expected weekly output if every reporting student hit their KPIs
-      // (founder 2026-07-31): 3 roleplays/day for everyone working, 3 looms/
-      // day in training, 5 applications/day in applying. Onboarding students
-      // are still locked to Start Here and graduated phases owe nothing.
-      const training = students.filter((s) => s.status === "active" && ["training", "coaching_1on1"].includes(s.phase)).length;
-      const applying = students.filter((s) => s.status === "active" && s.phase === "applying").length;
-      const expectedWeekly = 7 * (3 * (training + applying) + 3 * training + 5 * applying);
+      const students = (studentsRes.data ?? []) as unknown as { id: string; full_name: string }[];
       return {
         eods: (eodsRes.data ?? []) as unknown as EodRow[],
         names: new Map(students.map((s) => [s.id, s.full_name])),
-        expectedWeekly,
       };
     },
   });
 }
 
 /** The weekly output chart, shared by Student success and the CSM overview
- *  (founder 2026-07-31: "put student output in csm overview"). The dashed
- *  line is what a fully-on-KPI week would produce with today's roster. */
+ *  (founder 2026-07-31: "put student output in csm overview"). */
 export function StudentOutputCard() {
   const pulseQ = useStudentEodPulse();
   const d = pulseQ.data;
   const weekly = useMemo(() => {
     if (!d) return [];
-    const weeks: { key: string; week: string; eods: number; roleplays: number; looms: number; applications: number; expected: number }[] = [];
+    const weeks: { key: string; week: string; eods: number; roleplays: number; looms: number; applications: number }[] = [];
     for (let i = 7; i >= 0; i--) {
       const start = startOfWeek(subWeeks(new Date(), i), { weekStartsOn: 1 });
-      weeks.push({ key: iso(start), week: format(start, "d MMM"), eods: 0, roleplays: 0, looms: 0, applications: 0, expected: d.expectedWeekly });
+      weeks.push({ key: iso(start), week: format(start, "d MMM"), eods: 0, roleplays: 0, looms: 0, applications: 0 });
     }
     const byKey = new Map(weeks.map((w) => [w.key, w]));
     for (const e of d.eods) {
@@ -88,7 +79,7 @@ export function StudentOutputCard() {
   return (
     <div className="card-surface p-4">
       <div className="text-[13px] font-medium text-foreground mb-1">Student output</div>
-      <div className="text-[11px] text-muted-foreground mb-3">weekly · EODs filed, roleplays, looms, applications · dashed = if every student hit KPIs</div>
+      <div className="text-[11px] text-muted-foreground mb-3">weekly · EODs filed, roleplays, looms, applications</div>
       <div className="h-56">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={weekly} margin={{ top: 4, right: 4, bottom: 0, left: -22 }}>
@@ -102,7 +93,6 @@ export function StudentOutputCard() {
             <Bar dataKey="looms" name="Looms" stackId="a" fill="var(--chart-4)" />
             <Bar dataKey="applications" name="Applications" stackId="a" fill="var(--chart-6)" radius={[3, 3, 0, 0]} />
             <Line dataKey="eods" name="EODs filed" stroke="var(--chart-2)" strokeWidth={2} dot={false} />
-            <Line dataKey="expected" name="Expected at full KPIs" stroke="var(--muted-foreground)" strokeWidth={1.5} strokeDasharray="5 4" dot={false} />
           </ComposedChart>
         </ResponsiveContainer>
       </div>
