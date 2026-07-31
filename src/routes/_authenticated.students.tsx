@@ -871,7 +871,7 @@ function StudentCard({ s, canDrag, coachName, atRisk, canManage, coaches, onUpda
         {canManage && (
           <button
             onClick={() => setEditing(o => !o)}
-            className={`p-1 rounded-sm shrink-0 motion-safe:transition-colors ${editing ? "text-foreground bg-[var(--accent)]" : "text-muted-foreground/50 hover:text-foreground"}`}
+            className={`p-1 rounded-sm shrink-0 motion-safe:transition-colors ${editing ? "text-foreground bg-[var(--accent)]" : "text-muted-foreground hover:text-foreground"}`}
             title="Quick edit"
           >
             <Pencil className="h-3 w-3" />

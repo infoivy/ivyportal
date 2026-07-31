@@ -121,7 +121,7 @@ function HolderCard({ holder, entries, isSelf }: {
 }) {
   const { user } = useAuth();
   const qc = useQueryClient();
-  const [adding, setAdding] = useState<"credit" | "spend" | null>(null);
+  const [adding, setAdding] = useState<"credit" | "spend" | "balance" | null>(null);
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const [category, setCategory] = useState<string>(SPEND_CATEGORIES[0]);
@@ -159,21 +159,37 @@ function HolderCard({ holder, entries, isSelf }: {
   }, [grouped]);
 
   const finalNote = adding === "spend" ? spendNote(category, note) : note.trim();
-  const canSave = Number(amount) > 0 && finalNote.length >= 1;
+  const canSave = adding === "balance"
+    ? amount.trim() !== "" && Number.isFinite(Number(amount)) && Math.abs(Number(amount) - stats.balance) >= 0.01
+    : Number(amount) > 0 && finalNote.length >= 1;
 
   const save = async () => {
     if (!user || !adding || !canSave) return;
     setSaving(true);
+    // "Set balance" writes the signed difference as its own audited entry
+    // (founder 2026-07-31: the holders correct their own balance; the trust
+    // circle plus the audit log is the control).
+    const row = adding === "balance"
+      ? (() => {
+          const target = Math.round(Number(amount) * 100) / 100;
+          const diff = Math.round((target - stats.balance) * 100) / 100;
+          return {
+            kind: diff > 0 ? "credit" : "spend",
+            amount: Math.abs(diff),
+            note: [`Balance correction · set to ${money(target)}`, note.trim()].filter(Boolean).join(" · "),
+          };
+        })()
+      : { kind: adding, amount: Math.round(Number(amount) * 100) / 100, note: finalNote };
     const { error } = await (supabase.from("wallet_entries" as any).insert({
       user_id: holder.id,
-      kind: adding,
-      amount: Math.round(Number(amount) * 100) / 100,
-      note: finalNote,
+      kind: row.kind,
+      amount: row.amount,
+      note: row.note,
       created_by: user.id,
     }) as any);
     setSaving(false);
     if (error) return toast.error(error.message);
-    toast.success(adding === "credit" ? "Card loaded" : "Spend logged");
+    toast.success(adding === "credit" ? "Card loaded" : adding === "spend" ? "Spend logged" : "Balance corrected");
     setAdding(null); setAmount(""); setNote(""); setCategory(SPEND_CATEGORIES[0]);
     invalidateForTables(qc, ["wallet_entries"]);
   };
@@ -209,10 +225,10 @@ function HolderCard({ holder, entries, isSelf }: {
       <div className="px-5 py-3">
         {adding ? (
           <div className="flex flex-wrap items-center gap-2 pb-3">
-            <span className="text-[12px] font-medium text-foreground">{adding === "credit" ? "Load card" : "Log spend"}</span>
+            <span className="text-[12px] font-medium text-foreground">{adding === "credit" ? "Load card" : adding === "spend" ? "Log spend" : "Set the true balance"}</span>
             <input
               autoFocus
-              placeholder="Amount"
+              placeholder={adding === "balance" ? money(stats.balance) : "Amount"}
               value={amount}
               onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))}
               onKeyDown={(e) => { if (e.key === "Enter") void save(); if (e.key === "Escape") setAdding(null); }}
@@ -228,7 +244,7 @@ function HolderCard({ holder, entries, isSelf }: {
               </select>
             )}
             <input
-              placeholder={adding === "credit" ? "What for (e.g. August profit share + commissions)" : "Detail (optional)"}
+              placeholder={adding === "credit" ? "What for (e.g. August profit share + commissions)" : adding === "balance" ? "Why it was off (optional)" : "Detail (optional)"}
               value={note}
               onChange={(e) => setNote(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") void save(); if (e.key === "Escape") setAdding(null); }}
@@ -251,6 +267,10 @@ function HolderCard({ holder, entries, isSelf }: {
             <span className="text-muted-foreground/40">·</span>
             <button onClick={() => setAdding("spend")} className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline">
               <Minus className="h-3 w-3" /> Log spend
+            </button>
+            <span className="text-muted-foreground/40">·</span>
+            <button onClick={() => { setAdding("balance"); setAmount(""); }} className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline" title="Type the card's real balance; the difference is logged as a correction">
+              <CreditCard className="h-3 w-3" /> Set balance
             </button>
           </div>
         )}
