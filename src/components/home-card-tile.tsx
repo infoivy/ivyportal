@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { invalidateForTables } from "@/lib/query-keys";
 import { useAuth } from "@/lib/auth-context";
 import { money } from "@/lib/revenue";
+import { SPEND_CATEGORIES, spendNote } from "@/lib/wallet";
 import { BlurMoney } from "@/components/blur-money";
 
 /**
@@ -21,6 +22,7 @@ export function HomeCardTile() {
   const [adding, setAdding] = useState<"credit" | "spend" | null>(null);
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
+  const [category, setCategory] = useState<string>(SPEND_CATEGORIES[0]);
   const [saving, setSaving] = useState(false);
 
   const cardQ = useQuery({
@@ -42,21 +44,23 @@ export function HomeCardTile() {
 
   if (!isHolder) return null;
 
+  const finalNote = adding === "spend" ? spendNote(category, note) : note.trim();
+  const canSave = Number(amount) > 0 && finalNote.length >= 1;
+
   const save = async () => {
-    const amt = Number(amount);
-    if (!user || !adding || !(amt > 0) || note.trim().length < 3) return;
+    if (!user || !adding || !canSave) return;
     setSaving(true);
     const { error } = await (supabase.from("wallet_entries" as any).insert({
       user_id: user.id,
       kind: adding,
-      amount: Math.round(amt * 100) / 100,
-      note: note.trim(),
+      amount: Math.round(Number(amount) * 100) / 100,
+      note: finalNote,
       created_by: user.id,
     }) as any);
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success(adding === "credit" ? "Card loaded" : "Spend logged");
-    setAdding(null); setAmount(""); setNote("");
+    setAdding(null); setAmount(""); setNote(""); setCategory(SPEND_CATEGORIES[0]);
     invalidateForTables(qc, ["wallet_entries"]);
   };
 
@@ -86,15 +90,24 @@ export function HomeCardTile() {
               onKeyDown={(e) => { if (e.key === "Enter") void save(); if (e.key === "Escape") setAdding(null); }}
               className="h-9 w-24 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-right text-[13px] tabular-nums focus:outline-none focus:border-ring"
             />
+            {adding === "spend" && (
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="h-9 rounded-sm border border-[var(--border)] bg-[var(--background)] px-2 text-[13px] focus:outline-none focus:border-ring"
+              >
+                {SPEND_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            )}
             <input
-              placeholder="What for"
+              placeholder={adding === "spend" ? "Detail (optional)" : "What for"}
               value={note}
               onChange={(e) => setNote(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") void save(); if (e.key === "Escape") setAdding(null); }}
-              className="h-9 flex-1 min-w-[130px] px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-[13px] focus:outline-none focus:border-ring"
+              className="h-9 flex-1 min-w-[110px] px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-[13px] focus:outline-none focus:border-ring"
             />
             <button
-              disabled={saving || !(Number(amount) > 0) || note.trim().length < 3}
+              disabled={saving || !canSave}
               onClick={() => void save()}
               className="h-9 px-3 rounded-sm bg-primary text-primary-foreground text-[12px] font-medium hover:bg-primary/90 disabled:opacity-40"
             >
