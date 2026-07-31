@@ -128,10 +128,7 @@ function HolderCard({ holder, entries, isSelf }: {
   const stats = useMemo(() => {
     const credited = entries.filter((e) => e.kind === "credit").reduce((s, e) => s + Number(e.amount), 0);
     const spent = entries.filter((e) => e.kind === "spend").reduce((s, e) => s + Number(e.amount), 0);
-    const thisMonth = new Date().toISOString().slice(0, 7);
-    const mCred = entries.filter((e) => e.kind === "credit" && e.entry_date.startsWith(thisMonth)).reduce((s, e) => s + Number(e.amount), 0);
-    const mSpent = entries.filter((e) => e.kind === "spend" && e.entry_date.startsWith(thisMonth)).reduce((s, e) => s + Number(e.amount), 0);
-    return { credited, spent, balance: credited - spent, mCred, mSpent };
+    return { credited, spent, balance: credited - spent };
   }, [entries]);
 
   const grouped = useMemo(() => {
@@ -142,6 +139,22 @@ function HolderCard({ holder, entries, isSelf }: {
     }
     return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]));
   }, [entries]);
+
+  // Month-by-month running balance: what came in, what carried in from the
+  // previous month, and what carries out — the founder's "count what's left
+  // for next month" view, computed instead of remembered.
+  const monthSummary = useMemo(() => {
+    const asc = [...grouped].sort((a, b) => a[0].localeCompare(b[0]));
+    let running = 0;
+    const map = new Map<string, { carryIn: number; loaded: number; spent: number; carryOut: number }>();
+    for (const [ym, rows] of asc) {
+      const loaded = rows.filter((r) => r.kind === "credit").reduce((s, r) => s + Number(r.amount), 0);
+      const spentM = rows.filter((r) => r.kind === "spend").reduce((s, r) => s + Number(r.amount), 0);
+      map.set(ym, { carryIn: running, loaded, spent: spentM, carryOut: running + loaded - spentM });
+      running += loaded - spentM;
+    }
+    return map;
+  }, [grouped]);
 
   const save = async () => {
     const amt = Number(amount);
@@ -179,8 +192,7 @@ function HolderCard({ holder, entries, isSelf }: {
           <div className="min-w-0">
             <div className="text-[14px] font-medium text-foreground truncate">{holder.display_name ?? holder.id.slice(0, 8)}</div>
             <div className="text-[11px] text-muted-foreground tabular-nums">
-              {money(stats.credited)} loaded · {money(stats.spent)} spent
-              {(stats.mCred > 0 || stats.mSpent > 0) && ` · this month ${money(stats.mCred)} in, ${money(stats.mSpent)} out`}
+              {money(stats.credited)} loaded all-time · {money(stats.spent)} spent
             </div>
           </div>
         </div>
@@ -234,10 +246,19 @@ function HolderCard({ holder, entries, isSelf }: {
           <p className="text-[12px] text-muted-foreground pb-2">Nothing on this card yet. Load it with their commissions and profit share.</p>
         ) : (
           <div className="space-y-2 pb-1">
-            {grouped.map(([ym, rows]) => (
+            {grouped.map(([ym, rows]) => {
+              const ms = monthSummary.get(ym);
+              return (
               <div key={ym}>
-                <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-1">
-                  {monthLabel(ym + "-01")}
+                <div className="flex flex-wrap items-baseline justify-between gap-x-3 mb-1">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                    {monthLabel(ym + "-01")}
+                  </span>
+                  {ms && (
+                    <span className="text-[10px] text-muted-foreground tabular-nums">
+                      {ms.carryIn > 0 ? `carried in ${money(ms.carryIn)} · ` : ""}loaded {money(ms.loaded)} · spent {money(ms.spent)} · carries out {money(ms.carryOut)}
+                    </span>
+                  )}
                 </div>
                 <div className="space-y-0.5">
                   {rows.map((e) => (
@@ -258,7 +279,8 @@ function HolderCard({ holder, entries, isSelf }: {
                   ))}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

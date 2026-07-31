@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { format, subDays } from "date-fns";
 import { ArrowRight, HandCoins, WalletCards } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { supabase } from "@/integrations/supabase/client";
 import { money } from "@/lib/revenue";
 import { getWhopCashWindow } from "@/lib/mochi.functions";
 import { fetchCollectedCashByCloser } from "@/lib/collected-cash";
@@ -47,8 +48,20 @@ export function HomeMoneyStrip() {
     enabled: canSee,
     staleTime: 4 * 60_000,
     queryFn: async () => {
-      const owed = await fetchPeriodOwed(period);
-      return owed.reduce((s, m) => s + m.total, 0);
+      // Truth-first (founder 2026-07-31): members already confirmed paid drop
+      // out of "to pay out"; a fully settled period says so instead of
+      // re-showing computed numbers that were already paid.
+      const [owed, confRes] = await Promise.all([
+        fetchPeriodOwed(period),
+        (supabase.from("payout_confirmations" as any).select("user_id, amount_paid").eq("period_start", period.start) as any),
+      ]);
+      const confirmed = new Map(
+        (((confRes as { data?: { user_id: string; amount_paid: number }[] }).data) ?? []).map(r => [r.user_id, Number(r.amount_paid)]),
+      );
+      const remaining = owed.filter(m => !confirmed.has(m.id)).reduce((s, m) => s + m.total, 0);
+      const paidSum = [...confirmed.values()].reduce((s, v) => s + v, 0);
+      const allPaid = confirmed.size > 0 && owed.every(m => confirmed.has(m.id));
+      return { remaining, paidSum, allPaid };
     },
   });
 
@@ -83,12 +96,20 @@ export function HomeMoneyStrip() {
         <div className="min-w-0">
           <div className="flex items-center gap-2 text-muted-foreground">
             <WalletCards className="h-4 w-4" />
-            <p className="text-micro font-semibold uppercase tracking-[0.1em]">To pay out · {period.label}</p>
+            <p className="text-micro font-semibold uppercase tracking-[0.1em]">
+              {payoutQ.data?.allPaid ? `Paid out · ${period.label}` : `Left to pay out · ${period.label}`}
+            </p>
           </div>
           <p className="mt-3 text-[28px] font-medium leading-none tracking-[-0.02em] tabular-nums text-foreground">
-            {payoutQ.isLoading ? "…" : <BlurMoney>{money(payoutQ.data ?? 0)}</BlurMoney>}
+            {payoutQ.isLoading ? "…" : <BlurMoney>{money(payoutQ.data?.allPaid ? (payoutQ.data?.paidSum ?? 0) : (payoutQ.data?.remaining ?? 0))}</BlurMoney>}
           </p>
-          <p className="mt-2 text-caption text-muted-foreground">Live · moves with cash until the period closes</p>
+          <p className="mt-2 text-caption text-muted-foreground">
+            {payoutQ.data?.allPaid
+              ? "Every payout confirmed · nothing left to pay"
+              : (payoutQ.data?.paidSum ?? 0) > 0
+                ? `${money(payoutQ.data?.paidSum ?? 0)} already confirmed paid`
+                : "Live · moves with cash until the period closes"}
+          </p>
         </div>
         <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-foreground" aria-hidden="true" />
       </Link>

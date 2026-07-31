@@ -101,8 +101,8 @@ const TABLE_KEYS = {
   commission_rates: [keys.revenue, keys.finance, keys.payoutsPage, keys.admin, keys.cashCalendar, keys.dashboard],
   business_expenses: [keys.finance, keys.installmentsPage, keys.cashCalendar],
   founder_settings: [keys.finance, keys.admin, keys.dashboard, keys.installmentsPage],
-  payout_confirmations: [keys.payoutsPage, keys.payoutAlert, keys.dashboard, keys.notifications],
-  payout_adjustments: [keys.payoutsPage, keys.payoutAlert, keys.dashboard, keys.notifications],
+  payout_confirmations: [keys.payoutsPage, keys.payoutAlert, keys.dashboard, keys.notifications, keys.finance],
+  payout_adjustments: [keys.payoutsPage, keys.payoutAlert, keys.dashboard, keys.notifications, keys.finance],
   wallet_entries: [keys.cardsPage],
   set_reminders: [keys.calSets, keys.dashboard, keys.dashboardNudges],
 } satisfies Record<string, readonly QueryKey[]>;

@@ -6,7 +6,7 @@ import { invalidateForTables } from "@/lib/query-keys";
 import { useAuth } from "@/lib/auth-context";
 import { useServerFn } from "@tanstack/react-start";
 import { getFinanceRevenue, findWhopMatch } from "@/lib/mochi.functions";
-import { calcMonthPayouts } from "@/lib/payouts-calc";
+import { buildPayoutRows, memberPayoutTotals, type PayoutAdjustment } from "@/lib/payout-period";
 import { MoneyShell } from "@/components/money-shell";
 import { ExpenseModal } from "@/components/expense-modal";
 import { DEFAULT_RATES } from "@/lib/revenue";
@@ -85,17 +85,20 @@ function FinanceInner() {
     queryKey: ["page", "finance", iso(monthStart), mrrPage],
     queryFn: async () => {
       const in6mo = new Date(now.getFullYear(), now.getMonth() + 6, 0);
-      const [expensesRes, dealsRes, paysRes, futurePaysRes, settingsRes, paidRes, instRes, profRes, ratesRes, cofRes] = await Promise.all([
+      const periodStarts = [iso(monthStart), iso(monthStart).slice(0, 8) + "16"];
+      const [expensesRes, dealsRes, paysRes, futurePaysRes, settingsRes, paidRes, instRes, profRes, ratesRes, cofRes, confRes, adjRes] = await Promise.all([
         supabase.from("business_expenses").select("*").order("recurring", { ascending: false }).order("due_day"),
-        supabase.from("deals").select("id, closer_id, setter_id, cash_collected_upfront, deal_date").eq("is_demo", false).is("voided_at", null).gte("deal_date", iso(monthStart)).lte("deal_date", iso(monthEnd)),
+        supabase.from("deals").select("id, closer_id, setter_id, total_value, cash_collected_upfront, payment_type, deal_date").eq("is_demo", false).is("voided_at", null).gte("deal_date", iso(monthStart)).lte("deal_date", iso(monthEnd)),
         supabase.from("installment_payments").select("id, installment_id, sequence, amount, due_date, status, notes, installments!inner(student_name, students!inner(is_demo))").eq("installments.students.is_demo", false).gte("due_date", iso(monthStart)).lte("due_date", iso(monthEnd)),
         supabase.from("installment_payments").select("amount, due_date, status, installments!inner(students!inner(is_demo))").eq("installments.students.is_demo", false).not("status", "in", "(waived,refunded)").gte("due_date", iso(mrrFrom)).lte("due_date", iso(mrrTo)),
         supabase.from("founder_settings").select("id, processor_balance, processor_balance_updated_at, monthly_cash_goal, base_pay_day").maybeSingle(),
         supabase.from("installment_payments").select("amount, paid_at, installment_id, installments!inner(students!inner(is_demo))").eq("installments.students.is_demo", false).eq("status", "paid").gte("paid_at", iso(monthStart) + "T00:00:00").lte("paid_at", iso(monthEnd) + "T23:59:59").not("paid_at", "is", null),
         supabase.from("installments").select("id, setter_id, closer_id, students!inner(is_demo)").eq("students.is_demo", false),
-        supabase.from("profiles").select("id, display_name, commission_cap_pct, base_pay_monthly, base_pay_day").eq("is_demo", false),
+        supabase.from("profiles").select("id, display_name, commission_cap_pct, base_pay_monthly, base_pay_day, started_on").eq("is_demo", false),
         supabase.from("commission_rates").select("key, rate").eq("active", true),
         supabase.from("user_roles").select("user_id").eq("role", "cofounder"),
+        (supabase.from("payout_confirmations" as any).select("period_start, user_id, amount_paid").in("period_start", periodStarts) as any),
+        (supabase.from("payout_adjustments" as any).select("*").in("period_start", periodStarts) as any),
       ]);
       const rates = { ...DEFAULT_RATES };
       for (const row of ratesRes.data ?? []) {
@@ -110,9 +113,11 @@ function FinanceInner() {
         settings: settingsRes.data as { id: string; processor_balance: number | null; processor_balance_updated_at: string | null; monthly_cash_goal: number | null } | null,
         paidPays: (paidRes.data ?? []) as { amount: number; paid_at: string | null; installment_id: string }[],
         installments: (instRes.data ?? []) as { id: string; setter_id: string | null; closer_id: string | null }[],
-        profiles: (profRes.data ?? []) as { id: string; commission_cap_pct: number | null; base_pay_monthly: number | null }[],
+        profiles: (profRes.data ?? []) as { id: string; display_name: string | null; commission_cap_pct: number | null; base_pay_monthly: number | null; base_pay_day: number | null; started_on: string | null }[],
         rates,
         cofounderIds: new Set(((cofRes.data ?? []) as { user_id: string }[]).map((r) => r.user_id)),
+        confirmations: (confRes.data ?? []) as { period_start: string; user_id: string; amount_paid: number }[],
+        adjustments: (adjRes.data ?? []) as PayoutAdjustment[],
       };
     },
   });
@@ -151,9 +156,9 @@ function FinanceInner() {
 
     const expensesTotal = monthExpenses.reduce((a, e) => a + Number(e.amount), 0);
     // Base pay presents as a business expense (founder-directed 2026-07-28)
-    // but stays OUT of expensesTotal — calcMonthPayouts already counts it, so
-    // profit would double-subtract otherwise. Each member lands on THEIR own
-    // pay day (profiles.base_pay_day, anchored to their start date).
+    // but stays OUT of expensesTotal — the truth-first payouts total already
+    // counts it, so profit would double-subtract otherwise. Each member lands
+    // on THEIR own pay day (profiles.base_pay_day, anchored to their start date).
     const basePayRows = (d.profiles as { id: string; display_name?: string | null; base_pay_monthly?: number | null; base_pay_day?: number | null }[])
       .filter(p => (p.base_pay_monthly ?? 0) > 0)
       .map(p => {
@@ -224,19 +229,62 @@ function FinanceInner() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [d, monthOffset, mrrPage]);
-  // Team payouts for the month — commissions (incl. co-founder caps) + base
-  // pay. Profit is what's left AFTER these, not just after expenses.
+  // Team payouts for the month, TRUTH-FIRST (founder 2026-07-31: "I already
+  // paid everyone out, I don't know where you're calculating this from"):
+  // for each semi-monthly period, a member with a confirmed payout counts at
+  // the STORED amount actually paid; only unconfirmed members count at the
+  // computed value. Same shared math as the Payouts page — never forked.
   const payouts = useMemo(() => {
     if (!d) return null;
-    return calcMonthPayouts({
-      deals: d.deals as never,
-      installmentPayments: d.paidPays,
-      installments: d.installments,
-      profiles: d.profiles,
-      rates: d.rates,
-      cofounderIds: d.cofounderIds,
-    });
-  }, [d]);
+    const profileMap = new Map(d.profiles.map((p) => [p.id, p]));
+    const mStart = iso(monthStart);
+    const mEnd = iso(monthEnd);
+    const periods = [
+      { start: mStart, end: mStart.slice(0, 8) + "15", monthStart: mStart, isSecondHalf: false },
+      { start: mStart.slice(0, 8) + "16", end: mEnd, monthStart: mStart, isSecondHalf: true },
+    ];
+    const confByPeriod = new Map<string, Map<string, number>>();
+    for (const c of d.confirmations) {
+      const inner = confByPeriod.get(c.period_start) ?? new Map<string, number>();
+      inner.set(c.user_id, Number(c.amount_paid));
+      confByPeriod.set(c.period_start, inner);
+    }
+    let total = 0;
+    let confirmedSum = 0;
+    let unconfirmedComputed = 0;
+    for (const p of periods) {
+      const rows = buildPayoutRows({
+        deals: d.deals as never,
+        installmentPayments: d.paidPays as never,
+        installments: d.installments as never,
+        profileMap: profileMap as never,
+        rates: d.rates,
+        cofounderIds: d.cofounderIds,
+      }, p);
+      const owedMembers = memberPayoutTotals(rows, profileMap as never, p, d.adjustments.filter((a) => a.period_start === p.start));
+      const conf = confByPeriod.get(p.start) ?? new Map<string, number>();
+      const owedIds = new Set(owedMembers.map((m) => m.id));
+      for (const m of owedMembers) {
+        if (conf.has(m.id)) {
+          total += conf.get(m.id)!;
+          confirmedSum += conf.get(m.id)!;
+        } else {
+          total += m.total;
+          unconfirmedComputed += m.total;
+        }
+      }
+      // Confirmed payments to people the computation shows nothing for
+      // (e.g. cumulative back pay) are still real money out.
+      for (const [uid, v] of conf) {
+        if (!owedIds.has(uid)) {
+          total += v;
+          confirmedSum += v;
+        }
+      }
+    }
+    return { total, confirmedSum, unconfirmedComputed };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [d, monthOffset]);
 
   // Whop is the cash-in source of truth, and NET is the real number — gross
   // includes processor fees we never receive (founder rule 2026-07-14).
@@ -371,7 +419,7 @@ function FinanceInner() {
           })()}
           icon={<ArrowDownRight className="h-3.5 w-3.5" />}
         />
-        <StatCard label="Expenses + payouts" value={calc ? money(calc.expensesTotal + payoutsTotal) : "–"} sub={calc && payouts ? `${money(calc.expensesTotal + payouts.basePay)} expenses incl. base pay · ${money(payouts.setterCommission + payouts.closerCommission)} commissions` : undefined} icon={<ArrowUpRight className="h-3.5 w-3.5" />} />
+        <StatCard label="Expenses + payouts" value={calc ? money(calc.expensesTotal + payoutsTotal) : "–"} sub={calc && payouts ? `${money(calc.expensesTotal)} expenses · payouts: ${money(payouts.confirmedSum)} confirmed paid${payouts.unconfirmedComputed >= 0.01 ? ` + ${money(payouts.unconfirmedComputed)} computed` : " · all confirmed"}` : undefined} icon={<ArrowUpRight className="h-3.5 w-3.5" />} />
         <StatCard label="Profit (projected)" value={calc ? money(profitProjected) : "–"} sub={calc ? `${money(profitSoFar)} so far · after expenses & payouts` : undefined} icon={<TrendingUp className="h-3.5 w-3.5" />} tone={calc && profitProjected < 0 ? "danger" : "default"} />
         <StatCard label="Installment revenue" value={calc ? money(calc.mrrNow.value) : "–"} sub={calc ? `${money(calc.mrrNow.collected)} collected · ${money(calc.mrrNow.value - calc.mrrNow.collected)} still due` : undefined} icon={<PiggyBank className="h-3.5 w-3.5" />} />
       </div>
@@ -421,9 +469,12 @@ function FinanceInner() {
             <h2 className="text-sm font-semibold">Profit split</h2>
             <span className="text-caption text-muted-foreground">after expenses & payouts · {monthLabel}</span>
           </div>
+          {/* Banked profit leads (founder 2026-07-31: the projected figure read
+              as "my split", which it never was) — real cash minus expenses
+              minus payouts actually recorded. The projection is the footnote. */}
           <div className="text-[28px] font-medium tabular-nums tracking-[-0.02em] mb-4">
-            {calc ? money(Math.max(0, profitProjected)) : "–"}
-            <span className="text-[13px] text-muted-foreground font-normal ml-2">projected profit</span>
+            {calc ? money(Math.max(0, profitSoFar)) : "–"}
+            <span className="text-[13px] text-muted-foreground font-normal ml-2">profit so far · banked cash</span>
           </div>
           <div className="space-y-2.5">
             {SPLIT.map(p => (
@@ -434,14 +485,14 @@ function FinanceInner() {
                 </div>
                 <span className="text-caption text-muted-foreground w-8 text-right">{p.pct}%</span>
                 <span className="text-[13px] tabular-nums font-medium w-24 text-right">
-                  {calc ? money(Math.max(0, profitProjected) * (p.pct / 100)) : "–"}
+                  {calc ? money(Math.max(0, profitSoFar) * (p.pct / 100)) : "–"}
                 </span>
               </div>
             ))}
           </div>
           {calc && profitSoFar !== profitProjected && (
             <p className="text-caption text-muted-foreground mt-4">
-              On banked cash only: {SPLIT.map(p => `${p.name} ${money(Math.max(0, profitSoFar) * (p.pct / 100))}`).join(" · ")}
+              If every scheduled installment this month lands: {money(Math.max(0, profitProjected))} profit · {SPLIT.map(p => `${p.name} ${money(Math.max(0, profitProjected) * (p.pct / 100))}`).join(" · ")}
             </p>
           )}
         </div>
