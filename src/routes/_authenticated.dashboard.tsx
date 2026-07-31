@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { PageShell } from "@/components/ui/page-shell";
 import { Skeleton } from "@/components/ui/skeletons";
 import { HomeMoneyStrip } from "@/components/home-money-strip";
+import { HomeMyItems } from "@/components/home-my-items";
 import { HomeCardTile } from "@/components/home-card-tile";
 import { HomeFulfillmentPicture } from "@/components/home-fulfillment-picture";
 import { HomeSalesPicture } from "@/components/home-sales-picture";
@@ -433,6 +434,9 @@ function HomePage() {
 
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.65fr)_minmax(300px,0.75fr)]">
         <main className="space-y-5">
+          {/* Personal assignments outrank the aggregate queue (founder
+              2026-08-01) — renders nothing when the member has no open items. */}
+          <HomeMyItems />
           <section className="card-surface overflow-hidden" aria-labelledby="next-actions-title">
             <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-4 sm:px-5">
               <div>

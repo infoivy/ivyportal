@@ -249,9 +249,14 @@ function TeamPage() {
                     <span className="italic opacity-70">· no timezone yet</span>
                   )}
                   {(() => {
+                    // Only real new hires carry the onboarding chip (founder
+                    // 2026-08-01: "why does Faizan say 0%?" — established
+                    // members with an untouched checklist are just noise).
                     const pct = memberOnboardingPct(m);
-                    if (pct === null) return null;
-                    const color = pct === 100 ? "text-success-fg" : pct >= 50 ? "text-warning-fg" : "text-danger-fg";
+                    if (pct === null || pct === 100) return null;
+                    const recentHire = m.started_on && (Date.now() - new Date(m.started_on + "T00:00:00").getTime()) < 30 * 86400000;
+                    if (pct === 0 && !recentHire) return null;
+                    const color = pct >= 50 ? "text-warning-fg" : "text-danger-fg";
                     return <span className={color} title="Onboarding progress">· onboarding {pct}%</span>;
                   })()}
                   {(() => {

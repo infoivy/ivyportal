@@ -84,7 +84,6 @@ const PAYMENT_STATES: { key: PaymentState; label: string; color: string }[] = [
   { key: "scholarship", label: "Scholarship", color: "text-primary border-primary/25 bg-primary/10" },
 ];
 
-type Milestone = { id: string; name: string; sort_order: number };
 type Tab = "timeline" | "calls" | "eods" | "csm" | "installments" | "notes";
 
 function StudentDetail() {
@@ -116,52 +115,11 @@ function StudentDetail() {
   const [adhocItems, setAdhocItems] = useState<AdhocItem[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [coaches, setCoaches] = useState<Coach[]>([]);
-  const [milestones, setMilestones] = useState<Milestone[]>([]);
-  const [milestoneProgress, setMilestoneProgress] = useState<Set<string>>(new Set());
   const [callFormOpen, setCallFormOpen] = useState(false);
   const [tab, setTab] = useState<Tab>(() =>
     (["timeline", "calls", "eods", "csm", "installments", "notes"] as Tab[]).includes(tabParam as Tab) ? (tabParam as Tab) : "timeline",
   );
   const { data: healthMap } = useStudentHealth();
-
-  const milestonesQ = useQuery({
-    queryKey: ["page", "student", id, "milestones"],
-    queryFn: async () => {
-
-      const [mRes, mpRes] = await Promise.all([
-
-        (supabase as any).from("student_milestones").select("id, name, sort_order").order("sort_order"),
-
-        (supabase as any).from("student_milestone_progress").select("milestone_id").eq("student_id", id),
-      ]);
-      return {
-        milestones: (mRes.data ?? []) as Milestone[],
-        done: ((mpRes.data ?? []) as any[]).map((r: any) => r.milestone_id) as string[],
-      };
-    },
-  });
-  useEffect(() => {
-    if (!milestonesQ.data) return;
-    setMilestones(milestonesQ.data.milestones);
-    setMilestoneProgress(new Set(milestonesQ.data.done));
-  }, [milestonesQ.data]);
-  const loadMilestones = () => milestonesQ.refetch();
-
-  const toggleMilestone = async (milestoneId: string) => {
-    const has = milestoneProgress.has(milestoneId);
-    if (has) {
-
-      const { error } = await (supabase as any).from("student_milestone_progress")
-        .delete().eq("student_id", id).eq("milestone_id", milestoneId);
-      if (error) return toast.error(error.message);
-    } else {
-
-      const { error } = await (supabase as any).from("student_milestone_progress")
-        .insert({ student_id: id, milestone_id: milestoneId });
-      if (error) return toast.error(error.message);
-    }
-    loadMilestones();
-  };
 
   const fetchPage = async () => {
     const [sRes, cRes, eRes, weeklyRes, coachRes, csmRes, instRes, dealRes, aiRes] = await Promise.all([
@@ -247,8 +205,10 @@ function StudentDetail() {
   const lastCallDaysAgo = calls.length ? daysSince(calls[0].call_date) : null;
   const lastEodDaysAgo = eods.length ? daysSince(eods[0].report_date) : null;
 
+  // One step per real event (founder 2026-08-01: "First win" and "Offer
+  // landed" were the same thing twice) — land the offer, collect the
+  // testimonial, collect the Trustpilot.
   const graduationSteps = useMemo(() => student ? [
-    { key: "first_win", label: "First win", done: !!student.first_win_at, at: student.first_win_at, icon: Star },
     { key: "offer", label: "Offer landed", done: !!student.offer_landed_at, at: student.offer_landed_at, icon: Trophy },
     { key: "testimonial", label: student.testimonial_requested && !student.testimonial_collected ? "Testimonial (requested)" : "Testimonial", done: student.testimonial_collected, at: null, icon: Award },
     { key: "trustpilot", label: "Trustpilot", done: student.trustpilot_collected, at: null, icon: MessageSquare },
@@ -289,9 +249,11 @@ function StudentDetail() {
   const toggleGradStep = async (key: string) => {
     if (!canManage) return;
     const now = new Date().toISOString();
-    if (key === "first_win") await update({ first_win_at: student.first_win_at ? null : now });
     if (key === "offer") await update({
       offer_landed_at: student.offer_landed_at ? null : now,
+      // first_win_at rides along: the landed offer IS the first win, and the
+      // testimonials-ready queue keys off it.
+      first_win_at: student.offer_landed_at ? student.first_win_at : (student.first_win_at ?? now),
       offers_landed_count: student.offer_landed_at ? student.offers_landed_count : Math.max(1, student.offers_landed_count),
     });
     if (key === "testimonial") await update({ testimonial_collected: !student.testimonial_collected });
@@ -625,10 +587,10 @@ function StudentDetail() {
             <GraduationCap className="h-3 w-3 text-warning-fg" /> Graduation checklist
           </div>
           <div className="text-[11px] font-mono text-muted-foreground">
-            {graduationDone}/4 {graduationDone === 4 && <span className="text-warning-fg ml-1">🏆 Complete</span>}
+            {graduationDone}/3 {graduationDone === 3 && <span className="text-warning-fg ml-1">🏆 Complete</span>}
           </div>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
           {graduationSteps.map(step => {
             const Icon = step.icon;
             return (
@@ -654,42 +616,10 @@ function StudentDetail() {
           })}
         </div>
         <div className="mt-3 h-1.5 rounded-full bg-[var(--muted)] overflow-hidden">
-          <div className="h-full bg-warning motion-safe:transition-[width] duration-500 ease-(--ease-out)" style={{ width: `${(graduationDone / 4) * 100}%` }} />
+          <div className="h-full bg-warning motion-safe:transition-[width] duration-500 ease-(--ease-out)" style={{ width: `${(graduationDone / 3) * 100}%` }} />
         </div>
       </div>
 
-      {/* Milestones */}
-      {milestones.length > 0 && (
-        <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-4 space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Progress milestones</div>
-            <div className="text-[11px] font-mono text-muted-foreground">{milestoneProgress.size}/{milestones.length}</div>
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            {milestones.map(m => {
-              const done = milestoneProgress.has(m.id);
-              return (
-                <button
-                  key={m.id}
-                  onClick={() => canManage && toggleMilestone(m.id)}
-                  disabled={!canManage}
-                  className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-sm border transition ${
-                    done
-                      ? "border-success/25 bg-success-bg text-success-fg"
-                      : "border-[var(--border)] bg-[var(--muted)] text-muted-foreground"
-                  } ${canManage ? "hover:border-success/25 cursor-pointer" : "cursor-default"}`}
-                >
-                  {done ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Circle className="h-3.5 w-3.5" />}
-                  {m.name}
-                </button>
-              );
-            })}
-          </div>
-          <div className="h-1.5 rounded-full bg-[var(--muted)] overflow-hidden">
-            <div className="h-full bg-success motion-safe:transition-[width] duration-500 ease-(--ease-out)" style={{ width: `${(milestoneProgress.size / milestones.length) * 100}%` }} />
-          </div>
-        </div>
-      )}
 
       {/* Tabs */}
       <div className="flex items-center gap-1 border-b border-[var(--border)] overflow-x-auto">
