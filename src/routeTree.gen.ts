@@ -39,6 +39,7 @@ import { Route as AuthenticatedCsmRouteImport } from './routes/_authenticated.cs
 import { Route as AuthenticatedCrmRouteImport } from './routes/_authenticated.crm'
 import { Route as AuthenticatedCloserResourcesRouteImport } from './routes/_authenticated.closer-resources'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated.chat'
+import { Route as AuthenticatedCardsRouteImport } from './routes/_authenticated.cards'
 import { Route as AuthenticatedCallsRouteImport } from './routes/_authenticated.calls'
 import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticated.calendar'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated.analytics'
@@ -216,6 +217,11 @@ const AuthenticatedChatRoute = AuthenticatedChatRouteImport.update({
   path: '/chat',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedCardsRoute = AuthenticatedCardsRouteImport.update({
+  id: '/cards',
+  path: '/cards',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedCallsRoute = AuthenticatedCallsRouteImport.update({
   id: '/calls',
   path: '/calls',
@@ -346,6 +352,7 @@ export interface FileRoutesByFullPath {
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/calendar': typeof AuthenticatedCalendarRoute
   '/calls': typeof AuthenticatedCallsRoute
+  '/cards': typeof AuthenticatedCardsRoute
   '/chat': typeof AuthenticatedChatRoute
   '/closer-resources': typeof AuthenticatedCloserResourcesRoute
   '/crm': typeof AuthenticatedCrmRoute
@@ -398,6 +405,7 @@ export interface FileRoutesByTo {
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/calendar': typeof AuthenticatedCalendarRoute
   '/calls': typeof AuthenticatedCallsRoute
+  '/cards': typeof AuthenticatedCardsRoute
   '/chat': typeof AuthenticatedChatRoute
   '/closer-resources': typeof AuthenticatedCloserResourcesRoute
   '/crm': typeof AuthenticatedCrmRoute
@@ -450,6 +458,7 @@ export interface FileRoutesById {
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
   '/_authenticated/calendar': typeof AuthenticatedCalendarRoute
   '/_authenticated/calls': typeof AuthenticatedCallsRoute
+  '/_authenticated/cards': typeof AuthenticatedCardsRoute
   '/_authenticated/chat': typeof AuthenticatedChatRoute
   '/_authenticated/closer-resources': typeof AuthenticatedCloserResourcesRoute
   '/_authenticated/crm': typeof AuthenticatedCrmRoute
@@ -504,6 +513,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/calendar'
     | '/calls'
+    | '/cards'
     | '/chat'
     | '/closer-resources'
     | '/crm'
@@ -556,6 +566,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/calendar'
     | '/calls'
+    | '/cards'
     | '/chat'
     | '/closer-resources'
     | '/crm'
@@ -607,6 +618,7 @@ export interface FileRouteTypes {
     | '/_authenticated/analytics'
     | '/_authenticated/calendar'
     | '/_authenticated/calls'
+    | '/_authenticated/cards'
     | '/_authenticated/chat'
     | '/_authenticated/closer-resources'
     | '/_authenticated/crm'
@@ -871,6 +883,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedChatRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/cards': {
+      id: '/_authenticated/cards'
+      path: '/cards'
+      fullPath: '/cards'
+      preLoaderRoute: typeof AuthenticatedCardsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/calls': {
       id: '/_authenticated/calls'
       path: '/calls'
@@ -1116,6 +1135,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
   AuthenticatedCalendarRoute: typeof AuthenticatedCalendarRoute
   AuthenticatedCallsRoute: typeof AuthenticatedCallsRoute
+  AuthenticatedCardsRoute: typeof AuthenticatedCardsRoute
   AuthenticatedChatRoute: typeof AuthenticatedChatRoute
   AuthenticatedCloserResourcesRoute: typeof AuthenticatedCloserResourcesRoute
   AuthenticatedCrmRoute: typeof AuthenticatedCrmRoute
@@ -1151,6 +1171,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
   AuthenticatedCalendarRoute: AuthenticatedCalendarRoute,
   AuthenticatedCallsRoute: AuthenticatedCallsRoute,
+  AuthenticatedCardsRoute: AuthenticatedCardsRoute,
   AuthenticatedChatRoute: AuthenticatedChatRoute,
   AuthenticatedCloserResourcesRoute: AuthenticatedCloserResourcesRoute,
   AuthenticatedCrmRoute: AuthenticatedCrmRoute,

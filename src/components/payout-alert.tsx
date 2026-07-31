@@ -32,7 +32,10 @@ export async function fetchPeriodOwed(period: PayoutPeriod): Promise<OwedMember[
       .is("voided_at", null)
       .gte("deal_date", period.monthStart)
       .lte("deal_date", period.monthEnd),
-    supabase.from("profiles").select("id, display_name, commission_cap_pct, base_pay_monthly, base_pay_day").eq("is_demo", false),
+    // started_on is load-bearing: without it basePayEligibleOn assumes
+    // eligibility and freshly started members' base pay shows as owed
+    // (the phantom $2,000 on the home strip, founder 2026-07-31).
+    supabase.from("profiles").select("id, display_name, commission_cap_pct, base_pay_monthly, base_pay_day, started_on").eq("is_demo", false),
     supabase.from("commission_rates").select("key, rate").eq("active", true),
     supabase
       .from("installment_payments")
