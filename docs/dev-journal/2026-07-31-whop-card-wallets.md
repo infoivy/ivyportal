@@ -1,7 +1,7 @@
-# Log: WAP card wallets + payouts paid-amount truth
+# Log: Whop card wallets + payouts paid-amount truth
 
 ### Prompt
-Founder (2026-07-31, follow-up to the July settlement): the settled Payouts rows still looked "glitched / weird" (they showed computed totals, not what he actually paid: Aalian $337.50, Abu Bilal $170 with $247 sent earlier, Faizan $1,755, his own profit share $2,995.20). And he wants to track the three founders' WAP cards: each card is loaded monthly with commissions + profit share, spending draws it down, unspent carries into next month; he needs everybody's balance, what's been used, and for his own card how much he leaves in the business.
+Founder (2026-07-31, follow-up to the July settlement): the settled Payouts rows still looked "glitched / weird" (they showed computed totals, not what he actually paid: Aalian $337.50, Abu Bilal $170 with $247 sent earlier, Faizan $1,755, his own profit share $2,995.20). And he wants to track the three founders' Whop cards: each card is loaded monthly with commissions + profit share, spending draws it down, unspent carries into next month; he needs everybody's balance, what's been used, and for his own card how much he leaves in the business.
 
 ### Issue
 `payout_confirmations.amount_paid` stored the truth but the UI led with the computed figure, so settled rows contradicted reality. There was no concept of the card wallets at all; Faizan's spending lived in the founder's head ($2,400-ish used, $668 remaining).

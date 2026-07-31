@@ -16,7 +16,7 @@ export const Route = createFileRoute("/_authenticated/cards")({
 });
 
 /**
- * WAP card wallets (founder 2026-07-31). Each founder's payment-processor
+ * Whop card wallets (founder 2026-07-31). Each founder's payment-processor
  * card is loaded monthly with commissions + profit share; every load and
  * spend is a wallet entry. Balance = loaded − spent, and whatever is unspent
  * simply carries into the next month.

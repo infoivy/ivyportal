@@ -186,7 +186,7 @@ export const WORK_NAV_ITEMS: PortalNavItem[] = [
   {
     key: "cards",
     title: "Cards",
-    description: "WAP card balances: profit share loaded, spending, what remains.",
+    description: "Whop card balances: profit share loaded, spending, what remains.",
     url: "/cards",
     icon: WalletCards,
     roles: ["founder", "cofounder"],
