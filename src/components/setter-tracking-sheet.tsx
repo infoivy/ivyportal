@@ -29,6 +29,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useAuth } from "@/lib/auth-context";
+import { cancelSet, restoreSet } from "@/lib/calendar.functions";
 import {
   completeSetFollowUp,
   getSetterTracker,
@@ -267,6 +268,8 @@ export function SetterTrackingSheet() {
   const lifecycleFn = useServerFn(updateSetLifecycle);
   const scheduleFn = useServerFn(scheduleSetFollowUp);
   const completeFn = useServerFn(completeSetFollowUp);
+  const cancelFn = useServerFn(cancelSet);
+  const restoreFn = useServerFn(restoreSet);
 
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [rangeDays, setRangeDays] = useState<7 | 30 | 90>(30);
@@ -340,6 +343,31 @@ export function SetterTrackingSheet() {
       toast.error(error instanceof Error ? error.message : "Could not update follow-up"),
   });
 
+  const cancel = useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      cancelFn({ data: { id, reason } }),
+    onSuccess: async (result) => {
+      await invalidateTracker();
+      const warning = (result as { warning?: string } | null)?.warning;
+      if (warning) toast.warning(warning);
+      else toast.success("Set cancelled · it no longer counts toward your show rate");
+    },
+    onError: (error) =>
+      toast.error(error instanceof Error ? error.message : "Could not cancel the set"),
+  });
+
+  const restore = useMutation({
+    mutationFn: ({ id }: { id: string }) => restoreFn({ data: { id } }),
+    onSuccess: async (result) => {
+      await invalidateTracker();
+      const warning = (result as { warning?: string } | null)?.warning;
+      if (warning) toast.warning(warning);
+      else toast.success("Set restored");
+    },
+    onError: (error) =>
+      toast.error(error instanceof Error ? error.message : "Could not restore the set"),
+  });
+
   const data = tracker.data;
   const visibleSets = useMemo(() => {
     if (!data) return [];
@@ -408,11 +436,25 @@ export function SetterTrackingSheet() {
       (set) => set.status === "active" && new Date(set.event_start).getTime() > now,
     ) ?? [];
   const remindersDue = upcomingSets.filter((set) => isReminderDue(set, now));
-  const showed = data?.sets.filter((set) => set.attendance_status === "showed").length ?? 0;
-  const noShows = data?.sets.filter((set) => set.attendance_status === "no_show").length ?? 0;
+  // Cancelled sets (duplicates, reschedules, prospect cancellations) never
+  // touch the show rate: only live sets that resolved showed/no-show count.
+  const countableSets = data?.sets.filter((set) => set.status !== "cancelled") ?? [];
+  const showed = countableSets.filter((set) => set.attendance_status === "showed").length;
+  const noShows = countableSets.filter((set) => set.attendance_status === "no_show").length;
   const showDenominator = showed + noShows;
   const showRate =
     showDenominator > 0 ? `${Math.round((showed / showDenominator) * 100)}%` : "Unavailable";
+  // Same prospect with 2+ non-cancelled rows = likely double-book/reschedule
+  // leftover. Flag every row in the group; the setter picks which to cancel.
+  const prospectCounts = new Map<string, number>();
+  for (const set of data?.sets ?? []) {
+    if (set.status === "cancelled") continue;
+    const key = set.prospect.trim().toLowerCase();
+    prospectCounts.set(key, (prospectCounts.get(key) ?? 0) + 1);
+  }
+  const duplicateProspects = new Set(
+    [...prospectCounts.entries()].filter(([, n]) => n > 1).map(([k]) => k),
+  );
   const selectedSet = data?.sets.find((set) => set.id === selectedSetId) ?? null;
   const selectedFollowUp =
     selectedSet && data ? currentFollowUp(data.followUps, selectedSet.id) : undefined;
@@ -553,13 +595,25 @@ export function SetterTrackingSheet() {
                       {visibleSets.map((set) => {
                         const followUp = currentFollowUp(data.followUps, set.id);
                         const reminderDue = isReminderDue(set);
+                        const isCancelled = set.status === "cancelled";
+                        const isDuplicate = !isCancelled && duplicateProspects.has(set.prospect.trim().toLowerCase());
                         return (
-                          <tr key={set.id} className="bg-card align-middle hover:bg-muted/30">
+                          <tr key={set.id} className={`bg-card align-middle hover:bg-muted/30 ${isCancelled ? "opacity-55" : ""}`}>
                             <td className="px-4 py-3">
                               <p className="font-medium text-foreground">{set.prospect}</p>
                               <p className="mt-1 text-micro text-muted-foreground">
                                 {formatDateTime(set.event_start)}
                               </p>
+                              {isCancelled && (
+                                <div className="mt-1">
+                                  <StatusBadge value="Cancelled · not counted" />
+                                </div>
+                              )}
+                              {isDuplicate && (
+                                <div className="mt-1">
+                                  <StatusBadge value="Possible duplicate" urgent />
+                                </div>
+                              )}
                               {set.calendar_sync_status === "error" && (
                                 <div className="mt-1">
                                   <StatusBadge value="Calendar sync needed" urgent />
@@ -673,17 +727,21 @@ export function SetterTrackingSheet() {
                   {visibleSets.map((set) => {
                     const followUp = currentFollowUp(data.followUps, set.id);
                     const reminderDue = isReminderDue(set);
+                    const isCancelled = set.status === "cancelled";
+                    const isDuplicate = !isCancelled && duplicateProspects.has(set.prospect.trim().toLowerCase());
                     return (
                       <button
                         key={set.id}
                         type="button"
                         onClick={() => setSelectedSetId(set.id)}
-                        className="flex min-h-24 w-full items-center gap-3 px-4 py-4 text-left active:bg-muted"
+                        className={`flex min-h-24 w-full items-center gap-3 px-4 py-4 text-left active:bg-muted ${isCancelled ? "opacity-55" : ""}`}
                       >
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
                             <p className="truncate font-medium text-foreground">{set.prospect}</p>
-                            {reminderDue && <StatusBadge value="Reminder due" urgent />}
+                            {isCancelled && <StatusBadge value="Cancelled · not counted" />}
+                            {isDuplicate && <StatusBadge value="Possible duplicate" urgent />}
+                            {reminderDue && !isCancelled && <StatusBadge value="Reminder due" urgent />}
                             {set.attendance_status === "no_show" && (
                               <StatusBadge value="no_show" urgent />
                             )}
@@ -724,13 +782,16 @@ export function SetterTrackingSheet() {
         set={selectedSet}
         followUp={selectedFollowUp}
         events={selectedEvents}
-        saving={lifecycle.isPending || schedule.isPending || complete.isPending}
+        saving={lifecycle.isPending || schedule.isPending || complete.isPending || cancel.isPending || restore.isPending}
+        isDuplicate={Boolean(selectedSet && selectedSet.status !== "cancelled" && duplicateProspects.has(selectedSet.prospect.trim().toLowerCase()))}
         onOpenChange={(open) => {
           if (!open) setSelectedSetId(null);
         }}
         onLifecycle={(id, patch) => lifecycle.mutate({ id, patch })}
         onSchedule={(payload) => schedule.mutate(payload)}
         onComplete={(id, status) => complete.mutate({ id, status })}
+        onCancel={(id, reason) => cancel.mutate({ id, reason })}
+        onRestore={(id) => restore.mutate({ id })}
       />
     </div>
   );
@@ -844,20 +905,31 @@ function EodActivity({ data }: { data: SetterTrackerData }) {
   );
 }
 
+const CANCEL_REASONS = [
+  { value: "Duplicate booking", label: "Duplicate booking" },
+  { value: "Prospect cancelled", label: "Prospect cancelled" },
+  { value: "Rescheduled to a new time", label: "Rescheduled to a new time" },
+  { value: "Other", label: "Other" },
+];
+
 function SetDetailSheet({
   set,
   followUp,
   events,
   saving,
+  isDuplicate,
   onOpenChange,
   onLifecycle,
   onSchedule,
   onComplete,
+  onCancel,
+  onRestore,
 }: {
   set: TrackerSet | null;
   followUp?: TrackerFollowUp;
   events: TrackerEvent[];
   saving: boolean;
+  isDuplicate?: boolean;
   onOpenChange: (open: boolean) => void;
   onLifecycle: (id: string, patch: LifecyclePatch) => void;
   onSchedule: (payload: {
@@ -867,18 +939,22 @@ function SetDetailSheet({
     note: string | null;
   }) => void;
   onComplete: (id: string, status: "completed" | "cancelled") => void;
+  onCancel: (id: string, reason: string) => void;
+  onRestore: (id: string) => void;
 }) {
   const [notes, setNotes] = useState("");
   const [followUpAt, setFollowUpAt] = useState(localDateTimeValue());
   const [followUpChannel, setFollowUpChannel] = useState<TrackerFollowUpChannel>("dm");
   const [followUpNote, setFollowUpNote] = useState("");
+  const [cancelReason, setCancelReason] = useState(CANCEL_REASONS[0].value);
 
   useEffect(() => {
     setNotes(set?.notes ?? "");
     setFollowUpAt(followUp ? localDateTimeValue(new Date(followUp.due_at)) : localDateTimeValue());
     setFollowUpChannel((followUp?.channel as TrackerFollowUpChannel | undefined) ?? "dm");
     setFollowUpNote(followUp?.note ?? "");
-  }, [followUp, set]);
+    setCancelReason(isDuplicate ? "Duplicate booking" : CANCEL_REASONS[0].value);
+  }, [followUp, set, isDuplicate]);
 
   if (!set) return null;
   const reminderLog = (set.reminder_log ?? {}) as Record<string, unknown>;
@@ -944,6 +1020,53 @@ function SetDetailSheet({
                   />
                 </div>
               </section>
+
+              {set.status === "cancelled" ? (
+                <section className="rounded-lg border border-border bg-muted/40 p-4">
+                  <p className="text-caption font-medium text-foreground">This set is cancelled</p>
+                  <p className="mt-1 text-micro text-muted-foreground">
+                    It does not count toward your sets or show rate. Restore it if that was a mistake.
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="mt-3"
+                    disabled={saving}
+                    onClick={() => onRestore(set.id)}
+                  >
+                    Restore set
+                  </Button>
+                </section>
+              ) : (
+                <section className={`rounded-lg border p-4 ${isDuplicate ? "border-foreground/40 bg-muted" : "border-border bg-muted/40"}`}>
+                  <p className="text-caption font-medium text-foreground">
+                    {isDuplicate ? "Possible duplicate booking" : "Cancel this set"}
+                  </p>
+                  <p className="mt-1 text-micro text-muted-foreground">
+                    {isDuplicate
+                      ? "This prospect has more than one live set. Cancel the wrong one so your show rate stays honest."
+                      : "Double-booked, rescheduled, or the prospect pulled out? Cancelling removes it from your sets and show rate and clears the calendar event."}
+                  </p>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <SelectField
+                      aria-label="Cancel reason"
+                      value={cancelReason}
+                      onChange={setCancelReason}
+                      options={CANCEL_REASONS}
+                      disabled={saving}
+                      className="h-9 min-w-44 bg-background text-caption"
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={saving}
+                      onClick={() => onCancel(set.id, cancelReason)}
+                    >
+                      <X className="h-4 w-4" /> Cancel set
+                    </Button>
+                  </div>
+                </section>
+              )}
 
               <section>
                 <div className="flex items-center justify-between gap-3">

@@ -427,7 +427,60 @@ export const syncCalendlySets = createServerFn({ method: "POST" })
         .select("id");
       if (!error && data?.length) imported += 1;
     }
-    return { ok: true, imported };
+
+    // Cancelled-bookings sweep: a Calendly reschedule cancels the old booking
+    // and mints a NEW event URI, so without this pass the old row stays
+    // active forever and the prospect shows twice, corrupting show rates.
+    // Rows already marked "showed" are never clobbered.
+    let cancelled = 0;
+    try {
+      const cParams = new URLSearchParams({
+        organization: me.resource.current_organization,
+        status: "canceled",
+        min_start_time: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+        count: "100",
+        sort: "start_time:desc",
+      });
+      const cRes = await fetch(`https://api.calendly.com/scheduled_events?${cParams}`, { headers: H });
+      if (cRes.ok) {
+        const cJson = (await cRes.json()) as { collection: { uri: string }[] };
+        const uris = cJson.collection.map((ev) => ev.uri);
+        if (uris.length) {
+          const { data: staleRows } = await (supabaseAdmin as any)
+            .from("set_reminders")
+            .select("id, notes, attendance_status, owner_id, gcal_event_id, gcal_event_owner_id")
+            .in("calendly_event_uri", uris)
+            .eq("status", "active");
+          for (const row of (staleRows ?? []) as { id: string; notes: string | null; attendance_status: string; owner_id: string | null; gcal_event_id: string | null; gcal_event_owner_id: string | null }[]) {
+            if (row.attendance_status === "showed") continue;
+            const { error: cErr } = await (supabaseAdmin as any)
+              .from("set_reminders")
+              .update({
+                status: "cancelled",
+                attendance_status: "cancelled",
+                notes: [row.notes, "Cancelled on Calendly"].filter(Boolean).join("\n"),
+              })
+              .eq("id", row.id)
+              .eq("status", "active");
+            if (cErr) continue;
+            cancelled += 1;
+            // Best-effort: clear the claimer's Google Calendar event too.
+            const calOwner = row.gcal_event_owner_id ?? row.owner_id;
+            if (row.gcal_event_id && calOwner) {
+              try {
+                await withFreshUserCalendar(calOwner, (token, calendarId) =>
+                  deleteCalendarEvent(token, calendarId, row.gcal_event_id!));
+              } catch (gcalErr) {
+                console.error("[syncCalendlySets] gcal cleanup failed:", gcalErr);
+              }
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error("[syncCalendlySets] cancelled sweep failed:", err);
+    }
+    return { ok: true, imported, cancelled };
   });
 
 type CalendarSyncAdmin = { from: (table: string) => any };
