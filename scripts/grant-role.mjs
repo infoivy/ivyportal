@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 const [emailArg, roleArg] = process.argv.slice(2);
 const email = emailArg?.trim().toLowerCase();
 const role = roleArg?.trim().toLowerCase();
-const allowedRoles = new Set(["admin", "founder", "closer", "setter", "csm", "coach", "student"]);
+const allowedRoles = new Set(["admin", "founder", "cofounder", "closer", "setter", "csm", "coach", "student", "sales", "fulfillment"]);
 
 if (!email || !role || !allowedRoles.has(role)) {
   console.error("Usage: npm run roles:grant -- <email> <admin|founder|closer|setter|csm|coach|student>");

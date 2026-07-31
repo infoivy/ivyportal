@@ -25,7 +25,10 @@ export const CATEGORY_LABEL: Record<DocCategory, string> = {
   content: "Content",
 };
 
-export const ALL_ROLES = ["admin", "closer", "setter", "coach", "csm", "student", "founder", "cofounder"] as const;
+// sales + fulfillment are VIEW-ONLY roles (founder 2026-07-31): they pick a
+// department home picture and grant nothing else — every permission, EOD,
+// and nav rule scopes to the roles before them.
+export const ALL_ROLES = ["admin", "closer", "setter", "coach", "csm", "student", "founder", "cofounder", "sales", "fulfillment"] as const;
 export type AppRole = (typeof ALL_ROLES)[number];
 
 export function slugify(input: string): string {

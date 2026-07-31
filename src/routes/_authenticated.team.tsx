@@ -126,10 +126,10 @@ function TeamPage() {
       if (!confirm("Remove the admin role from YOURSELF? You will lose access to this page.")) return;
     }
     if (has) {
-      const { error } = await supabase.from("user_roles").delete().eq("user_id", userId).eq("role", role);
+      const { error } = await supabase.from("user_roles").delete().eq("user_id", userId).eq("role", role as never);
       if (error) return toast.error(error.message);
     } else {
-      const { error } = await supabase.from("user_roles").insert({ user_id: userId, role });
+      const { error } = await supabase.from("user_roles").insert({ user_id: userId, role: role as never });
       if (error) return toast.error(error.message);
     }
     toast.success("Role updated");

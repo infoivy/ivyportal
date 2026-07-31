@@ -2,17 +2,21 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
-  Check, Copy, GraduationCap, HeartHandshake, Phone, RefreshCw, School, Shield, Sparkles,
-  Trash2, UserCircle2, X,
+  Check, Copy, GraduationCap, HeartHandshake, PackageCheck, Phone, RefreshCw, School, Shield, Sparkles,
+  Trash2, TrendingUp, UserCircle2, X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 
-export type AppRole = "admin" | "closer" | "setter" | "coach" | "csm" | "founder" | "cofounder" | "student";
+export type AppRole = "admin" | "closer" | "setter" | "coach" | "csm" | "founder" | "cofounder" | "student" | "sales" | "fulfillment";
 export type SetterType = "phone" | "dm" | "full_cycle" | null;
 
 // Every role needs a visibly distinct "on" state — a muted "on" reads as off.
-export const roleLabel = (k: string) => (k === "cofounder" ? "co-founder" : k);
+export const roleLabel = (k: string) =>
+  k === "cofounder" ? "co-founder"
+  : k === "sales" ? "sales view"
+  : k === "fulfillment" ? "fulfillment view"
+  : k;
 
 export const ROLES: { key: AppRole; icon: React.ComponentType<{ className?: string }>; color: string }[] = [
   { key: "admin", icon: Shield, color: "text-danger-fg border-danger/25 bg-danger-bg" },
@@ -23,6 +27,9 @@ export const ROLES: { key: AppRole; icon: React.ComponentType<{ className?: stri
   { key: "founder", icon: Sparkles, color: "text-chart-6 border-chart-6/25 bg-chart-6/10" },
   { key: "cofounder", icon: Sparkles, color: "text-chart-2 border-chart-2/25 bg-chart-2/10" },
   { key: "student", icon: School, color: "text-foreground border-foreground/30 bg-muted" },
+  // View-only roles: they pick a department home picture, nothing else.
+  { key: "sales", icon: TrendingUp, color: "text-chart-3 border-chart-3/25 bg-chart-3/10" },
+  { key: "fulfillment", icon: PackageCheck, color: "text-chart-5 border-chart-5/25 bg-chart-5/10" },
 ];
 
 const INVITATIONS_KEY = ["page", "team", "invitations"];

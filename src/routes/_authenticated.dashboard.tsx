@@ -55,7 +55,6 @@ type TeamProfile = {
   setter_type: string | null;
   active: boolean | null;
   eod_exempt: boolean | null;
-  home_focus: "sales" | "fulfillment" | null;
 };
 
 type ActiveStudent = {
@@ -161,7 +160,7 @@ function HomePage() {
           .gte("report_date", recentFrom)
           .lte("report_date", today)
           .order("report_date", { ascending: true }),
-        supabase.from("profiles").select("id, display_name, setter_type, active, eod_exempt, home_focus").eq("is_demo", false),
+        supabase.from("profiles").select("id, display_name, setter_type, active, eod_exempt").eq("is_demo", false),
         supabase.from("user_roles").select("user_id, role").in("role", ["founder", "cofounder", "setter", "closer", "coach", "csm"]),
         supabase
           .from("student_action_items")
@@ -420,13 +419,13 @@ function HomePage() {
           <PayoutAlertBanner />
           <HomeMoneyStrip />
           <HomeCardTile />
-          {/* Department homes (founder 2026-07-31): each founder's picture
-              leads with what they run. NULL home_focus keeps the default. */}
-          {ownProfile?.home_focus === "fulfillment" ? (
-            <HomeFulfillmentPicture />
-          ) : ownProfile?.home_focus === "sales" ? (
-            <HomeSalesPicture />
-          ) : (
+          {/* Department homes (founder 2026-07-31): the 'sales' and
+              'fulfillment' VIEW roles pick the picture, so the founder can
+              grant a view to anyone (or preview on a second account).
+              Holding both shows both; holding neither keeps the default. */}
+          {roles.includes("sales") && <HomeSalesPicture />}
+          {roles.includes("fulfillment") && <HomeFulfillmentPicture />}
+          {!roles.includes("sales") && !roles.includes("fulfillment") && (
             <LeadershipBrief data={data} />
           )}
         </>
