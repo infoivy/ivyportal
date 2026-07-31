@@ -17,7 +17,7 @@ import {
   PhoneCall, AlertTriangle, Undo2, CheckCircle2, Circle, Clock, X,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { humanDue, todayLocal } from "@/lib/dates";
+import { friendlyPastDay, humanDue, todayLocal } from "@/lib/dates";
 import { getStudentWeeklyWindow } from "@/lib/student-weekly-eod";
 import { DateField } from "@/components/ui/date-field";
 import { SelectField } from "@/components/ui/select-field";
@@ -479,7 +479,7 @@ function CsmPage() {
               </div>
               <div className="grid grid-cols-2 lg:grid-cols-5 gap-px bg-[var(--border)]">
                 <AccountStat label="Open action items" value={openCount} tone={openCount > 0 ? "warn" : "ok"} />
-                <AccountStat label="Last student EOD" value={lastStudentEod ?? "–"} tone={lastStudentEod && Date.now() - new Date(lastStudentEod).getTime() < 2 * 86400000 ? "ok" : "warn"} />
+                <AccountStat label="Last student EOD" value={friendlyPastDay(lastStudentEod)} tone={lastStudentEod && Date.now() - new Date(lastStudentEod).getTime() < 2 * 86400000 ? "ok" : "warn"} />
                 <AccountStat
                   label={`Weekly calls · ${targetWeeklyEodStart}`}
                   value={weeklyEodLoadError ? "Load error" : selectedWeeklyEod

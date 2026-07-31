@@ -51,3 +51,25 @@ export function humanDue(isoDate: string | null | undefined): string {
   const nice = new Date(isoDate + "T00:00:00").toLocaleDateString("en", { month: "short", day: "numeric" });
   return days < 0 ? `was due ${nice}` : `due ${nice}`;
 }
+
+/** Friendly label for a recent past day (founder 2026-07-31): "Today",
+ *  "Yesterday", a weekday inside the current week, "Last Thursday" for the
+ *  week before, and only beyond two weeks the exact date. */
+export function friendlyPastDay(isoDate: string | null | undefined): string {
+  if (!isoDate) return "–";
+  const day = isoDate.slice(0, 10);
+  const today = todayLocal();
+  const d = new Date(day + "T00:00:00");
+  const t = new Date(today + "T00:00:00");
+  const days = Math.round((t.getTime() - d.getTime()) / 86_400_000);
+  if (days < 0 || days > 13) {
+    return d.toLocaleDateString("en", { month: "short", day: "numeric", year: d.getFullYear() !== t.getFullYear() ? "numeric" : undefined });
+  }
+  if (days === 0) return "Today";
+  if (days === 1) return "Yesterday";
+  const weekday = d.toLocaleDateString("en", { weekday: "long" });
+  // Monday-started weeks: same week → bare weekday; the week before → "Last …".
+  const mondayOffset = (t.getDay() + 6) % 7;
+  const sameWeek = days <= mondayOffset;
+  return sameWeek ? weekday : `Last ${weekday}`;
+}
