@@ -20,6 +20,9 @@ import { Button } from "@/components/ui/button";
 import { PageShell } from "@/components/ui/page-shell";
 import { Skeleton } from "@/components/ui/skeletons";
 import { HomeMoneyStrip } from "@/components/home-money-strip";
+import { HomeCardTile } from "@/components/home-card-tile";
+import { HomeFulfillmentPicture } from "@/components/home-fulfillment-picture";
+import { HomeSalesPicture } from "@/components/home-sales-picture";
 import { HomeSetterWeek } from "@/components/home-setter-week";
 import { PayoutAlertBanner } from "@/components/payout-alert";
 import { supabase } from "@/integrations/supabase/client";
@@ -52,6 +55,7 @@ type TeamProfile = {
   setter_type: string | null;
   active: boolean | null;
   eod_exempt: boolean | null;
+  home_focus: "sales" | "fulfillment" | null;
 };
 
 type ActiveStudent = {
@@ -157,7 +161,7 @@ function HomePage() {
           .gte("report_date", recentFrom)
           .lte("report_date", today)
           .order("report_date", { ascending: true }),
-        supabase.from("profiles").select("id, display_name, setter_type, active, eod_exempt").eq("is_demo", false),
+        supabase.from("profiles").select("id, display_name, setter_type, active, eod_exempt, home_focus").eq("is_demo", false),
         supabase.from("user_roles").select("user_id, role").in("role", ["founder", "cofounder", "setter", "closer", "coach", "csm"]),
         supabase
           .from("student_action_items")
@@ -415,7 +419,16 @@ function HomePage() {
         <>
           <PayoutAlertBanner />
           <HomeMoneyStrip />
-          <LeadershipBrief data={data} />
+          <HomeCardTile />
+          {/* Department homes (founder 2026-07-31): each founder's picture
+              leads with what they run. NULL home_focus keeps the default. */}
+          {ownProfile?.home_focus === "fulfillment" ? (
+            <HomeFulfillmentPicture />
+          ) : ownProfile?.home_focus === "sales" ? (
+            <HomeSalesPicture />
+          ) : (
+            <LeadershipBrief data={data} />
+          )}
         </>
       )}
 

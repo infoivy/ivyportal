@@ -75,7 +75,7 @@ const TABLE_KEYS = {
     keys.notifications, keys.studentPages, keys.dashboard, keys.studentLeaderboard,
   ],
   student_weekly_eods: [keys.csmPage, keys.studentPages],
-  student_checkins: [keys.csmPage, keys.csmOverview, keys.csmTodayQueue, keys.studentPages],
+  student_checkins: [keys.csmPage, keys.csmOverview, keys.csmTodayQueue, keys.studentPages, keys.dashboard],
   setter_daily_logs: [],
   student_calls: [
     keys.studentCallsAgg, keys.csmPage, keys.csmOverview, keys.csmTodayQueue,
@@ -90,7 +90,7 @@ const TABLE_KEYS = {
     keys.placements, keys.placementBoard, keys.csmOverview, keys.studentHealth,
     keys.notifications,
   ],
-  csm_tally: [keys.csmPage, keys.csmOverview, keys.csmTodayQueue],
+  csm_tally: [keys.csmPage, keys.csmOverview, keys.csmTodayQueue, keys.dashboard],
   csm_student_notes: [keys.csmPage, keys.csmTodayQueue, keys.studentPages],
   testimonials: [keys.testimonialsPage, keys.dashboard],
   profiles: [
@@ -103,7 +103,7 @@ const TABLE_KEYS = {
   founder_settings: [keys.finance, keys.admin, keys.dashboard, keys.installmentsPage],
   payout_confirmations: [keys.payoutsPage, keys.payoutAlert, keys.dashboard, keys.notifications, keys.finance],
   payout_adjustments: [keys.payoutsPage, keys.payoutAlert, keys.dashboard, keys.notifications, keys.finance],
-  wallet_entries: [keys.cardsPage],
+  wallet_entries: [keys.cardsPage, keys.dashboard],
   set_reminders: [keys.calSets, keys.dashboard, keys.dashboardNudges],
 } satisfies Record<string, readonly QueryKey[]>;
 
