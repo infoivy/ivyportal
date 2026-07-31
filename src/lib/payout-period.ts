@@ -46,7 +46,7 @@ export type PayoutInstallment = {
 };
 
 export type PayoutLine = {
-  kind: "deal" | "installment";
+  kind: "deal" | "installment" | "adjustment";
   refId: string;
   student: string;
   date: string;
@@ -54,6 +54,15 @@ export type PayoutLine = {
   cash: number;
   rate: number | null;
   commission: number | null;
+};
+
+export type PayoutAdjustment = {
+  id: string;
+  user_id: string;
+  period_start: string;
+  amount: number;
+  note: string;
+  created_at: string;
 };
 
 export type SetterRow = {
@@ -284,7 +293,7 @@ export function buildPayoutRows(data: PayoutData, period: Pick<PayoutPeriod, "st
   return { setterRows, closerRows, periodDeals, periodPayments };
 }
 
-export type OwedMember = { id: string; name: string; commission: number; basePay: number; total: number };
+export type OwedMember = { id: string; name: string; commission: number; basePay: number; adjustment: number; adjustmentLines: PayoutLine[]; total: number };
 
 /** A member's base pay lands once a month on their own day (anchored to when
  *  they started — founder-corrected 2026-07-28), clamped to the month's
@@ -309,17 +318,21 @@ export function basePayEligibleOn(p: PayoutProfile, payDate: string): boolean {
 
 /**
  * Everything a member is owed for a period: setter + closer commission, plus
- * monthly base pay when THEIR pay day falls inside the period. This is the
+ * monthly base pay when THEIR pay day falls inside the period, plus any
+ * manual adjustments (signed corrections with a mandatory note). This is the
  * unit one payout confirmation covers.
  */
 export function memberPayoutTotals(
   rows: { setterRows: SetterRow[]; closerRows: CloserRow[] },
   profileMap: Map<string, PayoutProfile>,
   period: Pick<PayoutPeriod, "start" | "end" | "monthStart">,
+  adjustments: PayoutAdjustment[] = [],
 ): OwedMember[] {
   const map = new Map<string, OwedMember>();
+  const blank = (id: string, name: string): OwedMember =>
+    ({ id, name, commission: 0, basePay: 0, adjustment: 0, adjustmentLines: [], total: 0 });
   const bump = (id: string, name: string, commission: number) => {
-    const cur = map.get(id) ?? { id, name, commission: 0, basePay: 0, total: 0 };
+    const cur = map.get(id) ?? blank(id, name);
     cur.commission += commission;
     map.set(id, cur);
   };
@@ -330,12 +343,29 @@ export function memberPayoutTotals(
     const payDate = basePayDateFor(p, period.monthStart);
     if (payDate < period.start || payDate > period.end) continue;
     if (!basePayEligibleOn(p, payDate)) continue; // full month not worked yet
-    const cur = map.get(p.id) ?? { id: p.id, name: p.display_name ?? p.id.slice(0, 8), commission: 0, basePay: 0, total: 0 };
+    const cur = map.get(p.id) ?? blank(p.id, p.display_name ?? p.id.slice(0, 8));
     cur.basePay = Number(p.base_pay_monthly);
     map.set(p.id, cur);
   }
+  for (const a of adjustments) {
+    if (a.period_start !== period.start) continue;
+    const name = profileMap.get(a.user_id)?.display_name ?? a.user_id.slice(0, 8);
+    const cur = map.get(a.user_id) ?? blank(a.user_id, name);
+    cur.adjustment += Number(a.amount);
+    cur.adjustmentLines.push({
+      kind: "adjustment",
+      refId: a.id,
+      student: "",
+      date: (a.created_at ?? "").slice(0, 10),
+      detail: a.note,
+      cash: 0,
+      rate: null,
+      commission: Number(a.amount),
+    });
+    map.set(a.user_id, cur);
+  }
   return [...map.values()]
-    .map(m => ({ ...m, total: m.commission + m.basePay }))
-    .filter(m => m.total >= 0.01)
+    .map(m => ({ ...m, total: m.commission + m.basePay + m.adjustment }))
+    .filter(m => Math.abs(m.total) >= 0.01 || m.adjustment !== 0)
     .sort((a, b) => b.total - a.total);
 }

@@ -14,13 +14,14 @@ import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import {
   Plus, Trash2, Ban, X, AlertTriangle, Bell, CheckCircle2,
-  Calendar as CalendarIcon, Edit3, Search, ChevronLeft, ChevronRight,
+  Calendar as CalendarIcon, Edit3, Search, ChevronLeft, ChevronRight, Undo2,
 } from "lucide-react";
 import { CashInCalendarCard } from "@/components/cash-in-calendar";
+import { RefundStudentDialog } from "@/components/refund-student-dialog";
 import { DateField } from "@/components/ui/date-field";
 import { SelectField } from "@/components/ui/select-field";
 
-type PayStatus = "upcoming" | "paid" | "late" | "missed" | "waived";
+type PayStatus = "upcoming" | "paid" | "late" | "missed" | "waived" | "refunded";
 type Payment = {
   id: string;
   installment_id: string;
@@ -55,7 +56,11 @@ const STATUS_META: Record<PayStatus, { label: string; cls: string }> = {
   late:     { label: "Late",     cls: "text-warning-fg border-warning/25 bg-warning-bg" },
   missed:   { label: "Missed",   cls: "text-danger-fg border-danger/25 bg-danger-bg" },
   waived:   { label: "Waived",   cls: "text-muted-foreground border-border bg-zinc-500/5" },
+  refunded: { label: "Refunded", cls: "text-danger-fg border-danger/25 bg-danger-bg/50" },
 };
+// Statuses an operator can pick by hand. "refunded" is set only by the
+// refund flow (or the paid-row Refund action) so it always carries a note.
+const SETTABLE_STATUSES = ["upcoming", "paid", "late", "missed", "waived"] as const;
 
 const fmtMoney = (n: number, cur: string) =>
   new Intl.NumberFormat(undefined, { style: "currency", currency: cur || "USD" }).format(n || 0);
@@ -78,6 +83,7 @@ export function PaymentPlansSection() {
   const [q, setQ] = useState("");
   const [addOpen, setAddOpen] = useState(false);
   const [editing, setEditing] = useState<Installment | null>(null);
+  const [refunding, setRefunding] = useState<{ id: string; name: string } | null>(null);
 
   // Cached page read: other pages' mutations (deal logging, student renames)
   // reach this view through invalidateForTables; mutations below still patch
@@ -123,13 +129,13 @@ export function PaymentPlansSection() {
     !q || i.student_name.toLowerCase().includes(q.toLowerCase())
   );
 
-  const overdue = payments.filter(p => p.status !== "paid" && p.status !== "waived" && daysUntil(p.due_date) < 0);
+  const overdue = payments.filter(p => p.status !== "paid" && p.status !== "waived" && p.status !== "refunded" && daysUntil(p.due_date) < 0);
   const dueIn1 = payments.filter(p => p.status === "upcoming" && daysUntil(p.due_date) === 1);
   const dueIn3 = payments.filter(p => p.status === "upcoming" && daysUntil(p.due_date) === 3);
   const dueSoon = payments.filter(p => p.status === "upcoming" && daysUntil(p.due_date) >= 0 && daysUntil(p.due_date) <= 7);
 
   const totalOutstanding = payments
-    .filter(p => p.status !== "paid" && p.status !== "waived")
+    .filter(p => p.status !== "paid" && p.status !== "waived" && p.status !== "refunded")
     .reduce((s, p) => s + Number(p.amount || 0), 0);
   const collectedThisMonth = payments
     .filter(p => p.status === "paid" && p.paid_at && new Date(p.paid_at).getMonth() === new Date().getMonth() && new Date(p.paid_at).getFullYear() === new Date().getFullYear())
@@ -196,6 +202,22 @@ export function PaymentPlansSection() {
     setPayments(x => x.map(p => p.installment_id === id && p.status !== "paid" ? { ...p, status: "waived", paid_at: null } : p));
     toast.success("Plan voided · paid history preserved");
     invalidateForTables(qc, ["installments", "installment_payments"]);
+  };
+
+  // The one sanctioned way OFF "paid": a documented refund. The money stops
+  // counting as collected and stops paying commission; the note keeps the
+  // original paid date so history stays auditable.
+  const refundPayment = async (id: string) => {
+    const row = payments.find(p => p.id === id);
+    if (!row || row.status !== "paid") return;
+    const reason = prompt(`Refund this ${fmtMoney(Number(row.amount), row.currency)} payment? Why?`, "Student refunded");
+    if (!reason?.trim()) return;
+    const notes = [row.notes, `Refunded ${new Date().toISOString().slice(0, 10)} (originally paid ${(row.paid_at ?? "").slice(0, 10) || "unknown"}): ${reason.trim()}`].filter(Boolean).join("\n");
+    const { error } = await (supabase.from("installment_payments" as any).update({ status: "refunded", paid_at: null, notes }).eq("id", id) as any);
+    if (error) return toast.error(error.message);
+    setPayments(x => x.map(p => p.id === id ? { ...p, status: "refunded" as PayStatus, paid_at: null, notes } : p));
+    toast.success("Payment refunded · it no longer counts as cash or commission");
+    invalidateForTables(qc, ["installment_payments"]);
   };
 
   const dismissReminder = async (id: string, which: "3d" | "1d") => {
@@ -303,6 +325,9 @@ export function PaymentPlansSection() {
                 </div>
                 <div className="w-40 h-1.5 bg-muted rounded-full overflow-hidden"><div className="h-full bg-success" style={{ width: `${pct}%` }} /></div>
                 {canEdit && <button onClick={() => { setEditing(inst); setAddOpen(true); }} className="text-xs px-2 py-1 rounded border border-border hover:bg-accent inline-flex items-center gap-1"><Edit3 className="h-3 w-3" />Edit</button>}
+                {canEdit && inst.student_id && (
+                  <button onClick={() => setRefunding({ id: inst.student_id!, name: inst.student_name })} className="text-xs px-2 py-1 rounded border border-border hover:bg-accent text-danger-fg inline-flex items-center gap-1" title="Refund this student everywhere: deals, plan, paid payments"><Undo2 className="h-3 w-3" />Refund student</button>
+                )}
                 {canDelete && (
                   <button onClick={() => removeInstallment(inst.id)} className="text-xs px-2 py-1 rounded border border-border hover:bg-accent text-danger-fg inline-flex items-center gap-1"><Ban className="h-3 w-3" />Void</button>
                 )}
@@ -322,11 +347,11 @@ export function PaymentPlansSection() {
                           </span>
                         )}
                       </span>
-                      {canEdit ? (
+                      {canEdit && p.status !== "refunded" ? (
                         <SelectField
                           value={p.status}
                           onChange={v => setStatus(p.id, v as PayStatus)}
-                          options={(Object.keys(STATUS_META) as PayStatus[]).map(s => ({ value: s, label: STATUS_META[s].label }))}
+                          options={SETTABLE_STATUSES.map(s => ({ value: s, label: STATUS_META[s].label }))}
                           disabled={p.status === "paid"}
                           className={`w-auto text-xs ${STATUS_META[p.status].cls}`}
                         />
@@ -336,7 +361,10 @@ export function PaymentPlansSection() {
                       {p.payment_method && <span className="text-xs text-muted-foreground">{p.payment_method}</span>}
                       {p.notes && <span className="text-xs text-muted-foreground italic truncate max-w-[240px]">"{p.notes}"</span>}
                       <div className="ml-auto flex items-center gap-2">
-                        {canDelete && p.status !== "paid" && p.status !== "waived" && (
+                        {canDelete && p.status === "paid" && (
+                          <button onClick={() => refundPayment(p.id)} className="text-xs text-danger-fg hover:underline inline-flex items-center gap-1" title="Refund this paid payment"><Undo2 className="h-3 w-3" />Refund</button>
+                        )}
+                        {canDelete && p.status !== "paid" && p.status !== "waived" && p.status !== "refunded" && (
                           <button onClick={() => removePayment(p.id)} className="text-xs text-danger-fg hover:underline inline-flex items-center gap-1" title="Waive scheduled payment"><Ban className="h-3 w-3" />Waive</button>
                         )}
                       </div>
@@ -359,6 +387,14 @@ export function PaymentPlansSection() {
           currentUserId={user?.id ?? null}
           onClose={() => { setAddOpen(false); setEditing(null); }}
           onSaved={() => { setAddOpen(false); setEditing(null); invalidateForTables(qc, ["installments", "installment_payments"]); }}
+        />
+      )}
+
+      {refunding && (
+        <RefundStudentDialog
+          studentId={refunding.id}
+          studentName={refunding.name}
+          onClose={() => setRefunding(null)}
         />
       )}
     </div>

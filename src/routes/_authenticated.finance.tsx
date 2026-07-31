@@ -89,7 +89,7 @@ function FinanceInner() {
         supabase.from("business_expenses").select("*").order("recurring", { ascending: false }).order("due_day"),
         supabase.from("deals").select("id, closer_id, setter_id, cash_collected_upfront, deal_date").eq("is_demo", false).is("voided_at", null).gte("deal_date", iso(monthStart)).lte("deal_date", iso(monthEnd)),
         supabase.from("installment_payments").select("id, installment_id, sequence, amount, due_date, status, notes, installments!inner(student_name, students!inner(is_demo))").eq("installments.students.is_demo", false).gte("due_date", iso(monthStart)).lte("due_date", iso(monthEnd)),
-        supabase.from("installment_payments").select("amount, due_date, status, installments!inner(students!inner(is_demo))").eq("installments.students.is_demo", false).neq("status", "waived").gte("due_date", iso(mrrFrom)).lte("due_date", iso(mrrTo)),
+        supabase.from("installment_payments").select("amount, due_date, status, installments!inner(students!inner(is_demo))").eq("installments.students.is_demo", false).not("status", "in", "(waived,refunded)").gte("due_date", iso(mrrFrom)).lte("due_date", iso(mrrTo)),
         supabase.from("founder_settings").select("id, processor_balance, processor_balance_updated_at, monthly_cash_goal, base_pay_day").maybeSingle(),
         supabase.from("installment_payments").select("amount, paid_at, installment_id, installments!inner(students!inner(is_demo))").eq("installments.students.is_demo", false).eq("status", "paid").gte("paid_at", iso(monthStart) + "T00:00:00").lte("paid_at", iso(monthEnd) + "T23:59:59").not("paid_at", "is", null),
         supabase.from("installments").select("id, setter_id, closer_id, students!inner(is_demo)").eq("students.is_demo", false),
@@ -484,7 +484,7 @@ function FinanceInner() {
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                       <span className="font-medium">{f.pay.installments?.student_name ?? "Unknown student"}</span>
                       <span className="text-muted-foreground">installment #{f.pay.sequence ?? "?"}</span>
-                      {canEditMoney ? (
+                      {canEditMoney && f.pay.status !== "refunded" ? (
                         <SelectField
                           value={f.pay.status}
                           onChange={v => void setPayStatus(f.pay!, v)}

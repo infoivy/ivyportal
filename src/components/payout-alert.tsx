@@ -8,7 +8,7 @@ import { keys } from "@/lib/query-keys";
 import { money, type Deal, type CommissionRates, DEFAULT_RATES } from "@/lib/revenue";
 import {
   getPeriod, buildPayoutRows, memberPayoutTotals,
-  type PayoutProfile, type PayoutInstallmentPayment, type PayoutInstallment, type OwedMember, type PayoutPeriod,
+  type PayoutProfile, type PayoutInstallmentPayment, type PayoutInstallment, type OwedMember, type PayoutPeriod, type PayoutAdjustment,
 } from "@/lib/payout-period";
 import { todayLocal } from "@/lib/dates";
 
@@ -24,7 +24,7 @@ export type PayoutAlertPeriod = {
  * uses. Shared by the overdue-payout banner and the founder home money strip.
  */
 export async function fetchPeriodOwed(period: PayoutPeriod): Promise<OwedMember[]> {
-  const [dealsRes, profilesRes, ratesRes, ipRes, instRes, cofRes] = await Promise.all([
+  const [dealsRes, profilesRes, ratesRes, ipRes, instRes, cofRes, adjRes] = await Promise.all([
     supabase
       .from("deals")
       .select("id, closer_id, setter_id, total_value, cash_collected_upfront, deal_date, payment_type")
@@ -44,6 +44,7 @@ export async function fetchPeriodOwed(period: PayoutPeriod): Promise<OwedMember[
       .not("paid_at", "is", null),
     supabase.from("installments").select("id, setter_id, closer_id, student_name, students!inner(is_demo)").eq("students.is_demo", false),
     supabase.from("user_roles").select("user_id").eq("role", "cofounder"),
+    (supabase.from("payout_adjustments" as any).select("*").eq("period_start", period.start) as any),
   ]);
   const rates: CommissionRates = { ...DEFAULT_RATES };
   for (const row of (ratesRes.data ?? [])) {
@@ -60,7 +61,7 @@ export async function fetchPeriodOwed(period: PayoutPeriod): Promise<OwedMember[
     rates,
     cofounderIds: new Set(((cofRes.data ?? []) as { user_id: string }[]).map(r => r.user_id)),
   }, period);
-  return memberPayoutTotals(rows, profileMap, period);
+  return memberPayoutTotals(rows, profileMap, period, (adjRes.data ?? []) as PayoutAdjustment[]);
 }
 
 // Commissions before the Jul 16-31 period were paid outside the portal

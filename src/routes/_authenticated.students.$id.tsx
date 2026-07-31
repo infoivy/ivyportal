@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { DateField } from "@/components/ui/date-field";
 import { SelectField } from "@/components/ui/select-field";
 import { StudentPaymentSetup } from "@/components/student-payment-setup";
+import { RefundStudentDialog } from "@/components/refund-student-dialog";
 import { StudentLocalTime, timezoneOptions } from "@/components/student-local-time";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
@@ -96,6 +97,7 @@ function StudentDetail() {
 
   const [student, setStudent] = useState<Student | null>(null);
   const [paymentSetupOpen, setPaymentSetupOpen] = useState(false);
+  const [refundOpen, setRefundOpen] = useState(false);
   const { setup } = Route.useSearch();
   useEffect(() => {
     if (setup === "payment" && student && !student.payment_state) setPaymentSetupOpen(true);
@@ -413,6 +415,21 @@ function StudentDetail() {
               >
                 {student.payment_state ? "Log the close · no deal on record" : "Log close · set up payment"}
               </button>
+            )}
+            {hasDeal && (roles.includes("admin") || roles.includes("closer")) && (
+              <button
+                onClick={() => setRefundOpen(true)}
+                className="mt-2 inline-flex items-center gap-1.5 text-caption font-medium px-3 py-1.5 rounded-md border border-border text-danger-fg hover:bg-danger-bg motion-safe:transition-colors"
+              >
+                Record refund
+              </button>
+            )}
+            {refundOpen && (
+              <RefundStudentDialog
+                studentId={student.id}
+                studentName={student.full_name}
+                onClose={() => { setRefundOpen(false); load(); }}
+              />
             )}
             <div className="text-xs text-muted-foreground mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
               <span>{student.email ?? "no email"}</span>

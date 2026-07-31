@@ -10,7 +10,7 @@ import { Link } from "@tanstack/react-router";
 import {
   getPeriod, buildPayoutRows, memberPayoutTotals,
   type PayoutProfile as Profile, type PayoutInstallmentPayment as InstallmentPayment,
-  type PayoutInstallment as Installment, type OwedMember,
+  type PayoutInstallment as Installment, type OwedMember, type PayoutAdjustment,
 } from "@/lib/payout-period";
 import { todayLocal } from "@/lib/dates";
 import { toast } from "sonner";
@@ -29,6 +29,7 @@ type PayoutConfirmation = {
   amount_paid: number;
   confirmed_at: string;
   confirmed_by: string;
+  note: string | null;
 };
 
 const LinesPanel = ({ lines, colSpan, aggregate }: { lines: import("@/lib/payout-period").PayoutLine[]; colSpan: number; aggregate?: string }) => (
@@ -41,18 +42,28 @@ const LinesPanel = ({ lines, colSpan, aggregate }: { lines: import("@/lib/payout
           {lines.map(l => (
             <div key={l.refId} className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px]">
               <span className="tabular-nums text-muted-foreground w-[74px] shrink-0">{l.date}</span>
-              <span className="font-medium text-foreground">{l.student}</span>
-              <span className="text-muted-foreground">{l.detail}</span>
-              <span className="tabular-nums">{money(l.cash)}</span>
-              {l.rate != null && <span className="tabular-nums text-muted-foreground">× {(l.rate * 100).toFixed(1)}%</span>}
-              <span className="tabular-nums font-medium">{l.commission != null ? `= ${money(l.commission)}` : ""}</span>
-              <Link
-                to="/revenue"
-                search={(l.kind === "installment" ? { tab: "plans" } : {}) as never}
-                className="text-muted-foreground hover:text-foreground hover:underline"
-              >
-                {l.kind === "installment" ? "open plan →" : "open deal →"}
-              </Link>
+              {l.kind === "adjustment" ? (
+                <>
+                  <span className="font-medium text-foreground">Adjustment</span>
+                  <span className="text-muted-foreground">{l.detail}</span>
+                  <span className="tabular-nums font-medium">{l.commission != null ? money(l.commission) : ""}</span>
+                </>
+              ) : (
+                <>
+                  <span className="font-medium text-foreground">{l.student}</span>
+                  <span className="text-muted-foreground">{l.detail}</span>
+                  <span className="tabular-nums">{money(l.cash)}</span>
+                  {l.rate != null && <span className="tabular-nums text-muted-foreground">× {(l.rate * 100).toFixed(1)}%</span>}
+                  <span className="tabular-nums font-medium">{l.commission != null ? `= ${money(l.commission)}` : ""}</span>
+                  <Link
+                    to="/revenue"
+                    search={(l.kind === "installment" ? { tab: "plans" } : {}) as never}
+                    className="text-muted-foreground hover:text-foreground hover:underline"
+                  >
+                    {l.kind === "installment" ? "open plan →" : "open deal →"}
+                  </Link>
+                </>
+              )}
             </div>
           ))}
           {aggregate && <div className="pt-1 text-[10px] text-muted-foreground">{aggregate}</div>}
@@ -163,9 +174,15 @@ function PayoutsInner() {
       (((await (supabase.from("payout_confirmations" as any).select("*").eq("period_start", period.start) as any)).data ?? []) as PayoutConfirmation[]),
   });
   const confirmations = confirmQ.data ?? [];
+  const adjQ = useQuery({
+    queryKey: [...keys.payoutsPage, "adjustments", period.start],
+    queryFn: async () =>
+      (((await (supabase.from("payout_adjustments" as any).select("*").eq("period_start", period.start).order("created_at", { ascending: true }) as any)).data ?? []) as PayoutAdjustment[]),
+  });
+  const adjustments = useMemo(() => adjQ.data ?? [], [adjQ.data]);
   const owed = useMemo(
-    () => memberPayoutTotals(rows, profileMap, period),
-    [rows, profileMap, period],
+    () => memberPayoutTotals(rows, profileMap, period, adjustments),
+    [rows, profileMap, period, adjustments],
   );
   const periodEnded = todayLocal() > period.end;
   const confirmedBy = new Map(confirmations.map(c => [c.user_id, c]));
@@ -223,15 +240,19 @@ function PayoutsInner() {
           const owedTotal = owed.reduce((s, m) => s + m.total, 0);
           const commissionSum = owed.reduce((s, m) => s + m.commission, 0);
           const basePaySum = owed.reduce((s, m) => s + m.basePay, 0);
+          const adjSum = owed.reduce((s, m) => s + m.adjustment, 0);
           const paidSum = owed.filter(m => confirmedBy.has(m.id)).reduce((s, m) => s + m.total, 0);
           const leftSum = owedTotal - paidSum;
+          const periodCash = periodDeals.reduce((s, d) => s + (d.cash_collected_upfront ?? 0), 0)
+            + periodPayments.reduce((s, p) => s + p.amount, 0);
+          const pct = periodCash > 0 ? (owedTotal / periodCash) * 100 : null;
           return (
-            <div className="card-surface px-5 py-4 flex flex-wrap items-end justify-between gap-3">
+            <div className="card-surface px-5 py-4 flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
               <div>
                 <div className="text-[12px] text-muted-foreground mb-2">To pay out · {period.label}</div>
                 <div className="text-[30px] font-medium tabular-nums leading-none">{money(owedTotal)}</div>
                 <div className="mt-2.5 text-[12px] text-muted-foreground tabular-nums">
-                  {money(commissionSum)} commissions{basePaySum > 0 ? ` + ${money(basePaySum)} base pay` : ""} · {owed.length} {owed.length === 1 ? "person" : "people"}
+                  {money(commissionSum)} commissions{basePaySum > 0 ? ` + ${money(basePaySum)} base pay` : ""}{Math.abs(adjSum) >= 0.01 ? ` ${adjSum > 0 ? "+" : "−"} ${money(Math.abs(adjSum))} adjustments` : ""} · {owed.length} {owed.length === 1 ? "person" : "people"}
                   {periodEnded && paidSum > 0 && (
                     <>
                       {" "}· <span className="text-success-fg">{money(paidSum)} confirmed paid</span>
@@ -240,9 +261,14 @@ function PayoutsInner() {
                   )}
                 </div>
               </div>
-              {!periodEnded && (
-                <span className="text-[11px] text-muted-foreground mb-1">period still running · grows as cash lands</span>
-              )}
+              <div className="text-right">
+                <div className="text-[12px] text-muted-foreground mb-2">Cash collected this period</div>
+                <div className="text-[22px] font-medium tabular-nums leading-none">{money(periodCash)}</div>
+                <div className="mt-2 text-[11px] text-muted-foreground tabular-nums">
+                  {pct != null ? `payouts are ${pct.toFixed(1)}% of cash` : "no cash collected yet"}
+                  {!periodEnded && " · period still running"}
+                </div>
+              </div>
             </div>
           );
         })()}
@@ -256,6 +282,16 @@ function PayoutsInner() {
             invalidateForTables(qc, ["profiles"]);
             qc.invalidateQueries({ queryKey: ["payout-alert"] });
           }}
+        />
+
+        {/* Manual adjustments: signed corrections on a member's payout for
+            this period (off-system payments, clawbacks). Note is mandatory
+            so every number keeps its receipt. */}
+        <AdjustmentsPanel
+          period={period}
+          adjustments={adjustments}
+          profileMap={profileMap}
+          teamIds={data?.teamIds ?? []}
         />
 
 
@@ -286,8 +322,9 @@ function PayoutsInner() {
                     <div className="min-w-0">
                       <div className="text-[13px] font-medium text-foreground truncate">{m.name}</div>
                       <div className="text-[11px] text-muted-foreground tabular-nums">
-                        {money(m.commission)} commission{m.basePay > 0 ? ` + ${money(m.basePay)} base` : ""}
+                        {money(m.commission)} commission{m.basePay > 0 ? ` + ${money(m.basePay)} base` : ""}{Math.abs(m.adjustment) >= 0.01 ? ` ${m.adjustment > 0 ? "+" : "−"} ${money(Math.abs(m.adjustment))} adj.` : ""}
                       </div>
+                      {c?.note && <div className="text-[11px] text-muted-foreground/80 truncate" title={c.note}>{c.note}</div>}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <span className="text-[13px] font-semibold tabular-nums">{money(m.total)}</span>
@@ -550,6 +587,121 @@ function BasePayPanel({ profileMap, teamIds, onChanged }: {
       ) : (
         <button onClick={() => setAdding(true)} className="mt-2 text-[11px] font-medium text-primary hover:underline">+ Add base pay</button>
       )}
+    </div>
+  );
+}
+
+/** Signed payout corrections for the shown period. Every adjustment needs a
+ *  note; each one shows up in the member's owed total, the confirmation
+ *  banner, and the receipts. Deleting is allowed (the audit log keeps the
+ *  history). */
+function AdjustmentsPanel({ period, adjustments, profileMap, teamIds }: {
+  period: { start: string; label: string };
+  adjustments: PayoutAdjustment[];
+  profileMap: Map<string, Profile>;
+  teamIds: string[];
+}) {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const [adding, setAdding] = useState(false);
+  const [memberId, setMemberId] = useState("");
+  const [amount, setAmount] = useState("");
+  const [note, setNote] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const members = teamIds
+    .map(id => profileMap.get(id))
+    .filter((p): p is Profile => !!p)
+    .sort((a, b) => (a.display_name ?? "").localeCompare(b.display_name ?? ""));
+
+  const add = async () => {
+    const amt = Number(amount);
+    if (!user || !memberId || !Number.isFinite(amt) || amt === 0 || note.trim().length < 3) return;
+    setSaving(true);
+    const { error } = await (supabase.from("payout_adjustments" as any).insert({
+      user_id: memberId,
+      period_start: period.start,
+      amount: Math.round(amt * 100) / 100,
+      note: note.trim(),
+      created_by: user.id,
+    }) as any);
+    setSaving(false);
+    if (error) return toast.error(error.message);
+    toast.success("Adjustment added");
+    setAdding(false); setMemberId(""); setAmount(""); setNote("");
+    invalidateForTables(qc, ["payout_adjustments"]);
+  };
+
+  const remove = async (a: PayoutAdjustment) => {
+    if (!confirm(`Remove this adjustment (${money(a.amount)})? The audit log keeps the record.`)) return;
+    const { error } = await (supabase.from("payout_adjustments" as any).delete().eq("id", a.id) as any);
+    if (error) return toast.error(error.message);
+    toast.success("Adjustment removed");
+    invalidateForTables(qc, ["payout_adjustments"]);
+  };
+
+  if (adjustments.length === 0 && !adding) {
+    return (
+      <div className="card-surface px-4 py-3 flex items-center justify-between gap-3">
+        <span className="text-[12px] text-muted-foreground">No adjustments for {period.label}. Use one to correct a payout or record money paid outside the ledger.</span>
+        <button onClick={() => setAdding(true)} className="text-[11px] font-medium text-primary hover:underline shrink-0">+ Add adjustment</button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="card-surface px-4 py-3.5">
+      <div className="flex flex-wrap items-baseline justify-between gap-3 mb-2">
+        <span className="text-[13px] font-medium text-foreground">Adjustments · {period.label}</span>
+        {!adding && <button onClick={() => setAdding(true)} className="text-[11px] font-medium text-primary hover:underline">+ Add adjustment</button>}
+      </div>
+      <div className="space-y-1">
+        {adjustments.map(a => (
+          <div key={a.id} className="flex items-center justify-between gap-3 text-[13px] rounded-md px-2 py-1.5 hover:bg-muted/60 motion-safe:transition-colors">
+            <div className="min-w-0 flex-1">
+              <span className="text-foreground font-medium">{profileMap.get(a.user_id)?.display_name ?? a.user_id.slice(0, 8)}</span>
+              <span className="text-muted-foreground"> · {a.note}</span>
+            </div>
+            <span className={`tabular-nums font-medium shrink-0 ${a.amount < 0 ? "text-danger-fg" : ""}`}>{money(a.amount)}</span>
+            <button onClick={() => remove(a)} className="p-1 rounded-sm text-muted-foreground hover:text-danger-fg hover:bg-danger-bg shrink-0" title="Remove adjustment">
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+        ))}
+      </div>
+      {adding && (
+        <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-[var(--border)] pt-2">
+          <select
+            value={memberId}
+            onChange={e => setMemberId(e.target.value)}
+            className="h-8 rounded-sm border border-[var(--border)] bg-[var(--background)] px-2 text-[12px] focus:outline-none focus:border-ring"
+          >
+            <option value="">Pick a team member…</option>
+            {members.map(p => <option key={p.id} value={p.id}>{p.display_name ?? p.id.slice(0, 8)}</option>)}
+          </select>
+          <input
+            placeholder="± amount"
+            value={amount}
+            onChange={e => setAmount(e.target.value.replace(/[^0-9.-]/g, ""))}
+            className="h-8 w-24 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-right text-[12px] tabular-nums focus:outline-none focus:border-ring"
+          />
+          <input
+            placeholder="Why (required)"
+            value={note}
+            onChange={e => setNote(e.target.value)}
+            className="h-8 flex-1 min-w-[180px] px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-[12px] focus:outline-none focus:border-ring"
+          />
+          <button
+            disabled={saving || !memberId || !Number.isFinite(Number(amount)) || Number(amount) === 0 || note.trim().length < 3}
+            onClick={() => void add()}
+            className="h-8 px-3 rounded-sm bg-primary text-primary-foreground text-[12px] font-medium hover:bg-primary/90 disabled:opacity-40"
+          >
+            Add
+          </button>
+          <button onClick={() => { setAdding(false); setMemberId(""); setAmount(""); setNote(""); }} className="text-[11px] text-muted-foreground hover:text-foreground">Cancel</button>
+        </div>
+      )}
+      <p className="mt-2 text-[10px] text-muted-foreground">Positive adds to what the member is owed, negative subtracts. Shows in their receipts and the payout banner.</p>
     </div>
   );
 }

@@ -27,6 +27,7 @@ export const keys = {
   payoutsPage: ["page", "payouts"],
   payoutAlert: ["payout-alert"],
   cashCalendar: ["cash-in-calendar"],
+  calSets: ["cal", "sets"],
   teamPage: ["page", "team"],
   testimonialsPage: ["page", "testimonials"],
   csmOverview: ["csm-overview"],
@@ -100,6 +101,8 @@ const TABLE_KEYS = {
   business_expenses: [keys.finance, keys.installmentsPage, keys.cashCalendar],
   founder_settings: [keys.finance, keys.admin, keys.dashboard, keys.installmentsPage],
   payout_confirmations: [keys.payoutsPage, keys.payoutAlert, keys.dashboard, keys.notifications],
+  payout_adjustments: [keys.payoutsPage, keys.payoutAlert, keys.dashboard, keys.notifications],
+  set_reminders: [keys.calSets, keys.dashboard, keys.dashboardNudges],
 } satisfies Record<string, readonly QueryKey[]>;
 
 export type WrittenTable = keyof typeof TABLE_KEYS;

@@ -16,7 +16,7 @@ import {
   type PayoutProfile, type PayoutInstallmentPayment, type PayoutInstallment,
 } from "@/lib/payout-period";
 
-type PayStatus = "upcoming" | "paid" | "late" | "missed" | "waived";
+type PayStatus = "upcoming" | "paid" | "late" | "missed" | "waived" | "refunded";
 type Payment = {
   id: string;
   installment_id: string;
@@ -44,7 +44,10 @@ const STATUS_LABEL: Record<PayStatus, { label: string; cls: string }> = {
   late:     { label: "Late",     cls: "text-warning-fg border-warning/25 bg-warning-bg" },
   missed:   { label: "Missed",   cls: "text-danger-fg border-danger/25 bg-danger-bg" },
   waived:   { label: "Waived",   cls: "text-muted-foreground border-border bg-zinc-500/5" },
+  refunded: { label: "Refunded", cls: "text-danger-fg border-danger/25 bg-danger-bg/50" },
 };
+// "refunded" is set only by the refund flow; it is never picked by hand here.
+const SETTABLE_STATUSES = ["upcoming", "paid", "late", "missed", "waived"] as const;
 
 const fmtMoney = (n: number, cur = "USD") =>
   new Intl.NumberFormat(undefined, { style: "currency", currency: cur }).format(n || 0);
@@ -170,7 +173,7 @@ export function CashInCalendarCard({ foundersOnly = false }: { foundersOnly?: bo
   const byDay = useMemo(() => {
     const m = new Map<string, { expected: number; collected: number; rows: Payment[] }>();
     for (const p of payments) {
-      if (p.status === "waived") continue;
+      if (p.status === "waived" || p.status === "refunded") continue;
       const cur = m.get(p.due_date) ?? { expected: 0, collected: 0, rows: [] };
       if (p.status === "paid") cur.collected += Number(p.amount) || 0;
       else cur.expected += Number(p.amount) || 0;
@@ -371,11 +374,11 @@ export function CashInCalendarCard({ foundersOnly = false }: { foundersOnly?: bo
                         <SelectField
                           value={p.status}
                           onChange={v => setStatus(p.id, v as PayStatus)}
-                          options={(Object.keys(STATUS_LABEL) as PayStatus[]).map(s => ({ value: s, label: STATUS_LABEL[s].label }))}
-                          disabled={p.status === "paid"}
+                          options={SETTABLE_STATUSES.map(s => ({ value: s, label: STATUS_LABEL[s].label }))}
+                          disabled={p.status === "paid" || p.status === "refunded"}
                           className={`w-auto text-xs ${STATUS_LABEL[p.status].cls}`}
                         />
-                        {p.status !== "paid" && p.status !== "waived" && (
+                        {p.status !== "paid" && p.status !== "waived" && p.status !== "refunded" && (
                           <button onClick={() => removePayment(p.id)} className="text-danger-fg hover:underline inline-flex items-center gap-1" aria-label="Waive scheduled payment">
                             <Ban className="h-3 w-3" /> Waive
                           </button>
