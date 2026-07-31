@@ -39,6 +39,7 @@ export function RefundStudentDialog({ studentId, studentName, onClose }: {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reason, setReason] = useState("Student refunded");
   const [cancelSets, setCancelSets] = useState(true);
+  const [archive, setArchive] = useState(true);
   const [applying, setApplying] = useState(false);
 
   useEffect(() => {
@@ -77,6 +78,7 @@ export function RefundStudentDialog({ studentId, studentName, onClose }: {
     const { data, error } = await (supabase.rpc as any)("refund_student_money", {
       p_student_id: studentId,
       p_reason: reason.trim(),
+      p_archive: archive,
     });
     if (error) {
       setApplying(false);
@@ -166,6 +168,11 @@ export function RefundStudentDialog({ studentId, studentName, onClose }: {
                 <span>Also cancel their {preview.sets.length} set row{preview.sets.length === 1 ? "" : "s"} in the setter tracker (keeps show rates honest)</span>
               </label>
             )}
+
+            <label className="flex items-start gap-2 text-[12px] text-muted-foreground cursor-pointer">
+              <input type="checkbox" checked={archive} onChange={e => setArchive(e.target.checked)} className="mt-0.5" />
+              <span>Archive the student: removed from every list and picker (history preserved, page reachable from the Archived view)</span>
+            </label>
 
             <div className="flex items-center justify-end gap-2 pt-1">
               <button onClick={onClose} className="text-[12px] text-muted-foreground hover:text-foreground px-3 py-2">Cancel</button>

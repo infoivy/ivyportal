@@ -268,10 +268,12 @@ function StudentsLayout() {
   };
 
   const archiveStudent = async (id: string) => {
-    if (!confirm("Archive this student? Their calls, EODs, payments, and placement history will be preserved.")) return;
-    const { error } = await supabase.from("students").update({ status: "inactive" }).eq("id", id);
+    if (!confirm("Archive this student? They disappear from every list and picker; their calls, EODs, payments, and placement history are preserved and their page stays reachable from the Archived view.")) return;
+    // archived_at is what actually removes them from rosters — status alone
+    // never did (the Adem lesson, founder 2026-07-31).
+    const { error } = await supabase.from("students").update({ status: "inactive", archived_at: new Date().toISOString() } as never).eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success("Student archived · history preserved");
+    toast.success("Student archived · gone from lists, history preserved");
     invalidateAll();
   };
 
@@ -669,7 +671,47 @@ function StudentsLayout() {
       )}
 
 
+      <ArchivedStudentsStrip />
+
       {addOpen && <AddStudentModal onClose={() => setAddOpen(false)} onCreated={() => { setAddOpen(false); invalidateAll(); }} coaches={coaches} />}
+    </div>
+  );
+}
+
+/** Archived students live OUT of every roster; this quiet strip is the one
+ *  way back in (open their page, restore if the archive was a mistake). */
+function ArchivedStudentsStrip() {
+  const [open, setOpen] = useState(false);
+  const archivedQ = useQuery({
+    queryKey: ["students", "archived"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("students")
+        .select("id, full_name, archived_at" as never)
+        .eq("is_demo", false)
+        .not("archived_at" as never, "is", null)
+        .order("archived_at" as never, { ascending: false });
+      return (data ?? []) as unknown as { id: string; full_name: string; archived_at: string }[];
+    },
+    staleTime: 60_000,
+  });
+  const rows = archivedQ.data ?? [];
+  if (rows.length === 0) return null;
+  return (
+    <div className="text-[12px] text-muted-foreground">
+      <button onClick={() => setOpen(o => !o)} className="hover:text-foreground underline-offset-2 hover:underline">
+        {open ? "Hide archived" : `Archived students (${rows.length})`}
+      </button>
+      {open && (
+        <div className="mt-2 space-y-1">
+          {rows.map(r => (
+            <div key={r.id} className="flex items-center gap-3">
+              <Link to="/students/$id" params={{ id: r.id }} className="text-foreground hover:underline">{r.full_name}</Link>
+              <span className="tabular-nums">archived {r.archived_at.slice(0, 10)}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

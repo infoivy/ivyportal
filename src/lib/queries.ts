@@ -10,7 +10,10 @@ export const studentsQuery = () =>
   queryOptions({
     queryKey: ["students", "real"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("students").select("*").eq("is_demo", false).order("created_at", { ascending: false });
+      // Archived students (refunds, removals) leave every roster and picker
+      // in one move (founder 2026-07-31); their history stays reachable via
+      // the detail page and the Archived toggle on Students.
+      const { data, error } = await supabase.from("students").select("*").eq("is_demo", false).is("archived_at", null).order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
     },

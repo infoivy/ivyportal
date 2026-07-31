@@ -95,7 +95,7 @@ export function PaymentPlansSection() {
       const [iRes, pRes, sRes, tRes] = await Promise.all([
         (supabase.from("installments" as any).select("*, students!inner(is_demo)").eq("students.is_demo", false).is("voided_at", null).order("created_at", { ascending: false }) as any),
         (supabase.from("installment_payments" as any).select("*, installments!inner(students!inner(is_demo))").eq("installments.students.is_demo", false).order("due_date", { ascending: true }) as any),
-        supabase.from("students").select("id, full_name").eq("is_demo", false).order("full_name"),
+        supabase.from("students").select("id, full_name").eq("is_demo", false).is("archived_at" as never, null).order("full_name"),
         supabase.from("profiles").select("id, display_name" as any).eq("is_demo", false),
       ]);
       return {

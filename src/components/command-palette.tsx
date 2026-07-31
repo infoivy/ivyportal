@@ -79,7 +79,7 @@ export function CommandPalette() {
     let alive = true;
     (async () => {
       const [sRes, pRes, rRes, dRes, tRes] = await Promise.all([
-        supabase.from("students").select("id, full_name, email").eq("is_demo", false).order("full_name").limit(500),
+        supabase.from("students").select("id, full_name, email").eq("is_demo", false).is("archived_at" as never, null).order("full_name").limit(500),
         supabase.from("profiles").select("id, display_name").eq("is_demo", false).limit(200),
         supabase.from("user_roles").select("user_id, role"),
         supabase.from("docs").select("slug, title, category").limit(300),

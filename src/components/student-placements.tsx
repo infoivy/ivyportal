@@ -184,7 +184,7 @@ export function PlacementBoard() {
     queryFn: async () => {
       const [placements, students] = await Promise.all([
         supabase.from("student_placements").select("*, students!inner(is_demo)").eq("students.is_demo", false).is("voided_at", null).neq("stage", "lost").order("updated_at", { ascending: false }),
-        supabase.from("students").select("id, full_name").eq("is_demo", false),
+        supabase.from("students").select("id, full_name").eq("is_demo", false).is("archived_at" as never, null),
       ]);
       const names = new Map(((students.data ?? []) as { id: string; full_name: string }[]).map((s) => [s.id, s.full_name]));
       return { rows: (placements.data ?? []) as Placement[], names };

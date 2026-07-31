@@ -95,7 +95,7 @@ function RevenueInner() {
         .from("user_roles")
         .select("user_id, role")
         .in("role", ["closer", "coach", "admin", "setter"]),
-      supabase.from("students").select("id, full_name").eq("is_demo", false).order("full_name"),
+      supabase.from("students").select("id, full_name").eq("is_demo", false).is("archived_at" as never, null).order("full_name"),
     ]);
 
     const r: CommissionRates = { ...DEFAULT_RATES };

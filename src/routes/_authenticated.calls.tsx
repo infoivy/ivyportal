@@ -61,7 +61,7 @@ function CallsPage() {
   const fetchPage = async () => {
     const [cRes, sRes, roleRes] = await Promise.all([
       supabase.from("student_calls").select("*, students!inner(is_demo)").eq("students.is_demo", false).is("voided_at", null).order("call_date", { ascending: false }).limit(500),
-      supabase.from("students").select("id, full_name, calls_allotted").eq("is_demo", false).order("full_name"),
+      supabase.from("students").select("id, full_name, calls_allotted").eq("is_demo", false).is("archived_at" as never, null).order("full_name"),
       supabase.from("user_roles").select("user_id, role").in("role", ["coach", "admin"]),
     ]);
     const coachIds = Array.from(new Set((roleRes.data ?? []).map(r => r.user_id)));

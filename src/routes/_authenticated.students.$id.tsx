@@ -397,6 +397,26 @@ function StudentDetail() {
                   <AlertTriangle className="h-2.5 w-2.5" /> Portal not linked
                 </span>
               )}
+              {(student as { archived_at?: string | null }).archived_at && (
+                <span className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-danger-fg border border-danger/25 bg-danger-bg px-1.5 py-0.5 rounded-sm">
+                  Archived · hidden from every list
+                  {canManage && (
+                    <button
+                      onClick={async () => {
+                        if (!confirm("Restore this student to the lists?")) return;
+                        const { error } = await supabase.from("students").update({ archived_at: null, status: "active" } as never).eq("id", student.id);
+                        if (error) return toast.error(error.message);
+                        toast.success("Student restored");
+                        load();
+                        invalidateForTables(qc, ["students"]);
+                      }}
+                      className="normal-case tracking-normal font-medium underline underline-offset-2 hover:opacity-80"
+                    >
+                      Restore
+                    </button>
+                  )}
+                </span>
+              )}
             </div>
             {paymentSetupOpen && (
               <StudentPaymentSetup
