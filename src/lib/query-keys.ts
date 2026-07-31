@@ -25,6 +25,7 @@ export const keys = {
   studentPages: ["page", "student"],
   installmentsPage: ["page", "installments"],
   payoutsPage: ["page", "payouts"],
+  cardsPage: ["page", "cards"],
   payoutAlert: ["payout-alert"],
   cashCalendar: ["cash-in-calendar"],
   calSets: ["cal", "sets"],
@@ -102,6 +103,7 @@ const TABLE_KEYS = {
   founder_settings: [keys.finance, keys.admin, keys.dashboard, keys.installmentsPage],
   payout_confirmations: [keys.payoutsPage, keys.payoutAlert, keys.dashboard, keys.notifications],
   payout_adjustments: [keys.payoutsPage, keys.payoutAlert, keys.dashboard, keys.notifications],
+  wallet_entries: [keys.cardsPage],
   set_reminders: [keys.calSets, keys.dashboard, keys.dashboardNudges],
 } satisfies Record<string, readonly QueryKey[]>;
 

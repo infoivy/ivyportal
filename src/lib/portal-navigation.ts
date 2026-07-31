@@ -184,6 +184,15 @@ export const WORK_NAV_ITEMS: PortalNavItem[] = [
     group: "work",
   },
   {
+    key: "cards",
+    title: "Cards",
+    description: "WAP card balances: profit share loaded, spending, what remains.",
+    url: "/cards",
+    icon: WalletCards,
+    roles: ["founder", "cofounder"],
+    group: "work",
+  },
+  {
     key: "team-chat",
     title: "Team chat",
     description: "Internal coordination and operational updates.",

@@ -7,14 +7,20 @@ if (!url || !serviceRoleKey) {
 }
 
 const expectedTables = [
-  'calendar_connections', 'commission_rates', 'content_hooks', 'content_ideas',
-  'content_items', 'content_week_ideas', 'content_week_plans', 'crm_lead_notes',
-  'csm_student_notes', 'csm_tally', 'deals', 'docs', 'eods', 'founder_settings',
+  'audit_log', 'business_expenses', 'calendar_connections', 'commission_rates',
+  'content_hooks', 'content_ideas', 'content_items', 'content_week_ideas',
+  'content_week_plans', 'crm_lead_notes', 'csm_student_notes', 'csm_tally',
+  'deals', 'docs', 'eod_correction_archive', 'eods', 'founder_settings',
   'ig_connections', 'ig_dashboards', 'ig_monthly_snapshots', 'ig_top_reels',
-  'installment_payments', 'installments', 'notes', 'onboarding_progress',
-  'onboarding_templates', 'payment_links', 'payout_confirmations', 'profiles', 'service_credentials',
-  'student_action_items', 'student_calls', 'student_eods', 'student_weekly_eods', 'students',
-  'testimonials', 'user_roles',
+  'installment_payments', 'installments', 'invitations', 'notes',
+  'onboarding_progress', 'onboarding_templates', 'org_settings', 'payment_links',
+  'payout_adjustments', 'payout_confirmations', 'profiles', 'role_access',
+  'service_credentials', 'set_follow_ups', 'set_reminder_events', 'set_reminders',
+  'setter_daily_logs', 'student_action_items', 'student_alerts',
+  'student_call_attendance', 'student_calls', 'student_checkins', 'student_eods',
+  'student_guide_steps', 'student_milestone_progress', 'student_milestones',
+  'student_placements', 'student_weekly_eods', 'students', 'team_chat',
+  'testimonials', 'training_videos', 'user_roles', 'wallet_entries',
 ];
 
 const response = await fetch(`${url.replace(/\/$/, '')}/rest/v1/rpc/verify_security_schema`, {

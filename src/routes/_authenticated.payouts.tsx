@@ -241,7 +241,7 @@ function PayoutsInner() {
           const commissionSum = owed.reduce((s, m) => s + m.commission, 0);
           const basePaySum = owed.reduce((s, m) => s + m.basePay, 0);
           const adjSum = owed.reduce((s, m) => s + m.adjustment, 0);
-          const paidSum = owed.filter(m => confirmedBy.has(m.id)).reduce((s, m) => s + m.total, 0);
+          const paidSum = owed.filter(m => confirmedBy.has(m.id)).reduce((s, m) => s + Number(confirmedBy.get(m.id)!.amount_paid), 0);
           const leftSum = owedTotal - paidSum;
           const periodCash = periodDeals.reduce((s, d) => s + (d.cash_collected_upfront ?? 0), 0)
             + periodPayments.reduce((s, p) => s + p.amount, 0);
@@ -327,7 +327,19 @@ function PayoutsInner() {
                       {c?.note && <div className="text-[11px] text-muted-foreground/80 truncate" title={c.note}>{c.note}</div>}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-[13px] font-semibold tabular-nums">{money(m.total)}</span>
+                      {/* Once confirmed, the STORED paid amount is the number that
+                          matters; the computed figure demotes to context when they
+                          differ (founder 2026-07-31: settled rows looked wrong). */}
+                      {c ? (
+                        <span className="text-right">
+                          <span className="text-[13px] font-semibold tabular-nums block">{money(Number(c.amount_paid))}</span>
+                          {Math.abs(Number(c.amount_paid) - m.total) >= 1 && (
+                            <span className="text-[10px] text-muted-foreground tabular-nums block">ledger computed {money(m.total)}</span>
+                          )}
+                        </span>
+                      ) : (
+                        <span className="text-[13px] font-semibold tabular-nums">{money(m.total)}</span>
+                      )}
                       {c ? (
                         <span className="inline-flex items-center gap-1.5">
                           <span className="inline-flex items-center gap-1 text-[11px] text-success-fg border border-success/25 bg-success-bg px-2 py-1 rounded-sm">
