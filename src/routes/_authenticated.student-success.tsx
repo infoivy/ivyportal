@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { StudentEodPulse } from "@/components/student-eod-pulse";
 import {
   AlertTriangle, CheckCircle2, Calendar, Quote, Loader2,
   Phone, TrendingUp, Users, Trophy,
@@ -376,6 +377,8 @@ export function StudentSuccessInner() {
           </TabsContent>
         </Tabs>
       </div>
+
+      <StudentEodPulse />
     </div>
   );
 }

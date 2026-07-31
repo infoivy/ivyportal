@@ -36,6 +36,7 @@ type CsmRow = {
   loomsWeek: number;
   roleplaysWeek: number;
   escalationsWeek: number;
+  notesWeek: number;
 };
 
 export function HomeFulfillmentPicture() {
@@ -50,7 +51,7 @@ export function HomeFulfillmentPicture() {
       const twoWeeksAgo = iso(subDays(new Date(), 13));
       const sevenDaysAgo = iso(subDays(new Date(), 7));
       const inSevenDays = iso(subDays(new Date(), -7));
-      const [studentsRes, checkinsRes, tallyGenRes, tallyStuRes, eodsRes, itemsRes, callsRes, csmRolesRes, profilesRes] = await Promise.all([
+      const [studentsRes, checkinsRes, tallyGenRes, tallyStuRes, eodsRes, itemsRes, callsRes, csmRolesRes, profilesRes, notesRes] = await Promise.all([
         supabase.from("students").select("id, full_name, phase, status, created_at, onboarding_completed_at, testimonial_collected, first_win_at").eq("is_demo", false).is("archived_at" as never, null),
         (supabase.from("student_checkins" as never).select("student_id, csm_id, checked_at").gte("checked_at", twoWeeksAgo) as any),
         supabase.from("csm_tally").select("user_id, kind, created_at").is("student_id", null).gte("created_at", weekStart + "T00:00:00"),
@@ -60,6 +61,7 @@ export function HomeFulfillmentPicture() {
         supabase.from("student_calls").select("id, students!inner(is_demo)", { count: "exact", head: true }).eq("students.is_demo", false).is("voided_at", null).eq("status", "scheduled").gte("call_date", today).lte("call_date", inSevenDays),
         supabase.from("user_roles").select("user_id").eq("role", "csm"),
         supabase.from("profiles").select("id, display_name").eq("is_demo", false),
+        supabase.from("csm_student_notes").select("id, student_id, user_id, note, created_at, students!inner(is_demo)").eq("students.is_demo", false).order("created_at", { ascending: false }).limit(12),
       ]);
 
       const students = (studentsRes.data ?? []) as unknown as {
@@ -126,6 +128,24 @@ export function HomeFulfillmentPicture() {
         ...((tallyGenRes.data ?? []) as { user_id: string; kind: string; created_at: string }[]),
         ...((tallyStuRes.data ?? []) as { user_id: string; kind: string; created_at: string }[]),
       ];
+      // Latest CSM notes: the founder wants to SEE who writes notes and who
+      // doesn't — recent notes verbatim plus a per-CSM weekly note count.
+      const studentName = new Map(students.map((s) => [s.id, s.full_name]));
+      const notes = ((notesRes.data ?? []) as unknown as { id: string; student_id: string; user_id: string | null; note: string; created_at: string }[])
+        .map((n) => ({
+          id: n.id,
+          when: n.created_at,
+          csm: n.user_id ? (nameOf.get(n.user_id) ?? "Unknown") : "Unknown",
+          student: studentName.get(n.student_id) ?? "Unknown",
+          studentId: n.student_id,
+          note: n.note,
+        }));
+      const notesWeekBy = new Map<string, number>();
+      for (const n of ((notesRes.data ?? []) as unknown as { user_id: string | null; created_at: string }[])) {
+        if (!n.user_id || n.created_at.slice(0, 10) < weekStart) continue;
+        notesWeekBy.set(n.user_id, (notesWeekBy.get(n.user_id) ?? 0) + 1);
+      }
+
       const csmRows: CsmRow[] = csmIds
         .filter((id) => nameOf.has(id))
         .map((id) => {
@@ -139,6 +159,7 @@ export function HomeFulfillmentPicture() {
             loomsWeek: mine.filter((t) => t.kind === "loom").length,
             roleplaysWeek: mine.filter((t) => t.kind === "roleplay").length,
             escalationsWeek: mine.filter((t) => t.kind === "escalation").length,
+            notesWeek: notesWeekBy.get(id) ?? 0,
           };
         })
         .sort((a, b) => b.checkinsWeek - a.checkinsWeek);
@@ -160,6 +181,7 @@ export function HomeFulfillmentPicture() {
         overdueItems,
         callsWeek: callsRes.count ?? 0,
         csmRows,
+        notes,
       };
     },
   });
@@ -225,6 +247,7 @@ export function HomeFulfillmentPicture() {
                   <th className="text-right py-1.5 font-medium">This week</th>
                   <th className="text-right py-1.5 font-medium">Looms</th>
                   <th className="text-right py-1.5 font-medium">Roleplays</th>
+                  <th className="text-right py-1.5 font-medium">Notes</th>
                   <th className="text-right py-1.5 font-medium">Escalations</th>
                 </tr>
               </thead>
@@ -236,11 +259,30 @@ export function HomeFulfillmentPicture() {
                     <td className="py-2 text-right tabular-nums">{r.checkinsWeek}</td>
                     <td className="py-2 text-right tabular-nums">{r.loomsWeek}</td>
                     <td className="py-2 text-right tabular-nums">{r.roleplaysWeek}</td>
+                    <td className={`py-2 text-right tabular-nums ${r.notesWeek === 0 ? "text-warning-fg" : ""}`}>{r.notesWeek}</td>
                     <td className={`py-2 text-right tabular-nums ${r.escalationsWeek > 0 ? "text-warning-fg" : ""}`}>{r.escalationsWeek}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+      {d && d.notes.length > 0 && (
+        <div className="border-t border-border px-5 py-4 sm:px-6">
+          <p className="text-caption font-medium text-foreground mb-2">Latest CSM notes</p>
+          <div className="space-y-2.5">
+            {d.notes.slice(0, 6).map((n) => (
+              <div key={n.id} className="text-caption">
+                <div className="flex flex-wrap items-baseline gap-x-2">
+                  <span className="font-medium text-foreground">{n.csm}</span>
+                  <span className="text-muted-foreground">on</span>
+                  <Link to="/students/$id" params={{ id: n.studentId }} className="font-medium text-foreground hover:underline">{n.student}</Link>
+                  <span className="text-micro text-muted-foreground tabular-nums">{n.when.slice(0, 10)}</span>
+                </div>
+                <p className="text-muted-foreground mt-0.5 line-clamp-2">{n.note}</p>
+              </div>
+            ))}
           </div>
         </div>
       )}

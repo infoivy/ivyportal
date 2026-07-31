@@ -26,8 +26,10 @@ import {
 
 export const Route = createFileRoute("/_authenticated/students/$id")({
   head: () => ({ meta: [{ title: "Student · ISA" }] }),
-  validateSearch: (s: Record<string, unknown>): { setup?: string } =>
-    typeof s.setup === "string" ? { setup: s.setup } : {},
+  validateSearch: (s: Record<string, unknown>): { setup?: string; tab?: string } => ({
+    ...(typeof s.setup === "string" ? { setup: s.setup } : {}),
+    ...(typeof s.tab === "string" ? { tab: s.tab } : {}),
+  }),
   component: StudentDetail,
 });
 
@@ -98,7 +100,7 @@ function StudentDetail() {
   const [student, setStudent] = useState<Student | null>(null);
   const [paymentSetupOpen, setPaymentSetupOpen] = useState(false);
   const [refundOpen, setRefundOpen] = useState(false);
-  const { setup } = Route.useSearch();
+  const { setup, tab: tabParam } = Route.useSearch();
   useEffect(() => {
     if (setup === "payment" && student && !student.payment_state) setPaymentSetupOpen(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -117,7 +119,9 @@ function StudentDetail() {
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [milestoneProgress, setMilestoneProgress] = useState<Set<string>>(new Set());
   const [callFormOpen, setCallFormOpen] = useState(false);
-  const [tab, setTab] = useState<Tab>("timeline");
+  const [tab, setTab] = useState<Tab>(() =>
+    (["timeline", "calls", "eods", "csm", "installments", "notes"] as Tab[]).includes(tabParam as Tab) ? (tabParam as Tab) : "timeline",
+  );
   const { data: healthMap } = useStudentHealth();
 
   const milestonesQ = useQuery({
@@ -474,7 +478,10 @@ function StudentDetail() {
                 <>
                   <SelectChip value={student.phase} onChange={v => update({ phase: v as Phase })} options={PHASES.map(p => ({ v: p, l: p.replace("_", " ") }))} color="fuchsia" />
                   <SelectChip value={student.status} onChange={v => update({ status: v as Status })} options={STATUSES.map(s => ({ v: s, l: s }))} color={student.status === "active" ? "emerald" : student.status === "ghosting" ? "rose" : "zinc"} />
-                  <SelectChip value={student.coach_id ?? ""} onChange={v => update({ coach_id: v || null })} options={[{ v: "", l: "Unassigned" }, ...coaches.map(c => ({ v: c.id, l: c.display_name ?? "?" }))]} color="sky" prefix="Coach: " />
+                  {/* Group-program students have no assigned coach or 1:1 anything (founder 2026-07-31). */}
+                  {student.calls_allotted > 0 && (
+                    <SelectChip value={student.coach_id ?? ""} onChange={v => update({ coach_id: v || null })} options={[{ v: "", l: "Unassigned" }, ...coaches.map(c => ({ v: c.id, l: c.display_name ?? "?" }))]} color="sky" prefix="Coach: " />
+                  )}
                   <SelectChip
                     value={student.student_grade ?? ""}
                     onChange={v => update({ student_grade: v || null })}
@@ -590,13 +597,15 @@ function StudentDetail() {
           accent={apps7d === 0 ? "rose" : "emerald"}
           icon={<Trophy className="h-3 w-3" />}
         />
-        <StatCard
-          label="Since last 1:1"
-          value={lastCallDaysAgo == null ? "–" : `${lastCallDaysAgo}d`}
-          sub={calls.length ? `${calls.length} calls total` : "No calls yet"}
-          accent={lastCallDaysAgo != null && lastCallDaysAgo > 14 ? "rose" : "sky"}
-          icon={<CalIcon className="h-3 w-3" />}
-        />
+        {student.calls_allotted > 0 && (
+          <StatCard
+            label="Since last 1:1"
+            value={lastCallDaysAgo == null ? "–" : `${lastCallDaysAgo}d`}
+            sub={calls.length ? `${calls.length} calls total` : "No calls yet"}
+            accent={lastCallDaysAgo != null && lastCallDaysAgo > 14 ? "rose" : "sky"}
+            icon={<CalIcon className="h-3 w-3" />}
+          />
+        )}
         <StatCard
           label="Since last EOD"
           value={lastEodDaysAgo == null ? "–" : `${lastEodDaysAgo}d`}
@@ -685,7 +694,7 @@ function StudentDetail() {
       {/* Tabs */}
       <div className="flex items-center gap-1 border-b border-[var(--border)] overflow-x-auto">
         <TabBtn active={tab === "timeline"} onClick={() => setTab("timeline")} icon={<Activity className="h-3 w-3" />}>Timeline</TabBtn>
-        <TabBtn active={tab === "calls"} onClick={() => setTab("calls")} icon={<Phone className="h-3 w-3" />}>1:1s ({calls.length})</TabBtn>
+        {student.calls_allotted > 0 && <TabBtn active={tab === "calls"} onClick={() => setTab("calls")} icon={<Phone className="h-3 w-3" />}>1:1s ({calls.length})</TabBtn>}
         <TabBtn active={tab === "eods"} onClick={() => setTab("eods")} icon={<User className="h-3 w-3" />}>Student EODs ({eods.length} daily · {weeklyEods.length} weekly)</TabBtn>
         {isCsm && <TabBtn active={tab === "csm"} onClick={() => setTab("csm")} icon={<HeartHandshake className="h-3 w-3" />}>CSM notes ({csmNotes.length})</TabBtn>}
         <TabBtn active={tab === "installments"} onClick={() => setTab("installments")} icon={<DollarSign className="h-3 w-3" />}>Installments {installment ? `(${payments.filter(p => p.status === "paid").length}/${payments.length})` : ""}</TabBtn>

@@ -13,7 +13,7 @@ import { signAvatars } from "@/lib/avatars";
 import { toast } from "sonner";
 import {
   School, Search, Plus, LayoutGrid, Table as TableIcon, Archive, X,
-  ChevronRight, Users, AlertTriangle, Columns3, Award, MessageSquare, Trophy, Download, Lock,
+  ChevronRight, Users, AlertTriangle, Columns3, Award, MessageSquare, Trophy, Download, Lock, Pencil,
 } from "lucide-react";
 import { START_HERE_REQUIRED_KEYS } from "@/lib/student-guide-steps";
 import { StudentLocalTime } from "@/components/student-local-time";
@@ -143,7 +143,18 @@ function StudentsLayout() {
     const path = coachAvatarsQ.data?.paths[id];
     return path ? coachAvatarsQ.data?.signed[path] : undefined;
   };
-  const [view, setView] = useState<"table" | "kanban" | "graduation">("table");
+  // Kanban is the standard view (founder 2026-07-31); the last pick sticks.
+  const [view, setViewRaw] = useState<"table" | "kanban" | "graduation">(() => {
+    try {
+      const saved = localStorage.getItem("students.view");
+      if (saved === "table" || saved === "kanban" || saved === "graduation") return saved;
+    } catch { /* default below */ }
+    return "kanban";
+  });
+  const setView = (v: "table" | "kanban" | "graduation") => {
+    setViewRaw(v);
+    try { localStorage.setItem("students.view", v); } catch { /* non-fatal */ }
+  };
   const [kanbanBy, setKanbanBy] = useState<"phase" | "coach">("phase");
   const [addOpen, setAddOpen] = useState(false);
   const [colsOpen, setColsOpen] = useState(false);
@@ -167,6 +178,52 @@ function StudentsLayout() {
   // Roster edits (coach, phase, status, add/delete) fan out to every surface
   // that reads students; a new student can also carry a deal + plan.
   const invalidateAll = () => invalidateForTables(qc, ["students", "deals", "installments", "installment_payments"]);
+
+  // Paid-vs-total per student for the Pay column (founder 2026-07-31:
+  // "see how much they paid" from the roster). RLS keeps this empty for
+  // CSMs — the chip alone renders for them. Keyed under the studentPages
+  // prefix so money writes elsewhere refresh it.
+  const moneyQ = useQuery({
+    queryKey: ["page", "student", "roster-money"],
+    staleTime: 2 * 60_000,
+    queryFn: async () => {
+      const [dealsRes, instRes, paysRes] = await Promise.all([
+        supabase.from("deals").select("student_id, total_value, cash_collected_upfront").eq("is_demo", false).is("voided_at", null).not("student_id", "is", null),
+        (supabase.from("installments" as any).select("id, student_id, total_amount").is("voided_at", null) as any),
+        (supabase.from("installment_payments" as any).select("installment_id, amount, status") as any),
+      ]);
+      return {
+        deals: (dealsRes.data ?? []) as { student_id: string; total_value: number | null; cash_collected_upfront: number | null }[],
+        installments: ((instRes.data ?? []) as { id: string; student_id: string | null; total_amount: number | null }[]),
+        payments: ((paysRes.data ?? []) as { installment_id: string; amount: number; status: string }[]),
+      };
+    },
+  });
+  const moneyByStudent = useMemo(() => {
+    const map = new Map<string, { paid: number; total: number }>();
+    const md = moneyQ.data;
+    if (!md) return map;
+    const instStudent = new Map(md.installments.map(i => [i.id, i.student_id]));
+    const bump = (sid: string | null, paid: number, total: number) => {
+      if (!sid) return;
+      const cur = map.get(sid) ?? { paid: 0, total: 0 };
+      cur.paid += paid;
+      cur.total += total;
+      map.set(sid, cur);
+    };
+    for (const d of md.deals) bump(d.student_id, Number(d.cash_collected_upfront ?? 0), Number(d.total_value ?? 0));
+    for (const p of md.payments) {
+      if (p.status !== "paid") continue;
+      bump(instStudent.get(p.installment_id) ?? null, Number(p.amount), 0);
+    }
+    // Students with a plan but no logged deal: the plan total is the target.
+    const hasDeal = new Set(md.deals.map(d => d.student_id));
+    for (const i of md.installments) {
+      if (!i.student_id || hasDeal.has(i.student_id)) continue;
+      bump(i.student_id, 0, Number(i.total_amount ?? 0));
+    }
+    return map;
+  }, [moneyQ.data]);
 
 
   const coachName = (id: string | null) => (id ? coaches.find(c => c.id === id)?.display_name ?? "–" : "Unassigned");
@@ -235,10 +292,13 @@ function StudentsLayout() {
 
   const byCoach = useMemo(() => {
     const map = new Map<string, Student[]>();
+    // Group-program students have no assigned coach (founder 2026-07-31):
+    // they live in their own lane instead of polluting "Unassigned".
+    map.set("__group__", []);
     map.set("__unassigned__", []);
     coaches.forEach(c => map.set(c.id, []));
     filtered.forEach(s => {
-      const k = s.coach_id ?? "__unassigned__";
+      const k = s.calls_allotted === 0 ? "__group__" : (s.coach_id ?? "__unassigned__");
       if (!map.has(k)) map.set(k, []);
       map.get(k)!.push(s);
     });
@@ -547,7 +607,9 @@ function StudentsLayout() {
                     )}
                     {visibleCols.has("coach") && (
                       <td className="px-2 py-3">
-                        {canManage ? (
+                        {s.calls_allotted === 0 ? (
+                          <span className="text-[11px] text-muted-foreground">Group</span>
+                        ) : canManage ? (
                           <SelectField value={s.coach_id ?? ""} onChange={v => updateStudent(s.id, { coach_id: v || null })} options={coaches.map(c => ({ value: c.id, label: c.display_name ?? c.id }))} allowEmpty emptyLabel="Unassigned" placeholder="Unassigned" className="h-7 max-w-[140px]" />
                         ) : (
                           <span className="text-xs text-muted-foreground truncate">{coachName(s.coach_id)}</span>
@@ -556,9 +618,25 @@ function StudentsLayout() {
                     )}
                     {visibleCols.has("payment") && (
                       <td className="px-2 py-3">
-                        {s.payment_state ? (
-                          <span className={`text-[12px] px-2 py-0.5 rounded-md border ${PAYMENT_META[s.payment_state].color}`}>{PAYMENT_META[s.payment_state].label}</span>
-                        ) : <span className="text-[10px] text-muted-foreground">–</span>}
+                        <Link
+                          to={"/students/$id" as any}
+                          params={{ id: s.id } as any}
+                          search={{ tab: "installments" } as any}
+                          className="inline-flex flex-col items-start gap-0.5 group/pay"
+                          title="Open their payments"
+                        >
+                          {s.payment_state ? (
+                            <span className={`text-[12px] px-2 py-0.5 rounded-md border group-hover/pay:underline ${PAYMENT_META[s.payment_state].color}`}>{PAYMENT_META[s.payment_state].label}</span>
+                          ) : <span className="text-[10px] text-muted-foreground group-hover/pay:underline">–</span>}
+                          {(() => {
+                            const m = moneyByStudent.get(s.id);
+                            return m && m.total > 0 ? (
+                              <span className={`text-[10px] tabular-nums ${m.paid >= m.total ? "text-success-fg" : "text-muted-foreground"}`}>
+                                ${Math.round(m.paid).toLocaleString()} of ${Math.round(m.total).toLocaleString()} paid
+                              </span>
+                            ) : null;
+                          })()}
+                        </Link>
                       </td>
                     )}
                     {visibleCols.has("calls_remaining") && (
@@ -638,7 +716,7 @@ function StudentsLayout() {
               </div>
               <div className="space-y-1.5">
                 {byPhase.get(p.key)!.map(s => (
-                  <StudentCard key={s.id} s={s} canDrag={canManage} coachName={coachName(s.coach_id)} atRisk={isAtRisk(s)} />
+                  <StudentCard key={s.id} s={s} canDrag={canManage} coachName={coachName(s.coach_id)} atRisk={isAtRisk(s)} canManage={canManage} coaches={coaches} onUpdate={updateStudent} />
                 ))}
                 {byPhase.get(p.key)!.length === 0 && <div className="text-[10px] text-muted-foreground text-center py-3">Drop here</div>}
               </div>
@@ -648,20 +726,26 @@ function StudentsLayout() {
 
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
-          {["__unassigned__", ...coaches.map(c => c.id)].map(cid => (
+          {["__group__", "__unassigned__", ...coaches.map(c => c.id)].map(cid => (
             <div
               key={cid}
-              onDragOver={e => { if (canManage) e.preventDefault(); }}
-              onDrop={e => { const id = e.dataTransfer.getData("text/plain"); if (id && canManage) onDropToCoach(id, cid === "__unassigned__" ? null : cid); }}
+              onDragOver={e => { if (canManage && cid !== "__group__") e.preventDefault(); }}
+              onDrop={e => {
+                const id = e.dataTransfer.getData("text/plain");
+                if (!id || !canManage || cid === "__group__") return;
+                const stu = students.find(x => x.id === id);
+                if (stu && stu.calls_allotted === 0) { toast.error("Group program students don't have an assigned coach"); return; }
+                onDropToCoach(id, cid === "__unassigned__" ? null : cid);
+              }}
               className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-2 min-h-[200px]"
             >
               <div className="flex items-center justify-between text-[12px] font-medium px-2 py-1.5 mb-2 rounded-lg text-primary bg-primary/10">
-                <span className="truncate">{cid === "__unassigned__" ? "Unassigned" : coachName(cid)}</span>
+                <span className="truncate">{cid === "__group__" ? "Group program" : cid === "__unassigned__" ? "Unassigned" : coachName(cid)}</span>
                 <span className="">{byCoach.get(cid)?.length ?? 0}</span>
               </div>
               <div className="space-y-1.5">
                 {(byCoach.get(cid) ?? []).map(s => (
-                  <StudentCard key={s.id} s={s} canDrag={canManage} coachName={phaseMeta(s.phase).label} atRisk={isAtRisk(s)} />
+                  <StudentCard key={s.id} s={s} canDrag={canManage} coachName={phaseMeta(s.phase).label} atRisk={isAtRisk(s)} canManage={canManage} coaches={coaches} onUpdate={updateStudent} />
                 ))}
                 {(byCoach.get(cid)?.length ?? 0) === 0 && <div className="text-[10px] text-muted-foreground text-center py-3">Drop here</div>}
               </div>
@@ -762,24 +846,58 @@ function GraduationKanban({ students }: { students: Student[] }) {
   );
 }
 
-function StudentCard({ s, canDrag, coachName, atRisk }: { s: Student; canDrag: boolean; coachName: string; atRisk: boolean }) {
+function StudentCard({ s, canDrag, coachName, atRisk, canManage, coaches, onUpdate }: {
+  s: Student;
+  canDrag: boolean;
+  coachName: string;
+  atRisk: boolean;
+  canManage: boolean;
+  coaches: Coach[];
+  onUpdate: (id: string, patch: Partial<Student>) => unknown;
+}) {
+  const [editing, setEditing] = useState(false);
+  const isGroup = s.calls_allotted === 0;
   return (
-    <Link
-      to={"/students/$id" as any}
-      params={{ id: s.id } as any}
-      draggable={canDrag}
+    <div
+      draggable={canDrag && !editing}
       onDragStart={e => e.dataTransfer.setData("text/plain", s.id)}
-      className={`block p-2 rounded-sm bg-[var(--muted)] border transition cursor-pointer ${atRisk ? "border-danger/25 hover:border-danger/25" : "border-[var(--border)] hover:border-ring/50"}`}
+      className={`p-2 rounded-sm bg-[var(--muted)] border transition ${atRisk ? "border-danger/25" : "border-[var(--border)] hover:border-ring/50"}`}
     >
       <div className="flex items-center gap-1.5">
         {atRisk && <AlertTriangle className="h-3 w-3 text-danger-fg shrink-0" />}
-        <div className="text-xs font-medium truncate flex-1">{s.full_name}</div>
+        <Link to={"/students/$id" as any} params={{ id: s.id } as any} className="text-xs font-medium truncate flex-1 hover:underline underline-offset-2">
+          {s.full_name}
+        </Link>
+        {canManage && (
+          <button
+            onClick={() => setEditing(o => !o)}
+            className={`p-1 rounded-sm shrink-0 motion-safe:transition-colors ${editing ? "text-foreground bg-[var(--accent)]" : "text-muted-foreground/50 hover:text-foreground"}`}
+            title="Quick edit"
+          >
+            <Pencil className="h-3 w-3" />
+          </button>
+        )}
       </div>
       <div className="flex items-center justify-between mt-1">
         <span className={`text-[11px] px-1.5 py-0.5 rounded-md border ${statusMeta(s.status).color}`}>{statusMeta(s.status).label}</span>
-        <span className="text-[9px] text-muted-foreground truncate ml-1">{coachName.slice(0, 14)}</span>
+        <span className="text-[9px] text-muted-foreground truncate ml-1">{isGroup ? "Group" : coachName.slice(0, 14)}</span>
       </div>
-    </Link>
+      {editing && (
+        <div className="mt-2 pt-2 border-t border-[var(--border)] space-y-1.5" onClick={e => e.stopPropagation()}>
+          <SelectField value={s.phase} onChange={v => onUpdate(s.id, { phase: v as Phase })} options={PHASES.map(p => ({ value: p.key, label: p.label }))} className="w-full text-[11px] h-7" aria-label="Phase" />
+          <SelectField value={s.status} onChange={v => onUpdate(s.id, { status: v as Status })} options={STATUSES.map(x => ({ value: x.key, label: x.label }))} className="w-full text-[11px] h-7" aria-label="Status" />
+          {!isGroup && (
+            <SelectField value={s.coach_id ?? ""} onChange={v => onUpdate(s.id, { coach_id: v || null })} options={coaches.map(c => ({ value: c.id, label: c.display_name ?? c.id }))} allowEmpty emptyLabel="Unassigned" placeholder="Coach" className="w-full text-[11px] h-7" aria-label="Coach" />
+          )}
+          <input
+            defaultValue={s.next_action ?? ""}
+            onBlur={e => { if (e.target.value !== (s.next_action ?? "")) onUpdate(s.id, { next_action: e.target.value.trim() || null }); }}
+            placeholder="Next action…"
+            className="w-full h-7 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-[11px] focus:outline-none focus:border-ring"
+          />
+        </div>
+      )}
+    </div>
   );
 }
 
