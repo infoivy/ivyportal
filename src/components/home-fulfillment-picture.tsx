@@ -55,13 +55,13 @@ export function HomeFulfillmentPicture() {
         supabase.from("students").select("id, full_name, phase, status, created_at, onboarding_completed_at, testimonial_collected, first_win_at").eq("is_demo", false).is("archived_at" as never, null),
         (supabase.from("student_checkins" as never).select("student_id, csm_id, checked_at").gte("checked_at", twoWeeksAgo) as any),
         supabase.from("csm_tally").select("user_id, kind, created_at").is("student_id", null).gte("created_at", weekStart + "T00:00:00"),
-        supabase.from("csm_tally").select("user_id, kind, created_at, students!inner(is_demo)").eq("students.is_demo", false).gte("created_at", weekStart + "T00:00:00"),
-        supabase.from("student_eods").select("student_id, report_date, students!inner(is_demo)").eq("students.is_demo", false).gte("report_date", twoWeeksAgo),
-        supabase.from("student_action_items").select("id, due_date, done, students!inner(is_demo)").eq("students.is_demo", false).eq("done", false),
-        supabase.from("student_calls").select("id, students!inner(is_demo)", { count: "exact", head: true }).eq("students.is_demo", false).is("voided_at", null).eq("status", "scheduled").gte("call_date", today).lte("call_date", inSevenDays),
+        supabase.from("csm_tally").select("user_id, kind, created_at, students!inner(is_demo)").eq("students.is_demo", false).is("students.archived_at" as never, null).gte("created_at", weekStart + "T00:00:00"),
+        supabase.from("student_eods").select("student_id, report_date, students!inner(is_demo)").eq("students.is_demo", false).is("students.archived_at" as never, null).gte("report_date", twoWeeksAgo),
+        supabase.from("student_action_items").select("id, due_date, done, students!inner(is_demo)").eq("students.is_demo", false).is("students.archived_at" as never, null).eq("done", false),
+        supabase.from("student_calls").select("id, students!inner(is_demo)", { count: "exact", head: true }).eq("students.is_demo", false).is("students.archived_at" as never, null).is("voided_at", null).eq("status", "scheduled").gte("call_date", today).lte("call_date", inSevenDays),
         supabase.from("user_roles").select("user_id").eq("role", "csm"),
         supabase.from("profiles").select("id, display_name").eq("is_demo", false),
-        supabase.from("csm_student_notes").select("id, student_id, user_id, note, created_at, students!inner(is_demo)").eq("students.is_demo", false).order("created_at", { ascending: false }).limit(12),
+        supabase.from("csm_student_notes").select("id, student_id, user_id, note, created_at, students!inner(is_demo)").eq("students.is_demo", false).is("students.archived_at" as never, null).order("created_at", { ascending: false }).limit(12),
       ]);
 
       const students = (studentsRes.data ?? []) as unknown as {

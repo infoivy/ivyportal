@@ -39,6 +39,8 @@ export type HealthInputs = {
   openItems: number;
   /** ISO date of last completed 1-on-1, if any. */
   lastCallDate: string | null;
+  /** Group-program students (0 allotted calls) are never judged on 1:1s. */
+  callsAllotted: number;
   /** Placement signals. */
   placementStages: string[];
   placementActivity14: boolean;
@@ -100,10 +102,12 @@ export function computeStudentHealth(i: HealthInputs): StudentHealth {
     reasons.push(`${i.overdueItems} overdue action item${i.overdueItems > 1 ? "s" : ""}`);
   }
 
-  // 1-on-1 cadence (15) — only judged once they're in coaching or later
+  // 1-on-1 cadence (15) — only judged once they're in coaching or later,
+  // and NEVER for group-program students (founder 2026-07-31: they have no
+  // access to 1:1s, so "no 1-on-1 on record" is meaningless noise for them).
   let callScore = 15;
   const callDays = daysSince(i.lastCallDate);
-  if (["training", "coaching_1on1", "applying"].includes(i.phase)) {
+  if (i.callsAllotted > 0 && ["training", "coaching_1on1", "applying"].includes(i.phase)) {
     if (callDays == null) { callScore = 4; reasons.push("No 1-on-1 on record"); }
     else if (callDays > 14) { callScore = 4; reasons.push(`No 1-on-1 in ${callDays} days`); }
     else if (callDays > 9) callScore = 10;

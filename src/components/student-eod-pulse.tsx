@@ -36,7 +36,7 @@ function useStudentEodPulse() {
         supabase
           .from("student_eods")
           .select("id, student_id, report_date, roleplays, looms_sent, applications_submitted, students!inner(is_demo)")
-          .eq("students.is_demo", false)
+          .eq("students.is_demo", false).is("students.archived_at" as never, null)
           .gte("report_date", eightWeeksAgo)
           .order("report_date", { ascending: false })
           .limit(2000),

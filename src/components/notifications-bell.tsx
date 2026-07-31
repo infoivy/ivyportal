@@ -40,10 +40,10 @@ async function fetchStudentAlerts(): Promise<StudentAlert[]> {
   const sixty = new Date(now - 60 * DAY).toISOString().slice(0, 10);
   const [students, eods, calls, placements, guideSteps] = await Promise.all([
     supabase.from("students").select("id, full_name, phase, payment_state, eod_exempt, onboarding_completed_at, created_at, calls_allotted").eq("is_demo", false).eq("status", "active"),
-    supabase.from("student_eods").select("student_id, report_date, students!inner(is_demo)").eq("students.is_demo", false).gte("report_date", thirty),
-    supabase.from("student_calls").select("student_id, call_date, students!inner(is_demo)").eq("students.is_demo", false).is("voided_at", null).eq("status", "completed").gte("call_date", sixty),
-    supabase.from("student_placements").select("student_id, business_name, interview_at, students!inner(is_demo)").eq("students.is_demo", false).is("voided_at", null).not("interview_at", "is", null),
-    supabase.from("student_guide_steps").select("student_id, step_key, done_at, students!inner(is_demo)").eq("students.is_demo", false),
+    supabase.from("student_eods").select("student_id, report_date, students!inner(is_demo)").eq("students.is_demo", false).is("students.archived_at" as never, null).gte("report_date", thirty),
+    supabase.from("student_calls").select("student_id, call_date, students!inner(is_demo)").eq("students.is_demo", false).is("students.archived_at" as never, null).is("voided_at", null).eq("status", "completed").gte("call_date", sixty),
+    supabase.from("student_placements").select("student_id, business_name, interview_at, students!inner(is_demo)").eq("students.is_demo", false).is("students.archived_at" as never, null).is("voided_at", null).not("interview_at", "is", null),
+    supabase.from("student_guide_steps").select("student_id, step_key, done_at, students!inner(is_demo)").eq("students.is_demo", false).is("students.archived_at" as never, null),
   ]);
 
   const lastEod = new Map<string, string>();

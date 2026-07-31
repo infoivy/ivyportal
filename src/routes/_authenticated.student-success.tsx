@@ -25,6 +25,7 @@ type Student = {
   testimonial_collected: boolean;
   payment_state: string | null;
   onboarding_completed_at: string | null;
+  calls_allotted: number;
 };
 
 type CallRow = { student_id: string; call_date: string; next_call_date: string | null };
@@ -72,13 +73,13 @@ export function StudentSuccessInner() {
   const load = useCallback(async () => {
     setLoading(true);
     const [studRes, callsRes, instRes, payRes, adhocRes, eodRes, noteRes, profRes] = await Promise.all([
-      supabase.from("students").select("id, full_name, email, phase, status, coach_id, join_date, testimonial_collected, payment_state, onboarding_completed_at").eq("is_demo", false).order("full_name"),
-      supabase.from("student_calls").select("student_id, call_date, next_call_date, students!inner(is_demo)").eq("students.is_demo", false).is("voided_at", null).order("call_date", { ascending: false }).limit(2000),
-      supabase.from("installments").select("id, student_id, students!inner(is_demo)").eq("students.is_demo", false).is("voided_at", null),
+      supabase.from("students").select("id, full_name, email, phase, status, coach_id, join_date, testimonial_collected, payment_state, onboarding_completed_at, calls_allotted").eq("is_demo", false).is("archived_at" as never, null).order("full_name"),
+      supabase.from("student_calls").select("student_id, call_date, next_call_date, students!inner(is_demo)").eq("students.is_demo", false).is("students.archived_at" as never, null).is("voided_at", null).order("call_date", { ascending: false }).limit(2000),
+      supabase.from("installments").select("id, student_id, students!inner(is_demo)").eq("students.is_demo", false).is("students.archived_at" as never, null).is("voided_at", null),
       supabase.from("installment_payments").select("id, installment_id, status, due_date, installments!inner(students!inner(is_demo))").eq("installments.students.is_demo", false),
-      supabase.from("student_action_items").select("id, student_id, text, done, due_date, created_at, students!inner(is_demo)").eq("is_demo", false).eq("students.is_demo", false).eq("done", false).order("due_date", { ascending: true }),
-      supabase.from("student_eods").select("student_id, report_date, students!inner(is_demo)").eq("students.is_demo", false).gte("report_date", sevenDaysAgo),
-      supabase.from("csm_student_notes").select("student_id, created_at, students!inner(is_demo)").eq("students.is_demo", false).gte("created_at", fourteenDaysAgo + "T00:00:00"),
+      supabase.from("student_action_items").select("id, student_id, text, done, due_date, created_at, students!inner(is_demo)").eq("is_demo", false).eq("students.is_demo", false).is("students.archived_at" as never, null).eq("done", false).order("due_date", { ascending: true }),
+      supabase.from("student_eods").select("student_id, report_date, students!inner(is_demo)").eq("students.is_demo", false).is("students.archived_at" as never, null).gte("report_date", sevenDaysAgo),
+      supabase.from("csm_student_notes").select("student_id, created_at, students!inner(is_demo)").eq("students.is_demo", false).is("students.archived_at" as never, null).gte("created_at", fourteenDaysAgo + "T00:00:00"),
       supabase.from("profiles").select("id, display_name").eq("is_demo", false),
     ]);
 
@@ -132,7 +133,9 @@ export function StudentSuccessInner() {
       // and payment problems count against them here.
       if (!s.onboarding_completed_at) return isGhosting || paymentLate;
       const lastCall = recentCallByStudent.get(s.id);
-      const noRecentCall = ["training", "coaching_1on1"].includes(s.phase) && (!lastCall || lastCall < fourteenDaysAgo);
+      // Group-program students have no 1:1 access, so call cadence never
+      // flags them (founder 2026-07-31: universal rule).
+      const noRecentCall = s.calls_allotted > 0 && ["training", "coaching_1on1"].includes(s.phase) && (!lastCall || lastCall < fourteenDaysAgo);
       const noRecentEod = !eodsByStudent.has(s.id);
       return noRecentCall || isGhosting || noRecentEod || paymentLate;
     });
@@ -231,7 +234,7 @@ export function StudentSuccessInner() {
                     const flags: string[] = [];
                     const recentCall = calls.find(c => c.student_id === s.id);
                     const lastCallDate = calls.filter(c => c.student_id === s.id)[0]?.call_date;
-                    if (!lastCallDate || lastCallDate < fourteenDaysAgo) flags.push("No call in 14d");
+                    if (s.calls_allotted > 0 && (!lastCallDate || lastCallDate < fourteenDaysAgo)) flags.push("No call in 14d");
                     if (s.status === "ghosting") flags.push("Ghosting");
                     if (!studentEods.some(e => e.student_id === s.id)) flags.push("No EOD in 7d");
                     if (payments.some(p => p.student_id === s.id && (p.status === "late" || p.status === "missed"))) flags.push("Payment late");

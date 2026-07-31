@@ -38,10 +38,10 @@ export function CsmTodayQueue() {
     queryFn: async () => {
       const fourteen = new Date(Date.now() - 14 * DAY).toISOString();
       const [students, tallies, notes, calls] = await Promise.all([
-        supabase.from("students").select("id, full_name, phase, status").eq("is_demo", false).eq("status", "active"),
-        supabase.from("csm_tally").select("student_id, created_at, kind, user_id, students!inner(is_demo)").eq("students.is_demo", false).gte("created_at", fourteen),
-        supabase.from("csm_student_notes").select("student_id, created_at, students!inner(is_demo)").eq("students.is_demo", false).gte("created_at", fourteen),
-        supabase.from("student_calls").select("student_id, call_date, students!inner(is_demo)").eq("students.is_demo", false).is("voided_at", null).eq("status", "completed").gte("call_date", iso(new Date(Date.now() - 14 * DAY))),
+        supabase.from("students").select("id, full_name, phase, status").eq("is_demo", false).is("archived_at" as never, null).eq("status", "active"),
+        supabase.from("csm_tally").select("student_id, created_at, kind, user_id, students!inner(is_demo)").eq("students.is_demo", false).is("students.archived_at" as never, null).gte("created_at", fourteen),
+        supabase.from("csm_student_notes").select("student_id, created_at, students!inner(is_demo)").eq("students.is_demo", false).is("students.archived_at" as never, null).gte("created_at", fourteen),
+        supabase.from("student_calls").select("student_id, call_date, students!inner(is_demo)").eq("students.is_demo", false).is("students.archived_at" as never, null).is("voided_at", null).eq("status", "completed").gte("call_date", iso(new Date(Date.now() - 14 * DAY))),
       ]);
       const lastTouch = new Map<string, number>();
       const bump = (sid: string | null, t: string) => {

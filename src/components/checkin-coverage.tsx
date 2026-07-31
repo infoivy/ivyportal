@@ -29,7 +29,7 @@ export function CheckinCoverage() {
     queryFn: async () => {
       const since = new Date(Date.now() - 14 * 86400000).toISOString();
       const [studentsRes, checkinsRes, csmsRes, profilesRes] = await Promise.all([
-        supabase.from("students").select("id, full_name, phase, status").eq("is_demo", false).eq("status", "active"),
+        supabase.from("students").select("id, full_name, phase, status").eq("is_demo", false).is("archived_at" as never, null).eq("status", "active"),
         (supabase.from("student_checkins" as never).select("student_id, csm_id, checked_at").gte("checked_at", since) as unknown as Promise<{ data: CheckinRow[] | null; error: { message: string } | null }>),
         supabase.from("user_roles").select("user_id").eq("role", "csm"),
         supabase.from("profiles").select("id, display_name, csm_daily_target, active, eod_exempt" as never).eq("is_demo", false),

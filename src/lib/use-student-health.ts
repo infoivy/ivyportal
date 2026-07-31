@@ -21,7 +21,7 @@ export function useStudentHealth() {
       const sixty = iso(new Date(Date.now() - 59 * 86400000));
       const fourteen = iso(new Date(Date.now() - 13 * 86400000));
       const [students, eods, items, calls, placements] = await Promise.all([
-        supabase.from("students").select("id, status, phase, payment_state, eod_exempt, onboarding_completed_at").eq("is_demo", false),
+        supabase.from("students").select("id, status, phase, payment_state, eod_exempt, onboarding_completed_at, calls_allotted").eq("is_demo", false).is("archived_at" as never, null),
         supabase.from("student_eods").select("student_id, report_date, roleplays, looms_sent, applications_submitted, students!inner(is_demo)").eq("students.is_demo", false).gte("report_date", sixty),
         supabase.from("student_action_items").select("student_id, due_date, done, students!inner(is_demo)").eq("is_demo", false).eq("students.is_demo", false).eq("done", false),
         supabase.from("student_calls").select("student_id, call_date, status, students!inner(is_demo)").eq("students.is_demo", false).is("voided_at", null).eq("status", "completed").gte("call_date", sixty),
@@ -73,6 +73,7 @@ export function useStudentHealth() {
           overdueItems: itemRow.overdue,
           openItems: itemRow.open,
           lastCallDate: lastCallBy.get(s.id) ?? null,
+          callsAllotted: Number(s.calls_allotted ?? 0),
           placementStages: pls.map((p) => p.stage),
           placementActivity14: pls.some((p) => p.updated_at >= fourteen),
           interviewUpcoming: pls.some((p) => p.interview_at && p.interview_at > new Date().toISOString()),

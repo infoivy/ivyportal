@@ -43,7 +43,7 @@ export const studentCallsAggQuery = () =>
     queryFn: async () => {
       const { data, error } = await supabase.from("student_calls")
         .select("student_id, call_date, status, students!inner(is_demo)")
-        .eq("students.is_demo", false)
+        .eq("students.is_demo", false).is("students.archived_at" as never, null)
         .is("voided_at", null)
         .order("call_date", { ascending: false })
         .limit(2000);
@@ -65,7 +65,7 @@ export const studentEodsAggQuery = () =>
     queryFn: async () => {
       const { data, error } = await supabase.from("student_eods")
         .select("student_id, report_date, applications_submitted, students!inner(is_demo)")
-        .eq("students.is_demo", false)
+        .eq("students.is_demo", false).is("students.archived_at" as never, null)
         .order("report_date", { ascending: false })
         .limit(3000);
       if (error) throw error;
