@@ -252,6 +252,11 @@ function FinanceInner() {
     let total = 0;
     let confirmedSum = 0;
     let unconfirmedComputed = 0;
+    // Per-period commission tiles for the money-flow calendar (founder
+    // 2026-07-31: payouts must appear there automatically). Base pay is
+    // excluded — the flow already shows it per member on their own day —
+    // so a settled member contributes amount_paid minus their base pay.
+    const flowTiles: { payday: string; label: string; commissions: number; settled: boolean }[] = [];
     for (const p of periods) {
       const rows = buildPayoutRows({
         deals: d.deals as never,
@@ -264,13 +269,19 @@ function FinanceInner() {
       const owedMembers = memberPayoutTotals(rows, profileMap as never, p, d.adjustments.filter((a) => a.period_start === p.start));
       const conf = confByPeriod.get(p.start) ?? new Map<string, number>();
       const owedIds = new Set(owedMembers.map((m) => m.id));
+      let tileCommissions = 0;
+      let unsettledCount = 0;
       for (const m of owedMembers) {
         if (conf.has(m.id)) {
-          total += conf.get(m.id)!;
-          confirmedSum += conf.get(m.id)!;
+          const v = conf.get(m.id)!;
+          total += v;
+          confirmedSum += v;
+          tileCommissions += Math.max(0, v - m.basePay);
         } else {
           total += m.total;
           unconfirmedComputed += m.total;
+          tileCommissions += m.commission + m.adjustment;
+          unsettledCount += 1;
         }
       }
       // Confirmed payments to people the computation shows nothing for
@@ -279,12 +290,55 @@ function FinanceInner() {
         if (!owedIds.has(uid)) {
           total += v;
           confirmedSum += v;
+          tileCommissions += v;
         }
       }
+      const startD = Number(p.start.slice(8, 10));
+      const payday = startD === 1
+        ? p.start.slice(0, 8) + "16" // first half pays on the 16th
+        : p.end; // second half pays on the 1st of next month · shown at month end
+      const startLabel = Number(p.start.slice(8, 10));
+      const endLabel = Number(p.end.slice(8, 10));
+      flowTiles.push({
+        payday,
+        label: `Team commissions · ${startLabel}–${endLabel}${startD === 1 ? "" : " · paid on the 1st"}`,
+        commissions: tileCommissions,
+        settled: unsettledCount === 0 && tileCommissions >= 0 && (conf.size > 0 || owedMembers.length === 0),
+      });
     }
-    return { total, confirmedSum, unconfirmedComputed };
+    return { total, confirmedSum, unconfirmedComputed, flowTiles };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [d, monthOffset]);
+
+  // The money flow with the automatic team-commission tiles merged in
+  // (founder 2026-07-31: payout money must appear in the flow calendar by
+  // itself, mid-month and month-end, with the authentic totals). Settled
+  // periods render as paid markers with no balance impact — that money
+  // already left the processor balance.
+  const flowFinal = useMemo(() => {
+    if (!calc) return null;
+    const today2 = iso(new Date());
+    type FlowRow = (typeof calc.flowWithBalance)[number] & { payoutTile?: { settled: boolean } };
+    const base: Omit<FlowRow, "balance">[] = calc.flowWithBalance.map(({ balance: _b, ...rest }) => rest);
+    for (const t of payouts?.flowTiles ?? []) {
+      if (t.commissions < 0.01) continue;
+      if (isCurrentMonth && !t.settled && t.payday < today2) continue; // overdue unsettled still shows via the payout banner
+      base.push({
+        date: t.payday,
+        label: t.settled ? `${t.label} · paid` : t.label,
+        amount: t.commissions,
+        kind: "out",
+        payoutTile: { settled: t.settled },
+      } as Omit<FlowRow, "balance">);
+    }
+    base.sort((a, b) => a.date.localeCompare(b.date) || (a.kind === "in" ? -1 : 1));
+    let running = calc.startBalance ?? 0;
+    return base.map((f) => {
+      const settledTile = (f as { payoutTile?: { settled: boolean } }).payoutTile?.settled;
+      if (!settledTile) running += f.kind === "in" ? f.amount : -f.amount;
+      return { ...f, balance: running } as FlowRow & { balance: number };
+    });
+  }, [calc, payouts, isCurrentMonth]);
 
   // Whop is the cash-in source of truth, and NET is the real number — gross
   // includes processor fees we never receive (founder rule 2026-07-14).
@@ -511,23 +565,28 @@ function FinanceInner() {
             <Button size="sm" variant="outline" onClick={saveBalance}>Save</Button>
           </div>
         </div>
-        {calc && calc.flowWithBalance.length === 0 ? (
+        {flowFinal && flowFinal.length === 0 ? (
           <p className="text-[13px] text-muted-foreground py-6 text-center">Nothing scheduled for the rest of the month.</p>
         ) : (
           <div className="divide-y divide-[var(--accent)]">
-            {calc?.flowWithBalance.map((f, i) => (
+            {flowFinal?.map((f, i) => (
               <div key={i}>
                 <button
                   onClick={() => { setOpenFlow(openFlow === i ? null : i); setPayDraft(f.pay ? { amount: String(f.pay.amount), due: f.pay.due_date } : null); }}
-                  className={`w-full grid grid-cols-[90px_minmax(0,1fr)_110px_120px] gap-3 items-center py-2 text-[13px] text-left hover:bg-muted/40 motion-safe:transition-colors ${openFlow === i ? "bg-muted/40" : ""}`}
+                  className={`w-full grid grid-cols-[90px_minmax(0,1fr)_110px_120px] gap-3 items-center py-2 text-[13px] text-left hover:bg-muted/40 motion-safe:transition-colors ${openFlow === i ? "bg-muted/40" : ""} ${(f as { payoutTile?: { settled: boolean } }).payoutTile?.settled ? "opacity-60" : ""}`}
                 >
                   <span className="text-muted-foreground tabular-nums">{format(new Date(f.date + "T00:00:00"), "EEE d MMM")}</span>
-                  <span className="truncate">{f.label}</span>
+                  <span className="truncate">
+                    {f.label}
+                    {(f as { payoutTile?: { settled: boolean } }).payoutTile && (
+                      <span className="ml-2 text-[10px] uppercase tracking-wider text-muted-foreground border border-border rounded-sm px-1 py-0.5">auto · from Payouts</span>
+                    )}
+                  </span>
                   <span className={`text-right tabular-nums ${f.kind === "in" ? "text-success-fg" : "text-danger-fg"}`}>
                     {f.kind === "in" ? "+" : "−"}{money(f.amount)}
                   </span>
                   <span className="text-right tabular-nums text-muted-foreground">
-                    {calc.startBalance != null ? money(f.balance) : "–"}
+                    {calc && calc.startBalance != null ? money(f.balance) : "–"}
                   </span>
                 </button>
                 {openFlow === i && f.pay && (
