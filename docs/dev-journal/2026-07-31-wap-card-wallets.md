@@ -19,6 +19,11 @@ Migration `20260731090821_wallet_entries` (MCP apply → local file). `src/route
 Faizan's narrated numbers didn't reconcile ("used $2,400" vs "credit was 2448, balance 668"); anchored on his two most-specific facts (credits $1,755 + $693.26, balance $668) and consolidated the difference into one labeled spend entry, flagged in the summary for a one-edit fix.
 
 ### Future work
-- Abu Bilal's card needs its opening credits from the founder (his July $417 + profit split share presumably).
 - If the founder wants the monthly card limit auto-suggested, the Payouts confirmations (amount_paid) + Finance split could prefill the "Load card" form next cycle.
 - Profit split percentages remain hardcoded in finance.tsx SPLIT (70/15/15).
+
+## Addendum · truth-first money surfaces (same day)
+
+Founder: "the overview still says to pay out... Aalian owed 413, which is incorrect... even the profit split is incorrect. I just gave you all the data." Root cause: Finance Overview ran `calcMonthPayouts`, a forked month-wide aggregate that ignored `payout_confirmations` entirely (and summed every `base_pay_monthly` regardless of eligibility, counting Emre's ineligible $2,000); the home strip's "To pay out" ignored confirmations the same way; the profit split led with PROJECTED profit (incl. expected future installments), which read as "my split".
+
+Fixes (commit `415ba11`): Finance computes each semi-monthly period through the shared `buildPayoutRows` + `memberPayoutTotals`, then overlays confirmations — confirmed members count at stored `amount_paid` (including confirmed payments the computation shows nothing for, like Faizan's cumulative $1,755), unconfirmed at computed. `calcMonthPayouts` deleted. Profit split leads with banked profit after real payouts; projection demoted to a footnote. Home strip subtracts confirmed members and flips to "Paid out · every payout confirmed" when settled. Cards: per-month "carried in · loaded · spent · carries out" summary rows (carry-over computed, not remembered); header simplified to all-time loaded/spent. Abu Bilal's card seeded with a $1,000 opening credit marked as a founder estimate. `payout_confirmations`/`payout_adjustments` writes now also invalidate the Finance page cache.
