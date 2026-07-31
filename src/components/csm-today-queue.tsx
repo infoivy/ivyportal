@@ -183,13 +183,13 @@ export function CsmTodayQueue() {
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   {!done && (
-                    <Button size="sm" variant="ghost" className="h-7 px-2 text-[11px]" onClick={() => checkIn(s.id)} title="Log a check-in">
+                    <Button size="sm" variant="ghost" className="h-9 sm:h-7 px-2.5 sm:px-2 text-[12px] sm:text-[11px]" onClick={() => checkIn(s.id)} title="Log a check-in">
                       <PhoneCall className="h-3 w-3 mr-1" /> Check-in
                     </Button>
                   )}
                   <Popover open={noteFor === s.id} onOpenChange={(o) => { setNoteFor(o ? s.id : null); if (!o) { setItemDue(undefined); setDueOpen(false); } }}>
                     <PopoverTrigger asChild>
-                      <Button size="sm" variant="ghost" className="h-7 px-2 text-[11px]" title="Assign an action item">
+                      <Button size="sm" variant="ghost" className="h-9 sm:h-7 px-2.5 sm:px-2 text-[12px] sm:text-[11px]" title="Assign an action item">
                         <Plus className="h-3 w-3 mr-1" /> Item
                       </Button>
                     </PopoverTrigger>

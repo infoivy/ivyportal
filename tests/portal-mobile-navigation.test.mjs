@@ -24,7 +24,9 @@ test("staff mobile navigation keeps primary work visible and opens the shared si
   assert.match(staffNav, /min-h-12/);
   assert.match(shell, /StaffBottomNav/);
   assert.match(shell, /isTeam && !studentOnly/);
-  assert.match(shell, /pb-20 md:pb-0/);
+  // Clearance for the floating pill tab bar (2026-07-31): taller than the
+  // old edge-to-edge bar, so content needs pb-24 below md.
+  assert.match(shell, /pb-24 md:pb-0/);
 });
 
 test("portal chrome is monochrome and dark mode uses a true-black surface stack", () => {

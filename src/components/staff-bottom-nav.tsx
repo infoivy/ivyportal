@@ -7,6 +7,11 @@ import { PRIMARY_NAV_ITEMS, isVisibleToRoles, matchesNavItem } from "@/lib/porta
 
 const MOBILE_PRIMARY_KEYS = ["home", "work", "performance", "customers"] as const;
 
+/**
+ * Floating pill tab bar (founder 2026-07-31, from a reference screenshot):
+ * a detached rounded capsule above the bottom edge, native-app style. Pure
+ * CSS — blur, rounding, and safe-area work on Android exactly like iOS.
+ */
 export function StaffBottomNav() {
   const { roles } = useAuth();
   const { pageHidden } = useAccess();
@@ -23,10 +28,11 @@ export function StaffBottomNav() {
   return (
     <nav
       aria-label="Staff primary navigation"
-      className="frosted fixed inset-x-0 bottom-0 z-40 border-t border-border md:hidden"
+      className="fixed inset-x-0 z-40 md:hidden pointer-events-none"
+      style={{ bottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
     >
       <div
-        className="grid px-1 pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom))]"
+        className="frosted pointer-events-auto mx-auto grid w-[min(100%-1.5rem,26rem)] rounded-full border border-border/80 px-1.5 py-1 shadow-[0_8px_30px_rgba(0,0,0,0.35)]"
         style={{ gridTemplateColumns: `repeat(${items.length + 1}, minmax(0, 1fr))` }}
       >
         {items.map((item) => {
@@ -38,34 +44,25 @@ export function StaffBottomNav() {
               to={item.url as never}
               preload="intent"
               aria-current={active ? "page" : undefined}
-              className={`relative flex min-h-12 flex-col items-center justify-center gap-1 rounded-md px-1 text-[10px] font-medium motion-safe:transition-colors ${
-                active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+              className={`flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-full px-1 text-[10px] font-medium motion-safe:transition-colors ${
+                active ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <Icon className="h-[18px] w-[18px]" />
               <span className="truncate">{item.title}</span>
-              {active && (
-                <span
-                  className="absolute bottom-1 h-0.5 w-4 rounded-full bg-foreground"
-                  aria-hidden
-                />
-              )}
             </Link>
           );
         })}
         <button
           type="button"
           onClick={() => setOpenMobile(true)}
-          className={`relative flex min-h-12 flex-col items-center justify-center gap-1 rounded-md px-1 text-[10px] font-medium motion-safe:transition-colors ${
-            moreActive ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+          className={`flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-full px-1 text-[10px] font-medium motion-safe:transition-colors ${
+            moreActive ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"
           }`}
           aria-label="Open more navigation"
         >
           <Menu className="h-[18px] w-[18px]" />
           <span>More</span>
-          {moreActive && (
-            <span className="absolute bottom-1 h-0.5 w-4 rounded-full bg-foreground" aria-hidden />
-          )}
         </button>
       </div>
     </nav>

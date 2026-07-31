@@ -296,7 +296,7 @@ function AuthedLayout() {
               </div>
             </header>
 
-            <main className={`flex-1 min-w-0 overflow-x-clip relative ${studentOnly ? "pb-16 sm:pb-0" : isTeam ? "pb-20 md:pb-0" : ""}`}>
+            <main className={`flex-1 min-w-0 overflow-x-clip relative ${studentOnly ? "pb-16 sm:pb-0" : isTeam ? "pb-24 md:pb-0" : ""}`}>
               {/* relative + min-h-full: full-viewport pages (SOP canvas) position
                   against this wrapper even while the enter animation holds a transform */}
               <div className="page-enter relative min-h-full">

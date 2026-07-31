@@ -702,13 +702,15 @@ function StudentsLayout() {
           </table>
         </div>
       ) : kanbanBy === "phase" ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+        // Phones get native horizontal lanes (swipe between phases, snap per
+        // lane); tablets and up keep the grid board.
+        <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-3 xl:grid-cols-6 sm:overflow-visible sm:pb-0">
           {PHASES.map(p => (
             <div
               key={p.key}
               onDragOver={e => { if (canManage) e.preventDefault(); }}
               onDrop={e => { const id = e.dataTransfer.getData("text/plain"); if (id && canManage) onDropToPhase(id, p.key); }}
-              className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-2 min-h-[200px]"
+              className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-2 min-h-[200px] w-[80%] shrink-0 snap-start sm:w-auto sm:shrink"
             >
               <div className={`flex items-center justify-between text-[12px] font-medium px-2 py-1.5 mb-2 rounded-lg ${p.color}`}>
                 <span>{p.label}</span>
@@ -725,7 +727,7 @@ function StudentsLayout() {
         </div>
 
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
+        <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-3 xl:grid-cols-4 sm:overflow-visible sm:pb-0">
           {["__group__", "__unassigned__", ...coaches.map(c => c.id)].map(cid => (
             <div
               key={cid}
@@ -737,7 +739,7 @@ function StudentsLayout() {
                 if (stu && stu.calls_allotted === 0) { toast.error("Group program students don't have an assigned coach"); return; }
                 onDropToCoach(id, cid === "__unassigned__" ? null : cid);
               }}
-              className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-2 min-h-[200px]"
+              className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-2 min-h-[200px] w-[80%] shrink-0 snap-start sm:w-auto sm:shrink"
             >
               <div className="flex items-center justify-between text-[12px] font-medium px-2 py-1.5 mb-2 rounded-lg text-primary bg-primary/10">
                 <span className="truncate">{cid === "__group__" ? "Group program" : cid === "__unassigned__" ? "Unassigned" : coachName(cid)}</span>
@@ -815,11 +817,11 @@ function GraduationKanban({ students }: { students: Student[] }) {
   ];
   const active = students.filter(s => s.status === "active" || (!!s.testimonial_collected && !!s.trustpilot_collected));
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
+    <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-3 xl:grid-cols-5 sm:overflow-visible sm:pb-0">
       {stages.map(st => {
         const inStage = active.filter(s => st.match(s));
         return (
-          <div key={st.key} className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-2 min-h-[200px]">
+          <div key={st.key} className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-2 min-h-[200px] w-[80%] shrink-0 snap-start sm:w-auto sm:shrink">
             <div className={`flex items-center justify-between text-[12px] font-medium px-2 py-1.5 mb-2 rounded-lg border ${st.color}`}>
               <span className="truncate">{st.label}</span>
               <span className="">{inStage.length}</span>
