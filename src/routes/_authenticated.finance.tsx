@@ -16,6 +16,7 @@ import { format } from "date-fns";
 import {
   Wallet, Plus, Trash2, Pencil, ChevronLeft, ChevronRight, TrendingUp,
   ArrowDownRight, ArrowUpRight, PiggyBank,
+  ArrowRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -472,10 +473,11 @@ function FinanceInner() {
             return `goal ${money(goal)} · pace ${money(Math.round(pace))} · ${money(rev?.whopGross ?? 0)} gross`;
           })()}
           icon={<ArrowDownRight className="h-3.5 w-3.5" />}
+          to="/revenue"
         />
-        <StatCard label="Expenses + payouts" value={calc ? money(calc.expensesTotal + payoutsTotal) : "–"} sub={calc && payouts ? `${money(calc.expensesTotal)} expenses · payouts: ${money(payouts.confirmedSum)} confirmed paid${payouts.unconfirmedComputed >= 0.01 ? ` + ${money(payouts.unconfirmedComputed)} computed` : " · all confirmed"}` : undefined} icon={<ArrowUpRight className="h-3.5 w-3.5" />} />
-        <StatCard label="Profit (projected)" value={calc ? money(profitProjected) : "–"} sub={calc ? `${money(profitSoFar)} so far · after expenses & payouts` : undefined} icon={<TrendingUp className="h-3.5 w-3.5" />} tone={calc && profitProjected < 0 ? "danger" : "default"} />
-        <StatCard label="Installment revenue" value={calc ? money(calc.mrrNow.value) : "–"} sub={calc ? `${money(calc.mrrNow.collected)} collected · ${money(calc.mrrNow.value - calc.mrrNow.collected)} still due` : undefined} icon={<PiggyBank className="h-3.5 w-3.5" />} />
+        <StatCard label="Expenses + payouts" value={calc ? money(calc.expensesTotal + payoutsTotal) : "–"} sub={calc && payouts ? `${money(calc.expensesTotal)} expenses · payouts: ${money(payouts.confirmedSum)} confirmed paid${payouts.unconfirmedComputed >= 0.01 ? ` + ${money(payouts.unconfirmedComputed)} computed` : " · all confirmed"}` : undefined} icon={<ArrowUpRight className="h-3.5 w-3.5" />} scrollTo="expenses-section" />
+        <StatCard label="Profit (projected)" value={calc ? money(profitProjected) : "–"} sub={calc ? `${money(profitSoFar)} so far · after expenses & payouts` : undefined} icon={<TrendingUp className="h-3.5 w-3.5" />} tone={calc && profitProjected < 0 ? "danger" : "default"} scrollTo="profit-split" />
+        <StatCard label="Installment revenue" value={calc ? money(calc.mrrNow.value) : "–"} sub={calc ? `${money(calc.mrrNow.collected)} collected · ${money(calc.mrrNow.value - calc.mrrNow.collected)} still due` : undefined} icon={<PiggyBank className="h-3.5 w-3.5" />} to="/revenue" search={{ tab: "plans" }} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -520,7 +522,7 @@ function FinanceInner() {
         {/* Profit split */}
         <div className="card-surface p-5">
           <div className="flex items-baseline justify-between mb-1">
-            <h2 className="text-sm font-semibold">Profit split</h2>
+            <h2 id="profit-split" className="text-sm font-semibold scroll-mt-24">Profit split</h2>
             <span className="text-caption text-muted-foreground">after expenses & payouts · {monthLabel}</span>
           </div>
           {/* Banked profit leads (founder 2026-07-31: the projected figure read
@@ -660,7 +662,7 @@ function FinanceInner() {
       <div className="card-surface p-5">
         <div className="flex items-center justify-between gap-3 mb-4">
           <div>
-            <h2 className="text-sm font-semibold">Business expenses</h2>
+            <h2 id="expenses-section" className="text-sm font-semibold scroll-mt-24">Business expenses</h2>
             <p className="text-caption text-muted-foreground mt-0.5">Recurring bills hit every month on their day; one-offs hit once.</p>
           </div>
           <Button size="sm" onClick={() => setExpenseModal({ open: true, editing: null })}>
@@ -774,14 +776,31 @@ function FinanceInner() {
   );
 }
 
-function StatCard({ label, value, sub, icon, tone = "default" }: {
+/** Every headline stat drills into its detail (founder 2026-08-01: "all of
+ *  these should be clickable") — a route, or a smooth scroll to the section
+ *  on this page that explains the number. */
+function StatCard({ label, value, sub, icon, tone = "default", to, scrollTo, search }: {
   label: string; value: string; sub?: string; icon: React.ReactNode; tone?: "default" | "danger";
+  to?: string; scrollTo?: string; search?: Record<string, string>;
 }) {
-  return (
-    <div className="card-surface p-4">
-      <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground mb-2">{icon} {label}</div>
+  const body = (
+    <>
+      <div className="flex items-center justify-between gap-1.5 text-[12px] text-muted-foreground mb-2">
+        <span className="flex items-center gap-1.5 min-w-0">{icon} <span className="truncate">{label}</span></span>
+        {(to || scrollTo) && <ArrowRight className="h-3 w-3 shrink-0 opacity-0 group-hover/stat:opacity-100 motion-safe:transition-opacity" />}
+      </div>
       <div className={`text-[22px] font-medium tabular-nums tracking-[-0.02em] leading-none ${tone === "danger" ? "text-danger-fg" : "text-foreground"}`}>{value}</div>
       {sub && <div className="text-caption text-muted-foreground mt-1.5">{sub}</div>}
-    </div>
+    </>
   );
+  const cls = "card-surface p-4 block w-full text-left group/stat hover:bg-muted/40 motion-safe:transition-colors";
+  if (to) return <Link to={to as never} search={(search ?? {}) as never} className={cls}>{body}</Link>;
+  if (scrollTo) {
+    return (
+      <button type="button" className={cls} onClick={() => document.getElementById(scrollTo)?.scrollIntoView({ behavior: "smooth", block: "start" })}>
+        {body}
+      </button>
+    );
+  }
+  return <div className="card-surface p-4">{body}</div>;
 }

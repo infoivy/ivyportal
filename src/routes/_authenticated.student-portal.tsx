@@ -12,6 +12,7 @@ import {
 import { computeStreak } from "@/lib/streak";
 import { setStudentPortalTab, onStudentPortalTab, getStudentPortalTab } from "@/lib/student-portal-bus";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { invalidateForTables } from "@/lib/query-keys";
 import { useServerFn } from "@tanstack/react-start";
@@ -1938,14 +1939,30 @@ function StartHereGuide({ done, locked = false, unlocking = false, onToggle }: {
                   {s.embedUrl && (
                     <p className="text-[12px] text-muted-foreground mt-2">Featured above. Watch it there, then mark it done.</p>
                   )}
-                  <div className="flex items-center gap-4 mt-3.5">
+                  <div className="flex flex-wrap items-center gap-3 mt-3.5">
                     {s.link && !rowLocked && (
                       <Link to={s.link.to} className="text-[12px] font-medium text-primary hover:underline">{s.link.label} →</Link>
                     )}
-                    <label className={`flex items-center gap-1.5 text-[12px] text-muted-foreground select-none ${rowLocked ? "cursor-not-allowed" : "cursor-pointer"}`}>
-                      <Checkbox checked={checked} disabled={unlocking || rowLocked} onCheckedChange={(v) => onToggle(s.key, v === true)} className="h-3.5 w-3.5" />
-                      {checked ? "Done" : "Mark done"}
-                    </label>
+                    {checked ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={unlocking || rowLocked}
+                        onClick={() => onToggle(s.key, false)}
+                        className="h-9"
+                      >
+                        <CheckCircle2 className="h-4 w-4" /> Done
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        disabled={unlocking || rowLocked}
+                        onClick={() => onToggle(s.key, true)}
+                        className="h-9"
+                      >
+                        Mark done
+                      </Button>
+                    )}
                   </div>
                 </div>
                 <div className="justify-self-start sm:justify-self-end pt-1">

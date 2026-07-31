@@ -15,28 +15,6 @@ export const WALKTHROUGH_VIDEOS: Record<"one_on_one" | "group", { share: string;
   group: WALKTHROUGH,
 };
 
-// Video length via Loom's oEmbed, cached for the process lifetime. If Loom
-// is unreachable we fall back to 0 — the gate then only requires the
-// explicit mark-done, never bricking a student on a Loom outage.
-const durationCache = new Map<string, number>();
-async function videoDurationSeconds(shareUrl: string): Promise<number> {
-  const hit = durationCache.get(shareUrl);
-  if (hit != null) return hit;
-  try {
-    const res = await fetch(`https://www.loom.com/v1/oembed?url=${encodeURIComponent(shareUrl)}`);
-    if (!res.ok) return 0;
-    const json = (await res.json()) as { duration?: number };
-    const d = Math.max(0, Math.round(json.duration ?? 0));
-    durationCache.set(shareUrl, d);
-    return d;
-  } catch {
-    return 0;
-  }
-}
-
-const pathwayOf = (s: { calls_allotted: number | null; calls_included: number | null }) =>
-  ((s.calls_allotted ?? s.calls_included) ?? 0) > 0 ? ("one_on_one" as const) : ("group" as const);
-
 /** Stamp the moment the walkthrough first renders for this student. */
 export const beginPortalWalkthrough = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -57,10 +35,10 @@ export const beginPortalWalkthrough = createServerFn({ method: "POST" })
   });
 
 /**
- * Mark the walkthrough watched. Server-enforced honesty floor: at least 90%
- * of the video's runtime must have elapsed since it first rendered — an
- * iframe can't report real playback, but a 12-minute video cannot have been
- * "watched in full" 40 seconds after it appeared.
+ * Mark the walkthrough watched. The old 90%-of-runtime dwell floor is GONE
+ * (founder 2026-08-01): the Loom embed glitches for some students and the
+ * timer punished honest watchers. Their word is enough; started_at stays
+ * recorded for context.
  */
 export const completePortalWalkthrough = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -68,22 +46,12 @@ export const completePortalWalkthrough = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: student, error } = await supabaseAdmin
       .from("students")
-      .select("id, calls_allotted, calls_included, walkthrough_started_at, walkthrough_done_at")
+      .select("id, walkthrough_done_at")
       .eq("user_id", context.userId)
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!student) throw new Error("Your account isn't linked to a student profile.");
     if (student.walkthrough_done_at) return { ok: true, already: true };
-
-    const video = WALKTHROUGH_VIDEOS[pathwayOf(student)];
-    if (video && student.walkthrough_started_at) {
-      const duration = await videoDurationSeconds(video.share);
-      const elapsed = (Date.now() - new Date(student.walkthrough_started_at).getTime()) / 1000;
-      if (duration > 0 && elapsed < duration * 0.9) {
-        const waitMin = Math.ceil((duration * 0.9 - elapsed) / 60);
-        throw new Error(`Watch it through first · roughly ${waitMin} more minute${waitMin === 1 ? "" : "s"} of video left.`);
-      }
-    }
 
     const { error: upErr } = await supabaseAdmin.from("students")
       .update({ walkthrough_done_at: new Date().toISOString() })
