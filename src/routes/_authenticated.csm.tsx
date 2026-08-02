@@ -543,7 +543,7 @@ function CsmPage() {
                     {selectedDailyEods.map(e => (
                       <li key={e.report_date} className="text-xs">
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
-                          <span className="font-mono text-muted-foreground">{e.report_date}</span>
+                          <span className="text-muted-foreground whitespace-nowrap">{friendlyPastDay(e.report_date)}</span>
                           <span className="tabular-nums">RP {e.roleplays ?? 0}</span>
                           {(e.applications_submitted ?? 0) > 0
                             ? <span className="tabular-nums text-success-fg">Apps {e.applications_submitted}</span>
@@ -617,7 +617,7 @@ function CsmPage() {
                           <div className={`text-sm ${it.done ? "line-through text-muted-foreground" : ""}`}>{it.text}</div>
                           <div className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
                             <Clock className="h-2.5 w-2.5" />
-                            {it.due_date ? humanDue(it.due_date) : `added ${it.created_at.slice(0, 10)}`}
+                            {it.due_date ? humanDue(it.due_date) : `added ${friendlyPastDay(it.created_at)}`}
                           </div>
                         </div>
                         {(it.created_by === user?.id || roles.includes("admin")) && (

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { friendlyPastDay } from "@/lib/dates";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { format, startOfWeek, subWeeks } from "date-fns";
@@ -143,7 +144,7 @@ export function StudentEodPulse() {
             <tbody className="divide-y divide-border">
               {feed.map((e) => (
                 <tr key={e.id}>
-                  <td className="py-1.5 tabular-nums text-muted-foreground whitespace-nowrap">{e.report_date}</td>
+                  <td className="py-1.5 text-muted-foreground whitespace-nowrap">{friendlyPastDay(e.report_date)}</td>
                   <td className="py-1.5">
                     <Link to="/students/$id" params={{ id: e.student_id }} className="font-medium text-foreground hover:underline inline-flex items-center gap-1">
                       {d?.names.get(e.student_id) ?? "Unknown"}

@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { friendlyPastDay } from "@/lib/dates";
 import { useEffect, useMemo, useState } from "react";
 import { ListSkeleton } from "@/components/ui/skeletons";
 import { supabase } from "@/integrations/supabase/client";
@@ -264,7 +265,7 @@ function KnowledgeIndex() {
                           {isStubDoc(d.content) ? <span className="italic text-muted-foreground/70">Content coming soon.</span> : stripMarkdown(d.content).slice(0, 160)}
                         </p>
                         <div className="mt-3 flex items-center justify-between text-[10px] text-muted-foreground">
-                          <span>Updated {new Date(d.updated_at).toLocaleDateString()}</span>
+                          <span>Updated {friendlyPastDay(d.updated_at)}</span>
                           <span className="inline-flex items-center gap-1 text-primary opacity-0 group-hover:opacity-100 transition">
                             Read <ArrowRight className="h-3 w-3" />
                           </span>

@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { friendlyPastDay } from "@/lib/dates";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -109,7 +110,7 @@ function RequestsPage() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="text-body font-medium text-foreground truncate">{p.display_name ?? "Unnamed"}</div>
-                  <div className="text-caption text-muted-foreground">requested {p.created_at.slice(0, 10)}</div>
+                  <div className="text-caption text-muted-foreground">requested {friendlyPastDay(p.created_at)}</div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 shrink-0">
                   <button

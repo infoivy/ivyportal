@@ -5,6 +5,7 @@
  * keys.installmentsPage so all cross-page invalidation keeps working.
  */
 import { useEffect, useMemo, useState } from "react";
+import { friendlyPastDay } from "@/lib/dates";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { findWhopMatch } from "@/lib/mochi.functions";
@@ -273,7 +274,7 @@ export function PaymentPlansSection() {
                   <span className={`text-[11px] px-2 py-0.5 rounded-full border ${tone === "rose" ? "text-danger-fg border-danger/25 bg-danger-bg" : tone === "amber" ? "text-warning-fg border-warning/25 bg-warning-bg" : "text-muted-foreground border-border bg-muted"}`}>{label}</span>
                   <span className="font-medium">{nameFor(p)}</span>
                   <span className="text-sm text-muted-foreground">Payment #{p.sequence} · {fmtMoney(Number(p.amount), p.currency)}</span>
-                  <span className="text-xs text-muted-foreground flex items-center gap-1"><CalendarIcon className="h-3 w-3" /> {p.due_date}</span>
+                  <span className="text-xs text-muted-foreground flex items-center gap-1"><CalendarIcon className="h-3 w-3" /> {friendlyPastDay(p.due_date)}</span>
                   <div className="ml-auto flex items-center gap-2">
                     <button onClick={() => setStatus(p.id, "paid")} className="text-xs px-2 py-1 rounded border border-border hover:bg-accent">Mark paid</button>
                     {dLeft >= 2 && !p.reminded_3d_at && (
@@ -340,7 +341,7 @@ export function PaymentPlansSection() {
                     <div key={p.id} className="px-4 py-2 flex items-center gap-3 flex-wrap text-sm">
                       <span className="text-xs text-muted-foreground w-6">#{p.sequence}</span>
                       <span className="font-medium w-28">{fmtMoney(Number(p.amount), p.currency)}</span>
-                      <span className="text-xs text-muted-foreground flex items-center gap-1"><CalendarIcon className="h-3 w-3" /> {p.due_date}
+                      <span className="text-xs text-muted-foreground flex items-center gap-1"><CalendarIcon className="h-3 w-3" /> {friendlyPastDay(p.due_date)}
                         {p.status === "upcoming" && (
                           <span className={`ml-1 px-1.5 py-0.5 rounded ${dLeft < 0 ? "text-danger-fg" : dLeft <= 3 ? "text-warning-fg" : "text-muted-foreground"}`}>
                             ({dLeft < 0 ? `${Math.abs(dLeft)}d late` : dLeft === 0 ? "today" : `in ${dLeft}d`})

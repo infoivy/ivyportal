@@ -1,4 +1,5 @@
 import { StudentsTabBar } from "@/components/students-tab-bar";
+import { friendlyPastDay } from "@/lib/dates";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -204,7 +205,7 @@ function CallsPage() {
             const totalA = c.action_items_json?.length ?? 0;
             return (
               <div key={c.id} className="grid grid-cols-[64px_1.3fr_auto] sm:grid-cols-[0.7fr_1.3fr_1fr_0.9fr_0.9fr_0.7fr_auto] items-center gap-2 px-4 py-3 border-b border-[var(--accent)] last:border-0 hover:bg-[var(--muted)]">
-                <span className="text-xs text-muted-foreground whitespace-nowrap"><span className="sm:hidden">{c.call_date.slice(5)}</span><span className="hidden sm:inline">{c.call_date}</span></span>
+                <span className="text-xs text-muted-foreground whitespace-nowrap">{friendlyPastDay(c.call_date)}</span>
                 <div className="min-w-0">
                   <Link to={"/students/$id" as any} params={{ id: c.student_id } as any} className="block text-sm truncate hover:text-success-fg">
                     {studentName(c.student_id)}
@@ -261,7 +262,7 @@ function CallsPage() {
                       >
                         <div className="text-xs font-medium truncate">{studentName(c.student_id)}</div>
                         <div className="flex items-center justify-between mt-1 text-[10px] text-muted-foreground">
-                          <span className="">{c.call_date}</span>
+                          <span className="">{friendlyPastDay(c.call_date)}</span>
                           <span className="truncate ml-1">{coachName(c.coach_id).split(" ")[0]}</span>
                         </div>
                         <div className="flex items-center gap-2 mt-1 text-[10px]">

@@ -17,7 +17,7 @@ import { StudentLocalTime, timezoneOptions } from "@/components/student-local-ti
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
-import { humanDue } from "@/lib/dates";
+import { friendlyPastDay, humanDue } from "@/lib/dates";
 import {
   ArrowLeft, Video, Trash2, ArchiveX, Plus, Save, Calendar as CalIcon,
   Phone, FileText, User, Pencil, ExternalLink, CheckCircle2, Circle,
@@ -609,7 +609,7 @@ function StudentDetail() {
                   <div className="text-xs font-medium flex items-center gap-1">
                     <Icon className="h-3 w-3" /> {step.label}
                   </div>
-                  {step.at && <div className="text-[9px] font-mono text-muted-foreground">{new Date(step.at).toISOString().slice(0, 10)}</div>}
+                  {step.at && <div className="text-[9px] text-muted-foreground">{friendlyPastDay(step.at)}</div>}
                 </div>
               </button>
             );
@@ -661,7 +661,7 @@ function StudentDetail() {
                 <div className="flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2 font-mono text-muted-foreground">
                     <CalIcon className="h-3 w-3" />
-                    {c.call_date}
+                    {friendlyPastDay(c.call_date)}
                     <span className="text-foreground">· {coachName(c.coach_id)}</span>
                     {c.status && <span className="text-[10px] uppercase tracking-wider text-muted-foreground">· {c.status}</span>}
                     {c.progress_rating && (
@@ -717,7 +717,7 @@ function StudentDetail() {
                 {eods.length === 0 && <tr><td colSpan={8} className="p-6 text-center text-muted-foreground">No EODs yet.</td></tr>}
                 {eods.map(e => (
                   <tr key={e.id} className="border-b border-[var(--accent)]">
-                    <td className="p-2 font-mono text-muted-foreground">{e.report_date}</td>
+                    <td className="p-2 text-muted-foreground whitespace-nowrap">{friendlyPastDay(e.report_date)}</td>
                     <td className="p-2 text-right font-mono text-success-fg">{e.applications_submitted}</td>
                     <td className="p-2 text-right font-mono">{e.looms_sent ?? 0}</td>
                     <td className="p-2 text-right font-mono">{e.roleplays ?? 0}</td>
@@ -789,7 +789,7 @@ function StudentDetail() {
                     return (
                       <tr key={p.id} className="border-b border-[var(--accent)]">
                         <td className="p-2 font-mono text-muted-foreground">{p.sequence}</td>
-                        <td className={`p-2 font-mono ${overdue ? "text-danger-fg" : "text-muted-foreground"}`}>{p.due_date}</td>
+                        <td className={`p-2 whitespace-nowrap ${overdue ? "text-danger-fg" : "text-muted-foreground"}`}>{friendlyPastDay(p.due_date)}</td>
                         <td className="p-2 text-right font-mono">{p.currency} {Number(p.amount).toLocaleString()}</td>
                         <td className={`p-2 uppercase tracking-wider text-[10px] ${p.status === "paid" ? "text-success-fg" : overdue ? "text-danger-fg" : "text-muted-foreground"}`}>{overdue ? "overdue" : p.status}</td>
                       </tr>
@@ -943,7 +943,7 @@ function CsmNotesPanel({ notes, authors, onAdd }: { notes: CsmNote[]; authors: R
           <div key={n.id} className="border border-[var(--accent)] bg-[var(--muted)] rounded-sm p-2.5">
             <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1 font-mono">
               <span>{authors[n.user_id] ?? "Unknown"}</span>
-              <span>{new Date(n.created_at).toISOString().slice(0, 10)}</span>
+              <span>{friendlyPastDay(n.created_at)}</span>
             </div>
             <div className="text-xs whitespace-pre-wrap">{n.note}</div>
           </div>

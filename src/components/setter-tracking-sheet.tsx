@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { friendlyPastDay } from "@/lib/dates";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { format } from "date-fns";
@@ -844,7 +845,7 @@ function EodActivity({ data }: { data: SetterTrackerData }) {
                   <tr key={eod.id ?? eod.report_date} className="bg-card">
                     <td className="px-4 py-3 font-medium">
                       {eod.report_date
-                        ? format(new Date(`${eod.report_date}T12:00:00`), "MMM d")
+                        ? friendlyPastDay(eod.report_date)
                         : "Unavailable"}
                     </td>
                     <td className="px-3 py-3">{formatMetric(eod.dials)}</td>
@@ -870,7 +871,7 @@ function EodActivity({ data }: { data: SetterTrackerData }) {
               <div key={eod.id ?? eod.report_date} className="px-4 py-4">
                 <p className="font-medium">
                   {eod.report_date
-                    ? format(new Date(`${eod.report_date}T12:00:00`), "EEEE, MMM d")
+                    ? friendlyPastDay(eod.report_date)
                     : "Date unavailable"}
                 </p>
                 <div className="mt-3 grid grid-cols-3 gap-x-4 gap-y-3 text-caption">

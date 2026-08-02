@@ -1,4 +1,5 @@
 import { createFileRoute, Link, Navigate, useNavigate } from "@tanstack/react-router";
+import { friendlyPastDay } from "@/lib/dates";
 import { useEffect, useMemo, useState } from "react";
 import { PageSkeleton } from "@/components/ui/skeletons";
 import { supabase } from "@/integrations/supabase/client";
@@ -123,7 +124,7 @@ function KnowledgeDoc() {
       icon={FileText}
       title={doc.title}
       description={
-        <>Last updated {new Date(doc.updated_at).toLocaleDateString()}{updatedByName ? ` by ${updatedByName}` : ""}</>
+        <>Last updated {friendlyPastDay(doc.updated_at)}{updatedByName ? ` by ${updatedByName}` : ""}</>
       }
       badges={[CATEGORY_LABEL[doc.category], ...(doc.pinned ? ["Pinned"] : [])]}
       sections={toc.filter(t => t.level <= 2).map(t => ({ id: t.id, label: t.text }))}

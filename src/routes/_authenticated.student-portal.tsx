@@ -25,7 +25,7 @@ import { TimezoneCombobox } from "@/components/ui/timezone-combobox";
 import { getStudentNextCall } from "@/lib/student-next-call.functions";
 import { getMyGraduationReview, reportOfferLanded, submitGraduationReview } from "@/lib/student-review.functions";
 import { WALKTHROUGH_VIDEOS, beginPortalWalkthrough, completePortalWalkthrough } from "@/lib/student-walkthrough.functions";
-import { humanDue } from "@/lib/dates";
+import { friendlyPastDay, humanDue } from "@/lib/dates";
 import { signAvatar } from "@/lib/avatars";
 import { START_HERE_STEPS, isStartHereComplete } from "@/lib/student-guide-steps";
 import { ApplicationPending } from "@/components/application-pending";
@@ -597,7 +597,7 @@ function StudentPortal() {
           </h1>
           <p className="text-sm text-foreground mt-2 font-medium">You landed your offer. Alhamdulillah.</p>
           <p className="text-xs text-muted-foreground mt-1">
-            {student.offer_landed_at ? `Offer landed ${student.offer_landed_at.slice(0, 10)}` : "Offer landed"}
+            {student.offer_landed_at ? `Offer landed ${friendlyPastDay(student.offer_landed_at)}` : "Offer landed"}
             {student.join_date && student.offer_landed_at && (() => {
               const days = Math.max(1, Math.round((new Date(student.offer_landed_at).getTime() - new Date(student.join_date).getTime()) / 86400000));
               return ` · ${days} days from joining`;
@@ -1145,7 +1145,7 @@ function StudentPortal() {
             <MilestoneCard
               done={!!student.offer_landed_at}
               label="First win · offer landed"
-              detail={student.offer_landed_at ? `Unlocked ${student.offer_landed_at.slice(0, 10)}` : "Sign your first setter offer. Everything before this is practice."}
+              detail={student.offer_landed_at ? `Unlocked ${friendlyPastDay(student.offer_landed_at)}` : "Sign your first setter offer. Everything before this is practice."}
             />
             <MilestoneCard
               done={!!student.testimonial_collected && !!student.trustpilot_collected}
@@ -1815,7 +1815,7 @@ function GraduationPlacement({ studentId }: { studentId: string }) {
       </div>
       <div className="min-w-0">
         <div className="text-sm font-semibold truncate">{q.data.role_title} · {q.data.business_name}</div>
-        {q.data.started_at && <div className="text-[11px] text-muted-foreground">Started {q.data.started_at.slice(0, 10)}</div>}
+        {q.data.started_at && <div className="text-[11px] text-muted-foreground">Started {friendlyPastDay(q.data.started_at)}</div>}
       </div>
     </section>
   );

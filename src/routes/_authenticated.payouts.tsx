@@ -12,7 +12,7 @@ import {
   type PayoutProfile as Profile, type PayoutInstallmentPayment as InstallmentPayment,
   type PayoutInstallment as Installment, type OwedMember, type PayoutAdjustment,
 } from "@/lib/payout-period";
-import { todayLocal } from "@/lib/dates";
+import { friendlyPastDay, todayLocal } from "@/lib/dates";
 import { toast } from "sonner";
 import { MoneyShell } from "@/components/money-shell";
 import { PayoutAlertBanner } from "@/components/payout-alert";
@@ -41,7 +41,7 @@ const LinesPanel = ({ lines, colSpan, aggregate }: { lines: import("@/lib/payout
         <div className="space-y-1">
           {lines.map(l => (
             <div key={l.refId} className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px]">
-              <span className="tabular-nums text-muted-foreground w-[74px] shrink-0">{l.date}</span>
+              <span className="text-muted-foreground w-[92px] shrink-0">{friendlyPastDay(l.date)}</span>
               {l.kind === "adjustment" ? (
                 <>
                   <span className="font-medium text-foreground">Adjustment</span>

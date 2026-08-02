@@ -1,4 +1,5 @@
 import { StudentsTabBar } from "@/components/students-tab-bar";
+import { friendlyPastDay } from "@/lib/dates";
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useStudentHealth } from "@/lib/use-student-health";
 import { BAND_META } from "@/lib/student-health";
@@ -793,7 +794,7 @@ function ArchivedStudentsStrip() {
           {rows.map(r => (
             <div key={r.id} className="flex items-center gap-3">
               <Link to="/students/$id" params={{ id: r.id }} className="text-foreground hover:underline">{r.full_name}</Link>
-              <span className="tabular-nums">archived {r.archived_at.slice(0, 10)}</span>
+              <span>archived {friendlyPastDay(r.archived_at)}</span>
             </div>
           ))}
         </div>

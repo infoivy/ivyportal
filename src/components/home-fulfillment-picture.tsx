@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { friendlyPastDay } from "@/lib/dates";
 import { useQuery } from "@tanstack/react-query";
 import {
   CalendarDays, ClipboardCheck, ClipboardList, GraduationCap,
@@ -278,7 +279,7 @@ export function HomeFulfillmentPicture() {
                   <span className="font-medium text-foreground">{n.csm}</span>
                   <span className="text-muted-foreground">on</span>
                   <Link to="/students/$id" params={{ id: n.studentId }} className="font-medium text-foreground hover:underline">{n.student}</Link>
-                  <span className="text-micro text-muted-foreground tabular-nums">{n.when.slice(0, 10)}</span>
+                  <span className="text-micro text-muted-foreground">{friendlyPastDay(n.when)}</span>
                 </div>
                 <p className="text-muted-foreground mt-0.5 line-clamp-2">{n.note}</p>
               </div>

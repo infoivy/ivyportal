@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { friendlyPastDay } from "@/lib/dates";
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CreditCard, Loader2, Minus, Plus, X } from "lucide-react";
@@ -296,7 +297,7 @@ function HolderCard({ holder, entries, isSelf }: {
                 <div className="space-y-0.5">
                   {rows.map((e) => (
                     <div key={e.id} className="group flex items-center gap-3 text-[12px] rounded-md px-2 py-1 hover:bg-muted/60 motion-safe:transition-colors">
-                      <span className="tabular-nums text-muted-foreground w-[72px] shrink-0">{e.entry_date}</span>
+                      <span className="text-muted-foreground w-[92px] shrink-0">{friendlyPastDay(e.entry_date)}</span>
                       <span className="flex-1 min-w-0 truncate text-foreground">{e.note}</span>
                       <span className={`tabular-nums font-medium shrink-0 ${e.kind === "spend" ? "text-danger-fg" : "text-success-fg"}`}>
                         {e.kind === "spend" ? "−" : "+"}{money(Number(e.amount))}
