@@ -47,6 +47,8 @@ UI checks use `const { roles } = useAuth()` and `roles.includes('role')`. Do not
 
 Never use em dashes (—) in user-facing text (founder-directed 2026-07-18). Use a period, comma, colon, or the " · " separator instead. Empty-value placeholders in tables use "–" (en dash), not "—".
 
+Never render a raw or exact date for anything within the last two weeks (founder-directed 2026-08-02, universal: staff and student surfaces alike). Every displayed date goes through `friendlyPastDay()` in `src/lib/dates.ts` (Today / Yesterday / weekday / "Last Friday"; short "Jul 10" only beyond two weeks; `humanDue()` for due phrasing). Calendar grids and date inputs are exempt.
+
 ## Change discipline
 
 Keep changes small, typed, and migration-backed. Run `npm run build` and `npx tsc --noEmit` after app changes; run `npm run supabase:verify` after a deployment/migration. Preserve RLS. After ANY Supabase write (insert/update/delete/upsert), call `invalidateForTables(qc, [tables])` from `src/lib/query-keys.ts` so every page that reads those tables refreshes; register new query keys and table dependencies there. Keep optimistic setQueryData patches for your own screen only, never another page's cache. New routes reachable by students must be added to the student allowlist in `_authenticated.tsx` or they will be redirected. Use an explicit new migration for schema, policy, function, trigger, or bucket changes. Do not use the service role in client code. Do not change commission rules, role gates, EOD KPIs, or data-history behavior without explicit written approval.
