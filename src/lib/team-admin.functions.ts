@@ -14,6 +14,26 @@ export const deleteTeamMember = createServerFn({ method: "POST" })
     await assertAdmin(context.supabase, context.userId);
     if (data.userId === context.userId) throw new Error("You can't delete your own account here.");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Money and reporting history must keep its name: a member with logged
+    // deals or EODs gets deactivated, not deleted (founder history rule).
+    const [dealsRes, eodsRes, instRes] = await Promise.all([
+      supabaseAdmin.from("deals").select("id", { count: "exact", head: true }).or(`closer_id.eq.${data.userId},setter_id.eq.${data.userId}`),
+      supabaseAdmin.from("eods").select("id", { count: "exact", head: true }).eq("user_id", data.userId),
+      supabaseAdmin.from("installments").select("id", { count: "exact", head: true }).or(`closer_id.eq.${data.userId},setter_id.eq.${data.userId}`),
+    ]);
+    const deals = dealsRes.count ?? 0;
+    const eods = eodsRes.count ?? 0;
+    const plans = instRes.count ?? 0;
+    if (deals > 0 || eods > 0 || plans > 0) {
+      const parts = [
+        deals ? `${deals} deal${deals === 1 ? "" : "s"}` : null,
+        plans ? `${plans} payment plan${plans === 1 ? "" : "s"}` : null,
+        eods ? `${eods} EOD${eods === 1 ? "" : "s"}` : null,
+      ].filter(Boolean).join(", ");
+      throw new Error(`This member has logged history (${parts}). Deactivate them instead so those records keep their name.`);
+    }
+
     const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
     if (error) throw new Error(error.message);
     return { ok: true };
