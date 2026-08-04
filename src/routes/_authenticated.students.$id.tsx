@@ -217,7 +217,7 @@ function StudentDetail() {
 
   // Staff tracker only — students have their own portal and must never see
   // this view of themselves (grades, next actions, pathway internals).
-  if (!["admin", "closer", "csm", "coach", "founder", "cofounder"].some(r => roles.includes(r))) {
+  if (!["admin", "closer", "csm", "coach", "founder", "cofounder", "setter"].some(r => roles.includes(r))) {
     return (
       <div className="w-full max-w-none p-4 sm:p-6">
         <div className="card-surface p-8 text-center text-[13px] text-muted-foreground">Staff access required.</div>

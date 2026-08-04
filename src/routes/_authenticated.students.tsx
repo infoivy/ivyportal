@@ -97,7 +97,10 @@ function StudentsLayout() {
   const isDetail = /^\/students\/[^/]+/.test(pathname);
   const canManage = roles.includes("admin") || roles.includes("coach");
   // Staff surface — students never see the roster (their portal is /student-portal).
-  const isStaff = ["admin", "closer", "csm", "coach", "founder", "cofounder"].some(r => roles.includes(r));
+  // Every staff role may ENTER (the access grid decides who gets the nav
+  // entry — founder 2026-08-04: granting setters Students must actually
+  // work). Editing stays gated by canManage below; RLS guards the data.
+  const isStaff = ["admin", "closer", "csm", "coach", "founder", "cofounder", "setter"].some(r => roles.includes(r));
 
   const qc = useQueryClient();
   const { data: students = [], isLoading: studentsLoading } = useQuery(studentsQuery()) as { data: Student[]; isLoading: boolean };
