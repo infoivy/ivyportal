@@ -14,14 +14,13 @@ const MOBILE_PRIMARY_KEYS = ["home", "work", "performance", "customers"] as cons
  */
 export function StaffBottomNav() {
   const { roles } = useAuth();
-  const { pageHidden } = useAccess();
+  const { canSee } = useAccess();
   const { setOpenMobile } = useSidebar();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const items = PRIMARY_NAV_ITEMS.filter(
     (item) =>
       (MOBILE_PRIMARY_KEYS as readonly string[]).includes(item.key) &&
-      isVisibleToRoles(item, roles) &&
-      !pageHidden(item.url),
+      canSee(item),
   );
   const moreActive = !items.some((item) => matchesNavItem(item, pathname));
 

@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { WorkspaceDirectory } from "@/components/workspace-directory";
 import { useAuth } from "@/lib/auth-context";
 import { useAccess } from "@/lib/use-access";
-import { CUSTOMER_NAV_ITEMS, visibleItems } from "@/lib/portal-navigation";
+import { CUSTOMER_NAV_ITEMS } from "@/lib/portal-navigation";
 
 export const Route = createFileRoute("/_authenticated/customers")({
   head: () => ({ meta: [{ title: "Customers · Ivy Portal" }] }),
@@ -11,8 +11,8 @@ export const Route = createFileRoute("/_authenticated/customers")({
 
 function CustomersPage() {
   const { roles } = useAuth();
-  const { pageHidden } = useAccess();
-  const items = visibleItems(CUSTOMER_NAV_ITEMS, roles).filter((item) => !pageHidden(item.url));
+  const { canSee } = useAccess();
+  const items = CUSTOMER_NAV_ITEMS.filter((item) => canSee(item));
 
   return (
     <WorkspaceDirectory

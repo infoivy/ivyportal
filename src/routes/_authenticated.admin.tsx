@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { CommissionRates, DEFAULT_RATES } from "@/lib/revenue";
 import { format, subDays } from "date-fns";
-import { CONFIGURABLE_ROLES, defaultPagesFor, type RoleAccess } from "@/lib/nav-pages";
+import { CONFIGURABLE_PAGES, CONFIGURABLE_ROLES, grantable, type RoleAccess } from "@/lib/nav-pages";
 import { parseGroupCallSchedule } from "@/lib/student-weekly-eod";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -740,28 +740,37 @@ function AccessDefaultsCard() {
   const accessQ = useQuery({
     queryKey: ["role-access"],
     queryFn: async () => {
-      const { data } = await supabase.from("role_access").select("role, hidden_pages, hide_money");
-      return (data ?? []) as RoleAccess[];
+      const { data } = await supabase.from("role_access").select("role, hidden_pages, granted_pages, hide_money" as never);
+      return (data ?? []) as unknown as RoleAccess[];
     },
   });
-  const [draft, setDraft] = useState<Record<string, { hidden: Set<string>; hideMoney: boolean }>>({});
+  const [draft, setDraft] = useState<Record<string, { hidden: Set<string>; granted: Set<string>; hideMoney: boolean }>>({});
   const [savingRole, setSavingRole] = useState<string | null>(null);
 
   useEffect(() => {
     if (!accessQ.data) return;
-    const next: Record<string, { hidden: Set<string>; hideMoney: boolean }> = {};
+    const next: Record<string, { hidden: Set<string>; granted: Set<string>; hideMoney: boolean }> = {};
     for (const r of CONFIGURABLE_ROLES) {
       const row = accessQ.data.find(a => a.role === r);
-      next[r] = { hidden: new Set(row?.hidden_pages ?? []), hideMoney: row?.hide_money ?? false };
+      next[r] = { hidden: new Set(row?.hidden_pages ?? []), granted: new Set(row?.granted_pages ?? []), hideMoney: row?.hide_money ?? false };
     }
     setDraft(next);
   }, [accessQ.data]);
 
-  const toggle = (role: string, url: string) =>
+  // One toggle, two ledgers: default pages flip in/out of hidden_pages,
+  // non-default pages flip in/out of granted_pages (founder 2026-08-04:
+  // every page checkable for every role, both directions).
+  const toggle = (role: string, url: string, byDefault: boolean) =>
     setDraft(d => {
-      const cur = new Set(d[role]?.hidden ?? []);
-      if (cur.has(url)) cur.delete(url); else cur.add(url);
-      return { ...d, [role]: { hidden: cur, hideMoney: d[role]?.hideMoney ?? false } };
+      const cur = d[role] ?? { hidden: new Set<string>(), granted: new Set<string>(), hideMoney: false };
+      const hidden = new Set(cur.hidden);
+      const granted = new Set(cur.granted);
+      if (byDefault) {
+        if (hidden.has(url)) hidden.delete(url); else hidden.add(url);
+      } else {
+        if (granted.has(url)) granted.delete(url); else granted.add(url);
+      }
+      return { ...d, [role]: { hidden, granted, hideMoney: cur.hideMoney } };
     });
 
   const save = async (role: string) => {
@@ -771,6 +780,7 @@ function AccessDefaultsCard() {
     const { error } = await (supabase as any).from("role_access").upsert({
       role,
       hidden_pages: Array.from(d.hidden),
+      granted_pages: Array.from(d.granted),
       hide_money: d.hideMoney,
       updated_at: new Date().toISOString(),
       updated_by: user?.id ?? null,
@@ -792,7 +802,6 @@ function AccessDefaultsCard() {
       <div className="grid gap-4 lg:grid-cols-2">
         {CONFIGURABLE_ROLES.map(role => {
           const d = draft[role];
-          const pages = defaultPagesFor(role);
           return (
             <div key={role} className="rounded-lg border border-[var(--border)] p-4 space-y-3">
               <div className="flex items-center justify-between gap-3">
@@ -802,23 +811,35 @@ function AccessDefaultsCard() {
                 </Button>
               </div>
               <div className="grid grid-cols-2 gap-x-3 gap-y-2">
-                {pages.map(pg => (
-                  <label key={pg.url} className={`flex items-center gap-2 text-[13px] ${pg.locked ? "opacity-50" : ""}`}>
-                    <Checkbox
-                      checked={pg.locked ? true : !(d?.hidden.has(pg.url))}
-                      disabled={pg.locked || !d}
-                      onCheckedChange={() => toggle(role, pg.url)}
-                    />
-                    <span className="truncate">{pg.title}</span>
-                    {pg.locked && <span className="text-[10px] text-muted-foreground shrink-0">always on</span>}
-                  </label>
-                ))}
+                {CONFIGURABLE_PAGES.map(pg => {
+                  const byDefault = !pg.roles || pg.roles.includes(role);
+                  const canGrant = grantable(role, pg.url);
+                  const locked = !!pg.locked;
+                  const serverLocked = !byDefault && !canGrant;
+                  const checked = locked
+                    ? byDefault
+                    : byDefault
+                      ? !(d?.hidden.has(pg.url))
+                      : canGrant && !!d?.granted.has(pg.url);
+                  return (
+                    <label key={pg.url} className={`flex items-center gap-2 text-[13px] ${locked || serverLocked ? "opacity-50" : ""}`} title={serverLocked ? "This page's own role wall doesn't admit this role · a checkbox here would do nothing" : undefined}>
+                      <Checkbox
+                        checked={checked}
+                        disabled={locked || serverLocked || !d}
+                        onCheckedChange={() => toggle(role, pg.url, byDefault)}
+                      />
+                      <span className="truncate">{pg.title}</span>
+                      {locked && byDefault && <span className="text-[10px] text-muted-foreground shrink-0">always on</span>}
+                      {serverLocked && <span className="text-[10px] text-muted-foreground shrink-0">role-walled</span>}
+                    </label>
+                  );
+                })}
               </div>
               <label className="flex items-center gap-2 text-[13px] pt-2 border-t border-[var(--border)]">
                 <Checkbox
                   checked={d?.hideMoney ?? false}
                   disabled={!d}
-                  onCheckedChange={() => setDraft(dd => ({ ...dd, [role]: { hidden: dd[role]?.hidden ?? new Set(), hideMoney: !(dd[role]?.hideMoney ?? false) } }))}
+                  onCheckedChange={() => setDraft(dd => ({ ...dd, [role]: { hidden: dd[role]?.hidden ?? new Set(), granted: dd[role]?.granted ?? new Set(), hideMoney: !(dd[role]?.hideMoney ?? false) } }))}
                 />
                 <span>Blur revenue figures</span>
                 <span className="text-[11px] text-muted-foreground">cash totals show pixelated for this role</span>

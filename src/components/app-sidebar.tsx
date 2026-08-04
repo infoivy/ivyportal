@@ -95,7 +95,7 @@ function StudentJourneyGroup({ collapsed, currentPath }: { collapsed: boolean; c
 }
 
 export function AppSidebar({ roles }: { roles: string[] }) {
-  const { pageHidden } = useAccess();
+  const { canSee } = useAccess();
   const { state, isMobile, setOpenMobile } = useSidebar();
   const collapsed = state === "collapsed";
   const currentPath = useRouterState({ select: (router) => router.location.pathname });
@@ -127,7 +127,7 @@ export function AppSidebar({ roles }: { roles: string[] }) {
   }, [canApproveRequests, currentPath]);
 
   const renderGroup = (label: string, items: readonly SidebarItem[]) => {
-    const filtered = items.filter((item) => isVisibleToRoles(item, roles) && !pageHidden(item.url));
+    const filtered = items.filter((item) => canSee(item));
     if (!filtered.length) return null;
 
     return (

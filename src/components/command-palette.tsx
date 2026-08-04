@@ -44,7 +44,7 @@ const PAGES: PageItem[] = Array.from(
 
 export function CommandPalette() {
   const { roles } = useAuth();
-  const { pageHidden } = useAccess();
+  const { canSee } = useAccess();
   const nav = useNavigate();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -107,8 +107,8 @@ export function CommandPalette() {
   }, [open]);
 
   const visiblePages = useMemo(
-    () => PAGES.filter((page) => isVisibleToRoles(page, roles) && !pageHidden(page.url)),
-    [roles, pageHidden]
+    () => PAGES.filter((page) => canSee(page)),
+    [canSee]
   );
 
   const results = useMemo<Item[]>(() => {
