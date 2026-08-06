@@ -444,6 +444,11 @@ function PlanEditor({
   const [currency, setCurrency] = useState<string>(initial?.currency ?? "USD");
   const [total, setTotal] = useState<string>(initial ? String(initial.total_amount) : "");
   const [notes, setNotes] = useState<string>(initial?.notes ?? "");
+  // Cash collected at close (founder 2026-08-06: "$1k paid today shows
+  // 0/$5k") — one field, Whop-checked, lands as the paid first payment.
+  const [depositAmount, setDepositAmount] = useState<string>("");
+  const [depositDate, setDepositDate] = useState<string>(new Date().toISOString().slice(0, 10));
+  const depositWhopFn = useServerFn(findWhopMatch);
   const [drafts, setDrafts] = useState<Draft[]>(
     initialPayments.length
       ? [...initialPayments]
@@ -468,7 +473,7 @@ function PlanEditor({
   };
 
   const generateMonthly = () => {
-    const t = Number(total) || 0;
+    const t = Math.max(0, (Number(total) || 0) - (Number(depositAmount) || 0));
     const n = drafts.length || 1;
     const each = (t / n).toFixed(2);
     setDrafts(d => d.map((row, i) => {
@@ -528,11 +533,41 @@ function PlanEditor({
         if (error) throw error;
       }
 
+      // Deposit first: verified against Whop like any paid flip, then written
+      // as the paid opening payment so the plan reads $collected/$total.
+      let depositNum = !initial ? Number(depositAmount) || 0 : 0;
+      if (depositNum > 0) {
+        try {
+          const m = await depositWhopFn({ data: { amount: depositNum } });
+          if (m.connected && !m.matched) {
+            const go = confirm(
+              `No Whop payment of ~$${depositNum.toLocaleString()} found in the last few days.\n\n` +
+              `Money only counts once it's in Whop. Record the collected cash anyway? (Only for verified off-Whop money, e.g. a Wise transfer.)`,
+            );
+            if (!go) { depositNum = 0; toast.info("Deposit skipped · add it later from the payment row once Whop shows it"); }
+          }
+        } catch { /* verification unavailable · proceed, reconciliation will flag it */ }
+      }
+      if (depositNum > 0) {
+        const { error } = await (supabase.from("installment_payments" as any).insert({
+          installment_id: planId as string,
+          sequence: 1,
+          amount: depositNum,
+          currency,
+          due_date: depositDate,
+          status: "paid",
+          paid_at: depositDate,
+          notes: "Collected at close",
+        }) as any);
+        if (error) throw error;
+      }
+
       const newRows: any[] = [];
+      const seqOffset = depositNum > 0 ? 1 : 0;
       for (const [i, draft] of validDrafts.entries()) {
         const row = {
           installment_id: planId as string,
-          sequence: i + 1,
+          sequence: i + 1 + seqOffset,
           amount: Number(draft.amount) || 0,
           currency,
           due_date: draft.due_date,
@@ -589,7 +624,22 @@ function PlanEditor({
             <Field label="Currency">
               <SelectField value={currency} onChange={setCurrency} options={["USD","EUR","GBP","CAD","AUD","AED"].map(c => ({ value: c, label: c }))} className="h-9 text-sm" />
             </Field>
+            {!initial && (
+              <>
+                <Field label="Collected at close (deposit)">
+                  <input value={depositAmount} onChange={e => setDepositAmount(e.target.value)} type="number" min="0" step="0.01" placeholder="0" className="w-full px-2 py-1.5 rounded border border-border bg-background text-sm" />
+                </Field>
+                <Field label="Collected on">
+                  <DateField value={depositDate} onChange={setDepositDate} clearable={false} />
+                </Field>
+              </>
+            )}
           </div>
+          {!initial && Number(depositAmount) > 0 && (
+            <p className="text-[11px] text-muted-foreground -mt-2">
+              Saves as the paid opening payment (Whop-checked), so the plan reads {fmtMoney(Number(depositAmount) || 0, currency)} collected from the start. Schedule the rest below.
+            </p>
+          )}
           <Field label="Deal notes (optional)">
             <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} className="w-full px-2 py-1.5 rounded border border-border bg-background text-sm" />
           </Field>
