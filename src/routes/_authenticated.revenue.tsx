@@ -44,8 +44,9 @@ import { BlurMoney } from "@/components/blur-money";
 
 export const Route = createFileRoute("/_authenticated/revenue")({
   head: () => ({ meta: [{ title: "Money in · ISA Team" }] }),
-  validateSearch: (search: Record<string, unknown>): { tab?: "deals" | "plans" } => ({
+  validateSearch: (search: Record<string, unknown>): { tab?: "deals" | "plans"; q?: string } => ({
     tab: search.tab === "plans" ? "plans" : search.tab === "deals" ? "deals" : undefined,
+    ...(typeof search.q === "string" && search.q ? { q: search.q } : {}),
   }),
   component: RevenuePage,
 });
@@ -353,7 +354,7 @@ function RevenueInner() {
         </Link>
       </div>
 
-      {tab === "plans" ? <PaymentPlansSection /> : (<>
+      {tab === "plans" ? <PaymentPlansSection initialQuery={search.q} /> : (<>
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -529,6 +530,11 @@ function RevenueInner() {
                         <div className="flex gap-1 justify-end">
                           <Button size="icon" variant="ghost" onClick={() => { setEditing(d); setLogOpen(true); }}>
                             <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button size="icon" variant="ghost" asChild title="Open this student's payment plan">
+                            <Link to="/revenue" search={{ tab: "plans", q: d.student_name ?? "" } as never}>
+                              <ClipboardList className="h-3.5 w-3.5" />
+                            </Link>
                           </Button>
                           {isAdmin && (
                             <Button size="icon" variant="ghost" onClick={() => voidDeal(d.id)} className="text-destructive" title="Void deal and preserve history">

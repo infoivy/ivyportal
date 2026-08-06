@@ -72,7 +72,7 @@ const daysUntil = (d: string) => {
   return Math.round((due.getTime() - today.getTime()) / 86_400_000);
 };
 
-export function PaymentPlansSection() {
+export function PaymentPlansSection({ initialQuery }: { initialQuery?: string } = {}) {
   const { user, roles } = useAuth();
   const canEdit = roles.includes("admin") || roles.includes("closer");
   const canDelete = roles.includes("admin");
@@ -81,7 +81,7 @@ export function PaymentPlansSection() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [team, setTeam] = useState<Person[]>([]);
-  const [q, setQ] = useState("");
+  const [q, setQ] = useState(initialQuery ?? "");
   const [addOpen, setAddOpen] = useState(false);
   const [editing, setEditing] = useState<Installment | null>(null);
   const [refunding, setRefunding] = useState<{ id: string; name: string } | null>(null);
@@ -93,17 +93,19 @@ export function PaymentPlansSection() {
   const pageQ = useQuery({
     queryKey: keys.installmentsPage,
     queryFn: async () => {
-      const [iRes, pRes, sRes, tRes] = await Promise.all([
+      const [iRes, pRes, sRes, tRes, dRes] = await Promise.all([
         (supabase.from("installments" as any).select("*, students!inner(is_demo)").eq("students.is_demo", false).is("voided_at", null).order("created_at", { ascending: false }) as any),
         (supabase.from("installment_payments" as any).select("*, installments!inner(students!inner(is_demo))").eq("installments.students.is_demo", false).order("due_date", { ascending: true }) as any),
         supabase.from("students").select("id, full_name").eq("is_demo", false).is("archived_at" as never, null).order("full_name"),
         supabase.from("profiles").select("id, display_name" as any).eq("is_demo", false),
+        supabase.from("deals").select("student_id, total_value, cash_collected_upfront").eq("is_demo", false).is("voided_at", null).not("student_id", "is", null),
       ]);
       return {
         installments: (iRes.data ?? []) as Installment[],
         payments: (pRes.data ?? []) as Payment[],
         students: (sRes.data ?? []) as Student[],
         team: ((tRes.data ?? []) as any[]).map(p => ({ id: p.id, display_name: p.display_name })) as Person[],
+        deals: (dRes.data ?? []) as { student_id: string; total_value: number | null; cash_collected_upfront: number | null }[],
       };
     },
   });
@@ -114,6 +116,19 @@ export function PaymentPlansSection() {
     setStudents(pageQ.data.students);
     setTeam(pageQ.data.team);
   }, [pageQ.data]);
+  // Deal upfront per student: the plan header folds close cash into
+  // "collected / total" so a $1k-at-close $5k deal never reads 0/$5k
+  // (founder 2026-08-06).
+  const dealByStudent = useMemo(() => {
+    const map = new Map<string, { upfront: number; total: number }>();
+    for (const d of pageQ.data?.deals ?? []) {
+      const cur = map.get(d.student_id) ?? { upfront: 0, total: 0 };
+      cur.upfront += Number(d.cash_collected_upfront ?? 0);
+      cur.total += Number(d.total_value ?? 0);
+      map.set(d.student_id, cur);
+    }
+    return map;
+  }, [pageQ.data?.deals]);
 
   const paymentsByInstallment = useMemo(() => {
     const map = new Map<string, Payment[]>();
@@ -309,8 +324,12 @@ export function PaymentPlansSection() {
         )}
         {filtered.map(inst => {
           const pays = (paymentsByInstallment.get(inst.id) ?? []).sort((a,b) => a.sequence - b.sequence);
-          const paid = pays.filter(p => p.status === "paid").reduce((s,p) => s + Number(p.amount), 0);
-          const pct = inst.total_amount > 0 ? Math.min(100, Math.round((paid / Number(inst.total_amount)) * 100)) : 0;
+          const paidRows = pays.filter(p => p.status === "paid").reduce((s,p) => s + Number(p.amount), 0);
+          const deal = inst.student_id ? dealByStudent.get(inst.student_id) : undefined;
+          const upfront = deal?.upfront ?? 0;
+          const paid = paidRows + upfront;
+          const target = Math.max(Number(inst.total_amount), deal?.total ?? 0);
+          const pct = target > 0 ? Math.min(100, Math.round((paid / target) * 100)) : 0;
           return (
             <section key={inst.id} className="rounded-lg border border-border bg-card">
               <header className="px-4 py-3 border-b border-border flex items-center gap-3 flex-wrap">
@@ -320,9 +339,10 @@ export function PaymentPlansSection() {
                     Closer: {teamName(inst.closer_id)} · Coach: {teamName(inst.coach_id)}
                   </div>
                 </div>
-                <div className="text-sm">
+                <div className="text-sm text-right">
                   <span className="text-success-fg font-medium">{fmtMoney(paid, inst.currency)}</span>
-                  <span className="text-muted-foreground"> / {fmtMoney(Number(inst.total_amount), inst.currency)}</span>
+                  <span className="text-muted-foreground"> / {fmtMoney(target, inst.currency)}</span>
+                  {upfront > 0 && <div className="text-[10px] text-muted-foreground">incl. {fmtMoney(upfront, inst.currency)} collected at close</div>}
                 </div>
                 <div className="w-40 h-1.5 bg-muted rounded-full overflow-hidden"><div className="h-full bg-success" style={{ width: `${pct}%` }} /></div>
                 {canEdit && <button onClick={() => { setEditing(inst); setAddOpen(true); }} className="text-xs px-2 py-1 rounded border border-border hover:bg-accent inline-flex items-center gap-1"><Edit3 className="h-3 w-3" />Edit</button>}
@@ -535,7 +555,7 @@ function PlanEditor({
 
       // Deposit first: verified against Whop like any paid flip, then written
       // as the paid opening payment so the plan reads $collected/$total.
-      let depositNum = !initial ? Number(depositAmount) || 0 : 0;
+      let depositNum = Number(depositAmount) || 0;
       if (depositNum > 0) {
         try {
           const m = await depositWhopFn({ data: { amount: depositNum } });
@@ -549,9 +569,10 @@ function PlanEditor({
         } catch { /* verification unavailable · proceed, reconciliation will flag it */ }
       }
       if (depositNum > 0) {
+        const nextSeq = initial ? Math.max(0, ...initialPayments.map(pm => pm.sequence)) + 1 : 1;
         const { error } = await (supabase.from("installment_payments" as any).insert({
           installment_id: planId as string,
-          sequence: 1,
+          sequence: nextSeq,
           amount: depositNum,
           currency,
           due_date: depositDate,
@@ -624,9 +645,9 @@ function PlanEditor({
             <Field label="Currency">
               <SelectField value={currency} onChange={setCurrency} options={["USD","EUR","GBP","CAD","AUD","AED"].map(c => ({ value: c, label: c }))} className="h-9 text-sm" />
             </Field>
-            {!initial && (
+            {(
               <>
-                <Field label="Collected at close (deposit)">
+                <Field label={initial ? "Record cash collected (adds a paid payment)" : "Collected at close (deposit)"}>
                   <input value={depositAmount} onChange={e => setDepositAmount(e.target.value)} type="number" min="0" step="0.01" placeholder="0" className="w-full px-2 py-1.5 rounded border border-border bg-background text-sm" />
                 </Field>
                 <Field label="Collected on">
@@ -635,9 +656,9 @@ function PlanEditor({
               </>
             )}
           </div>
-          {!initial && Number(depositAmount) > 0 && (
+          {Number(depositAmount) > 0 && (
             <p className="text-[11px] text-muted-foreground -mt-2">
-              Saves as the paid opening payment (Whop-checked), so the plan reads {fmtMoney(Number(depositAmount) || 0, currency)} collected from the start. Schedule the rest below.
+              Saves as a paid payment (Whop-checked): the plan reads {fmtMoney(Number(depositAmount) || 0, currency)} more collected the moment you save.
             </p>
           )}
           <Field label="Deal notes (optional)">
