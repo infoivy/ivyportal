@@ -1,5 +1,5 @@
 import { type Deal, type CommissionRates, commissionForDeal, setterWeekBonusIds, isSelfSet } from "@/lib/revenue";
-import { cofounderCappedCommission, type CommissionEvent, COFOUNDER_RATE, COFOUNDER_WEEK_CAP, COFOUNDER_MONTH_CAP } from "@/lib/payouts-calc";
+import { cofounderCappedCommission, type CommissionEvent, COFOUNDER_RATE, COFOUNDER_PERIOD_CAP, COFOUNDER_MONTH_CAP } from "@/lib/payouts-calc";
 
 // Pay periods: semi-monthly halves — 1st–15th and 16th–end of month.
 // Commissions are paid twice a month (founder-confirmed 2026-07-12);
@@ -248,7 +248,7 @@ export function buildPayoutRows(data: PayoutData, period: Pick<PayoutPeriod, "st
         installmentCash: iCash,
         installmentCommission: 0,
         total: owed,
-        capNote: `co-founder · ${(COFOUNDER_RATE * 100).toFixed(0)}% flat · capped $${COFOUNDER_WEEK_CAP / 1000}k/wk · $${COFOUNDER_MONTH_CAP / 1000}k/mo${capped.capped ? " · cap hit" : ""}`,
+        capNote: `co-founder · ${(COFOUNDER_RATE * 100).toFixed(0)}% flat · capped $${COFOUNDER_PERIOD_CAP / 1000}k per payout period · $${COFOUNDER_MONTH_CAP / 1000}k/mo${capped.capped ? " · cap hit" : ""}`,
         lines: cofLines,
       };
     }
