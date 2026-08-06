@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { format, subDays } from "date-fns";
+import { format } from "date-fns";
 import { ArrowRight, HandCoins, WalletCards } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,20 +22,22 @@ export function HomeMoneyStrip() {
   const canSee = roles.some(r => ["admin", "founder", "cofounder"].includes(r));
 
   const today = format(new Date(), "yyyy-MM-dd");
-  const from30 = format(subDays(new Date(), 29), "yyyy-MM-dd");
+  // Fresh each month (founder 2026-08-06): the tile counts from the 1st.
+  const monthStart = today.slice(0, 8) + "01";
+  const monthName = format(new Date(), "MMMM");
 
   const cashQ = useQuery({
-    queryKey: ["page", "home", "money-30d"],
+    queryKey: ["page", "home", "money-month", monthStart],
     enabled: canSee,
     staleTime: 4 * 60_000,
     queryFn: async () => {
       // Whop is the cash truth; fall back to logged deals + paid installments
       // (labeled) only when Whop is not connected.
       try {
-        const w = await getWhopCashWindow({ data: { from: from30, to: today } });
+        const w = await getWhopCashWindow({ data: { from: monthStart, to: today } });
         if (w.connected) return { amount: w.net, source: "whop" as const };
       } catch { /* fall through to logged */ }
-      const byCloser = await fetchCollectedCashByCloser(from30, today);
+      const byCloser = await fetchCollectedCashByCloser(monthStart, today);
       let total = 0;
       for (const v of byCloser.values()) total += v.cash;
       return { amount: total, source: "logged" as const };
@@ -77,7 +79,7 @@ export function HomeMoneyStrip() {
         <div className="min-w-0">
           <div className="flex items-center gap-2 text-muted-foreground">
             <HandCoins className="h-4 w-4" />
-            <p className="text-micro font-semibold uppercase tracking-[0.1em]">Cash collected · last 30 days</p>
+            <p className="text-micro font-semibold uppercase tracking-[0.1em]">Cash collected · {monthName}</p>
           </div>
           <p className="mt-3 text-[28px] font-medium leading-none tracking-[-0.02em] tabular-nums text-foreground">
             {cashQ.isLoading ? "…" : <BlurMoney>{money(cashQ.data?.amount ?? 0)}</BlurMoney>}

@@ -362,7 +362,7 @@ function RevenueInner() {
           value={<BlurMoney>{whopQ.isLoading ? "…" : money(whopCash ?? stats.cash)}</BlurMoney>}
           icon={<DollarSign className="h-3.5 w-3.5" />}
           accent
-          sparkData={whopCash == null ? cashSparkData : undefined}
+          sparkData={cashSparkData}
           delta={whopCash == null && compare ? { value: stats.cash - prevStats.cash, format: "money" } : undefined}
           noData={!whopQ.isLoading && whopCash == null && rangeDeals.length === 0}
         />

@@ -106,7 +106,10 @@ test("EOD correction archives source rows and removes all direct delete privileg
 
 test("Whop net headline never reuses logged-deal comparison data", () => {
   const revenue = read("src/routes/_authenticated.revenue.tsx");
-  assert.match(revenue, /sparkData=\{whopCash == null \? cashSparkData : undefined\}/);
+  // The sparkline is a trend SHAPE and always renders (founder 2026-08-06:
+  // it vanished when the Whop number loaded); the numeric delta comparison
+  // still never mixes logged-deal math with a Whop headline.
+  assert.match(revenue, /sparkData=\{cashSparkData\}/);
   assert.match(revenue, /delta=\{whopCash == null && compare \?/);
 });
 
