@@ -25,6 +25,15 @@ Sami Khan's plan card read "$3,000 / $10,000" for a $5,000 deal with $1,000 coll
 - Paid rows cannot be deleted or edited by design; the correction had to use the refunded status with an explanatory note so the audit trail says why.
 - deals column names differ from intuition (total_value, cash_collected_upfront) — verify queries failed twice before matching the app's own select.
 
+### Addendum (same day)
+Founder follow-ups: "deals shows 17k for some reason" + wants day/week/month stat scoping with specific-period pickers (shadcn) + "what does waived mean? why not add collected option?"
+- The $17k is correct, not a glitch: $17,100 = $14,400 deal upfronts + $2,700 installment collections received in the rolling 30-day window; that is the "Cash collected · Whop net" tile, which counts all money in, not deal values.
+- RangePicker (src/components/range-picker.tsx) gained a By-period mode: shadcn Select (Day/Week/Month), prev/next chevrons, calendar popover for a specific day (week snaps to Mon–Sun), month dropdown of the last 12. Emits the same DateRange, so stats/spark/compare on Money In work unchanged. Booked value tile now hints "full deal values closed in this window, collected or not".
+- Status language: "paid" displays as "Collected" in chips/selects; waived options read "Waived · no longer owed"; the Finance flow editor got a one-click "Mark collected" button (runs the Whop check) and waive buttons carry plain-language tooltips.
+
+### Addendum 2 (same day) · co-founder cap correction
+Founder: "abu bilal and faizan are not capped at 1k/wk, theyre capped at 1k per payout period and 2k max per month in commissions." Rewrote `cofounderCappedCommission` in src/lib/payouts-calc.ts: the Mon–Sun week bucket is gone; the semi-monthly halves (1st–15th, 16th–end) are the cap buckets, $1,000 each, $2,000/month guard kept. COFOUNDER_WEEK_CAP renamed COFOUNDER_PERIOD_CAP; capNote copy in payout-period.ts follows. Net effect: tighter within a half (old rule let two different weeks inside one half stack to $2k). Settled July confirmations are truth-first and untouched. CLAUDE.md business rule updated. Commit 9240590.
+
 ### Future work
 - Hamza's remaining plan ($500 Aug 29 + $2,000 Sep 29) still awaiting founder confirmation whether to void.
 - Ibrahim's August $700: mark paid once confirmed.
