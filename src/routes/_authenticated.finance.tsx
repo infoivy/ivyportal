@@ -575,13 +575,16 @@ function FinanceInner() {
               <div key={i}>
                 <button
                   onClick={() => { setOpenFlow(openFlow === i ? null : i); setPayDraft(f.pay ? { amount: String(f.pay.amount), due: f.pay.due_date } : null); }}
-                  className={`w-full grid grid-cols-[90px_minmax(0,1fr)_110px_120px] gap-3 items-center py-2 text-[13px] text-left hover:bg-muted/40 motion-safe:transition-colors ${openFlow === i ? "bg-muted/40" : ""} ${(f as { payoutTile?: { settled: boolean } }).payoutTile?.settled ? "opacity-60" : ""}`}
+                  className={`group/flowrow w-full grid grid-cols-[90px_minmax(0,1fr)_110px_120px] gap-3 items-center py-2 text-[13px] text-left hover:bg-muted/40 motion-safe:transition-colors ${openFlow === i ? "bg-muted/40" : ""} ${(f as { payoutTile?: { settled: boolean } }).payoutTile?.settled ? "opacity-60" : ""}`}
                 >
                   <span className="text-muted-foreground tabular-nums">{format(new Date(f.date + "T00:00:00"), "EEE d MMM")}</span>
                   <span className="truncate">
                     {f.label}
                     {(f as { payoutTile?: { settled: boolean } }).payoutTile && (
                       <span className="ml-2 text-[10px] uppercase tracking-wider text-muted-foreground border border-border rounded-sm px-1 py-0.5">auto · from Payouts</span>
+                    )}
+                    {(f.pay || f.expense) && canEditMoney && (
+                      <Pencil className="ml-2 inline h-3 w-3 text-muted-foreground/0 group-hover/flowrow:text-muted-foreground align-[-1px]" aria-hidden />
                     )}
                   </span>
                   <span className={`text-right tabular-nums ${f.kind === "in" ? "text-success-fg" : "text-danger-fg"}`}>

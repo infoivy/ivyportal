@@ -403,6 +403,7 @@ export function PaymentPlansSection({ initialQuery }: { initialQuery?: string } 
         <PlanEditor
           initial={editing}
           initialPayments={editing ? (paymentsByInstallment.get(editing.id) ?? []) : []}
+          dealByStudent={dealByStudent}
           students={students}
           team={team}
           currentUserId={user?.id ?? null}
@@ -448,10 +449,11 @@ type Draft = {
 };
 
 function PlanEditor({
-  initial, initialPayments, students, team, currentUserId, onClose, onSaved,
+  initial, initialPayments, dealByStudent, students, team, currentUserId, onClose, onSaved,
 }: {
   initial: Installment | null;
   initialPayments: Payment[];
+  dealByStudent: Map<string, { upfront: number; total: number }>;
   students: Student[];
   team: Person[];
   currentUserId: string | null;
@@ -656,11 +658,21 @@ function PlanEditor({
               </>
             )}
           </div>
-          {Number(depositAmount) > 0 && (
-            <p className="text-[11px] text-muted-foreground -mt-2">
-              Saves as a paid payment (Whop-checked): the plan reads {fmtMoney(Number(depositAmount) || 0, currency)} more collected the moment you save.
-            </p>
-          )}
+          {(() => {
+            const dealUpfront = studentId ? (dealByStudent.get(studentId)?.upfront ?? 0) : 0;
+            if (dealUpfront > 0) {
+              return (
+                <p className="text-[11px] text-warning-fg -mt-2">
+                  The deal already records {fmtMoney(dealUpfront, currency)} collected at close, and the plan card counts it automatically. Only enter cash here that is NOT on the deal, or it will double count.
+                </p>
+              );
+            }
+            return Number(depositAmount) > 0 ? (
+              <p className="text-[11px] text-muted-foreground -mt-2">
+                Saves as a paid payment (Whop-checked): the plan reads {fmtMoney(Number(depositAmount) || 0, currency)} more collected the moment you save.
+              </p>
+            ) : null;
+          })()}
           <Field label="Deal notes (optional)">
             <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} className="w-full px-2 py-1.5 rounded border border-border bg-background text-sm" />
           </Field>
