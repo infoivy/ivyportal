@@ -369,6 +369,9 @@ function FinanceInner() {
   const findWhopMatchFn = useServerFn(findWhopMatch);
 
   const PAY_STATUSES = ["upcoming", "paid", "late", "missed", "waived"] as const;
+  const PAY_STATUS_LABEL: Record<string, string> = {
+    upcoming: "Upcoming", paid: "Collected", late: "Late", missed: "Missed", waived: "Waived · no longer owed",
+  };
   const setPayStatus = async (pay: Payment, status: string) => {
     if (!pay.id) return;
     if (pay.status === "paid" && status !== "paid") return toast.error("Paid history is immutable");
@@ -603,12 +606,15 @@ function FinanceInner() {
                         <SelectField
                           value={f.pay.status}
                           onChange={v => void setPayStatus(f.pay!, v)}
-                          options={PAY_STATUSES.map(st => ({ value: st, label: st }))}
+                          options={PAY_STATUSES.map(st => ({ value: st, label: PAY_STATUS_LABEL[st] ?? st }))}
                           disabled={f.pay.status === "paid"}
-                          className="w-auto text-xs capitalize"
+                          className="w-auto text-xs"
                         />
                       ) : (
                         <span className="text-caption text-muted-foreground capitalize">{f.pay.status}</span>
+                      )}
+                      {canEditMoney && f.pay.status !== "paid" && f.pay.status !== "refunded" && (
+                        <Button size="sm" onClick={() => void setPayStatus(f.pay!, "paid")}>Mark collected</Button>
                       )}
                       <Link to="/revenue" search={{ tab: "plans" } as never} className="ml-auto text-caption text-primary hover:underline">
                         Open full plan →
@@ -626,8 +632,8 @@ function FinanceInner() {
                         </div>
                         <Button size="sm" variant="outline" onClick={() => void savePayment(f.pay!)}>Save changes</Button>
                         <span className="flex-1" />
-                        <button onClick={() => void waivePayment(f.pay!)} className="text-caption text-danger-fg hover:underline">Waive this installment</button>
-                        <button onClick={() => void waiveFollowing(f.pay!)} className="text-caption text-danger-fg hover:underline">Waive this + all following</button>
+                        <button onClick={() => void waivePayment(f.pay!)} title="Forgive it: the student no longer owes this amount. The row is kept for history and drops out of expected money." className="text-caption text-danger-fg hover:underline">Waive this installment</button>
+                        <button onClick={() => void waiveFollowing(f.pay!)} title="Forgive this and every later unpaid installment on the plan. Rows are kept for history." className="text-caption text-danger-fg hover:underline">Waive this + all following</button>
                       </div>
                     )}
                   </div>

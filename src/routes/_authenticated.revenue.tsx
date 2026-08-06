@@ -373,6 +373,7 @@ function RevenueInner() {
           icon={<TrendingUp className="h-3.5 w-3.5" />}
           delta={compare ? { value: stats.booked - prevStats.booked, format: "money" } : undefined}
           noData={rangeDeals.length === 0}
+          hint="full deal values closed in this window, collected or not"
         />
         <StatCard
           label="Deals"

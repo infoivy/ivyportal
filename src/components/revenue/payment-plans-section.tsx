@@ -53,7 +53,7 @@ type Person = { id: string; display_name: string | null };
 
 const STATUS_META: Record<PayStatus, { label: string; cls: string }> = {
   upcoming: { label: "Upcoming", cls: "text-muted-foreground border-border bg-muted" },
-  paid:     { label: "Paid",     cls: "text-success-fg border-success/25 bg-success-bg" },
+  paid:     { label: "Collected", cls: "text-success-fg border-success/25 bg-success-bg" },
   late:     { label: "Late",     cls: "text-warning-fg border-warning/25 bg-warning-bg" },
   missed:   { label: "Missed",   cls: "text-danger-fg border-danger/25 bg-danger-bg" },
   waived:   { label: "Waived",   cls: "text-muted-foreground border-border bg-zinc-500/5" },
@@ -372,7 +372,7 @@ export function PaymentPlansSection({ initialQuery }: { initialQuery?: string } 
                         <SelectField
                           value={p.status}
                           onChange={v => setStatus(p.id, v as PayStatus)}
-                          options={SETTABLE_STATUSES.map(s => ({ value: s, label: STATUS_META[s].label }))}
+                          options={SETTABLE_STATUSES.map(s => ({ value: s, label: s === "waived" ? "Waived · no longer owed" : STATUS_META[s].label }))}
                           disabled={p.status === "paid"}
                           className={`w-auto text-xs ${STATUS_META[p.status].cls}`}
                         />
@@ -692,7 +692,7 @@ function PlanEditor({
                   </div>
                   <input disabled={d.status === "paid"} type="number" min="0" step="0.01" value={d.amount} onChange={e => setDrafts(list => list.map((r,idx) => idx === i ? { ...r, amount: e.target.value } : r))} placeholder="Amount" className="col-span-1 sm:col-span-3 px-2 py-1.5 rounded border border-border bg-background text-sm disabled:opacity-60" />
                   <DateField disabled={d.status === "paid"} value={d.due_date} onChange={v => setDrafts(list => list.map((r,idx) => idx === i ? { ...r, due_date: v } : r))} clearable={false} className="col-span-1 sm:col-span-3 h-9 text-sm" />
-                  <SelectField disabled={d.status === "paid"} value={d.status} onChange={v => setDrafts(list => list.map((r,idx) => idx === i ? { ...r, status: v as PayStatus } : r))} options={(d.status === "paid" ? ["paid"] : (Object.keys(STATUS_META) as PayStatus[]).filter(s => s !== "paid")).map(s => ({ value: s as PayStatus, label: STATUS_META[s as PayStatus].label }))} className="col-span-1 sm:col-span-2 h-9 text-sm" />
+                  <SelectField disabled={d.status === "paid"} value={d.status} onChange={v => setDrafts(list => list.map((r,idx) => idx === i ? { ...r, status: v as PayStatus } : r))} options={(d.status === "paid" ? ["paid"] : (Object.keys(STATUS_META) as PayStatus[]).filter(s => s !== "paid")).map(s => ({ value: s as PayStatus, label: s === "waived" ? "Waived · no longer owed" : STATUS_META[s as PayStatus].label }))} className="col-span-1 sm:col-span-2 h-9 text-sm" />
                   <input disabled={d.status === "paid"} value={d.payment_method} onChange={e => setDrafts(list => list.map((r,idx) => idx === i ? { ...r, payment_method: e.target.value } : r))} placeholder="Method" className="col-span-1 sm:col-span-2 px-2 py-1.5 rounded border border-border bg-background text-sm disabled:opacity-60" />
                   {d.status !== "paid" && <button onClick={() => removeDraft(i)} className="hidden sm:block sm:col-span-1 p-1.5 rounded hover:bg-accent text-danger-fg justify-self-end"><Trash2 className="h-3.5 w-3.5" /></button>}
                 </div>
