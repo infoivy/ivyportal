@@ -6,6 +6,7 @@ import { CalendarCheck2, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { dayStatus, outreachOf, type EodKpiRow, type SetterType } from "@/lib/eod-kpi";
+import { useKpiRules } from "@/lib/use-kpi-rules";
 import { computeStreak } from "@/lib/streak";
 import { todayLocal } from "@/lib/dates";
 
@@ -45,6 +46,7 @@ export function HomeSetterWeek({ userId, setterType, activities, profiles }: {
   profiles: PoolProfile[];
 }) {
   const today = todayLocal();
+  const kpiRules = useKpiRules();
 
   // Streak wants more history than the home feed carries; own rows only.
   const streakQ = useQuery({
@@ -71,7 +73,7 @@ export function HomeSetterWeek({ userId, setterType, activities, profiles }: {
       const date = format(subDays(new Date(), 6 - i), "yyyy-MM-dd");
       const row = own.get(date);
       const status: keyof typeof CHIP_CLS = row
-        ? dayStatus(row as EodKpiRow, setterType)
+        ? dayStatus(row as EodKpiRow, setterType, undefined, kpiRules)
         : date === today ? "pending" : "red";
       return { date, row, status };
     });

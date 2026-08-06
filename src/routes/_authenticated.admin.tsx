@@ -7,6 +7,7 @@ import { CommissionRates, DEFAULT_RATES } from "@/lib/revenue";
 import { format, subDays } from "date-fns";
 import { CONFIGURABLE_PAGES, CONFIGURABLE_ROLES, grantable, type RoleAccess } from "@/lib/nav-pages";
 import { parseGroupCallSchedule } from "@/lib/student-weekly-eod";
+import { friendlyPastDay } from "@/lib/dates";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -300,6 +301,8 @@ function AdminConsole() {
       {/* Access defaults — per-role page visibility + money blur */}
       <div id="access">
         <AccessDefaultsCard />
+
+        <SetterKpiCard />
       </div>
 
       {/* Portal settings */}
@@ -733,6 +736,110 @@ function GoLiveChecklist({ checklist }: { checklist: Record<string, boolean> }) 
 }
 
 /* ---------- Access defaults ---------- */
+
+/** Setter KPI targets, leadership-editable (founder 2026-08-06: "allow Abu
+ *  Bilal to edit the KPIs"). Applying a change INSERTS a new era effective
+ *  today — history keeps being judged by the rules of its own day. */
+function SetterKpiCard() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const rulesQ = useQuery({
+    queryKey: ["org", "kpi-rules"],
+    queryFn: async () => {
+      const { data } = await (supabase.from("kpi_targets" as never)
+        .select("setter_type, effective_from, primary_target, secondary_target, sets_target")
+        .order("effective_from", { ascending: true }) as never as Promise<{ data: { setter_type: string; effective_from: string; primary_target: number; secondary_target: number | null; sets_target: number }[] | null }>);
+      return data ?? [];
+    },
+  });
+  const currentFor = (st: string) => {
+    const today = new Date().toISOString().slice(0, 10);
+    return (rulesQ.data ?? []).filter(r => r.setter_type === st && r.effective_from <= today).sort((a, b) => b.effective_from.localeCompare(a.effective_from))[0] ?? null;
+  };
+  const TYPES: { key: string; label: string; primaryLabel: string; hasSecondary: boolean }[] = [
+    { key: "phone", label: "Phone setters", primaryLabel: "Dials / day", hasSecondary: false },
+    { key: "dm", label: "DM setters", primaryLabel: "DMs sent / day", hasSecondary: false },
+    { key: "full_cycle", label: "Full-cycle setters", primaryLabel: "Dials / day", hasSecondary: true },
+  ];
+  const [draft, setDraft] = useState<Record<string, { primary: string; secondary: string; sets: string }>>({});
+  useEffect(() => {
+    if (!rulesQ.data) return;
+    const next: Record<string, { primary: string; secondary: string; sets: string }> = {};
+    for (const t of TYPES) {
+      const cur = currentFor(t.key);
+      next[t.key] = { primary: String(cur?.primary_target ?? ""), secondary: String(cur?.secondary_target ?? ""), sets: String(cur?.sets_target ?? "") };
+    }
+    setDraft(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rulesQ.data]);
+  const [savingType, setSavingType] = useState<string | null>(null);
+
+  const apply = async (st: string, hasSecondary: boolean) => {
+    const d = draft[st];
+    if (!d) return;
+    const primary = Number(d.primary), sets = Number(d.sets);
+    const secondary = hasSecondary ? Number(d.secondary) : null;
+    if (!(primary > 0) || !(sets > 0) || (hasSecondary && !(Number(secondary) > 0))) return toast.error("Targets must be positive numbers");
+    const cur = currentFor(st);
+    if (cur && cur.primary_target === primary && cur.sets_target === sets && (cur.secondary_target ?? null) === (secondary ?? null)) {
+      return toast.info("No change · these are already the targets");
+    }
+    setSavingType(st);
+    const today = new Date().toISOString().slice(0, 10);
+    const { error } = await (supabase.from("kpi_targets" as never).upsert({
+      setter_type: st,
+      effective_from: today,
+      primary_target: primary,
+      secondary_target: secondary,
+      sets_target: sets,
+      created_by: user?.id ?? null,
+    } as never, { onConflict: "setter_type,effective_from" } as never) as never as Promise<{ error: { message: string } | null }>);
+    setSavingType(null);
+    if (error) return toast.error(error.message);
+    toast.success("KPIs updated · applies from today, history keeps its old targets");
+    qc.invalidateQueries({ queryKey: ["org", "kpi-rules"] });
+  };
+
+  return (
+    <Panel
+      title="Setter KPIs"
+      subtitle="Daily targets per setter type. Changes apply from today; past days are always judged by the targets of their own day."
+      icon={<Shield className="h-3.5 w-3.5 text-primary" />}
+    >
+      <div className="grid gap-4 lg:grid-cols-3">
+        {TYPES.map(t => {
+          const d = draft[t.key];
+          const cur = currentFor(t.key);
+          return (
+            <div key={t.key} className="rounded-lg border border-[var(--border)] p-4 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-semibold">{t.label}</p>
+                {cur && <span className="text-[10px] text-muted-foreground">since {friendlyPastDay(cur.effective_from)}</span>}
+              </div>
+              <label className="block text-[12px] text-muted-foreground">
+                {t.primaryLabel}
+                <input value={d?.primary ?? ""} onChange={e => setDraft(dd => ({ ...dd, [t.key]: { ...(dd[t.key] ?? { primary: "", secondary: "", sets: "" }), primary: e.target.value.replace(/[^0-9]/g, "") } }))} className="mt-1 w-full h-9 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-[13px] tabular-nums focus:outline-none focus:border-ring" />
+              </label>
+              {t.hasSecondary && (
+                <label className="block text-[12px] text-muted-foreground">
+                  DMs sent / day
+                  <input value={d?.secondary ?? ""} onChange={e => setDraft(dd => ({ ...dd, [t.key]: { ...(dd[t.key] ?? { primary: "", secondary: "", sets: "" }), secondary: e.target.value.replace(/[^0-9]/g, "") } }))} className="mt-1 w-full h-9 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-[13px] tabular-nums focus:outline-none focus:border-ring" />
+                </label>
+              )}
+              <label className="block text-[12px] text-muted-foreground">
+                Sets / day
+                <input value={d?.sets ?? ""} onChange={e => setDraft(dd => ({ ...dd, [t.key]: { ...(dd[t.key] ?? { primary: "", secondary: "", sets: "" }), sets: e.target.value.replace(/[^0-9]/g, "") } }))} className="mt-1 w-full h-9 px-2 rounded-sm border border-[var(--border)] bg-[var(--background)] text-[13px] tabular-nums focus:outline-none focus:border-ring" />
+              </label>
+              <Button size="sm" variant="outline" className="w-full" disabled={savingType === t.key || !d} onClick={() => apply(t.key, t.hasSecondary)}>
+                {savingType === t.key ? "Applying…" : "Apply from today"}
+              </Button>
+            </div>
+          );
+        })}
+      </div>
+    </Panel>
+  );
+}
 
 function AccessDefaultsCard() {
   const { user } = useAuth();

@@ -31,6 +31,7 @@ import { useAuth } from "@/lib/auth-context";
 import { humanDue, todayLocal } from "@/lib/dates";
 import { shortName } from "@/lib/names";
 import { KPI, kpiTargetsFor, owesEods, type SetterType } from "@/lib/eod-kpi";
+import { useKpiRules } from "@/lib/use-kpi-rules";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Home · Ivy Portal" }] }),
@@ -118,6 +119,7 @@ function greetingForHour(hour: number) {
 
 function HomePage() {
   const { user, displayName, roles } = useAuth();
+  const kpiRules = useKpiRules();
   const roleKey = [...roles].sort().join(":");
   const canSeeCustomers = roles.some((role) => ["admin", "founder", "cofounder", "closer", "coach", "csm"].includes(role));
   const canSeeFinance = roles.some((role) => ["admin", "founder", "cofounder", "closer", "coach"].includes(role));
@@ -396,7 +398,7 @@ function HomePage() {
   const ownDials = sum(ownTodayRows, "dials");
   const ownDms = sum(ownTodayRows, "dms_sent");
   const ownBooked = sum(ownTodayRows, "calls_booked");
-  const target = setterTarget(ownProfile?.setter_type, ownDials, ownDms, ownBooked);
+  const target = setterTarget(ownProfile?.setter_type, ownDials, ownDms, ownBooked, kpiRules);
 
   return (
     <PageShell className="pb-24 sm:pb-7">
@@ -560,6 +562,7 @@ function setterTarget(
   dials: number | null,
   dms: number | null,
   booked: number | null,
+  kpiRules?: import("@/lib/eod-kpi").KpiRule[],
 ) {
   const required = setterType === "phone"
     ? [dials, booked]
@@ -580,7 +583,7 @@ function setterTarget(
   const typed = setterType === "phone" || setterType === "dm" || setterType === "full_cycle"
     ? (setterType as Exclude<SetterType, null>)
     : null;
-  const t = typed ? kpiTargetsFor(typed, todayLocal()) : null;
+  const t = typed ? kpiTargetsFor(typed, todayLocal(), kpiRules) : null;
   const secondary = typed ? KPI[typed].secondary : null;
   const ratios = typed && t
     ? [

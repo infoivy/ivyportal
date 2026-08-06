@@ -10,6 +10,7 @@ import { SelectField } from "@/components/ui/select-field";
 import {
   KPI, kpiTargetsFor, outreachOf, didHitKpi, didHitCsmKpi, dayStatus, owesEods, type SetterType, type EodKpiRow,
 } from "@/lib/eod-kpi";
+import { useKpiRules } from "@/lib/use-kpi-rules";
 
 /**
  * The founder's per-member week view, rebuilt for the Performance workspace
@@ -45,6 +46,7 @@ const ROLE_LABEL: Record<string, string> = { setter: "Setter", closer: "Closer",
 
 export function TeamWeekSection() {
   const { roles } = useAuth();
+  const kpiRules = useKpiRules();
   const qc = useQueryClient();
   const canEditSetterType = roles.includes("admin");
   const today = todayLocal();
@@ -110,18 +112,18 @@ export function TeamWeekSection() {
       const todayEod = byUserDate.get(`${r.user_id}::${today}`);
       const week = weekDays.map(d => {
         const e = byUserDate.get(`${r.user_id}::${d}`);
-        return { d, status: !e ? ("red" as const) : dayStatus(e, st, csmTarget), e };
+        return { d, status: !e ? ("red" as const) : dayStatus(e, st, csmTarget, kpiRules), e };
       });
       const status: "green" | "amber" | "red" = !todayEod
         ? "red"
-        : dayStatus(todayEod, st, csmTarget) === "green" ? "green" : "amber";
+        : dayStatus(todayEod, st, csmTarget, kpiRules) === "green" ? "green" : "amber";
       let todayLine = "No EOD submitted yet today";
       if (todayEod) {
         if (r.primary_role === "setter" && st) {
           const cfg = KPI[st];
-          const t = kpiTargetsFor(st, today);
+          const t = kpiTargetsFor(st, today, kpiRules);
           const primary = st === "dm" ? outreachOf(todayEod) : (todayEod.dials ?? 0);
-          todayLine = didHitKpi(todayEod, st)
+          todayLine = didHitKpi(todayEod, st, kpiRules)
             ? `Submitted · hit KPI (${primary} ${cfg.primary.label.toLowerCase()}, ${todayEod.calls_booked ?? 0} sets)`
             : `Submitted · missed KPI (${primary} of ${t.primaryTarget} ${cfg.primary.label.toLowerCase()}, ${todayEod.calls_booked ?? 0} of ${t.sets} sets)`;
         } else if (r.primary_role === "closer" || r.primary_role === "coach") {
@@ -148,7 +150,7 @@ export function TeamWeekSection() {
     });
     const order = { red: 0, amber: 1, green: 2 } as const;
     return list.sort((a, b) => order[a.status] - order[b.status] || a.r.display_name.localeCompare(b.r.display_name));
-  }, [roster, byUserDate, weekDays, today]);
+  }, [roster, byUserDate, weekDays, today, kpiRules]);
 
   // Today ops strip (ported from the old Sales activity page)
   const setters = useMemo(() => roster.filter(r => r.primary_role === "setter"), [roster]);

@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { money } from "@/lib/revenue";
 import { getPeriod } from "@/lib/payout-period";
 import { kpiTargetsFor, outreachOf, type SetterType, type EodKpiRow } from "@/lib/eod-kpi";
+import { useKpiRules } from "@/lib/use-kpi-rules";
 import { listCloseLeads } from "@/lib/close-crm.functions";
 import { BlurMoney } from "@/components/blur-money";
 
@@ -36,9 +37,10 @@ type SetterWeekRow = {
 
 export function HomeSalesPicture() {
   const closeLeadsFn = useServerFn(listCloseLeads);
+  const kpiRules = useKpiRules();
 
   const q = useQuery({
-    queryKey: ["page", "home", "sales"],
+    queryKey: ["page", "home", "sales", kpiRules.map((r) => `${r.setter_type}:${r.effective_from}:${r.primary_target}:${r.sets_target}`).join("|")],
     staleTime: 2 * 60_000,
     queryFn: async () => {
       const today = iso(new Date());
@@ -87,7 +89,7 @@ export function HomeSalesPicture() {
       const setterRows: SetterWeekRow[] = [];
       for (const p of setters) {
         const st = p.setter_type as Exclude<SetterType, null>;
-        const t = kpiTargetsFor(st, yesterday);
+        const t = kpiTargetsFor(st, yesterday, kpiRules);
         const mine = eods.filter((e) => e.user_id === p.id);
         const myDials = mine.reduce((s, e) => s + (e.dials ?? 0), 0);
         const myDms = mine.reduce((s, e) => s + outreachOf(e), 0);

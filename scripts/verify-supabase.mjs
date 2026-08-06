@@ -12,7 +12,7 @@ const expectedTables = [
   'content_week_plans', 'crm_lead_notes', 'csm_student_notes', 'csm_tally',
   'deals', 'docs', 'eod_correction_archive', 'eods', 'founder_settings',
   'ig_connections', 'ig_dashboards', 'ig_monthly_snapshots', 'ig_top_reels',
-  'installment_payments', 'installments', 'invitations', 'notes',
+  'installment_payments', 'installments', 'invitations', 'kpi_targets', 'notes',
   'onboarding_progress', 'onboarding_templates', 'org_settings', 'payment_links',
   'payout_adjustments', 'payout_confirmations', 'profiles', 'role_access',
   'service_credentials', 'set_follow_ups', 'set_reminder_events', 'set_reminders',

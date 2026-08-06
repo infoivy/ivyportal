@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { CheckCircle2, Clock, AlertTriangle, ChevronRight, ChevronDown, Flame } from "lucide-react";
 import { computeStreak } from "@/lib/streak";
 import { KPI, kpiTargetsFor, outreachOf, didHitKpi, didHitCsmKpi, dayStatus, type SetterType } from "@/lib/eod-kpi";
+import { useKpiRules } from "@/lib/use-kpi-rules";
 import { todayLocal } from "@/lib/dates";
 import confetti from "canvas-confetti";
 import { MochiEodReference } from "@/components/mochi-eod-reference";
@@ -58,6 +59,7 @@ const startOfWeek = (iso: string) => { const d = new Date(iso + "T00:00:00"); co
 
 function EODsPage() {
   const { user, roles } = useAuth();
+  const kpiRules = useKpiRules();
   const qc = useQueryClient();
   const isAdmin = roles.includes("admin");
   const isCsm = roles.includes("csm");
@@ -203,12 +205,12 @@ function EODsPage() {
     const recent = myEods.filter(e => new Date(e.report_date) >= cutoff);
     const sum = (k: keyof EOD) => recent.reduce((a, e) => a + (Number(e[k]) || 0), 0);
     const kpiHitDays = recent.filter(e =>
-      mySetterType ? didHitKpi(e, mySetterType) : isCsm ? didHitCsmKpi(e, csmTarget) : false,
+      mySetterType ? didHitKpi(e, mySetterType, kpiRules) : isCsm ? didHitCsmKpi(e, csmTarget) : false,
     ).length;
     return { submitted: recent.length, kpiHitDays,
       dials: sum("dials"), leads: recent.reduce((a, e) => a + outreachOf(e), 0), sets: sum("calls_booked"),
       shows: sum("shows"), cash: sum("cash_collected"), closes: sum("closes") };
-  }, [myEods, mySetterType, isCsm, csmTarget]);
+  }, [myEods, mySetterType, isCsm, csmTarget, kpiRules]);
   const streak = useMemo(() => computeStreak(myEods.map(e => e.report_date)), [myEods]);
 
   // The form is for TODAY: show the targets that apply to this report date.
@@ -445,6 +447,7 @@ function EODsPage() {
 // ---------- My history (grouped by week) ----------
 
 function MyHistory({ myEods, setterType, isSetter, isCloser, csmTarget = null }: { myEods: EOD[]; setterType: SetterType; isSetter: boolean; isCloser: boolean; csmTarget?: number | null }) {
+  const kpiRules = useKpiRules();
   const groups = useMemo(() => {
     const m = new Map<string, EOD[]>();
     myEods.forEach(e => {
@@ -472,7 +475,7 @@ function MyHistory({ myEods, setterType, isSetter, isCloser, csmTarget = null }:
         const sets = rows.reduce((a, e) => a + e.calls_booked, 0);
         const cash = rows.reduce((a, e) => a + Number(e.cash_collected ?? 0), 0);
         const checkins = rows.reduce((a, e) => a + (e.student_checkins ?? 0), 0);
-        const kpiDays = rows.filter(e => setterType ? didHitKpi(e, setterType) : csmTarget != null ? didHitCsmKpi(e, csmTarget) : false).length;
+        const kpiDays = rows.filter(e => setterType ? didHitKpi(e, setterType, kpiRules) : csmTarget != null ? didHitCsmKpi(e, csmTarget) : false).length;
         return (
           <div key={wk} className="border border-[var(--border)] bg-[var(--card)] rounded-sm">
             <button onClick={() => toggle(wk)} className="w-full flex items-center justify-between p-3 text-left hover:bg-[var(--muted)]">
@@ -554,6 +557,7 @@ function HistoryDayRow({ eod, setterType, isSetter, isCloser }: { eod: EOD; sett
 // ---------- Personal last-7 panel ----------
 
 function MyLast7Panel({ myEods, today, setterType, csmTarget = null }: { myEods: EOD[]; today: string; setterType: SetterType; csmTarget?: number | null }) {
+  const kpiRules = useKpiRules();
   const days = useMemo(() => { const list: string[] = []; const t = new Date(today + "T00:00:00"); for (let i = 6; i >= 0; i--) { const d = new Date(t); d.setDate(t.getDate() - i); list.push(isoDate(d)); } return list; }, [today]);
   const byDate = new Map(myEods.map(e => [e.report_date, e]));
   return (
@@ -562,7 +566,7 @@ function MyLast7Panel({ myEods, today, setterType, csmTarget = null }: { myEods:
       <div className="space-y-1.5 text-xs">
         {days.map(d => {
           const e = byDate.get(d);
-          const status = dayStatus(e, setterType, csmTarget);
+          const status = dayStatus(e, setterType, csmTarget, kpiRules);
           const glyph = !e ? "✗" : status === "amber" ? "!" : "✓";
           const cls = !e ? "text-danger-fg" : status === "amber" ? "text-warning-fg" : "text-success-fg";
           return (<div key={d} className="flex items-center justify-between"><span className="text-muted-foreground">{fmtLong(d)}</span><span className={`text-[11px] ${cls}`}>{glyph}</span></div>);

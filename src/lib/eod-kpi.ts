@@ -33,8 +33,28 @@ export const KPI = {
 const DM_V1 = { target: 125, sets: 3 };
 const DM_V2_FROM = "2026-07-29";
 
-/** The targets that applied on a given report date. */
-export function kpiTargetsFor(st: Exclude<SetterType, null>, reportDate: string) {
+/** A leadership-set KPI era from the kpi_targets table (admin-editable,
+ *  founder 2026-08-06). Versioned by effective_from; never edited in place. */
+export type KpiRule = {
+  setter_type: string;
+  effective_from: string;
+  primary_target: number;
+  secondary_target: number | null;
+  sets_target: number;
+};
+
+/** The targets that applied on a given report date. DB rules (when loaded)
+ *  win; the hardcoded eras below remain the fallback so nothing breaks
+ *  while rules load or if the table is empty. */
+export function kpiTargetsFor(st: Exclude<SetterType, null>, reportDate: string, rules?: KpiRule[]) {
+  if (rules?.length) {
+    const match = rules
+      .filter((r) => r.setter_type === st && r.effective_from <= reportDate)
+      .sort((a, b) => b.effective_from.localeCompare(a.effective_from))[0];
+    if (match) {
+      return { primaryTarget: match.primary_target, sets: match.sets_target, secondaryTarget: match.secondary_target };
+    }
+  }
   const cfg = KPI[st];
   if (st === "dm" && reportDate < DM_V2_FROM) {
     return { primaryTarget: DM_V1.target, sets: DM_V1.sets, secondaryTarget: null as number | null };
@@ -47,10 +67,10 @@ export function outreachOf(e: EodKpiRow): number {
   return Math.max(e.dms_sent ?? 0, e.leads_contacted ?? 0);
 }
 
-export function didHitKpi(e: EodKpiRow, st: SetterType): boolean {
+export function didHitKpi(e: EodKpiRow, st: SetterType, rules?: KpiRule[]): boolean {
   if (!st) return false;
   const cfg = KPI[st];
-  const t = kpiTargetsFor(st, e.report_date);
+  const t = kpiTargetsFor(st, e.report_date, rules);
   const read = (k: "dials" | "dms_sent") => (k === "dms_sent" ? outreachOf(e) : (e[k] ?? 0));
   // Founder rule 2026-07-14: SETS are the KPI. Hitting the sets target means
   // KPI met regardless of volume. Couldn't hit sets? Full volume (100 dials /
@@ -85,9 +105,9 @@ export function owesEods(input: {
   return input.roles.some((r) => ["setter", "closer", "coach", "csm"].includes(r));
 }
 
-export function dayStatus(e: EodKpiRow | undefined, st: SetterType, csmTarget?: number | null): "green" | "amber" | "red" {
+export function dayStatus(e: EodKpiRow | undefined, st: SetterType, csmTarget?: number | null, rules?: KpiRule[]): "green" | "amber" | "red" {
   if (!e) return "red";
-  if (st) return didHitKpi(e, st) ? "green" : "amber";
+  if (st) return didHitKpi(e, st, rules) ? "green" : "amber";
   if (csmTarget != null) return didHitCsmKpi(e, csmTarget) ? "green" : "amber";
   return "green"; // no KPI defined (closer/coach)
 }
