@@ -25,6 +25,27 @@ async function requireActiveStudentPortalAccess(context: { userId: string }) {
   return supabaseAdmin;
 }
 
+// Staff open the same leaderboard through the student-view sandbox. Staff RLS
+// already lets these roles read every student's EODs directly, so the
+// aggregate exposes nothing new to them.
+const LEADERBOARD_STAFF_ROLES = ["admin", "founder", "cofounder", "csm", "coach", "setter", "closer"];
+
+async function leaderboardAccess(context: { userId: string }) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  try {
+    return await requireActiveStudentPortalAccess(context);
+  } catch {
+    const { data: roles, error } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId);
+    if (error) throw new Error(error.message);
+    const isStaff = (roles ?? []).some(r => LEADERBOARD_STAFF_ROLES.includes(String(r.role)));
+    if (!isStaff) throw new Error("Forbidden: active student portal access required");
+    return supabaseAdmin;
+  }
+}
+
 /**
  * Student leaderboard: last-7-day activity across ALL active students,
  * aggregated server-side because RLS (correctly) blocks students from
@@ -32,8 +53,13 @@ async function requireActiveStudentPortalAccess(context: { userId: string }) {
  */
 export const getStudentLeaderboard = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const supabaseAdmin = await requireActiveStudentPortalAccess(context);
+  .validator((input?: { viewAsStudentId?: string }) => {
+    const viewAsStudentId = String(input?.viewAsStudentId ?? "").trim();
+    if (viewAsStudentId && !/^[0-9a-f-]{36}$/i.test(viewAsStudentId)) throw new Error("Invalid student id");
+    return { viewAsStudentId: viewAsStudentId || null };
+  })
+  .handler(async ({ data, context }) => {
+    const supabaseAdmin = await leaderboardAccess(context);
     // Over-fetch by 2 days, then trim per student to THEIR local last-7-days —
     // report_date is each student's local day, so a shared UTC window
     // drifts out of sync with what their own EOD tab shows.
@@ -84,7 +110,8 @@ export const getStudentLeaderboard = createServerFn({ method: "GET" })
     const rows = ((students ?? []) as { id: string; full_name: string; user_id: string | null }[])
       .map((s) => ({
         name: shortName(s.full_name),
-        isYou: s.user_id === context.userId,
+        // Sandbox viewers see "you" as the student whose portal they opened.
+        isYou: data.viewAsStudentId ? s.id === data.viewAsStudentId : s.user_id === context.userId,
         ...(byStudent.get(s.id) ?? { apps7: 0, looms7: 0, interviews7: 0 }),
       }))
       // Score: applications are the goal; looms keep pre-approval students on the board

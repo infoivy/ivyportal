@@ -19,7 +19,7 @@ import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { friendlyPastDay, humanDue } from "@/lib/dates";
 import {
-  ArrowLeft, Video, Trash2, ArchiveX, Plus, Save, Calendar as CalIcon,
+  ArrowLeft, Video, Trash2, ArchiveX, Plus, Save, Calendar as CalIcon, Eye,
   Phone, FileText, User, Pencil, ExternalLink, CheckCircle2, Circle,
   Star, HeartHandshake, DollarSign, Trophy, Award, MessageSquare, Link2,
   AlertTriangle, MessageCircle, GraduationCap, Activity, Briefcase } from "lucide-react";
@@ -363,6 +363,15 @@ function StudentDetail() {
                   <AlertTriangle className="h-2.5 w-2.5" /> Portal not linked
                 </span>
               )}
+              {/* Sandbox: the exact portal this student sees, interactions
+                  simulated, nothing saved (founder-asked 2026-08-09) */}
+              <Link
+                to="/students/$id/portal"
+                params={{ id: student.id }}
+                className="flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-md border border-primary/25 bg-primary/10 text-primary hover:bg-primary/15 motion-safe:transition-colors"
+              >
+                <Eye className="h-3 w-3" /> View their portal
+              </Link>
               {(student as { archived_at?: string | null }).archived_at && (
                 <span className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-danger-fg border border-danger/25 bg-danger-bg px-1.5 py-0.5 rounded-sm">
                   Archived · hidden from every list

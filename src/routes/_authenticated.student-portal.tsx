@@ -28,6 +28,7 @@ import { WALKTHROUGH_VIDEOS, beginPortalWalkthrough, completePortalWalkthrough }
 import { friendlyPastDay, humanDue } from "@/lib/dates";
 import { signAvatar } from "@/lib/avatars";
 import { START_HERE_STEPS, isStartHereComplete } from "@/lib/student-guide-steps";
+import { useStudentSandbox } from "@/lib/student-sandbox";
 import { ApplicationPending } from "@/components/application-pending";
 import {
   DEFAULT_GROUP_CALL_SCHEDULE,
@@ -114,8 +115,11 @@ const localFmt = new Intl.DateTimeFormat("en-CA");
 const todayStr = () => localFmt.format(new Date());
 const daysAgoStr = (n: number) => localFmt.format(new Date(Date.now() - n * 86400000));
 
-function StudentPortal() {
+export function StudentPortal() {
   const { user, displayName } = useAuth();
+  // Staff sandbox (founder-asked 2026-08-09): render this exact page for a
+  // chosen student, reads real data, but every write below simulates locally.
+  const sandbox = useStudentSandbox();
   const qc = useQueryClient();
   const today = todayStr();
   const weeklyWindow = useMemo(() => getStudentWeeklyWindow(today), [today]);
@@ -149,15 +153,19 @@ function StudentPortal() {
   const formRef = useRef<HTMLDivElement>(null);
   const weeklyRef = useRef<HTMLDivElement>(null);
 
-  const draftKey = student ? `student-eod-draft:${student.id}:${today}` : null;
-  const weeklyDraftKey = student ? `student-weekly-eod-draft:${student.id}:${weeklyWindow.weekStart}` : null;
+  // No draft autosave in the sandbox — a staff member poking around must not
+  // leave localStorage drafts behind for anyone.
+  const draftKey = student && !sandbox ? `student-eod-draft:${student.id}:${today}` : null;
+  const weeklyDraftKey = student && !sandbox ? `student-weekly-eod-draft:${student.id}:${weeklyWindow.weekStart}` : null;
 
   const load = useCallback(async () => {
-    if (!user) return;
+    if (!user && !sandbox) return;
     setWeeklyDraftHydrated(false);
-    const { data: s } = await supabase.from("students")
-      .select("id, full_name, email, phase, status, calls_included, calls_allotted, coach_id, first_win_at, offer_landed_at, testimonial_collected, trustpilot_collected, onboarding_completed_at, timezone, join_date, whatsapp, walkthrough_started_at, walkthrough_done_at")
-      .eq("user_id", user.id).maybeSingle();
+    const studentQuery = supabase.from("students")
+      .select("id, full_name, email, phase, status, calls_included, calls_allotted, coach_id, first_win_at, offer_landed_at, testimonial_collected, trustpilot_collected, onboarding_completed_at, timezone, join_date, whatsapp, walkthrough_started_at, walkthrough_done_at");
+    const { data: s } = await (sandbox
+      ? studentQuery.eq("id", sandbox.studentId).maybeSingle()
+      : studentQuery.eq("user_id", user!.id).maybeSingle());
     setStudent((s as Student) ?? null);
     if (!s) { setLoading(false); return; }
     const st = s as Student;
@@ -206,8 +214,9 @@ function StudentPortal() {
       setShowForm(false);
     } else {
       setExistingId(null);
-      // Try to restore draft
-      try {
+      // Try to restore draft (never in the sandbox: drafts belong to the student)
+      if (sandbox) setForm(empty);
+      else try {
         const raw = localStorage.getItem(`student-eod-draft:${st.id}:${today}`);
         if (raw) setForm({ ...empty, ...JSON.parse(raw) });
         else setForm(empty);
@@ -233,7 +242,8 @@ function StudentPortal() {
       });
       setShowWeeklyForm(false);
     } else {
-      try {
+      if (sandbox) setWeeklyForm({ ...emptyWeekly, callsAttended: windowTicks });
+      else try {
         const raw = localStorage.getItem(`student-weekly-eod-draft:${st.id}:${weeklyWindow.weekStart}`);
         const draft = raw ? { ...emptyWeekly, ...JSON.parse(raw) } : emptyWeekly;
         // Attendance lives in the DB (ticked all week, any device) — it wins
@@ -244,7 +254,7 @@ function StudentPortal() {
     }
     setWeeklyDraftHydrated(true);
     setLoading(false);
-  }, [user, today, weeklyWindow.weekStart, currentWeekStart]);
+  }, [user, sandbox, today, weeklyWindow.weekStart, currentWeekStart]);
   useEffect(() => { void load(); }, [load]);
 
   // One tick = one row; works from any device all week. The weekly submit
@@ -262,6 +272,7 @@ function StudentPortal() {
         callsAttended: on ? Array.from(new Set([...prev.callsAttended, day])) : prev.callsAttended.filter(d => d !== day),
       }));
     }
+    if (sandbox) return; // sandbox: the tick shows, nothing is recorded
     const { error } = on
       ? await supabase.from("student_call_attendance").upsert(
           { student_id: student.id, week_start: weekStart, day, name: call.name },
@@ -436,6 +447,24 @@ function StudentPortal() {
 
   const submit = async () => {
     if (!student) return;
+    if (sandbox) {
+      // Simulate the submit: the recap, streak, and confetti all behave as
+      // they would for the student, but no row is written.
+      const wasNew = !existingId;
+      const fakeId = existingId ?? `sandbox-${today}`;
+      setEods(prev => {
+        const rest = prev.filter(e => e.report_date !== today);
+        return [{ id: fakeId, student_id: student.id, report_date: today, ...form } as SEod, ...rest];
+      });
+      setExistingId(fakeId);
+      setShowForm(false);
+      toast.success(wasNew ? "EOD submitted · sandbox, nothing saved" : "EOD updated · sandbox, nothing saved");
+      if (wasNew) {
+        setConfetti(true);
+        setTimeout(() => setConfetti(false), 2500);
+      }
+      return;
+    }
     setSaving(true);
     const { error } = await supabase.from("student_eods").upsert({
       student_id: student.id, report_date: today, ...form,
@@ -462,6 +491,26 @@ function StudentPortal() {
       callSchedule,
     );
     if (validationError) return toast.error(validationError);
+    if (sandbox) {
+      const attended = toAttendedRecords(weeklyForm.callsAttended, callSchedule);
+      setWeeklyEods(prev => {
+        const rest = prev.filter(w => w.week_start !== weeklyWindow.weekStart);
+        return [{
+          id: `sandbox-${weeklyWindow.weekStart}`, student_id: student.id,
+          week_start: weeklyWindow.weekStart, calls_attended: attended,
+          group_calls_attended: attended.length,
+          one_on_one_calls: isOneOnOne ? weeklyForm.oneOnOneCalls : null,
+          implementation: weeklyForm.implementation.trim(),
+          biggest_win: weeklyForm.biggestWin.trim() || null,
+          biggest_blocker: weeklyForm.biggestBlocker.trim() || null,
+          next_week_commitment: weeklyForm.nextWeekCommitment.trim(),
+          submitted_at: new Date().toISOString(),
+        } as StudentWeeklyEod, ...rest];
+      });
+      setShowWeeklyForm(false);
+      toast.success("Weekly EOD submitted · sandbox, nothing saved");
+      return;
+    }
     setSavingWeekly(true);
     const attended = toAttendedRecords(weeklyForm.callsAttended, callSchedule);
     const { error } = await supabase.from("student_weekly_eods").upsert({
@@ -491,7 +540,10 @@ function StudentPortal() {
   // hand-logged next_call_date when it exists.
   const calendarCallQ = useQuery({
     queryKey: ["student-next-call", student?.id],
-    enabled: !!student && !!student.onboarding_completed_at && (student.calls_allotted ?? 0) > 0,
+    // The server fn resolves the CALLER's booking; in the sandbox that would
+    // be the staff member's own calendar, so it stays off and the page falls
+    // back to the hand-logged next call date.
+    enabled: !sandbox && !!student && !!student.onboarding_completed_at && (student.calls_allotted ?? 0) > 0,
     staleTime: 5 * 60_000,
     queryFn: async () => (await nextCallFn()).event,
   });
@@ -501,6 +553,17 @@ function StudentPortal() {
     const next = new Set(guideDone);
     if (done) next.add(key); else next.delete(key);
     setGuideDone(next);
+    if (sandbox) {
+      // Simulate the unlock moment without touching the student's real
+      // progress: no rows, no completeStudentOnboarding, no team pings.
+      if (locked && done && isStartHereComplete(next)) {
+        setStudent(s => (s ? { ...s, onboarding_completed_at: new Date().toISOString() } : s));
+        setConfetti(true);
+        setTimeout(() => setConfetti(false), 2500);
+        toast.success("That's onboarding done · sandbox, nothing saved");
+      }
+      return;
+    }
     const q = done
       ? (supabase as any).from("student_guide_steps").insert({ student_id: student.id, step_key: key })
       : (supabase as any).from("student_guide_steps").delete().eq("student_id", student.id).eq("step_key", key);
@@ -532,6 +595,7 @@ function StudentPortal() {
     if (callId.startsWith("adhoc:")) {
       const id = callId.slice("adhoc:".length);
       setAdhocItems(prev => prev.map(a => a.id === id ? { ...a, done } : a));
+      if (sandbox) return;
       const { error } = await supabase
         .from("student_action_items")
         .update({ done, done_at: done ? new Date().toISOString() : null })
@@ -545,6 +609,7 @@ function StudentPortal() {
       items[index] = { ...items[index], done };
       return { ...c, action_items_json: items };
     }));
+    if (sandbox) return;
     const { error } = await supabase.rpc("student_toggle_action_item", { _call_id: callId, _index: index, _done: done });
     if (error) { toast.error(error.message); load(); }
   };
@@ -552,6 +617,18 @@ function StudentPortal() {
   if (loading) return <PageSkeleton />;
 
   if (!student) {
+    if (sandbox) {
+      return (
+        <div className="p-8 max-w-xl mx-auto">
+          <div className="card-surface p-8 text-center">
+            <p className="text-sm font-medium text-foreground">This student could not be loaded</p>
+            <p className="text-[13px] text-muted-foreground mt-2">
+              The record may be archived, or your role can't read it.
+            </p>
+          </div>
+        </div>
+      );
+    }
     // Not linked yet: collect phone + timezone, then "Application pending."
     // (founder-directed 2026-07-28). Approval copies the details into the
     // student record and this page opens on its own.
@@ -561,7 +638,9 @@ function StudentPortal() {
   const bump = (k: keyof typeof empty, d: number) =>
     setForm(f => ({ ...f, [k]: Math.max(0, (typeof f[k] === "number" ? (f[k] as number) : 0) + d) }));
 
-  const first = (displayName ?? student.full_name).split(" ")[0];
+  // In the sandbox the greeting belongs to the student being viewed, not to
+  // the staff member's own display name.
+  const first = (sandbox ? student.full_name : displayName ?? student.full_name).split(" ")[0];
   const brandNew = eods.length === 0;
 
   // Soft lock (founder-directed 2026-07-23, WhatsApp added 2026-07-26):
@@ -576,10 +655,12 @@ function StudentPortal() {
         needTimezone={!student.timezone}
         needWhatsapp={!student.whatsapp}
         onConfirm={async (tz, whatsapp) => {
-          if (tz) await syncTzFn({ data: { timezone: tz } });
-          if (whatsapp) await saveWhatsappFn({ data: { whatsapp } });
+          if (!sandbox) {
+            if (tz) await syncTzFn({ data: { timezone: tz } });
+            if (whatsapp) await saveWhatsappFn({ data: { whatsapp } });
+          }
           setStudent(s => (s ? { ...s, timezone: tz ?? s.timezone, whatsapp: whatsapp ?? s.whatsapp } : s));
-          toast.success("Saved · welcome in");
+          toast.success(sandbox ? "Saved · sandbox, nothing saved" : "Saved · welcome in");
         }}
       />
     );
@@ -675,7 +756,8 @@ function StudentPortal() {
           onDone={async () => {
             setConfetti(true);
             setTimeout(() => setConfetti(false), 2500);
-            await load();
+            if (sandbox) setStudent(s => (s ? { ...s, walkthrough_done_at: new Date().toISOString() } : s));
+            else await load();
           }}
         />
       )}
@@ -832,7 +914,12 @@ function StudentPortal() {
         {/* The moment it happens, they tell us — front and center, not buried
             in a tab (founder-directed 2026-07-25) */}
         {!student.offer_landed_at && (
-          <OfferLandedForm onReported={async () => { setConfetti(true); setTimeout(() => setConfetti(false), 2500); await load(); }} />
+          <OfferLandedForm onReported={async () => {
+            setConfetti(true);
+            setTimeout(() => setConfetti(false), 2500);
+            if (sandbox) setStudent(s => (s ? { ...s, offer_landed_at: new Date().toISOString() } : s));
+            else await load();
+          }} />
         )}
       </section>
 
@@ -1515,11 +1602,14 @@ function DetailsGate({ first, needTimezone, needWhatsapp, onConfirm }: {
  * Trustpilot, written right here, lands in the team's Testimonials pipeline.
  */
 function GraduationReviewCard({ first }: { first: string }) {
+  const sandbox = useStudentSandbox();
   const submitFn = useServerFn(submitGraduationReview);
   const getFn = useServerFn(getMyGraduationReview);
   const q = useQuery({
     queryKey: ["graduation-review"],
     staleTime: 60_000,
+    // The server fn answers for the CALLER; a staff viewer has no review.
+    enabled: !sandbox,
     queryFn: async () => (await getFn()).text,
   });
   const [text, setText] = useState("");
@@ -1529,6 +1619,11 @@ function GraduationReviewCard({ first }: { first: string }) {
   const submitted = q.data != null && !editing;
 
   const send = async () => {
+    if (sandbox) {
+      toast.success("Got it · sandbox, nothing saved");
+      setEditing(false);
+      return;
+    }
     setSaving(true);
     try {
       await submitFn({ data: { text } });
@@ -1652,18 +1747,24 @@ function WalkthroughGate({ video, startedAt, onDone }: {
   startedAt: string | null;
   onDone: () => Promise<void>;
 }) {
+  const sandbox = useStudentSandbox();
   const beginFn = useServerFn(beginPortalWalkthrough);
   const completeFn = useServerFn(completePortalWalkthrough);
   const [saving, setSaving] = useState(false);
   const began = useRef(false);
   useEffect(() => {
-    if (began.current || startedAt) return;
+    if (began.current || startedAt || sandbox) return;
     began.current = true;
     void beginFn().catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startedAt]);
 
   const markDone = async () => {
+    if (sandbox) {
+      toast.success("Portal unlocked · sandbox, nothing saved");
+      await onDone();
+      return;
+    }
     setSaving(true);
     try {
       await completeFn();
@@ -1707,6 +1808,7 @@ function WalkthroughGate({ video, startedAt, onDone }: {
  * pinged to verify and move them to Offer Won.
  */
 function OfferLandedForm({ onReported }: { onReported: () => Promise<void> }) {
+  const sandbox = useStudentSandbox();
   const reportFn = useServerFn(reportOfferLanded);
   const [open, setOpen] = useState(false);
   const [company, setCompany] = useState("");
@@ -1715,6 +1817,11 @@ function OfferLandedForm({ onReported }: { onReported: () => Promise<void> }) {
   const [saving, setSaving] = useState(false);
 
   const submit = async () => {
+    if (sandbox) {
+      toast.success("LET'S GO · sandbox, the team was NOT pinged");
+      await onReported();
+      return;
+    }
     setSaving(true);
     try {
       await reportFn({ data: { company, roleType, ote } });
@@ -1995,8 +2102,13 @@ function StartHereGuide({ done, locked = false, unlocking = false, onToggle }: {
 
 /** Hero rank chip — the cheapest motivation lever there is. */
 function RankChip({ onClick }: { onClick: () => void }) {
+  const sandbox = useStudentSandbox();
   const leaderboardFn = useServerFn(getStudentLeaderboard);
-  const q = useQuery({ queryKey: ["student-leaderboard"], queryFn: () => leaderboardFn(), staleTime: 5 * 60_000 });
+  const q = useQuery({
+    queryKey: ["student-leaderboard", sandbox?.studentId ?? "self"],
+    queryFn: () => leaderboardFn({ data: sandbox ? { viewAsStudentId: sandbox.studentId } : undefined }),
+    staleTime: 5 * 60_000,
+  });
   const you = q.data?.you;
   if (!you || !q.data || q.data.totalStudents < 2) return null;
   const top3 = you.rank <= 3;
@@ -2015,8 +2127,13 @@ function RankChip({ onClick }: { onClick: () => void }) {
 /* ---------- Leaderboard ---------- */
 
 function LeaderboardPanel() {
+  const sandbox = useStudentSandbox();
   const leaderboardFn = useServerFn(getStudentLeaderboard);
-  const q = useQuery({ queryKey: ["student-leaderboard"], queryFn: () => leaderboardFn(), staleTime: 5 * 60_000 });
+  const q = useQuery({
+    queryKey: ["student-leaderboard", sandbox?.studentId ?? "self"],
+    queryFn: () => leaderboardFn({ data: sandbox ? { viewAsStudentId: sandbox.studentId } : undefined }),
+    staleTime: 5 * 60_000,
+  });
   if (q.isLoading) return <div className="text-xs text-muted-foreground py-8 text-center">Loading leaderboard…</div>;
   const data = q.data;
   if (!data || data.rows.length === 0) {

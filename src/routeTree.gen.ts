@@ -60,6 +60,7 @@ import { Route as AuthenticatedPoliciesEodHygieneRouteImport } from './routes/_a
 import { Route as AuthenticatedPoliciesCrmHygieneRouteImport } from './routes/_authenticated.policies.crm-hygiene'
 import { Route as AuthenticatedKnowledgeNewRouteImport } from './routes/_authenticated.knowledge.new'
 import { Route as AuthenticatedKnowledgeSlugRouteImport } from './routes/_authenticated.knowledge.$slug'
+import { Route as AuthenticatedStudentsIdPortalRouteImport } from './routes/_authenticated.students_.$id.portal'
 import { Route as AuthenticatedKnowledgeSlugEditRouteImport } from './routes/_authenticated.knowledge.$slug.edit'
 
 const PrintRoute = PrintRouteImport.update({
@@ -336,6 +337,12 @@ const AuthenticatedKnowledgeSlugRoute =
     path: '/$slug',
     getParentRoute: () => AuthenticatedKnowledgeRoute,
   } as any)
+const AuthenticatedStudentsIdPortalRoute =
+  AuthenticatedStudentsIdPortalRouteImport.update({
+    id: '/students_/$id/portal',
+    path: '/students/$id/portal',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedKnowledgeSlugEditRoute =
   AuthenticatedKnowledgeSlugEditRouteImport.update({
     id: '/edit',
@@ -395,6 +402,7 @@ export interface FileRoutesByFullPath {
   '/knowledge/': typeof AuthenticatedKnowledgeIndexRoute
   '/policies/': typeof AuthenticatedPoliciesIndexRoute
   '/knowledge/$slug/edit': typeof AuthenticatedKnowledgeSlugEditRoute
+  '/students/$id/portal': typeof AuthenticatedStudentsIdPortalRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -446,6 +454,7 @@ export interface FileRoutesByTo {
   '/knowledge': typeof AuthenticatedKnowledgeIndexRoute
   '/policies': typeof AuthenticatedPoliciesIndexRoute
   '/knowledge/$slug/edit': typeof AuthenticatedKnowledgeSlugEditRoute
+  '/students/$id/portal': typeof AuthenticatedStudentsIdPortalRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -501,6 +510,7 @@ export interface FileRoutesById {
   '/_authenticated/knowledge/': typeof AuthenticatedKnowledgeIndexRoute
   '/_authenticated/policies/': typeof AuthenticatedPoliciesIndexRoute
   '/_authenticated/knowledge/$slug/edit': typeof AuthenticatedKnowledgeSlugEditRoute
+  '/_authenticated/students_/$id/portal': typeof AuthenticatedStudentsIdPortalRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -556,6 +566,7 @@ export interface FileRouteTypes {
     | '/knowledge/'
     | '/policies/'
     | '/knowledge/$slug/edit'
+    | '/students/$id/portal'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -607,6 +618,7 @@ export interface FileRouteTypes {
     | '/knowledge'
     | '/policies'
     | '/knowledge/$slug/edit'
+    | '/students/$id/portal'
   id:
     | '__root__'
     | '/'
@@ -661,6 +673,7 @@ export interface FileRouteTypes {
     | '/_authenticated/knowledge/'
     | '/_authenticated/policies/'
     | '/_authenticated/knowledge/$slug/edit'
+    | '/_authenticated/students_/$id/portal'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1030,6 +1043,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedKnowledgeSlugRouteImport
       parentRoute: typeof AuthenticatedKnowledgeRoute
     }
+    '/_authenticated/students_/$id/portal': {
+      id: '/_authenticated/students_/$id/portal'
+      path: '/students/$id/portal'
+      fullPath: '/students/$id/portal'
+      preLoaderRoute: typeof AuthenticatedStudentsIdPortalRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/knowledge/$slug/edit': {
       id: '/_authenticated/knowledge/$slug/edit'
       path: '/edit'
@@ -1163,6 +1183,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedTestimonialsRoute: typeof AuthenticatedTestimonialsRoute
   AuthenticatedWorkRoute: typeof AuthenticatedWorkRoute
   AuthenticatedTeamIdRoute: typeof AuthenticatedTeamIdRoute
+  AuthenticatedStudentsIdPortalRoute: typeof AuthenticatedStudentsIdPortalRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -1199,6 +1220,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedTestimonialsRoute: AuthenticatedTestimonialsRoute,
   AuthenticatedWorkRoute: AuthenticatedWorkRoute,
   AuthenticatedTeamIdRoute: AuthenticatedTeamIdRoute,
+  AuthenticatedStudentsIdPortalRoute: AuthenticatedStudentsIdPortalRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
