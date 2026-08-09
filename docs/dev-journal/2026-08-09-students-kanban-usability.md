@@ -52,3 +52,30 @@ real drag, so a plain onClick with an interactive-element guard is enough.
 - Setters can't read student_guide_steps under RLS, so for them locked badges
   read 0/5 "on: Onboarding form" regardless of truth. If setters need real
   Start Here visibility, widen the select policy.
+
+---
+
+## Round 2 (same day): profile journey card, health in plain words, sandbox gate
+
+### Prompt
+
+"View their portal shows Student Portal asking for the number, I don't
+understand" · "on the profile I want to see exactly what steps they're at and
+completed" · "what is Watch 0 / At risk" · "make the profile less messy,
+softer, better overview".
+
+### What I did
+
+- StartHereJourneyCard on the student profile (locked students): all five
+  steps with done dates, current step highlighted, progress bar, Unlock
+  button moved into it.
+- Health chip explained inline: "At risk · health 19/100 · why:" + reason
+  chips under the contact row (was tooltip-only).
+- Sandbox: banner over the timezone/WhatsApp gate explaining that IS the
+  student's current screen, plus a local-only "Skip ahead" button.
+- Chips are pill-shaped and grouped under Journey / Setup labels.
+
+### Note
+
+The confusing sandbox screen was CORRECT behavior: the student genuinely
+still sits at the details gate. The fix was context, not code behavior.
