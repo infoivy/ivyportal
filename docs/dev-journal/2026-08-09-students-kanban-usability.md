@@ -79,3 +79,34 @@ softer, better overview".
 
 The confusing sandbox screen was CORRECT behavior: the student genuinely
 still sits at the details gate. The fix was context, not code behavior.
+
+---
+
+## Round 3: header redesign shipped + the data layer
+
+### Prompt
+
+"Redesign this page, sizing is weird, feels messy" + "Wednesday had the most
+EODs, what happened? Let me click days. Give me who has access, at what time,
+what timeframe, touch points. I want a lot of data."
+
+### What I did
+
+- Profile header redesign (plan-approved): identity + uniform action cluster,
+  ONE health banner with reasons, Journey/Setup aligned rows, calm loom gate.
+- Student output chart: click-a-bar drilldown (per-student numbers, submit
+  times, avg comparison, missing filers). Lands in CSM hub + Student success.
+- Revenue trend chart: same drilldown for deals (closer/setter/set+close/
+  value/cash/logged-at).
+- NEW portal_activity presence tracking: migration applied to prod via
+  Supabase MCP (local CLI had no credentials; file made idempotent so a
+  future `supabase db push` is harmless). portal_ping(_day) RPC called from
+  _authenticated.tsx on sign-in / refocus / every 10 min while visible.
+- StudentActivityCard on the profile: 30-day touchpoint stream across nine
+  tables + presence, counts, last seen + usual hour in student timezone,
+  intensity dot strip with portal-open rings.
+
+### Note
+
+Presence data starts accumulating from deploy time (2026-08-09) — no
+backfill exists, the UI says "tracked since Aug 2026".
