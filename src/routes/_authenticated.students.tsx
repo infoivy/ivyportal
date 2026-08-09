@@ -623,11 +623,17 @@ function StudentsLayout() {
                         )}
                         {!s.onboarding_completed_at && (
                           <span
-                            className="mt-1 flex w-fit items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md bg-warning-bg text-warning-fg"
+                            className="mt-1 flex w-fit max-w-[220px] items-center gap-1.5 min-w-0 text-[10px] px-1.5 py-0.5 rounded-md bg-warning-bg text-warning-fg"
                             title={startHereNext(s.id) ? `Portal locked · current step: ${startHereNext(s.id)!.title}` : "Portal locked until every Start Here step is done"}
                           >
-                            <Lock className="h-2.5 w-2.5" /> Start Here {startHereCount(s.id)}/{START_HERE_REQUIRED_KEYS.length}
-                            {startHereNext(s.id) && <span className="font-medium">· on: {startHereNext(s.id)!.shortLabel}</span>}
+                            <Lock className="h-2.5 w-2.5 shrink-0" />
+                            <span className="tabular-nums shrink-0">{startHereCount(s.id)}/{START_HERE_REQUIRED_KEYS.length}</span>
+                            {startHereNext(s.id) && (
+                              <>
+                                <span className="shrink-0 opacity-60">·</span>
+                                <span className="font-medium truncate">{startHereNext(s.id)!.shortLabel}</span>
+                              </>
+                            )}
                           </span>
                         )}
                       </td>
@@ -752,7 +758,7 @@ function StudentsLayout() {
                 <span>{p.label}</span>
                 <span className="">{byPhase.get(p.key)!.length}</span>
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 {byPhase.get(p.key)!.map(s => (
                   <StudentCard key={s.id} s={s} canDrag={canManage} coachName={coachName(s.coach_id)} atRisk={isAtRisk(s)} canManage={canManage} coaches={coaches} onUpdate={updateStudent}
                     startHere={!s.onboarding_completed_at ? { count: startHereCount(s.id), total: START_HERE_REQUIRED_KEYS.length, next: startHereNext(s.id)?.shortLabel ?? null } : null} />
@@ -782,7 +788,7 @@ function StudentsLayout() {
                 <span className="truncate">{cid === "__group__" ? "Group program" : cid === "__unassigned__" ? "Unassigned" : coachName(cid)}</span>
                 <span className="">{byCoach.get(cid)?.length ?? 0}</span>
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 {(byCoach.get(cid) ?? []).map(s => (
                   <StudentCard key={s.id} s={s} canDrag={canManage} coachName={phaseMeta(s.phase).label} atRisk={isAtRisk(s)} canManage={canManage} coaches={coaches} onUpdate={updateStudent}
                     startHere={!s.onboarding_completed_at ? { count: startHereCount(s.id), total: START_HERE_REQUIRED_KEYS.length, next: startHereNext(s.id)?.shortLabel ?? null } : null} />
@@ -864,7 +870,7 @@ function GraduationKanban({ students }: { students: Student[] }) {
               <span className="truncate">{st.label}</span>
               <span className="">{inStage.length}</span>
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               {inStage.map(s => (
                 <Link key={s.id} to={"/students/$id" as any} params={{ id: s.id } as any}
                   className="block p-2 rounded-sm bg-[var(--muted)] border border-[var(--border)] hover:border-ring/50">
@@ -912,7 +918,7 @@ function StudentCard({ s, canDrag, coachName, atRisk, canManage, coaches, onUpda
         if ((e.target as HTMLElement).closest("a, button, select, input, textarea, label")) return;
         nav({ to: "/students/$id", params: { id: s.id } });
       }}
-      className={`p-2 rounded-sm bg-[var(--muted)] border transition cursor-pointer ${atRisk ? "border-danger/25" : "border-[var(--border)] hover:border-ring/50"}`}
+      className={`p-2.5 rounded-sm bg-[var(--muted)] border transition cursor-pointer ${atRisk ? "border-danger/25" : "border-[var(--border)] hover:border-ring/50"}`}
     >
       <div className="flex items-center gap-1.5">
         {atRisk && <AlertTriangle className="h-3 w-3 text-danger-fg shrink-0" />}
@@ -929,17 +935,23 @@ function StudentCard({ s, canDrag, coachName, atRisk, canManage, coaches, onUpda
           </button>
         )}
       </div>
-      <div className="flex items-center justify-between mt-1">
+      <div className="flex items-center justify-between gap-2 mt-1.5">
         <span className={`text-[11px] px-1.5 py-0.5 rounded-md border ${statusMeta(s.status).color}`}>{statusMeta(s.status).label}</span>
-        <span className="text-[9px] text-muted-foreground truncate ml-1">{isGroup ? "Group" : coachName.slice(0, 14)}</span>
+        <span className="text-[9px] text-muted-foreground truncate">{isGroup ? "Group" : coachName.slice(0, 14)}</span>
       </div>
       {startHere && (
         <div
-          className="mt-1 flex w-fit items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md bg-warning-bg text-warning-fg"
-          title="Portal locked until every Start Here step is done"
+          className="mt-1.5 flex items-center gap-1.5 min-w-0 text-[10px] px-2 py-1 rounded-md bg-warning-bg text-warning-fg"
+          title={`Portal locked · ${startHere.count}/${startHere.total} Start Here steps done${startHere.next ? ` · current step: ${startHere.next}` : ""}`}
         >
-          <Lock className="h-2.5 w-2.5" /> {startHere.count}/{startHere.total}
-          {startHere.next && <span className="font-medium truncate">· on: {startHere.next}</span>}
+          <Lock className="h-2.5 w-2.5 shrink-0" />
+          <span className="tabular-nums shrink-0">{startHere.count}/{startHere.total}</span>
+          {startHere.next && (
+            <>
+              <span className="shrink-0 opacity-60">·</span>
+              <span className="font-medium truncate">{startHere.next}</span>
+            </>
+          )}
         </div>
       )}
       {editing && (
