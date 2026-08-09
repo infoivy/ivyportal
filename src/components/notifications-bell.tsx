@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { AlertOctagon, Bell, DollarSign, HeartHandshake, UserPlus } from "lucide-react";
 import { usePayoutAlert } from "@/components/payout-alert";
-import { START_HERE_REQUIRED_KEYS } from "@/lib/student-guide-steps";
+import { START_HERE_REQUIRED_KEYS, nextStartHereStep } from "@/lib/student-guide-steps";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -54,11 +54,11 @@ async function fetchStudentAlerts(): Promise<StudentAlert[]> {
   for (const c of (calls.data ?? []) as { student_id: string; call_date: string }[]) {
     if (c.call_date > (lastCall.get(c.student_id) ?? "")) lastCall.set(c.student_id, c.call_date);
   }
-  const stepsDone = new Map<string, number>();
+  const stepsDone = new Map<string, string[]>();
   const lastStepAt = new Map<string, string>();
   for (const g of (guideSteps.data ?? []) as { student_id: string; step_key: string; done_at: string }[]) {
     if (START_HERE_REQUIRED_KEYS.includes(g.step_key)) {
-      stepsDone.set(g.student_id, (stepsDone.get(g.student_id) ?? 0) + 1);
+      stepsDone.set(g.student_id, [...(stepsDone.get(g.student_id) ?? []), g.step_key]);
     }
     if (g.done_at > (lastStepAt.get(g.student_id) ?? "")) lastStepAt.set(g.student_id, g.done_at);
   }
@@ -78,12 +78,13 @@ async function fetchStudentAlerts(): Promise<StudentAlert[]> {
       const lastActivity = lastStepAt.get(st.id) ?? st.created_at ?? "";
       const stuckDays = lastActivity ? Math.floor((now - new Date(lastActivity).getTime()) / DAY) : null;
       if (stuckDays != null && stuckDays >= 3) {
-        const done = stepsDone.get(st.id) ?? 0;
+        const doneKeys = stepsDone.get(st.id) ?? [];
+        const next = nextStartHereStep(doneKeys);
         alerts.push({
           key: `stuck-${st.id}`,
           student_id: st.id,
           student_name: st.full_name,
-          text: `Stuck in Start Here ${stuckDays}d (${done}/${START_HERE_REQUIRED_KEYS.length} steps)`,
+          text: `Stuck in Start Here ${stuckDays}d (${doneKeys.length}/${START_HERE_REQUIRED_KEYS.length}${next ? ` · on: ${next.shortLabel}` : ""})`,
           tone: stuckDays >= 7 ? "text-danger-fg" : "text-warning-fg",
         });
       }

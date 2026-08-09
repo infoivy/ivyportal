@@ -1,6 +1,6 @@
 import { StudentsTabBar } from "@/components/students-tab-bar";
 import { friendlyPastDay } from "@/lib/dates";
-import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useStudentHealth } from "@/lib/use-student-health";
 import { BAND_META } from "@/lib/student-health";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -16,7 +16,7 @@ import {
   School, Search, Plus, LayoutGrid, Table as TableIcon, Archive, X,
   ChevronRight, Users, AlertTriangle, Columns3, Award, MessageSquare, Trophy, Download, Lock, Pencil,
 } from "lucide-react";
-import { START_HERE_REQUIRED_KEYS } from "@/lib/student-guide-steps";
+import { START_HERE_REQUIRED_KEYS, nextStartHereStep } from "@/lib/student-guide-steps";
 import { StudentLocalTime } from "@/components/student-local-time";
 import { exportToCsv } from "@/lib/csv";
 import { DateField } from "@/components/ui/date-field";
@@ -110,14 +110,17 @@ function StudentsLayout() {
     staleTime: 60_000,
     queryFn: async () => {
       const { data } = await supabase.from("student_guide_steps").select("student_id, step_key, students!inner(is_demo)").eq("students.is_demo", false);
-      const counts: Record<string, number> = {};
+      const byStudent: Record<string, string[]> = {};
       for (const r of data ?? []) {
-        if (START_HERE_REQUIRED_KEYS.includes(r.step_key)) counts[r.student_id] = (counts[r.student_id] ?? 0) + 1;
+        if (START_HERE_REQUIRED_KEYS.includes(r.step_key)) (byStudent[r.student_id] ??= []).push(r.step_key);
       }
-      return counts;
+      return byStudent;
     },
   });
-  const startHereCount = (id: string) => guideStepsQ.data?.[id] ?? 0;
+  const startHereCount = (id: string) => guideStepsQ.data?.[id]?.length ?? 0;
+  // The exact step a locked student is ON (steps are sequential), not just a
+  // number (asked 2026-08-09: "tell me the exact step they are on").
+  const startHereNext = (id: string) => nextStartHereStep(guideStepsQ.data?.[id] ?? []);
   const { data: coaches = [] } = useQuery(coachesQuery()) as { data: Coach[] };
   const { data: callAgg } = useQuery(studentCallsAggQuery());
   const { data: eodAgg } = useQuery(studentEodsAggQuery());
@@ -160,6 +163,9 @@ function StudentsLayout() {
     try { localStorage.setItem("students.view", v); } catch { /* non-fatal */ }
   };
   const [kanbanBy, setKanbanBy] = useState<"phase" | "coach">("phase");
+  // Pathway view (asked 2026-08-09): slice every view down to the 1:1
+  // pathway or group coaching. Program type derives from calls_allotted.
+  const [pathwayFilter, setPathwayFilter] = useState<"all" | "one_on_one" | "group">("all");
   const [addOpen, setAddOpen] = useState(false);
   const [colsOpen, setColsOpen] = useState(false);
   const [visibleCols, setVisibleCols] = useState<Set<ColKey>>(() => {
@@ -284,8 +290,12 @@ function StudentsLayout() {
       coachFilter === "all" ? true :
       coachFilter === "unassigned" ? !s.coach_id :
       s.coach_id === coachFilter;
-    return matchesQ && matchesPhase && matchesCoach;
-  }), [students, q, phaseFilter, coachFilter, isAtRisk]);
+    const matchesPathway =
+      pathwayFilter === "all" ? true :
+      pathwayFilter === "group" ? s.calls_allotted === 0 :
+      s.calls_allotted > 0;
+    return matchesQ && matchesPhase && matchesCoach && matchesPathway;
+  }), [students, q, phaseFilter, coachFilter, pathwayFilter, isAtRisk]);
 
   const byPhase = useMemo(() => {
     const map = new Map<Phase, Student[]>();
@@ -451,6 +461,27 @@ function StudentsLayout() {
           <AlertTriangle className="h-3.5 w-3.5" /> At risk · {atRiskCount}
         </button>
 
+        {/* Pathway view: 1:1 vs group coaching, applies to every view */}
+        <div className="ml-auto inline-flex rounded-lg bg-muted p-[3px]">
+          <button
+            onClick={() => setPathwayFilter("all")}
+            className={`text-[13px] font-medium px-3 py-1.5 rounded-[8px] motion-safe:transition-colors ${pathwayFilter === "all" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            All pathways
+          </button>
+          <button
+            onClick={() => setPathwayFilter("one_on_one")}
+            className={`text-[13px] font-medium px-3 py-1.5 rounded-[8px] motion-safe:transition-colors ${pathwayFilter === "one_on_one" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            1:1 · {students.filter(s => s.calls_allotted > 0).length}
+          </button>
+          <button
+            onClick={() => setPathwayFilter("group")}
+            className={`text-[13px] font-medium px-3 py-1.5 rounded-[8px] motion-safe:transition-colors ${pathwayFilter === "group" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            Group · {students.filter(s => s.calls_allotted === 0).length}
+          </button>
+        </div>
       </div>
 
       {/* Coach filter — same treatment as the 1-on-1 Calls page */}
@@ -593,9 +624,10 @@ function StudentsLayout() {
                         {!s.onboarding_completed_at && (
                           <span
                             className="mt-1 flex w-fit items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md bg-warning-bg text-warning-fg"
-                            title="Portal locked until every Start Here step is done"
+                            title={startHereNext(s.id) ? `Portal locked · current step: ${startHereNext(s.id)!.title}` : "Portal locked until every Start Here step is done"}
                           >
                             <Lock className="h-2.5 w-2.5" /> Start Here {startHereCount(s.id)}/{START_HERE_REQUIRED_KEYS.length}
+                            {startHereNext(s.id) && <span className="font-medium">· on: {startHereNext(s.id)!.shortLabel}</span>}
                           </span>
                         )}
                       </td>
@@ -722,7 +754,8 @@ function StudentsLayout() {
               </div>
               <div className="space-y-1.5">
                 {byPhase.get(p.key)!.map(s => (
-                  <StudentCard key={s.id} s={s} canDrag={canManage} coachName={coachName(s.coach_id)} atRisk={isAtRisk(s)} canManage={canManage} coaches={coaches} onUpdate={updateStudent} />
+                  <StudentCard key={s.id} s={s} canDrag={canManage} coachName={coachName(s.coach_id)} atRisk={isAtRisk(s)} canManage={canManage} coaches={coaches} onUpdate={updateStudent}
+                    startHere={!s.onboarding_completed_at ? { count: startHereCount(s.id), total: START_HERE_REQUIRED_KEYS.length, next: startHereNext(s.id)?.shortLabel ?? null } : null} />
                 ))}
                 {byPhase.get(p.key)!.length === 0 && <div className="text-[10px] text-muted-foreground text-center py-3">Drop here</div>}
               </div>
@@ -751,7 +784,8 @@ function StudentsLayout() {
               </div>
               <div className="space-y-1.5">
                 {(byCoach.get(cid) ?? []).map(s => (
-                  <StudentCard key={s.id} s={s} canDrag={canManage} coachName={phaseMeta(s.phase).label} atRisk={isAtRisk(s)} canManage={canManage} coaches={coaches} onUpdate={updateStudent} />
+                  <StudentCard key={s.id} s={s} canDrag={canManage} coachName={phaseMeta(s.phase).label} atRisk={isAtRisk(s)} canManage={canManage} coaches={coaches} onUpdate={updateStudent}
+                    startHere={!s.onboarding_completed_at ? { count: startHereCount(s.id), total: START_HERE_REQUIRED_KEYS.length, next: startHereNext(s.id)?.shortLabel ?? null } : null} />
                 ))}
                 {(byCoach.get(cid)?.length ?? 0) === 0 && <div className="text-[10px] text-muted-foreground text-center py-3">Drop here</div>}
               </div>
@@ -852,7 +886,7 @@ function GraduationKanban({ students }: { students: Student[] }) {
   );
 }
 
-function StudentCard({ s, canDrag, coachName, atRisk, canManage, coaches, onUpdate }: {
+function StudentCard({ s, canDrag, coachName, atRisk, canManage, coaches, onUpdate, startHere }: {
   s: Student;
   canDrag: boolean;
   coachName: string;
@@ -860,14 +894,25 @@ function StudentCard({ s, canDrag, coachName, atRisk, canManage, coaches, onUpda
   canManage: boolean;
   coaches: Coach[];
   onUpdate: (id: string, patch: Partial<Student>) => unknown;
+  /** Locked students only: progress + the exact step they are on. */
+  startHere?: { count: number; total: number; next: string | null } | null;
 }) {
   const [editing, setEditing] = useState(false);
+  const nav = useNavigate();
   const isGroup = s.calls_allotted === 0;
   return (
     <div
       draggable={canDrag && !editing}
       onDragStart={e => e.dataTransfer.setData("text/plain", s.id)}
-      className={`p-2 rounded-sm bg-[var(--muted)] border transition ${atRisk ? "border-danger/25" : "border-[var(--border)] hover:border-ring/50"}`}
+      // The whole card opens the profile, not just the name (asked
+      // 2026-08-09: "I have to go into list view to see their profile").
+      // Inner controls (quick edit, selects, the name link itself) still win.
+      onClick={e => {
+        if (editing) return;
+        if ((e.target as HTMLElement).closest("a, button, select, input, textarea, label")) return;
+        nav({ to: "/students/$id", params: { id: s.id } });
+      }}
+      className={`p-2 rounded-sm bg-[var(--muted)] border transition cursor-pointer ${atRisk ? "border-danger/25" : "border-[var(--border)] hover:border-ring/50"}`}
     >
       <div className="flex items-center gap-1.5">
         {atRisk && <AlertTriangle className="h-3 w-3 text-danger-fg shrink-0" />}
@@ -888,6 +933,15 @@ function StudentCard({ s, canDrag, coachName, atRisk, canManage, coaches, onUpda
         <span className={`text-[11px] px-1.5 py-0.5 rounded-md border ${statusMeta(s.status).color}`}>{statusMeta(s.status).label}</span>
         <span className="text-[9px] text-muted-foreground truncate ml-1">{isGroup ? "Group" : coachName.slice(0, 14)}</span>
       </div>
+      {startHere && (
+        <div
+          className="mt-1 flex w-fit items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md bg-warning-bg text-warning-fg"
+          title="Portal locked until every Start Here step is done"
+        >
+          <Lock className="h-2.5 w-2.5" /> {startHere.count}/{startHere.total}
+          {startHere.next && <span className="font-medium truncate">· on: {startHere.next}</span>}
+        </div>
+      )}
       {editing && (
         <div className="mt-2 pt-2 border-t border-[var(--border)] space-y-1.5" onClick={e => e.stopPropagation()}>
           <SelectField value={s.phase} onChange={v => onUpdate(s.id, { phase: v as Phase })} options={PHASES.map(p => ({ value: p.key, label: p.label }))} className="w-full text-[11px] h-7" aria-label="Phase" />
