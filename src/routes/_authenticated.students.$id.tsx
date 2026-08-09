@@ -340,85 +340,94 @@ function StudentDetail() {
         </button>
       </div>
 
-      {/* Header */}
-      <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-5">
-        <div className="flex items-start gap-4 flex-wrap">
-          <div className="h-14 w-14 rounded-md bg-muted border border-border flex items-center justify-center text-muted-foreground text-lg font-semibold shrink-0">
-            {student.full_name.slice(0, 2).toUpperCase()}
-          </div>
-          <div className="flex-1 min-w-[240px]">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-display text-foreground flex items-center gap-2.5">
-                <EditableName
-                  value={student.full_name}
-                  canEdit={canManage || roles.includes("closer")}
-                  onSave={renameStudent}
-                />
+      {/* Header · identity row + actions, then one banner, then controls.
+          Redesigned 2026-08-09: uniform chip/button sizes, health said once. */}
+      <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-5 space-y-4">
+        <div className="flex items-start justify-between gap-x-4 gap-y-3 flex-wrap">
+          <div className="flex items-center gap-3.5 min-w-0">
+            <div className="h-12 w-12 rounded-full bg-muted border border-border flex items-center justify-center text-muted-foreground text-base font-semibold shrink-0">
+              {student.full_name.slice(0, 2).toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-display text-foreground">
+                  <EditableName
+                    value={student.full_name}
+                    canEdit={canManage || roles.includes("closer")}
+                    onSave={renameStudent}
+                  />
+                </h1>
+                {student.user_id ? (
+                  <span className="inline-flex items-center gap-1 h-5 text-[10px] uppercase tracking-wider text-success-fg border border-success/25 bg-success-bg px-1.5 rounded-full">
+                    <Link2 className="h-2.5 w-2.5" /> Portal linked
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 h-5 text-[10px] uppercase tracking-wider text-warning-fg border border-warning/25 bg-warning-bg px-1.5 rounded-full">
+                    <AlertTriangle className="h-2.5 w-2.5" /> Portal not linked
+                  </span>
+                )}
                 {(() => {
                   const h = healthMap?.get(student.id);
-                  return h ? (
-                    <span
-                      className={`text-[11px] font-medium tabular-nums px-2 py-0.5 rounded-full border ${BAND_META[h.band].chip}`}
-                      title={h.reasons.join(" · ") || "All signals healthy"}
-                    >
-                      {BAND_META[h.band].label} · {h.score}
+                  return h && h.band === "green" ? (
+                    <span className={`inline-flex items-center h-5 text-[10px] uppercase tracking-wider px-1.5 rounded-full border ${BAND_META.green.chip}`} title="Health score 0-100, every point traceable to a behavior">
+                      Healthy · {h.score}
                     </span>
                   ) : null;
                 })()}
-              </h1>
-              {student.user_id ? (
-                <span className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-success-fg border border-success/25 bg-success-bg px-1.5 py-0.5 rounded-sm">
-                  <Link2 className="h-2.5 w-2.5" /> Portal linked
-                </span>
-              ) : (
-                <span className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-warning-fg border border-warning/25 bg-warning-bg px-1.5 py-0.5 rounded-sm">
-                  <AlertTriangle className="h-2.5 w-2.5" /> Portal not linked
-                </span>
-              )}
-              {/* Sandbox: the exact portal this student sees, interactions
-                  simulated, nothing saved (founder-asked 2026-08-09) */}
-              <Link
-                to="/students/$id/portal"
-                params={{ id: student.id }}
-                className="flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-md border border-primary/25 bg-primary/10 text-primary hover:bg-primary/15 motion-safe:transition-colors"
-              >
-                <Eye className="h-3 w-3" /> View their portal
-              </Link>
-              {(student as { archived_at?: string | null }).archived_at && (
-                <span className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-danger-fg border border-danger/25 bg-danger-bg px-1.5 py-0.5 rounded-sm">
-                  Archived · hidden from every list
-                  {canManage && (
-                    <button
-                      onClick={async () => {
-                        if (!confirm("Restore this student to the lists?")) return;
-                        const { error } = await supabase.from("students").update({ archived_at: null, status: "active" } as never).eq("id", student.id);
-                        if (error) return toast.error(error.message);
-                        toast.success("Student restored");
-                        load();
-                        invalidateForTables(qc, ["students"]);
-                      }}
-                      className="normal-case tracking-normal font-medium underline underline-offset-2 hover:opacity-80"
-                    >
-                      Restore
-                    </button>
-                  )}
-                </span>
-              )}
+                {(student as { archived_at?: string | null }).archived_at && (
+                  <span className="inline-flex items-center gap-1.5 h-5 text-[10px] uppercase tracking-wider text-danger-fg border border-danger/25 bg-danger-bg px-1.5 rounded-full">
+                    Archived · hidden from every list
+                    {canManage && (
+                      <button
+                        onClick={async () => {
+                          if (!confirm("Restore this student to the lists?")) return;
+                          const { error } = await supabase.from("students").update({ archived_at: null, status: "active" } as never).eq("id", student.id);
+                          if (error) return toast.error(error.message);
+                          toast.success("Student restored");
+                          load();
+                          invalidateForTables(qc, ["students"]);
+                        }}
+                        className="normal-case tracking-normal font-medium underline underline-offset-2 hover:opacity-80"
+                      >
+                        Restore
+                      </button>
+                    )}
+                  </span>
+                )}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span>{student.email ?? "no email"}</span>
+                {student.whatsapp && <span className="flex items-center gap-1"><MessageCircle className="h-3 w-3 text-success-fg" /> {student.whatsapp}</span>}
+                <span>joined {student.join_date}</span>
+                <StudentLocalTime tz={student.timezone} className="text-xs" />
+                {canManage && (
+                  <select
+                    value={student.timezone ?? ""}
+                    onChange={e => update({ timezone: e.target.value || null })}
+                    className="h-6 rounded-sm border border-[var(--border)] bg-[var(--background)] px-1 text-[10px] text-muted-foreground focus:outline-none focus:border-ring max-w-[150px]"
+                    title="Student timezone (auto-synced from their browser when they use the portal)"
+                  >
+                    <option value="">tz unknown</option>
+                    {timezoneOptions().map(z => <option key={z} value={z}>{z}</option>)}
+                  </select>
+                )}
+              </div>
             </div>
-            {paymentSetupOpen && (
-              <StudentPaymentSetup
-                student={{ id: student.id, full_name: student.full_name, coach_id: student.coach_id }}
-                onClose={() => setPaymentSetupOpen(false)}
-                onDone={() => { setPaymentSetupOpen(false); load(); }}
-              />
-            )}
-            {/* Keyed off the DEAL, not payment_state: "skip for now" during
-                approval left students with no close on record, and setting the
-                Pay chip used to bury this entrance forever. */}
+          </div>
+
+          {/* Actions · one cluster, one size */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <Link
+              to="/students/$id/portal"
+              params={{ id: student.id }}
+              className="h-8 inline-flex items-center gap-1.5 text-xs font-medium px-3 rounded-md border border-primary/25 bg-primary/10 text-primary hover:bg-primary/15 motion-safe:transition-colors"
+            >
+              <Eye className="h-3.5 w-3.5" /> View their portal
+            </Link>
             {!hasDeal && student.payment_state !== "scholarship" && (roles.includes("admin") || roles.includes("closer")) && (
               <button
                 onClick={() => setPaymentSetupOpen(true)}
-                className="mt-2 inline-flex items-center gap-1.5 text-caption font-medium px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 motion-safe:transition-colors"
+                className="h-8 inline-flex items-center gap-1.5 text-xs font-medium px-3 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 motion-safe:transition-colors"
               >
                 {student.payment_state ? "Log the close · no deal on record" : "Log close · set up payment"}
               </button>
@@ -426,144 +435,123 @@ function StudentDetail() {
             {hasDeal && (roles.includes("admin") || roles.includes("closer")) && (
               <button
                 onClick={() => setRefundOpen(true)}
-                className="mt-2 inline-flex items-center gap-1.5 text-caption font-medium px-3 py-1.5 rounded-md border border-border text-danger-fg hover:bg-danger-bg motion-safe:transition-colors"
+                className="h-8 inline-flex items-center gap-1.5 text-xs font-medium px-3 rounded-md border border-border text-danger-fg hover:bg-danger-bg motion-safe:transition-colors"
               >
                 Record refund
               </button>
             )}
-            {refundOpen && (
-              <RefundStudentDialog
-                studentId={student.id}
-                studentName={student.full_name}
-                onClose={() => { setRefundOpen(false); load(); }}
-              />
-            )}
-            <div className="text-xs text-muted-foreground mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-              <span>{student.email ?? "no email"}</span>
-              {student.whatsapp && <span className="flex items-center gap-1"><MessageCircle className="h-3 w-3 text-success-fg" /> {student.whatsapp}</span>}
-              <span>joined {student.join_date}</span>
-              <StudentLocalTime tz={student.timezone} className="text-xs" />
-              {canManage && (
-                <select
-                  value={student.timezone ?? ""}
-                  onChange={e => update({ timezone: e.target.value || null })}
-                  className="h-6 rounded-sm border border-[var(--border)] bg-[var(--background)] px-1 text-[10px] text-muted-foreground focus:outline-none focus:border-ring max-w-[150px]"
-                  title="Student timezone (auto-synced from their browser when they use the portal)"
-                >
-                  <option value="">tz unknown</option>
-                  {timezoneOptions().map(z => <option key={z} value={z}>{z}</option>)}
-                </select>
-              )}
-            </div>
-
-            {/* Health, in plain words: the chip's score is 0-100 and every
-                lost point is traceable. Spell the reasons out instead of
-                hiding them in a tooltip (asked 2026-08-09). */}
-            {(() => {
-              const h = healthMap?.get(student.id);
-              if (!h || h.band === "green" || h.reasons.length === 0) return null;
-              return (
-                <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-                  <span className={`text-[10px] font-semibold uppercase tracking-wider ${BAND_META[h.band].text}`}>
-                    {BAND_META[h.band].label} · health {h.score}/100 · why:
-                  </span>
-                  {h.reasons.map(r => (
-                    <span key={r} className="text-[11px] px-2 py-0.5 rounded-full border border-border bg-muted text-muted-foreground">{r}</span>
-                  ))}
-                </div>
-              );
-            })()}
-
-            <div className="flex flex-wrap gap-x-2 gap-y-2 mt-4 items-center">
-              {canManage ? (
-                <>
-                  <span className="text-[9px] uppercase tracking-[0.16em] text-muted-foreground/70 mr-0.5">Journey</span>
-                  <SelectChip value={student.phase} onChange={v => update({ phase: v as Phase })} options={PHASES.map(p => ({ v: p, l: p.replace("_", " ") }))} color="fuchsia" />
-                  <SelectChip value={student.status} onChange={v => update({ status: v as Status })} options={STATUSES.map(s => ({ v: s, l: s }))} color={student.status === "active" ? "emerald" : student.status === "ghosting" ? "rose" : "zinc"} />
-                  <SelectChip
-                    value={student.student_grade ?? ""}
-                    onChange={v => update({ student_grade: v || null })}
-                    options={[{ v: "", l: "No grade" }, ...GRADES.map(g => ({ v: g, l: g }))]}
-                    color="amber" prefix="Grade: "
-                  />
-                  <span className="basis-full h-0" aria-hidden />
-                  <span className="text-[9px] uppercase tracking-[0.16em] text-muted-foreground/70 mr-0.5">Setup</span>
-                  {/* Group-program students have no assigned coach or 1:1 anything (founder 2026-07-31). */}
-                  {student.calls_allotted > 0 && (
-                    <SelectChip value={student.coach_id ?? ""} onChange={v => update({ coach_id: v || null })} options={[{ v: "", l: "Unassigned" }, ...coaches.map(c => ({ v: c.id, l: c.display_name ?? "?" }))]} color="sky" prefix="Coach: " />
-                  )}
-                  <SelectChip
-                    value={student.payment_state ?? ""}
-                    onChange={v => update({ payment_state: (v || null) as PaymentState | null })}
-                    options={[{ v: "", l: "Unknown" }, ...PAYMENT_STATES.map(p => ({ v: p.key, l: p.label }))]}
-                    color={student.payment_state === "behind" ? "rose" : student.payment_state === "paid_in_full" ? "emerald" : "sky"}
-                    prefix="Pay: "
-                  />
-                  <SelectChip
-                    value={student.eod_exempt ? "off" : "on"}
-                    onChange={v => update({ eod_exempt: v === "off" } as never)}
-                    options={[{ v: "on", l: "tracked" }, { v: "off", l: "off · no alerts" }]}
-                    color={student.eod_exempt ? "zinc" : "emerald"}
-                    prefix="EODs: "
-                  />
-                  <SelectChip
-                    value={student.calls_allotted > 0 ? "1on1" : "group"}
-                    onChange={async v => {
-                      await update({ calls_allotted: v === "1on1" ? (student.calls_allotted > 0 ? student.calls_allotted : 10) : 0 });
-                      // Group students must never see 1:1 anything — clear the
-                      // auto "book your 1:1s" task if they had one.
-                      if (v === "group") {
-                        await supabase.from("student_action_items").delete()
-                          .eq("student_id", student.id).eq("done", false)
-                          .ilike("text", "Book your 1:1 coaching calls%");
-                      }
-                    }}
-                    options={[{ v: "1on1", l: "1:1 Pathway" }, { v: "group", l: "Group Expertise" }]}
-                    color="sky" prefix="Program: "
-                  />
-                </>
-              ) : (
-                <>
-                  <Chip label={student.phase.replace("_", " ")} color="fuchsia" />
-                  <Chip label={student.status} color={student.status === "active" ? "emerald" : student.status === "ghosting" ? "rose" : "zinc"} />
-                  <Chip label={`Coach: ${coachName(student.coach_id)}`} color="sky" />
-                  {student.student_grade && <Chip label={`Grade ${student.student_grade}`} color="amber" />}
-                  {paymentMeta && <Chip label={paymentMeta.label} color={student.payment_state === "behind" ? "rose" : student.payment_state === "paid_in_full" ? "emerald" : "sky"} />}
-                </>
-              )}
-            </div>
-
-            {/* Loom approval — the gate a CSM controls once the portal is
-                open. (The Start Here lock state lives in its own journey card
-                below the header, asked 2026-08-09.) */}
-            {canManage && student.onboarding_completed_at && !["applying", "offer_won", "testimonial", "paused"].includes(student.phase) && (
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                {student.onboarding_completed_at && !["applying", "offer_won", "testimonial", "paused"].includes(student.phase) && (
-                  <>
-                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground border border-border bg-muted px-1.5 py-0.5 rounded-sm">
-                      Loom review stage · 3/day to the review chat
-                    </span>
-                    <button
-                      onClick={() => update({ phase: "applying" })}
-                      className="text-caption font-medium px-2.5 py-1 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 motion-safe:transition-colors"
-                    >
-                      Approve looms → applying (5/day)
-                    </button>
-                  </>
-                )}
-              </div>
-            )}
-
-            {/* Next actions — composer creates real action items (portal +
-                queues), due date optional, add as many as needed */}
-            <NextActionsComposer
-              canManage={canManage || roles.includes("closer")}
-              items={adhocItems}
-              onAdd={addNextAction}
-              onToggle={toggleActionItem}
-            />
           </div>
         </div>
+        {paymentSetupOpen && (
+          <StudentPaymentSetup
+            student={{ id: student.id, full_name: student.full_name, coach_id: student.coach_id }}
+            onClose={() => setPaymentSetupOpen(false)}
+            onDone={() => { setPaymentSetupOpen(false); load(); }}
+          />
+        )}
+        {refundOpen && (
+          <RefundStudentDialog
+            studentId={student.id}
+            studentName={student.full_name}
+            onClose={() => { setRefundOpen(false); load(); }}
+          />
+        )}
+
+        {/* Health · said once, in one calm banner with the reasons inline */}
+        {(() => {
+          const h = healthMap?.get(student.id);
+          if (!h || h.band === "green") return null;
+          return (
+            <div className={`flex flex-wrap items-center gap-x-2.5 gap-y-1 rounded-md border px-3 py-2 ${BAND_META[h.band].chip}`}>
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+              <span className="text-xs font-semibold">{BAND_META[h.band].label} · health {h.score}/100</span>
+              {h.reasons.length > 0 && <span className="text-xs opacity-75">{h.reasons.join(" · ")}</span>}
+            </div>
+          );
+        })()}
+
+        <div className="flex flex-wrap gap-x-2 gap-y-2 items-center">
+          {canManage ? (
+            <>
+              <span className="w-14 shrink-0 text-[9px] uppercase tracking-[0.16em] text-muted-foreground/70">Journey</span>
+              <SelectChip value={student.phase} onChange={v => update({ phase: v as Phase })} options={PHASES.map(p => ({ v: p, l: p.replace("_", " ") }))} color="fuchsia" />
+              <SelectChip value={student.status} onChange={v => update({ status: v as Status })} options={STATUSES.map(s => ({ v: s, l: s }))} color={student.status === "active" ? "emerald" : student.status === "ghosting" ? "rose" : "zinc"} />
+              <SelectChip
+                value={student.student_grade ?? ""}
+                onChange={v => update({ student_grade: v || null })}
+                options={[{ v: "", l: "No grade" }, ...GRADES.map(g => ({ v: g, l: g }))]}
+                color="amber" prefix="Grade: "
+              />
+              <span className="basis-full h-0" aria-hidden />
+              <span className="w-14 shrink-0 text-[9px] uppercase tracking-[0.16em] text-muted-foreground/70">Setup</span>
+              {/* Group-program students have no assigned coach or 1:1 anything (founder 2026-07-31). */}
+              {student.calls_allotted > 0 && (
+                <SelectChip value={student.coach_id ?? ""} onChange={v => update({ coach_id: v || null })} options={[{ v: "", l: "Unassigned" }, ...coaches.map(c => ({ v: c.id, l: c.display_name ?? "?" }))]} color="sky" prefix="Coach: " />
+              )}
+              <SelectChip
+                value={student.payment_state ?? ""}
+                onChange={v => update({ payment_state: (v || null) as PaymentState | null })}
+                options={[{ v: "", l: "Unknown" }, ...PAYMENT_STATES.map(p => ({ v: p.key, l: p.label }))]}
+                color={student.payment_state === "behind" ? "rose" : student.payment_state === "paid_in_full" ? "emerald" : "sky"}
+                prefix="Pay: "
+              />
+              <SelectChip
+                value={student.eod_exempt ? "off" : "on"}
+                onChange={v => update({ eod_exempt: v === "off" } as never)}
+                options={[{ v: "on", l: "tracked" }, { v: "off", l: "off · no alerts" }]}
+                color={student.eod_exempt ? "zinc" : "emerald"}
+                prefix="EODs: "
+              />
+              <SelectChip
+                value={student.calls_allotted > 0 ? "1on1" : "group"}
+                onChange={async v => {
+                  await update({ calls_allotted: v === "1on1" ? (student.calls_allotted > 0 ? student.calls_allotted : 10) : 0 });
+                  // Group students must never see 1:1 anything — clear the
+                  // auto "book your 1:1s" task if they had one.
+                  if (v === "group") {
+                    await supabase.from("student_action_items").delete()
+                      .eq("student_id", student.id).eq("done", false)
+                      .ilike("text", "Book your 1:1 coaching calls%");
+                  }
+                }}
+                options={[{ v: "1on1", l: "1:1 Pathway" }, { v: "group", l: "Group Expertise" }]}
+                color="sky" prefix="Program: "
+              />
+            </>
+          ) : (
+            <>
+              <Chip label={student.phase.replace("_", " ")} color="fuchsia" />
+              <Chip label={student.status} color={student.status === "active" ? "emerald" : student.status === "ghosting" ? "rose" : "zinc"} />
+              <Chip label={`Coach: ${coachName(student.coach_id)}`} color="sky" />
+              {student.student_grade && <Chip label={`Grade ${student.student_grade}`} color="amber" />}
+              {paymentMeta && <Chip label={paymentMeta.label} color={student.payment_state === "behind" ? "rose" : student.payment_state === "paid_in_full" ? "emerald" : "sky"} />}
+            </>
+          )}
+        </div>
+
+        {/* Loom approval — the gate a CSM controls once the portal is open */}
+        {canManage && student.onboarding_completed_at && !["applying", "offer_won", "testimonial", "paused"].includes(student.phase) && (
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-muted/40 px-3 py-2">
+            <span className="text-xs text-muted-foreground">
+              <span className="font-medium text-foreground">Loom review stage</span> · they send 3 looms a day to the review chat until a CSM approves
+            </span>
+            <button
+              onClick={() => update({ phase: "applying" })}
+              className="h-7 inline-flex items-center text-xs font-medium px-3 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 motion-safe:transition-colors"
+            >
+              Approve looms → applying (5/day)
+            </button>
+          </div>
+        )}
+
+        {/* Next actions — composer creates real action items (portal +
+            queues), due date optional, add as many as needed */}
+        <NextActionsComposer
+          canManage={canManage || roles.includes("closer")}
+          items={adhocItems}
+          onAdd={addNextAction}
+          onToggle={toggleActionItem}
+        />
       </div>
 
       {/* Start Here journey — where a locked student actually is, step by
