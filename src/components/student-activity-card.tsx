@@ -64,9 +64,9 @@ function useStudentActivity(studentId: string, userId: string | null) {
         q<{ created_at: string; business_name: string; stage: string | null }>(
           sb.from("student_placements").select("created_at, business_name, stage").eq("student_id", studentId).is("voided_at", null).gte("created_at", sinceTs)),
         userId
-          ? q<{ day: string; first_seen_at: string; last_seen_at: string; pings: number }>(
-              sb.from("portal_activity").select("day, first_seen_at, last_seen_at, pings").eq("user_id", userId).gte("day", sinceDay))
-          : Promise.resolve([] as { day: string; first_seen_at: string; last_seen_at: string; pings: number }[]),
+          ? q<{ day: string; first_seen_at: string; last_seen_at: string; pings: number; opens: number | null }>(
+              sb.from("portal_activity").select("day, first_seen_at, last_seen_at, pings, opens").eq("user_id", userId).gte("day", sinceDay))
+          : Promise.resolve([] as { day: string; first_seen_at: string; last_seen_at: string; pings: number; opens: number | null }[]),
       ]);
 
       // Staff names for check-ins/notes
@@ -138,25 +138,26 @@ export function StudentActivityCard({ studentId, userId, timezone }: {
     };
     const perDay = new Map<string, number>();
     d.events.forEach(e => { const k = dayOf(e.at); perDay.set(k, (perDay.get(k) ?? 0) + 1); });
-    const days: { key: string; count: number; inPortal: boolean }[] = [];
-    const presenceSet = new Set(d.presence.map(p => p.day));
+    type Presence = (typeof d.presence)[number];
+    const presenceMap = new Map<string, Presence>(d.presence.map(p => [p.day, p]));
+    const days: { key: string; count: number; presence: Presence | null }[] = [];
     for (let i = 29; i >= 0; i--) {
       const key = iso(subDays(new Date(), i));
-      days.push({ key, count: perDay.get(key) ?? 0, inPortal: presenceSet.has(key) });
+      days.push({ key, count: perDay.get(key) ?? 0, presence: presenceMap.get(key) ?? null });
     }
-    return { touch7, touch30, lastSeen, topHour, presenceDays, totalMinutes, days };
+    const portalDays = [...d.presence].sort((a, b) => b.day.localeCompare(a.day));
+    return { touch7, touch30, lastSeen, topHour, presenceDays, totalMinutes, days, portalDays };
   }, [d, timezone]);
 
-  const fmtWhen = (ts: string) => {
-    const time = (() => {
-      try {
-        return new Intl.DateTimeFormat("en-GB", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: timezone ?? undefined }).format(new Date(ts));
-      } catch {
-        return new Date(ts).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-      }
-    })();
-    return `${friendlyPastDay(ts)} · ${time}${timezone ? " their time" : ""}`;
+  const fmtClock = (ts: string) => {
+    try {
+      return new Intl.DateTimeFormat("en-GB", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: timezone ?? undefined }).format(new Date(ts));
+    } catch {
+      return new Date(ts).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+    }
   };
+  const fmtWhen = (ts: string) => `${friendlyPastDay(ts)} · ${fmtClock(ts)}${timezone ? " their time" : ""}`;
+  const fmtSpan = (mins: number) => (mins < 60 ? `${Math.max(1, Math.round(mins))}m` : `${Math.floor(mins / 60)}h ${Math.round(mins % 60)}m`);
 
   if (q.isLoading) return null;
   if (!d || !stats) return null;
@@ -198,11 +199,15 @@ export function StudentActivityCard({ studentId, userId, timezone }: {
         {stats.days.map(day => {
           const intensity = day.count === 0 ? 0 : day.count <= 2 ? 1 : day.count <= 5 ? 2 : 3;
           const fill = ["bg-[var(--accent)]", "bg-primary/30", "bg-primary/60", "bg-primary"][intensity];
+          const p = day.presence;
+          const portalNote = p
+            ? ` · opened the portal ${Math.max(1, p.opens ?? 0)}x (${fmtClock(p.first_seen_at)} to ${fmtClock(p.last_seen_at)})`
+            : "";
           return (
             <div
               key={day.key}
-              title={`${friendlyPastDay(day.key)} · ${day.count} touchpoint${day.count === 1 ? "" : "s"}${day.inPortal ? " · opened the portal" : ""}`}
-              className={`h-5 flex-1 min-w-[5px] rounded-[3px] ${fill} ${day.inPortal ? "ring-1 ring-success/60" : ""}`}
+              title={`${friendlyPastDay(day.key)} · ${day.count} touchpoint${day.count === 1 ? "" : "s"}${portalNote}`}
+              className={`h-5 flex-1 min-w-[5px] rounded-[3px] ${fill} ${p ? "ring-1 ring-success/60" : ""}`}
             />
           );
         })}
@@ -212,6 +217,26 @@ export function StudentActivityCard({ studentId, userId, timezone }: {
         <span>green ring = opened the portal that day (tracked since Aug 2026)</span>
         <span>today</span>
       </div>
+
+      {/* Portal opens, day by day: how many times, first in, last seen, rough time inside */}
+      {stats.portalDays.length > 0 && (
+        <div className="mb-4 rounded-md border border-border bg-background p-3">
+          <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mb-1.5">In the portal · day by day</div>
+          <div className="max-h-40 overflow-y-auto divide-y divide-border/50">
+            {stats.portalDays.slice(0, 14).map(p => {
+              const activeMin = Math.max(0, (new Date(p.last_seen_at).getTime() - new Date(p.first_seen_at).getTime()) / 60000);
+              return (
+                <div key={p.day} className="flex flex-wrap items-center gap-x-3 gap-y-0.5 py-1.5 text-[12px]">
+                  <span className="w-24 shrink-0 text-foreground font-medium">{friendlyPastDay(p.day)}</span>
+                  <span className="text-muted-foreground">opened <span className="text-foreground font-medium tabular-nums">{Math.max(1, p.opens ?? 0)}x</span></span>
+                  <span className="text-muted-foreground">{fmtClock(p.first_seen_at)} to {fmtClock(p.last_seen_at)}{timezone ? " their time" : ""}</span>
+                  <span className="text-muted-foreground ml-auto tabular-nums">{fmtSpan(activeMin)} span</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* The stream itself */}
       {d.events.length === 0 ? (

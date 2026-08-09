@@ -188,15 +188,15 @@ function AuthedLayout() {
   const userId = state.user?.id ?? null;
   useEffect(() => {
     if (!userId) return;
-    const ping = () => {
+    const ping = (open: boolean) => {
       if (document.visibilityState === "hidden") return;
       void (supabase.rpc as (fn: string, args: Record<string, unknown>) => PromiseLike<unknown>)(
-        "portal_ping", { _day: todayLocal() },
+        "portal_ping", { _day: todayLocal(), _open: open },
       ).then(() => {}, () => {});
     };
-    ping();
-    const timer = setInterval(ping, 10 * 60_000);
-    const onVis = () => { if (document.visibilityState === "visible") ping(); };
+    ping(true); // sign-in / page load counts as an open
+    const timer = setInterval(() => ping(false), 10 * 60_000);
+    const onVis = () => { if (document.visibilityState === "visible") ping(true); };
     document.addEventListener("visibilitychange", onVis);
     return () => { clearInterval(timer); document.removeEventListener("visibilitychange", onVis); };
   }, [userId]);
