@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useStudentHealth } from "@/lib/use-student-health";
 import { BAND_META } from "@/lib/student-health";
+import { START_HERE_STEPS, nextStartHereStep } from "@/lib/student-guide-steps";
 import { useEffect, useMemo, useState } from "react";
 import { PageSkeleton } from "@/components/ui/skeletons";
 import { PlacementsSection } from "@/components/student-placements";
@@ -19,7 +20,7 @@ import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { friendlyPastDay, humanDue } from "@/lib/dates";
 import {
-  ArrowLeft, Video, Trash2, ArchiveX, Plus, Save, Calendar as CalIcon, Eye,
+  ArrowLeft, Video, Trash2, ArchiveX, Plus, Save, Calendar as CalIcon, Eye, Lock,
   Phone, FileText, User, Pencil, ExternalLink, CheckCircle2, Circle,
   Star, HeartHandshake, DollarSign, Trophy, Award, MessageSquare, Link2,
   AlertTriangle, MessageCircle, GraduationCap, Activity, Briefcase } from "lucide-react";
@@ -120,6 +121,17 @@ function StudentDetail() {
     (["timeline", "calls", "eods", "csm", "installments", "notes"] as Tab[]).includes(tabParam as Tab) ? (tabParam as Tab) : "timeline",
   );
   const { data: healthMap } = useStudentHealth();
+  // Start Here ticks for the journey card: which of the five steps are done
+  // and when. Readable by admin/csm/coach under RLS; empty for other roles.
+  const guideQ = useQuery({
+    queryKey: ["student_guide_steps", "detail", id],
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data } = await (supabase as any).from("student_guide_steps")
+        .select("step_key, done_at").eq("student_id", id);
+      return (data ?? []) as { step_key: string; done_at: string }[];
+    },
+  });
 
   const fetchPage = async () => {
     const [sRes, cRes, eRes, weeklyRes, coachRes, csmRes, instRes, dealRes, aiRes] = await Promise.all([
@@ -444,21 +456,42 @@ function StudentDetail() {
               )}
             </div>
 
-            <div className="flex flex-wrap gap-2 mt-4 items-center">
+            {/* Health, in plain words: the chip's score is 0-100 and every
+                lost point is traceable. Spell the reasons out instead of
+                hiding them in a tooltip (asked 2026-08-09). */}
+            {(() => {
+              const h = healthMap?.get(student.id);
+              if (!h || h.band === "green" || h.reasons.length === 0) return null;
+              return (
+                <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                  <span className={`text-[10px] font-semibold uppercase tracking-wider ${BAND_META[h.band].text}`}>
+                    {BAND_META[h.band].label} · health {h.score}/100 · why:
+                  </span>
+                  {h.reasons.map(r => (
+                    <span key={r} className="text-[11px] px-2 py-0.5 rounded-full border border-border bg-muted text-muted-foreground">{r}</span>
+                  ))}
+                </div>
+              );
+            })()}
+
+            <div className="flex flex-wrap gap-x-2 gap-y-2 mt-4 items-center">
               {canManage ? (
                 <>
+                  <span className="text-[9px] uppercase tracking-[0.16em] text-muted-foreground/70 mr-0.5">Journey</span>
                   <SelectChip value={student.phase} onChange={v => update({ phase: v as Phase })} options={PHASES.map(p => ({ v: p, l: p.replace("_", " ") }))} color="fuchsia" />
                   <SelectChip value={student.status} onChange={v => update({ status: v as Status })} options={STATUSES.map(s => ({ v: s, l: s }))} color={student.status === "active" ? "emerald" : student.status === "ghosting" ? "rose" : "zinc"} />
-                  {/* Group-program students have no assigned coach or 1:1 anything (founder 2026-07-31). */}
-                  {student.calls_allotted > 0 && (
-                    <SelectChip value={student.coach_id ?? ""} onChange={v => update({ coach_id: v || null })} options={[{ v: "", l: "Unassigned" }, ...coaches.map(c => ({ v: c.id, l: c.display_name ?? "?" }))]} color="sky" prefix="Coach: " />
-                  )}
                   <SelectChip
                     value={student.student_grade ?? ""}
                     onChange={v => update({ student_grade: v || null })}
                     options={[{ v: "", l: "No grade" }, ...GRADES.map(g => ({ v: g, l: g }))]}
                     color="amber" prefix="Grade: "
                   />
+                  <span className="basis-full h-0" aria-hidden />
+                  <span className="text-[9px] uppercase tracking-[0.16em] text-muted-foreground/70 mr-0.5">Setup</span>
+                  {/* Group-program students have no assigned coach or 1:1 anything (founder 2026-07-31). */}
+                  {student.calls_allotted > 0 && (
+                    <SelectChip value={student.coach_id ?? ""} onChange={v => update({ coach_id: v || null })} options={[{ v: "", l: "Unassigned" }, ...coaches.map(c => ({ v: c.id, l: c.display_name ?? "?" }))]} color="sky" prefix="Coach: " />
+                  )}
                   <SelectChip
                     value={student.payment_state ?? ""}
                     onChange={v => update({ payment_state: (v || null) as PaymentState | null })}
@@ -500,22 +533,11 @@ function StudentDetail() {
               )}
             </div>
 
-            {/* Onboarding + loom approval — the two gates a CSM controls */}
-            {canManage && (!student.onboarding_completed_at || !["applying", "offer_won", "testimonial", "paused"].includes(student.phase)) && (
+            {/* Loom approval — the gate a CSM controls once the portal is
+                open. (The Start Here lock state lives in its own journey card
+                below the header, asked 2026-08-09.) */}
+            {canManage && student.onboarding_completed_at && !["applying", "offer_won", "testimonial", "paused"].includes(student.phase) && (
               <div className="mt-3 flex flex-wrap items-center gap-2">
-                {!student.onboarding_completed_at && (
-                  <>
-                    <span className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-warning-fg border border-warning/25 bg-warning-bg px-1.5 py-0.5 rounded-sm">
-                      <AlertTriangle className="h-2.5 w-2.5" /> Start Here incomplete · portal locked
-                    </span>
-                    <button
-                      onClick={() => update({ onboarding_completed_at: new Date().toISOString() })}
-                      className="text-caption font-medium px-2.5 py-1 rounded-md border border-border text-foreground hover:bg-muted motion-safe:transition-colors"
-                    >
-                      Unlock portal now
-                    </button>
-                  </>
-                )}
                 {student.onboarding_completed_at && !["applying", "offer_won", "testimonial", "paused"].includes(student.phase) && (
                   <>
                     <span className="text-[10px] uppercase tracking-wider text-muted-foreground border border-border bg-muted px-1.5 py-0.5 rounded-sm">
@@ -543,6 +565,17 @@ function StudentDetail() {
           </div>
         </div>
       </div>
+
+      {/* Start Here journey — where a locked student actually is, step by
+          step, instead of a bare count (asked 2026-08-09) */}
+      {!student.onboarding_completed_at && (
+        <StartHereJourneyCard
+          done={guideQ.data ?? []}
+          canManage={canManage}
+          studentName={student.full_name.split(" ")[0]}
+          onUnlock={() => update({ onboarding_completed_at: new Date().toISOString() })}
+        />
+      )}
 
       {/* Stat strip */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
@@ -975,6 +1008,83 @@ function TabBtn({ children, active, onClick, icon }: { children: React.ReactNode
   );
 }
 
+/**
+ * The five Start Here steps as a readable journey: done steps with their
+ * date, the step the student is ON highlighted, everything after it dimmed
+ * (steps unlock in order). Shown only while the portal is locked.
+ */
+function StartHereJourneyCard({ done, canManage, studentName, onUnlock }: {
+  done: { step_key: string; done_at: string }[];
+  canManage: boolean;
+  studentName: string;
+  onUnlock: () => void;
+}) {
+  const doneMap = new Map(done.map(d => [d.step_key, d.done_at]));
+  const current = nextStartHereStep([...doneMap.keys()]);
+  const doneCount = START_HERE_STEPS.filter(s => doneMap.has(s.key)).length;
+  return (
+    <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div>
+          <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-muted-foreground">
+            <Lock className="h-3 w-3 text-warning-fg" /> Start Here journey · portal locked
+          </div>
+          <p className="text-[12px] text-muted-foreground mt-1.5">
+            {current
+              ? <>{studentName} is on step {START_HERE_STEPS.findIndex(s => s.key === current.key) + 1}: <span className="text-foreground font-medium">{current.title}</span></>
+              : "All five steps are ticked, the unlock stamp is just pending."}
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-[11px] font-mono text-muted-foreground tabular-nums">{doneCount}/{START_HERE_STEPS.length}</span>
+          {canManage && (
+            <button
+              onClick={onUnlock}
+              className="text-caption font-medium px-2.5 py-1.5 rounded-md border border-border text-foreground hover:bg-muted motion-safe:transition-colors"
+              title="Skip the remaining steps and open their full portal now"
+            >
+              Unlock portal now
+            </button>
+          )}
+        </div>
+      </div>
+      {/* Progress bar */}
+      <div className="h-1.5 rounded-full bg-[var(--accent)] overflow-hidden mb-4">
+        <div className="h-full bg-warning rounded-full motion-safe:transition-all" style={{ width: `${(doneCount / START_HERE_STEPS.length) * 100}%` }} />
+      </div>
+      <div className="space-y-1">
+        {START_HERE_STEPS.map((step, i) => {
+          const doneAt = doneMap.get(step.key);
+          const isCurrent = current?.key === step.key;
+          const isFuture = !doneAt && !isCurrent;
+          return (
+            <div
+              key={step.key}
+              className={`flex items-center gap-3 rounded-md px-3 py-2 ${
+                isCurrent ? "border border-warning/25 bg-warning-bg/50" : isFuture ? "opacity-45" : ""
+              }`}
+            >
+              {doneAt ? (
+                <CheckCircle2 className="h-4 w-4 text-success-fg shrink-0" />
+              ) : (
+                <span className={`h-4 w-4 rounded-full border flex items-center justify-center text-[9px] tabular-nums shrink-0 ${isCurrent ? "border-warning text-warning-fg" : "border-border text-muted-foreground"}`}>
+                  {i + 1}
+                </span>
+              )}
+              <div className="min-w-0 flex-1">
+                <span className={`text-[13px] ${doneAt ? "text-muted-foreground" : "text-foreground font-medium"}`}>{step.title}</span>
+              </div>
+              <span className="text-[11px] text-muted-foreground shrink-0">
+                {doneAt ? `Done ${friendlyPastDay(doneAt)}` : isCurrent ? "They are here" : "Locked until the step before is done"}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function StatCard({ label, value, sub, accent, icon, sparkline }: {
   label: string; value: React.ReactNode; sub?: string; accent: "emerald" | "sky" | "rose" | "amber" | "fuchsia";
   icon: React.ReactNode; sparkline?: number[];
@@ -1020,7 +1130,7 @@ function SelectChip({ value, onChange, options, color, prefix }: {
     amber: "text-warning-fg border-warning/25 bg-warning-bg",
   } as const;
   return (
-    <div className={`inline-flex items-center gap-1 text-[10px] uppercase tracking-wider pl-2 pr-1 py-0.5 rounded-sm border ${map[color]}`}>
+    <div className={`inline-flex items-center gap-1 text-[10px] uppercase tracking-wider pl-2.5 pr-1 py-0.5 rounded-full border ${map[color]}`}>
       {prefix && <span>{prefix}</span>}
       <SelectField value={value} onChange={onChange} options={options.map(o => ({ value: o.v, label: o.l }))} className="h-7 w-auto border-0 bg-transparent shadow-none" />
     </div>
@@ -1036,7 +1146,7 @@ function Chip({ label, color }: { label: string; color: "emerald" | "rose" | "zi
     sky: "text-muted-foreground border-border bg-muted",
     amber: "text-warning-fg border-warning/25 bg-warning-bg",
   } as const;
-  return <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border ${map[color]}`}>{label}</span>;
+  return <span className={`text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-full border ${map[color]}`}>{label}</span>;
 }
 
 function CallForm({ studentId, onCancel, onDone }: { studentId: string; onCancel: () => void; onDone: () => void }) {

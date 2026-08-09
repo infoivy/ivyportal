@@ -650,6 +650,26 @@ export function StudentPortal() {
   // WhatsApp field on their next visit.
   if (!student.timezone || !student.whatsapp) {
     return (
+      <>
+      {/* Sandbox context: this gate IS what the student currently sees —
+          say so, and let staff jump past it to the rest of the portal. */}
+      {sandbox && (
+        <div className="mx-4 sm:mx-6 mt-4 flex flex-wrap items-center justify-between gap-2 rounded-md border border-primary/25 bg-primary/10 px-3 py-2">
+          <span className="text-[12px] text-foreground">
+            This is really where {first} is: the portal asks for {!student.timezone && !student.whatsapp ? "their timezone and WhatsApp" : !student.whatsapp ? "their WhatsApp number" : "their timezone"} before anything else opens.
+          </span>
+          <button
+            onClick={() => setStudent(s => (s ? {
+              ...s,
+              timezone: s.timezone ?? (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return "Asia/Riyadh"; } })(),
+              whatsapp: s.whatsapp ?? "+10000000000",
+            } : s))}
+            className="text-[11px] font-medium px-2.5 py-1 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 motion-safe:transition-colors"
+          >
+            Skip ahead · see the rest
+          </button>
+        </div>
+      )}
       <DetailsGate
         first={first}
         needTimezone={!student.timezone}
@@ -663,6 +683,7 @@ export function StudentPortal() {
           toast.success(sandbox ? "Saved · sandbox, nothing saved" : "Saved · welcome in");
         }}
       />
+      </>
     );
   }
 
