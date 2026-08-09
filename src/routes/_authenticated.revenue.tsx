@@ -253,10 +253,14 @@ function RevenueInner() {
   }, [rangeDeals, setters, rates]);
 
   // Monthly / weekly / daily trend
-  const [trendMode, setTrendMode] = useState<"monthly" | "weekly" | "daily">("monthly");
+  const [trendMode, setTrendModeRaw] = useState<"monthly" | "weekly" | "daily">("monthly");
+  // Click a bar → the panel under the chart lists that period's deals
+  // (founder-asked 2026-08-09: same drilldown as Student output).
+  const [trendSel, setTrendSel] = useState<string | null>(null);
+  const setTrendMode = (m: "monthly" | "weekly" | "daily") => { setTrendModeRaw(m); setTrendSel(null); };
   const trend = useMemo(() => {
     const now = new Date();
-    const buckets: { label: string; cash: number; booked: number; deals: number }[] = [];
+    const buckets: { label: string; cash: number; booked: number; deals: number; ids: string[] }[] = [];
     if (trendMode === "monthly") {
       for (let i = 5; i >= 0; i--) {
         const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
@@ -269,6 +273,7 @@ function RevenueInner() {
           cash: inRange.reduce((a, x) => a + Number(x.cash_collected_upfront), 0),
           booked: inRange.reduce((a, x) => a + Number(x.total_value), 0),
           deals: inRange.length,
+          ids: inRange.map((x) => x.id),
         });
       }
     } else if (trendMode === "weekly") {
@@ -286,6 +291,7 @@ function RevenueInner() {
           cash: inRange.reduce((a, x) => a + Number(x.cash_collected_upfront), 0),
           booked: inRange.reduce((a, x) => a + Number(x.total_value), 0),
           deals: inRange.length,
+          ids: inRange.map((x) => x.id),
         });
       }
     } else {
@@ -298,6 +304,7 @@ function RevenueInner() {
           cash: inRange.reduce((a, x) => a + Number(x.cash_collected_upfront), 0),
           booked: inRange.reduce((a, x) => a + Number(x.total_value), 0),
           deals: inRange.length,
+          ids: inRange.map((x) => x.id),
         });
       }
     }
@@ -445,7 +452,13 @@ function RevenueInner() {
             </div>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={trend.map((t) => ({ ...t, avg: t.deals ? Math.round(t.booked / t.deals) : 0 }))}>
+                <ComposedChart
+                  data={trend.map((t) => ({ ...t, avg: t.deals ? Math.round(t.booked / t.deals) : 0 }))}
+                  onClick={(state) => {
+                    const label = (state?.activePayload?.[0]?.payload as { label?: string } | undefined)?.label;
+                    if (label) setTrendSel((cur) => (cur === label ? null : label));
+                  }}
+                >
                   <CartesianGrid stroke="var(--color-border)" strokeOpacity={0.5} vertical={false} />
                   <XAxis dataKey="label" tick={{ fontSize: 10, fill: "var(--color-muted-foreground)" }} interval="preserveStartEnd" tickLine={false} axisLine={false} tickMargin={8} />
                   <YAxis yAxisId="deals" tick={{ fontSize: 10, fill: "var(--color-muted-foreground)" }} tickLine={false} axisLine={false} width={28} allowDecimals={false} />
@@ -460,6 +473,68 @@ function RevenueInner() {
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
+            {!trendSel && (
+              <div className="mt-1 text-[10px] text-muted-foreground text-center">Click a bar to see that period's deals</div>
+            )}
+            {(() => {
+              if (!trendSel) return null;
+              const bucket = trend.find((t) => t.label === trendSel);
+              if (!bucket) return null;
+              const ids = new Set(bucket.ids);
+              const rows = deals.filter((d) => ids.has(d.id));
+              return (
+                <div className="mt-3 rounded-md border border-border bg-background p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                    <div className="text-[12px] font-semibold text-foreground">
+                      {bucket.label} · {bucket.deals} deal{bucket.deals === 1 ? "" : "s"} · {money(bucket.booked)} booked · {money(bucket.cash)} cash upfront
+                    </div>
+                    <button onClick={() => setTrendSel(null)} className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-2">Close</button>
+                  </div>
+                  {rows.length === 0 ? (
+                    <div className="py-3 text-center text-[11px] text-muted-foreground">No deals in this period.</div>
+                  ) : (
+                    <div className="max-h-56 overflow-y-auto overflow-x-auto -mx-1 px-1">
+                      <table className="w-full min-w-[520px] text-caption">
+                        <thead className="sticky top-0 bg-background">
+                          <tr className="text-micro text-muted-foreground">
+                            <th className="text-left py-1 font-medium">Date</th>
+                            <th className="text-left py-1 font-medium">Student</th>
+                            <th className="text-left py-1 font-medium">Closer</th>
+                            <th className="text-left py-1 font-medium">Setter</th>
+                            <th className="text-right py-1 font-medium">Value</th>
+                            <th className="text-right py-1 font-medium">Cash</th>
+                            <th className="text-right py-1 font-medium">Logged at</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border/60">
+                          {rows.map((d) => {
+                            const closerName = closers.find((c) => c.id === d.closer_id)?.display_name || "–";
+                            const setterName = d.setter_id ? setters.find((s) => s.id === d.setter_id)?.display_name || "–" : "–";
+                            return (
+                              <tr key={d.id}>
+                                <td className="py-1.5 text-muted-foreground whitespace-nowrap tabular-nums">{d.deal_date}</td>
+                                <td className="py-1.5 font-medium">{d.student_name}</td>
+                                <td className="py-1.5">
+                                  {closerName}
+                                  {isSelfSet(d) && <span className="ml-1.5 text-[9px] uppercase tracking-wider text-primary border border-primary/25 bg-primary/10 rounded-full px-1.5 py-px">set + close</span>}
+                                </td>
+                                <td className="py-1.5 text-muted-foreground">{setterName}</td>
+                                <td className="py-1.5 text-right tabular-nums">{money(Number(d.total_value))}</td>
+                                <td className="py-1.5 text-right tabular-nums">{money(Number(d.cash_collected_upfront))}</td>
+                                <td className="py-1.5 text-right text-muted-foreground whitespace-nowrap">
+                                  {d.created_at ? new Date(d.created_at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "–"}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                  <div className="mt-2 text-[10px] text-muted-foreground">Per-closer commission detail lives in the Payouts ledger below.</div>
+                </div>
+              );
+            })()}
           </Card>
       </div>
 

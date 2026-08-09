@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useStudentHealth } from "@/lib/use-student-health";
 import { BAND_META } from "@/lib/student-health";
 import { START_HERE_STEPS, nextStartHereStep } from "@/lib/student-guide-steps";
+import { StudentActivityCard } from "@/components/student-activity-card";
 import { useEffect, useMemo, useState } from "react";
 import { PageSkeleton } from "@/components/ui/skeletons";
 import { PlacementsSection } from "@/components/student-placements";
@@ -606,6 +607,9 @@ function StudentDetail() {
           icon={<FileText className="h-3 w-3" />}
         />
       </div>
+
+      {/* Every touchpoint in one stream + real portal presence */}
+      <StudentActivityCard studentId={student.id} userId={student.user_id} timezone={student.timezone} />
 
       {/* Placements — the outcome, so it leads */}
       <PlacementsSection studentId={student.id} />

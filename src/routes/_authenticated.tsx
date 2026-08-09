@@ -182,6 +182,25 @@ function AuthedLayout() {
     };
   }, [navigate, queryClient]);
 
+  // Presence ping (founder-asked 2026-08-09): one row per person per LOCAL
+  // day in portal_activity — on sign-in, on tab refocus, and every 10 minutes
+  // while visible. Powers "who was in the portal, when, and how long".
+  const userId = state.user?.id ?? null;
+  useEffect(() => {
+    if (!userId) return;
+    const ping = () => {
+      if (document.visibilityState === "hidden") return;
+      void (supabase.rpc as (fn: string, args: Record<string, unknown>) => PromiseLike<unknown>)(
+        "portal_ping", { _day: todayLocal() },
+      ).then(() => {}, () => {});
+    };
+    ping();
+    const timer = setInterval(ping, 10 * 60_000);
+    const onVis = () => { if (document.visibilityState === "visible") ping(); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => { clearInterval(timer); document.removeEventListener("visibilitychange", onVis); };
+  }, [userId]);
+
   const signOut = async () => {
     const error = await signOutWithLocalFallback(options => supabase.auth.signOut(options));
     if (error) setAuthError("We couldn't sign out this browser. Try again.");
