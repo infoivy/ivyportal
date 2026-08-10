@@ -291,6 +291,18 @@
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.09);
 }
 
+/* Soft card: the student-surface treatment (redesign 2026-08-11) — bigger
+   radius, calmer edges, room to breathe. Staff surfaces keep .card-surface. */
+.card-soft {
+  background: var(--color-card);
+  box-shadow: var(--shadow-card);
+  border-radius: var(--radius-xl);
+}
+.dark .card-soft {
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.07);
+}
+
 /* Frosted chrome (top bar, sheets) */
 .frosted {
   background: color-mix(in srgb, var(--background) 92%, transparent);

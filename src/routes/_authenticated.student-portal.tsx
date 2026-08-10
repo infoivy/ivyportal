@@ -7,10 +7,10 @@ import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import {
   CheckCircle2, Clock, Award, Briefcase, MessageSquare, Users, ListChecks,
-  Calendar, Trophy, TrendingUp, Flame, BookOpen, PartyPopper, ChevronRight, Lock,
-  Sparkles, AlertCircle, PlayCircle, FileText, Star, ArrowRight, Play } from "lucide-react";
+  Calendar, Trophy, TrendingUp, Flame, Home, PartyPopper, ChevronRight, Lock,
+  PlayCircle, FileText, Star, ArrowRight, Play } from "lucide-react";
 import { computeStreak } from "@/lib/streak";
-import { setStudentPortalTab, onStudentPortalTab, getStudentPortalTab } from "@/lib/student-portal-bus";
+import { setStudentPortalTab, onStudentPortalTab, getStudentPortalTab, normalizeStudentTab } from "@/lib/student-portal-bus";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -86,7 +86,6 @@ type AdhocItem = {
   id: string; student_id: string; text: string; done: boolean;
   due_date: string | null; created_at: string; source_call_id: string | null;
 };
-type Doc = { slug: string; title: string; category: string };
 
 const empty = {
   applications_submitted: 0, outreach_sent: 0, replies: 0, interviews: 0,
@@ -104,9 +103,11 @@ const emptyWeekly = {
 };
 
 // Placements and the phase journey were cut from the student view
-// (founder-directed 2026-07-25): students work their daily loop; the pipeline
-// language (coaching → applying, placements) is staff vocabulary.
-type Tab = "start" | "eod" | "actions" | "coaching" | "milestones" | "leaderboard";
+// (founder-directed 2026-07-25); the redesign (founder-directed 2026-08-11)
+// collapsed six tabs into three: home (log + calls + to-dos), progress
+// (numbers, coaching, milestones, history), board (leaderboard). Legacy tab
+// keys are mapped by normalizeStudentTab.
+type Tab = "start" | "home" | "progress" | "board";
 
 // The student's LOCAL day — same rule as team EODs. toISOString() is UTC and
 // files evening submissions onto tomorrow for western timezones, which then
@@ -124,9 +125,14 @@ export function StudentPortal() {
   const today = todayStr();
   const weeklyWindow = useMemo(() => getStudentWeeklyWindow(today), [today]);
   const currentWeekStart = useMemo(() => getCurrentWeekStart(today), [today]);
-  const [tab, setTab] = useState<Tab>(() => (getStudentPortalTab() as Tab) || "eod");
+  const [tab, setTab] = useState<Tab>(() => normalizeStudentTab(getStudentPortalTab()) as Tab);
   useEffect(() => { setStudentPortalTab(tab); }, [tab]);
-  useEffect(() => { const off = onStudentPortalTab(t => setTab(t as Tab)); return () => { off(); }; }, []);
+  useEffect(() => { const off = onStudentPortalTab(t => setTab(normalizeStudentTab(t) as Tab)); return () => { off(); }; }, []);
+  // Daily log notes (wins/blockers/tomorrow) hide behind one quiet link; they
+  // auto-show whenever they already hold text (draft or submitted log).
+  const [notesOpen, setNotesOpen] = useState(false);
+  // Submitted weekly EOD collapses to one quiet line; this expands it.
+  const [weeklyOpen, setWeeklyOpen] = useState(false);
 
   const [student, setStudent] = useState<Student | null>(null);
   const [callSchedule, setCallSchedule] = useState<GroupCall[]>(DEFAULT_GROUP_CALL_SCHEDULE);
@@ -137,7 +143,6 @@ export function StudentPortal() {
   const [weeklyEods, setWeeklyEods] = useState<StudentWeeklyEod[]>([]);
   const [calls, setCalls] = useState<Call[]>([]);
   const [adhocItems, setAdhocItems] = useState<AdhocItem[]>([]);
-  const [docs, setDocs] = useState<Doc[]>([]);
   const [form, setForm] = useState(empty);
   const [weeklyForm, setWeeklyForm] = useState(emptyWeekly);
   const [currentTicks, setCurrentTicks] = useState<string[]>([]);
@@ -170,13 +175,12 @@ export function StudentPortal() {
     if (!s) { setLoading(false); return; }
     const st = s as Student;
 
-    const [{ data: e }, weeklyRes, { data: c }, { data: ah }, coachRes, docsRes, guideRes, orgRes, attendRes] = await Promise.all([
+    const [{ data: e }, weeklyRes, { data: c }, { data: ah }, coachRes, guideRes, orgRes, attendRes] = await Promise.all([
       supabase.from("student_eods").select("*").eq("student_id", st.id).order("report_date", { ascending: false }).limit(60),
       supabase.from("student_weekly_eods").select("*").eq("student_id", st.id).order("week_start", { ascending: false }).limit(16),
       supabase.from("student_calls").select("id, call_date, status, progress_rating, next_call_date, action_items_json").eq("student_id", st.id).is("voided_at", null).order("call_date", { ascending: false }),
       supabase.from("student_action_items").select("id, student_id, text, done, due_date, created_at, source_call_id").eq("student_id", st.id).order("created_at", { ascending: false }),
       st.coach_id ? supabase.from("profiles").select("id, display_name, avatar_url, avatar_path").eq("id", st.coach_id).maybeSingle() : Promise.resolve({ data: null }),
-      supabase.from("docs").select("slug, title, category").contains("role_visibility", ["student"]).order("pinned", { ascending: false }).order("sort_order").limit(8),
       (supabase as any).from("student_guide_steps").select("step_key").eq("student_id", st.id),
       supabase.from("org_settings").select("group_call_schedule").limit(1).maybeSingle(),
       supabase.from("student_call_attendance").select("week_start, day").eq("student_id", st.id)
@@ -199,7 +203,6 @@ export function StudentPortal() {
     } else {
       setCoach(null);
     }
-    setDocs((docsRes.data ?? []) as Doc[]);
 
     const t = (e ?? []).find((r: any) => r.report_date === today);
     if (t) {
@@ -429,18 +432,13 @@ export function StudentPortal() {
     ? WALKTHROUGH_VIDEOS[isOneOnOne ? "one_on_one" : "group"]
     : null;
   const softLocked = !!student && !locked && !!walkthroughVideo && !student.walkthrough_done_at;
-  // Stale/persisted tab state can still say "coaching" (e.g. moved to group)
-  // or point at removed tabs — never render those panels.
-  useEffect(() => {
-    if (student && !isOneOnOne && tab === "coaching") setTab(locked ? "start" : "eod");
-  }, [student, isOneOnOne, tab, locked]);
   useEffect(() => {
     if (locked && tab !== "start") setTab("start");
   }, [locked, tab]);
   // Once onboarding is done, Start Here is gone entirely (founder-directed
-  // 2026-07-25) — and "placements" no longer exists as a tab.
+  // 2026-07-25).
   useEffect(() => {
-    if (student && !locked && (tab === "start" || (tab as string) === "placements")) setTab("eod");
+    if (student && !locked && tab === "start") setTab("home");
   }, [student, locked, tab]);
   // Loom approved ≈ moved past training/coaching into applying
   const loomApproved = ["applying", "offer_won", "testimonial"].includes(student?.phase ?? "");
@@ -642,6 +640,7 @@ export function StudentPortal() {
   // the staff member's own display name.
   const first = (sandbox ? student.full_name : displayName ?? student.full_name).split(" ")[0];
   const brandNew = eods.length === 0;
+  const hasNotes = !!(form.wins || form.blockers || form.tomorrow_focus);
 
   // Soft lock (founder-directed 2026-07-23, WhatsApp added 2026-07-26):
   // every student confirms their own timezone AND WhatsApp before anything
@@ -765,7 +764,7 @@ export function StudentPortal() {
   }
 
   return (
-    <div className="w-full max-w-none p-4 sm:p-6 space-y-5 relative">
+    <div className="w-full max-w-2xl mx-auto p-4 sm:p-6 space-y-4 relative">
       {confetti && <ConfettiBurst />}
 
       {/* Post-unlock walkthrough: the whole portal is scrollable below, but
@@ -783,215 +782,40 @@ export function StudentPortal() {
         />
       )}
 
-      <div className={softLocked ? "space-y-5 pointer-events-none select-none opacity-55" : "space-y-5"} aria-hidden={softLocked || undefined}>
-      {/* HERO — editorial welcome (founder-referenced layout 2026-07-28) */}
-      <section className="pt-1 px-1">
-        <div className="flex flex-wrap items-end justify-between gap-4">
+      <div className={softLocked ? "space-y-4 pointer-events-none select-none opacity-55" : "space-y-4"} aria-hidden={softLocked || undefined}>
+
+      {/* Greeting — small and calm; the log card below is the hero
+          (founder-directed redesign 2026-08-11: radical simplicity) */}
+      <section className="px-1 pt-1">
+        <div className="flex flex-wrap items-end justify-between gap-3">
           <div className="min-w-0">
-            <div dir="rtl" className="text-[14px] text-muted-foreground/80">السلام عليكم ورحمة الله وبركاته</div>
-            <h1 className="mt-2.5 text-[30px] sm:text-[40px] font-semibold tracking-[-0.02em] leading-[1.1]">
+            <div dir="rtl" className="text-[13px] text-muted-foreground/80">السلام عليكم ورحمة الله وبركاته</div>
+            <h1 className="mt-1.5 text-[26px] sm:text-[32px] font-semibold tracking-[-0.02em] leading-[1.1]">
               Welcome, <span className="text-primary">{first}</span>.
             </h1>
           </div>
-          <div className="flex items-center gap-2 pb-1.5">
-            <RankChip onClick={() => setTab("leaderboard")} />
+          <div className="flex items-center gap-2 pb-1">
+            <RankChip onClick={() => setTab("board")} />
             {streak > 0 && (
-              <div className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-sm border border-warning/25 bg-warning-bg text-warning-fg">
-                <Flame className="h-3.5 w-3.5" />
-                {streak}-day streak
+              <div className="flex items-center gap-1.5 text-[12px] px-3 py-1.5 rounded-full border border-warning/25 bg-warning-bg text-warning-fg" title={`${streak}-day streak`}>
+                <Flame className="h-3.5 w-3.5" /> {streak}
               </div>
             )}
-            <button
-              onClick={() => {
-                setTab("eod");
-                setShowForm(true);
-                setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
-              }}
-              className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-sm border transition ${existingId ? "border-success/25 bg-success-bg text-success-fg hover:bg-success-bg" : "border-warning/25 bg-warning-bg text-warning-fg hover:bg-warning-bg"}`}
-            >
-              {existingId ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Clock className="h-3.5 w-3.5" />}
-              {existingId ? "Today logged, edit" : "Submit today's log"}
-            </button>
           </div>
         </div>
-
-        {/* To do — urgent items sit directly under the salaam; the border
-            breathes so it can't be scrolled past unnoticed */}
-        {openItems.length > 0 && (
-          <div className="mt-4 rounded-lg border border-warning/25 bg-warning-bg/50 p-3 space-y-1 todo-pulse">
-            <div className="flex items-center justify-between gap-3 px-1">
-              <div className="flex items-center gap-2 text-[12px] font-semibold text-foreground">
-                <ListChecks className="h-3.5 w-3.5 text-warning-fg" /> <span className="text-[11px] font-semibold uppercase tracking-[0.16em]">To do</span>
-                {overdue.length > 0 && (
-                  <span className="text-micro px-2 py-0.5 rounded-full bg-danger-bg text-danger-fg">{overdue.length} overdue</span>
-                )}
-                {dueToday.length > 0 && (
-                  <span className="text-micro px-2 py-0.5 rounded-full bg-warning-bg text-warning-fg">{dueToday.length} due today</span>
-                )}
-              </div>
-              {openItems.length > 4 && (
-                <button onClick={() => setTab("actions")} className="text-caption text-primary hover:underline shrink-0">
-                  View all {openItems.length} →
-                </button>
-              )}
-            </div>
-            <div className="divide-y divide-border/40 rounded-md bg-card">
-              {[...overdue, ...dueToday, ...upcoming].slice(0, 4).map(a => (
-                <ActionRow key={`todo-${a.callId}-${a.index}`} a={a} today={today} onToggle={toggleItem} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-5">
-          {isOneOnOne ? (
-            <>
-              {/* Coach card — 1:1 students only; group students have CSM support instead */}
-              <div className="border border-[var(--border)] rounded-sm bg-[var(--background)] p-3 flex items-center gap-3">
-                {coach ? (
-                  <>
-                    {coach.avatar_url ? (
-                      <img src={coach.avatar_url} alt="" className="h-10 w-10 rounded-full object-cover border border-[var(--border)]" />
-                    ) : (
-                      <div className="h-10 w-10 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-xs font-semibold">
-                        {(coach.display_name ?? "C").slice(0, 1).toUpperCase()}
-                      </div>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <div className="text-[9px] text-muted-foreground">Your coach</div>
-                      <div className="text-sm font-medium truncate">{coach.display_name ?? "Coach"}</div>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="h-10 w-10 rounded-full border border-dashed border-[#2b3240] text-muted-foreground flex items-center justify-center">
-                      <Users className="h-4 w-4" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-[9px] text-muted-foreground">Your coach</div>
-                      <div className="text-xs text-muted-foreground">Will be assigned soon</div>
-                    </div>
-                  </>
-                )}
-              </div>
-              {/* Next call */}
-              <div className="border border-[var(--border)] rounded-sm bg-[var(--background)] p-3 flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-success-bg text-success-fg flex items-center justify-center">
-                  <Calendar className="h-4 w-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-[9px] text-muted-foreground">Next 1:1</div>
-                  {calendarNextCall ? (
-                    <div className="text-sm font-medium">
-                      {new Date(calendarNextCall.start).toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
-                      {calendarNextCall.with && <span className="text-muted-foreground text-[11px] ml-2">w/ {calendarNextCall.with}</span>}
-                      {calendarNextCall.meet_link && (
-                        <a href={calendarNextCall.meet_link} target="_blank" rel="noopener" className="text-[11px] text-primary hover:underline ml-2">Join →</a>
-                      )}
-                    </div>
-                  ) : nextCallDate ? (
-                    <div className="text-sm font-medium">
-                      {nextCallDate}
-                      <span className="text-muted-foreground text-[11px] ml-2">
-                        {nextCallInDays === 0 ? "today" : nextCallInDays === 1 ? "tomorrow" : `in ${nextCallInDays}d`}
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="text-xs text-muted-foreground">Not scheduled · book your next call</div>
-                  )}
-                </div>
-              </div>
-            </>
-          ) : (
-            <>
-              {/* Group Expertise Pathway: group calls + CSM support, no coach */}
-              <div className="border border-[var(--border)] rounded-sm bg-[var(--background)] p-3 flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-success-bg text-success-fg flex items-center justify-center">
-                  <Users className="h-4 w-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-[9px] text-muted-foreground">Group coaching</div>
-                  <div className="text-sm font-medium">{callSchedule.length} calls a week</div>
-                  <div className="text-[10px] text-muted-foreground">Attend them all · take notes, ask smart questions</div>
-                </div>
-              </div>
-              <div className="border border-[var(--border)] rounded-sm bg-[var(--background)] p-3 flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-                  <MessageSquare className="h-4 w-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-[9px] text-muted-foreground">Your success team</div>
-                  <div className="text-sm font-medium">CSM check-ins</div>
-                  <div className="text-[10px] text-muted-foreground">Loom feedback, action items, and regular calls to keep you moving</div>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* This week — 7 day-dots build streak pressure at a glance */}
-        <WeekDots eodDates={eods.map(e => e.report_date)} today={today} hasToday={!!existingId} />
-
-        {/* The moment it happens, they tell us — front and center, not buried
-            in a tab (founder-directed 2026-07-25) */}
-        {!student.offer_landed_at && (
-          <OfferLandedForm onReported={async () => {
-            setConfetti(true);
-            setTimeout(() => setConfetti(false), 2500);
-            if (sandbox) setStudent(s => (s ? { ...s, offer_landed_at: new Date().toISOString() } : s));
-            else await load();
-          }} />
-        )}
       </section>
 
-      {/* TABS — EOD first; group students have no 1:1 coaching tab; Start Here
-          exists only pre-unlock (its own full-page view) */}
-      <nav className="flex flex-wrap gap-1 border-b border-[var(--border)] -mb-px">
-        <TabButton active={tab === "eod"} onClick={() => setTab("eod")} icon={<FileText className="h-3.5 w-3.5" />} label="My EOD" />
-        <TabButton active={tab === "actions"} onClick={() => setTab("actions")} icon={<ListChecks className="h-3.5 w-3.5" />} label="Action items" badge={openItems.length} urgent={overdue.length > 0 || dueToday.length > 0} />
-        {isOneOnOne && <TabButton active={tab === "coaching"} onClick={() => setTab("coaching")} icon={<Calendar className="h-3.5 w-3.5" />} label="My coaching" />}
-        <TabButton active={tab === "milestones"} onClick={() => setTab("milestones")} icon={<Trophy className="h-3.5 w-3.5" />} label="Milestones" />
-        <TabButton active={tab === "leaderboard"} onClick={() => setTab("leaderboard")} icon={<Trophy className="h-3.5 w-3.5" />} label="Leaderboard" />
+      {/* Three big buttons. That is the whole portal. */}
+      <nav className="grid grid-cols-3 gap-2" role="tablist" aria-label="Portal sections">
+        <BigTab active={tab === "home"} onClick={() => setTab("home")} icon={<Home className="h-4 w-4" />} label="Home" />
+        <BigTab active={tab === "progress"} onClick={() => setTab("progress")} icon={<TrendingUp className="h-4 w-4" />} label="Progress" />
+        <BigTab active={tab === "board"} onClick={() => setTab("board")} icon={<Trophy className="h-4 w-4" />} label="Board" />
       </nav>
 
-      {tab === "leaderboard" && <LeaderboardPanel />}
-
-      {tab === "eod" && (
-        <div className="space-y-5">
-          {/* End of week: point at the weekly EOD until it's in */}
-          {!weeklyLoadError && !weeklySubmission && !weeklyFirstWeek && (
-            <button
-              type="button"
-              onClick={() => weeklyRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
-              className={`w-full flex items-center justify-between gap-3 rounded-sm border p-3 text-left text-xs motion-safe:transition-colors ${
-                weeklyWindow.dueToday
-                  ? "border-warning/25 bg-warning-bg text-warning-fg hover:bg-warning-bg/80"
-                  : "border-danger/25 bg-danger-bg text-danger-fg hover:bg-danger-bg/80"
-              }`}
-            >
-              <span className="flex items-center gap-2">
-                <Calendar className="h-3.5 w-3.5" />
-                Weekly EOD {weeklyWindow.dueToday ? "due today" : "overdue"}: which calls did you attend this week? Takes 2 minutes.
-              </span>
-              <span className="font-medium whitespace-nowrap">Fill it out ↓</span>
-            </button>
-          )}
-
-          {/* KPI cards last 7 — a loom application IS the outreach, no separate count */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            <StatCard label="Loom apps · 7d" value={totals7.apps} prev={totalsPrev.apps} series={spark("applications_submitted")} accent brandNew={brandNew} icon={<Briefcase className="h-3 w-3" />} />
-            <StatCard label="Looms · 7d" value={totals7.looms} prev={totalsPrev.looms} series={spark("looms_sent")} brandNew={brandNew} icon={<Users className="h-3 w-3" />} />
-            <StatCard label="Roleplays · 7d" value={totals7.roleplays} prev={totalsPrev.roleplays} series={spark("roleplays")} brandNew={brandNew} icon={<MessageSquare className="h-3 w-3" />} />
-            <StatCard label="Interviews · 7d" value={totals7.interviews} prev={totalsPrev.interviews} series={spark("interviews")} accent brandNew={brandNew} icon={<Award className="h-3 w-3" />} />
-          </div>
-
-          {/* Weekly recap (Mondays) */}
-          {isMonday && (totalsPrev.apps || totalsPrev.looms || totalsPrev.roleplays || totalsPrev.interviews) > 0 && (
-            <WeeklyRecap prev={totalsPrev} evenPrior={{ apps: 0, looms: 0, roleplays: 0, interviews: 0 }} totals={totals7} />
-          )}
-
-          {/* Form / Recap */}
-          <div ref={formRef}>
+      {tab === "home" && (
+        <div className="space-y-4">
+          {/* TODAY'S LOG — the one thing that matters, at the very top */}
+          <section ref={formRef} className="card-soft p-5 sm:p-6">
             {existingId && !showForm ? (
               <SubmittedRecap
                 form={form}
@@ -1000,27 +824,22 @@ export function StudentPortal() {
                 onEdit={() => setShowForm(true)}
               />
             ) : (
-              <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-5 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">Daily log</div>
-                    <h2 className="mt-1 text-[17px] font-semibold tracking-tight">{existingId ? "Update today's log" : "Submit today's log"}</h2>
-                    <p className="mt-0.5 text-[11px] text-muted-foreground">{today}{!existingId && " · autosaves as you type"}</p>
-                  </div>
-                  {existingId && (
-                    <button onClick={() => setShowForm(false)} className="text-[11px] text-muted-foreground hover:text-foreground">Collapse</button>
-                  )}
+              <div className="space-y-5">
+                <div>
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">Today's log</div>
+                  <h2 className="mt-1 text-[20px] font-semibold tracking-tight">{existingId ? "Update today's log" : "How did today go?"}</h2>
+                  <p className="mt-0.5 text-[12px] text-muted-foreground">{today}{!existingId && " · saves as you type"}</p>
                 </div>
 
                 {/* Two modes (founder-set 2026-07-18): until the CSMs approve
                     your looms · 3 roleplays + 3 looms into the Inner Circle
                     Loom Review chat; once approved · 5 loom applications a
                     day. Never both loom fields at once. */}
-                <div className="rounded-lg border border-border bg-background p-3">
-                  <div className="text-[11px] text-muted-foreground mb-2">
+                <div className="rounded-xl border border-border bg-background p-4">
+                  <div className="text-[12px] text-muted-foreground mb-2.5">
                     {loomApproved
-                      ? "Today's targets: looms approved, you're applying now"
-                      : "Today's targets: get your looms approved first. Send looms to the INNER CIRCLE LOOM REVIEW chat, not to offers"}
+                      ? "Your targets today"
+                      : "Your targets today · send looms to the Inner Circle Loom Review chat, not to offers"}
                   </div>
                   <div className="grid gap-3 grid-cols-2">
                     {loomApproved ? (
@@ -1037,7 +856,7 @@ export function StudentPortal() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <Counter label="Roleplays" value={form.roleplays} onBump={d => bump("roleplays", d)} />
                   {loomApproved ? (
                     <Counter label="Loom applications" value={form.applications_submitted} onBump={d => bump("applications_submitted", d)} />
@@ -1046,25 +865,38 @@ export function StudentPortal() {
                   )}
                   <Counter label="Interviews" value={form.interviews} onBump={d => bump("interviews", d)} />
                 </div>
-                {!loomApproved && (
-                  <p className="text-[10px] text-muted-foreground -mt-2">
-                    Looms go to the Inner Circle Loom Review chat for CSM feedback. Once you're approved, this switches to loom applications, 5 a day.
-                  </p>
+
+                {notesOpen || hasNotes ? (
+                  <div className="space-y-3">
+                    <TextField label="Wins" value={form.wins} onChange={v => setForm(f => ({ ...f, wins: v }))} />
+                    <TextField label="Blockers" value={form.blockers} onChange={v => setForm(f => ({ ...f, blockers: v }))} />
+                    <TextField label="Tomorrow's focus" value={form.tomorrow_focus} onChange={v => setForm(f => ({ ...f, tomorrow_focus: v }))} />
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setNotesOpen(true)}
+                    className="text-[12px] text-muted-foreground hover:text-foreground underline underline-offset-4"
+                  >
+                    + Add a note (optional)
+                  </button>
                 )}
 
-                <TextField label="Wins" value={form.wins} onChange={v => setForm(f => ({ ...f, wins: v }))} />
-                <TextField label="Blockers" value={form.blockers} onChange={v => setForm(f => ({ ...f, blockers: v }))} />
-                <TextField label="Tomorrow's focus" value={form.tomorrow_focus} onChange={v => setForm(f => ({ ...f, tomorrow_focus: v }))} />
-
-                <button onClick={submit} disabled={saving} className="w-full inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold h-11 rounded-md text-sm disabled:opacity-50">
-                  {saving ? "Saving…" : existingId ? "Update EOD" : "Submit EOD"}
+                <button
+                  onClick={submit}
+                  disabled={saving}
+                  className="pressable w-full inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold h-14 rounded-xl text-[15px] disabled:opacity-50"
+                >
+                  {saving ? "Saving…" : existingId ? "Update my log" : "Submit my log"}
                 </button>
               </div>
             )}
-          </div>
+            <div className="mt-4 pt-4 border-t border-border/60">
+              <WeekDots eodDates={eods.map(e => e.report_date)} today={today} hasToday={!!existingId} />
+            </div>
+          </section>
 
-          {/* This week's calls — tick each one off right after attending.
-              On Sunday the weekly EOD form below takes over the same week. */}
+          {/* This week's calls — tick each right after attending. On Sunday
+              the weekly EOD card below takes over the same week. */}
           {!weeklyWindow.dueToday && (
             <WeekCallTiles
               schedule={callSchedule}
@@ -1073,14 +905,25 @@ export function StudentPortal() {
             />
           )}
 
-          {/* Weekly EOD lives UNDER the daily one; it only shouts at the end of the week */}
+          {/* Weekly EOD: quiet once it's in, a card only while it needs you */}
           <div ref={weeklyRef}>
             {weeklyLoadError ? (
-              <div className="flex items-center justify-between gap-3 rounded-sm border border-danger/25 bg-danger-bg p-4 text-xs text-danger-fg">
+              <div className="flex items-center justify-between gap-3 card-soft border border-danger/25 bg-danger-bg p-4 text-xs text-danger-fg">
                 <span>Weekly accountability could not load. Nothing has been recorded as zero.</span>
                 <button type="button" onClick={() => load()} className="font-medium underline underline-offset-4">Retry</button>
               </div>
-            ) : (
+            ) : weeklySubmission && !weeklyOpen && !showWeeklyForm ? (
+              <button
+                type="button"
+                onClick={() => setWeeklyOpen(true)}
+                className="pressable w-full flex items-center justify-between gap-3 card-soft px-5 py-4 text-left"
+              >
+                <span className="flex items-center gap-2 text-[13px] font-medium text-success-fg">
+                  <CheckCircle2 className="h-4 w-4" /> Weekly EOD is in
+                </span>
+                <span className="text-[12px] text-muted-foreground">View</span>
+              </button>
+            ) : !weeklySubmission && weeklyFirstWeek ? null : (
               <WeeklyAccountabilityCard
                 window={weeklyWindow}
                 submission={weeklySubmission}
@@ -1102,37 +945,245 @@ export function StudentPortal() {
             )}
           </div>
 
-          {/* Resources for you */}
-          {docs.length > 0 && (
-            <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm">
-              <div className="px-4 py-3 border-b border-[var(--border)] flex items-center gap-2">
-                <BookOpen className="h-3.5 w-3.5 text-muted-foreground" />
-                <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Resources for you</div>
+          {/* To do — everything the coach and CSMs have asked of them */}
+          {actionItems.length > 0 && (
+            <section className="card-soft p-5">
+              <div className="flex items-center justify-between gap-3 mb-2 px-1">
+                <div className="flex items-center gap-2 text-[13px] font-semibold">
+                  <ListChecks className="h-4 w-4 text-warning-fg" /> To do
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {overdue.length > 0 && (
+                    <span className="text-micro px-2 py-0.5 rounded-full bg-danger-bg text-danger-fg">{overdue.length} overdue</span>
+                  )}
+                  {dueToday.length > 0 && (
+                    <span className="text-micro px-2 py-0.5 rounded-full bg-warning-bg text-warning-fg">{dueToday.length} due today</span>
+                  )}
+                </div>
               </div>
-              <div className="divide-y divide-[var(--accent)]">
-                {docs.map(d => (
-                  <Link key={d.slug} to="/knowledge/$slug" params={{ slug: d.slug }} className="flex items-center gap-3 p-3 hover:bg-muted/50 group">
-                    <div className="h-7 w-7 rounded-sm bg-[var(--background)] border border-[var(--border)] flex items-center justify-center">
-                      <BookOpen className="h-3.5 w-3.5 text-muted-foreground group-hover:text-muted-foreground" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-medium truncate">{d.title}</div>
-                      <div className="text-[10px] text-muted-foreground">{d.category.replace("_", " ")}</div>
-                    </div>
-                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-                  </Link>
+              <div className="divide-y divide-border/50">
+                {[...overdue, ...dueToday, ...upcoming].map(a => (
+                  <ActionRow key={`o-${a.callId}-${a.index}`} a={a} today={today} onToggle={toggleItem} />
+                ))}
+                {actionItems.filter(a => a.item.done).map(a => (
+                  <ActionRow key={`d-${a.callId}-${a.index}`} a={a} today={today} onToggle={toggleItem} />
                 ))}
               </div>
-            </div>
+            </section>
           )}
 
-          {/* Past EODs */}
-          <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm">
-            <div className="px-4 py-3 border-b border-[var(--border)] text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Past EODs</div>
-            <div className="divide-y divide-[var(--accent)]">
-              {eods.length === 0 && <div className="p-6 text-center text-xs text-muted-foreground">No EODs yet. Your first log starts your streak. 🔥</div>}
+          {/* The moment it happens, they tell us (founder-directed 2026-07-25) */}
+          {!student.offer_landed_at && (
+            <OfferLandedForm onReported={async () => {
+              setConfetti(true);
+              setTimeout(() => setConfetti(false), 2500);
+              if (sandbox) setStudent(s => (s ? { ...s, offer_landed_at: new Date().toISOString() } : s));
+              else await load();
+            }} />
+          )}
+        </div>
+      )}
+
+      {tab === "progress" && (
+        <div className="space-y-4">
+          {/* This week's numbers */}
+          <section className="card-soft p-5">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary mb-3">This week</div>
+            <div className="grid grid-cols-2 gap-2.5">
+              <StatCard label="Loom apps · 7d" value={totals7.apps} prev={totalsPrev.apps} series={spark("applications_submitted")} accent brandNew={brandNew} icon={<Briefcase className="h-3 w-3" />} />
+              <StatCard label="Looms · 7d" value={totals7.looms} prev={totalsPrev.looms} series={spark("looms_sent")} brandNew={brandNew} icon={<Users className="h-3 w-3" />} />
+              <StatCard label="Roleplays · 7d" value={totals7.roleplays} prev={totalsPrev.roleplays} series={spark("roleplays")} brandNew={brandNew} icon={<MessageSquare className="h-3 w-3" />} />
+              <StatCard label="Interviews · 7d" value={totals7.interviews} prev={totalsPrev.interviews} series={spark("interviews")} accent brandNew={brandNew} icon={<Award className="h-3 w-3" />} />
+            </div>
+          </section>
+
+          {/* Who's in your corner */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {isOneOnOne ? (
+              <>
+                <div className="card-soft p-4 flex items-center gap-3">
+                  {coach ? (
+                    <>
+                      {coach.avatar_url ? (
+                        <img src={coach.avatar_url} alt="" className="h-11 w-11 rounded-full object-cover border border-border" />
+                      ) : (
+                        <div className="h-11 w-11 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-sm font-semibold">
+                          {(coach.display_name ?? "C").slice(0, 1).toUpperCase()}
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[10px] text-muted-foreground">Your coach</div>
+                        <div className="text-sm font-medium truncate">{coach.display_name ?? "Coach"}</div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="h-11 w-11 rounded-full border border-dashed border-border text-muted-foreground flex items-center justify-center">
+                        <Users className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[10px] text-muted-foreground">Your coach</div>
+                        <div className="text-xs text-muted-foreground">Will be assigned soon</div>
+                      </div>
+                    </>
+                  )}
+                </div>
+                <div className="card-soft p-4 flex items-center gap-3">
+                  <div className="h-11 w-11 rounded-full bg-success-bg text-success-fg flex items-center justify-center">
+                    <Calendar className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[10px] text-muted-foreground">Next 1:1</div>
+                    {calendarNextCall ? (
+                      <div className="text-sm font-medium">
+                        {new Date(calendarNextCall.start).toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                        {calendarNextCall.with && <span className="text-muted-foreground text-[11px] ml-2">w/ {calendarNextCall.with}</span>}
+                        {calendarNextCall.meet_link && (
+                          <a href={calendarNextCall.meet_link} target="_blank" rel="noopener" className="text-[11px] text-primary hover:underline ml-2">Join →</a>
+                        )}
+                      </div>
+                    ) : nextCallDate ? (
+                      <div className="text-sm font-medium">
+                        {nextCallDate}
+                        <span className="text-muted-foreground text-[11px] ml-2">
+                          {nextCallInDays === 0 ? "today" : nextCallInDays === 1 ? "tomorrow" : `in ${nextCallInDays}d`}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="text-xs text-muted-foreground">Not scheduled · book your next call</div>
+                    )}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="card-soft p-4 flex items-center gap-3">
+                  <div className="h-11 w-11 rounded-full bg-success-bg text-success-fg flex items-center justify-center">
+                    <Users className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[10px] text-muted-foreground">Group coaching</div>
+                    <div className="text-sm font-medium">{callSchedule.length} calls a week</div>
+                    <div className="text-[10px] text-muted-foreground">Attend them all · take notes, ask smart questions</div>
+                  </div>
+                </div>
+                <div className="card-soft p-4 flex items-center gap-3">
+                  <div className="h-11 w-11 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                    <MessageSquare className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[10px] text-muted-foreground">Your success team</div>
+                    <div className="text-sm font-medium">CSM check-ins</div>
+                    <div className="text-[10px] text-muted-foreground">Loom feedback, action items, and regular calls to keep you moving</div>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* My coaching — 1:1 students only */}
+          {isOneOnOne && (
+            <section className="card-soft p-5 space-y-5">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Coaching calls</div>
+                  <div className="text-[11px] text-muted-foreground">{callsUsed}/{callsAllotted} used</div>
+                </div>
+                <div className="h-2 rounded-full bg-[var(--accent)] overflow-hidden">
+                  <div className="h-full bg-primary" style={{ width: `${callsAllotted ? Math.min(100, (callsUsed / callsAllotted) * 100) : 0}%` }} />
+                </div>
+                <div className="flex justify-between text-[10px] text-muted-foreground mt-1.5">
+                  <span>{Math.max(0, callsAllotted - callsUsed)} remaining</span>
+                  <span>{nextCallDate ? `Next · ${nextCallDate}` : "No call scheduled"}</span>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Progress rating trend</div>
+                  <div className="text-[11px] text-muted-foreground">Latest {ratings.at(-1)?.rating ?? "–"}/5</div>
+                </div>
+                {ratings.length < 2 ? (
+                  <div className="text-[11px] text-muted-foreground py-6 text-center">Trend shows once you have 2+ rated calls.</div>
+                ) : (
+                  <RatingChart data={ratings} />
+                )}
+              </div>
+
+              {lastCallItems && lastCallItems.items.length > 0 && (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Last call action items</div>
+                    <div className="text-[10px] text-muted-foreground">{lastCallItems.date}</div>
+                  </div>
+                  <div className="divide-y divide-border/50">
+                    {lastCallItems.items.map((it, i) => (
+                      <div key={i} className="flex items-start gap-3 py-2 text-xs">
+                        {it.done ? <CheckCircle2 className="h-3.5 w-3.5 text-success-fg mt-0.5" /> : <Clock className="h-3.5 w-3.5 text-muted-foreground mt-0.5" />}
+                        <span className={it.done ? "line-through text-muted-foreground" : ""}>{it.text || <span className="italic">(no text)</span>}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground mb-1">Your 1:1 history</div>
+                <div className="divide-y divide-border/50">
+                  {completedCalls.length === 0 && <div className="py-4 text-center text-xs text-muted-foreground">No completed calls yet.</div>}
+                  {completedCalls.map(c => (
+                    <div key={c.id} className="grid grid-cols-[100px_1fr_auto] items-center gap-3 py-2 text-xs">
+                      <span className="text-muted-foreground">{c.call_date}</span>
+                      <span className="text-muted-foreground">Completed</span>
+                      <span>{c.progress_rating ? `${c.progress_rating}/5` : "–"}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* Milestones */}
+          <section className="card-soft p-5">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary mb-1">Milestones</div>
+            <div className="text-xs text-muted-foreground mb-3">The finish line. Your coach unlocks these as you hit them.</div>
+            {/* Founder 2026-07-25: the first REAL win is the signed offer — an
+                interview is just a possibility. One social-proof milestone, then
+                graduation. */}
+            <div className="grid grid-cols-1 gap-3">
+              <MilestoneCard
+                done={!!student.offer_landed_at}
+                label="First win · offer landed"
+                detail={student.offer_landed_at ? `Unlocked ${friendlyPastDay(student.offer_landed_at)}` : "Sign your first setter offer. Everything before this is practice."}
+              />
+              <MilestoneCard
+                done={!!student.testimonial_collected && !!student.trustpilot_collected}
+                label="Testimonial & Trustpilot"
+                detail={
+                  student.testimonial_collected && student.trustpilot_collected
+                    ? "Both in. Future students will find us because of you."
+                    : student.testimonial_collected
+                      ? "Testimonial in · Trustpilot review still open"
+                      : student.trustpilot_collected
+                        ? "Trustpilot in · testimonial still open"
+                        : "Share your story and leave a Trustpilot review"
+                }
+              />
+              <MilestoneCard
+                done={student.testimonial_collected === true}
+                label="Graduated from The Ivy Sales Academy"
+                detail={student.testimonial_collected ? "Done. Go be great." : "Offer signed · share your story with the team"}
+              />
+            </div>
+          </section>
+
+          {/* Past logs */}
+          <section className="card-soft overflow-hidden">
+            <div className="px-5 py-3.5 border-b border-border/60 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Past logs</div>
+            <div className="divide-y divide-border/40">
+              {eods.length === 0 && <div className="p-6 text-center text-xs text-muted-foreground">No logs yet. Your first one starts your streak. 🔥</div>}
               {eods.map(e => (
-                <div key={e.id} className="grid grid-cols-[80px_1fr] items-center gap-3 p-3 text-xs">
+                <div key={e.id} className="grid grid-cols-[84px_1fr] items-center gap-3 px-5 py-2.5 text-xs">
                   <span className="text-muted-foreground">{e.report_date}</span>
                   <div className="flex gap-3 text-[11px] text-muted-foreground flex-wrap">
                     <span>Apps <span className="text-success-fg">{e.applications_submitted}</span></span>
@@ -1143,139 +1194,11 @@ export function StudentPortal() {
                 </div>
               ))}
             </div>
-          </div>
+          </section>
         </div>
       )}
 
-      {tab === "actions" && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-2">
-            <MiniStat label="Due today" value={dueToday.length} tone={dueToday.length ? "amber" : "neutral"} />
-            <MiniStat label="Overdue" value={overdue.length} tone={overdue.length ? "rose" : "neutral"} />
-            <MiniStat label="Upcoming" value={upcoming.length} tone="neutral" />
-          </div>
-
-          {dueToday.length > 0 && (
-            <ActionSection title="Due today" icon={<AlertCircle className="h-3.5 w-3.5 text-warning-fg" />}>
-              {dueToday.map(a => <ActionRow key={`${a.callId}-${a.index}`} a={a} today={today} onToggle={toggleItem} />)}
-            </ActionSection>
-          )}
-          {overdue.length > 0 && (
-            <ActionSection title="Overdue" icon={<AlertCircle className="h-3.5 w-3.5 text-danger-fg" />} tone="rose">
-              {overdue.map(a => <ActionRow key={`${a.callId}-${a.index}`} a={a} today={today} onToggle={toggleItem} />)}
-            </ActionSection>
-          )}
-          <ActionSection title={overdue.length + dueToday.length ? "Later" : "All items"} icon={<ListChecks className="h-3.5 w-3.5 text-muted-foreground" />}>
-            {upcoming.length === 0 && actionItems.filter(a => a.item.done).length === 0 && (
-              <div className="p-6 text-center text-xs text-muted-foreground">Your coach hasn't set any action items yet.</div>
-            )}
-            {upcoming.map(a => <ActionRow key={`${a.callId}-${a.index}`} a={a} today={today} onToggle={toggleItem} />)}
-            {actionItems.filter(a => a.item.done).map(a => <ActionRow key={`${a.callId}-${a.index}`} a={a} today={today} onToggle={toggleItem} />)}
-          </ActionSection>
-        </div>
-      )}
-
-      {tab === "coaching" && (
-        <div className="space-y-5">
-          {/* Calls bar */}
-          <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-5">
-            <div className="flex items-center justify-between mb-2">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Coaching calls</div>
-              <div className="text-[11px] text-muted-foreground">{callsUsed}/{callsAllotted} used</div>
-            </div>
-            <div className="h-2 rounded-sm bg-[var(--accent)] overflow-hidden">
-              <div
-                className="h-full bg-primary"
-                style={{ width: `${callsAllotted ? Math.min(100, (callsUsed / callsAllotted) * 100) : 0}%` }}
-              />
-            </div>
-            <div className="flex justify-between text-[10px] text-muted-foreground mt-1.5">
-              <span>{Math.max(0, callsAllotted - callsUsed)} remaining</span>
-              <span>{nextCallDate ? `Next · ${nextCallDate}` : "No call scheduled"}</span>
-            </div>
-          </div>
-
-          {/* Trend */}
-          <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm p-5">
-            <div className="flex items-center justify-between mb-3">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Progress rating trend</div>
-              <div className="text-[11px] text-muted-foreground">Latest {ratings.at(-1)?.rating ?? "–"}/5</div>
-            </div>
-            {ratings.length < 2 ? (
-              <div className="text-[11px] text-muted-foreground py-8 text-center">Trend shows once you have 2+ rated calls.</div>
-            ) : (
-              <RatingChart data={ratings} />
-            )}
-          </div>
-
-          {/* Last call action items */}
-          {lastCallItems && lastCallItems.items.length > 0 && (
-            <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm">
-              <div className="px-4 py-3 border-b border-[var(--border)] flex items-center justify-between">
-                <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Last call action items</div>
-                <div className="text-[10px] text-muted-foreground">{lastCallItems.date}</div>
-              </div>
-              <div className="divide-y divide-[var(--accent)]">
-                {lastCallItems.items.map((it, i) => (
-                  <div key={i} className="flex items-start gap-3 p-3 text-xs">
-                    {it.done ? <CheckCircle2 className="h-3.5 w-3.5 text-success-fg mt-0.5" /> : <Clock className="h-3.5 w-3.5 text-muted-foreground mt-0.5" />}
-                    <span className={it.done ? "line-through text-muted-foreground" : ""}>{it.text || <span className="italic">(no text)</span>}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* History */}
-          <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm">
-            <div className="px-4 py-3 border-b border-[var(--border)] text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Your 1:1 history</div>
-            <div className="divide-y divide-[var(--accent)]">
-              {completedCalls.length === 0 && <div className="p-6 text-center text-xs text-muted-foreground">No completed calls yet.</div>}
-              {completedCalls.map(c => (
-                <div key={c.id} className="grid grid-cols-[100px_1fr_auto] items-center gap-3 p-3 text-xs">
-                  <span className="text-muted-foreground">{c.call_date}</span>
-                  <span className="text-muted-foreground">Completed</span>
-                  <span className="">{c.progress_rating ? `${c.progress_rating}/5` : "–"}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {tab === "milestones" && (
-        <div className="space-y-3">
-          <div className="text-xs text-muted-foreground">The finish line. Your coach unlocks these as you hit them.</div>
-          {/* Founder 2026-07-25: the first REAL win is the signed offer — an
-              interview is just a possibility. One social-proof milestone, then
-              graduation. */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <MilestoneCard
-              done={!!student.offer_landed_at}
-              label="First win · offer landed"
-              detail={student.offer_landed_at ? `Unlocked ${friendlyPastDay(student.offer_landed_at)}` : "Sign your first setter offer. Everything before this is practice."}
-            />
-            <MilestoneCard
-              done={!!student.testimonial_collected && !!student.trustpilot_collected}
-              label="Testimonial & Trustpilot"
-              detail={
-                student.testimonial_collected && student.trustpilot_collected
-                  ? "Both in. Future students will find us because of you."
-                  : student.testimonial_collected
-                    ? "Testimonial in · Trustpilot review still open"
-                    : student.trustpilot_collected
-                      ? "Trustpilot in · testimonial still open"
-                      : "Share your story and leave a Trustpilot review"
-              }
-            />
-            <MilestoneCard
-              done={student.testimonial_collected === true}
-              label="Graduated from The Ivy Sales Academy"
-              detail={student.testimonial_collected ? "Done. Go be great." : "Offer signed · share your story with the team"}
-            />
-          </div>
-        </div>
-      )}
+      {tab === "board" && <LeaderboardPanel />}
       </div>
     </div>
   );
@@ -1292,7 +1215,7 @@ function WeekCallTiles({ schedule, ticks, onToggle }: {
   onToggle: (day: string, on: boolean) => void;
 }) {
   return (
-    <section className="rounded-sm border border-border bg-card p-5 space-y-3" aria-labelledby="week-calls-title">
+    <section className="card-soft p-5 space-y-3" aria-labelledby="week-calls-title">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">This week</div>
@@ -1312,7 +1235,7 @@ function WeekCallTiles({ schedule, ticks, onToggle }: {
               type="button"
               aria-pressed={on}
               onClick={() => onToggle(call.day, !on)}
-              className={`flex items-center gap-2.5 rounded-sm border px-3 py-2.5 text-left motion-safe:transition-colors ${
+              className={`pressable flex items-center gap-2.5 rounded-xl border px-3 py-3 text-left motion-safe:transition-colors ${
                 on ? "border-success/25 bg-success-bg" : "border-border bg-background hover:bg-muted/50"
               }`}
             >
@@ -1387,7 +1310,7 @@ function WeeklyAccountabilityCard({
     : [];
 
   return (
-    <section className={`rounded-sm border bg-card p-5 space-y-4 ${cardClass}`} aria-labelledby="weekly-eod-title">
+    <section className={`rounded-xl border bg-card p-5 space-y-4 ${cardClass}`} aria-labelledby="weekly-eod-title">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">End of week</div>
@@ -2161,25 +2084,25 @@ function LeaderboardPanel() {
     return <div className="text-xs text-muted-foreground py-8 text-center">No activity yet this week · first log tops the board.</div>;
   }
   return (
-    <div className="space-y-4">
-      <div className="text-xs text-muted-foreground">
-        Last 7 days across every active student. Interviews and applications move you most. Looms keep you on the board while you're still in training.
-      </div>
-      {data.you && data.you.rank > data.rows.length && (
-        <div className="card-surface px-4 py-3 text-xs">
-          You're <span className="font-semibold text-foreground">#{data.you.rank}</span> of {data.totalStudents} · log today's numbers to climb.
+    <div className="space-y-3">
+      {data.you && (
+        <div className="card-soft px-5 py-4 flex flex-wrap items-center justify-between gap-2">
+          <span className="text-[14px]">
+            You're <span className="font-semibold text-foreground">#{data.you.rank}</span> of {data.totalStudents} this week
+          </span>
+          <span className="text-[12px] text-muted-foreground">Log today's numbers to climb</span>
         </div>
       )}
-      <div className="border border-[var(--border)] bg-[var(--card)] rounded-sm overflow-hidden">
-        <div className="grid grid-cols-[44px_1fr_auto_auto_auto] gap-2 px-4 py-2 border-b border-[var(--border)] text-[10px] uppercase tracking-wider text-muted-foreground">
+      <div className="card-soft overflow-hidden">
+        <div className="grid grid-cols-[44px_1fr_auto_auto_auto] gap-2 px-5 py-2.5 border-b border-border/60 text-[10px] uppercase tracking-wider text-muted-foreground">
           <span>#</span><span>Student</span><span className="text-right">Apps</span><span className="text-right">Looms</span><span className="text-right">Int.</span>
         </div>
         {data.rows.map((r) => (
           <div
             key={r.rank}
-            className={`grid grid-cols-[44px_1fr_auto_auto_auto] gap-2 px-4 py-2.5 text-xs items-center border-b border-[var(--accent)] last:border-0 ${r.isYou ? "bg-primary/5" : ""}`}
+            className={`grid grid-cols-[44px_1fr_auto_auto_auto] gap-2 px-5 py-3.5 text-[13px] items-center border-b border-border/40 last:border-0 ${r.isYou ? "bg-primary/5" : ""}`}
           >
-            <span className={`font-semibold tabular-nums ${r.rank === 1 ? "text-warning-fg" : r.rank <= 3 ? "text-foreground" : "text-muted-foreground"}`}>
+            <span className={`font-semibold tabular-nums ${r.rank === 1 ? "text-warning-fg text-[17px]" : r.rank <= 3 ? "text-foreground text-[17px]" : "text-muted-foreground"}`}>
               {r.rank === 1 ? "🥇" : r.rank === 2 ? "🥈" : r.rank === 3 ? "🥉" : r.rank}
             </span>
             <span className={`truncate ${r.isYou ? "font-semibold text-foreground" : ""}`}>{r.name}{r.isYou ? " (you)" : ""}</span>
@@ -2189,19 +2112,27 @@ function LeaderboardPanel() {
           </div>
         ))}
       </div>
+      <div className="text-[11px] text-muted-foreground text-center px-4">
+        Last 7 days across every active student. Interviews and applications move you most; looms keep you on the board while you're in training.
+      </div>
     </div>
   );
 }
 
 /* ---------- sub-components ---------- */
 
-function TabButton({ active, onClick, icon, label, badge, urgent }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string; badge?: number; urgent?: boolean }) {
+/** One of the three big portal buttons (redesign 2026-08-11). */
+function BigTab({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string }) {
   return (
-    <button onClick={onClick} className={`flex items-center gap-1.5 px-3 py-2 text-xs border-b-2 -mb-px ${active ? "border-border text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
+    <button
+      role="tab"
+      aria-selected={active}
+      onClick={onClick}
+      className={`pressable flex items-center justify-center gap-2 h-12 sm:h-14 rounded-xl text-[13px] sm:text-[14px] font-semibold motion-safe:transition-colors ${
+        active ? "bg-primary text-primary-foreground shadow-sm" : "card-soft text-muted-foreground hover:text-foreground"
+      }`}
+    >
       {icon}{label}
-      {badge != null && badge > 0 && (
-        <span className={`ml-1 text-[10px] px-1.5 py-0.5 rounded-full ${urgent ? "bg-danger/20 text-danger-fg" : "bg-[var(--accent)] text-muted-foreground"}`}>{badge}</span>
-      )}
     </button>
   );
 }
@@ -2245,24 +2176,6 @@ function Sparkline({ data, color }: { data: number[]; color: string }) {
   );
 }
 
-function WeeklyRecap({ prev, totals }: { prev: any; evenPrior: any; totals: any }) {
-  const pct = (a: number, b: number) => (b === 0 ? (a > 0 ? "+∞" : "0") : `${a >= b ? "+" : ""}${Math.round(((a - b) / b) * 100)}%`);
-  return (
-    <div className="border border-border bg-muted rounded-sm p-4">
-      <div className="flex items-center gap-2 mb-2">
-        <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />
-        <div className="text-xs font-semibold text-muted-foreground">Weekly recap</div>
-      </div>
-      <div className="text-xs text-foreground">
-        Last week: <span className="font-semibold text-success-fg">{prev.apps}</span> applications, <span className="font-semibold">{prev.looms}</span> looms, <span className="font-semibold">{prev.roleplays}</span> roleplays, <span className="font-semibold">{prev.interviews}</span> interviews.
-      </div>
-      <div className="text-[11px] text-muted-foreground mt-1">
-        Apps {pct(totals.apps, prev.apps)} · Looms {pct(totals.looms, prev.looms)} · Roleplays {pct(totals.roleplays, prev.roleplays)} · Interviews {pct(totals.interviews, prev.interviews)} vs this week so far
-      </div>
-    </div>
-  );
-}
-
 function SubmittedRecap({ form, streak, loomApproved, onEdit }: { form: typeof empty; streak: number; loomApproved: boolean; onEdit: () => void }) {
   return (
     <div className="border border-success/25 bg-success-bg rounded-lg p-6 text-center space-y-4">
@@ -2297,17 +2210,6 @@ function SubmittedRecap({ form, streak, loomApproved, onEdit }: { form: typeof e
   );
 }
 
-function ActionSection({ title, icon, children, tone }: { title: string; icon: React.ReactNode; children: React.ReactNode; tone?: "rose" }) {
-  return (
-    <div className={`border rounded-sm ${tone === "rose" ? "border-danger/25 bg-danger-bg" : "border-[var(--border)] bg-[var(--card)]"}`}>
-      <div className={`px-4 py-2.5 border-b flex items-center gap-2 ${tone === "rose" ? "border-danger/25" : "border-[var(--border)]"}`}>
-        {icon}<div className="text-xs font-semibold">{title}</div>
-      </div>
-      <div className="divide-y divide-[var(--accent)]">{children}</div>
-    </div>
-  );
-}
-
 function ActionRow({ a, today, onToggle }: { a: { kind?: "call" | "adhoc"; callId: string; callDate: string; index: number; item: ActionItem }; today: string; onToggle: (id: string, i: number, done: boolean) => void }) {
   const isOverdue = !a.item.done && a.item.due_date && a.item.due_date < today;
   const isAdhoc = a.kind === "adhoc";
@@ -2338,18 +2240,6 @@ function ActionRow({ a, today, onToggle }: { a: { kind?: "call" | "adhoc"; callI
         </div>
       </div>
     </label>
-  );
-}
-
-function MiniStat({ label, value, tone }: { label: string; value: number; tone: "amber" | "rose" | "neutral" }) {
-  const cls = tone === "amber" ? "border-warning/25 bg-warning-bg text-warning-fg"
-    : tone === "rose" ? "border-danger/25 bg-danger-bg text-danger-fg"
-    : "border-[var(--border)] bg-[var(--card)] text-foreground";
-  return (
-    <div className={`border rounded-sm p-3 ${cls}`}>
-      <div className="text-[9px] opacity-80 mb-1">{label}</div>
-      <div className="text-xl font-semibold">{value}</div>
-    </div>
   );
 }
 
@@ -2389,12 +2279,12 @@ function RatingChart({ data }: { data: { date: string; rating: number }[] }) {
 
 function Counter({ label, value, onBump }: { label: string; value: number; onBump: (d: number) => void }) {
   return (
-    <div className="border border-[var(--border)] rounded-sm bg-[var(--background)] p-2">
-      <div className="text-[10px] text-muted-foreground mb-1">{label}</div>
-      <div className="flex items-center gap-1">
-        <button onClick={() => onBump(-1)} className="h-8 w-8 rounded-sm border border-[var(--border)] hover:bg-[var(--accent)] text-lg leading-none">−</button>
-        <div className="flex-1 text-center text-lg font-semibold">{value}</div>
-        <button onClick={() => onBump(1)} className="h-8 w-8 rounded-sm border border-[var(--border)] hover:bg-[var(--accent)] text-lg leading-none">+</button>
+    <div className="rounded-xl border border-border bg-background p-3">
+      <div className="text-[11px] text-muted-foreground mb-2 text-center">{label}</div>
+      <div className="flex items-center gap-2">
+        <button onClick={() => onBump(-1)} aria-label={`One less ${label}`} className="pressable h-12 w-12 shrink-0 rounded-xl border border-border hover:bg-muted text-xl leading-none">−</button>
+        <div className="flex-1 text-center text-[26px] font-semibold tabular-nums">{value}</div>
+        <button onClick={() => onBump(1)} aria-label={`One more ${label}`} className="pressable h-12 w-12 shrink-0 rounded-xl border border-border hover:bg-muted text-xl leading-none">+</button>
       </div>
     </div>
   );
