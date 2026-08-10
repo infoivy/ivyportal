@@ -13,6 +13,7 @@ Vercel correctly prevents Sensitive environment variables from being pulled into
 - Added `Cache-Control: no-store`.
 - Returned aggregate operational data only: EOD coverage, EOD activity, setter KPI state, and week-to-date logged deals.
 - Excluded demo profiles, demo EODs, demo deals, inactive profiles from active-team denominators, and voided deals.
+- Resolved each member's EOD day in that member's profile timezone; missing or invalid timezones are reported as unknown and are never counted as missing EODs.
 - Omitted email addresses, EOD narrative fields, student/customer records, credentials, and raw database rows.
 
 ## Verification

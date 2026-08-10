@@ -27,6 +27,10 @@ test("Portal ops agent endpoint is bearer-protected, server-only, and real-only"
   assert.doesNotMatch(service, /console\.(?:log|error)\([^\n]*(?:token|authorization)/i);
 
   assert.match(service, /from\("profiles"\)[\s\S]*?\.eq\("is_demo", false\)/);
+  assert.match(service, /eod_exempt,setter_type,timezone/);
+  assert.match(service, /calendarByUser\.get\(row\.user_id\)/);
+  assert.match(service, /eod_day_basis:\s*"profile_timezone"/);
+  assert.match(service, /timezone_unknown/);
   assert.match(service, /from\("eods"\)[\s\S]*?\.eq\("is_demo", false\)/);
   assert.match(service, /from\("deals"\)[\s\S]*?\.eq\("is_demo", false\)/);
   assert.match(service, /data_mode:\s*"real_only"/);

@@ -31,6 +31,7 @@ type ProfileRow = {
   is_demo: boolean;
   eod_exempt: boolean | null;
   setter_type: SetterType;
+  timezone: string | null;
 };
 
 type RoleRow = { user_id: string; role: string };
@@ -72,6 +73,22 @@ function weekStartFor(iso: string): string {
   return date.toISOString().slice(0, 10);
 }
 
+type ProfileCalendar = {
+  today: string;
+  yesterday: string;
+  weekStart: string;
+};
+
+function profileCalendar(profile: ProfileRow, now: Date): ProfileCalendar | null {
+  if (!profile.timezone) return null;
+  try {
+    const today = businessDate(now, profile.timezone);
+    return { today, yesterday: addDays(today, -1), weekStart: weekStartFor(today) };
+  } catch {
+    return null;
+  }
+}
+
 function totals(rows: EodRow[]): Record<MetricKey, number> {
   return Object.fromEntries(
     METRIC_KEYS.map((key) => [key, rows.reduce((total, row) => total + (Number(row[key]) || 0), 0)]),
@@ -105,15 +122,15 @@ export async function buildPortalOpsReport() {
         "user_id,report_date,dials,dms_sent,leads_contacted,convos_started,calls_booked,calls_scheduled,shows,no_shows,closes,cash_collected,is_demo",
       )
       .eq("is_demo", false)
-      .gte("report_date", addDays(weekStart, -7))
-      .lte("report_date", today)
+      .gte("report_date", addDays(weekStart, -8))
+      .lte("report_date", addDays(today, 1))
       .order("report_date", { ascending: false }),
     supabaseAdmin.from("user_roles").select("user_id,role"),
     supabaseAdmin
       .from("profiles")
       // Generated types lag the additive eod_exempt migration; the live column
       // is already used by the canonical Home, EOD, and Team surfaces.
-      .select("id,display_name,active,is_demo,eod_exempt,setter_type" as never)
+      .select("id,display_name,active,is_demo,eod_exempt,setter_type,timezone" as never)
       .eq("is_demo", false),
     supabaseAdmin
       .from("deals")
@@ -134,6 +151,11 @@ export async function buildPortalOpsReport() {
   const realProfileIds = new Set(profiles.map((profile) => profile.id));
   const roleMap = rolesByUser(roles, realProfileIds);
   const activeProfiles = profiles.filter((profile) => profile.active !== false);
+  const calendarByUser = new Map(
+    activeProfiles
+      .map((profile) => [profile.id, profileCalendar(profile, now)] as const)
+      .filter((entry): entry is readonly [string, ProfileCalendar] => entry[1] !== null),
+  );
   const expectedProfiles = activeProfiles.filter((profile) =>
     owesEods({
       roles: roleMap.get(profile.id) ?? [],
@@ -141,33 +163,47 @@ export async function buildPortalOpsReport() {
       eod_exempt: profile.eod_exempt,
     }),
   );
-  const todayRows = eods.filter((row) => row.report_date === today);
-  const yesterdayRows = eods.filter((row) => row.report_date === yesterday);
-  const weekRows = eods.filter((row) => row.report_date >= weekStart && row.report_date <= today);
+  const expectedWithTimezone = expectedProfiles.filter((profile) => calendarByUser.has(profile.id));
+  const timezoneUnknown = expectedProfiles.filter((profile) => !calendarByUser.has(profile.id));
+  const todayRows = eods.filter((row) => row.report_date === calendarByUser.get(row.user_id)?.today);
+  const yesterdayRows = eods.filter((row) => row.report_date === calendarByUser.get(row.user_id)?.yesterday);
+  const weekRows = eods.filter((row) => {
+    const calendar = calendarByUser.get(row.user_id);
+    return Boolean(calendar && row.report_date >= calendar.weekStart && row.report_date <= calendar.today);
+  });
   const submittedToday = new Set(todayRows.map((row) => row.user_id));
   const submittedYesterday = new Set(yesterdayRows.map((row) => row.user_id));
-  const missingToday = expectedProfiles.filter((profile) => !submittedToday.has(profile.id));
-  const missingYesterday = expectedProfiles.filter((profile) => !submittedYesterday.has(profile.id));
+  const missingToday = expectedWithTimezone.filter((profile) => !submittedToday.has(profile.id));
+  const missingYesterday = expectedWithTimezone.filter((profile) => !submittedYesterday.has(profile.id));
   const latestByUserAndDate = new Map(eods.map((row) => [`${row.user_id}:${row.report_date}`, row]));
 
   const setters = activeProfiles
     .filter((profile) => (roleMap.get(profile.id) ?? []).includes("setter"))
     .map((profile) => {
-      const yesterdayRow = latestByUserAndDate.get(`${profile.id}:${yesterday}`);
-      const todayRow = latestByUserAndDate.get(`${profile.id}:${today}`);
+      const calendar = calendarByUser.get(profile.id);
+      const yesterdayRow = calendar
+        ? latestByUserAndDate.get(`${profile.id}:${calendar.yesterday}`)
+        : undefined;
+      const todayRow = calendar ? latestByUserAndDate.get(`${profile.id}:${calendar.today}`) : undefined;
       return {
         name: safeName(profile),
         setter_type: profile.setter_type,
-        today: todayRow
-          ? { submitted: true, hit_kpi: didHitKpi(todayRow, profile.setter_type), metrics: totals([todayRow]) }
-          : { submitted: false, hit_kpi: null, metrics: null },
-        yesterday: yesterdayRow
-          ? {
-              submitted: true,
-              hit_kpi: didHitKpi(yesterdayRow, profile.setter_type),
-              metrics: totals([yesterdayRow]),
-            }
-          : { submitted: false, hit_kpi: null, metrics: null },
+        timezone_status: calendar ? "configured" : "unknown",
+        local_dates: calendar ? { today: calendar.today, yesterday: calendar.yesterday } : null,
+        today: !calendar
+          ? { submitted: null, hit_kpi: null, metrics: null }
+          : todayRow
+            ? { submitted: true, hit_kpi: didHitKpi(todayRow, profile.setter_type), metrics: totals([todayRow]) }
+            : { submitted: false, hit_kpi: null, metrics: null },
+        yesterday: !calendar
+          ? { submitted: null, hit_kpi: null, metrics: null }
+          : yesterdayRow
+            ? {
+                submitted: true,
+                hit_kpi: didHitKpi(yesterdayRow, profile.setter_type),
+                metrics: totals([yesterdayRow]),
+              }
+            : { submitted: false, hit_kpi: null, metrics: null },
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -176,6 +212,7 @@ export async function buildPortalOpsReport() {
     data_mode: "real_only",
     generated_at: now.toISOString(),
     timezone: REPORT_TIMEZONE,
+    eod_day_basis: "profile_timezone",
     dates: { today, yesterday, week_start: weekStart },
     team: {
       active_members: activeProfiles.length,
@@ -183,9 +220,11 @@ export async function buildPortalOpsReport() {
         (roleMap.get(profile.id) ?? []).some((role) => REPORTING_ROLES.has(role)),
       ).length,
       expected_eod_reporters: expectedProfiles.length,
-      submitted_today: expectedProfiles.filter((profile) => submittedToday.has(profile.id)).length,
+      eod_timezone_eligible: expectedWithTimezone.length,
+      timezone_unknown: timezoneUnknown.map(safeName),
+      submitted_today: expectedWithTimezone.filter((profile) => submittedToday.has(profile.id)).length,
       missing_today: missingToday.map(safeName),
-      submitted_yesterday: expectedProfiles.filter((profile) => submittedYesterday.has(profile.id)).length,
+      submitted_yesterday: expectedWithTimezone.filter((profile) => submittedYesterday.has(profile.id)).length,
       missing_yesterday: missingYesterday.map(safeName),
     },
     activity: {
