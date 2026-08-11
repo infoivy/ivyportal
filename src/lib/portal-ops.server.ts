@@ -71,6 +71,14 @@ class PortalOpsReportError extends Error {
   }
 }
 
+async function resolvePortalQuery<T>(code: PortalOpsErrorCode, query: PromiseLike<T>): Promise<T> {
+  try {
+    return await query;
+  } catch (error) {
+    throw new PortalOpsReportError(code, error);
+  }
+}
+
 const JSON_HEADERS = {
   "content-type": "application/json; charset=utf-8",
   "cache-control": "no-store",
@@ -153,10 +161,8 @@ export async function buildPortalOpsReport(dependencies: PortalOpsDependencies =
   const yesterday = addDays(today, -1);
   const weekStart = weekStartFor(today);
 
-  const [eodResult, roleResult, profileResult, dealResult] = await (async () => {
-    try {
-      return await Promise.all([
-    supabaseAdmin
+  const buildQueries = () => ({
+    eods: supabaseAdmin
       .from("eods")
       .select(
         "user_id,report_date,dials,dms_sent,leads_contacted,convos_started,calls_booked,calls_scheduled,shows,no_shows,closes,cash_collected,is_demo",
@@ -165,25 +171,35 @@ export async function buildPortalOpsReport(dependencies: PortalOpsDependencies =
       .gte("report_date", addDays(weekStart, -8))
       .lte("report_date", addDays(today, 1))
       .order("report_date", { ascending: false }),
-    supabaseAdmin.from("user_roles").select("user_id,role"),
-    supabaseAdmin
+    roles: supabaseAdmin.from("user_roles").select("user_id,role"),
+    profiles: supabaseAdmin
       .from("profiles")
       // Generated types lag the additive eod_exempt migration; the live column
       // is already used by the canonical Home, EOD, and Team surfaces.
       .select("id,display_name,active,is_demo,eod_exempt,setter_type,timezone" as never)
       .eq("is_demo", false),
-    supabaseAdmin
+    deals: supabaseAdmin
       .from("deals")
       .select("cash_collected_upfront,total_value,deal_date,is_demo,voided_at")
       .eq("is_demo", false)
       .is("voided_at", null)
       .gte("deal_date", weekStart)
       .lte("deal_date", today),
-      ]);
-    } catch (error) {
-      throw new PortalOpsReportError("query_setup", error);
-    }
-  })();
+  });
+
+  let queries: ReturnType<typeof buildQueries>;
+  try {
+    queries = buildQueries();
+  } catch (error) {
+    throw new PortalOpsReportError("query_setup", error);
+  }
+
+  const [eodResult, roleResult, profileResult, dealResult] = await Promise.all([
+    resolvePortalQuery("eods", queries.eods),
+    resolvePortalQuery("roles", queries.roles),
+    resolvePortalQuery("profiles", queries.profiles),
+    resolvePortalQuery("deals", queries.deals),
+  ]);
 
   const firstError = [
     { code: "eods", error: eodResult.error },

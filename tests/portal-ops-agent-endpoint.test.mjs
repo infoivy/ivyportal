@@ -31,7 +31,7 @@ const service = await import(
   ).toString("base64")}`
 );
 
-function buildQuery(rows, error = null) {
+function buildQuery(rows, error = null, rejection = null) {
   const filters = [];
   const query = {
     select() { return query; },
@@ -41,6 +41,7 @@ function buildQuery(rows, error = null) {
     lte(column, value) { filters.push(["lte", column, value]); return query; },
     order() { return query; },
     then(resolve, reject) {
+      if (rejection) return Promise.reject(rejection).then(resolve, reject);
       let data = [...rows];
       for (const [kind, column, value] of filters) {
         if (kind === "eq") data = data.filter((row) => row[column] === value);
@@ -54,10 +55,10 @@ function buildQuery(rows, error = null) {
   return query;
 }
 
-function buildSupabase(fixtures, errors = {}) {
+function buildSupabase(fixtures, errors = {}, rejections = {}) {
   return {
     from(table) {
-      return buildQuery(fixtures[table] ?? [], errors[table] ?? null);
+      return buildQuery(fixtures[table] ?? [], errors[table] ?? null, rejections[table] ?? null);
     },
   };
 }
@@ -224,6 +225,54 @@ test("report behavior labels synchronous client setup failures without exposing 
     (error) =>
       error instanceof Error && error.message === "missing private environment" && error.code === "query_setup",
   );
+});
+
+test("report behavior labels rejected query promises by their failing stage", async () => {
+  const fixtures = { eods: [], user_roles: [], profiles: [], deals: [] };
+  for (const [table, code] of [
+    ["eods", "eods"],
+    ["user_roles", "roles"],
+    ["profiles", "profiles"],
+    ["deals", "deals"],
+  ]) {
+    const supabaseAdmin = buildSupabase(fixtures, {}, { [table]: new Error("private network detail") });
+    await assert.rejects(
+      service.buildPortalOpsReport({ supabaseAdmin, now: new Date("2026-08-11T12:00:00.000Z") }),
+      (error) =>
+        error instanceof Error && error.message === "private network detail" && error.code === code,
+    );
+  }
+});
+
+test("agent GET exposes only bounded stage codes for every report query", async () => {
+  const original = process.env.ARRODES_API_TOKEN;
+  process.env.ARRODES_API_TOKEN = "b".repeat(32);
+  const request = new Request("https://portal.test", {
+    headers: { authorization: ["Bear", "er ", "b".repeat(32)].join("") },
+  });
+  const fixtures = { eods: [], user_roles: [], profiles: [], deals: [] };
+  const safeCodes = new Set(["query_setup", "eods", "roles", "profiles", "deals", "report"]);
+  try {
+    for (const [table, code] of [
+      ["eods", "eods"],
+      ["user_roles", "roles"],
+      ["profiles", "profiles"],
+      ["deals", "deals"],
+    ]) {
+      const supabaseAdmin = buildSupabase(fixtures, { [table]: { message: "private database detail" } });
+      const response = await service.handlePortalOpsAgentGet(request, () =>
+        service.buildPortalOpsReport({ supabaseAdmin, now: new Date("2026-08-11T12:00:00.000Z") }),
+      );
+      const body = await response.json();
+      assert.equal(response.status, 500);
+      assert.deepEqual(body, { error: "Portal report unavailable", error_code: code });
+      assert.equal(safeCodes.has(body.error_code), true);
+      assert.equal(JSON.stringify(body).includes("private database detail"), false);
+    }
+  } finally {
+    if (original === undefined) delete process.env.ARRODES_API_TOKEN;
+    else process.env.ARRODES_API_TOKEN = original;
+  }
 });
 
 test("report behavior surfaces database failures to the generic endpoint boundary", async () => {
