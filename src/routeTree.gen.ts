@@ -60,6 +60,7 @@ import { Route as AuthenticatedPoliciesEodHygieneRouteImport } from './routes/_a
 import { Route as AuthenticatedPoliciesCrmHygieneRouteImport } from './routes/_authenticated.policies.crm-hygiene'
 import { Route as AuthenticatedKnowledgeNewRouteImport } from './routes/_authenticated.knowledge.new'
 import { Route as AuthenticatedKnowledgeSlugRouteImport } from './routes/_authenticated.knowledge.$slug'
+import { Route as ApiAgentV1PortalOpsRouteImport } from './routes/api/agent/v1/portal-ops'
 import { Route as AuthenticatedStudentsIdPortalRouteImport } from './routes/_authenticated.students_.$id.portal'
 import { Route as AuthenticatedKnowledgeSlugEditRouteImport } from './routes/_authenticated.knowledge.$slug.edit'
 
@@ -337,6 +338,11 @@ const AuthenticatedKnowledgeSlugRoute =
     path: '/$slug',
     getParentRoute: () => AuthenticatedKnowledgeRoute,
   } as any)
+const ApiAgentV1PortalOpsRoute = ApiAgentV1PortalOpsRouteImport.update({
+  id: '/api/agent/v1/portal-ops',
+  path: '/api/agent/v1/portal-ops',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedStudentsIdPortalRoute =
   AuthenticatedStudentsIdPortalRouteImport.update({
     id: '/students_/$id/portal',
@@ -403,6 +409,7 @@ export interface FileRoutesByFullPath {
   '/policies/': typeof AuthenticatedPoliciesIndexRoute
   '/knowledge/$slug/edit': typeof AuthenticatedKnowledgeSlugEditRoute
   '/students/$id/portal': typeof AuthenticatedStudentsIdPortalRoute
+  '/api/agent/v1/portal-ops': typeof ApiAgentV1PortalOpsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -455,6 +462,7 @@ export interface FileRoutesByTo {
   '/policies': typeof AuthenticatedPoliciesIndexRoute
   '/knowledge/$slug/edit': typeof AuthenticatedKnowledgeSlugEditRoute
   '/students/$id/portal': typeof AuthenticatedStudentsIdPortalRoute
+  '/api/agent/v1/portal-ops': typeof ApiAgentV1PortalOpsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -511,6 +519,7 @@ export interface FileRoutesById {
   '/_authenticated/policies/': typeof AuthenticatedPoliciesIndexRoute
   '/_authenticated/knowledge/$slug/edit': typeof AuthenticatedKnowledgeSlugEditRoute
   '/_authenticated/students_/$id/portal': typeof AuthenticatedStudentsIdPortalRoute
+  '/api/agent/v1/portal-ops': typeof ApiAgentV1PortalOpsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -567,6 +576,7 @@ export interface FileRouteTypes {
     | '/policies/'
     | '/knowledge/$slug/edit'
     | '/students/$id/portal'
+    | '/api/agent/v1/portal-ops'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -619,6 +629,7 @@ export interface FileRouteTypes {
     | '/policies'
     | '/knowledge/$slug/edit'
     | '/students/$id/portal'
+    | '/api/agent/v1/portal-ops'
   id:
     | '__root__'
     | '/'
@@ -674,6 +685,7 @@ export interface FileRouteTypes {
     | '/_authenticated/policies/'
     | '/_authenticated/knowledge/$slug/edit'
     | '/_authenticated/students_/$id/portal'
+    | '/api/agent/v1/portal-ops'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -682,6 +694,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   PrintRoute: typeof PrintRoute
   ApiPublicGoogleOauthCallbackRoute: typeof ApiPublicGoogleOauthCallbackRoute
+  ApiAgentV1PortalOpsRoute: typeof ApiAgentV1PortalOpsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1043,6 +1056,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedKnowledgeSlugRouteImport
       parentRoute: typeof AuthenticatedKnowledgeRoute
     }
+    '/api/agent/v1/portal-ops': {
+      id: '/api/agent/v1/portal-ops'
+      path: '/api/agent/v1/portal-ops'
+      fullPath: '/api/agent/v1/portal-ops'
+      preLoaderRoute: typeof ApiAgentV1PortalOpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/students_/$id/portal': {
       id: '/_authenticated/students_/$id/portal'
       path: '/students/$id/portal'
@@ -1233,6 +1253,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   PrintRoute: PrintRoute,
   ApiPublicGoogleOauthCallbackRoute: ApiPublicGoogleOauthCallbackRoute,
+  ApiAgentV1PortalOpsRoute: ApiAgentV1PortalOpsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
