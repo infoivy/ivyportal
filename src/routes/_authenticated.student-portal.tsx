@@ -691,7 +691,8 @@ export function StudentPortal() {
   if (["offer_won", "testimonial", "graduated"].includes(student.phase)) {
     return (
       <div className="w-full max-w-none p-4 sm:p-6 space-y-5 relative">
-        <section className="card-surface p-6 text-center">
+        <div className="glass-ambient" aria-hidden />
+        <section className="card-soft p-6 text-center">
           <div className="text-4xl mb-2">🎉</div>
           <h1 className="text-2xl font-semibold tracking-tight">
             <span dir="rtl">السلام عليكم ورحمة الله وبركاته</span>, {first}
@@ -746,6 +747,7 @@ export function StudentPortal() {
   if (locked) {
     return (
       <div className="w-full max-w-none px-5 sm:px-8 lg:px-12 pt-10 sm:pt-16 pb-24 sm:pb-32 relative">
+        <div className="glass-ambient" aria-hidden />
         {confetti && <ConfettiBurst />}
         <div dir="rtl" className="text-[14px] text-muted-foreground/80">السلام عليكم ورحمة الله وبركاته</div>
         <h1 className="mt-4 text-[34px] sm:text-5xl font-semibold tracking-[-0.03em] leading-[1.1]">
@@ -765,6 +767,7 @@ export function StudentPortal() {
 
   return (
     <div className="w-full max-w-2xl mx-auto p-4 sm:p-6 space-y-4 relative">
+      <div className="glass-ambient" aria-hidden />
       {confetti && <ConfettiBurst />}
 
       {/* Post-unlock walkthrough: the whole portal is scrollable below, but
@@ -805,8 +808,8 @@ export function StudentPortal() {
         </div>
       </section>
 
-      {/* Three big buttons. That is the whole portal. */}
-      <nav className="grid grid-cols-3 gap-2" role="tablist" aria-label="Portal sections">
+      {/* Three big buttons in one glass pill. That is the whole portal. */}
+      <nav className="card-soft !rounded-full p-1.5 grid grid-cols-3 gap-1" role="tablist" aria-label="Portal sections">
         <BigTab active={tab === "home"} onClick={() => setTab("home")} icon={<Home className="h-4 w-4" />} label="Home" />
         <BigTab active={tab === "progress"} onClick={() => setTab("progress")} icon={<TrendingUp className="h-4 w-4" />} label="Progress" />
         <BigTab active={tab === "board"} onClick={() => setTab("board")} icon={<Trophy className="h-4 w-4" />} label="Board" />
@@ -835,7 +838,7 @@ export function StudentPortal() {
                     your looms · 3 roleplays + 3 looms into the Inner Circle
                     Loom Review chat; once approved · 5 loom applications a
                     day. Never both loom fields at once. */}
-                <div className="rounded-xl border border-border bg-background p-4">
+                <div className="rounded-2xl border border-border/60 bg-background/50 p-4">
                   <div className="text-[12px] text-muted-foreground mb-2.5">
                     {loomApproved
                       ? "Your targets today"
@@ -884,7 +887,7 @@ export function StudentPortal() {
                 <button
                   onClick={submit}
                   disabled={saving}
-                  className="pressable w-full inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold h-14 rounded-xl text-[15px] disabled:opacity-50"
+                  className="pressable w-full inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold h-14 rounded-full text-[15px] shadow-lg disabled:opacity-50"
                 >
                   {saving ? "Saving…" : existingId ? "Update my log" : "Submit my log"}
                 </button>
@@ -1236,7 +1239,7 @@ function WeekCallTiles({ schedule, ticks, onToggle }: {
               aria-pressed={on}
               onClick={() => onToggle(call.day, !on)}
               className={`pressable flex items-center gap-2.5 rounded-xl border px-3 py-3 text-left motion-safe:transition-colors ${
-                on ? "border-success/25 bg-success-bg" : "border-border bg-background hover:bg-muted/50"
+                on ? "border-success/25 bg-success-bg" : "border-border/60 bg-background/50 hover:bg-muted/50"
               }`}
             >
               <span className={`h-5 w-5 rounded-full flex items-center justify-center shrink-0 ${on ? "bg-success text-success-fg" : "border border-border text-transparent"}`}>
@@ -1310,7 +1313,7 @@ function WeeklyAccountabilityCard({
     : [];
 
   return (
-    <section className={`rounded-xl border bg-card p-5 space-y-4 ${cardClass}`} aria-labelledby="weekly-eod-title">
+    <section className={`card-soft p-5 space-y-4 ${cardClass}`} aria-labelledby="weekly-eod-title">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">End of week</div>
@@ -1487,7 +1490,7 @@ function DetailsGate({ first, needTimezone, needWhatsapp, onConfirm }: {
 
   return (
     <div className="w-full max-w-none p-4 sm:p-6 space-y-5">
-      <section className="card-surface p-6">
+      <section className="card-soft p-6">
         <div className="text-[10px] text-muted-foreground mb-1">Student portal</div>
         <h1 className="text-2xl font-semibold tracking-tight">
           <span dir="rtl">السلام عليكم ورحمة الله وبركاته</span>, {first} <span className="inline-block">👋</span>
@@ -1779,7 +1782,7 @@ function OfferLandedForm({ onReported }: { onReported: () => Promise<void> }) {
   };
 
   return (
-    <div className="mt-4 rounded-lg border border-[var(--border)] bg-[var(--background)] p-3 space-y-3">
+    <div className="card-soft p-4 space-y-3">
       {!open ? (
         <button onClick={() => setOpen(true)} className="w-full flex items-center justify-between gap-3 text-left">
           <div>
@@ -2128,8 +2131,8 @@ function BigTab({ active, onClick, icon, label }: { active: boolean; onClick: ()
       role="tab"
       aria-selected={active}
       onClick={onClick}
-      className={`pressable flex items-center justify-center gap-2 h-12 sm:h-14 rounded-xl text-[13px] sm:text-[14px] font-semibold motion-safe:transition-colors ${
-        active ? "bg-primary text-primary-foreground shadow-sm" : "card-soft text-muted-foreground hover:text-foreground"
+      className={`pressable flex items-center justify-center gap-2 h-11 sm:h-12 rounded-full text-[13px] sm:text-[14px] font-semibold motion-safe:transition-colors ${
+        active ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
       }`}
     >
       {icon}{label}
@@ -2178,7 +2181,7 @@ function Sparkline({ data, color }: { data: number[]; color: string }) {
 
 function SubmittedRecap({ form, streak, loomApproved, onEdit }: { form: typeof empty; streak: number; loomApproved: boolean; onEdit: () => void }) {
   return (
-    <div className="border border-success/25 bg-success-bg rounded-lg p-6 text-center space-y-4">
+    <div className="border border-success/20 bg-success-bg/70 rounded-2xl p-6 text-center space-y-4">
       <div className="flex justify-center">
         <div className="h-12 w-12 rounded-full bg-success text-success-fg flex items-center justify-center">
           <CheckCircle2 className="h-6 w-6" />
@@ -2279,7 +2282,7 @@ function RatingChart({ data }: { data: { date: string; rating: number }[] }) {
 
 function Counter({ label, value, onBump }: { label: string; value: number; onBump: (d: number) => void }) {
   return (
-    <div className="rounded-xl border border-border bg-background p-3">
+    <div className="rounded-2xl border border-border/60 bg-background/50 p-3">
       <div className="text-[11px] text-muted-foreground mb-2 text-center">{label}</div>
       <div className="flex items-center gap-2">
         <button onClick={() => onBump(-1)} aria-label={`One less ${label}`} className="pressable h-12 w-12 shrink-0 rounded-xl border border-border hover:bg-muted text-xl leading-none">−</button>

@@ -50,8 +50,8 @@ export function StudentBottomNav({ activeTab, onTabChange }: { activeTab?: strin
   const onPortal = path === "/student-portal";
   const cellCount = visible.length + (showLibrary ? 1 : 0) + 1;
   return (
-    <nav className="sm:hidden fixed bottom-0 inset-x-0 z-40 border-t border-[var(--border)] bg-[var(--background)]/95 backdrop-blur">
-      <div className={`grid pb-[max(0.25rem,env(safe-area-inset-bottom))] ${GRID[cellCount] ?? "grid-cols-5"}`}>
+    <nav className="sm:hidden fixed bottom-[max(0.5rem,env(safe-area-inset-bottom))] inset-x-3 z-40">
+      <div className={`card-soft !rounded-full px-1.5 py-1 grid ${GRID[cellCount] ?? "grid-cols-5"}`}>
         {visible.map(it => {
           const Icon = it.icon;
           const active = onPortal && activeTab === it.tab;
