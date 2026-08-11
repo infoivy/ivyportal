@@ -415,11 +415,17 @@ test("student portal reads and writes weekly accountability EODs", () => {
   assert.match(studentPortal, /student_weekly_eods/);
   assert.match(studentPortal, /group_calls_attended/);
   assert.match(studentPortal, /Weekly accountability/);
-  const weeklySubmit = studentPortal.slice(
-    studentPortal.indexOf("const submitWeeklyEod"),
-    studentPortal.indexOf("const toggleGuideStep"),
+  const weeklyUpsertStart = studentPortal.indexOf(
+    'const { error } = await supabase.from("student_weekly_eods").upsert({',
   );
-  assert.doesNotMatch(weeklySubmit, /submitted_at/);
+  assert.notEqual(weeklyUpsertStart, -1, "weekly EOD upsert must exist");
+  const weeklyUpsertEnd = studentPortal.indexOf(
+    '}, { onConflict: "student_id,week_start" });',
+    weeklyUpsertStart,
+  );
+  assert.notEqual(weeklyUpsertEnd, -1, "weekly EOD upsert boundary must exist");
+  const weeklyUpsert = studentPortal.slice(weeklyUpsertStart, weeklyUpsertEnd);
+  assert.doesNotMatch(weeklyUpsert, /submitted_at/);
   assert.match(csm, /Weekly calls/);
   assert.match(csm, /weeklyEodLoadError/);
 });
