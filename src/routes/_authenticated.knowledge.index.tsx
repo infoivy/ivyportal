@@ -254,7 +254,7 @@ function KnowledgeIndex() {
                   ))}
                   {items.map((d) => (
                     <Link key={d.id} to={"/knowledge/$slug" as string} params={{ slug: d.slug } as never}>
-                      <Card className="p-4 h-full hover:border-primary/60 transition group">
+                      <Card className="card-soft p-5 h-full hover:border-primary/60 transition group">
                         <div className="flex items-start justify-between gap-2">
                           <h3 className="font-semibold text-sm group-hover:text-primary transition line-clamp-2">
                             {d.title}

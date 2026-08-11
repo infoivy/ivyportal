@@ -126,7 +126,7 @@ function ProfilePage() {
       )}
 
       {tab === "profile" ? (
-        <section className="card-surface overflow-hidden">
+        <section className="card-soft overflow-hidden">
           <div className="px-5 pt-5">
             <h2 className="text-title text-foreground">Personal information</h2>
             <p className="text-caption text-muted-foreground mt-0.5">Manage how you appear across the portal.</p>
@@ -189,7 +189,7 @@ function ProfilePage() {
 
           <div className="px-5 py-4 border-t border-[var(--border)] flex flex-wrap items-center justify-between gap-3">
             <span className="text-caption text-muted-foreground">{memberSince ? `Member since ${memberSince}` : ""}</span>
-            <button onClick={save} disabled={saving} className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground font-medium px-4 py-2 rounded-md text-[13px]">
+            <button onClick={save} disabled={saving} className="pressable flex items-center gap-1.5 h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-medium px-5 rounded-xl text-[13px] disabled:opacity-50">
               <Save className="h-3.5 w-3.5" /> {saving ? "Saving…" : "Save changes"}
             </button>
           </div>

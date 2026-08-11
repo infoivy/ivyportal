@@ -1,6 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { BookOpen, FileText, UserCircle } from "lucide-react";
+import { BookOpen, FileText, Home, TrendingUp, Trophy, UserCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAccess } from "@/lib/use-access";
 import {
@@ -32,9 +32,12 @@ import {
 
 type SidebarItem = PortalNavItem & { badge?: number };
 
+// Matches the portal's three big tabs and the mobile bottom nav exactly
+// (redesign 2026-08-11).
 const studentTabItems = [
-  { tab: "eod", title: "My Portal", icon: FileText },
-  { tab: "leaderboard", title: "Leaderboard", icon: UserCircle },
+  { tab: "home", title: "Home", icon: Home },
+  { tab: "progress", title: "Progress", icon: TrendingUp },
+  { tab: "board", title: "Board", icon: Trophy },
 ];
 
 function StudentJourneyGroup({ collapsed, currentPath }: { collapsed: boolean; currentPath: string }) {
@@ -59,7 +62,7 @@ function StudentJourneyGroup({ collapsed, currentPath }: { collapsed: boolean; c
           {studentTabItems.map((item) => {
             const active = onPortal && (
               item.tab === activeTab ||
-              (item.tab === "eod" && !studentTabItems.some((candidate) => candidate.tab === activeTab))
+              (item.tab === "home" && !studentTabItems.some((candidate) => candidate.tab === activeTab))
             );
             return (
               <SidebarMenuItem key={item.tab}>
