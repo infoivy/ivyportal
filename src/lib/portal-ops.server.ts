@@ -53,6 +53,24 @@ type PortalOpsDependencies = {
 
 type PortalOpsReportBuilder = () => Promise<unknown>;
 
+type PortalOpsErrorCode = "query_setup" | "eods" | "roles" | "profiles" | "deals";
+
+class PortalOpsReportError extends Error {
+  readonly code: PortalOpsErrorCode;
+
+  constructor(code: PortalOpsErrorCode, cause: unknown) {
+    const message =
+      cause instanceof Error
+        ? cause.message
+        : typeof cause === "object" && cause !== null && "message" in cause
+          ? String(cause.message)
+          : "Portal report query failed";
+    super(message, { cause });
+    this.name = "PortalOpsReportError";
+    this.code = code;
+  }
+}
+
 const JSON_HEADERS = {
   "content-type": "application/json; charset=utf-8",
   "cache-control": "no-store",
@@ -135,7 +153,9 @@ export async function buildPortalOpsReport(dependencies: PortalOpsDependencies =
   const yesterday = addDays(today, -1);
   const weekStart = weekStartFor(today);
 
-  const [eodResult, roleResult, profileResult, dealResult] = await Promise.all([
+  const [eodResult, roleResult, profileResult, dealResult] = await (async () => {
+    try {
+      return await Promise.all([
     supabaseAdmin
       .from("eods")
       .select(
@@ -159,10 +179,19 @@ export async function buildPortalOpsReport(dependencies: PortalOpsDependencies =
       .is("voided_at", null)
       .gte("deal_date", weekStart)
       .lte("deal_date", today),
-  ]);
+      ]);
+    } catch (error) {
+      throw new PortalOpsReportError("query_setup", error);
+    }
+  })();
 
-  const firstError = eodResult.error ?? roleResult.error ?? profileResult.error ?? dealResult.error;
-  if (firstError) throw new Error(firstError.message);
+  const firstError = [
+    { code: "eods", error: eodResult.error },
+    { code: "roles", error: roleResult.error },
+    { code: "profiles", error: profileResult.error },
+    { code: "deals", error: dealResult.error },
+  ].find((result) => result.error);
+  if (firstError) throw new PortalOpsReportError(firstError.code as PortalOpsErrorCode, firstError.error);
 
   const eods = (eodResult.data ?? []) as EodRow[];
   const profiles = (profileResult.data ?? []) as unknown as ProfileRow[];
@@ -274,6 +303,12 @@ export async function handlePortalOpsAgentGet(
       "[portal-ops-agent] report failed",
       error instanceof Error ? error.message : "Unknown report error",
     );
-    return json({ error: "Portal report unavailable" }, 500);
+    return json(
+      {
+        error: "Portal report unavailable",
+        error_code: error instanceof PortalOpsReportError ? error.code : "report",
+      },
+      500,
+    );
   }
 }

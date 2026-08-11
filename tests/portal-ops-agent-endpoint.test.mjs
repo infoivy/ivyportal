@@ -146,7 +146,10 @@ test("agent GET returns 401, a no-store real-only report, and a generic 500", as
       throw new Error("private database detail");
     });
     assert.equal(unavailable.status, 500);
-    assert.deepEqual(await unavailable.json(), { error: "Portal report unavailable" });
+    assert.deepEqual(await unavailable.json(), {
+      error: "Portal report unavailable",
+      error_code: "report",
+    });
   } finally {
     if (original === undefined) delete process.env.ARRODES_API_TOKEN;
     else process.env.ARRODES_API_TOKEN = original;
@@ -210,6 +213,19 @@ test("report behavior filters demo and voided data and respects profile-local EO
   assert.equal(report.deals_week_to_date.deal_value, 1000);
 });
 
+test("report behavior labels synchronous client setup failures without exposing details", async () => {
+  const supabaseAdmin = Object.defineProperty({}, "from", {
+    get() {
+      throw new Error("missing private environment");
+    },
+  });
+  await assert.rejects(
+    service.buildPortalOpsReport({ supabaseAdmin, now: new Date("2026-08-11T12:00:00.000Z") }),
+    (error) =>
+      error instanceof Error && error.message === "missing private environment" && error.code === "query_setup",
+  );
+});
+
 test("report behavior surfaces database failures to the generic endpoint boundary", async () => {
   const supabaseAdmin = buildSupabase(
     { eods: [], user_roles: [], profiles: [], deals: [] },
@@ -217,6 +233,6 @@ test("report behavior surfaces database failures to the generic endpoint boundar
   );
   await assert.rejects(
     service.buildPortalOpsReport({ supabaseAdmin, now: new Date("2026-08-11T12:00:00.000Z") }),
-    /database detail/,
+    (error) => error instanceof Error && error.message === "database detail" && error.code === "eods",
   );
 });
