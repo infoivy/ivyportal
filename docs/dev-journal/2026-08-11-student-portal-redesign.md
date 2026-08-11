@@ -54,3 +54,17 @@ removed by anchor-based splicing.
   fastest way to eyeball every state.
 - Locked Start Here + graduation pages kept their old (already simple)
   layout; could adopt card-soft in a follow-up.
+
+---
+
+## Addendum: liquid glass pass + the deploy mystery
+
+- "More liquid glass, complete overhaul": card-soft redefined as translucent
+  blurred glass with specular edge; drifting ambient color wash behind all
+  student states; tabs merged into one glass pill; floating glass bottom
+  nav; translucent inner surfaces; pill submit button.
+- Deploy mystery solved: main HAD deployed, but the Arrodes agent
+  CLI-deploys its feat/arrodes-portal-ops-endpoint branch to PRODUCTION,
+  which took the domain 3 minutes later. Restored with `vercel promote`.
+  Open decision for the founder: merge that branch or stop its --prod
+  deploys. Recorded in memory (project_ivyportal_deploys).
