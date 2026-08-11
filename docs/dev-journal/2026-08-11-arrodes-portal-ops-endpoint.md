@@ -29,3 +29,12 @@ Vercel correctly prevents Sensitive environment variables from being pulled into
 ## Release notes
 
 No database migration is required. Production acceptance must verify unauthenticated `401`, authenticated `200`, `data_mode: real_only`, and the canonical `portal.ivysalesacademy.com` route before monitoring is enabled.
+
+## Set-ledger reconciliation follow-up
+
+- Added the existing `set_reminders` ledger as a second, separately labelled booking source in the read-only agent report.
+- The report now returns tracked-set counts for today, yesterday, and week to date beside EOD-reported `calls_booked`, plus `tracked_minus_eod` so disagreement is explicit and never silently summed.
+- Week-to-date output includes source counts and the number of tracked sets still missing an outcome.
+- Set dates use the assigned owner's profile timezone; unowned records use the report timezone.
+- Rows assigned to demo or inactive profiles are excluded. Prospect names, notes, external URLs, and raw set rows are never selected or returned.
+- No schema or migration change was required. The focused endpoint suite was extended first and observed failing before the implementation was added.

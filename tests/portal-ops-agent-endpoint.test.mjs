@@ -103,6 +103,9 @@ test("Portal ops agent endpoint is bearer-protected, server-only, and real-only"
   assert.match(source, /eod_day_basis:\s*"profile_timezone"/);
   assert.match(source, /from\("eods"\)[\s\S]*?\.eq\("is_demo", false\)/);
   assert.match(source, /from\("deals"\)[\s\S]*?\.eq\("is_demo", false\)/);
+  assert.match(source, /from\("set_reminders"\)/);
+  assert.match(source, /created_at,event_start,source,outcome_recorded_at,owner_id/);
+  assert.doesNotMatch(source, /set_reminders"\)[\s\S]{0,250}?prospect/);
   assert.match(source, /\.is\("voided_at", null\)/);
   assert.match(source, /data_mode:\s*"real_only"/);
   assert.doesNotMatch(source, /\.(?:insert|upsert|delete)\(/);
@@ -192,6 +195,29 @@ test("report behavior filters demo and voided data and respects profile-local EO
       { cash_collected_upfront: 900, total_value: 900, deal_date: "2026-08-11", is_demo: true, voided_at: null },
       { cash_collected_upfront: 700, total_value: 700, deal_date: "2026-08-11", is_demo: false, voided_at: "2026-08-11T10:00:00Z" },
     ],
+    set_reminders: [
+      {
+        owner_id: "real-setter",
+        created_at: "2026-08-11T14:00:00Z",
+        event_start: "2026-08-12T16:00:00Z",
+        source: "calendly",
+        outcome_recorded_at: null,
+      },
+      {
+        owner_id: "real-setter",
+        created_at: "2026-08-10T14:00:00Z",
+        event_start: "2026-08-13T16:00:00Z",
+        source: "manual",
+        outcome_recorded_at: "2026-08-10T20:00:00Z",
+      },
+      {
+        owner_id: "demo-setter",
+        created_at: "2026-08-11T15:00:00Z",
+        event_start: "2026-08-12T17:00:00Z",
+        source: "calendly",
+        outcome_recorded_at: null,
+      },
+    ],
   });
 
   const report = await service.buildPortalOpsReport({
@@ -212,6 +238,21 @@ test("report behavior filters demo and voided data and respects profile-local EO
   assert.equal(report.deals_week_to_date.count, 1);
   assert.equal(report.deals_week_to_date.cash_collected, 500);
   assert.equal(report.deals_week_to_date.deal_value, 1000);
+  assert.deepEqual(report.set_tracking.today, {
+    tracked: 1,
+    eod_reported: 3,
+    tracked_minus_eod: -2,
+  });
+  assert.deepEqual(report.set_tracking.yesterday, {
+    tracked: 1,
+    eod_reported: 0,
+    tracked_minus_eod: 1,
+  });
+  assert.equal(report.set_tracking.week_to_date.tracked, 2);
+  assert.equal(report.set_tracking.week_to_date.eod_reported, 3);
+  assert.equal(report.set_tracking.week_to_date.tracked_minus_eod, -1);
+  assert.equal(report.set_tracking.week_to_date.outcome_missing, 1);
+  assert.deepEqual(report.set_tracking.week_to_date.by_source, { calendly: 1, manual: 1 });
 });
 
 test("report behavior labels synchronous client setup failures without exposing details", async () => {
@@ -228,12 +269,13 @@ test("report behavior labels synchronous client setup failures without exposing 
 });
 
 test("report behavior labels rejected query promises by their failing stage", async () => {
-  const fixtures = { eods: [], user_roles: [], profiles: [], deals: [] };
+  const fixtures = { eods: [], user_roles: [], profiles: [], deals: [], set_reminders: [] };
   for (const [table, code] of [
     ["eods", "eods"],
     ["user_roles", "roles"],
     ["profiles", "profiles"],
     ["deals", "deals"],
+    ["set_reminders", "sets"],
   ]) {
     const supabaseAdmin = buildSupabase(fixtures, {}, { [table]: new Error("private network detail") });
     await assert.rejects(
@@ -250,14 +292,15 @@ test("agent GET exposes only bounded stage codes for every report query", async 
   const request = new Request("https://portal.test", {
     headers: { authorization: ["Bear", "er ", "b".repeat(32)].join("") },
   });
-  const fixtures = { eods: [], user_roles: [], profiles: [], deals: [] };
-  const safeCodes = new Set(["query_setup", "eods", "roles", "profiles", "deals", "report"]);
+  const fixtures = { eods: [], user_roles: [], profiles: [], deals: [], set_reminders: [] };
+  const safeCodes = new Set(["query_setup", "eods", "roles", "profiles", "deals", "sets", "report"]);
   try {
     for (const [table, code] of [
       ["eods", "eods"],
       ["user_roles", "roles"],
       ["profiles", "profiles"],
       ["deals", "deals"],
+      ["set_reminders", "sets"],
     ]) {
       const supabaseAdmin = buildSupabase(fixtures, { [table]: { message: "private database detail" } });
       const response = await service.handlePortalOpsAgentGet(request, () =>
@@ -277,7 +320,7 @@ test("agent GET exposes only bounded stage codes for every report query", async 
 
 test("report behavior surfaces database failures to the generic endpoint boundary", async () => {
   const supabaseAdmin = buildSupabase(
-    { eods: [], user_roles: [], profiles: [], deals: [] },
+    { eods: [], user_roles: [], profiles: [], deals: [], set_reminders: [] },
     { eods: { message: "database detail" } },
   );
   await assert.rejects(

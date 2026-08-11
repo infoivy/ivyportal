@@ -43,6 +43,13 @@ type DealRow = {
   is_demo: boolean;
   voided_at: string | null;
 };
+type SetReminderRow = {
+  created_at: string;
+  event_start: string;
+  source: string;
+  outcome_recorded_at: string | null;
+  owner_id: string | null;
+};
 
 type SupabaseAdmin = typeof SupabaseAdminValue;
 
@@ -53,7 +60,7 @@ type PortalOpsDependencies = {
 
 type PortalOpsReportBuilder = () => Promise<unknown>;
 
-type PortalOpsErrorCode = "query_setup" | "eods" | "roles" | "profiles" | "deals";
+type PortalOpsErrorCode = "query_setup" | "eods" | "roles" | "profiles" | "deals" | "sets";
 
 class PortalOpsReportError extends Error {
   readonly code: PortalOpsErrorCode;
@@ -185,6 +192,11 @@ export async function buildPortalOpsReport(dependencies: PortalOpsDependencies =
       .is("voided_at", null)
       .gte("deal_date", weekStart)
       .lte("deal_date", today),
+    sets: supabaseAdmin
+      .from("set_reminders")
+      .select("created_at,event_start,source,outcome_recorded_at,owner_id")
+      .gte("created_at", `${addDays(weekStart, -1)}T00:00:00Z`)
+      .lte("created_at", `${addDays(today, 2)}T00:00:00Z`),
   });
 
   let queries: ReturnType<typeof buildQueries>;
@@ -194,11 +206,12 @@ export async function buildPortalOpsReport(dependencies: PortalOpsDependencies =
     throw new PortalOpsReportError("query_setup", error);
   }
 
-  const [eodResult, roleResult, profileResult, dealResult] = await Promise.all([
+  const [eodResult, roleResult, profileResult, dealResult, setResult] = await Promise.all([
     resolvePortalQuery("eods", queries.eods),
     resolvePortalQuery("roles", queries.roles),
     resolvePortalQuery("profiles", queries.profiles),
     resolvePortalQuery("deals", queries.deals),
+    resolvePortalQuery("sets", queries.sets),
   ]);
 
   const firstError = [
@@ -206,6 +219,7 @@ export async function buildPortalOpsReport(dependencies: PortalOpsDependencies =
     { code: "roles", error: roleResult.error },
     { code: "profiles", error: profileResult.error },
     { code: "deals", error: dealResult.error },
+    { code: "sets", error: setResult.error },
   ].find((result) => result.error);
   if (firstError) throw new PortalOpsReportError(firstError.code as PortalOpsErrorCode, firstError.error);
 
@@ -213,6 +227,7 @@ export async function buildPortalOpsReport(dependencies: PortalOpsDependencies =
   const profiles = (profileResult.data ?? []) as unknown as ProfileRow[];
   const roles = (roleResult.data ?? []) as RoleRow[];
   const deals = (dealResult.data ?? []) as DealRow[];
+  const setReminders = (setResult.data ?? []) as SetReminderRow[];
   const realProfileIds = new Set(profiles.map((profile) => profile.id));
   const roleMap = rolesByUser(roles, realProfileIds);
   const activeProfiles = profiles.filter((profile) => profile.active !== false);
@@ -241,6 +256,40 @@ export async function buildPortalOpsReport(dependencies: PortalOpsDependencies =
   const missingToday = expectedWithTimezone.filter((profile) => !submittedToday.has(profile.id));
   const missingYesterday = expectedWithTimezone.filter((profile) => !submittedYesterday.has(profile.id));
   const latestByUserAndDate = new Map(eods.map((row) => [`${row.user_id}:${row.report_date}`, row]));
+  const reportCalendar = { today, yesterday, weekStart };
+  const activeRealProfileIds = new Set(activeProfiles.map((profile) => profile.id));
+  const profileById = new Map(activeProfiles.map((profile) => [profile.id, profile]));
+  const trackedSets = setReminders
+    .filter((row) => row.owner_id === null || activeRealProfileIds.has(row.owner_id))
+    .map((row) => {
+      const profile = row.owner_id ? profileById.get(row.owner_id) : undefined;
+      const calendar = row.owner_id ? calendarByUser.get(row.owner_id) ?? reportCalendar : reportCalendar;
+      const createdAt = new Date(row.created_at);
+      if (Number.isNaN(createdAt.getTime())) return null;
+      const date = businessDate(createdAt, profile?.timezone ?? REPORT_TIMEZONE);
+      return { ...row, date, calendar };
+    })
+    .filter((row): row is NonNullable<typeof row> => row !== null);
+  const trackedToday = trackedSets.filter((row) => row.date === row.calendar.today);
+  const trackedYesterday = trackedSets.filter((row) => row.date === row.calendar.yesterday);
+  const trackedWeek = trackedSets.filter(
+    (row) => row.date >= row.calendar.weekStart && row.date <= row.calendar.today,
+  );
+  const eodTodayBooked = totals(todayRows).calls_booked;
+  const eodYesterdayBooked = totals(yesterdayRows).calls_booked;
+  const eodWeekBooked = totals(weekRows).calls_booked;
+  const setSummary = (rows: typeof trackedSets, eodReported: number) => ({
+    tracked: rows.length,
+    eod_reported: eodReported,
+    tracked_minus_eod: rows.length - eodReported,
+  });
+  const setSources = Object.fromEntries(
+    [...trackedWeek.reduce((counts, row) => {
+      const source = row.source?.trim() || "unknown";
+      counts.set(source, (counts.get(source) ?? 0) + 1);
+      return counts;
+    }, new Map<string, number>()).entries()].sort(([a], [b]) => a.localeCompare(b)),
+  );
 
   const setters = activeProfiles
     .filter((profile) => (roleMap.get(profile.id) ?? []).includes("setter"))
@@ -302,6 +351,15 @@ export async function buildPortalOpsReport(dependencies: PortalOpsDependencies =
       count: deals.length,
       cash_collected: deals.reduce((sum, deal) => sum + (Number(deal.cash_collected_upfront) || 0), 0),
       deal_value: deals.reduce((sum, deal) => sum + (Number(deal.total_value) || 0), 0),
+    },
+    set_tracking: {
+      today: setSummary(trackedToday, eodTodayBooked),
+      yesterday: setSummary(trackedYesterday, eodYesterdayBooked),
+      week_to_date: {
+        ...setSummary(trackedWeek, eodWeekBooked),
+        outcome_missing: trackedWeek.filter((row) => !row.outcome_recorded_at).length,
+        by_source: setSources,
+      },
     },
   };
 }
