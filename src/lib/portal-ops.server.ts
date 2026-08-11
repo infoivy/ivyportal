@@ -1,5 +1,6 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 
+import type { supabaseAdmin as SupabaseAdminValue } from "@/integrations/supabase/client.server";
 import { didHitKpi, owesEods, type EodKpiRow, type SetterType } from "@/lib/eod-kpi";
 
 const REPORT_TIMEZONE = "Asia/Riyadh";
@@ -42,6 +43,24 @@ type DealRow = {
   is_demo: boolean;
   voided_at: string | null;
 };
+
+type SupabaseAdmin = typeof SupabaseAdminValue;
+
+type PortalOpsDependencies = {
+  supabaseAdmin?: SupabaseAdmin;
+  now?: Date;
+};
+
+type PortalOpsReportBuilder = () => Promise<unknown>;
+
+const JSON_HEADERS = {
+  "content-type": "application/json; charset=utf-8",
+  "cache-control": "no-store",
+};
+
+function json(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), { status, headers: JSON_HEADERS });
+}
 
 function digest(value: string): Buffer {
   return createHash("sha256").update(value, "utf8").digest();
@@ -108,9 +127,10 @@ function safeName(profile: ProfileRow): string {
   return profile.display_name?.trim() || "Unnamed team member";
 }
 
-export async function buildPortalOpsReport() {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const now = new Date();
+export async function buildPortalOpsReport(dependencies: PortalOpsDependencies = {}) {
+  const supabaseAdmin =
+    dependencies.supabaseAdmin ?? (await import("@/integrations/supabase/client.server")).supabaseAdmin;
+  const now = dependencies.now ?? new Date();
   const today = businessDate(now);
   const yesterday = addDays(today, -1);
   const weekStart = weekStartFor(today);
@@ -239,4 +259,21 @@ export async function buildPortalOpsReport() {
       deal_value: deals.reduce((sum, deal) => sum + (Number(deal.total_value) || 0), 0),
     },
   };
+}
+
+export async function handlePortalOpsAgentGet(
+  request: Request,
+  buildReport: PortalOpsReportBuilder = buildPortalOpsReport,
+): Promise<Response> {
+  if (!authorizeAgentRequest(request)) return json({ error: "Unauthorized" }, 401);
+
+  try {
+    return json(await buildReport());
+  } catch (error) {
+    console.error(
+      "[portal-ops-agent] report failed",
+      error instanceof Error ? error.message : "Unknown report error",
+    );
+    return json({ error: "Portal report unavailable" }, 500);
+  }
 }

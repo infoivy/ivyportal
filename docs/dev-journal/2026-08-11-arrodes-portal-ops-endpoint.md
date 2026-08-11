@@ -18,12 +18,12 @@ Vercel correctly prevents Sensitive environment variables from being pulled into
 
 ## Verification
 
-- Focused endpoint contract: passed.
+- Executable endpoint suite covers missing/invalid credentials, valid `200`, generic `500`, demo filtering, voided-deal filtering, profile-local EOD dates, KPI aggregation, and database-error propagation.
+- The inherited weekly-EOD source-contract test now isolates the actual database upsert instead of scanning unrelated sandbox state.
 - TypeScript: passed.
 - ESLint: passed with one inherited warning in `home-setter-week.tsx`.
 - Production build: passed and generated the route tree.
 - `git diff --check`: passed.
-- Untouched `origin/main` baseline has one existing weekly-EOD source-contract failure in `portal-reliability-contract.test.mjs`; the endpoint did not introduce or alter it.
 - Production dependency audit reports two inherited high advisories in transitive `js-yaml` and `nanoid`; this change does not modify dependencies.
 
 ## Release notes
