@@ -37,3 +37,10 @@ supabase/.temp/
 .vercel
 .env*
 !.env.example
+
+# Native iOS build products
+ios/.build/
+ios/.derivedData/
+ios/.derivedData-*/
+ios/qa-screenshots/
+*.xcresult
