@@ -9,11 +9,15 @@
 /* Begin PBXBuildFile section */
 		06639E837D93A6C0E122E9D7 /* RoleDestinationPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 691002273A01224D93FBBEF0 /* RoleDestinationPolicy.swift */; };
 		0C502646AB77CF4EDD58D7B6 /* RoleDestinationPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9FAA38FA65B3A14F178C873 /* RoleDestinationPolicyTests.swift */; };
+		1C871F192594E2CD02119751 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 313622262ECC323AC7B8136E /* PrivacyInfo.xcprivacy */; };
 		21DB59557AC0F4793A1DA576 /* PerformanceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9506EC7B316F186C69D450C3 /* PerformanceView.swift */; };
 		25EB1150A2EA1A9E6D833411 /* IvyPortalInteractionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B7128A183BCF55AA4436966 /* IvyPortalInteractionTests.swift */; };
+		3C120183E7355A84ABFE60C5 /* PaymentsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76626C605F00A4A86C3F704A /* PaymentsView.swift */; };
 		474EF0ED3F9E5E4BD75F5B80 /* SecondaryViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0B6ECABB4E069E644DACEA3 /* SecondaryViews.swift */; };
+		4B3B6082562F700C0AA9E795 /* FeatureNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81596ECE61B395F450F9EF50 /* FeatureNavigation.swift */; };
 		6C6DDF963EC5117D13DE585F /* PortalShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB1C1D13B33996B4533E3598 /* PortalShell.swift */; };
 		74DE9D4302D252C6829D8046 /* IvyPortalApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBCF822DA31E8719AFB8220C /* IvyPortalApp.swift */; };
+		75D08C1C1F7D558B4DC9EFEA /* FeatureNavigationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6A44331B1380EC5E1F6953D /* FeatureNavigationTests.swift */; };
 		A39D25067873C4F71C3A6A84 /* LoadStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D82CE802CAA94C209087E537 /* LoadStateTests.swift */; };
 		D6E8F90DDA27C979E44EDA33 /* HomeActionRoutingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D63FFEC06CAD25DFE92B0B4B /* HomeActionRoutingTests.swift */; };
 		DA5F9BBC3EF0DC724C7A012E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C8220D589EEDA534F8C68689 /* Assets.xcassets */; };
@@ -44,9 +48,12 @@
 		18711F0397918695F8D7CB53 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
 		2DD51BEE6A265B624CAE96B0 /* LoadState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadState.swift; sourceTree = "<group>"; };
 		310F5EDFDA87D1BF05177AC0 /* HomeAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeAction.swift; sourceTree = "<group>"; };
+		313622262ECC323AC7B8136E /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		5B7128A183BCF55AA4436966 /* IvyPortalInteractionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IvyPortalInteractionTests.swift; sourceTree = "<group>"; };
 		691002273A01224D93FBBEF0 /* RoleDestinationPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoleDestinationPolicy.swift; sourceTree = "<group>"; };
 		6F3CED060763D625C62112D7 /* IvyPortal.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = IvyPortal.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		76626C605F00A4A86C3F704A /* PaymentsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaymentsView.swift; sourceTree = "<group>"; };
+		81596ECE61B395F450F9EF50 /* FeatureNavigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureNavigation.swift; sourceTree = "<group>"; };
 		9506EC7B316F186C69D450C3 /* PerformanceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceView.swift; sourceTree = "<group>"; };
 		A2095E1A25B2854700574C30 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		A38ABDF5AC1EB60BA2A87B77 /* IvyPortalTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = IvyPortalTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -54,6 +61,7 @@
 		C8220D589EEDA534F8C68689 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		C9FAA38FA65B3A14F178C873 /* RoleDestinationPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoleDestinationPolicyTests.swift; sourceTree = "<group>"; };
 		D63FFEC06CAD25DFE92B0B4B /* HomeActionRoutingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeActionRoutingTests.swift; sourceTree = "<group>"; };
+		D6A44331B1380EC5E1F6953D /* FeatureNavigationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureNavigationTests.swift; sourceTree = "<group>"; };
 		D82CE802CAA94C209087E537 /* LoadStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadStateTests.swift; sourceTree = "<group>"; };
 		DBCF822DA31E8719AFB8220C /* IvyPortalApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IvyPortalApp.swift; sourceTree = "<group>"; };
 		F82910C4D584233E65E7911B /* IvyPortalUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = IvyPortalUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -89,6 +97,7 @@
 			isa = PBXGroup;
 			children = (
 				64E0F46AA63AE0ABE1011F93 /* Home */,
+				8270CA421F8B8184E980A16C /* Payments */,
 				1ABB15011088F9C506B3D5C8 /* Performance */,
 				52743D4E806F6C4ED05A92B5 /* Secondary */,
 			);
@@ -112,6 +121,14 @@
 			path = App;
 			sourceTree = "<group>";
 		};
+		8270CA421F8B8184E980A16C /* Payments */ = {
+			isa = PBXGroup;
+			children = (
+				76626C605F00A4A86C3F704A /* PaymentsView.swift */,
+			);
+			path = Payments;
+			sourceTree = "<group>";
+		};
 		8F6DAD627808430C636BC68C /* IvyPortalUITests */ = {
 			isa = PBXGroup;
 			children = (
@@ -124,6 +141,7 @@
 			isa = PBXGroup;
 			children = (
 				C8220D589EEDA534F8C68689 /* Assets.xcassets */,
+				313622262ECC323AC7B8136E /* PrivacyInfo.xcprivacy */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -142,6 +160,7 @@
 		9A507F64059DA122B6140C5B /* IvyPortalTests */ = {
 			isa = PBXGroup;
 			children = (
+				D6A44331B1380EC5E1F6953D /* FeatureNavigationTests.swift */,
 				D63FFEC06CAD25DFE92B0B4B /* HomeActionRoutingTests.swift */,
 				D82CE802CAA94C209087E537 /* LoadStateTests.swift */,
 				C9FAA38FA65B3A14F178C873 /* RoleDestinationPolicyTests.swift */,
@@ -163,6 +182,7 @@
 		AF0E65A4997035869F615178 /* IvyPortalCore */ = {
 			isa = PBXGroup;
 			children = (
+				81596ECE61B395F450F9EF50 /* FeatureNavigation.swift */,
 				310F5EDFDA87D1BF05177AC0 /* HomeAction.swift */,
 				2DD51BEE6A265B624CAE96B0 /* LoadState.swift */,
 				691002273A01224D93FBBEF0 /* RoleDestinationPolicy.swift */,
@@ -293,6 +313,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				DA5F9BBC3EF0DC724C7A012E /* Assets.xcassets in Resources */,
+				1C871F192594E2CD02119751 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -303,6 +324,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				75D08C1C1F7D558B4DC9EFEA /* FeatureNavigationTests.swift in Sources */,
 				D6E8F90DDA27C979E44EDA33 /* HomeActionRoutingTests.swift in Sources */,
 				A39D25067873C4F71C3A6A84 /* LoadStateTests.swift in Sources */,
 				0C502646AB77CF4EDD58D7B6 /* RoleDestinationPolicyTests.swift in Sources */,
@@ -314,10 +336,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				E159978F2B63C6D8FD6F3AD3 /* Components.swift in Sources */,
+				4B3B6082562F700C0AA9E795 /* FeatureNavigation.swift in Sources */,
 				FC36D8521EA779B953EFCA50 /* HomeAction.swift in Sources */,
 				DEEFDCB075BB353409611D71 /* HomeView.swift in Sources */,
 				74DE9D4302D252C6829D8046 /* IvyPortalApp.swift in Sources */,
 				EB3B13FA2F5475E1D155D286 /* LoadState.swift in Sources */,
+				3C120183E7355A84ABFE60C5 /* PaymentsView.swift in Sources */,
 				21DB59557AC0F4793A1DA576 /* PerformanceView.swift in Sources */,
 				6C6DDF963EC5117D13DE585F /* PortalShell.swift in Sources */,
 				06639E837D93A6C0E122E9D7 /* RoleDestinationPolicy.swift in Sources */,

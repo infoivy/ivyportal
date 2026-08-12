@@ -40,4 +40,20 @@ final class IvyPortalInteractionTests: XCTestCase {
         crm.tap()
         XCTAssertTrue(app.staticTexts["Open lead queues and verified follow-up work."].waitForExistence(timeout: 3))
     }
+
+    func testPaymentsLaunchShowsOverviewAndTabs() {
+        let app = launch(destination: "payments")
+        XCTAssertTrue(app.staticTexts["Gross volume"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["Clients"].exists)
+        XCTAssertTrue(app.buttons["Costs"].exists)
+    }
+
+    func testPerformanceMetricOpensDrilldown() {
+        let app = launch(destination: "performance")
+        let replies = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Total replies received'")).firstMatch
+        XCTAssertTrue(replies.waitForExistence(timeout: 3))
+        replies.tap()
+        XCTAssertTrue(app.staticTexts["DAILY BREAKDOWN"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["BY TEAMMATE"].exists)
+    }
 }

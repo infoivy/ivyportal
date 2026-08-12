@@ -8,32 +8,40 @@ enum DemoScenario: String, CaseIterable, Identifiable {
 
     static var launchScenario: DemoScenario {
         let arguments = ProcessInfo.processInfo.arguments
-        guard let index = arguments.firstIndex(of: "-demoScenario"), arguments.indices.contains(index + 1) else {
-            return .loaded
-        }
+        guard let index = arguments.firstIndex(of: "-demoScenario"), arguments.indices.contains(index + 1) else { return .loaded }
         return DemoScenario(rawValue: arguments[index + 1]) ?? .loaded
     }
 }
 #endif
 
+private enum PortalSurface: Equatable {
+    case root(RootDestination)
+    case payments
+}
+
 struct PortalShell: View {
     private let roles: [PortalRole] = [.founder]
-    @State private var selection: RootDestination = {
+    @State private var surface: PortalSurface = {
         let arguments = ProcessInfo.processInfo.arguments
         guard let index = arguments.firstIndex(of: "-demoDestination"), arguments.indices.contains(index + 1) else {
-            return .home
+            return .root(.home)
         }
-        return RootDestination(rawValue: arguments[index + 1]) ?? .home
+        let value = arguments[index + 1]
+        if value == "payments" { return .payments }
+        return .root(RootDestination(rawValue: value) ?? .home)
     }()
-    @State private var detailPresented = ProcessInfo.processInfo.arguments.contains("-showKPIDetail")
+    @State private var menuPresented = false
+    @State private var performanceMetric: PerformanceMetric?
     @State private var upcomingPresented = false
     #if DEBUG
     @State private var scenario = DemoScenario.launchScenario
     #endif
 
-    private var destinations: [RootDestination] {
-        RoleDestinationPolicy.destinations(for: roles)
+    private var rootSelection: RootDestination {
+        if case let .root(destination) = surface { destination } else { .work }
     }
+
+    private var destinations: [RootDestination] { RoleDestinationPolicy.destinations(for: roles) }
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -41,10 +49,21 @@ struct PortalShell: View {
             destinationContent
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .safeAreaPadding(.bottom, 88)
+                .environment(\.openPortalMenu) { menuPresented = true }
             floatingTabBar
         }
-        .sheet(isPresented: $detailPresented) {
-            KPIDetailSheet()
+        .sheet(isPresented: $menuPresented) {
+            PortalMenuSheet(
+                features: FeatureNavigationPolicy.menuFeatures(for: roles),
+                selected: selectedFeature,
+                select: selectFeature
+            )
+            .presentationDetents([.large])
+            .presentationDragIndicator(.visible)
+            .presentationBackground(Color.black)
+        }
+        .sheet(item: $performanceMetric) { metric in
+            PerformanceDetailSheet(metric: metric)
                 .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
                 .presentationBackground(ivySurface)
@@ -58,24 +77,46 @@ struct PortalShell: View {
         .tint(.white)
     }
 
+    private var selectedFeature: PortalFeature {
+        switch surface {
+        case .payments: .payments
+        case .root(.performance): .performance
+        default: .overview
+        }
+    }
+
     @ViewBuilder private var destinationContent: some View {
-        switch selection {
-        case .home:
-            #if DEBUG
-            HomeView(scenario: $scenario, onAction: handleHomeAction)
-            #else
-            HomeView(onAction: handleHomeAction)
-            #endif
-        case .work: WorkView()
-        case .performance: PerformanceView(showDetail: { detailPresented = true })
-        case .customers: CustomersView()
-        case .more: MoreView(entries: RoleDestinationPolicy.moreEntries(for: roles))
+        switch surface {
+        case .payments:
+            PaymentsView()
+        case let .root(selection):
+            switch selection {
+            case .home:
+                #if DEBUG
+                HomeView(scenario: $scenario, onAction: handleHomeAction)
+                #else
+                HomeView(onAction: handleHomeAction)
+                #endif
+            case .work: WorkView(openPayments: { surface = .payments })
+            case .performance: PerformanceView(showDetail: { performanceMetric = $0 })
+            case .customers: CustomersView()
+            case .more: MoreView(entries: RoleDestinationPolicy.moreEntries(for: roles))
+            }
+        }
+    }
+
+    private func selectFeature(_ feature: PortalFeature) {
+        withAnimation(.snappy(duration: 0.24)) {
+            if let root = feature.rootDestination { surface = .root(root) } else { surface = .payments }
+            menuPresented = false
         }
     }
 
     private func handleHomeAction(_ action: HomeAction) {
-        if let destination = action.destination {
-            withAnimation(.snappy(duration: 0.24)) { selection = destination }
+        if action == .openPayments {
+            withAnimation(.snappy(duration: 0.24)) { surface = .payments }
+        } else if let destination = action.destination {
+            withAnimation(.snappy(duration: 0.24)) { surface = .root(destination) }
         } else if action.detail == .upcomingEvent {
             upcomingPresented = true
         }
@@ -85,18 +126,15 @@ struct PortalShell: View {
         HStack(spacing: 2) {
             ForEach(destinations, id: \.self) { destination in
                 Button {
-                    withAnimation(.snappy(duration: 0.24)) { selection = destination }
+                    withAnimation(.snappy(duration: 0.24)) { surface = .root(destination) }
                 } label: {
                     VStack(spacing: 4) {
-                        Image(systemName: destination.symbol)
-                            .font(.system(size: 17, weight: .semibold))
-                        Text(destination.shortTitle)
-                            .font(.caption2.weight(.semibold))
-                            .lineLimit(1)
+                        Image(systemName: destination.symbol).font(.system(size: 16, weight: .semibold))
+                        Text(destination.shortTitle).font(.caption2.weight(.semibold)).lineLimit(1)
                     }
-                    .foregroundStyle(selection == destination ? .white : .secondary)
-                    .frame(maxWidth: .infinity, minHeight: 54)
-                    .background(selection == destination ? Color.white.opacity(0.1) : .clear, in: Capsule())
+                    .foregroundStyle(surface == .root(destination) ? .white : .secondary)
+                    .frame(maxWidth: .infinity, minHeight: 50)
+                    .background(surface == .root(destination) ? Color.white.opacity(0.1) : .clear, in: Capsule())
                     .contentShape(Capsule())
                 }
                 .buttonStyle(PressableButtonStyle())
@@ -104,11 +142,55 @@ struct PortalShell: View {
             }
         }
         .padding(6)
-        .frame(maxWidth: 390)
+        .frame(maxWidth: 370)
         .background(.ultraThinMaterial, in: Capsule())
-        .overlay(Capsule().stroke(Color.white.opacity(0.13), lineWidth: 1))
+        .overlay(Capsule().stroke(Color.white.opacity(0.16), lineWidth: 1))
         .padding(.horizontal, 20)
         .padding(.bottom, 10)
+    }
+}
+
+private struct PortalMenuSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let features: [PortalFeature]
+    let selected: PortalFeature
+    let select: (PortalFeature) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 28) {
+            HStack {
+                Text("Ivy Portal").font(.largeTitle.bold())
+                Spacer()
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark").font(.title3).frame(width: 48, height: 48).background(ivySurface, in: Circle())
+                }
+                .buttonStyle(PressableButtonStyle())
+                .accessibilityLabel("Close navigation")
+            }
+            Text("Navigate").font(.title2.bold()).foregroundStyle(.secondary)
+            VStack(spacing: 10) {
+                ForEach(features, id: \.self) { feature in
+                    Button { select(feature) } label: {
+                        HStack(spacing: 18) {
+                            Image(systemName: feature.symbol).font(.title2).frame(width: 36)
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(feature.title).font(.title3.bold())
+                                Text(feature.subtitle).font(.caption).foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            if selected == feature { Image(systemName: "checkmark.circle.fill") }
+                        }
+                        .padding(18)
+                        .frame(maxWidth: .infinity, minHeight: 82, alignment: .leading)
+                        .background(selected == feature ? ivySurface : .clear, in: RoundedRectangle(cornerRadius: 22))
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(PressableButtonStyle())
+                }
+            }
+            Spacer()
+        }
+        .padding(24)
     }
 }
 
@@ -123,25 +205,33 @@ private struct UpcomingEventSheet: View {
             }
             Label("Today · 5:00 PM to 5:45 PM", systemImage: "clock.fill")
             Label("Riyadh", systemImage: "location.fill")
-            Label("Review weekly performance and open actions", systemImage: "text.bubble.fill")
-                .foregroundStyle(.secondary)
+            Label("Review weekly performance and open actions", systemImage: "text.bubble.fill").foregroundStyle(.secondary)
             Spacer()
         }
         .padding(24)
     }
 }
 
-private extension RootDestination {
-    var shortTitle: String {
+private extension PortalFeature {
+    var title: String {
+        switch self { case .overview: "Overview"; case .performance: "Performance"; case .payments: "Payments" }
+    }
+    var subtitle: String {
         switch self {
-        case .home: "Home"
-        case .work: "Work"
-        case .performance: "Pulse"
-        case .customers: "Clients"
-        case .more: "More"
+        case .overview: "Priorities and funnel health"
+        case .performance: "Team activity and accountability"
+        case .payments: "Revenue, matching, and costs"
         }
     }
+    var symbol: String {
+        switch self { case .overview: "square.grid.2x2.fill"; case .performance: "chart.pie.fill"; case .payments: "dollarsign.circle.fill" }
+    }
+}
 
+private extension RootDestination {
+    var shortTitle: String {
+        switch self { case .home: "Home"; case .work: "Work"; case .performance: "Pulse"; case .customers: "Clients"; case .more: "More" }
+    }
     var symbol: String {
         switch self {
         case .home: "square.grid.2x2.fill"

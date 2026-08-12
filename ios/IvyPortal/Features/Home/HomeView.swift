@@ -92,7 +92,7 @@ struct HomeView: View {
                     onAction(.openCalls)
                 }
                 HomeMetricButton(title: "Cash collected", value: "$12.5K", trend: "4 verified deals", accent: ivyGreen) {
-                    onAction(.openCash)
+                    onAction(.openPayments)
                 }
             }
         }

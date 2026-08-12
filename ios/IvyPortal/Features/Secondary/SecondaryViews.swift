@@ -8,6 +8,7 @@ private struct PortalDetail: Identifiable {
 }
 
 struct WorkView: View {
+    let openPayments: () -> Void
     private let items = [
         ("Action items", "2 overdue · 5 open", "checklist", Color.orange, "Review assigned, overdue, and completed action items."),
         ("Calendar", "3 calls today", "calendar", Color.blue, "View today’s calls and scheduled reviews."),
@@ -25,7 +26,11 @@ struct WorkView: View {
                     VStack(spacing: 0) {
                         ForEach(Array(items.enumerated()), id: \.element.0) { index, item in
                             Button {
-                                detail = PortalDetail(title: item.0, message: item.4, symbol: item.2)
+                                if item.0 == "Money in" {
+                                    openPayments()
+                                } else {
+                                    detail = PortalDetail(title: item.0, message: item.4, symbol: item.2)
+                                }
                             } label: {
                                 HStack(spacing: 14) {
                                     Image(systemName: item.2).foregroundStyle(item.3).frame(width: 28)

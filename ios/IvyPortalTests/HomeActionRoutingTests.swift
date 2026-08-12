@@ -12,8 +12,8 @@ final class HomeActionRoutingTests: XCTestCase {
 
     func testLeadershipMetricsOpenPulse() {
         XCTAssertEqual(HomeAction.openCalls.destination, .performance)
-        XCTAssertEqual(HomeAction.openCash.destination, .performance)
         XCTAssertEqual(HomeAction.reviewCoverage.destination, .performance)
+        XCTAssertNil(HomeAction.openPayments.destination)
     }
 
     func testUpcomingEventUsesDetailInsteadOfChangingTab() {

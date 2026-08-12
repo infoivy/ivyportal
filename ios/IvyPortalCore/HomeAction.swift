@@ -6,16 +6,16 @@ public enum HomeAction: Equatable, Sendable {
     case reviewOverdue
     case reviewCoverage
     case openCalls
-    case openCash
+    case openPayments
     case openUpcoming
 
     public var destination: RootDestination? {
         switch self {
         case .reviewOverdue:
             return .work
-        case .reviewCoverage, .openCalls, .openCash:
+        case .reviewCoverage, .openCalls:
             return .performance
-        case .openUpcoming:
+        case .openPayments, .openUpcoming:
             return nil
         }
     }
