@@ -1,10 +1,17 @@
 import SwiftUI
 
-let ivySurface = Color(red: 0.105, green: 0.108, blue: 0.118)
-let ivyRaised = Color(red: 0.145, green: 0.148, blue: 0.16)
+let ivySurface = Color(red: 0.11, green: 0.11, blue: 0.118)      // #1C1C1E — Mochi card
+let ivyRaised = Color(red: 0.173, green: 0.173, blue: 0.18)      // #2C2C2E — Mochi raised/active
 let ivyMuted = Color(red: 0.62, green: 0.62, blue: 0.66)
 let ivyGreen = Color(red: 0.35, green: 0.78, blue: 0.46)
 let ivyTeal = Color(red: 0.34, green: 0.74, blue: 0.69)
+// Mochi accent ramp (funnel / category differentiation)
+let ivyBlue = Color(red: 0.37, green: 0.36, blue: 0.90)          // #5E5CE6
+let ivyPink = Color(red: 0.96, green: 0.42, blue: 0.61)
+let ivyPurple = Color(red: 0.69, green: 0.48, blue: 0.95)
+let ivyOrange = Color(red: 1.0, green: 0.62, blue: 0.04)         // #FF9F0A
+let ivyRed = Color(red: 1.0, green: 0.27, blue: 0.23)            // #FF453A
+let ivyMint = Color(red: 0.19, green: 0.82, blue: 0.35)          // #30D158
 
 private struct PortalMenuActionKey: EnvironmentKey {
     nonisolated(unsafe) static let defaultValue: () -> Void = {}
@@ -384,5 +391,168 @@ struct PairStat: View {
             Text(label).font(.caption).foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+// MARK: - Mochi hero + grid vocabulary (IMG_7144/7140/7138)
+
+/// Mochi hero stat: colored icon square + huge thin number + caption. The
+/// visual anchor of a detail/analytics screen (e.g. Total Replies "476").
+struct HeroStat: View {
+    let symbol: String
+    let color: Color
+    let value: String
+    var caption: String = ""
+
+    var body: some View {
+        VStack(spacing: 18) {
+            Image(systemName: symbol)
+                .font(.system(size: 34, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 76, height: 76)
+                .background(color, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+            Text(value)
+                .font(.system(size: 76, weight: .medium, design: .rounded))
+                .monospacedDigit()
+                .tracking(-2)
+            if !caption.isEmpty {
+                Text(caption).font(.subheadline).foregroundStyle(.secondary)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// Mochi 2-col stat tile: small grey label + icon top row, big bold value.
+struct StatTile: View {
+    let label: String
+    let value: String
+    let symbol: String
+    var valueColor: Color = .white
+    var action: (() -> Void)? = nil
+
+    var body: some View {
+        Button { action?() } label: {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(alignment: .top) {
+                    Text(label).font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
+                    Spacer(minLength: 4)
+                    Image(systemName: symbol).font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
+                }
+                Text(value).font(.system(.title, design: .rounded, weight: .semibold)).monospacedDigit().foregroundStyle(valueColor)
+            }
+            .padding(18)
+            .frame(maxWidth: .infinity, minHeight: 96, alignment: .topLeading)
+            .background(ivySurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        }
+        .buttonStyle(PressableButtonStyle())
+        .disabled(action == nil)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// Mochi horizontal daily-breakdown strip: colored active cells, grey empty dashes.
+struct DailyStrip: View {
+    struct Day: Hashable { let label: String; let value: String; let active: Bool }
+    let days: [Day]
+    var color: Color = ivyTeal
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ForEach(days, id: \.self) { day in
+                VStack(spacing: 6) {
+                    Text(day.label).font(.caption2.weight(.semibold)).foregroundStyle(day.active ? .white.opacity(0.85) : .secondary)
+                    Text(day.value).font(.subheadline.bold()).monospacedDigit().foregroundStyle(day.active ? .white : .secondary)
+                }
+                .frame(maxWidth: .infinity, minHeight: 64)
+                .background(day.active ? color : ivySurface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            }
+        }
+    }
+}
+
+/// Mochi revenue-breakdown bar: one full-width stacked bar + dot legend with % badges.
+struct BreakdownBar: View {
+    struct Segment: Hashable { let label: String; let value: String; let percent: Int; let color: Color }
+    let title: String
+    let subtitle: String
+    let keptLabel: String
+    let keptValue: String
+    let segments: [Segment]
+
+    var body: some View {
+        SurfaceCard(padding: 20) {
+            VStack(alignment: .leading, spacing: 18) {
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(title).font(.title3.bold())
+                        Text(subtitle).font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    VStack(alignment: .trailing, spacing: 4) {
+                        Text(keptLabel).font(.caption).foregroundStyle(.secondary)
+                        Text(keptValue).font(.title3.bold()).monospacedDigit()
+                    }
+                }
+                // stacked bar
+                GeometryReader { geo in
+                    HStack(spacing: 2) {
+                        ForEach(segments, id: \.self) { seg in
+                            if seg.percent > 0 {
+                                RoundedRectangle(cornerRadius: 4).fill(seg.color)
+                                    .frame(width: geo.size.width * CGFloat(seg.percent) / 100)
+                            }
+                        }
+                    }
+                }
+                .frame(height: 14)
+                .background(ivyRaised, in: Capsule())
+                VStack(spacing: 12) {
+                    ForEach(segments, id: \.self) { seg in
+                        HStack(spacing: 12) {
+                            Circle().fill(seg.color).frame(width: 9, height: 9)
+                            Text(seg.label).font(.subheadline)
+                            Spacer()
+                            Text(seg.value).font(.subheadline.weight(.semibold)).monospacedDigit().foregroundStyle(.secondary)
+                            Text("\(seg.percent)%").font(.caption.bold()).monospacedDigit().foregroundStyle(seg.color)
+                                .padding(.horizontal, 8).padding(.vertical, 4)
+                                .background(seg.color.opacity(0.16), in: Capsule())
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Mochi teammate/entity row: colored initial avatar + name + right count.
+struct EntityRow: View {
+    let name: String
+    let value: String
+    let color: Color
+    var subtitle: String = ""
+    var action: (() -> Void)? = nil
+
+    var body: some View {
+        Button { action?() } label: {
+            HStack(spacing: 14) {
+                Circle().fill(color.opacity(0.9)).frame(width: 42, height: 42)
+                    .overlay(Text(name.prefix(1)).font(.headline).foregroundStyle(.white))
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(name).font(.subheadline.weight(.semibold)).lineLimit(1)
+                    if !subtitle.isEmpty { Text(subtitle).font(.caption).foregroundStyle(.secondary).lineLimit(1) }
+                }
+                Spacer()
+                Text(value).font(.subheadline.bold()).monospacedDigit()
+                if action != nil { Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(.tertiary) }
+            }
+            .frame(minHeight: 58)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PressableButtonStyle())
+        .disabled(action == nil)
     }
 }

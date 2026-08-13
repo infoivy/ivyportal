@@ -153,57 +153,53 @@ struct HomeView: View {
 
     #if DEBUG
     private var salesPicture: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 26) {
             pictureHeader("Sales", title: "Today's picture")
-            moneyStrip
-            cardTile
-            SurfaceCard(padding: 0) {
-                VStack(spacing: 0) {
-                    SalesTile(icon: "calendar.badge.checkmark", label: "Sets this week", detail: "3 booked for today", value: "18", tone: .neutral) { onAction(.openSalesCalendar) }
-                    tileDivider
-                    SalesTile(icon: "eye.fill", label: "Show rate this week", detail: "12 showed · 3 did not show", value: "80%", tone: .neutral) { onAction(.openSalesCalendar) }
-                    tileDivider
-                    SalesTile(icon: "phone.fill", label: "Volume yesterday", detail: "96 dials of 100 · 41 DMs of 50 · 5 sets of 3", value: "2 short", tone: .warning) { onAction(.openSalesPerformance) }
-                    tileDivider
-                    SalesTile(icon: "banknote.fill", label: "Cash collected this week", detail: "$4.2K upfront · $1.8K installments", value: "$6.0K", tone: .neutral) { onAction(.openSalesRevenue) }
-                    tileDivider
-                    SalesTile(icon: "hand.coins.fill", label: "Closes this period", detail: "Aug 11 – Sep 11", value: "7", tone: .neutral) { onAction(.openSalesRevenue) }
-                    tileDivider
-                    SalesTile(icon: "target", label: "Pipeline in Close", detail: "Active leads being worked", value: "23", tone: .neutral) { onAction(.openSalesCRM) }
-                    tileDivider
-                    SalesTile(icon: "person.fill.questionmark", label: "Unclaimed sets", detail: "Booked calls waiting for an owner", value: "2", tone: .warning) { onAction(.openSalesCalendar) }
-                }
+            // Money strip → hero-level stat tiles
+            HStack(spacing: 14) {
+                StatTile(label: "Cash collected · Aug", value: "$18.4K", symbol: "banknote.fill", valueColor: ivyMint) { onAction(.openMoneyStrip) }
+                StatTile(label: "Left to pay out", value: "$2.3K", symbol: "wallet.pass.fill") { onAction(.openPayouts) }
             }
+            // The load-bearing sales numbers as a 2-col grid
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 14), GridItem(.flexible())], spacing: 14) {
+                StatTile(label: "Sets this week", value: "18", symbol: "calendar.badge.checkmark") { onAction(.openSalesCalendar) }
+                StatTile(label: "Show rate", value: "80%", symbol: "eye.fill", valueColor: ivyTeal) { onAction(.openSalesCalendar) }
+                StatTile(label: "Closes this period", value: "7", symbol: "hand.coins.fill") { onAction(.openSalesRevenue) }
+                StatTile(label: "Pipeline in Close", value: "23", symbol: "target", valueColor: ivyBlue) { onAction(.openSalesCRM) }
+            }
+            // Yesterday's volume vs target → colored daily strip
+            VStack(alignment: .leading, spacing: 12) {
+                sectionHeader("Volume yesterday", detail: "2 short of target")
+                DailyStrip(days: [
+                    .init(label: "Dials", value: "96", active: true),
+                    .init(label: "DMs", value: "41", active: true),
+                    .init(label: "Sets", value: "5", active: true),
+                    .init(label: "Target", value: "100", active: false),
+                    .init(label: "Target", value: "50", active: false),
+                    .init(label: "Target", value: "3", active: false),
+                ], color: ivyOrange)
+                Text("Short on volume yesterday: Aalian K., Abdelmalik").font(.caption).foregroundStyle(ivyOrange)
+            }
+            myCardTile
             setterWeekTable
         }
     }
 
     private var setterWeekTable: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack { Text("Setters this week").font(.headline); Spacer(); Button("Performance") { onAction(.openSalesPerformance) }.font(.caption.bold()).foregroundStyle(.secondary) }
-            SurfaceCard(padding: 0) {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack { Text("Setters this week").font(.title3.bold()); Spacer(); Button("Performance") { onAction(.openSalesPerformance) }.font(.caption.bold()).foregroundStyle(.secondary) }
+            SurfaceCard(padding: 6) {
                 VStack(spacing: 0) {
-                    setterRow("Haroon Q.", sets: 6, showed: 5, noShow: 1, rate: "83%", yesterday: "104 dials · 3 sets", short: false)
+                    EntityRow(name: "Haroon Quraishi", value: "6 sets", color: ivyPurple, subtitle: "83% show · 104 dials yest") { onAction(.openSalesPerformance) }
                     tileDivider
-                    setterRow("Masood A.", sets: 5, showed: 4, noShow: 1, rate: "80%", yesterday: "96 dials · 2 sets", short: false)
+                    EntityRow(name: "Masood Ali", value: "5 sets", color: ivyPink, subtitle: "80% show · 96 dials yest") { onAction(.openSalesPerformance) }
                     tileDivider
-                    setterRow("Aalian K.", sets: 4, showed: 3, noShow: 0, rate: "100%", yesterday: "no report", short: true)
+                    EntityRow(name: "Aalian Khan", value: "4 sets", color: ivyBlue, subtitle: "100% show · no report yest") { onAction(.openSalesPerformance) }
                     tileDivider
-                    setterRow("Abdelmalik", sets: 3, showed: 2, noShow: 1, rate: "67%", yesterday: "41 DMs · 1 set", short: true)
+                    EntityRow(name: "Abdelmalik", value: "3 sets", color: ivyMint, subtitle: "67% show · 41 DMs yest") { onAction(.openSalesPerformance) }
                 }
             }
-            Text("Short on volume yesterday: Aalian K., Abdelmalik").font(.caption).foregroundStyle(.orange)
         }
-    }
-
-    private func setterRow(_ name: String, sets: Int, showed: Int, noShow: Int, rate: String, yesterday: String, short: Bool) -> some View {
-        HStack(spacing: 10) {
-            Text(name).font(.subheadline.weight(.medium)).frame(maxWidth: .infinity, alignment: .leading)
-            VStack(alignment: .trailing, spacing: 1) { Text("\(sets)").font(.subheadline.bold()).monospacedDigit(); Text("sets").font(.system(size: 9)).foregroundStyle(.secondary) }.frame(width: 34)
-            VStack(alignment: .trailing, spacing: 1) { Text(rate).font(.subheadline.bold()).monospacedDigit(); Text("show").font(.system(size: 9)).foregroundStyle(.secondary) }.frame(width: 40)
-            Text(yesterday).font(.caption2).foregroundStyle(short ? .orange : .secondary).frame(width: 92, alignment: .trailing).lineLimit(2).multilineTextAlignment(.trailing)
-        }
-        .padding(.horizontal, 16).frame(minHeight: 52)
     }
     #endif
 
@@ -211,61 +207,48 @@ struct HomeView: View {
 
     #if DEBUG
     private var fulfillmentPicture: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 26) {
             pictureHeader("Fulfillment", title: "Delivery picture")
-            SurfaceCard(padding: 0) {
-                VStack(spacing: 0) {
-                    FulfillTile(icon: "person.2.fill", label: "Active students", detail: "4 joined this week", value: "47") { onAction(.openStudents) }
-                    tileDivider
-                    FulfillTile(icon: "heart.fill", label: "At risk", detail: "3 more to watch", value: "2", tone: .danger) { onAction(.openStudentSuccess) }
-                    tileDivider
-                    FulfillTile(icon: "message.fill", label: "Checked in today", detail: "5 due a check-in (2+ days)", value: "9", tone: .warning) { onAction(.openCSM) }
-                    tileDivider
-                    FulfillTile(icon: "doc.text.fill", label: "Student EODs today", detail: "6 quiet for 14+ days", value: "31") { onAction(.openStudentSuccess) }
-                    tileDivider
-                    FulfillTile(icon: "hourglass", label: "Stuck in onboarding", detail: "7+ days without finishing Start Here", value: "3", tone: .warning) { onAction(.openStudents) }
-                    tileDivider
-                    FulfillTile(icon: "checklist", label: "Action items open", detail: "4 overdue", value: "12", tone: .warning) { onAction(.reviewOverdue) }
-                    tileDivider
-                    FulfillTile(icon: "sparkles", label: "Testimonials ready", detail: "First win recorded, not collected", value: "5") { onAction(.openTestimonials) }
-                    tileDivider
-                    FulfillTile(icon: "phone.fill", label: "1-on-1 calls next 7 days", detail: "Scheduled coaching and support", value: "11") { onAction(.openCalls) }
-                }
+            // Delivery truth leads: a 2-col grid of the load-bearing numbers
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 14), GridItem(.flexible())], spacing: 14) {
+                StatTile(label: "Active students", value: "47", symbol: "person.2.fill") { onAction(.openStudents) }
+                StatTile(label: "At risk", value: "2", symbol: "heart.fill", valueColor: ivyRed) { onAction(.openStudentSuccess) }
+                StatTile(label: "Checked in today", value: "9", symbol: "message.fill", valueColor: ivyTeal) { onAction(.openCSM) }
+                StatTile(label: "Student EODs today", value: "31", symbol: "doc.text.fill") { onAction(.openStudentSuccess) }
+                StatTile(label: "Stuck in onboarding", value: "3", symbol: "hourglass", valueColor: ivyOrange) { onAction(.openStudents) }
+                StatTile(label: "Testimonials ready", value: "5", symbol: "sparkles", valueColor: ivyPurple) { onAction(.openTestimonials) }
             }
-            Text("Onboarding 8 · Training 19 · Applying 15 · Offer won 5").font(.caption).foregroundStyle(.secondary)
+            // Phase mix as a Mochi breakdown bar
+            BreakdownBar(
+                title: "Phase mix",
+                subtitle: "Active students by delivery phase",
+                keptLabel: "Applying",
+                keptValue: "15",
+                segments: [
+                    .init(label: "Onboarding", value: "8", percent: 17, color: ivyBlue),
+                    .init(label: "Training", value: "19", percent: 40, color: ivyPurple),
+                    .init(label: "Applying", value: "15", percent: 32, color: ivyTeal),
+                    .init(label: "Offer won", value: "5", percent: 11, color: ivyMint),
+                ]
+            )
             csmTable
             latestNotes
         }
     }
 
     private var csmTable: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack { Text("CSM activity this week").font(.headline); Spacer(); Button("Open workspace") { onAction(.openCSM) }.font(.caption.bold()).foregroundStyle(.secondary) }
-            SurfaceCard(padding: 0) {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack { Text("CSM activity this week").font(.title3.bold()); Spacer(); Button("Open workspace") { onAction(.openCSM) }.font(.caption.bold()).foregroundStyle(.secondary) }
+            SurfaceCard(padding: 6) {
                 VStack(spacing: 0) {
-                    csmRow("Faizan", today: 4, week: 18, looms: 6, roleplays: 3, notes: 9, escalations: 1)
+                    EntityRow(name: "Faizan", value: "18 wk", color: ivyPurple, subtitle: "4 today · 6 looms · 9 notes") { onAction(.openCSM) }
                     tileDivider
-                    csmRow("Sara", today: 3, week: 14, looms: 4, roleplays: 5, notes: 7, escalations: 0)
+                    EntityRow(name: "Sara", value: "14 wk", color: ivyPink, subtitle: "3 today · 4 looms · 7 notes") { onAction(.openCSM) }
                     tileDivider
-                    csmRow("Maryam", today: 2, week: 11, looms: 2, roleplays: 2, notes: 0, escalations: 2)
+                    EntityRow(name: "Maryam", value: "11 wk", color: ivyBlue, subtitle: "2 today · 2 looms · no notes") { onAction(.openCSM) }
                 }
             }
         }
-    }
-
-    private func csmRow(_ name: String, today: Int, week: Int, looms: Int, roleplays: Int, notes: Int, escalations: Int) -> some View {
-        HStack(spacing: 8) {
-            Text(name).font(.subheadline.weight(.medium)).frame(maxWidth: .infinity, alignment: .leading)
-            csmStat("\(today)", "today")
-            csmStat("\(week)", "week")
-            csmStat("\(looms)", "looms")
-            csmStat("\(notes)", "notes", warn: notes == 0)
-        }
-        .padding(.horizontal, 16).frame(minHeight: 50)
-    }
-
-    private func csmStat(_ value: String, _ label: String, warn: Bool = false) -> some View {
-        VStack(alignment: .trailing, spacing: 1) { Text(value).font(.subheadline.bold()).monospacedDigit().foregroundStyle(warn ? .orange : .primary); Text(label).font(.system(size: 9)).foregroundStyle(.secondary) }.frame(width: 40)
     }
 
     private var latestNotes: some View {
@@ -295,20 +278,18 @@ struct HomeView: View {
 
     #if DEBUG
     private var leadershipPicture: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 26) {
             pictureHeader("Leadership", title: "Operating picture")
-            moneyStrip
-            cardTile
-            SurfaceCard(padding: 0) {
-                VStack(spacing: 0) {
-                    FulfillTile(icon: "person.2.fill", label: "Active students", detail: "Current delivery roster", value: "47") { onAction(.openLeadershipStudents) }
-                    tileDivider
-                    FulfillTile(icon: "phone.fill", label: "Calls next 7 days", detail: "Scheduled coaching and support", value: "11") { onAction(.openLeadershipCalls) }
-                    tileDivider
-                    FulfillTile(icon: "creditcard.fill", label: "Payments due next 3 days", detail: "Upcoming installment follow-up", value: "6") { onAction(.openLeadershipPayments) }
-                    tileDivider
-                    FulfillTile(icon: "graduationcap.fill", label: "Testimonials ready", detail: "First win recorded, not collected", value: "5") { onAction(.openLeadershipTestimonials) }
-                }
+            HStack(spacing: 14) {
+                StatTile(label: "Cash collected · Aug", value: "$18.4K", symbol: "banknote.fill", valueColor: ivyMint) { onAction(.openMoneyStrip) }
+                StatTile(label: "Left to pay out", value: "$2.3K", symbol: "wallet.pass.fill") { onAction(.openPayouts) }
+            }
+            myCardTile
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 14), GridItem(.flexible())], spacing: 14) {
+                StatTile(label: "Active students", value: "47", symbol: "person.2.fill") { onAction(.openLeadershipStudents) }
+                StatTile(label: "Calls next 7 days", value: "11", symbol: "phone.fill", valueColor: ivyBlue) { onAction(.openLeadershipCalls) }
+                StatTile(label: "Payments due · 3d", value: "6", symbol: "creditcard.fill", valueColor: ivyOrange) { onAction(.openLeadershipPayments) }
+                StatTile(label: "Testimonials ready", value: "5", symbol: "graduationcap.fill", valueColor: ivyPurple) { onAction(.openLeadershipTestimonials) }
             }
         }
     }
@@ -318,70 +299,46 @@ struct HomeView: View {
 
     #if DEBUG
     private var personalPicture: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 26) {
             pictureHeader("Personal", title: "Your day")
-            SurfaceCard {
-                VStack(alignment: .leading, spacing: 14) {
+            // Hero: today's progress as the big Mochi number
+            SurfaceCard(padding: 24) {
+                VStack(spacing: 20) {
                     HStack(alignment: .firstTextBaseline) {
-                        VStack(alignment: .leading, spacing: 4) { Text("72%").font(.system(size: 34, weight: .bold, design: .rounded)).monospacedDigit(); Text("100 dials · 3 sets target").font(.caption).foregroundStyle(.secondary) }
+                        Text("72%").font(.system(size: 64, weight: .medium, design: .rounded)).monospacedDigit().tracking(-2)
                         Spacer()
-                        StatusPill(title: "Pending EOD", color: .orange)
+                        StatusPill(title: "Pending EOD", color: ivyOrange)
                     }
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
-                            Capsule().fill(ivyRaised).frame(height: 6)
-                            Capsule().fill(Color.white).frame(width: geo.size.width * 0.72, height: 6)
+                            Capsule().fill(ivyRaised).frame(height: 8)
+                            Capsule().fill(Color.white).frame(width: geo.size.width * 0.72, height: 8)
                         }
                     }
-                    .frame(height: 6)
-                    HStack(spacing: 0) {
-                        miniMetric("Dials", "72"); Spacer(); miniMetric("DMs", "18"); Spacer(); miniMetric("Booked", "2")
-                    }
-                    .padding(.top, 4)
+                    .frame(height: 8)
+                    Text("100 dials · 3 sets target").font(.subheadline).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 14), GridItem(.flexible()), GridItem(.flexible())], spacing: 14) {
+                StatTile(label: "Dials", value: "72", symbol: "phone.fill")
+                StatTile(label: "DMs", value: "18", symbol: "message.fill", valueColor: ivyPurple)
+                StatTile(label: "Booked", value: "2", symbol: "calendar.badge.checkmark", valueColor: ivyMint)
+            }
         }
-    }
-
-    private func miniMetric(_ label: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) { Text(value).font(.headline).monospacedDigit(); Text(label).font(.caption2).foregroundStyle(.secondary) }
     }
     #endif
 
     // MARK: Shared blocks
 
     #if DEBUG
-    private var moneyStrip: some View {
-        HStack(spacing: 12) {
-            Button { onAction(.openMoneyStrip) } label: {
-                SurfaceCard {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Label("Cash collected · Aug", systemImage: "hand.coins.fill").font(.caption2.bold()).foregroundStyle(.secondary)
-                        Text("$18.4K").font(.system(size: 24, weight: .semibold, design: .rounded)).monospacedDigit()
-                        Text("Whop net, after fees").font(.caption2).foregroundStyle(.tertiary)
-                    }.frame(maxWidth: .infinity, alignment: .leading)
-                }
-            }.buttonStyle(PressableButtonStyle())
-            Button { onAction(.openPayouts) } label: {
-                SurfaceCard {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Label("Left to pay out", systemImage: "wallet.pass.fill").font(.caption2.bold()).foregroundStyle(.secondary)
-                        Text("$2.3K").font(.system(size: 24, weight: .semibold, design: .rounded)).monospacedDigit()
-                        Text("$5.9K already confirmed paid").font(.caption2).foregroundStyle(.tertiary)
-                    }.frame(maxWidth: .infinity, alignment: .leading)
-                }
-            }.buttonStyle(PressableButtonStyle())
-        }
-    }
-
-    private var cardTile: some View {
+    private var myCardTile: some View {
         Button { onAction(.openCards) } label: {
             SurfaceCard {
                 HStack(spacing: 14) {
-                    Image(systemName: "creditcard.fill").font(.system(size: 18, weight: .semibold)).foregroundStyle(.white).frame(width: 40, height: 40).background(ivyRaised, in: RoundedRectangle(cornerRadius: 12))
+                    Image(systemName: "creditcard.fill").font(.system(size: 18, weight: .semibold)).foregroundStyle(.white).frame(width: 46, height: 46).background(ivyBlue, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("My card · kept in the business").font(.caption2.bold()).foregroundStyle(.secondary)
-                        Text("$3,150").font(.system(size: 22, weight: .semibold, design: .rounded)).monospacedDigit()
+                        Text("My card · kept in the business").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                        Text("$3,150").font(.system(size: 24, weight: .semibold, design: .rounded)).monospacedDigit()
                         Text("$5,000 loaded · $1,850 spent").font(.caption2).foregroundStyle(.tertiary)
                     }
                     Spacer()
@@ -472,44 +429,6 @@ struct HomeView: View {
 }
 
 // MARK: - Tiles
-
-private struct SalesTile: View {
-    enum Tone { case neutral, warning, danger }
-    let icon, label, detail, value: String
-    let tone: Tone
-    let action: () -> Void
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 14) {
-                Image(systemName: icon).font(.system(size: 15, weight: .semibold)).foregroundStyle(.secondary).frame(width: 32, height: 32).background(ivyRaised, in: RoundedRectangle(cornerRadius: 9))
-                VStack(alignment: .leading, spacing: 3) { Text(label).font(.subheadline.weight(.medium)); Text(detail).font(.caption).foregroundStyle(.secondary).lineLimit(1) }
-                Spacer(minLength: 8)
-                Text(value).font(.title3.bold()).monospacedDigit().foregroundStyle(tone == .danger ? .red : tone == .warning ? .orange : .primary)
-                Image(systemName: "chevron.right").font(.caption2.bold()).foregroundStyle(.tertiary)
-            }
-            .padding(.horizontal, 16).frame(minHeight: 64).contentShape(Rectangle())
-        }.buttonStyle(PressableButtonStyle())
-    }
-}
-
-private struct FulfillTile: View {
-    enum Tone { case neutral, warning, danger }
-    let icon, label, detail, value: String
-    var tone: Tone = .neutral
-    let action: () -> Void
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 14) {
-                Image(systemName: icon).font(.system(size: 14, weight: .semibold)).foregroundStyle(.secondary).frame(width: 30, height: 30).background(ivyRaised, in: RoundedRectangle(cornerRadius: 8))
-                VStack(alignment: .leading, spacing: 3) { Text(label).font(.subheadline.weight(.medium)); Text(detail).font(.caption).foregroundStyle(.secondary).lineLimit(1) }
-                Spacer(minLength: 8)
-                Text(value).font(.headline).monospacedDigit().foregroundStyle(tone == .danger ? .red : tone == .warning ? .orange : .primary)
-                Image(systemName: "chevron.right").font(.caption2.bold()).foregroundStyle(.tertiary)
-            }
-            .padding(.horizontal, 16).frame(minHeight: 58).contentShape(Rectangle())
-        }.buttonStyle(PressableButtonStyle())
-    }
-}
 
 private struct HomeActionRow: View {
     let symbol: String

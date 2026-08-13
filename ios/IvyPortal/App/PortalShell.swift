@@ -63,9 +63,25 @@ struct PortalShell: View {
         }
         .sheet(isPresented: $menuPresented) {
             PortalMenuSheet(
-                features: FeatureNavigationPolicy.menuFeatures(for: roles),
-                selected: selectedFeature,
-                select: selectFeature
+                selectView: { picture in
+                    withAnimation(ivySpring) {
+                        #if DEBUG
+                        homePicture = picture
+                        #endif
+                        surface = .root(.home)
+                        menuPresented = false
+                    }
+                },
+                selectDestination: { destination in
+                    withAnimation(ivySpring) { surface = .root(destination); menuPresented = false }
+                },
+                currentPicture: {
+                    #if DEBUG
+                    return homePicture
+                    #else
+                    return .leadership
+                    #endif
+                }()
             )
             .presentationDetents([.medium])
             .presentationDragIndicator(.hidden)
@@ -85,14 +101,6 @@ struct PortalShell: View {
                 .presentationBackground(ivySurface)
         }
         .tint(.white)
-    }
-
-    private var selectedFeature: PortalFeature {
-        switch surface {
-        case .payments: .payments
-        case .root(.performance): .performance
-        default: .overview
-        }
     }
 
     @ViewBuilder private var destinationContent: some View {
@@ -116,13 +124,6 @@ struct PortalShell: View {
             case .customers: CustomersView()
             case .more: MoreView(entries: RoleDestinationPolicy.moreEntries(for: roles))
             }
-        }
-    }
-
-    private func selectFeature(_ feature: PortalFeature) {
-        withAnimation(ivySpring) {
-            if let root = feature.rootDestination { surface = .root(root) } else { surface = .payments }
-            menuPresented = false
         }
     }
 
@@ -169,9 +170,12 @@ struct PortalShell: View {
 
 private struct PortalMenuSheet: View {
     @Environment(\.dismiss) private var dismiss
-    let features: [PortalFeature]
-    let selected: PortalFeature
-    let select: (PortalFeature) -> Void
+    /// The burger menu holds ONLY views that are not on the bottom navbar:
+    /// department pictures (sales/fulfillment) plus secondary destinations.
+    /// Navbar tabs (Work/Performance/Clients/More) are never repeated here.
+    let selectView: (HomePicture) -> Void
+    let selectDestination: (RootDestination) -> Void
+    let currentPicture: HomePicture
 
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
@@ -184,23 +188,22 @@ private struct PortalMenuSheet: View {
                 .buttonStyle(PressableButtonStyle())
                 .accessibilityLabel("Close navigation")
             }
-            VStack(spacing: 2) {
-                ForEach(features, id: \.self) { feature in
-                    Button { select(feature) } label: {
-                        HStack(spacing: 16) {
-                            Image(systemName: feature.symbol).font(.system(size: 17, weight: .semibold)).frame(width: 40, height: 40)
-                                .background(selected == feature ? Color.white.opacity(0.14) : ivySurface, in: Circle())
-                                .foregroundStyle(selected == feature ? .white : .secondary)
-                            Text(feature.title).font(.body.weight(selected == feature ? .semibold : .regular))
-                                .foregroundStyle(selected == feature ? .white : .secondary)
-                            Spacer()
-                            if selected == feature { Image(systemName: "checkmark").font(.caption.bold()) }
-                        }
-                        .padding(.horizontal, 16).frame(minHeight: 60)
-                        .background(selected == feature ? Color.white.opacity(0.06) : .clear, in: RoundedRectangle(cornerRadius: 16))
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(PressableButtonStyle())
+            VStack(alignment: .leading, spacing: 18) {
+                Text("VIEWS").font(.caption.bold()).tracking(1.2).foregroundStyle(.secondary)
+                VStack(spacing: 2) {
+                    menuRow(icon: "chart.line.uptrend.xyaxis", title: "Sales", subtitle: "Sets, show rate, cash, pipeline", active: currentPicture == .sales) { selectView(.sales) }
+                    menuRow(icon: "heart.text.square.fill", title: "Fulfillment", subtitle: "Delivery, CSM, student health", active: currentPicture == .fulfillment) { selectView(.fulfillment) }
+                    menuRow(icon: "square.grid.2x2.fill", title: "Leadership", subtitle: "Operating picture and money", active: currentPicture == .leadership) { selectView(.leadership) }
+                    menuRow(icon: "person.fill", title: "Personal", subtitle: "Your day and targets", active: currentPicture == .personal) { selectView(.personal) }
+                }
+            }
+            VStack(alignment: .leading, spacing: 18) {
+                Text("GO TO").font(.caption.bold()).tracking(1.2).foregroundStyle(.secondary)
+                VStack(spacing: 2) {
+                    menuRow(icon: "banknote.fill", title: "Money in", subtitle: "Deals, plans, setter attribution") { selectDestination(.work) }
+                    menuRow(icon: "creditcard.fill", title: "Cards", subtitle: "Profit-share card balances") { selectDestination(.work) }
+                    menuRow(icon: "calendar", title: "Calendar", subtitle: "Calls, sets, confirmations") { selectDestination(.work) }
+                    menuRow(icon: "book.closed.fill", title: "Knowledge", subtitle: "SOPs, scripts, policies") { selectDestination(.more) }
                 }
             }
             Spacer()
@@ -208,6 +211,27 @@ private struct PortalMenuSheet: View {
         .padding(.horizontal, 20).padding(.top, 24).padding(.bottom, 8)
         .background(Color.black.ignoresSafeArea())
         .transition(.move(edge: .leading).combined(with: .opacity))
+    }
+
+    private func menuRow(icon: String, title: String, subtitle: String, active: Bool = false, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 16) {
+                Image(systemName: icon).font(.system(size: 16, weight: .semibold)).frame(width: 40, height: 40)
+                    .background(active ? Color.white.opacity(0.16) : ivySurface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .foregroundStyle(active ? .white : .secondary)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title).font(.body.weight(active ? .semibold : .regular)).foregroundStyle(active ? .white : .primary)
+                    Text(subtitle).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                }
+                Spacer()
+                if active { Image(systemName: "checkmark").font(.caption.bold()).foregroundStyle(.white) }
+                else { Image(systemName: "chevron.right").font(.caption2.bold()).foregroundStyle(.tertiary) }
+            }
+            .padding(.horizontal, 14).frame(minHeight: 62)
+            .background(active ? Color.white.opacity(0.08) : .clear, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PressableButtonStyle())
     }
 }
 
