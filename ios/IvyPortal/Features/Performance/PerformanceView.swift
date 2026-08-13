@@ -5,25 +5,116 @@ struct PerformanceView: View {
     let showDetail: (PerformanceMetric) -> Void
     @State private var teamScope = "All members"
     @State private var period = "This week"
+    @State private var section: PerformanceSection = .weeklyReport
+    @State private var sectionMenuPresented = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
-                ScreenHeader(title: "Performance", subtitle: "Weekly Report")
-                filters
-                reportGrid
-                funnel
-                activitySection
-                repliesCard
-                scriptCard
-                Text("Source: real-only submitted EOD activity · Updated just now")
-                    .font(.caption).foregroundStyle(.tertiary)
+                HStack {
+                    Button { sectionMenuPresented = true } label: {
+                        Image(systemName: "line.3.horizontal").font(.subheadline.bold()).frame(width: 40, height: 40).background(ivySurface, in: Circle())
+                    }
+                    .buttonStyle(PressableButtonStyle())
+                    .accessibilityLabel("Performance menu")
+                    Spacer()
+                }
+                ScreenHeader(title: section.title, subtitle: section.subtitle)
+                sectionContent
             }
             .padding(.horizontal, 20)
             .padding(.top, 10)
             .padding(.bottom, 112)
         }
         .scrollIndicators(.hidden)
+        .sheet(isPresented: $sectionMenuPresented) {
+            PerformanceMenuSheet(selected: section) { picked in
+                withAnimation(.snappy(duration: 0.24)) { section = picked }
+                sectionMenuPresented = false
+            }
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.hidden)
+            .presentationBackground(.clear)
+            .presentationCornerRadius(28)
+        }
+    }
+
+    @ViewBuilder private var sectionContent: some View {
+        switch section {
+        case .weeklyReport:
+            filters
+            reportGrid
+            funnel
+            activitySection
+            repliesCard
+            scriptCard
+            Text("Source: real-only submitted EOD activity · Updated just now")
+                .font(.caption).foregroundStyle(.tertiary)
+        case .crm:
+            crmSection
+        case .eods:
+            eodsSection
+        case .team:
+            teamSection
+        }
+    }
+
+    private var crmSection: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            Text("Close phone and Mochi DM sources, kept separate").font(.subheadline).foregroundStyle(.secondary)
+            SurfaceCard {
+                VStack(spacing: 0) {
+                    MenuRow(title: "Close CRM", detail: "Phone pipeline and leads", symbol: "phone.fill", color: .blue) { }
+                    Divider().overlay(Color.white.opacity(0.08)).padding(.leading, 56)
+                    MenuRow(title: "Mochi", detail: "DM conversations and replies", symbol: "message.fill", color: .purple) { }
+                }
+            }
+        }
+    }
+
+    private var eodsSection: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            Text("End-of-day reporting per team member").font(.subheadline).foregroundStyle(.secondary)
+            SurfaceCard {
+                VStack(spacing: 0) {
+                    ForEach(TeammateMetric.replies.prefix(4)) { teammate in
+                        HStack(spacing: 12) {
+                            AvatarBadge(name: teammate.name, color: teammate.color)
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(teammate.name).font(.headline).lineLimit(1)
+                                Text("EODs filed this week").font(.caption).foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Text("5/7").font(.subheadline.bold()).monospacedDigit()
+                        }.frame(minHeight: 62)
+                        if teammate.id != TeammateMetric.replies.prefix(4).last?.id { Divider().overlay(Color.white.opacity(0.08)).padding(.leading, 54) }
+                    }
+                }
+            }
+            Button { } label: {
+                Label("Submit my EOD", systemImage: "square.and.pencil").frame(maxWidth: .infinity, minHeight: 48)
+                    .background(.white, in: RoundedRectangle(cornerRadius: 14)).foregroundStyle(.black).fontWeight(.semibold)
+            }.buttonStyle(PressableButtonStyle())
+        }
+    }
+
+    private var teamSection: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            Text("All team members and roles").font(.subheadline).foregroundStyle(.secondary)
+            SurfaceCard {
+                VStack(spacing: 0) {
+                    ForEach(TeammateMetric.replies) { teammate in
+                        HStack(spacing: 12) {
+                            AvatarBadge(name: teammate.name, color: teammate.color)
+                            Text(teammate.name).font(.headline).lineLimit(1)
+                            Spacer()
+                            Text("Setter").font(.caption).foregroundStyle(.secondary)
+                        }.frame(minHeight: 62)
+                        if teammate.id != TeammateMetric.replies.last?.id { Divider().overlay(Color.white.opacity(0.08)).padding(.leading, 54) }
+                    }
+                }
+            }
+        }
     }
 
     private var filters: some View {
@@ -58,9 +149,9 @@ struct PerformanceView: View {
                 ) { showDetail(.totalReplies) }
             }
             HStack(spacing: 12) {
-                CompactPerformanceMetric(title: "Follow-ups\nsent", value: "289", context: "This week", symbol: "arrow.trianglehead.2.clockwise.rotate.90", accent: .pink) { showDetail(.followUps) }
-                CompactPerformanceMetric(title: "Links\nsent", value: "0", context: "No verified links", symbol: "link", accent: .orange) { showDetail(.linksSent) }
-                CompactPerformanceMetric(title: "Booked\ncalls", value: "18", context: "12 shows", symbol: "phone.fill", accent: .blue) { showDetail(.bookedCalls) }
+                CompactPerformanceMetric(title: "Follow-ups", value: "289", context: "This week", symbol: "arrow.trianglehead.2.clockwise.rotate.90", accent: .pink) { showDetail(.followUps) }
+                CompactPerformanceMetric(title: "Links sent", value: "0", context: "No verified links", symbol: "link", accent: .orange) { showDetail(.linksSent) }
+                CompactPerformanceMetric(title: "Booked calls", value: "18", context: "12 shows", symbol: "phone.fill", accent: .blue) { showDetail(.bookedCalls) }
             }
         }
     }
@@ -105,17 +196,16 @@ struct PerformanceView: View {
     private var repliesCard: some View {
         Button { showDetail(.setterReplies) } label: {
             SurfaceCard {
-                VStack(alignment: .leading, spacing: 18) {
-                    HStack {
+                HStack {
+                    VStack(alignment: .leading, spacing: 10) {
                         Text("Setter replies").font(.title3)
-                        Spacer()
-                        Image(systemName: "chevron.right").foregroundStyle(.tertiary)
+                        HStack(spacing: 24) {
+                            VStack(alignment: .leading, spacing: 4) { Text("70%").font(.system(size: 40, weight: .semibold, design: .rounded)).monospacedDigit(); Text("Overall reply rate").font(.caption).foregroundStyle(.secondary) }
+                            VStack(alignment: .leading, spacing: 4) { Text("28m").font(.system(size: 40, weight: .semibold, design: .rounded)).monospacedDigit(); Text("Median reply time").font(.caption).foregroundStyle(.secondary) }
+                        }
                     }
-                    HStack {
-                        ReplyStat(value: "70%", label: "Overall reply rate")
-                        Spacer()
-                        ReplyStat(value: "28m", label: "Median reply time")
-                    }
+                    Spacer()
+                    Image(systemName: "chevron.right").foregroundStyle(.tertiary)
                 }
             }
         }
@@ -140,6 +230,92 @@ struct PerformanceView: View {
     }
 }
 
+private enum PerformanceSection: String, CaseIterable, Hashable {
+    case weeklyReport, crm, eods, team
+    var title: String {
+        switch self {
+        case .weeklyReport: "Performance"
+        case .crm: "CRM"
+        case .eods: "EODs"
+        case .team: "Team"
+        }
+    }
+    var subtitle: String {
+        switch self {
+        case .weeklyReport: "Weekly Report"
+        case .crm: "Close and Mochi sources"
+        case .eods: "End-of-day reports"
+        case .team: "Members and roles"
+        }
+    }
+}
+
+private struct PerformanceMenuSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let selected: PerformanceSection
+    let select: (PerformanceSection) -> Void
+
+    private let items: [(PerformanceSection, String, String)] = [
+        (.weeklyReport, "chart.bar.fill", "Weekly Report"),
+        (.crm, "phone.fill", "CRM"),
+        (.eods, "doc.text.fill", "EODs"),
+        (.team, "person.2.fill", "Team"),
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            HStack {
+                Text("Performance").font(.largeTitle.bold())
+                Spacer()
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark").font(.subheadline.bold()).frame(width: 40, height: 40).background(ivySurface, in: Circle())
+                }
+                .buttonStyle(PressableButtonStyle())
+                .accessibilityLabel("Close navigation")
+            }
+            VStack(spacing: 2) {
+                ForEach(items, id: \.0) { section, symbol, title in
+                    Button { select(section) } label: {
+                        HStack(spacing: 16) {
+                            Image(systemName: symbol).font(.system(size: 17, weight: .semibold)).frame(width: 40, height: 40)
+                                .background(selected == section ? Color.white.opacity(0.14) : ivySurface, in: Circle())
+                                .foregroundStyle(selected == section ? .white : .secondary)
+                            Text(title).font(.body.weight(selected == section ? .semibold : .regular))
+                                .foregroundStyle(selected == section ? .white : .secondary)
+                            Spacer()
+                            if selected == section { Image(systemName: "checkmark").font(.caption.bold()) }
+                        }
+                        .padding(.horizontal, 16).frame(minHeight: 60)
+                        .background(selected == section ? Color.white.opacity(0.06) : .clear, in: RoundedRectangle(cornerRadius: 16))
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(PressableButtonStyle())
+                }
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 20).padding(.top, 24).padding(.bottom, 8)
+        .background(Color.black.ignoresSafeArea())
+    }
+}
+
+private struct MenuRow: View {
+    let title, detail, symbol: String
+    let color: Color
+    let action: () -> Void
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 14) {
+                Image(systemName: symbol).font(.system(size: 15, weight: .semibold)).frame(width: 42, height: 42).background(color.opacity(0.18), in: Circle()).foregroundStyle(color)
+                VStack(alignment: .leading, spacing: 3) { Text(title).font(.headline); Text(detail).font(.caption).foregroundStyle(.secondary) }
+                Spacer()
+                Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(.tertiary)
+            }.frame(minHeight: 68).contentShape(Rectangle())
+        }.buttonStyle(PressableButtonStyle())
+    }
+}
+
+
 private struct CompactPerformanceMetric: View {
     let title, value, context, symbol: String
     let accent: Color
@@ -147,25 +323,25 @@ private struct CompactPerformanceMetric: View {
 
     var body: some View {
         Button(action: action) {
-            SurfaceCard(padding: 15) {
-                VStack(alignment: .leading, spacing: 14) {
-                    ZStack(alignment: .topTrailing) {
-                        Text(title)
-                            .font(.caption.weight(.medium))
-                            .foregroundStyle(ivyMuted)
-                            .multilineTextAlignment(.leading)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.trailing, 34)
+            SurfaceCard(padding: 12) {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 8) {
                         Image(systemName: symbol)
-                            .font(.caption.bold())
-                            .frame(width: 30, height: 30)
-                            .background(accent, in: RoundedRectangle(cornerRadius: 9))
+                            .font(.system(size: 11, weight: .bold))
+                            .frame(width: 22, height: 22)
+                            .background(accent, in: RoundedRectangle(cornerRadius: 7))
+                        Text(title)
+                            .font(.system(.caption2, weight: .medium))
+                            .foregroundStyle(ivyMuted)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                        Spacer(minLength: 0)
                     }
-                    Spacer(minLength: 2)
-                    Text(value).font(.system(.title, design: .rounded, weight: .semibold)).monospacedDigit()
-                    Text(context).font(.caption2).foregroundStyle(.secondary).lineLimit(2)
+                    Spacer(minLength: 0)
+                    Text(value).font(.system(.title2, design: .rounded, weight: .semibold)).monospacedDigit()
+                    Text(context).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.85)
                 }
-                .frame(minHeight: 142, alignment: .top)
+                .frame(minHeight: 96, alignment: .top)
             }
         }
         .buttonStyle(PressableButtonStyle())
@@ -195,12 +371,12 @@ private struct SplitMetricCard: View {
                         }
                     }.frame(height: 5)
                     HStack(spacing: 8) {
-                        Text(left).lineLimit(1)
+                        Text(left).lineLimit(1).minimumScaleFactor(0.8)
                         Spacer(minLength: 2)
-                        Text(right).lineLimit(1)
-                    }.font(.caption2).foregroundStyle(.secondary)
+                        Text(right).lineLimit(1).minimumScaleFactor(0.8)
+                    }.font(.system(size: 11)).foregroundStyle(.secondary)
                 }
-                .frame(minHeight: 150, alignment: .top)
+                .frame(minHeight: 138, alignment: .top)
             }
         }.buttonStyle(PressableButtonStyle())
     }

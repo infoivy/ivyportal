@@ -131,7 +131,7 @@ struct PortalShell: View {
                 } label: {
                     VStack(spacing: 4) {
                         Image(systemName: destination.symbol).font(.system(size: 16, weight: .semibold))
-                        Text(destination.shortTitle).font(.caption2.weight(.semibold)).lineLimit(1)
+                        Text(destination.shortTitle).font(.caption2.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.7)
                     }
                     .foregroundStyle(surface == .root(destination) ? .white : .secondary)
                     .frame(maxWidth: .infinity, minHeight: 50)
@@ -244,7 +244,7 @@ private extension PortalFeature {
 
 private extension RootDestination {
     var shortTitle: String {
-        switch self { case .home: "Home"; case .work: "Work"; case .performance: "Pulse"; case .customers: "Clients"; case .more: "More" }
+        switch self { case .home: "Home"; case .work: "Work"; case .performance: "Performance"; case .customers: "Clients"; case .more: "More" }
     }
     var symbol: String {
         switch self {
