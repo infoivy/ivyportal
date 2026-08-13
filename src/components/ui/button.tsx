@@ -9,11 +9,11 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        // Apple-style filled primary — pill shape, emerald
-        default: "bg-primary text-primary-foreground hover:bg-primary/90 rounded-full",
+        // Mochi filled primary — near-black, 10px corners (rebrand 2026-08-13)
+        default: "bg-primary text-primary-foreground hover:bg-primary/90 rounded-md",
         destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-md",
-        // Apple gray button — filled muted, no border
-        outline: "bg-muted text-foreground hover:bg-muted/70 rounded-md",
+        // Mochi outline button — white with a 1px border
+        outline: "bg-card text-foreground border border-border hover:bg-muted/60 rounded-md",
         secondary: "bg-muted text-foreground hover:bg-muted/70 rounded-md",
         ghost: "text-foreground hover:bg-muted rounded-md",
         link: "text-primary underline-offset-4 hover:underline rounded-md",

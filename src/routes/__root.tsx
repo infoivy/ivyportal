@@ -100,7 +100,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 // Inline script to apply theme before first paint — prevents flash
-const THEME_SCRIPT = `(function(){try{var t=localStorage.getItem('isa-theme');if(t==='light'){document.documentElement.classList.remove('dark')}else if(t==='dark'){document.documentElement.classList.add('dark')}else{if(window.matchMedia('(prefers-color-scheme: dark)').matches){document.documentElement.classList.add('dark')}else{document.documentElement.classList.remove('dark')}}}catch(e){}})()`;
+const THEME_SCRIPT = `(function(){try{var t=localStorage.getItem('isa-theme-v2');if(t==='dark'){document.documentElement.classList.add('dark')}else if(t==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches){document.documentElement.classList.add('dark')}else{document.documentElement.classList.remove('dark')}}catch(e){}})()`;
 
 function RootShell({ children }: { children: ReactNode }) {
   return (

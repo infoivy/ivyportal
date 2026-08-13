@@ -84,3 +84,26 @@ MochiStat replaces StatCard+Sparkline, TargetBar is a Mochi mini-card
 with thin orange/green bar + dot legend, bottom nav is the Ask-Mochi
 floating bar with black active pill. Screenshots for comparison saved at
 ~/mochi-dashboard.png, ~/mochi-performance.png, ~/mochi-inbox.png.
+
+---
+
+## Addendum 2026-08-13 (2): FULL app rebrand to Mochi, both themes
+
+Founder: "don't see changes" (was in dark mode + staff pages) then "copy
+their entire branding and style, for all pages and everything and buttons
+and graphs". Measured Mochi's dark palette from their .dark CSS rules and
+applied the complete rebrand globally:
+
+- Light + dark token palettes replaced with Mochi's measured neutral scale
+  (light: white bg / #E5E5E5 borders / #F5F5F5 muted / #171717 primary;
+  dark: #0A0A0A bg / #171717 cards / #262626 muted / white 10% borders /
+  #E5E5E5 primary).
+- card-surface (44 staff files) → Mochi card: 1px border, 10px radius, no
+  shadow, both themes.
+- Charts app-wide: monochrome grayscale → Mochi's colorful sets (light:
+  orange/teal/deep-blue/yellow/amber/violet; dark: blue/emerald/amber/
+  violet/rose/teal) via --chart-1..6.
+- Button default variant: pill → Mochi 10px; outline variant → white with
+  1px border (was borderless muted).
+- Theme default flipped to LIGHT via new storage key isa-theme-v2 (stale
+  dark prefs reset once; toggle still offers dark/system).

@@ -93,28 +93,28 @@
 /* ── Light theme (default) ───────────────────────────────────────────────── */
 :root {
   /* Surfaces */
-  --background:        #F5F5F7;   /* Apple near-white canvas */
-  --foreground:        #1C1C1E;
+  --background:        #FFFFFF;   /* Mochi white canvas (measured 2026-08-13) */
+  --foreground:        #0A0A0A;
   --card:              #FFFFFF;
-  --card-foreground:   #1C1C1E;
+  --card-foreground:   #0A0A0A;
   --popover:           #FFFFFF;
-  --popover-foreground: #1C1C1E;
-  --muted:             #F2F2F7;
-  --muted-foreground:  #86868B;
-  --border:            rgba(0, 0, 0, 0.08);
-  --input:             rgba(0, 0, 0, 0.06);
+  --popover-foreground: #0A0A0A;
+  --muted:             #F5F5F5;
+  --muted-foreground:  #737373;
+  --border:            #E5E5E5;
+  --input:             #E5E5E5;
 
   /* Neutral chrome: primary button, active nav, focus, links, selection */
-  --primary:           #1C1C1E;
+  --primary:           #171717;
   --primary-foreground: #FFFFFF;
 
-  --secondary:         #F2F2F7;
-  --secondary-foreground: #1C1C1E;
-  --accent:            #F2F2F7;
-  --accent-foreground: #1C1C1E;
+  --secondary:         #F5F5F5;
+  --secondary-foreground: #171717;
+  --accent:            #F5F5F5;
+  --accent-foreground: #171717;
   --destructive:       #DC2626;
   --destructive-foreground: #FFFFFF;
-  --ring:              rgba(28, 28, 30, 0.28);
+  --ring:              #A3A3A3;
 
   /* Status — reserved for meaning: KPI hit/miss, paid/due/overdue, at-risk.
      Success is REAL green (founder-directed 2026-07-28: "we still want some
@@ -129,28 +129,28 @@
   --danger-fg:   #B91C1C;
   --danger-bg:   color-mix(in srgb, #DC2626 8%, transparent);
 
-  /* Charts */
-  --chart-1: #171717;
-  --chart-2: #404040;
-  --chart-3: #737373;
-  --chart-4: #A3A3A3;
-  --chart-5: #D4D4D4;
-  --chart-6: #525252;
+  /* Charts — Mochi's colorful set (measured 2026-08-13) */
+  --chart-1: #F97316;
+  --chart-2: #0D9488;
+  --chart-3: #155E75;
+  --chart-4: #FBBF24;
+  --chart-5: #F59E0B;
+  --chart-6: #8B5CF6;
 
   /* Elevation — light lifts with shadow */
-  --shadow-card:    0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-card:    none;
   --shadow-raised:  0 4px 12px rgba(0,0,0,0.10), 0 2px 4px rgba(0,0,0,0.05);
   --shadow-overlay: 0 20px 60px rgba(0,0,0,0.14), 0 8px 20px rgba(0,0,0,0.08);
 
   /* Sidebar */
   --sidebar:              #FFFFFF;
-  --sidebar-foreground:   #1C1C1E;
-  --sidebar-primary:      #1C1C1E;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent:       #F2F2F7;
-  --sidebar-accent-foreground: #1C1C1E;
-  --sidebar-border:       rgba(0, 0, 0, 0.06);
-  --sidebar-ring:         rgba(28, 28, 30, 0.28);
+  --sidebar-foreground:   #0A0A0A;
+  --sidebar-primary:      #171717;
+  --sidebar-primary-foreground: #FAFAFA;
+  --sidebar-accent:       #F5F5F5;
+  --sidebar-accent-foreground: #171717;
+  --sidebar-border:       #F0F0F0;
+  --sidebar-ring:         #A3A3A3;
 
   /* Reading surfaces */
   --script-bg:     rgba(0, 0, 0, 0.03);
@@ -185,28 +185,28 @@
 
 /* ── Dark theme ──────────────────────────────────────────────────────────── */
 .dark {
-  /* True-black surface stack */
-  --background:        #000000;
-  --foreground:        #F5F5F7;
-  --card:              #080808;
-  --card-foreground:   #F5F5F7;
-  --popover:           #101010;
-  --popover-foreground: #F5F5F7;
-  --muted:             #101010;
-  --muted-foreground:  #8E8E93;
-  --border:            rgba(255, 255, 255, 0.07);
-  --input:             rgba(255, 255, 255, 0.06);
+  /* Mochi dark surface stack (measured 2026-08-13) */
+  --background:        #0A0A0A;
+  --foreground:        #FAFAFA;
+  --card:              #171717;
+  --card-foreground:   #FAFAFA;
+  --popover:           #171717;
+  --popover-foreground: #FAFAFA;
+  --muted:             #262626;
+  --muted-foreground:  #A3A3A3;
+  --border:            rgba(255, 255, 255, 0.10);
+  --input:             rgba(255, 255, 255, 0.15);
 
-  --primary:           #F5F5F7;
-  --primary-foreground: #000000;
+  --primary:           #E5E5E5;
+  --primary-foreground: #171717;
 
-  --secondary:         #121212;
-  --secondary-foreground: #F5F5F7;
-  --accent:            #161616;
-  --accent-foreground: #F5F5F7;
-  --destructive:       #EF4444;
-  --destructive-foreground: #EDEDF0;
-  --ring:              rgba(255, 255, 255, 0.36);
+  --secondary:         #262626;
+  --secondary-foreground: #FAFAFA;
+  --accent:            #262626;
+  --accent-foreground: #FAFAFA;
+  --destructive:       #F87171;
+  --destructive-foreground: #FAFAFA;
+  --ring:              #737373;
 
   /* Status — success is real green here too (founder 2026-07-28) */
   --success:     #22C55E;
@@ -219,13 +219,13 @@
   --danger-fg:   #F87171;
   --danger-bg:   color-mix(in srgb, #EF4444 12%, transparent);
 
-  /* Charts — brighter against dark */
-  --chart-1: #FAFAFA;
-  --chart-2: #D4D4D4;
-  --chart-3: #A3A3A3;
-  --chart-4: #737373;
-  --chart-5: #525252;
-  --chart-6: #E5E5E5;
+  /* Charts — Mochi's dark set (blue, emerald, amber, violet, rose) */
+  --chart-1: #2563EB;
+  --chart-2: #10B981;
+  --chart-3: #F59E0B;
+  --chart-4: #A855F7;
+  --chart-5: #F43F5E;
+  --chart-6: #14B8A6;
 
   /* Elevation — dark lifts with hairline + inset highlight, not shadow */
   --shadow-card:    none;
@@ -233,14 +233,14 @@
   --shadow-overlay: 0 20px 60px rgba(0,0,0,0.85);
 
   /* Sidebar — same neutral family as the background (no blue cast) */
-  --sidebar:              #000000;
-  --sidebar-foreground:   #F5F5F7;
-  --sidebar-primary:      #F5F5F7;
-  --sidebar-primary-foreground: #000000;
-  --sidebar-accent:       #101010;
-  --sidebar-accent-foreground: #F5F5F7;
-  --sidebar-border:       rgba(255, 255, 255, 0.05);
-  --sidebar-ring:         rgba(255, 255, 255, 0.36);
+  --sidebar:              #171717;
+  --sidebar-foreground:   #FAFAFA;
+  --sidebar-primary:      #2563EB;
+  --sidebar-primary-foreground: #FAFAFA;
+  --sidebar-accent:       #262626;
+  --sidebar-accent-foreground: #FAFAFA;
+  --sidebar-border:       rgba(255, 255, 255, 0.10);
+  --sidebar-ring:         #737373;
 
   --script-bg:     rgba(255, 255, 255, 0.02);
   --script-border: rgba(255, 255, 255, 0.10);
@@ -283,12 +283,11 @@
 /* Card elevation — the ONLY card treatment. Light: shadow. Dark: hairline. */
 .card-surface {
   background: var(--color-card);
-  box-shadow: var(--shadow-card);
-  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
 }
 .dark .card-surface {
-  border: 1px solid rgba(255,255,255,0.07);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.09);
+  border: 1px solid rgba(255,255,255,0.10);
 }
 
 /* Mochi skin: the student-surface treatment (founder-directed 2026-08-13,

@@ -11,16 +11,17 @@ function systemPrefersDark() {
 }
 
 function getStoredChoice(): ThemeChoice {
-  if (typeof window === "undefined") return "dark";
-  const stored = localStorage.getItem("isa-theme");
+  if (typeof window === "undefined") return "light";
+  const stored = localStorage.getItem("isa-theme-v2");
   if (stored === "light" || stored === "dark" || stored === "system") return stored;
-  return "system";
+  // Rebrand 2026-08-13: light is the brand default, not the OS preference.
+  return "light";
 }
 
 function applyChoice(choice: ThemeChoice) {
   const dark = choice === "system" ? systemPrefersDark() : choice === "dark";
   document.documentElement.classList.toggle("dark", dark);
-  localStorage.setItem("isa-theme", choice);
+  localStorage.setItem("isa-theme-v2", choice);
 }
 
 /**
@@ -28,7 +29,7 @@ function applyChoice(choice: ThemeChoice) {
  * not a blind toggle). "system" follows the OS live via the media query.
  */
 export function ThemeToggle() {
-  const [choice, setChoice] = useState<ThemeChoice>("dark");
+  const [choice, setChoice] = useState<ThemeChoice>("light");
 
   useEffect(() => {
     const c = getStoredChoice();
