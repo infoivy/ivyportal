@@ -291,37 +291,69 @@
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.09);
 }
 
-/* Liquid glass: the student-surface treatment (redesign 2026-08-11).
-   .card-soft IS the glass — translucent panel, deep blur, specular top edge —
-   so every student card sweeps together. Staff surfaces keep .card-surface. */
+/* Mochi skin: the student-surface treatment (founder-directed 2026-08-13,
+   replicated from use.themochi.app measured tokens). Flat white cards, NO
+   shadows — depth comes from nesting cards inside a muted tray. Staff
+   surfaces keep .card-surface. */
 .card-soft {
-  background: color-mix(in srgb, var(--color-card) 60%, transparent);
-  -webkit-backdrop-filter: blur(24px) saturate(160%);
-  backdrop-filter: blur(24px) saturate(160%);
-  border: 1px solid color-mix(in srgb, var(--color-foreground) 9%, transparent);
-  border-radius: 24px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
 }
 .dark .card-soft {
-  background: color-mix(in srgb, var(--color-card) 52%, transparent);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.09);
 }
 
-/* The ambient wash the glass refracts: slow-drifting color blobs behind the
-   student pages. Purely decorative, motion-safe. */
-.glass-ambient { position: absolute; inset: 0; overflow: hidden; z-index: -1; pointer-events: none; }
-.glass-ambient::before,
-.glass-ambient::after { content: ""; position: absolute; border-radius: 9999px; filter: blur(90px); }
-.glass-ambient::before { width: 460px; height: 460px; top: -140px; right: -100px; background: rgba(99, 102, 241, 0.15); }
-.glass-ambient::after { width: 400px; height: 400px; bottom: 8%; left: -140px; background: rgba(52, 211, 153, 0.12); }
-@media (prefers-reduced-motion: no-preference) {
-  .glass-ambient::before { animation: ambient-drift 26s ease-in-out infinite alternate; }
-  .glass-ambient::after { animation: ambient-drift 34s ease-in-out infinite alternate-reverse; }
+/* The Mochi tray: a group of sibling cards nested in a soft-gray wrapper
+   (measured: bg 97%, 0.5px border, radius 14, 4px padding + gap). */
+.tray {
+  background: var(--color-muted);
+  border: 0.5px solid var(--color-border);
+  border-radius: 14px;
+  padding: 4px;
 }
-@keyframes ambient-drift {
-  from { transform: translate3d(0, 0, 0) scale(1); }
-  to { transform: translate3d(-48px, 56px, 0) scale(1.18); }
+.dark .tray {
+  border-color: rgba(255, 255, 255, 0.07);
+}
+
+/* Mochi metric icon chip: 24px colored squircle, white glyph. Color comes
+   from an inline background or a bg-* utility at the call site. */
+.chip-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+/* Mochi's brand accent (their Continue button / health chart orange). Scoped
+   custom properties, deliberately NOT touching the app-wide --primary. */
+:root {
+  --mochi-orange: #f97316;
+  --mochi-orange-soft: rgba(249, 115, 22, 0.12);
+}
+.btn-mochi {
+  background: var(--mochi-orange);
+  color: #fff;
+  border-radius: 10px;
+  font-weight: 600;
+}
+.btn-mochi:hover { background: color-mix(in srgb, var(--mochi-orange) 90%, black); }
+
+/* Mochi empty state: dashed circle around a muted glyph. */
+.empty-mochi {
+  width: 96px;
+  height: 96px;
+  border-radius: 9999px;
+  border: 1.5px dashed var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-muted-foreground);
+  margin-inline: auto;
 }
 
 /* Frosted chrome (top bar, sheets) */

@@ -68,3 +68,19 @@ removed by anchor-based splicing.
   which took the domain 3 minutes later. Restored with `vercel promote`.
   Open decision for the founder: merge that branch or stop its --prod
   deploys. Recorded in memory (project_ivyportal_deploys).
+
+---
+
+## Addendum 2026-08-13: Mochi re-theme
+
+Founder: study use.themochi.app in the browser and remake the portal in
+exactly that style. Logged into the live app, measured real tokens from the
+DOM (tray: bg oklch 97% / 0.5px border / r14 / p1; cards white r10 1px
+border no shadow; 24px squircle icon chips; active filter chips solid
+black; orange #f97316 CTA; dashed-circle empty states; floating white
+pill bar). Replaced the liquid-glass skin: card-soft is now the Mochi
+white card, new .tray/.chip-icon/.btn-mochi/.empty-mochi utilities,
+MochiStat replaces StatCard+Sparkline, TargetBar is a Mochi mini-card
+with thin orange/green bar + dot legend, bottom nav is the Ask-Mochi
+floating bar with black active pill. Screenshots for comparison saved at
+~/mochi-dashboard.png, ~/mochi-performance.png, ~/mochi-inbox.png.

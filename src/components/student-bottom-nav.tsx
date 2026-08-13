@@ -51,7 +51,10 @@ export function StudentBottomNav({ activeTab, onTabChange }: { activeTab?: strin
   const cellCount = visible.length + (showLibrary ? 1 : 0) + 1;
   return (
     <nav className="sm:hidden fixed bottom-[max(0.5rem,env(safe-area-inset-bottom))] inset-x-3 z-40">
-      <div className={`card-soft !rounded-full px-1.5 py-1 grid ${GRID[cellCount] ?? "grid-cols-5"}`}>
+      <div
+        className={`bg-card border border-border rounded-full px-1.5 py-1 grid ${GRID[cellCount] ?? "grid-cols-5"}`}
+        style={{ boxShadow: "0 8px 24px rgba(0,0,0,0.08)" }}
+      >
         {visible.map(it => {
           const Icon = it.icon;
           const active = onPortal && activeTab === it.tab;
@@ -60,7 +63,7 @@ export function StudentBottomNav({ activeTab, onTabChange }: { activeTab?: strin
               key={it.tab}
               to="/student-portal"
               onClick={() => onTabChange?.(it.tab)}
-              className={`flex min-h-12 flex-col items-center justify-center gap-0.5 text-[10px] ${active ? "text-primary" : "text-muted-foreground"}`}
+              className={`flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-full text-[10px] motion-safe:transition-colors ${active ? "bg-foreground text-background font-medium" : "text-muted-foreground"}`}
             >
               <Icon className="h-4 w-4" />
               {it.label}

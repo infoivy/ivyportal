@@ -354,17 +354,6 @@ export function StudentPortal() {
   // Weekly recap on Mondays
   const isMonday = new Date().getDay() === 1;
 
-  // Sparkline series (7 days, oldest → newest)
-  const spark = (k: keyof SEod) => {
-    const arr: number[] = [];
-    for (let i = 6; i >= 0; i--) {
-      const day = daysAgoStr(i);
-      const row = eods.find(e => e.report_date === day);
-      arr.push(row ? (row[k] as number) || 0 : 0);
-    }
-    return arr;
-  };
-
   const actionItems = useMemo(() => {
     const out: {
       kind: "call" | "adhoc";
@@ -691,7 +680,6 @@ export function StudentPortal() {
   if (["offer_won", "testimonial", "graduated"].includes(student.phase)) {
     return (
       <div className="w-full max-w-none p-4 sm:p-6 space-y-5 relative">
-        <div className="glass-ambient" aria-hidden />
         <section className="card-soft p-6 text-center">
           <div className="text-4xl mb-2">🎉</div>
           <h1 className="text-2xl font-semibold tracking-tight">
@@ -747,7 +735,6 @@ export function StudentPortal() {
   if (locked) {
     return (
       <div className="w-full max-w-none px-5 sm:px-8 lg:px-12 pt-10 sm:pt-16 pb-24 sm:pb-32 relative">
-        <div className="glass-ambient" aria-hidden />
         {confetti && <ConfettiBurst />}
         <div dir="rtl" className="text-[14px] text-muted-foreground/80">السلام عليكم ورحمة الله وبركاته</div>
         <h1 className="mt-4 text-[34px] sm:text-5xl font-semibold tracking-[-0.03em] leading-[1.1]">
@@ -767,7 +754,6 @@ export function StudentPortal() {
 
   return (
     <div className="w-full max-w-2xl mx-auto p-4 sm:p-6 space-y-4 relative">
-      <div className="glass-ambient" aria-hidden />
       {confetti && <ConfettiBurst />}
 
       {/* Post-unlock walkthrough: the whole portal is scrollable below, but
@@ -808,8 +794,8 @@ export function StudentPortal() {
         </div>
       </section>
 
-      {/* Three big buttons in one glass pill. That is the whole portal. */}
-      <nav className="card-soft !rounded-full p-1.5 grid grid-cols-3 gap-1" role="tablist" aria-label="Portal sections">
+      {/* Three big buttons, Mochi filter-chip style. That is the whole portal. */}
+      <nav className="grid grid-cols-3 gap-2" role="tablist" aria-label="Portal sections">
         <BigTab active={tab === "home"} onClick={() => setTab("home")} icon={<Home className="h-4 w-4" />} label="Home" />
         <BigTab active={tab === "progress"} onClick={() => setTab("progress")} icon={<TrendingUp className="h-4 w-4" />} label="Progress" />
         <BigTab active={tab === "board"} onClick={() => setTab("board")} icon={<Trophy className="h-4 w-4" />} label="Board" />
@@ -838,8 +824,8 @@ export function StudentPortal() {
                     your looms · 3 roleplays + 3 looms into the Inner Circle
                     Loom Review chat; once approved · 5 loom applications a
                     day. Never both loom fields at once. */}
-                <div className="rounded-2xl border border-border/60 bg-background/50 p-4">
-                  <div className="text-[12px] text-muted-foreground mb-2.5">
+                <div className="tray p-3">
+                  <div className="text-[12px] text-muted-foreground mb-2.5 px-1 pt-1">
                     {loomApproved
                       ? "Your targets today"
                       : "Your targets today · send looms to the Inner Circle Loom Review chat, not to offers"}
@@ -887,7 +873,7 @@ export function StudentPortal() {
                 <button
                   onClick={submit}
                   disabled={saving}
-                  className="pressable w-full inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold h-14 rounded-full text-[15px] shadow-lg disabled:opacity-50"
+                  className="pressable btn-mochi w-full inline-flex items-center justify-center gap-2 h-14 text-[15px] disabled:opacity-50"
                 >
                   {saving ? "Saving…" : existingId ? "Update my log" : "Submit my log"}
                 </button>
@@ -990,13 +976,13 @@ export function StudentPortal() {
       {tab === "progress" && (
         <div className="space-y-4">
           {/* This week's numbers */}
-          <section className="card-soft p-5">
-            <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary mb-3">This week</div>
-            <div className="grid grid-cols-2 gap-2.5">
-              <StatCard label="Loom apps · 7d" value={totals7.apps} prev={totalsPrev.apps} series={spark("applications_submitted")} accent brandNew={brandNew} icon={<Briefcase className="h-3 w-3" />} />
-              <StatCard label="Looms · 7d" value={totals7.looms} prev={totalsPrev.looms} series={spark("looms_sent")} brandNew={brandNew} icon={<Users className="h-3 w-3" />} />
-              <StatCard label="Roleplays · 7d" value={totals7.roleplays} prev={totalsPrev.roleplays} series={spark("roleplays")} brandNew={brandNew} icon={<MessageSquare className="h-3 w-3" />} />
-              <StatCard label="Interviews · 7d" value={totals7.interviews} prev={totalsPrev.interviews} series={spark("interviews")} accent brandNew={brandNew} icon={<Award className="h-3 w-3" />} />
+          <section>
+            <div className="text-[15px] font-semibold mb-2 px-1">This week</div>
+            <div className="tray grid grid-cols-2 gap-1">
+              <MochiStat label="Loom apps" value={totals7.apps} prev={totalsPrev.apps} brandNew={brandNew} chip="#ec4899" icon={<Briefcase className="h-3.5 w-3.5" />} />
+              <MochiStat label="Looms" value={totals7.looms} prev={totalsPrev.looms} brandNew={brandNew} chip="#8b5cf6" icon={<Users className="h-3.5 w-3.5" />} />
+              <MochiStat label="Roleplays" value={totals7.roleplays} prev={totalsPrev.roleplays} brandNew={brandNew} chip="#14b8a6" icon={<MessageSquare className="h-3.5 w-3.5" />} />
+              <MochiStat label="Interviews" value={totals7.interviews} prev={totalsPrev.interviews} brandNew={brandNew} chip="#f59e0b" icon={<Award className="h-3.5 w-3.5" />} />
             </div>
           </section>
 
@@ -1184,7 +1170,12 @@ export function StudentPortal() {
           <section className="card-soft overflow-hidden">
             <div className="px-5 py-3.5 border-b border-border/60 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Past logs</div>
             <div className="divide-y divide-border/40">
-              {eods.length === 0 && <div className="p-6 text-center text-xs text-muted-foreground">No logs yet. Your first one starts your streak. 🔥</div>}
+              {eods.length === 0 && (
+                <div className="p-8 text-center space-y-3">
+                  <div className="empty-mochi"><FileText className="h-7 w-7 opacity-50" /></div>
+                  <div className="text-xs text-muted-foreground">No logs yet. Your first one starts your streak. 🔥</div>
+                </div>
+              )}
               {eods.map(e => (
                 <div key={e.id} className="grid grid-cols-[84px_1fr] items-center gap-3 px-5 py-2.5 text-xs">
                   <span className="text-muted-foreground">{e.report_date}</span>
@@ -1229,7 +1220,7 @@ function WeekCallTiles({ schedule, ticks, onToggle }: {
         </div>
         <span className="text-[11px] font-semibold uppercase tracking-[0.14em] tabular-nums text-muted-foreground">{ticks.length}/{schedule.length} attended</span>
       </div>
-      <div className="grid gap-1.5 sm:grid-cols-2">
+      <div className="tray grid gap-1 sm:grid-cols-2">
         {schedule.map((call) => {
           const on = ticks.includes(call.day);
           return (
@@ -1238,8 +1229,8 @@ function WeekCallTiles({ schedule, ticks, onToggle }: {
               type="button"
               aria-pressed={on}
               onClick={() => onToggle(call.day, !on)}
-              className={`pressable flex items-center gap-2.5 rounded-xl border px-3 py-3 text-left motion-safe:transition-colors ${
-                on ? "border-success/25 bg-success-bg" : "border-border/60 bg-background/50 hover:bg-muted/50"
+              className={`pressable flex items-center gap-2.5 rounded-[10px] border px-3 py-3 text-left motion-safe:transition-colors ${
+                on ? "border-success/25 bg-success-bg" : "border-border bg-card hover:bg-muted/40"
               }`}
             >
               <span className={`h-5 w-5 rounded-full flex items-center justify-center shrink-0 ${on ? "bg-success text-success-fg" : "border border-border text-transparent"}`}>
@@ -1529,7 +1520,7 @@ function DetailsGate({ first, needTimezone, needWhatsapp, onConfirm }: {
           <button
             onClick={confirm}
             disabled={!ready || saving}
-            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium h-10 rounded-sm text-sm disabled:opacity-50"
+            className="btn-mochi w-full h-11 text-sm disabled:opacity-50"
           >
             {saving ? "Saving…" : "All set · open my portal"}
           </button>
@@ -1613,7 +1604,7 @@ function GraduationReviewCard({ first }: { first: string }) {
             <button
               onClick={send}
               disabled={saving || text.trim().length < 10}
-              className="h-8 rounded-sm bg-primary px-4 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              className="btn-mochi h-8 px-4 text-xs disabled:opacity-50"
             >
               {saving ? "Sending…" : "Send it"}
             </button>
@@ -1740,7 +1731,7 @@ function WalkthroughGate({ video, startedAt, onDone }: {
         <button
           onClick={markDone}
           disabled={saving}
-          className="h-9 rounded-sm bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          className="btn-mochi h-9 px-4 text-sm disabled:opacity-50"
         >
           {saving ? "Checking…" : "I watched it in full · unlock my portal"}
         </button>
@@ -1832,7 +1823,7 @@ function OfferLandedForm({ onReported }: { onReported: () => Promise<void> }) {
             <button
               onClick={submit}
               disabled={saving || company.trim().length < 2 || !roleType || !ote.trim()}
-              className="h-8 rounded-sm bg-primary px-4 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              className="btn-mochi h-8 px-4 text-xs disabled:opacity-50"
             >
               {saving ? "Sending…" : "I landed it 🎉"}
             </button>
@@ -1930,7 +1921,7 @@ function StartHereGuide({ done, locked = false, unlocking = false, onToggle }: {
                   <button
                     onClick={() => onToggle(featured.key, true)}
                     disabled={unlocking || featuredLocked}
-                    className="inline-flex items-center justify-center gap-2 h-11 rounded-md bg-primary px-6 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                    className="btn-mochi inline-flex items-center justify-center gap-2 h-11 px-6 text-sm disabled:opacity-50"
                   >
                     I watched it in full <ArrowRight className="h-4 w-4" />
                   </button>
@@ -2091,11 +2082,12 @@ function LeaderboardPanel() {
       {data.you && (
         <div className="card-soft px-5 py-4 flex flex-wrap items-center justify-between gap-2">
           <span className="text-[14px]">
-            You're <span className="font-semibold text-foreground">#{data.you.rank}</span> of {data.totalStudents} this week
+            You're <span className="font-bold" style={{ color: "var(--mochi-orange)" }}>#{data.you.rank}</span> of {data.totalStudents} this week
           </span>
           <span className="text-[12px] text-muted-foreground">Log today's numbers to climb</span>
         </div>
       )}
+      <div className="tray">
       <div className="card-soft overflow-hidden">
         <div className="grid grid-cols-[44px_1fr_auto_auto_auto] gap-2 px-5 py-2.5 border-b border-border/60 text-[10px] uppercase tracking-wider text-muted-foreground">
           <span>#</span><span>Student</span><span className="text-right">Apps</span><span className="text-right">Looms</span><span className="text-right">Int.</span>
@@ -2115,6 +2107,7 @@ function LeaderboardPanel() {
           </div>
         ))}
       </div>
+      </div>
       <div className="text-[11px] text-muted-foreground text-center px-4">
         Last 7 days across every active student. Interviews and applications move you most; looms keep you on the board while you're in training.
       </div>
@@ -2131,8 +2124,10 @@ function BigTab({ active, onClick, icon, label }: { active: boolean; onClick: ()
       role="tab"
       aria-selected={active}
       onClick={onClick}
-      className={`pressable flex items-center justify-center gap-2 h-11 sm:h-12 rounded-full text-[13px] sm:text-[14px] font-semibold motion-safe:transition-colors ${
-        active ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+      className={`pressable flex items-center justify-center gap-2 h-11 sm:h-12 rounded-full text-[13px] sm:text-[14px] font-semibold border motion-safe:transition-colors ${
+        active
+          ? "bg-foreground text-background border-foreground"
+          : "bg-card text-muted-foreground border-border hover:text-foreground"
       }`}
     >
       {icon}{label}
@@ -2140,52 +2135,41 @@ function BigTab({ active, onClick, icon, label }: { active: boolean; onClick: ()
   );
 }
 
-function StatCard({ label, value, prev, series, accent, brandNew, icon }: { label: string; value: number; prev: number; series: number[]; accent?: boolean; brandNew?: boolean; icon: React.ReactNode }) {
+/** Mochi stat card: muted label top, big number bottom-left, colored 24px
+ *  squircle icon chip bottom-right (measured off use.themochi.app). */
+function MochiStat({ label, value, prev, brandNew, chip, icon }: {
+  label: string; value: number; prev: number; brandNew?: boolean; chip: string; icon: React.ReactNode;
+}) {
   const delta = prev === 0 ? (value > 0 ? 100 : 0) : Math.round(((value - prev) / prev) * 100);
-  const up = delta > 0;
   return (
-    <div className={`border border-[var(--border)] rounded-sm p-3 ${accent ? "bg-success-bg" : "bg-[var(--card)]"}`}>
-      <div className="flex items-center gap-1 text-[9px] text-muted-foreground mb-1">{icon}{label}</div>
+    <div className="card-soft flex flex-col justify-between gap-6 p-4 min-h-[108px]">
+      <div className="text-[13px] text-muted-foreground">{label}</div>
       {brandNew ? (
-        <div className="text-[10px] text-muted-foreground py-1 italic">Your first log starts here.</div>
+        <div className="text-[11px] text-muted-foreground italic">Your first log starts here.</div>
       ) : (
-        <>
-          <div className="flex items-end justify-between gap-2">
-            <div className={`text-xl font-semibold ${accent ? "text-success-fg" : "text-foreground"}`}>{value}</div>
-            <Sparkline data={series} color={accent ? "#34d399" : "#a78bfa"} />
+        <div className="flex items-end justify-between gap-2">
+          <div>
+            <div className="text-[26px] leading-none font-bold tracking-[-0.02em] tabular-nums">{value}</div>
+            {(prev > 0 || value > 0) && (
+              <div className={`text-[10px] mt-1.5 ${delta > 0 ? "text-success-fg" : delta < 0 ? "text-danger-fg" : "text-muted-foreground"}`}>
+                {delta > 0 ? "↑" : delta < 0 ? "↓" : "→"} {Math.abs(delta)}% vs prev 7d
+              </div>
+            )}
           </div>
-          {prev > 0 || value > 0 ? (
-            <div className={`text-[10px] mt-1 ${up ? "text-success-fg" : delta < 0 ? "text-danger-fg" : "text-muted-foreground"}`}>
-              {up ? "↑" : delta < 0 ? "↓" : "→"} {Math.abs(delta)}% vs prev 7d
-            </div>
-          ) : (
-            <div className="text-[10px] text-muted-foreground mt-1">–</div>
-          )}
-        </>
+          <span className="chip-icon" style={{ background: chip }}>{icon}</span>
+        </div>
       )}
     </div>
   );
 }
 
-function Sparkline({ data, color }: { data: number[]; color: string }) {
-  const w = 56, h = 20;
-  const max = Math.max(1, ...data);
-  const step = data.length > 1 ? w / (data.length - 1) : w;
-  const points = data.map((v, i) => `${i * step},${h - (v / max) * (h - 2) - 1}`).join(" ");
-  return (
-    <svg width={w} height={h} className="opacity-80">
-      <polyline points={points} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
 function SubmittedRecap({ form, streak, loomApproved, onEdit }: { form: typeof empty; streak: number; loomApproved: boolean; onEdit: () => void }) {
   return (
-    <div className="border border-success/20 bg-success-bg/70 rounded-2xl p-6 text-center space-y-4">
+    <div className="card-soft p-6 text-center space-y-4">
       <div className="flex justify-center">
-        <div className="h-12 w-12 rounded-full bg-success text-success-fg flex items-center justify-center">
-          <CheckCircle2 className="h-6 w-6" />
-        </div>
+        <span className="chip-icon !h-10 !w-10 !rounded-[10px]" style={{ background: "#10b981" }}>
+          <CheckCircle2 className="h-5 w-5" />
+        </span>
       </div>
       <div>
         <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-success-fg">Daily log · submitted</div>
@@ -2282,7 +2266,7 @@ function RatingChart({ data }: { data: { date: string; rating: number }[] }) {
 
 function Counter({ label, value, onBump }: { label: string; value: number; onBump: (d: number) => void }) {
   return (
-    <div className="rounded-2xl border border-border/60 bg-background/50 p-3">
+    <div className="card-soft p-3">
       <div className="text-[11px] text-muted-foreground mb-2 text-center">{label}</div>
       <div className="flex items-center gap-2">
         <button onClick={() => onBump(-1)} aria-label={`One less ${label}`} className="pressable h-12 w-12 shrink-0 rounded-xl border border-border hover:bg-muted text-xl leading-none">−</button>
@@ -2340,13 +2324,20 @@ function TargetBar({ label, value, target }: { label: string; value: number; tar
   const pct = Math.min(100, Math.round((value / target) * 100));
   const hit = value >= target;
   return (
-    <div>
-      <div className="flex items-center justify-between text-[11px] mb-1">
+    <div className="card-soft p-3">
+      <div className="flex items-center justify-between text-[12px] mb-2">
         <span className="text-muted-foreground">{label}</span>
-        <span className={hit ? "text-success-fg font-semibold" : "text-foreground"}>{value} / {target}</span>
+        <span className={`tabular-nums ${hit ? "text-success-fg font-semibold" : "font-semibold"}`}>{value} / {target}</span>
       </div>
-      <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-        <div className={`h-full rounded-full ${hit ? "bg-success" : "bg-warning"}`} style={{ width: `${pct}%` }} />
+      <div className="h-[5px] rounded-full bg-muted overflow-hidden">
+        <div
+          className="h-full rounded-full motion-safe:transition-[width]"
+          style={{ width: `${pct}%`, background: hit ? "var(--success)" : "var(--mochi-orange)" }}
+        />
+      </div>
+      <div className="flex items-center gap-1.5 mt-1.5 text-[10px] text-muted-foreground">
+        <span className="h-1.5 w-1.5 rounded-full" style={{ background: hit ? "var(--success)" : "var(--mochi-orange)" }} />
+        {hit ? "target hit" : `${Math.max(0, target - value)} to go`}
       </div>
     </div>
   );
