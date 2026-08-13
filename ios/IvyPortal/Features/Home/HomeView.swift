@@ -18,7 +18,7 @@ struct HomeView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
-                ScreenHeader(title: "Good afternoon", subtitle: "Wednesday, 12 August")
+                ScreenHeader(title: "Good afternoon", subtitle: "Wednesday, 12 August", showsMenu: true)
                 #if DEBUG
                 scenarioContent
                 #else

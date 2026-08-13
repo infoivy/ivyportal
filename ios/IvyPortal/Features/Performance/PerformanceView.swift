@@ -6,20 +6,12 @@ struct PerformanceView: View {
     @State private var teamScope = "All members"
     @State private var period = "This week"
     @State private var section: PerformanceSection = .weeklyReport
-    @State private var sectionMenuPresented = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
-                HStack {
-                    Button { sectionMenuPresented = true } label: {
-                        Image(systemName: "line.3.horizontal").font(.subheadline.bold()).frame(width: 40, height: 40).background(ivySurface, in: Circle())
-                    }
-                    .buttonStyle(PressableButtonStyle())
-                    .accessibilityLabel("Performance menu")
-                    Spacer()
-                }
                 ScreenHeader(title: section.title, subtitle: section.subtitle)
+                sectionPicker
                 sectionContent
             }
             .padding(.horizontal, 20)
@@ -27,16 +19,21 @@ struct PerformanceView: View {
             .padding(.bottom, 112)
         }
         .scrollIndicators(.hidden)
-        .sheet(isPresented: $sectionMenuPresented) {
-            PerformanceMenuSheet(selected: section) { picked in
-                withAnimation(.snappy(duration: 0.24)) { section = picked }
-                sectionMenuPresented = false
+    }
+
+    private var sectionPicker: some View {
+        ScrollView(.horizontal) {
+            HStack(spacing: 8) {
+                ForEach(PerformanceSection.allCases, id: \.self) { option in
+                    Button(option.pickerLabel) {
+                        withAnimation(.snappy(duration: 0.24)) { section = option }
+                    }
+                    .font(.subheadline.bold()).padding(.horizontal, 16).frame(minHeight: 42)
+                    .background(section == option ? Color.white.opacity(0.22) : ivySurface, in: Capsule())
+                    .foregroundStyle(section == option ? .white : .secondary)
+                }
             }
-            .presentationDetents([.medium])
-            .presentationDragIndicator(.hidden)
-            .presentationBackground(.clear)
-            .presentationCornerRadius(28)
-        }
+        }.scrollIndicators(.hidden)
     }
 
     @ViewBuilder private var sectionContent: some View {
@@ -248,54 +245,11 @@ private enum PerformanceSection: String, CaseIterable, Hashable {
         case .team: "Members and roles"
         }
     }
-}
-
-private struct PerformanceMenuSheet: View {
-    @Environment(\.dismiss) private var dismiss
-    let selected: PerformanceSection
-    let select: (PerformanceSection) -> Void
-
-    private let items: [(PerformanceSection, String, String)] = [
-        (.weeklyReport, "chart.bar.fill", "Weekly Report"),
-        (.crm, "phone.fill", "CRM"),
-        (.eods, "doc.text.fill", "EODs"),
-        (.team, "person.2.fill", "Team"),
-    ]
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            HStack {
-                Text("Performance").font(.largeTitle.bold())
-                Spacer()
-                Button { dismiss() } label: {
-                    Image(systemName: "xmark").font(.subheadline.bold()).frame(width: 40, height: 40).background(ivySurface, in: Circle())
-                }
-                .buttonStyle(PressableButtonStyle())
-                .accessibilityLabel("Close navigation")
-            }
-            VStack(spacing: 2) {
-                ForEach(items, id: \.0) { section, symbol, title in
-                    Button { select(section) } label: {
-                        HStack(spacing: 16) {
-                            Image(systemName: symbol).font(.system(size: 17, weight: .semibold)).frame(width: 40, height: 40)
-                                .background(selected == section ? Color.white.opacity(0.14) : ivySurface, in: Circle())
-                                .foregroundStyle(selected == section ? .white : .secondary)
-                            Text(title).font(.body.weight(selected == section ? .semibold : .regular))
-                                .foregroundStyle(selected == section ? .white : .secondary)
-                            Spacer()
-                            if selected == section { Image(systemName: "checkmark").font(.caption.bold()) }
-                        }
-                        .padding(.horizontal, 16).frame(minHeight: 60)
-                        .background(selected == section ? Color.white.opacity(0.06) : .clear, in: RoundedRectangle(cornerRadius: 16))
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(PressableButtonStyle())
-                }
-            }
-            Spacer()
+    var pickerLabel: String {
+        switch self {
+        case .weeklyReport: "Weekly Report"
+        default: title
         }
-        .padding(.horizontal, 20).padding(.top, 24).padding(.bottom, 8)
-        .background(Color.black.ignoresSafeArea())
     }
 }
 

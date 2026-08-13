@@ -21,6 +21,7 @@ struct ScreenHeader: View {
     @Environment(\.openPortalMenu) private var openMenu
     let title: String
     let subtitle: String
+    var showsMenu = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
@@ -29,17 +30,19 @@ struct ScreenHeader: View {
                     .font(.title2.bold())
                     .frame(maxWidth: .infinity)
                     .accessibilityAddTraits(.isHeader)
-                HStack {
-                    Button(action: openMenu) {
-                        Image(systemName: "line.3.horizontal")
-                            .font(.system(size: 18, weight: .semibold))
-                            .frame(width: 48, height: 48)
-                            .background(ivySurface, in: Circle())
-                            .overlay(Circle().stroke(Color.white.opacity(0.1)))
+                if showsMenu {
+                    HStack {
+                        Button(action: openMenu) {
+                            Image(systemName: "line.3.horizontal")
+                                .font(.system(size: 18, weight: .semibold))
+                                .frame(width: 48, height: 48)
+                                .background(ivySurface, in: Circle())
+                                .overlay(Circle().stroke(Color.white.opacity(0.1)))
+                        }
+                        .buttonStyle(PressableButtonStyle())
+                        .accessibilityLabel("Open navigation")
+                        Spacer()
                     }
-                    .buttonStyle(PressableButtonStyle())
-                    .accessibilityLabel("Open navigation")
-                    Spacer()
                 }
             }
             if !subtitle.isEmpty {
