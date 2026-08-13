@@ -2,6 +2,11 @@ import SwiftUI
 
 struct HomeView: View {
     let onAction: (HomeAction) -> Void
+    @State private var queue: HomeQueue?
+    @State private var queueLoading = false
+    @State private var queueError: String?
+
+    private var signedIn: Bool { AuthStore.shared.isSignedIn }
 
     #if DEBUG
     @Binding var scenario: DemoScenario
@@ -19,11 +24,15 @@ struct HomeView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
                 ScreenHeader(title: "Good afternoon", subtitle: "Wednesday, 12 August", showsMenu: true)
-                #if DEBUG
-                scenarioContent
-                #else
-                loadedContent
-                #endif
+                if signedIn {
+                    liveContent
+                } else {
+                    #if DEBUG
+                    scenarioContent
+                    #else
+                    StatusCard(symbol: "lock.shield.fill", title: "Connect Ivy Portal", message: "Sign in to load verified actions, students, Performance, and Money In data.")
+                    #endif
+                }
             }
             .padding(.horizontal, 20)
             .padding(.top, 10)
@@ -31,6 +40,58 @@ struct HomeView: View {
         }
         .scrollIndicators(.hidden)
         .background(Color.black)
+        .task { await loadQueueIfNeeded() }
+    }
+
+    private func loadQueueIfNeeded() async {
+        guard signedIn, queue == nil else { return }
+        queueLoading = true
+        defer { queueLoading = false }
+        do {
+            queue = try await PortalAPI.shared.homeQueue()
+            queueError = nil
+        } catch {
+            queueError = "Could not load the home queue."
+        }
+    }
+
+    @ViewBuilder private var liveContent: some View {
+        if let queue {
+            VStack(alignment: .leading, spacing: 30) {
+                liveFocus(queue)
+                upcomingSection
+                Text("Source: real portal data · students, action items, installments").font(.caption).foregroundStyle(.tertiary)
+            }
+        } else if queueLoading {
+            skeletonContent
+        } else {
+            StatusCard(symbol: "exclamationmark.triangle", title: "Home unavailable", message: queueError ?? "Sign in to load verified data.", retry: { queue = nil; Task { await loadQueueIfNeeded() } })
+        }
+    }
+
+    private func liveFocus(_ queue: HomeQueue) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionHeader("Today", detail: "Live priorities")
+            SurfaceCard {
+                VStack(spacing: 0) {
+                    HomeActionRow(
+                        symbol: "exclamationmark.circle.fill",
+                        symbolColor: .orange,
+                        title: "Review overdue items",
+                        detail: "\(queue.overdueActions) open action items",
+                        value: "\(queue.overdueActions)"
+                    ) { onAction(.reviewOverdue) }
+                    Divider().overlay(Color.white.opacity(0.08)).padding(.leading, 48)
+                    HomeActionRow(
+                        symbol: "person.3.fill",
+                        symbolColor: .white,
+                        title: "Check team reporting",
+                        detail: "\(queue.flaggedStudents) students flagged · \(queue.overduePayments) overdue installments",
+                        value: "\(queue.flaggedStudents + queue.overduePayments)"
+                    ) { onAction(.reviewCoverage) }
+                }
+            }
+        }
     }
 
     #if DEBUG

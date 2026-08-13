@@ -46,14 +46,82 @@ struct WorkHubView: View {
 }
 
 struct ActionItemsView: View {
+    @State private var realItems: [StudentActionItem]?
+    @State private var realLoading = false
+    @State private var realError: String?
     #if DEBUG
     @State private var filter = "Open"
     @State private var items = DemoOperations.actions
     #endif
 
+    private var signedIn: Bool { AuthStore.shared.isSignedIn }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {
-            #if DEBUG
+            if signedIn {
+                liveContent
+            } else {
+                #if DEBUG
+                fixtureContent
+                #else
+                StatusCard(symbol: "lock.shield.fill", title: "Connect Action Items", message: "Sign in to load verified assigned and overdue work.")
+                #endif
+            }
+        }
+        .task { await loadRealIfNeeded() }
+    }
+
+    private func loadRealIfNeeded() async {
+        guard signedIn, realItems == nil else { return }
+        realLoading = true
+        defer { realLoading = false }
+        do {
+            realItems = try await PortalAPI.shared.openActionItems()
+            realError = nil
+        } catch {
+            realError = "Could not load action items."
+        }
+    }
+
+    @ViewBuilder private var liveContent: some View {
+        if let realItems {
+            let open = realItems.filter { !$0.done }
+            HStack { Label("\(open.count) open", systemImage: "circle"); Spacer(); Text("\(open.filter { ($0.dueDate ?? "") < Self.todayISO }.count) overdue").foregroundStyle(.orange) }.font(.caption.weight(.semibold))
+            if open.isEmpty {
+                StatusCard(symbol: "checkmark.circle", title: "All clear", message: "No open action items.")
+            } else {
+                SurfaceCard {
+                    VStack(spacing: 0) {
+                        ForEach(Array(open.enumerated()), id: \.element.id) { index, item in
+                            HStack(alignment: .top, spacing: 14) {
+                                Image(systemName: "circle").foregroundStyle(.orange).font(.title3)
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text(item.text).font(.headline)
+                                    if let due = item.dueDate { Text("Due \(due)").font(.caption2.weight(.semibold)).foregroundStyle(.orange) }
+                                }
+                                Spacer()
+                            }.padding(.vertical, 14).contentShape(Rectangle())
+                            if index < open.count - 1 { Divider().overlay(Color.white.opacity(0.08)).padding(.leading, 44) }
+                        }
+                    }
+                }
+                Text("Source: real student_action_items via your portal session").font(.caption).foregroundStyle(.tertiary)
+            }
+        } else if realLoading {
+            VStack(spacing: 16) { ProgressView(); Text("Loading action items…").foregroundStyle(.secondary) }.frame(maxWidth: .infinity).padding(.vertical, 40)
+        } else {
+            StatusCard(symbol: "exclamationmark.triangle", title: "Unavailable", message: realError ?? "Sign in to load action items.", retry: { realItems = nil; Task { await loadRealIfNeeded() } })
+        }
+    }
+
+    private static var todayISO: String {
+        let f = ISO8601DateFormatter()
+        return f.string(from: Date())
+    }
+
+    #if DEBUG
+    private var fixtureContent: some View {
+        VStack(alignment: .leading, spacing: 22) {
             Picker("Filter", selection: $filter) { ForEach(["Open", "Mine", "Overdue", "All"], id: \.self) { Text($0) } }.pickerStyle(.segmented)
             HStack { Label("\(items.filter { !$0.done }.count) open", systemImage: "circle"); Spacer(); Text("\(items.filter { $0.overdue && !$0.done }.count) overdue").foregroundStyle(.orange) }.font(.caption.weight(.semibold))
             SurfaceCard {
@@ -83,11 +151,9 @@ struct ActionItemsView: View {
                 Label("Add action item", systemImage: "plus").frame(maxWidth: .infinity, minHeight: 48).background(.white, in: RoundedRectangle(cornerRadius: 14)).foregroundStyle(.black).fontWeight(.semibold)
             }.buttonStyle(PressableButtonStyle())
             Text("Debug fixture · Tapping animates completion; it does not write to Portal").font(.caption).foregroundStyle(.tertiary)
-            #else
-            StatusCard(symbol: "lock.shield.fill", title: "Connect Action Items", message: "Sign in to load verified assigned and overdue work.")
-            #endif
         }
     }
+    #endif
 
     #if DEBUG
     private var visible: [DemoAction] { items.filter { item in switch filter { case "Mine": item.owner == "You"; case "Overdue": item.overdue && !item.done; case "All": true; default: !item.done } } }

@@ -10,11 +10,14 @@ private struct PortalDetail: Identifiable {
 struct MoreView: View {
     let entries: [MoreEntry]
     @State private var detail: PortalDetail?
+    @State private var auth = AuthStore.shared
+    @State private var authPresented = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 ScreenHeader(title: "More", subtitle: "Account and authorized tools")
+                accountSection
                 SurfaceCard {
                     VStack(spacing: 0) {
                         ForEach(Array(entries.enumerated()), id: \.element) { index, entry in
@@ -39,6 +42,56 @@ struct MoreView: View {
         }
         .scrollIndicators(.hidden)
         .sheet(item: $detail) { PortalDetailSheet(detail: $0) }
+        .sheet(isPresented: $authPresented) {
+            AuthView(store: auth)
+                .presentationDetents([.large])
+                .presentationBackground(.black)
+        }
+    }
+
+    private var accountSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Account").font(.caption.bold()).tracking(1).foregroundStyle(.secondary)
+            SurfaceCard {
+                VStack(spacing: 0) {
+                    if auth.isSignedIn {
+                        HStack(spacing: 12) {
+                            AvatarBadge(name: "S", color: ivyTeal)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(auth.session?.user.email ?? "Signed in").font(.headline)
+                                Text("Admin · Founder").font(.caption).foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                        }.frame(minHeight: 64)
+                        Divider().overlay(Color.white.opacity(0.08)).padding(.leading, 54)
+                        Button {
+                            Task { await auth.signOut() }
+                        } label: {
+                            HStack(spacing: 12) {
+                                Text("Sign out").font(.subheadline.weight(.semibold)).foregroundStyle(.red)
+                                Spacer()
+                            }.frame(minHeight: 50).contentShape(Rectangle())
+                        }.buttonStyle(PressableButtonStyle())
+                    } else {
+                        Button { authPresented = true } label: {
+                            HStack(spacing: 14) {
+                                Image(systemName: "person.badge.key.fill").font(.system(size: 15, weight: .semibold)).frame(width: 42, height: 42).background(Color.blue.opacity(0.18), in: Circle()).foregroundStyle(.blue)
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Sign in to Portal").font(.headline)
+                                    Text("Load live data with your portal account").font(.caption).foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(.tertiary)
+                            }.frame(minHeight: 64).contentShape(Rectangle())
+                        }.buttonStyle(PressableButtonStyle())
+                    }
+                }
+            }
+            if !auth.isSignedIn {
+                Text("Preview mode: everything is open. Sign in for live portal data.")
+                    .font(.caption).foregroundStyle(.tertiary)
+            }
+        }
     }
 }
 
