@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		06639E837D93A6C0E122E9D7 /* RoleDestinationPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 691002273A01224D93FBBEF0 /* RoleDestinationPolicy.swift */; };
 		0C502646AB77CF4EDD58D7B6 /* RoleDestinationPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9FAA38FA65B3A14F178C873 /* RoleDestinationPolicyTests.swift */; };
+		0CF3EDC7E68E01CABEAA879F /* PortalSurfaces.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F0D470A19A919E4A73DDF52 /* PortalSurfaces.swift */; };
 		0F345A257EDD1ABB023022EA /* PortalAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A3FC2C67C4BDA25B4ABCC2C /* PortalAPI.swift */; };
 		0FCFF1549865FDA674A59210 /* OperationsViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD6ACF0E036155FF4A4E223E /* OperationsViews.swift */; };
 		1C871F192594E2CD02119751 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 313622262ECC323AC7B8136E /* PrivacyInfo.xcprivacy */; };
@@ -56,6 +57,7 @@
 
 /* Begin PBXFileReference section */
 		0A3FC2C67C4BDA25B4ABCC2C /* PortalAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortalAPI.swift; sourceTree = "<group>"; };
+		0F0D470A19A919E4A73DDF52 /* PortalSurfaces.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortalSurfaces.swift; sourceTree = "<group>"; };
 		0F30FD8C244FACB04A58F699 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		18711F0397918695F8D7CB53 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
 		2DD51BEE6A265B624CAE96B0 /* LoadState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadState.swift; sourceTree = "<group>"; };
@@ -111,6 +113,7 @@
 			isa = PBXGroup;
 			children = (
 				BD6ACF0E036155FF4A4E223E /* OperationsViews.swift */,
+				0F0D470A19A919E4A73DDF52 /* PortalSurfaces.swift */,
 			);
 			path = Operations;
 			sourceTree = "<group>";
@@ -444,6 +447,7 @@
 				0F345A257EDD1ABB023022EA /* PortalAPI.swift in Sources */,
 				73F79BE350AC53836331381A /* PortalConfig.swift in Sources */,
 				6C6DDF963EC5117D13DE585F /* PortalShell.swift in Sources */,
+				0CF3EDC7E68E01CABEAA879F /* PortalSurfaces.swift in Sources */,
 				06639E837D93A6C0E122E9D7 /* RoleDestinationPolicy.swift in Sources */,
 				474EF0ED3F9E5E4BD75F5B80 /* SecondaryViews.swift in Sources */,
 				4E7990943F3DF74483B4FD82 /* WorkFixtures.swift in Sources */,

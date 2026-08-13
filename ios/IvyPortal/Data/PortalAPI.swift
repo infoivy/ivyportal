@@ -170,6 +170,61 @@ struct MoneySummary: Sendable {
     var deals = 0
 }
 
+// MARK: - Set tracker, expenses, output
+
+struct SetterDailyLog: Decodable, Identifiable, Sendable {
+    let id: UUID
+    let userId: UUID
+    let logDate: String
+    let inbounds: Int
+    let outboundsSent: Int
+    let ibReplies: Int
+    let obReplies: Int
+    let followUpsSent: Int
+    let callsProposed: Int
+    let calendlySent: Int
+    let callsBookedInbound: Int
+    let callsBookedOutbound: Int
+    let qualifiedBookings: Int
+    let callsOnCalendar: Int
+    let callsShowed: Int
+    let setsClosed: Int
+    let cashCollected: Double
+    let notes: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id, userId = "user_id", logDate = "log_date"
+        case inbounds, outboundsSent = "outbounds_sent", ibReplies = "ib_replies", obReplies = "ob_replies"
+        case followUpsSent = "follow_ups_sent", callsProposed = "calls_proposed", calendlySent = "calendly_sent"
+        case callsBookedInbound = "calls_booked_inbound", callsBookedOutbound = "calls_booked_outbound"
+        case qualifiedBookings = "qualified_bookings", callsOnCalendar = "calls_on_calendar"
+        case callsShowed = "calls_showed", setsClosed = "sets_closed", cashCollected = "cash_collected", notes
+    }
+}
+
+struct BusinessExpense: Decodable, Identifiable, Sendable {
+    let id: UUID
+    let name: String
+    let amount: Double
+    let recurring: Bool
+    let dueDay: Int?
+    let oneOffDate: String?
+    let category: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, amount, recurring, dueDay = "due_day", oneOffDate = "one_off_date", category
+    }
+}
+
+struct StudentOutputPoint: Identifiable, Sendable {
+    let id: String
+    let date: String
+    var applications: Int
+    var outreach: Int
+    var replies: Int
+    var interviews: Int
+}
+
 @MainActor
 final class PortalAPI {
     static let shared = PortalAPI()
@@ -293,6 +348,53 @@ final class PortalAPI {
             .order("created_at", ascending: false)
             .execute()
             .value
+    }
+
+    // MARK: - Set tracker, expenses, output, and the rest
+
+    func setterDailyLogs(days: Int = 14) async throws -> [SetterDailyLog] {
+        let from = Calendar.current.date(byAdding: .day, value: -days, to: Date())!
+        let start = ISO8601DateFormatter().string(from: from)
+        return try await client().from("setter_daily_logs")
+            .select()
+            .gte("log_date", value: start)
+            .order("log_date", ascending: false)
+            .execute()
+            .value
+    }
+
+    func businessExpenses() async throws -> [BusinessExpense] {
+        try await client().from("business_expenses")
+            .select("id, name, amount, recurring, due_day, one_off_date, category")
+            .order("amount", ascending: false)
+            .execute()
+            .value
+    }
+
+    func allStudentEODs(days: Int = 14) async throws -> [StudentEOD] {
+        let from = Calendar.current.date(byAdding: .day, value: -days, to: Date())!
+        let start = ISO8601DateFormatter().string(from: from)
+        return try await client().from("student_eods")
+            .select("id, student_id, report_date, applications_submitted, outreach_sent, replies, interviews, wins, blockers")
+            .gte("report_date", value: start)
+            .order("report_date", ascending: false)
+            .execute()
+            .value
+    }
+
+    /// Student output over time (applications/outreach/replies/interviews per day) for the CSM graphs.
+    func studentOutput(days: Int = 14) async throws -> [StudentOutputPoint] {
+        let rows = try await allStudentEODs(days: days)
+        var byDate: [String: StudentOutputPoint] = [:]
+        for row in rows {
+            var point = byDate[row.reportDate] ?? StudentOutputPoint(id: row.reportDate, date: row.reportDate, applications: 0, outreach: 0, replies: 0, interviews: 0)
+            point.applications += row.applicationsSubmitted
+            point.outreach += row.outreachSent
+            point.replies += row.replies
+            point.interviews += row.interviews
+            byDate[row.reportDate] = point
+        }
+        return byDate.values.sorted { $0.date < $1.date }
     }
 
     func openActionItems() async throws -> [StudentActionItem] {

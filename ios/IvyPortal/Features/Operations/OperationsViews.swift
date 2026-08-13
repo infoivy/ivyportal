@@ -20,21 +20,28 @@ struct WorkHubView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
-                DirectoryBackButton(title: "Work", subtitle: "Action items, calendar, CRM, and money")
+                DirectoryBackButton(title: "Work", subtitle: "Action items, calendar, CRM, money, and the rest")
                 ScrollView(.horizontal) {
                     HStack(spacing: 8) {
                         ForEach(WorkTab.allCases, id: \.self) { option in
-                            Button(option.label) { tab = option }
+                            Button(option.label) { withAnimation(ivySpring) { tab = option } }
                                 .font(.subheadline.bold()).padding(.horizontal, 16).frame(minHeight: 42)
                                 .background(tab == option ? Color.white.opacity(0.22) : ivySurface, in: Capsule())
                         }
                     }
+                    .padding(.trailing, 20)
                 }.scrollIndicators(.hidden)
                 switch tab {
                 case .actionItems: ActionItemsView()
                 case .calendar: CalendarView()
                 case .crm: CRMView(onOpenPulse: onOpenPulse)
                 case .money: MoneyInView(tab: .constant(.overview))
+                case .myEOD: MyEODView()
+                case .setTracker: SetTrackerView()
+                case .paymentCalendar: PaymentCalendarView()
+                case .expenses: ExpensesView()
+                case .teamChat: TeamChatsView()
+                case .knowledge: KnowledgeView()
                 }
             }
             .padding(.horizontal, 20)
@@ -566,4 +573,3 @@ enum DemoOperations {
 #endif
 
 private extension MoneyInTab { var label: String { switch self { case .overview: "Overview"; case .deals: "Deals"; case .paymentPlans: "Plans"; case .setters: "Setters" } } }
-private extension WorkTab { var label: String { switch self { case .actionItems: "Actions"; case .calendar: "Calendar"; case .crm: "CRM"; case .money: "Money" } } }

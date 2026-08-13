@@ -132,6 +132,8 @@ struct CustomersView: View {
                         }
                     }
                 }
+                Text("Student output").font(.title3.bold())
+                StudentOutputView()
             } else if loading {
                 SkeletonCards(count: 3, height: 96)
             } else {
