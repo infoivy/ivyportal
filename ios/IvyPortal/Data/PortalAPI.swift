@@ -139,6 +139,37 @@ struct StudentEOD: Decodable, Identifiable, Sendable {
     }
 }
 
+// MARK: - Money / CRM models
+
+struct InstallmentPayment: Decodable, Identifiable, Sendable {
+    let id: UUID
+    let amount: Double
+    let status: String
+    let dueDate: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id, amount, status, dueDate = "due_date"
+    }
+}
+
+struct Deal: Decodable, Identifiable, Sendable {
+    let id: UUID
+    let name: String
+    let value: Double?
+    let status: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, value, status
+    }
+}
+
+struct MoneySummary: Sendable {
+    var collected: Double = 0
+    var overdue: Double = 0
+    var upcoming: Double = 0
+    var deals = 0
+}
+
 @MainActor
 final class PortalAPI {
     static let shared = PortalAPI()
@@ -231,6 +262,35 @@ final class PortalAPI {
             .select("id, student_id, text, due_date, done")
             .eq("student_id", value: studentId)
             .order("due_date", ascending: true)
+            .execute()
+            .value
+    }
+
+    // MARK: - Money / CRM reads
+
+    func moneySummary() async throws -> MoneySummary {
+        async let payments: [InstallmentPayment] = client().from("installment_payments")
+            .select("id, amount, status, due_date")
+            .execute()
+            .value
+        async let deals: [Deal] = client().from("deals")
+            .select("id, name, value, status")
+            .execute()
+            .value
+        let all = try await payments
+        let dealRows = try await deals
+        var summary = MoneySummary()
+        summary.collected = all.filter { $0.status == "paid" }.reduce(0) { $0 + $1.amount }
+        summary.overdue = all.filter { $0.status == "late" || $0.status == "missed" }.reduce(0) { $0 + $1.amount }
+        summary.upcoming = all.filter { $0.status == "upcoming" }.reduce(0) { $0 + $1.amount }
+        summary.deals = dealRows.count
+        return summary
+    }
+
+    func deals() async throws -> [Deal] {
+        try await client().from("deals")
+            .select("id, name, value, status")
+            .order("created_at", ascending: false)
             .execute()
             .value
     }

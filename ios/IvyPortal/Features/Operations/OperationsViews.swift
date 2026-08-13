@@ -350,9 +350,14 @@ struct KnowledgeView: View {
 
 struct MoneyInView: View {
     @Binding var tab: MoneyInTab
+    @State private var summary: MoneySummary?
+    @State private var loading = false
+    @State private var loadError: String?
     #if DEBUG
     @State private var detail: MoneyDetail?
     #endif
+
+    private var signedIn: Bool { AuthStore.shared.isSignedIn }
 
     var body: some View {
         ScrollView {
@@ -367,22 +372,60 @@ struct MoneyInView: View {
                         }
                     }
                 }.scrollIndicators(.hidden)
-                #if DEBUG
-                switch tab {
-                case .overview: overview
-                case .deals: deals
-                case .paymentPlans: plans
-                case .setters: setters
+                if signedIn {
+                    liveContent
+                } else {
+                    #if DEBUG
+                    switch tab {
+                    case .overview: overview
+                    case .deals: deals
+                    case .paymentPlans: plans
+                    case .setters: setters
+                    }
+                    Text("Debug fixture · Tap every metric or person for detail").font(.caption).foregroundStyle(.tertiary)
+                    #else
+                    StatusCard(symbol: "lock.shield.fill", title: "Connect Money In", message: "Sign in to load verified applied, received, payment-plan, and attribution data.")
+                    #endif
                 }
-                Text("Debug fixture · Tap every metric or person for detail").font(.caption).foregroundStyle(.tertiary)
-                #else
-                StatusCard(symbol: "lock.shield.fill", title: "Connect Money In", message: "Sign in to load verified applied, received, payment-plan, and attribution data.")
-                #endif
             }.padding(.horizontal, 20).padding(.top, 18).padding(.bottom, 120)
-        }.scrollIndicators(.hidden)
+        }
+        .scrollIndicators(.hidden)
+        .task { await loadSummaryIfNeeded() }
         #if DEBUG
         .sheet(item: $detail) { MoneyDetailSheet(detail: $0) }
         #endif
+    }
+
+    private func loadSummaryIfNeeded() async {
+        guard signedIn, summary == nil else { return }
+        loading = true
+        defer { loading = false }
+        do {
+            summary = try await PortalAPI.shared.moneySummary()
+            loadError = nil
+        } catch {
+            loadError = "Could not load Money In."
+        }
+    }
+
+    @ViewBuilder private var liveContent: some View {
+        if let summary {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack(spacing: 12) {
+                    PerformanceStatCard(title: "Collected", value: summary.collected.formatted(.currency(code: "USD").precision(.fractionLength(0))), context: "paid installments", color: ivyGreen) { }
+                    PerformanceStatCard(title: "Upcoming", value: summary.upcoming.formatted(.currency(code: "USD").precision(.fractionLength(0))), context: "scheduled", color: .blue) { }
+                }
+                HStack(spacing: 12) {
+                    PerformanceStatCard(title: "Overdue", value: summary.overdue.formatted(.currency(code: "USD").precision(.fractionLength(0))), context: "late or missed", color: summary.overdue > 0 ? .red : ivyGreen) { }
+                    PerformanceStatCard(title: "Deals", value: "\(summary.deals)", context: "on record", color: .purple) { }
+                }
+                Text("Source: real installment_payments and deals via your portal session").font(.caption).foregroundStyle(.tertiary)
+            }
+        } else if loading {
+            SkeletonCards(count: 4, height: 96)
+        } else {
+            StatusCard(symbol: "exclamationmark.triangle", title: "Money In unavailable", message: loadError ?? "Sign in to load verified money data.", retry: { summary = nil; Task { await loadSummaryIfNeeded() } })
+        }
     }
 
     #if DEBUG
