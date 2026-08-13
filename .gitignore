@@ -44,3 +44,4 @@ ios/.derivedData/
 ios/.derivedData-*/
 ios/qa-screenshots/
 *.xcresult
+ios/IvyPortal/Config/PortalConfig.swift

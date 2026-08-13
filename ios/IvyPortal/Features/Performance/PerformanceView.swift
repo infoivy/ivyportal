@@ -6,19 +6,205 @@ struct PerformanceView: View {
     @State private var teamScope = "All members"
     @State private var period = "This week"
     @State private var section: PerformanceSection = .weeklyReport
+    @State private var realSummary: PerformanceSummary?
+    @State private var realRows: [TeamMemberRow] = []
+    @State private var realLoading = false
+    @State private var realError: String?
+    @State private var realDays = 7
+
+    private var signedIn: Bool { AuthStore.shared.isSignedIn }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
                 ScreenHeader(title: section.title, subtitle: section.subtitle)
                 sectionPicker
-                sectionContent
+                if signedIn { realSectionContent } else { fixtureSectionContent }
             }
             .padding(.horizontal, 20)
             .padding(.top, 10)
             .padding(.bottom, 112)
         }
         .scrollIndicators(.hidden)
+        .task { await loadRealIfNeeded() }
+    }
+
+    private func loadRealIfNeeded() async {
+        guard signedIn, realSummary == nil else { return }
+        realLoading = true
+        defer { realLoading = false }
+        do {
+            let result = try await PortalAPI.shared.performanceSummary(days: realDays)
+            realSummary = result.summary
+            realRows = result.rows
+            realError = nil
+        } catch {
+            realError = "Could not load Performance from the portal."
+        }
+    }
+
+    @ViewBuilder private var fixtureSectionContent: some View {
+        sectionContent
+    }
+
+    @ViewBuilder private var realSectionContent: some View {
+        switch section {
+        case .weeklyReport:
+            realWeeklyReport
+        case .crm:
+            crmSection
+        case .eods:
+            realEODs
+        case .team:
+            realTeam
+        }
+    }
+
+    private var realWeeklyReport: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            HStack(spacing: 8) {
+                ForEach([7, 30, 90], id: \.self) { days in
+                    Button { realDays = days; realSummary = nil } label: {
+                        Text("\(days)D").font(.subheadline.bold()).padding(.horizontal, 14).padding(.vertical, 7)
+                            .background(realDays == days ? .white.opacity(0.16) : .clear, in: Capsule())
+                            .foregroundStyle(realDays == days ? .white : .secondary)
+                    }.buttonStyle(PressableButtonStyle())
+                }
+                Spacer()
+                Text("All team · EOD activity").font(.caption).foregroundStyle(.tertiary)
+            }
+            .onChange(of: realDays) { _ in Task { await loadRealIfNeeded() } }
+            if let summary = realSummary {
+                HStack(spacing: 12) {
+                    PerformanceStatCard(title: "Calls booked", value: "\(summary.callsBooked)", context: "from submitted EODs", color: ivyGreen) { showDetail(.bookedCalls) }
+                    PerformanceStatCard(title: "EOD coverage", value: "\(summary.coverage)%", context: "\(summary.submitted) submitted · \(summary.missing) missing", color: summary.coverage >= 80 ? ivyGreen : .orange) { showDetail(.activeHours) }
+                }
+                HStack(spacing: 12) {
+                    PerformanceStatCard(title: "Dials", value: "\(realRows.reduce(0) { $0 + $1.dials })", context: "phone outreach", color: .blue) { showDetail(.activeHours) }
+                    PerformanceStatCard(title: "DMs sent", value: "\(realRows.reduce(0) { $0 + $1.dmsSent })", context: "Mochi outreach", color: .purple) { showDetail(.totalMessages) }
+                }
+                HStack(spacing: 12) {
+                    PerformanceStatCard(title: "Shows", value: "\(realRows.reduce(0) { $0 + $1.shows })", context: "verified", color: .cyan) { showDetail(.bookedCalls) }
+                    PerformanceStatCard(title: "Closes", value: "\(realRows.reduce(0) { $0 + $1.closes })", context: "won deals", color: ivyGreen) { showDetail(.bookedCalls) }
+                }
+                sectionHeader("Team week", detail: "\(realRows.count) members")
+                SurfaceCard {
+                    VStack(spacing: 0) {
+                        ForEach(Array(realRows.enumerated()), id: \.element.id) { index, row in
+                            HStack(spacing: 12) {
+                                AvatarBadge(name: row.name, color: .purple)
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(row.name).font(.headline).lineLimit(1)
+                                    HStack(spacing: 6) {
+                                        StatusPill(title: row.role, color: .blue)
+                                        if row.filedToday { StatusPill(title: "Filed today", color: ivyGreen) }
+                                        if row.missedYesterday { StatusPill(title: "Missed yesterday", color: .red) }
+                                    }
+                                }
+                                Spacer()
+                                VStack(alignment: .trailing, spacing: 2) {
+                                    Text("\(row.sets) sets").font(.subheadline.bold()).monospacedDigit()
+                                    Text("EOD \(row.eodDays)/7").font(.caption2).foregroundStyle(.secondary)
+                                }
+                            }.frame(minHeight: 66).contentShape(Rectangle())
+                            if index < realRows.count - 1 { Divider().overlay(Color.white.opacity(0.08)).padding(.leading, 54) }
+                        }
+                    }
+                }
+                sectionHeader("Submission & outcome", detail: "Per member")
+                SurfaceCard {
+                    VStack(spacing: 0) {
+                        HStack(spacing: 8) {
+                            Text("Member").frame(maxWidth: .infinity, alignment: .leading)
+                            Text("EOD").frame(width: 44, alignment: .trailing)
+                            Text("Booked").frame(width: 52, alignment: .trailing)
+                            Text("Shows").frame(width: 46, alignment: .trailing)
+                            Text("Closes").frame(width: 46, alignment: .trailing)
+                        }.font(.caption2.bold()).foregroundStyle(.secondary).frame(minHeight: 34)
+                        ForEach(Array(realRows.enumerated()), id: \.element.id) { index, row in
+                            HStack(spacing: 8) {
+                                Text(row.name).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
+                                Text("\(row.eodDays)").monospacedDigit().frame(width: 44, alignment: .trailing)
+                                Text("\(row.booked)").monospacedDigit().frame(width: 52, alignment: .trailing)
+                                Text("\(row.shows)").monospacedDigit().frame(width: 46, alignment: .trailing)
+                                Text("\(row.closes)").monospacedDigit().frame(width: 46, alignment: .trailing)
+                            }.font(.subheadline).frame(minHeight: 44)
+                            if index < realRows.count - 1 { Divider().overlay(Color.white.opacity(0.08)) }
+                        }
+                    }
+                }
+                Text("Source: real eods_activity_real, profiles, and user_roles via your portal session. Demo, Revenue, and CRM data are never mixed in.").font(.caption).foregroundStyle(.tertiary)
+            } else if realLoading {
+                VStack(spacing: 16) { ProgressView(); Text("Loading performance…").foregroundStyle(.secondary) }.frame(maxWidth: .infinity).padding(.vertical, 40)
+            } else {
+                StatusCard(symbol: "exclamationmark.triangle", title: "Performance unavailable", message: realError ?? "Sign in to load verified performance data.", retry: { realSummary = nil; Task { await loadRealIfNeeded() } })
+            }
+        }
+    }
+
+    private var realEODs: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            Text("End-of-day reporting per team member · real data").font(.subheadline).foregroundStyle(.secondary)
+            if let summary = realSummary {
+                HStack(spacing: 12) {
+                    PerformanceStatCard(title: "Submitted", value: "\(summary.submitted)", context: "EODs this window", color: ivyGreen) { }
+                    PerformanceStatCard(title: "Missing", value: "\(summary.missing)", context: "expected days", color: .orange) { }
+                }
+                SurfaceCard {
+                    VStack(spacing: 0) {
+                        ForEach(Array(realRows.enumerated()), id: \.element.id) { index, row in
+                            HStack(spacing: 12) {
+                                AvatarBadge(name: row.name, color: .blue)
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(row.name).font(.headline).lineLimit(1)
+                                    Text("\(row.role)").font(.caption).foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                Text("\(row.eodDays)/7").font(.subheadline.bold()).monospacedDigit()
+                            }.frame(minHeight: 62)
+                            if index < realRows.count - 1 { Divider().overlay(Color.white.opacity(0.08)).padding(.leading, 54) }
+                        }
+                    }
+                }
+            } else if realLoading {
+                VStack(spacing: 16) { ProgressView(); Text("Loading EODs…").foregroundStyle(.secondary) }.frame(maxWidth: .infinity).padding(.vertical, 40)
+            } else {
+                StatusCard(symbol: "exclamationmark.triangle", title: "EODs unavailable", message: realError ?? "Sign in to load verified EODs.", retry: { realSummary = nil; Task { await loadRealIfNeeded() } })
+            }
+        }
+    }
+
+    private var realTeam: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            Text("All team members and roles · real data").font(.subheadline).foregroundStyle(.secondary)
+            if !realRows.isEmpty {
+                SurfaceCard {
+                    VStack(spacing: 0) {
+                        ForEach(Array(realRows.enumerated()), id: \.element.id) { index, row in
+                            HStack(spacing: 12) {
+                                AvatarBadge(name: row.name, color: .blue)
+                                Text(row.name).font(.headline).lineLimit(1)
+                                Spacer()
+                                StatusPill(title: row.role, color: .blue)
+                            }.frame(minHeight: 62)
+                            if index < realRows.count - 1 { Divider().overlay(Color.white.opacity(0.08)).padding(.leading, 54) }
+                        }
+                    }
+                }
+            } else if realLoading {
+                VStack(spacing: 16) { ProgressView(); Text("Loading team…").foregroundStyle(.secondary) }.frame(maxWidth: .infinity).padding(.vertical, 40)
+            } else {
+                StatusCard(symbol: "exclamationmark.triangle", title: "Team unavailable", message: realError ?? "Sign in to load verified team.", retry: { realSummary = nil; Task { await loadRealIfNeeded() } })
+            }
+        }
+    }
+
+    private func sectionHeader(_ title: String, detail: String) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(title).font(.title3.bold())
+            Spacer()
+            Text(detail).font(.caption).foregroundStyle(.secondary)
+        }
     }
 
     private var sectionPicker: some View {
@@ -269,6 +455,27 @@ private struct MenuRow: View {
     }
 }
 
+
+private struct PerformanceStatCard: View {
+    let title, value, context: String
+    let color: Color
+    var action: (() -> Void)?
+
+    var body: some View {
+        Button { action?() } label: {
+            SurfaceCard {
+                VStack(alignment: .leading, spacing: 10) {
+                    Circle().fill(color).frame(width: 8, height: 8)
+                    Text(title).font(.caption).foregroundStyle(.secondary)
+                    Text(value).font(.title2.bold()).monospacedDigit()
+                    Text(context).font(.caption2).foregroundStyle(color).lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                }.frame(maxWidth: .infinity, minHeight: 112, alignment: .leading)
+            }
+        }
+        .buttonStyle(PressableButtonStyle())
+        .disabled(action == nil)
+    }
+}
 
 private struct CompactPerformanceMetric: View {
     let title, value, context, symbol: String
