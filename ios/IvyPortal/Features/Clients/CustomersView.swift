@@ -11,6 +11,24 @@ enum CSMTab: String, CaseIterable, Hashable {
         case .requests: "Requests"
         }
     }
+    var subtitle: String {
+        switch self {
+        case .students: "Roster, health, and records"
+        case .csm: "Check-ins and coverage"
+        case .oneOnOne: "Coaching calls and follow-up"
+        case .testimonials: "Collect student proof"
+        case .requests: "Pending access requests"
+        }
+    }
+    var symbol: String {
+        switch self {
+        case .students: "graduationcap.fill"
+        case .csm: "person.2.fill"
+        case .oneOnOne: "phone.fill"
+        case .testimonials: "quote.bubble.fill"
+        case .requests: "envelope.fill"
+        }
+    }
 }
 
 struct CustomersView: View {
@@ -19,14 +37,14 @@ struct CustomersView: View {
     @State private var loading = false
     @State private var loadError: String?
     @State private var selectedStudent: StudentRosterItem?
+    @State private var menuPresented = false
 
     private var signedIn: Bool { AuthStore.shared.isSignedIn }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                ScreenHeader(title: "Clients", subtitle: "Students, CSM, and coaching")
-                tabPicker
+                clientsHeader
                 if signedIn { liveContent } else { fixtureContent }
             }
             .padding(.horizontal, 20)
@@ -41,20 +59,83 @@ struct CustomersView: View {
                 .presentationDragIndicator(.visible)
                 .presentationBackground(.black)
         }
+        .overlay { clientsMenu }
     }
 
-    private var tabPicker: some View {
-        ScrollView(.horizontal) {
-            HStack(spacing: 8) {
-                ForEach(CSMTab.allCases, id: \.self) { option in
-                    Button(option.label) { withAnimation(.snappy(duration: 0.24)) { tab = option } }
-                        .font(.subheadline.bold()).padding(.horizontal, 16).frame(minHeight: 42)
-                        .background(tab == option ? Color.white.opacity(0.22) : ivySurface, in: Capsule())
-                        .foregroundStyle(tab == option ? .white : .secondary)
+    /// Header with a burger that opens the section menu (consistent with Home).
+    private var clientsHeader: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Button { withAnimation(ivySpring) { menuPresented = true } } label: {
+                    Image(systemName: "line.3.horizontal").font(.system(size: 18, weight: .semibold))
+                        .frame(width: 48, height: 48).background(ivySurface, in: Circle())
+                        .overlay(Circle().stroke(Color.white.opacity(0.1)))
                 }
+                .buttonStyle(PressableButtonStyle())
+                .accessibilityLabel("Open Clients sections")
+                Spacer()
             }
-            .padding(.trailing, 20)
-        }.scrollIndicators(.hidden)
+            Text("Clients").font(.title.bold()).tracking(-0.4).accessibilityAddTraits(.isHeader)
+            Text(tab.label).font(.caption.weight(.medium)).foregroundStyle(.secondary)
+        }
+    }
+
+    /// Mochi-style slide-over section menu for the Clients workspace.
+    @ViewBuilder private var clientsMenu: some View {
+        if menuPresented {
+            Color.black.opacity(0.55).ignoresSafeArea()
+                .onTapGesture { withAnimation(ivySpring) { menuPresented = false } }
+                .transition(.opacity).zIndex(1)
+            HStack(spacing: 0) {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 26) {
+                        HStack {
+                            Text("Clients").font(.largeTitle.bold())
+                            Spacer()
+                            Button { withAnimation(ivySpring) { menuPresented = false } } label: {
+                                Image(systemName: "xmark").font(.subheadline.bold()).frame(width: 40, height: 40).background(ivySurface, in: Circle())
+                            }.buttonStyle(PressableButtonStyle()).accessibilityLabel("Close sections")
+                        }
+                        VStack(spacing: 2) {
+                            ForEach(CSMTab.allCases, id: \.self) { option in
+                                menuRow(option)
+                            }
+                        }
+                        Spacer(minLength: 20)
+                    }
+                    .padding(.horizontal, 20).padding(.top, 60).padding(.bottom, 24)
+                }
+                .scrollIndicators(.hidden)
+                .frame(width: 300).frame(maxHeight: .infinity).background(Color.black)
+                .overlay(alignment: .trailing) { Rectangle().fill(Color.white.opacity(0.08)).frame(width: 1) }
+                Spacer(minLength: 0)
+            }
+            .transition(.move(edge: .leading)).zIndex(2)
+        }
+    }
+
+    private func menuRow(_ option: CSMTab) -> some View {
+        let active = tab == option
+        return Button {
+            withAnimation(ivySpring) { tab = option; menuPresented = false }
+        } label: {
+            HStack(spacing: 16) {
+                Image(systemName: option.symbol).font(.system(size: 16, weight: .semibold)).frame(width: 40, height: 40)
+                    .background(active ? Color.white.opacity(0.16) : ivySurface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .foregroundStyle(active ? .white : .secondary)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(option.label).font(.body.weight(active ? .semibold : .regular)).foregroundStyle(active ? .white : .primary)
+                    Text(option.subtitle).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                }
+                Spacer()
+                if active { Image(systemName: "checkmark").font(.caption.bold()).foregroundStyle(.white) }
+                else { Image(systemName: "chevron.right").font(.caption2.bold()).foregroundStyle(.tertiary) }
+            }
+            .padding(.horizontal, 14).frame(minHeight: 62)
+            .background(active ? Color.white.opacity(0.08) : .clear, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PressableButtonStyle())
     }
 
     private func loadRosterIfNeeded() async {
@@ -183,36 +264,111 @@ struct CustomersView: View {
 
     // MARK: - Fixture (signed out)
 
-    private var fixtureContent: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            MetricCard(title: "Active students", value: "47", context: "3 need attention", symbol: "person.2.fill", accent: .blue) { }
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Needs attention").font(.title3.bold())
-                SurfaceCard {
-                    VStack(spacing: 0) {
-                        fixtureRow("Amina H.", "Missing weekly check-in", .orange)
-                        Divider().overlay(Color.white.opacity(0.08)).padding(.leading, 56)
-                        fixtureRow("Yusuf K.", "Coaching follow-up due", .red)
-                        Divider().overlay(Color.white.opacity(0.08)).padding(.leading, 56)
-                        fixtureRow("Maryam A.", "Onboarding in progress", .blue)
-                    }
-                }
-            }
-            Text("Debug fixture · Sign in to load the real roster").font(.caption).foregroundStyle(.tertiary)
+    @ViewBuilder private var fixtureContent: some View {
+        switch tab {
+        case .students: fixtureStudents
+        case .csm: fixtureCSM
+        case .oneOnOne: fixtureOneOnOne
+        case .testimonials: fixtureTestimonials
+        case .requests: fixtureRequests
         }
     }
 
-    private func fixtureRow(_ name: String, _ detail: String, _ color: Color) -> some View {
-        HStack(spacing: 12) {
-            Circle().fill(color.opacity(0.18)).frame(width: 44, height: 44)
-                .overlay(Text(name.prefix(1)).font(.headline).foregroundStyle(color))
-            VStack(alignment: .leading, spacing: 3) {
-                Text(name).font(.headline)
-                Text(detail).font(.subheadline).foregroundStyle(.secondary)
+    private var fixtureStudents: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 14), GridItem(.flexible())], spacing: 14) {
+                StatTile(label: "Active students", value: "47", symbol: "person.2.fill") { }
+                StatTile(label: "Need attention", value: "3", symbol: "heart.fill", valueColor: ivyRed) { }
             }
-            Spacer()
-            Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(.tertiary)
-        }.frame(minHeight: 64).contentShape(Rectangle())
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Needs attention").font(.title3.bold())
+                SurfaceCard(padding: 6) {
+                    VStack(spacing: 0) {
+                        EntityRow(name: "Amina H.", value: "Risk", color: ivyOrange, subtitle: "Missing weekly check-in") { }
+                        Divider().overlay(Color.white.opacity(0.08)).padding(.leading, 60)
+                        EntityRow(name: "Yusuf K.", value: "Risk", color: ivyRed, subtitle: "Coaching follow-up due") { }
+                        Divider().overlay(Color.white.opacity(0.08)).padding(.leading, 60)
+                        EntityRow(name: "Maryam A.", value: "Onboarding", color: ivyBlue, subtitle: "Day 4 of Start Here") { }
+                    }
+                }
+            }
+            fixtureNote
+        }
+    }
+
+    private var fixtureCSM: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            Text("Check-in coverage").font(.title3.bold())
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 14), GridItem(.flexible())], spacing: 14) {
+                StatTile(label: "Checked in today", value: "9", symbol: "message.fill", valueColor: ivyTeal) { }
+                StatTile(label: "Due a check-in", value: "5", symbol: "clock.fill", valueColor: ivyOrange) { }
+            }
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Coverage queue").font(.title3.bold())
+                SurfaceCard(padding: 6) {
+                    VStack(spacing: 0) {
+                        EntityRow(name: "Bilal R.", value: "4d", color: ivyRed, subtitle: "Longest without a check-in") { }
+                        Divider().overlay(Color.white.opacity(0.08)).padding(.leading, 60)
+                        EntityRow(name: "Amina H.", value: "2d", color: ivyOrange, subtitle: "Due a check-in") { }
+                        Divider().overlay(Color.white.opacity(0.08)).padding(.leading, 60)
+                        EntityRow(name: "Omar S.", value: "2d", color: ivyOrange, subtitle: "Due a check-in") { }
+                    }
+                }
+            }
+            fixtureNote
+        }
+    }
+
+    private var fixtureOneOnOne: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            Text("Calls used per student").font(.title3.bold())
+            SurfaceCard(padding: 6) {
+                VStack(spacing: 0) {
+                    EntityRow(name: "Amina H.", value: "3/10", color: ivyPurple, subtitle: "Next: Thu 4:00 PM") { }
+                    Divider().overlay(Color.white.opacity(0.08)).padding(.leading, 60)
+                    EntityRow(name: "Yusuf K.", value: "6/10", color: ivyPink, subtitle: "Next: Fri 2:30 PM") { }
+                    Divider().overlay(Color.white.opacity(0.08)).padding(.leading, 60)
+                    EntityRow(name: "Maryam A.", value: "1/10", color: ivyBlue, subtitle: "Next: Mon 6:00 PM") { }
+                    Divider().overlay(Color.white.opacity(0.08)).padding(.leading, 60)
+                    EntityRow(name: "Bilal R.", value: "8/10", color: ivyMint, subtitle: "2 remaining this cycle") { }
+                }
+            }
+            fixtureNote
+        }
+    }
+
+    private var fixtureTestimonials: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            Text("Ready to collect").font(.title3.bold())
+            SurfaceCard(padding: 6) {
+                VStack(spacing: 0) {
+                    EntityRow(name: "Maryam A.", value: "Ready", color: ivyMint, subtitle: "First win recorded · offer signed") { }
+                    Divider().overlay(Color.white.opacity(0.08)).padding(.leading, 60)
+                    EntityRow(name: "Omar S.", value: "Ready", color: ivyMint, subtitle: "First win recorded") { }
+                    Divider().overlay(Color.white.opacity(0.08)).padding(.leading, 60)
+                    EntityRow(name: "Sara K.", value: "Pending", color: ivyOrange, subtitle: "Win recorded, not yet collected") { }
+                }
+            }
+            fixtureNote
+        }
+    }
+
+    private var fixtureRequests: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            Text("Pending access requests").font(.title3.bold())
+            SurfaceCard(padding: 6) {
+                VStack(spacing: 0) {
+                    EntityRow(name: "new.student@example.com", value: "Student", color: ivyBlue, subtitle: "Requested 2h ago") { }
+                    Divider().overlay(Color.white.opacity(0.08)).padding(.leading, 60)
+                    EntityRow(name: "setter.applicant@example.com", value: "Setter", color: ivyPurple, subtitle: "Requested yesterday") { }
+                }
+            }
+            fixtureNote
+        }
+    }
+
+    private var fixtureNote: some View {
+        Text("Debug fixture · Sign in to load the real roster").font(.caption).foregroundStyle(.tertiary)
     }
 
     private func studentRow(_ student: StudentRosterItem) -> some View {
