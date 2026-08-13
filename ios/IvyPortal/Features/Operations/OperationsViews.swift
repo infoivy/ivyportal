@@ -6,9 +6,9 @@ struct DirectoryBackButton: View {
     let subtitle: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(title).font(.largeTitle.bold()).tracking(-0.6).accessibilityAddTraits(.isHeader)
-            if !subtitle.isEmpty { Text(subtitle).font(.subheadline.weight(.medium)).foregroundStyle(.secondary) }
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title).font(.title.bold()).tracking(-0.4).accessibilityAddTraits(.isHeader)
+            if !subtitle.isEmpty { Text(subtitle).font(.caption.weight(.medium)).foregroundStyle(.secondary) }
         }
     }
 }
@@ -369,7 +369,7 @@ struct MoneyInView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                ScreenHeader(title: "Money In", subtitle: "Applied, received, deals, plans, and setter attribution")
+                ScreenHeader(title: "Money In", subtitle: "Applied, received, deals, plans, and setter attribution", compact: true)
                 ScrollView(.horizontal) {
                     HStack(spacing: 8) {
                         ForEach(MoneyInTab.allCases, id: \.self) { option in
@@ -438,13 +438,11 @@ struct MoneyInView: View {
     #if DEBUG
     private var overview: some View {
         VStack(alignment: .leading, spacing: 20) {
-            HStack(spacing: 12) {
-                MetricNumberCard(title: "Total applied", value: "$31K", context: "8 applications", symbol: "creditcard.fill", color: .blue) { detail = .applied }
-                MetricNumberCard(title: "Total received", value: "$12.5K", context: "Whop net", symbol: "banknote.fill", color: ivyGreen) { detail = .received }
-            }
-            HStack(spacing: 12) {
-                MetricNumberCard(title: "Outstanding", value: "$8.5K", context: "14 active plans", symbol: "clock.fill", color: .orange) { detail = .outstanding }
-                MetricNumberCard(title: "Overdue", value: "$1.5K", context: "2 installments", symbol: "exclamationmark.triangle.fill", color: .red) { tab = .paymentPlans }
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 14), GridItem(.flexible())], spacing: 14) {
+                StatTile(label: "Total applied", value: "$31K", symbol: "creditcard.fill") { detail = .applied }
+                StatTile(label: "Total received", value: "$12.5K", symbol: "banknote.fill", valueColor: ivyMint) { detail = .received }
+                StatTile(label: "Outstanding", value: "$8.5K", symbol: "clock.fill", valueColor: ivyOrange) { detail = .outstanding }
+                StatTile(label: "Overdue", value: "$1.5K", symbol: "exclamationmark.triangle.fill", valueColor: ivyRed) { tab = .paymentPlans }
             }
             section("By setter", detail: "Tap a person")
             setterList
@@ -468,7 +466,7 @@ struct MoneyInView: View {
 
     private var setters: some View { VStack(alignment: .leading, spacing: 16) { section("Setter attribution", detail: "Applied + received"); setterList } }
     private var setterList: some View { SurfaceCard { VStack(spacing: 0) { ForEach(Array(DemoOperations.setters.enumerated()), id: \.element.id) { index, setter in Button { detail = .setter(setter.name) } label: { HStack(spacing: 12) { Circle().fill(setter.color.opacity(0.2)).frame(width: 42, height: 42).overlay(Text(setter.name.prefix(1)).bold().foregroundStyle(setter.color)); VStack(alignment: .leading, spacing: 4) { Text(setter.name).font(.headline); Text("\(setter.applications) applications · \(setter.deals) deals").font(.caption).foregroundStyle(.secondary) }; Spacer(); VStack(alignment: .trailing, spacing: 4) { Text(setter.received).font(.headline).monospacedDigit(); Text("received").font(.caption2).foregroundStyle(setter.color) }; Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(.tertiary) }.frame(minHeight: 68).contentShape(Rectangle()) }.buttonStyle(PressableButtonStyle()); if index < DemoOperations.setters.count - 1 { Divider().overlay(Color.white.opacity(0.08)).padding(.leading, 54) } } } } }
-    private func section(_ title: String, detail: String) -> some View { HStack { Text(title).font(.title2.bold()); Spacer(); Text(detail).font(.caption).foregroundStyle(.secondary) } }
+    private func section(_ title: String, detail: String) -> some View { HStack { Text(title).font(.title3.bold()); Spacer(); Text(detail).font(.caption).foregroundStyle(.secondary) } }
     #endif
 }
 

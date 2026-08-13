@@ -29,12 +29,14 @@ struct ScreenHeader: View {
     let title: String
     let subtitle: String
     var showsMenu = false
+    /// Large subtitle (Home greeting) vs a small section subtitle (Work/Money).
+    var compact = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 24) {
+        VStack(alignment: .leading, spacing: compact ? 8 : 24) {
             ZStack {
                 Text(title)
-                    .font(.title2.bold())
+                    .font(compact ? .title3.bold() : .title2.bold())
                     .frame(maxWidth: .infinity)
                     .accessibilityAddTraits(.isHeader)
                 if showsMenu {
@@ -54,8 +56,9 @@ struct ScreenHeader: View {
             }
             if !subtitle.isEmpty {
                 Text(subtitle)
-                    .font(.largeTitle.bold())
-                    .tracking(-0.7)
+                    .font(compact ? .subheadline.weight(.medium) : .largeTitle.bold())
+                    .tracking(compact ? 0 : -0.7)
+                    .foregroundStyle(compact ? .secondary : .primary)
                     .accessibilityAddTraits(.isHeader)
             }
         }

@@ -33,7 +33,12 @@ struct PortalShell: View {
     @State private var menuPresented = ProcessInfo.processInfo.arguments.contains("-showMenu")
     @State private var performanceMetric: PerformanceMetric?
     @State private var upcomingPresented = false
-    @State private var workTab: WorkTab = .actionItems
+    @State private var workTab: WorkTab = {
+        let args = ProcessInfo.processInfo.arguments
+        guard let i = args.firstIndex(of: "-workTab"), args.indices.contains(i + 1),
+              let t = WorkTab(rawValue: args[i + 1]) else { return .actionItems }
+        return t
+    }()
     #if DEBUG
     @State private var scenario = DemoScenario.launchScenario
     @State private var homePicture: HomePicture = {
