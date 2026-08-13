@@ -140,31 +140,81 @@ struct PortalShell: View {
         }
     }
 
-    private var floatingTabBar: some View {
-        HStack(spacing: 2) {
-            ForEach(destinations, id: \.self) { destination in
-                Button {
-                    withAnimation(ivySpring) { surface = .root(destination) }
-                } label: {
-                    VStack(spacing: 4) {
-                        Image(systemName: destination.symbol).font(.system(size: 16, weight: .semibold))
-                        Text(destination.shortTitle).font(.caption2.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.7)
-                    }
-                    .foregroundStyle(surface == .root(destination) ? .white : .secondary)
-                    .frame(maxWidth: .infinity, minHeight: 50)
-                    .background(surface == .root(destination) ? Color.white.opacity(0.1) : .clear, in: Capsule())
-                    .contentShape(Capsule())
-                }
-                .buttonStyle(PressableButtonStyle())
-                .accessibilityLabel(destination.shortTitle)
+    @State private var aiChatPresented = false
+
+    private func tabItem(_ destination: RootDestination) -> some View {
+        let active = surface == .root(destination)
+        return Button {
+            withAnimation(ivySpring) { surface = .root(destination) }
+        } label: {
+            VStack(spacing: 3) {
+                Image(systemName: destination.symbol).font(.system(size: 17, weight: .medium))
+                Text(destination.shortTitle).font(.system(size: 10, weight: .semibold)).lineLimit(1)
             }
+            .foregroundStyle(active ? Color.white : Color.white.opacity(0.55))
+            .frame(maxWidth: .infinity, minHeight: 52)
+            .background(active ? Color.white.opacity(0.14) : Color.clear, in: Capsule())
+            .contentShape(Capsule())
         }
-        .padding(6)
-        .frame(maxWidth: 370)
-        .background(.ultraThinMaterial, in: Capsule())
-        .overlay(Capsule().stroke(Color.white.opacity(0.16), lineWidth: 1))
-        .padding(.horizontal, 20)
-        .padding(.bottom, 10)
+        .buttonStyle(PressableButtonStyle())
+        .accessibilityLabel(destination.shortTitle)
+    }
+
+    private var floatingTabBar: some View {
+        HStack(alignment: .bottom, spacing: 12) {
+            HStack(spacing: 0) {
+                ForEach(destinations, id: \.self) { destination in
+                    tabItem(destination)
+                }
+            }
+            .padding(5)
+            .background(.ultraThinMaterial, in: Capsule())
+            .overlay(Capsule().stroke(Color.white.opacity(0.14), lineWidth: 1))
+
+            // AI chatbot avatar, Mochi-style, floating to the right of the pill
+            Button { aiChatPresented = true } label: {
+                ZStack {
+                    Circle().fill(ivyPurple).frame(width: 52, height: 52)
+                    Image(systemName: "sparkles").font(.system(size: 20, weight: .semibold)).foregroundStyle(.white)
+                }
+                .overlay(Circle().stroke(Color.white.opacity(0.18), lineWidth: 1))
+                .shadow(color: ivyPurple.opacity(0.4), radius: 12, y: 4)
+            }
+            .buttonStyle(PressableButtonStyle())
+            .accessibilityLabel("Open AI assistant")
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 8)
+        .sheet(isPresented: $aiChatPresented) {
+            AIChatSheet()
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+                .presentationBackground(Color.black)
+        }
+    }
+}
+
+/// Mochi-style AI assistant sheet (placeholder surface; model wiring next).
+private struct AIChatSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            HStack {
+                ZStack {
+                    Circle().fill(ivyPurple).frame(width: 40, height: 40)
+                    Image(systemName: "sparkles").font(.system(size: 16, weight: .semibold)).foregroundStyle(.white)
+                }
+                Text("Ivy AI").font(.title2.bold())
+                Spacer()
+                Button("Done") { dismiss() }.frame(minHeight: 44)
+            }
+            Text("Ask about sets, students, money, or the team. The assistant reads live portal data and answers in context.")
+                .font(.subheadline).foregroundStyle(.secondary)
+            Spacer()
+            Text("AI chat is not connected yet. This is the entry point surface.")
+                .font(.caption).foregroundStyle(.tertiary)
+        }
+        .padding(24)
     }
 }
 

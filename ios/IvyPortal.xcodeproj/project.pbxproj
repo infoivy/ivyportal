@@ -26,6 +26,7 @@
 		74DE9D4302D252C6829D8046 /* IvyPortalApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBCF822DA31E8719AFB8220C /* IvyPortalApp.swift */; };
 		75D08C1C1F7D558B4DC9EFEA /* FeatureNavigationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6A44331B1380EC5E1F6953D /* FeatureNavigationTests.swift */; };
 		77D3B900D07F9850AB55BADA /* DemoFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = B46499050625FB8ABF46542F /* DemoFixtures.swift */; };
+		8B9C9C51C2B644B5EB99582C /* TeamWeekView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D735C7E6ACC3349DD1444DB1 /* TeamWeekView.swift */; };
 		A39D25067873C4F71C3A6A84 /* LoadStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D82CE802CAA94C209087E537 /* LoadStateTests.swift */; };
 		A9B9BC6CFD53E3166A0BB1C8 /* AuthStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E47E29C16B2641ED296636B1 /* AuthStore.swift */; };
 		D6E8F90DDA27C979E44EDA33 /* HomeActionRoutingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D63FFEC06CAD25DFE92B0B4B /* HomeActionRoutingTests.swift */; };
@@ -82,6 +83,7 @@
 		C9FAA38FA65B3A14F178C873 /* RoleDestinationPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoleDestinationPolicyTests.swift; sourceTree = "<group>"; };
 		D63FFEC06CAD25DFE92B0B4B /* HomeActionRoutingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeActionRoutingTests.swift; sourceTree = "<group>"; };
 		D6A44331B1380EC5E1F6953D /* FeatureNavigationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureNavigationTests.swift; sourceTree = "<group>"; };
+		D735C7E6ACC3349DD1444DB1 /* TeamWeekView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TeamWeekView.swift; sourceTree = "<group>"; };
 		D82CE802CAA94C209087E537 /* LoadStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadStateTests.swift; sourceTree = "<group>"; };
 		DBCF822DA31E8719AFB8220C /* IvyPortalApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IvyPortalApp.swift; sourceTree = "<group>"; };
 		E47E29C16B2641ED296636B1 /* AuthStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthStore.swift; sourceTree = "<group>"; };
@@ -105,6 +107,7 @@
 			isa = PBXGroup;
 			children = (
 				9506EC7B316F186C69D450C3 /* PerformanceView.swift */,
+				D735C7E6ACC3349DD1444DB1 /* TeamWeekView.swift */,
 			);
 			path = Performance;
 			sourceTree = "<group>";
@@ -450,6 +453,7 @@
 				0CF3EDC7E68E01CABEAA879F /* PortalSurfaces.swift in Sources */,
 				06639E837D93A6C0E122E9D7 /* RoleDestinationPolicy.swift in Sources */,
 				474EF0ED3F9E5E4BD75F5B80 /* SecondaryViews.swift in Sources */,
+				8B9C9C51C2B644B5EB99582C /* TeamWeekView.swift in Sources */,
 				4E7990943F3DF74483B4FD82 /* WorkFixtures.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

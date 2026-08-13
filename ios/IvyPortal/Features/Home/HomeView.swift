@@ -30,9 +30,6 @@ struct HomeView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 26) {
                 ScreenHeader(title: "Good afternoon", subtitle: "Thursday, 13 August", showsMenu: true)
-                #if DEBUG
-                picturePicker
-                #endif
                 if signedIn {
                     liveContent
                 } else {
@@ -53,23 +50,8 @@ struct HomeView: View {
     }
 
     #if DEBUG
-    /// Preview each Home picture without an account (matches the portal's
-    /// grantable view roles). Only in DEBUG.
-    private var picturePicker: some View {
-        ScrollView(.horizontal) {
-            HStack(spacing: 8) {
-                ForEach(HomePicture.allCases, id: \.self) { picture in
-                    Button(picture.label) { withAnimation(.snappy(duration: 0.24)) { debugPicture = picture } }
-                        .font(.caption.bold()).padding(.horizontal, 14).frame(minHeight: 34)
-                        .background(debugPicture == picture ? Color.white.opacity(0.2) : ivySurface, in: Capsule())
-                        .foregroundStyle(debugPicture == picture ? .white : .secondary)
-                }
-            }
-            .padding(.trailing, 20)
-        }
-        .scrollIndicators(.hidden)
-        .accessibilityLabel("Preview Home by role")
-    }
+    /// The active Home picture. Chosen from the burger menu (not an on-screen
+    /// picker); the launch arg `-homePicture` presets it for screenshots.
     #endif
 
     private func loadQueueIfNeeded() async {
@@ -90,7 +72,6 @@ struct HomeView: View {
         if let queue {
             VStack(alignment: .leading, spacing: 26) {
                 liveFocus(queue)
-                upcomingSection
                 Text("Source: real portal data · students, action items, installments").font(.caption).foregroundStyle(.tertiary)
             }
         } else if queueLoading {
@@ -142,7 +123,6 @@ struct HomeView: View {
         case .personal:
             personalPicture
         }
-        myItemsSection
         commandQueueSection
         Text("Debug fixture · Preview as \(debugPicture.label). Tap any tile.")
             .font(.caption).foregroundStyle(.tertiary)
@@ -348,57 +328,74 @@ struct HomeView: View {
         }.buttonStyle(PressableButtonStyle())
     }
 
-    private var myItemsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack { Text("Your action items").font(.title3.bold()); Spacer(); Button("All items") { onAction(.reviewOverdue) }.font(.caption.bold()).foregroundStyle(.secondary) }
-            SurfaceCard {
-                VStack(spacing: 0) {
-                    myItem("Send updated onboarding plan", sub: "Amina H. · overdue", done: false)
-                    Divider().overlay(Color.white.opacity(0.08)).padding(.leading, 36)
-                    myItem("Review roleplay recording", sub: "Yusuf K. · due today", done: false)
-                }
-            }
-        }
-    }
-
-    private func myItem(_ title: String, sub: String, done: Bool) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: done ? "checkmark.circle.fill" : "circle").foregroundStyle(done ? ivyGreen : .secondary).font(.title3)
-            VStack(alignment: .leading, spacing: 3) { Text(title).font(.subheadline.weight(.medium)); Text(sub).font(.caption).foregroundStyle(.secondary) }
-            Spacer()
-        }.frame(minHeight: 50).contentShape(Rectangle())
-    }
-
     private var commandQueueSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            sectionHeader("Next actions", detail: "Today")
-            SurfaceCard {
-                VStack(spacing: 0) {
-                    HomeActionRow(symbol: "exclamationmark.circle.fill", symbolColor: .orange, title: "Review overdue items", detail: "2 assigned to you · oldest due yesterday", value: "2") { onAction(.reviewOverdue) }
-                    Divider().overlay(Color.white.opacity(0.08)).padding(.leading, 48)
-                    HomeActionRow(symbol: "person.3.fill", symbolColor: .white, title: "Check team reporting", detail: "36 of 42 EODs submitted", value: "86%") { onAction(.reviewCoverage) }
-                }
-            }
-            upcomingSection
+        VStack(alignment: .leading, spacing: 18) {
+            myItemsBanner
+            activityFeed
         }
     }
-    #endif
 
-    private var upcomingSection: some View {
-        Button { onAction(.openUpcoming) } label: {
-            SurfaceCard {
-                HStack(spacing: 14) {
-                    VStack(spacing: 2) { Text("5:00").font(.headline).monospacedDigit(); Text("PM").font(.caption2.weight(.semibold)).foregroundStyle(.secondary) }
-                        .frame(width: 48, height: 48).background(ivyRaised, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    VStack(alignment: .leading, spacing: 4) { Text("Founder review").font(.headline); Text("Riyadh · 45 minutes").font(.subheadline).foregroundStyle(.secondary) }
-                    Spacer()
-                    Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(.tertiary)
+    /// Mochi "At Risk"-style compact banner: one wide, short, tappable card.
+    private var myItemsBanner: some View {
+        Button { onAction(.reviewOverdue) } label: {
+            HStack(spacing: 14) {
+                ZStack {
+                    Circle().fill(ivyOrange).frame(width: 44, height: 44)
+                    Image(systemName: "exclamationmark").font(.system(size: 18, weight: .bold)).foregroundStyle(.white)
                 }
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Your items").font(.headline).foregroundStyle(ivyOrange)
+                    Text("2 assigned · oldest due yesterday").font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                }
+                Spacer()
+                Text("2").font(.title3.bold()).monospacedDigit()
+                Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(.tertiary)
             }
+            .padding(.horizontal, 16).frame(minHeight: 72)
+            .background(ivySurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         }
         .buttonStyle(PressableButtonStyle())
-        .accessibilityHint("Opens meeting details")
     }
+
+    /// Mochi "Latest activity" full-width feed.
+    private var activityFeed: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Latest activity").font(.title3.bold())
+                Spacer()
+                Button("See all") { onAction(.reviewOverdue) }.font(.caption.bold()).foregroundStyle(ivyTeal)
+            }
+            SurfaceCard(padding: 6) {
+                VStack(spacing: 0) {
+                    activityRow(avatar: "H", color: ivyPink, title: "@ahmed became a lead", sub: "Setter Haroon marked lead made contact", time: "1h")
+                    feedDivider
+                    activityRow(avatar: "Y", color: ivyPurple, title: "@yusuf is in contact", sub: "Lead replied to DM", time: "2h")
+                    feedDivider
+                    activityRow(avatar: "A", color: ivyBlue, title: "@amina was handed over", sub: "Originally assigned to Abdelmalik", time: "2h")
+                    feedDivider
+                    activityRow(avatar: "M", color: ivyMint, title: "@maryam booked a call", sub: "Set for tomorrow 4:00 PM", time: "3h")
+                }
+            }
+        }
+    }
+
+    private func activityRow(avatar: String, color: Color, title: String, sub: String, time: String) -> some View {
+        HStack(spacing: 12) {
+            Circle().fill(color.opacity(0.9)).frame(width: 40, height: 40)
+                .overlay(Text(avatar).font(.subheadline.bold()).foregroundStyle(.white))
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title).font(.subheadline.weight(.semibold)).lineLimit(1)
+                Text(sub).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+            }
+            Spacer()
+            Text(time).font(.caption).foregroundStyle(.tertiary)
+        }
+        .padding(.horizontal, 12).frame(minHeight: 60)
+    }
+
+    private var feedDivider: some View { Divider().overlay(Color.white.opacity(0.08)).padding(.leading, 64) }
+    #endif
 
     #if DEBUG
     private func pictureHeader(_ kicker: String, title: String) -> some View {

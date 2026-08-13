@@ -14,12 +14,22 @@ struct EODActivity: Decodable, Identifiable, Sendable {
     let shows: Int?
     let noShows: Int?
     let closes: Int?
+    // Team-week detail (portal team-week.tsx): wins, blockers, closer/csm fields.
+    let callsTaken: Int?
+    let cashCollected: Double?
+    let studentCheckins: Int?
+    let loomsReviewed: Int?
+    let wins: String?
+    let blockers: String?
 
     enum CodingKeys: String, CodingKey {
         case id, userId = "user_id", reportDate = "report_date"
         case dials, leadsContacted = "leads_contacted", dmsSent = "dms_sent", convosStarted = "convos_started"
         case callsBooked = "calls_booked", callsScheduled = "calls_scheduled"
         case shows, noShows = "no_shows", closes
+        case callsTaken = "calls_taken", cashCollected = "cash_collected"
+        case studentCheckins = "student_checkins", loomsReviewed = "looms_reviewed"
+        case wins, blockers
     }
 }
 

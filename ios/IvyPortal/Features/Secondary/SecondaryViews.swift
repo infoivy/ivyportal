@@ -5,6 +5,7 @@ private struct PortalDetail: Identifiable {
     let title: String
     let message: String
     let symbol: String
+    let entry: MoreEntry
 }
 
 struct MoreView: View {
@@ -22,7 +23,7 @@ struct MoreView: View {
                     VStack(spacing: 0) {
                         ForEach(Array(entries.enumerated()), id: \.element) { index, entry in
                             Button {
-                                detail = PortalDetail(title: entry.title, message: entry.detail, symbol: entry.symbol)
+                                detail = PortalDetail(title: entry.title, message: entry.detail, symbol: entry.symbol, entry: entry)
                             } label: {
                                 HStack {
                                     Image(systemName: entry.symbol).frame(width: 28).foregroundStyle(.secondary)
@@ -107,15 +108,90 @@ private struct PortalDetailSheet: View {
                 Spacer()
                 Button("Done") { dismiss() }.frame(minHeight: 48)
             }
-            Text(detail.message).font(.body).foregroundStyle(.secondary)
-            Text("This native surface will use verified Ivy Portal data when the corresponding service is connected.")
-                .font(.caption).foregroundStyle(.tertiary)
-            Spacer()
+            if detail.entry == .teamAdministration {
+                TeamAdministrationView()
+            } else {
+                Text(detail.message).font(.body).foregroundStyle(.secondary)
+                Text("This native surface will use verified Ivy Portal data when the corresponding service is connected.")
+                    .font(.caption).foregroundStyle(.tertiary)
+                Spacer()
+            }
         }
         .padding(24)
-        .presentationDetents([.medium])
+        .presentationDetents([.large])
         .presentationDragIndicator(.visible)
         .presentationBackground(ivySurface)
+    }
+}
+
+/// Team administration (moved out of Performance): the live roster with roles.
+private struct TeamAdministrationView: View {
+    @State private var rows: [TeamMemberRow] = []
+    @State private var loading = false
+    @State private var loadError: String?
+
+    private var signedIn: Bool { AuthStore.shared.isSignedIn }
+
+    var body: some View {
+        Group {
+            if signedIn {
+                liveContent
+            } else {
+                fixtureContent
+            }
+        }
+        .task { await loadIfNeeded() }
+    }
+
+    private func loadIfNeeded() async {
+        guard signedIn, rows.isEmpty else { return }
+        loading = true
+        defer { loading = false }
+        do {
+            rows = try await PortalAPI.shared.performanceSummary(days: 7).rows
+            loadError = nil
+        } catch {
+            loadError = "Could not load the team."
+        }
+    }
+
+    @ViewBuilder private var liveContent: some View {
+        if !rows.isEmpty {
+            ScrollView {
+                SurfaceCard(padding: 6) {
+                    VStack(spacing: 0) {
+                        ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
+                            EntityRow(name: row.name, value: row.role, color: ivyBlue, subtitle: "\(row.eodDays)/7 EODs this week")
+                            if index < rows.count - 1 { Divider().overlay(Color.white.opacity(0.08)).padding(.leading, 60) }
+                        }
+                    }
+                }
+            }
+        } else if loading {
+            SkeletonCards(count: 4, height: 64)
+        } else {
+            StatusCard(symbol: "exclamationmark.triangle", title: "Team unavailable", message: loadError ?? "Sign in to load the team.", retry: { Task { await loadIfNeeded() } })
+        }
+    }
+
+    private var fixtureContent: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                Text("Members and roles").font(.subheadline).foregroundStyle(.secondary)
+                SurfaceCard(padding: 6) {
+                    VStack(spacing: 0) {
+                        EntityRow(name: "Haroon Quraishi", value: "setter", color: ivyPurple, subtitle: "Phone · 6/7 EODs")
+                        Divider().overlay(Color.white.opacity(0.08)).padding(.leading, 60)
+                        EntityRow(name: "Masood Ali", value: "setter", color: ivyPink, subtitle: "Phone · 5/7 EODs")
+                        Divider().overlay(Color.white.opacity(0.08)).padding(.leading, 60)
+                        EntityRow(name: "Faizan", value: "csm", color: ivyTeal, subtitle: "Fulfillment lead")
+                        Divider().overlay(Color.white.opacity(0.08)).padding(.leading, 60)
+                        EntityRow(name: "Abu Bilal", value: "closer", color: ivyBlue, subtitle: "Sales lead")
+                    }
+                }
+                Text("Debug fixture · Sign in for the live roster").font(.caption).foregroundStyle(.tertiary)
+            }
+        }
     }
 }
 

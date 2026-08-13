@@ -9,12 +9,18 @@ final class IvyPortalInteractionTests: XCTestCase {
         return app
     }
 
-    func testHomeShowsRolePicturePicker() {
+    func testHomeShowsYourItemsBannerAndActivity() {
         let app = launch()
-        XCTAssertTrue(app.buttons["Sales"].waitForExistence(timeout: 3))
-        XCTAssertTrue(app.buttons["Fulfillment"].exists)
-        XCTAssertTrue(app.buttons["Leadership"].exists)
-        XCTAssertTrue(app.buttons["Personal"].exists)
+        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS 'Your items'")).firstMatch.waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["Latest activity"].exists)
+    }
+
+    func testYourItemsBannerRoutesToWork() {
+        let app = launch()
+        let banner = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Your items'")).firstMatch
+        XCTAssertTrue(banner.waitForExistence(timeout: 3))
+        banner.tap()
+        XCTAssertTrue(app.staticTexts["Work"].waitForExistence(timeout: 3))
     }
 
     func testSalesPictureTilesRouteIntoWork() {
@@ -33,20 +39,11 @@ final class IvyPortalInteractionTests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Clients"].waitForExistence(timeout: 3))
     }
 
-    func testUpcomingEventOpensDetailSheet() {
-        let app = launch()
-        let event = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Founder review'")).firstMatch
-        XCTAssertTrue(event.waitForExistence(timeout: 3))
-        event.tap()
-        XCTAssertTrue(app.staticTexts["Today · 5:00 PM to 5:45 PM"].waitForExistence(timeout: 3))
-    }
-
-    func testHomeOverdueOpensWorkActionItems() {
-        let app = launch()
-        let overdue = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Review overdue items'")).firstMatch
-        XCTAssertTrue(overdue.waitForExistence(timeout: 3))
-        overdue.tap()
-        XCTAssertTrue(app.staticTexts["Work"].waitForExistence(timeout: 3))
+    func testPerformanceShowsTeamWeekOpsStrip() {
+        let app = launch(destination: "performance")
+        XCTAssertTrue(app.staticTexts["Team week"].waitForExistence(timeout: 4))
+        XCTAssertTrue(app.staticTexts["Filed today"].exists)
+        XCTAssertTrue(app.staticTexts["Missed yest"].exists)
     }
 
     func testPerformanceMetricOpensDrilldown() {

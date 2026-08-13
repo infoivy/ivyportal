@@ -53,12 +53,8 @@ struct PerformanceView: View {
         switch section {
         case .weeklyReport:
             realWeeklyReport
-        case .crm:
-            crmSection
         case .eods:
             realEODs
-        case .team:
-            realTeam
         }
     }
 
@@ -229,31 +225,15 @@ struct PerformanceView: View {
         case .weeklyReport:
             filters
             reportGrid
+            teamWeekFixture
             funnel
             activitySection
             repliesCard
             scriptCard
             Text("Source: real-only submitted EOD activity · Updated just now")
                 .font(.caption).foregroundStyle(.tertiary)
-        case .crm:
-            crmSection
         case .eods:
             eodsSection
-        case .team:
-            teamSection
-        }
-    }
-
-    private var crmSection: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            Text("Close phone and Mochi DM sources, kept separate").font(.subheadline).foregroundStyle(.secondary)
-            SurfaceCard {
-                VStack(spacing: 0) {
-                    MenuRow(title: "Close CRM", detail: "Phone pipeline and leads", symbol: "phone.fill", color: .blue) { }
-                    Divider().overlay(Color.white.opacity(0.08)).padding(.leading, 56)
-                    MenuRow(title: "Mochi", detail: "DM conversations and replies", symbol: "message.fill", color: .purple) { }
-                }
-            }
         }
     }
 
@@ -280,25 +260,6 @@ struct PerformanceView: View {
                 Label("Submit my EOD", systemImage: "square.and.pencil").frame(maxWidth: .infinity, minHeight: 48)
                     .background(.white, in: RoundedRectangle(cornerRadius: 14)).foregroundStyle(.black).fontWeight(.semibold)
             }.buttonStyle(PressableButtonStyle())
-        }
-    }
-
-    private var teamSection: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            Text("All team members and roles").font(.subheadline).foregroundStyle(.secondary)
-            SurfaceCard {
-                VStack(spacing: 0) {
-                    ForEach(TeammateMetric.replies) { teammate in
-                        HStack(spacing: 12) {
-                            AvatarBadge(name: teammate.name, color: teammate.color)
-                            Text(teammate.name).font(.headline).lineLimit(1)
-                            Spacer()
-                            Text("Setter").font(.caption).foregroundStyle(.secondary)
-                        }.frame(minHeight: 62)
-                        if teammate.id != TeammateMetric.replies.last?.id { Divider().overlay(Color.white.opacity(0.08)).padding(.leading, 54) }
-                    }
-                }
-            }
         }
     }
 
@@ -413,24 +374,53 @@ struct PerformanceView: View {
         }
         .buttonStyle(PressableButtonStyle())
     }
+
+    // MARK: - Team week (portal team-week.tsx), fixture
+
+    private var teamWeekFixture: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Team week").font(.title3.bold())
+            TeamWeekView(days: Self.lastSevenDays(), members: Self.fixtureMembers())
+        }
+    }
+
+    private static func lastSevenDays() -> [String] {
+        let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"
+        return (0..<7).reversed().map { f.string(from: Calendar.current.date(byAdding: .day, value: -$0, to: Date())!) }
+    }
+
+    private static func eod(_ day: String, dials: Int?, dms: Int?, booked: Int?, wins: String? = nil, blockers: String? = nil) -> EODActivity {
+        EODActivity(id: UUID(), userId: UUID(), reportDate: day, dials: dials, leadsContacted: dms, dmsSent: dms, convosStarted: nil, callsBooked: booked, callsScheduled: nil, shows: nil, noShows: nil, closes: nil, callsTaken: nil, cashCollected: nil, studentCheckins: nil, loomsReviewed: nil, wins: wins, blockers: blockers)
+    }
+
+    private static func fixtureMembers() -> [MemberWeek] {
+        let days = lastSevenDays()
+        return [
+            MemberWeek(id: UUID(), name: "Haroon Quraishi", color: ivyPurple, role: "setter", setterType: "phone",
+                eods: days.enumerated().map { i, d in i == 5 ? eod(d, dials: 0, dms: 0, booked: 0, blockers: "Slow late afternoon") : eod(d, dials: 104, dms: 0, booked: 3, wins: i == 6 ? "Two follow-ups booked for tomorrow" : nil) },
+                weeklyLabel: "This week", weeklyValue: "18 sets · 83% show"),
+            MemberWeek(id: UUID(), name: "Masood Ali", color: ivyPink, role: "setter", setterType: "phone",
+                eods: days.enumerated().map { i, d in i == 4 ? eod(d, dials: 82, dms: 0, booked: 2, blockers: "Needed more morning slots") : eod(d, dials: 96, dms: 0, booked: 2) },
+                weeklyLabel: "This week", weeklyValue: "14 sets · 80% show"),
+            MemberWeek(id: UUID(), name: "Aalian Khan", color: ivyBlue, role: "setter", setterType: "dm",
+                eods: days.enumerated().compactMap { i, d in i >= 5 ? nil : eod(d, dials: 0, dms: 128, booked: 3, wins: i == 3 ? "Landed a whale lead" : nil) },
+                weeklyLabel: "This week", weeklyValue: "12 sets · 100% show"),
+        ]
+    }
 }
 
 private enum PerformanceSection: String, CaseIterable, Hashable {
-    case weeklyReport, crm, eods, team
+    case weeklyReport, eods
     var title: String {
         switch self {
         case .weeklyReport: "Performance"
-        case .crm: "CRM"
         case .eods: "EODs"
-        case .team: "Team"
         }
     }
     var subtitle: String {
         switch self {
         case .weeklyReport: "Weekly Report"
-        case .crm: "Close and Mochi sources"
         case .eods: "End-of-day reports"
-        case .team: "Members and roles"
         }
     }
     var pickerLabel: String {
