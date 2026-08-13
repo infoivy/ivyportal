@@ -187,11 +187,10 @@ struct HomeView: View {
                         Spacer()
                         RoundedRectangle(cornerRadius: 5).fill(ivyRaised).frame(width: 70, height: 14)
                     }
-                    RoundedRectangle(cornerRadius: 22).fill(ivySurface).frame(height: height)
+                    SkeletonBlock(height: height)
                 }
             }
         }
-        .redacted(reason: .placeholder)
         .accessibilityLabel("Loading Home")
     }
 }

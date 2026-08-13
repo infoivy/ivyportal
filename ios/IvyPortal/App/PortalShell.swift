@@ -14,7 +14,7 @@ enum DemoScenario: String, CaseIterable, Identifiable {
 }
 #endif
 
-private enum PortalSurface: Equatable {
+private enum PortalSurface: Hashable {
     case root(RootDestination)
     case payments
 }
@@ -51,6 +51,8 @@ struct PortalShell: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .safeAreaPadding(.bottom, 88)
                 .environment(\.openPortalMenu) { menuPresented = true }
+                .transition(.opacity)
+                .id(surface)
             floatingTabBar
         }
         .sheet(isPresented: $menuPresented) {
@@ -112,7 +114,7 @@ struct PortalShell: View {
     }
 
     private func selectFeature(_ feature: PortalFeature) {
-        withAnimation(.snappy(duration: 0.24)) {
+        withAnimation(ivySpring) {
             if let root = feature.rootDestination { surface = .root(root) } else { surface = .payments }
             menuPresented = false
         }
@@ -120,9 +122,9 @@ struct PortalShell: View {
 
     private func handleHomeAction(_ action: HomeAction) {
         if action == .openPayments {
-            withAnimation(.snappy(duration: 0.24)) { surface = .payments }
+            withAnimation(ivySpring) { surface = .payments }
         } else if let destination = action.destination {
-            withAnimation(.snappy(duration: 0.24)) { surface = .root(destination) }
+            withAnimation(ivySpring) { surface = .root(destination) }
         } else if action.detail == .upcomingEvent {
             upcomingPresented = true
         }
@@ -132,7 +134,7 @@ struct PortalShell: View {
         HStack(spacing: 2) {
             ForEach(destinations, id: \.self) { destination in
                 Button {
-                    withAnimation(.snappy(duration: 0.24)) { surface = .root(destination) }
+                    withAnimation(ivySpring) { surface = .root(destination) }
                 } label: {
                     VStack(spacing: 4) {
                         Image(systemName: destination.symbol).font(.system(size: 16, weight: .semibold))
@@ -196,6 +198,7 @@ private struct PortalMenuSheet: View {
         }
         .padding(.horizontal, 20).padding(.top, 24).padding(.bottom, 8)
         .background(Color.black.ignoresSafeArea())
+        .transition(.move(edge: .leading).combined(with: .opacity))
     }
 }
 

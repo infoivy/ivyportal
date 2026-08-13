@@ -107,7 +107,7 @@ struct CustomersView: View {
                 }
                 Text("Source: real students table via your portal session").font(.caption).foregroundStyle(.tertiary)
             } else if loading {
-                VStack(spacing: 16) { ProgressView(); Text("Loading students…").foregroundStyle(.secondary) }.frame(maxWidth: .infinity).padding(.vertical, 40)
+                SkeletonCards(count: 4, height: 96)
             } else {
                 StatusCard(symbol: "exclamationmark.triangle", title: "Roster unavailable", message: loadError ?? "Sign in to load verified students.", retry: { roster = nil; Task { await loadRosterIfNeeded() } })
             }
@@ -133,7 +133,7 @@ struct CustomersView: View {
                     }
                 }
             } else if loading {
-                VStack(spacing: 16) { ProgressView(); Text("Loading…").foregroundStyle(.secondary) }.frame(maxWidth: .infinity).padding(.vertical, 40)
+                SkeletonCards(count: 3, height: 96)
             } else {
                 StatusCard(symbol: "exclamationmark.triangle", title: "Unavailable", message: loadError ?? "Sign in to load CSM data.", retry: { roster = nil; Task { await loadRosterIfNeeded() } })
             }
@@ -164,7 +164,7 @@ struct CustomersView: View {
                 }
                 Text("Calls used per student open in the student detail").font(.caption).foregroundStyle(.tertiary)
             } else if loading {
-                VStack(spacing: 16) { ProgressView(); Text("Loading…").foregroundStyle(.secondary) }.frame(maxWidth: .infinity).padding(.vertical, 40)
+                SkeletonCards(count: 3, height: 96)
             } else {
                 StatusCard(symbol: "exclamationmark.triangle", title: "Unavailable", message: loadError ?? "Sign in to load 1-on-1 data.", retry: { roster = nil; Task { await loadRosterIfNeeded() } })
             }
@@ -296,7 +296,7 @@ private struct StudentDetailSheet: View {
 
     @ViewBuilder private var detailContent: some View {
         if detailLoading {
-            VStack(spacing: 16) { ProgressView(); Text("Loading student…").foregroundStyle(.secondary) }.frame(maxWidth: .infinity).padding(.vertical, 40)
+            SkeletonCards(count: 4, height: 96)
         } else if let detailError {
             StatusCard(symbol: "exclamationmark.triangle", title: "Unavailable", message: detailError, retry: { Task { await loadDetail() } })
         } else {

@@ -108,7 +108,7 @@ struct ActionItemsView: View {
                 Text("Source: real student_action_items via your portal session").font(.caption).foregroundStyle(.tertiary)
             }
         } else if realLoading {
-            VStack(spacing: 16) { ProgressView(); Text("Loading action items…").foregroundStyle(.secondary) }.frame(maxWidth: .infinity).padding(.vertical, 40)
+            SkeletonCards(count: 3, height: 96)
         } else {
             StatusCard(symbol: "exclamationmark.triangle", title: "Unavailable", message: realError ?? "Sign in to load action items.", retry: { realItems = nil; Task { await loadRealIfNeeded() } })
         }

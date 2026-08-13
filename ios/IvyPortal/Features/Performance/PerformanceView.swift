@@ -45,6 +45,8 @@ struct PerformanceView: View {
 
     @ViewBuilder private var fixtureSectionContent: some View {
         sectionContent
+            .transition(.opacity)
+            .id(section)
     }
 
     @ViewBuilder private var realSectionContent: some View {
@@ -135,7 +137,7 @@ struct PerformanceView: View {
                 }
                 Text("Source: real eods_activity_real, profiles, and user_roles via your portal session. Demo, Revenue, and CRM data are never mixed in.").font(.caption).foregroundStyle(.tertiary)
             } else if realLoading {
-                VStack(spacing: 16) { ProgressView(); Text("Loading performance…").foregroundStyle(.secondary) }.frame(maxWidth: .infinity).padding(.vertical, 40)
+                SkeletonCards(count: 4, height: 120)
             } else {
                 StatusCard(symbol: "exclamationmark.triangle", title: "Performance unavailable", message: realError ?? "Sign in to load verified performance data.", retry: { realSummary = nil; Task { await loadRealIfNeeded() } })
             }
@@ -167,7 +169,7 @@ struct PerformanceView: View {
                     }
                 }
             } else if realLoading {
-                VStack(spacing: 16) { ProgressView(); Text("Loading EODs…").foregroundStyle(.secondary) }.frame(maxWidth: .infinity).padding(.vertical, 40)
+                SkeletonCards(count: 3, height: 96)
             } else {
                 StatusCard(symbol: "exclamationmark.triangle", title: "EODs unavailable", message: realError ?? "Sign in to load verified EODs.", retry: { realSummary = nil; Task { await loadRealIfNeeded() } })
             }
@@ -192,7 +194,7 @@ struct PerformanceView: View {
                     }
                 }
             } else if realLoading {
-                VStack(spacing: 16) { ProgressView(); Text("Loading team…").foregroundStyle(.secondary) }.frame(maxWidth: .infinity).padding(.vertical, 40)
+                SkeletonCards(count: 3, height: 96)
             } else {
                 StatusCard(symbol: "exclamationmark.triangle", title: "Team unavailable", message: realError ?? "Sign in to load verified team.", retry: { realSummary = nil; Task { await loadRealIfNeeded() } })
             }
@@ -212,7 +214,7 @@ struct PerformanceView: View {
             HStack(spacing: 8) {
                 ForEach(PerformanceSection.allCases, id: \.self) { option in
                     Button(option.pickerLabel) {
-                        withAnimation(.snappy(duration: 0.24)) { section = option }
+                        withAnimation(ivySpring) { section = option }
                     }
                     .font(.subheadline.bold()).padding(.horizontal, 16).frame(minHeight: 42)
                     .background(section == option ? Color.white.opacity(0.22) : ivySurface, in: Capsule())

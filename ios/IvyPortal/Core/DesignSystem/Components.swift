@@ -178,6 +178,68 @@ struct AvatarBadge: View {
     }
 }
 
+// MARK: - Motion (locked: docs/ios/DESIGN-LANGUAGE.md §7)
+
+/// Quiet spring used for sheets, section changes, and navigation.
+let ivySpring = Animation.spring(duration: 0.34, bounce: 0.22)
+
+/// Skeleton block that matches the final card geometry while loading.
+struct SkeletonBlock: View {
+    var height: CGFloat = 120
+    var cornerRadius: CGFloat = 20
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+            .fill(ivySurface)
+            .frame(maxWidth: .infinity)
+            .frame(height: height)
+            .shimmer()
+    }
+}
+
+/// Layout-preserving skeleton for a list of cards.
+struct SkeletonCards: View {
+    var count = 3
+    var height: CGFloat = 120
+
+    var body: some View {
+        VStack(spacing: 12) {
+            ForEach(0..<count, id: \.self) { _ in SkeletonBlock(height: height) }
+        }
+        .accessibilityLabel("Loading")
+    }
+}
+
+private struct ShimmerModifier: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var phase: CGFloat = -1
+
+    func body(content: Content) -> some View {
+        if reduceMotion {
+            content.opacity(0.7)
+        } else {
+            content
+                .overlay(
+                    LinearGradient(
+                        colors: [.clear, Color.white.opacity(0.06), .clear],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                    .offset(x: phase * 400)
+                )
+                .onAppear {
+                    withAnimation(.linear(duration: 1.4).repeatForever(autoreverses: false)) {
+                        phase = 1.2
+                    }
+                }
+        }
+    }
+}
+
+extension View {
+    func shimmer() -> some View { modifier(ShimmerModifier()) }
+}
+
 struct StatusCard: View {
     let symbol: String
     let title: String
