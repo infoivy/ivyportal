@@ -12,6 +12,8 @@ let ivyPurple = Color(red: 0.69, green: 0.48, blue: 0.95)
 let ivyOrange = Color(red: 1.0, green: 0.62, blue: 0.04)         // #FF9F0A
 let ivyRed = Color(red: 1.0, green: 0.27, blue: 0.23)            // #FF453A
 let ivyMint = Color(red: 0.19, green: 0.82, blue: 0.35)          // #30D158
+// Progress-bar track: visible-but-quiet remainder (Mochi keeps it readable, not invisible).
+let ivyTrack = Color.white.opacity(0.16)
 
 private struct PortalMenuActionKey: EnvironmentKey {
     nonisolated(unsafe) static let defaultValue: () -> Void = {}
@@ -394,6 +396,24 @@ struct PairStat: View {
             Text(label).font(.caption).foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// Mochi progress bar: solid fill with a subtly visible remainder track.
+struct ProgressBar: View {
+    let progress: Double   // 0...1
+    var color: Color = .white
+    var height: CGFloat = 8
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                Capsule().fill(ivyTrack).frame(height: height)
+                Capsule().fill(color).frame(width: geo.size.width * min(max(progress, 0), 1), height: height)
+            }
+        }
+        .frame(height: height)
+        .accessibilityLabel("Progress \(Int(progress * 100)) percent")
     }
 }
 

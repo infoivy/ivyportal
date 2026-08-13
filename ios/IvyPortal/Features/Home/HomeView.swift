@@ -289,13 +289,7 @@ struct HomeView: View {
                         Spacer()
                         StatusPill(title: "Pending EOD", color: ivyOrange)
                     }
-                    GeometryReader { geo in
-                        ZStack(alignment: .leading) {
-                            Capsule().fill(ivyRaised).frame(height: 8)
-                            Capsule().fill(Color.white).frame(width: geo.size.width * 0.72, height: 8)
-                        }
-                    }
-                    .frame(height: 8)
+                    ProgressBar(progress: 0.72)
                     Text("100 dials · 3 sets target").font(.subheadline).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
