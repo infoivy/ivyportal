@@ -36,6 +36,12 @@ struct PortalShell: View {
     @State private var workTab: WorkTab = .actionItems
     #if DEBUG
     @State private var scenario = DemoScenario.launchScenario
+    @State private var homePicture: HomePicture = {
+        let args = ProcessInfo.processInfo.arguments
+        guard let i = args.firstIndex(of: "-homePicture"), args.indices.contains(i + 1),
+              let p = HomePicture(rawValue: args[i + 1]) else { return .sales }
+        return p
+    }()
     #endif
 
     private var rootSelection: RootDestination {
@@ -97,7 +103,7 @@ struct PortalShell: View {
             switch selection {
             case .home:
                 #if DEBUG
-                HomeView(scenario: $scenario, onAction: handleHomeAction)
+                HomeView(scenario: $scenario, picture: $homePicture, onAction: handleHomeAction)
                 #else
                 HomeView(onAction: handleHomeAction)
                 #endif
@@ -121,12 +127,15 @@ struct PortalShell: View {
     }
 
     private func handleHomeAction(_ action: HomeAction) {
-        if action == .openPayments {
-            withAnimation(ivySpring) { surface = .payments }
+        if let detail = action.detail, detail == .upcomingEvent {
+            upcomingPresented = true
+            return
+        }
+        if let tab = action.workTab {
+            workTab = tab
+            withAnimation(ivySpring) { surface = .root(.work) }
         } else if let destination = action.destination {
             withAnimation(ivySpring) { surface = .root(destination) }
-        } else if action.detail == .upcomingEvent {
-            upcomingPresented = true
         }
     }
 

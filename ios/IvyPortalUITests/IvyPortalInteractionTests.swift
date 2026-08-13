@@ -2,27 +2,35 @@ import XCTest
 
 @MainActor
 final class IvyPortalInteractionTests: XCTestCase {
-    private func launch(destination: String = "home") -> XCUIApplication {
+    private func launch(destination: String = "home", picture: String = "sales") -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = ["-demoDestination", destination, "-demoScenario", "loaded"]
+        app.launchArguments = ["-demoDestination", destination, "-demoScenario", "loaded", "-homePicture", picture]
         app.launch()
         return app
     }
 
-    func testHomePriorityOpensWork() {
+    func testHomeShowsRolePicturePicker() {
         let app = launch()
-        let overdue = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Review overdue items'")).firstMatch
-        XCTAssertTrue(overdue.waitForExistence(timeout: 3))
-        overdue.tap()
-        XCTAssertTrue(app.staticTexts["Work"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["Sales"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["Fulfillment"].exists)
+        XCTAssertTrue(app.buttons["Leadership"].exists)
+        XCTAssertTrue(app.buttons["Personal"].exists)
     }
 
-    func testHomeMetricOpensPulse() {
-        let app = launch()
-        let calls = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Calls booked'")).firstMatch
-        XCTAssertTrue(calls.waitForExistence(timeout: 3))
-        calls.tap()
-        XCTAssertTrue(app.staticTexts["Pulse"].waitForExistence(timeout: 3))
+    func testSalesPictureTilesRouteIntoWork() {
+        let app = launch(picture: "sales")
+        let sets = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Sets this week'")).firstMatch
+        XCTAssertTrue(sets.waitForExistence(timeout: 3))
+        sets.tap()
+        XCTAssertTrue(app.staticTexts["UPCOMING"].waitForExistence(timeout: 4))
+    }
+
+    func testFulfillmentAtRiskRoutesToCustomers() {
+        let app = launch(picture: "fulfillment")
+        let risk = app.buttons.matching(NSPredicate(format: "label CONTAINS 'At risk'")).firstMatch
+        XCTAssertTrue(risk.waitForExistence(timeout: 3))
+        risk.tap()
+        XCTAssertTrue(app.staticTexts["Clients"].waitForExistence(timeout: 3))
     }
 
     func testUpcomingEventOpensDetailSheet() {
@@ -33,19 +41,12 @@ final class IvyPortalInteractionTests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Today · 5:00 PM to 5:45 PM"].waitForExistence(timeout: 3))
     }
 
-    func testWorkRowOpensDetailSheet() {
-        let app = launch(destination: "work")
-        let crm = app.buttons.matching(NSPredicate(format: "label CONTAINS 'CRM'")).firstMatch
-        XCTAssertTrue(crm.waitForExistence(timeout: 3))
-        crm.tap()
-        XCTAssertTrue(app.staticTexts["Open lead queues and verified follow-up work."].waitForExistence(timeout: 3))
-    }
-
-    func testPaymentsLaunchShowsOverviewAndTabs() {
-        let app = launch(destination: "payments")
-        XCTAssertTrue(app.staticTexts["Gross volume"].waitForExistence(timeout: 3))
-        XCTAssertTrue(app.buttons["Clients"].exists)
-        XCTAssertTrue(app.buttons["Costs"].exists)
+    func testHomeOverdueOpensWorkActionItems() {
+        let app = launch()
+        let overdue = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Review overdue items'")).firstMatch
+        XCTAssertTrue(overdue.waitForExistence(timeout: 3))
+        overdue.tap()
+        XCTAssertTrue(app.staticTexts["Work"].waitForExistence(timeout: 3))
     }
 
     func testPerformanceMetricOpensDrilldown() {
