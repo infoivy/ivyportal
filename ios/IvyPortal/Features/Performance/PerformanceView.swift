@@ -342,11 +342,11 @@ struct PerformanceView: View {
     private var funnel: some View {
         SurfaceCard {
             VStack(spacing: 0) {
-                FunnelRow(symbol: "person.crop.circle.badge.plus", color: .pink, title: "New leads", value: "101")
+                FunnelRow(title: "New leads", value: "101", symbol: "person.crop.circle.badge.plus", color: .pink)
                 Divider().overlay(Color.white.opacity(0.08))
-                FunnelRow(symbol: "star.fill", color: .orange, title: "Qualified", value: "1")
+                FunnelRow(title: "Qualified", value: "1", symbol: "star.fill", color: .orange)
                 Divider().overlay(Color.white.opacity(0.08))
-                FunnelRow(symbol: "dollarsign", color: ivyGreen, title: "Won", value: "0")
+                FunnelRow(title: "Won", value: "0", symbol: "dollarsign", color: ivyGreen)
             }
         }
     }
@@ -540,20 +540,6 @@ private struct SplitMetricCard: View {
                 .frame(minHeight: 138, alignment: .top)
             }
         }.buttonStyle(PressableButtonStyle())
-    }
-}
-
-private struct FunnelRow: View {
-    let symbol: String
-    let color: Color
-    let title, value: String
-    var body: some View {
-        HStack(spacing: 14) {
-            Image(systemName: symbol).foregroundStyle(.white).frame(width: 30, height: 30).background(color, in: RoundedRectangle(cornerRadius: 9))
-            Text(title).font(.headline)
-            Spacer()
-            Text(value).font(.title2.bold()).monospacedDigit()
-        }.frame(minHeight: 64)
     }
 }
 

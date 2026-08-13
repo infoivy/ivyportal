@@ -203,3 +203,124 @@ struct StatusCard: View {
         }
     }
 }
+// MARK: - Mochi design language (locked: docs/ios/DESIGN-LANGUAGE.md)
+
+struct ScreenTitle: View {
+    let title: String
+    var subtitle = ""
+
+    var body: some View {
+        VStack(spacing: 6) {
+            Text(title)
+                .font(.largeTitle.bold())
+                .tracking(-0.6)
+                .accessibilityAddTraits(.isHeader)
+            if !subtitle.isEmpty {
+                Text(subtitle)
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
+struct IconSquare: View {
+    let symbol: String
+    let color: Color
+    var size: CGFloat = 32
+
+    var body: some View {
+        Image(systemName: symbol)
+            .font(.system(size: size * 0.45, weight: .semibold))
+            .foregroundStyle(.white)
+            .frame(width: size, height: size)
+            .background(color, in: RoundedRectangle(cornerRadius: size * 0.28, style: .continuous))
+            .accessibilityHidden(true)
+    }
+}
+
+/// Mochi metric card: icon square + small title + big number + context.
+struct MetricNumberCard: View {
+    let title: String
+    let value: String
+    let context: String
+    let symbol: String
+    let color: Color
+    var action: (() -> Void)?
+
+    var body: some View {
+        Button { action?() } label: {
+            SurfaceCard {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        IconSquare(symbol: symbol, color: color, size: 30)
+                        Spacer()
+                        if action != nil {
+                            Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(.tertiary)
+                        }
+                    }
+                    Text(title).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                    Text(value).font(.system(.title, design: .rounded, weight: .semibold)).monospacedDigit()
+                    Text(context).font(.caption2).foregroundStyle(color).lineLimit(2)
+                }
+                .frame(maxWidth: .infinity, minHeight: 116, alignment: .leading)
+            }
+        }
+        .buttonStyle(PressableButtonStyle())
+        .disabled(action == nil)
+        .accessibilityElement(children: .combine)
+        .accessibilityHint(action == nil ? "" : "Opens details")
+    }
+}
+
+/// Mochi funnel/stage row: colored icon square + label + count + chevron.
+struct FunnelRow: View {
+    let title: String
+    let value: String
+    let symbol: String
+    let color: Color
+    var action: (() -> Void)? = nil
+
+    var body: some View {
+        Button { action?() } label: {
+            HStack(spacing: 14) {
+                IconSquare(symbol: symbol, color: color, size: 28)
+                Text(title).font(.subheadline.weight(.semibold))
+                Spacer()
+                Text(value).font(.subheadline.bold()).monospacedDigit()
+                Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(.tertiary)
+            }
+            .frame(minHeight: 50)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PressableButtonStyle())
+    }
+}
+
+struct SectionLabel: View {
+    let title: String
+
+    var body: some View {
+        Text(title.uppercased())
+            .font(.caption.bold())
+            .tracking(1)
+            .foregroundStyle(.secondary)
+    }
+}
+
+/// Stacked label/value pair inside a card (Mochi pair style, e.g. reply rate / median time).
+struct PairStat: View {
+    let value: String
+    let label: String
+    var color: Color = .white
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(value).font(.system(.title2, design: .rounded, weight: .semibold)).monospacedDigit().foregroundStyle(color)
+            Text(label).font(.caption).foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}

@@ -7,58 +7,6 @@ private struct PortalDetail: Identifiable {
     let symbol: String
 }
 
-struct WorkView: View {
-    let openPayments: () -> Void
-    private let items = [
-        ("Action items", "2 overdue · 5 open", "checklist", Color.orange, "Review assigned, overdue, and completed action items."),
-        ("Calendar", "3 calls today", "calendar", Color.blue, "View today’s calls and scheduled reviews."),
-        ("CRM", "Lead queues and follow-up", "tray.full.fill", Color.purple, "Open lead queues and verified follow-up work."),
-        ("Money in", "Deals and installments", "banknote.fill", ivyGreen, "Review verified deals, installments, and payment matching."),
-        ("Team chat", "Operational updates", "bubble.left.and.bubble.right.fill", Color.cyan, "Read operational team updates."),
-    ]
-    @State private var detail: PortalDetail?
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                ScreenHeader(title: "Work", subtitle: "Queues that need action")
-                SurfaceCard {
-                    VStack(spacing: 0) {
-                        ForEach(Array(items.enumerated()), id: \.element.0) { index, item in
-                            Button {
-                                if item.0 == "Money in" {
-                                    openPayments()
-                                } else {
-                                    detail = PortalDetail(title: item.0, message: item.4, symbol: item.2)
-                                }
-                            } label: {
-                                HStack(spacing: 14) {
-                                    Image(systemName: item.2).foregroundStyle(item.3).frame(width: 28)
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(item.0).font(.headline)
-                                        Text(item.1).font(.subheadline).foregroundStyle(.secondary)
-                                    }
-                                    Spacer()
-                                    Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(.tertiary)
-                                }
-                                .frame(minHeight: 64)
-                                .contentShape(Rectangle())
-                            }
-                            .buttonStyle(PressableButtonStyle())
-                            if index < items.count - 1 {
-                                Divider().overlay(Color.white.opacity(0.08)).padding(.leading, 42)
-                            }
-                        }
-                    }
-                }
-            }
-            .padding(.horizontal, 20).padding(.top, 10).padding(.bottom, 112)
-        }
-        .scrollIndicators(.hidden)
-        .sheet(item: $detail) { PortalDetailSheet(detail: $0) }
-    }
-}
-
 struct MoreView: View {
     let entries: [MoreEntry]
     @State private var detail: PortalDetail?

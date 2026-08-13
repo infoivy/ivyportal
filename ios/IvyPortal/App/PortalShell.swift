@@ -33,6 +33,7 @@ struct PortalShell: View {
     @State private var menuPresented = false
     @State private var performanceMetric: PerformanceMetric?
     @State private var upcomingPresented = false
+    @State private var workTab: WorkTab = .actionItems
     #if DEBUG
     @State private var scenario = DemoScenario.launchScenario
     #endif
@@ -98,7 +99,11 @@ struct PortalShell: View {
                 #else
                 HomeView(onAction: handleHomeAction)
                 #endif
-            case .work: WorkView(openPayments: { surface = .payments })
+            case .work:
+                WorkHubView(tab: $workTab, onOpenPulse: { source in
+                    surface = .root(.performance)
+                    performanceMetric = source == .close ? .bookedCalls : .totalMessages
+                })
             case .performance: PerformanceView(showDetail: { performanceMetric = $0 })
             case .customers: CustomersView()
             case .more: MoreView(entries: RoleDestinationPolicy.moreEntries(for: roles))
