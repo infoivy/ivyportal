@@ -12,7 +12,7 @@ final class IvyPortalInteractionTests: XCTestCase {
     func testHomeShowsYourItemsBannerAndActivity() {
         let app = launch()
         XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS 'Your items'")).firstMatch.waitForExistence(timeout: 3))
-        XCTAssertTrue(app.staticTexts["Latest activity"].exists)
+        XCTAssertTrue(app.staticTexts["Latest Activity"].exists)
     }
 
     func testYourItemsBannerRoutesToWork() {

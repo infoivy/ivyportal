@@ -352,40 +352,84 @@ struct HomeView: View {
         .buttonStyle(PressableButtonStyle())
     }
 
-    /// Mochi "Latest activity" full-width feed.
+    /// Mochi "Latest activity" full-width feed — overlapping icon+avatar badge,
+    /// indented sub-line with a mini actor icon, mixed event types.
     private var activityFeed: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Latest activity").font(.title3.bold())
+                Text("Latest Activity").font(.title3.bold())
                 Spacer()
-                Button("See all") { onAction(.reviewOverdue) }.font(.caption.bold()).foregroundStyle(ivyTeal)
+                Button { onAction(.reviewOverdue) } label: {
+                    HStack(spacing: 3) { Text("See all"); Image(systemName: "chevron.right") }
+                        .font(.caption.bold()).foregroundStyle(ivyBlue)
+                }
             }
-            SurfaceCard(padding: 6) {
+            SurfaceCard(padding: 8) {
                 VStack(spacing: 0) {
-                    activityRow(avatar: "H", color: ivyPink, title: "@ahmed became a lead", sub: "Setter Haroon marked lead made contact", time: "1h")
+                    activityRow(icon: "person.badge.plus", iconColor: ivyPink, avatar: "A", avatarColor: ivySurface, main: "@ab_wahid_cp", action: "became a lead", time: "1h", subIcon: "H", sub: "Setter Haroon Quraishi marked lead made contact")
                     feedDivider
-                    activityRow(avatar: "Y", color: ivyPurple, title: "@yusuf is in contact", sub: "Lead replied to DM", time: "2h")
+                    activityRow(icon: "message.fill", iconColor: ivyPurple, avatar: "U", avatarColor: ivyPurple, main: "@uroofashahriyar", action: "is in contact", time: "2h", subIcon: "message.fill", sub: "Lead replied to DM")
                     feedDivider
-                    activityRow(avatar: "A", color: ivyBlue, title: "@amina was handed over", sub: "Originally assigned to Abdelmalik", time: "2h")
+                    activityRow(icon: "person.badge.plus", iconColor: ivyBlue, avatar: "U", avatarColor: ivyPurple, main: "@uroofashahriyar", action: "was handed over", time: "2h", subIcon: "H", sub: "Originally assigned to Abdelmalik Abu Abdurrahman")
                     feedDivider
-                    activityRow(avatar: "M", color: ivyMint, title: "@maryam booked a call", sub: "Set for tomorrow 4:00 PM", time: "3h")
+                    activityRow(icon: "note.text", iconColor: ivyTeal, avatar: "F", avatarColor: ivySurface, main: "CSM note", action: "on Amina H.", time: "3h", subIcon: "F", sub: "Faizan logged a check-in note")
+                    feedDivider
+                    activityRow(icon: "checklist", iconColor: ivyOrange, avatar: "Y", avatarColor: ivySurface, main: "Action item", action: "added for Yusuf K.", time: "5h", subIcon: "checkmark.circle", sub: "Review roleplay recording · due Friday")
                 }
             }
         }
     }
 
-    private func activityRow(avatar: String, color: Color, title: String, sub: String, time: String) -> some View {
-        HStack(spacing: 12) {
-            Circle().fill(color.opacity(0.9)).frame(width: 40, height: 40)
-                .overlay(Text(avatar).font(.subheadline.bold()).foregroundStyle(.white))
-            VStack(alignment: .leading, spacing: 3) {
-                Text(title).font(.subheadline.weight(.semibold)).lineLimit(1)
+    /// One activity row: overlapping event-icon + actor avatar on the left, then
+    /// main line (username bold white + action grey + timestamp) and an indented
+    /// sub-line with a mini icon and grey detail text.
+    private func activityRow(icon: String, iconColor: Color, avatar: String, avatarColor: Color, main: String, action: String, time: String, subIcon: String, sub: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .center, spacing: 12) {
+                overlapBadge(icon: icon, iconColor: iconColor, avatar: avatar, avatarColor: avatarColor)
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text(main).font(.subheadline.weight(.semibold))
+                    Text(action).font(.subheadline).foregroundStyle(.secondary)
+                }
+                .lineLimit(1)
+                Spacer(minLength: 6)
+                Text(time).font(.caption).foregroundStyle(.tertiary)
+            }
+            HStack(spacing: 8) {
+                miniIcon(subIcon)
                 Text(sub).font(.caption).foregroundStyle(.secondary).lineLimit(1)
             }
-            Spacer()
-            Text(time).font(.caption).foregroundStyle(.tertiary)
+            .padding(.leading, 52)
         }
-        .padding(.horizontal, 12).frame(minHeight: 60)
+        .padding(.horizontal, 12).padding(.vertical, 12)
+    }
+
+    /// Overlapping badge: colored event icon in front, actor avatar behind-right.
+    private func overlapBadge(icon: String, iconColor: Color, avatar: String, avatarColor: Color) -> some View {
+        ZStack(alignment: .bottomTrailing) {
+            Circle().fill(avatarColor).frame(width: 42, height: 42)
+                .overlay(Text(avatar).font(.subheadline.bold()).foregroundStyle(.white))
+                .offset(x: 8)
+            Circle().fill(iconColor).frame(width: 34, height: 34)
+                .overlay(badgeGlyph(icon).font(.system(size: 14, weight: .semibold)).foregroundStyle(.white))
+                .overlay(Circle().stroke(Color.black, lineWidth: 2))
+                .offset(x: -4, y: 4)
+        }
+        .frame(width: 50, height: 46)
+    }
+
+    @ViewBuilder private func badgeGlyph(_ icon: String) -> some View {
+        if icon.count == 1 { Text(icon) } else { Image(systemName: icon) }
+    }
+
+    @ViewBuilder private func miniIcon(_ token: String) -> some View {
+        if token.count == 1 {
+            Circle().fill(ivyRaised).frame(width: 20, height: 20)
+                .overlay(Text(token).font(.system(size: 10, weight: .bold)).foregroundStyle(.white))
+        } else {
+            Circle().fill(ivyRaised).frame(width: 20, height: 20)
+                .overlay(Image(systemName: token).font(.system(size: 9, weight: .bold)).foregroundStyle(.white))
+        }
     }
 
     private var feedDivider: some View { Divider().overlay(Color.white.opacity(0.08)).padding(.leading, 64) }

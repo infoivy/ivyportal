@@ -368,17 +368,15 @@ struct MoneyInView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                ScreenHeader(title: "Money In", subtitle: "Applied, received, deals, plans, and setter attribution", compact: true)
-                ScrollView(.horizontal) {
-                    HStack(spacing: 8) {
-                        ForEach(MoneyInTab.allCases, id: \.self) { option in
-                            Button(option.label) { tab = option }
-                                .font(.subheadline.bold()).padding(.horizontal, 16).frame(minHeight: 42)
-                                .background(tab == option ? Color.white.opacity(0.22) : ivySurface, in: Capsule())
-                        }
+            VStack(alignment: .leading, spacing: 20) {
+                HStack(spacing: 8) {
+                    ForEach(MoneyInTab.allCases, id: \.self) { option in
+                        Button(option.label) { tab = option }
+                            .font(.subheadline.bold()).padding(.horizontal, 16).frame(minHeight: 40)
+                            .background(tab == option ? Color.white.opacity(0.22) : ivySurface, in: Capsule())
+                            .foregroundStyle(tab == option ? .white : .secondary)
                     }
-                }.scrollIndicators(.hidden)
+                }
                 if signedIn {
                     liveContent
                 } else {

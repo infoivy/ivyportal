@@ -640,24 +640,7 @@ struct PerformanceDetailSheet: View {
         }
     }
 
-    private var activityDetail: some View {
-        VStack(alignment: .leading, spacing: 22) {
-            Text("543").font(.system(size: 52, weight: .semibold, design: .rounded)).monospacedDigit()
-            Text("Messages sent").foregroundStyle(.secondary)
-            HStack { FilterChip(title: "This week", symbol: "calendar"); FilterChip(title: "All members", symbol: "person.2") }
-            Chart(HourActivity.points) { point in
-                BarMark(x: .value("Hour", point.label), y: .value("Messages", point.value)).foregroundStyle(.blue.gradient).cornerRadius(4)
-            }.chartYAxis { AxisMarks(position: .trailing) }.frame(height: 230)
-            SurfaceCard {
-                VStack(spacing: 0) {
-                    ForEach(HourActivity.points.prefix(6)) { point in
-                        HStack { Text(point.label).foregroundStyle(.secondary); Spacer(); Text("\(point.value)").font(.headline).monospacedDigit() }.frame(minHeight: 52)
-                        Divider().overlay(Color.white.opacity(0.08))
-                    }
-                }
-            }
-        }
-    }
+    private var activityDetail: some View { SetterActivityDetail() }
 
     private var replyDetail: some View {
         VStack(alignment: .leading, spacing: 24) {
