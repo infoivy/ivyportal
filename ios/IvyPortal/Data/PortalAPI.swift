@@ -97,6 +97,48 @@ struct HomeQueue: Sendable {
     var overduePayments = 0
 }
 
+// MARK: - CSM workspace models
+
+struct StudentCall: Decodable, Identifiable, Sendable {
+    let id: UUID
+    let studentId: UUID
+    let callDate: String
+    let coachNotes: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id, studentId = "student_id", callDate = "call_date", coachNotes = "coach_notes"
+    }
+}
+
+struct CSMNote: Decodable, Identifiable, Sendable {
+    let id: UUID
+    let studentId: UUID
+    let note: String
+    let createdAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id, studentId = "student_id", note, createdAt = "created_at"
+    }
+}
+
+struct StudentEOD: Decodable, Identifiable, Sendable {
+    let id: UUID
+    let studentId: UUID
+    let reportDate: String
+    let applicationsSubmitted: Int
+    let outreachSent: Int
+    let replies: Int
+    let interviews: Int
+    let wins: String?
+    let blockers: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id, studentId = "student_id", reportDate = "report_date"
+        case applicationsSubmitted = "applications_submitted", outreachSent = "outreach_sent"
+        case replies, interviews, wins, blockers
+    }
+}
+
 @MainActor
 final class PortalAPI {
     static let shared = PortalAPI()
@@ -151,6 +193,44 @@ final class PortalAPI {
         try await client().from("students")
             .select("id, full_name, email, phase, status, coach_id")
             .order("full_name")
+            .execute()
+            .value
+    }
+
+    // MARK: - CSM workspace reads
+
+    func studentCalls(studentId: UUID) async throws -> [StudentCall] {
+        try await client().from("student_calls")
+            .select("id, student_id, call_date, coach_notes")
+            .eq("student_id", value: studentId)
+            .order("call_date", ascending: false)
+            .execute()
+            .value
+    }
+
+    func csmNotes(studentId: UUID) async throws -> [CSMNote] {
+        try await client().from("csm_student_notes")
+            .select("id, student_id, note, created_at")
+            .eq("student_id", value: studentId)
+            .order("created_at", ascending: false)
+            .execute()
+            .value
+    }
+
+    func studentEODs(studentId: UUID) async throws -> [StudentEOD] {
+        try await client().from("student_eods")
+            .select("id, student_id, report_date, applications_submitted, outreach_sent, replies, interviews, wins, blockers")
+            .eq("student_id", value: studentId)
+            .order("report_date", ascending: false)
+            .execute()
+            .value
+    }
+
+    func studentActionItems(studentId: UUID) async throws -> [StudentActionItem] {
+        try await client().from("student_action_items")
+            .select("id, student_id, text, due_date, done")
+            .eq("student_id", value: studentId)
+            .order("due_date", ascending: true)
             .execute()
             .value
     }

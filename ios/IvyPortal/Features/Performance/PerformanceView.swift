@@ -456,7 +456,7 @@ private struct MenuRow: View {
 }
 
 
-private struct PerformanceStatCard: View {
+struct PerformanceStatCard: View {
     let title, value, context: String
     let color: Color
     var action: (() -> Void)?

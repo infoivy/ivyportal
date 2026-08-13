@@ -59,62 +59,6 @@ struct WorkView: View {
     }
 }
 
-struct CustomersView: View {
-    private let customers = [
-        ("Amina H.", "Missing weekly check-in", Color.orange),
-        ("Yusuf K.", "Coaching follow-up due", Color.red),
-        ("Maryam A.", "Onboarding in progress", Color.blue),
-    ]
-    @State private var detail: PortalDetail?
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                ScreenHeader(title: "Clients", subtitle: "Student health and delivery")
-                MetricCard(title: "Active students", value: "47", context: "3 need attention", symbol: "person.2.fill", accent: .blue) {
-                    detail = PortalDetail(title: "Active students", message: "47 active students. 3 currently need attention.", symbol: "person.2.fill")
-                }
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Needs attention").font(.title3.bold())
-                    SurfaceCard {
-                        VStack(spacing: 0) {
-                            ForEach(Array(customers.enumerated()), id: \.element.0) { index, customer in
-                                Button {
-                                    detail = PortalDetail(title: customer.0, message: customer.1, symbol: "person.crop.circle.fill")
-                                } label: {
-                                    customerRow(customer.0, customer.1, customer.2)
-                                }
-                                .buttonStyle(PressableButtonStyle())
-                                if index < customers.count - 1 {
-                                    Divider().overlay(Color.white.opacity(0.08)).padding(.leading, 56)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            .padding(.horizontal, 20).padding(.top, 10).padding(.bottom, 112)
-        }
-        .scrollIndicators(.hidden)
-        .sheet(item: $detail) { PortalDetailSheet(detail: $0) }
-    }
-
-    private func customerRow(_ name: String, _ detail: String, _ color: Color) -> some View {
-        HStack(spacing: 12) {
-            Circle().fill(color.opacity(0.18)).frame(width: 44, height: 44)
-                .overlay(Text(name.prefix(1)).font(.headline).foregroundStyle(color))
-            VStack(alignment: .leading, spacing: 3) {
-                Text(name).font(.headline)
-                Text(detail).font(.subheadline).foregroundStyle(.secondary)
-            }
-            Spacer()
-            Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(.tertiary)
-        }
-        .frame(minHeight: 64)
-        .contentShape(Rectangle())
-    }
-}
-
 struct MoreView: View {
     let entries: [MoreEntry]
     @State private var detail: PortalDetail?
