@@ -51,7 +51,6 @@ struct HomeView: View {
     private var loadedContent: some View {
         VStack(alignment: .leading, spacing: 30) {
             focusSection
-            pulseSection
             upcomingSection
             Text("Verified in Ivy Portal · Updated just now")
                 .font(.caption)
@@ -79,20 +78,6 @@ struct HomeView: View {
                         detail: "36 of 42 EODs submitted",
                         value: "86%"
                     ) { onAction(.reviewCoverage) }
-                }
-            }
-        }
-    }
-
-    private var pulseSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            sectionHeader("Pulse", detail: "Last 7 days")
-            HStack(spacing: 12) {
-                HomeMetricButton(title: "Calls booked", value: "18", trend: "+3 vs prior", accent: .blue) {
-                    onAction(.openCalls)
-                }
-                HomeMetricButton(title: "Cash collected", value: "$12.5K", trend: "4 verified deals", accent: ivyGreen) {
-                    onAction(.openPayments)
                 }
             }
         }

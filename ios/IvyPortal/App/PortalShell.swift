@@ -58,9 +58,10 @@ struct PortalShell: View {
                 selected: selectedFeature,
                 select: selectFeature
             )
-            .presentationDetents([.large])
-            .presentationDragIndicator(.visible)
-            .presentationBackground(Color.black)
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.hidden)
+            .presentationBackground(.clear)
+            .presentationCornerRadius(28)
         }
         .sheet(item: $performanceMetric) { metric in
             PerformanceDetailSheet(metric: metric)
@@ -157,32 +158,30 @@ private struct PortalMenuSheet: View {
     let select: (PortalFeature) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 28) {
+        VStack(alignment: .leading, spacing: 24) {
             HStack {
-                Text("Ivy Portal").font(.largeTitle.bold())
+                Text("Home").font(.largeTitle.bold())
                 Spacer()
                 Button { dismiss() } label: {
-                    Image(systemName: "xmark").font(.title3).frame(width: 48, height: 48).background(ivySurface, in: Circle())
+                    Image(systemName: "xmark").font(.subheadline.bold()).frame(width: 40, height: 40).background(ivySurface, in: Circle())
                 }
                 .buttonStyle(PressableButtonStyle())
                 .accessibilityLabel("Close navigation")
             }
-            Text("Navigate").font(.title2.bold()).foregroundStyle(.secondary)
-            VStack(spacing: 10) {
+            VStack(spacing: 2) {
                 ForEach(features, id: \.self) { feature in
                     Button { select(feature) } label: {
-                        HStack(spacing: 18) {
-                            Image(systemName: feature.symbol).font(.title2).frame(width: 36)
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(feature.title).font(.title3.bold())
-                                Text(feature.subtitle).font(.caption).foregroundStyle(.secondary)
-                            }
+                        HStack(spacing: 16) {
+                            Image(systemName: feature.symbol).font(.system(size: 17, weight: .semibold)).frame(width: 40, height: 40)
+                                .background(selected == feature ? Color.white.opacity(0.14) : ivySurface, in: Circle())
+                                .foregroundStyle(selected == feature ? .white : .secondary)
+                            Text(feature.title).font(.body.weight(selected == feature ? .semibold : .regular))
+                                .foregroundStyle(selected == feature ? .white : .secondary)
                             Spacer()
-                            if selected == feature { Image(systemName: "checkmark.circle.fill") }
+                            if selected == feature { Image(systemName: "checkmark").font(.caption.bold()) }
                         }
-                        .padding(18)
-                        .frame(maxWidth: .infinity, minHeight: 82, alignment: .leading)
-                        .background(selected == feature ? ivySurface : .clear, in: RoundedRectangle(cornerRadius: 22))
+                        .padding(.horizontal, 16).frame(minHeight: 60)
+                        .background(selected == feature ? Color.white.opacity(0.06) : .clear, in: RoundedRectangle(cornerRadius: 16))
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(PressableButtonStyle())
@@ -190,7 +189,8 @@ private struct PortalMenuSheet: View {
             }
             Spacer()
         }
-        .padding(24)
+        .padding(.horizontal, 20).padding(.top, 24).padding(.bottom, 8)
+        .background(Color.black.ignoresSafeArea())
     }
 }
 
@@ -214,17 +214,31 @@ private struct UpcomingEventSheet: View {
 
 private extension PortalFeature {
     var title: String {
-        switch self { case .overview: "Overview"; case .performance: "Performance"; case .payments: "Payments" }
+        switch self {
+        case .overview: "Overview"
+        case .performance: "Performance"
+        case .payments: "Money"
+        case .work: "Work"
+        case .students: "Students"
+        }
     }
     var subtitle: String {
         switch self {
         case .overview: "Priorities and funnel health"
         case .performance: "Team activity and accountability"
         case .payments: "Revenue, matching, and costs"
+        case .work: "EOD, actions, calendar, and CRM"
+        case .students: "Students, CSM, and coaching"
         }
     }
     var symbol: String {
-        switch self { case .overview: "square.grid.2x2.fill"; case .performance: "chart.pie.fill"; case .payments: "dollarsign.circle.fill" }
+        switch self {
+        case .overview: "square.grid.2x2.fill"
+        case .performance: "chart.pie.fill"
+        case .payments: "dollarsign.circle.fill"
+        case .work: "checklist"
+        case .students: "graduationcap.fill"
+        }
     }
 }
 

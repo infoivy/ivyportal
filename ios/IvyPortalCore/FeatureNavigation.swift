@@ -1,10 +1,12 @@
 public enum PortalFeature: String, CaseIterable, Hashable, Sendable {
-    case overview, performance, payments
+    case overview, performance, payments, work, students
 
     public var rootDestination: RootDestination? {
         switch self {
         case .overview: .home
         case .performance: .performance
+        case .work: .work
+        case .students: .customers
         case .payments: nil
         }
     }
@@ -45,6 +47,8 @@ public enum FeatureNavigationPolicy {
             switch feature {
             case .overview: true
             case .performance: !leadership.isDisjoint(with: roleSet)
+            case .work: true
+            case .students: !roleSet.isDisjoint(with: [.admin, .founder, .cofounder, .coach, .csm])
             case .payments: !finance.isDisjoint(with: roleSet)
             }
         }

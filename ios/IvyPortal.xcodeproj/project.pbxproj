@@ -16,6 +16,7 @@
 		474EF0ED3F9E5E4BD75F5B80 /* SecondaryViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0B6ECABB4E069E644DACEA3 /* SecondaryViews.swift */; };
 		4B3B6082562F700C0AA9E795 /* FeatureNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81596ECE61B395F450F9EF50 /* FeatureNavigation.swift */; };
 		6C6DDF963EC5117D13DE585F /* PortalShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB1C1D13B33996B4533E3598 /* PortalShell.swift */; };
+		73F79BE350AC53836331381A /* PortalConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7D5D8C7EB8E956CCC461583 /* PortalConfig.swift */; };
 		74DE9D4302D252C6829D8046 /* IvyPortalApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBCF822DA31E8719AFB8220C /* IvyPortalApp.swift */; };
 		75D08C1C1F7D558B4DC9EFEA /* FeatureNavigationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6A44331B1380EC5E1F6953D /* FeatureNavigationTests.swift */; };
 		A39D25067873C4F71C3A6A84 /* LoadStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D82CE802CAA94C209087E537 /* LoadStateTests.swift */; };
@@ -57,6 +58,7 @@
 		9506EC7B316F186C69D450C3 /* PerformanceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceView.swift; sourceTree = "<group>"; };
 		A2095E1A25B2854700574C30 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		A38ABDF5AC1EB60BA2A87B77 /* IvyPortalTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = IvyPortalTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A7D5D8C7EB8E956CCC461583 /* PortalConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortalConfig.swift; sourceTree = "<group>"; };
 		B0B6ECABB4E069E644DACEA3 /* SecondaryViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecondaryViews.swift; sourceTree = "<group>"; };
 		C8220D589EEDA534F8C68689 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		C9FAA38FA65B3A14F178C873 /* RoleDestinationPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoleDestinationPolicyTests.swift; sourceTree = "<group>"; };
@@ -110,6 +112,14 @@
 				A2095E1A25B2854700574C30 /* HomeView.swift */,
 			);
 			path = Home;
+			sourceTree = "<group>";
+		};
+		6B7DA902C7B65344AF6F9820 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				A7D5D8C7EB8E956CCC461583 /* PortalConfig.swift */,
+			);
+			path = Config;
 			sourceTree = "<group>";
 		};
 		7FE7DA77D185F3F938DCF1DA /* App */ = {
@@ -172,6 +182,7 @@
 			isa = PBXGroup;
 			children = (
 				7FE7DA77D185F3F938DCF1DA /* App */,
+				6B7DA902C7B65344AF6F9820 /* Config */,
 				3CBD6853444C94E1D4E9225C /* Core */,
 				5CC04476489806B9E0648B63 /* Features */,
 				96F29AF5B11DA0AF3329EA63 /* Resources */,
@@ -343,6 +354,7 @@
 				EB3B13FA2F5475E1D155D286 /* LoadState.swift in Sources */,
 				3C120183E7355A84ABFE60C5 /* PaymentsView.swift in Sources */,
 				21DB59557AC0F4793A1DA576 /* PerformanceView.swift in Sources */,
+				73F79BE350AC53836331381A /* PortalConfig.swift in Sources */,
 				6C6DDF963EC5117D13DE585F /* PortalShell.swift in Sources */,
 				06639E837D93A6C0E122E9D7 /* RoleDestinationPolicy.swift in Sources */,
 				474EF0ED3F9E5E4BD75F5B80 /* SecondaryViews.swift in Sources */,

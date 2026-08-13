@@ -9,12 +9,12 @@ final class FeatureNavigationTests: XCTestCase {
     func testLeadershipMenuIncludesOverviewPerformanceAndPayments() {
         XCTAssertEqual(
             FeatureNavigationPolicy.menuFeatures(for: [.founder]),
-            [.overview, .performance, .payments]
+            [.overview, .performance, .payments, .work, .students]
         )
     }
 
     func testSetterMenuOmitsLeadershipFeatures() {
-        XCTAssertEqual(FeatureNavigationPolicy.menuFeatures(for: [.setter]), [.overview])
+        XCTAssertEqual(FeatureNavigationPolicy.menuFeatures(for: [.setter]), [.overview, .work])
     }
 
     func testFeatureRoutesToExistingRootOrNativePaymentsSurface() {
