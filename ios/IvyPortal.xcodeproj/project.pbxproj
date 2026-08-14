@@ -12,6 +12,7 @@
 		0CF3EDC7E68E01CABEAA879F /* PortalSurfaces.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F0D470A19A919E4A73DDF52 /* PortalSurfaces.swift */; };
 		0F345A257EDD1ABB023022EA /* PortalAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A3FC2C67C4BDA25B4ABCC2C /* PortalAPI.swift */; };
 		0FCFF1549865FDA674A59210 /* OperationsViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD6ACF0E036155FF4A4E223E /* OperationsViews.swift */; };
+		14DA2307559AE8A9A4589FBD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 814E4A86E1B80C172C803B1C /* Assets.xcassets */; };
 		1C871F192594E2CD02119751 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 313622262ECC323AC7B8136E /* PrivacyInfo.xcprivacy */; };
 		21DB59557AC0F4793A1DA576 /* PerformanceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9506EC7B316F186C69D450C3 /* PerformanceView.swift */; };
 		25EB1150A2EA1A9E6D833411 /* IvyPortalInteractionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B7128A183BCF55AA4436966 /* IvyPortalInteractionTests.swift */; };
@@ -19,6 +20,7 @@
 		474EF0ED3F9E5E4BD75F5B80 /* SecondaryViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0B6ECABB4E069E644DACEA3 /* SecondaryViews.swift */; };
 		4B3B6082562F700C0AA9E795 /* FeatureNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81596ECE61B395F450F9EF50 /* FeatureNavigation.swift */; };
 		4E7990943F3DF74483B4FD82 /* WorkFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E2D4CCB0A7230AD9B9C0FF8 /* WorkFixtures.swift */; };
+		61FAB836D48DA81F2351DE52 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90EC329FE0116CBF73F31C75 /* SplashView.swift */; };
 		62B6E9AAF71524EC3A0801DE /* CustomersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49D8EC8940B9EDC6145C4E68 /* CustomersView.swift */; };
 		6C6DDF963EC5117D13DE585F /* PortalShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB1C1D13B33996B4533E3598 /* PortalShell.swift */; };
 		73F79BE350AC53836331381A /* PortalConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7D5D8C7EB8E956CCC461583 /* PortalConfig.swift */; };
@@ -66,6 +68,7 @@
 		310F5EDFDA87D1BF05177AC0 /* HomeAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeAction.swift; sourceTree = "<group>"; };
 		313622262ECC323AC7B8136E /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		49D8EC8940B9EDC6145C4E68 /* CustomersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomersView.swift; sourceTree = "<group>"; };
+		4DE1091E6711F7BE8002BBC9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		4E2D4CCB0A7230AD9B9C0FF8 /* WorkFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkFixtures.swift; sourceTree = "<group>"; };
 		5339A6BD1A3108EFD993F9F1 /* SetterActivityDetail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetterActivityDetail.swift; sourceTree = "<group>"; };
 		5B7128A183BCF55AA4436966 /* IvyPortalInteractionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IvyPortalInteractionTests.swift; sourceTree = "<group>"; };
@@ -73,7 +76,9 @@
 		691002273A01224D93FBBEF0 /* RoleDestinationPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoleDestinationPolicy.swift; sourceTree = "<group>"; };
 		6F3CED060763D625C62112D7 /* IvyPortal.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = IvyPortal.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		76626C605F00A4A86C3F704A /* PaymentsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaymentsView.swift; sourceTree = "<group>"; };
+		814E4A86E1B80C172C803B1C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		81596ECE61B395F450F9EF50 /* FeatureNavigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureNavigation.swift; sourceTree = "<group>"; };
+		90EC329FE0116CBF73F31C75 /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
 		9506EC7B316F186C69D450C3 /* PerformanceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceView.swift; sourceTree = "<group>"; };
 		A2095E1A25B2854700574C30 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		A38ABDF5AC1EB60BA2A87B77 /* IvyPortalTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = IvyPortalTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -194,6 +199,7 @@
 			children = (
 				DBCF822DA31E8719AFB8220C /* IvyPortalApp.swift */,
 				FB1C1D13B33996B4533E3598 /* PortalShell.swift */,
+				90EC329FE0116CBF73F31C75 /* SplashView.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -256,6 +262,8 @@
 		AA7044E877E4727A6EB154FB /* IvyPortal */ = {
 			isa = PBXGroup;
 			children = (
+				814E4A86E1B80C172C803B1C /* Assets.xcassets */,
+				4DE1091E6711F7BE8002BBC9 /* Info.plist */,
 				7FE7DA77D185F3F938DCF1DA /* App */,
 				6B7DA902C7B65344AF6F9820 /* Config */,
 				3CBD6853444C94E1D4E9225C /* Core */,
@@ -413,6 +421,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				14DA2307559AE8A9A4589FBD /* Assets.xcassets in Resources */,
 				DA5F9BBC3EF0DC724C7A012E /* Assets.xcassets in Resources */,
 				1C871F192594E2CD02119751 /* PrivacyInfo.xcprivacy in Resources */,
 				FBE25B635AA8A68B5649DF22 /* README.md in Resources */,
@@ -457,6 +466,7 @@
 				06639E837D93A6C0E122E9D7 /* RoleDestinationPolicy.swift in Sources */,
 				474EF0ED3F9E5E4BD75F5B80 /* SecondaryViews.swift in Sources */,
 				D9494512771E0B6C6711EDE9 /* SetterActivityDetail.swift in Sources */,
+				61FAB836D48DA81F2351DE52 /* SplashView.swift in Sources */,
 				8B9C9C51C2B644B5EB99582C /* TeamWeekView.swift in Sources */,
 				4E7990943F3DF74483B4FD82 /* WorkFixtures.swift in Sources */,
 			);
@@ -552,10 +562,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				INFOPLIST_KEY_CFBundleDisplayName = "Ivy Portal";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = IvyPortal/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -672,10 +680,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				INFOPLIST_KEY_CFBundleDisplayName = "Ivy Portal";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = IvyPortal/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
