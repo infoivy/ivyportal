@@ -12,8 +12,40 @@ public enum PortalFeature: String, CaseIterable, Hashable, Sendable {
     }
 }
 
-public enum PaymentsTab: String, CaseIterable, Hashable, Sendable {
-    case overview, clients, costs
+/// Clients (fulfillment) sections. Lives in Core so HomeAction and the shell
+/// can deep-route into a specific tab (tiles + tab-icon long-press jumps).
+public enum CSMTab: String, CaseIterable, Hashable, Sendable {
+    case students, csm, oneOnOne, testimonials, requests
+
+    public var label: String {
+        switch self {
+        case .students: "Students"
+        case .csm: "CSM"
+        case .oneOnOne: "1-on-1"
+        case .testimonials: "Testimonials"
+        case .requests: "Requests"
+        }
+    }
+
+    public var subtitle: String {
+        switch self {
+        case .students: "Roster, health, and records"
+        case .csm: "Check-ins and coverage"
+        case .oneOnOne: "Coaching calls and follow-up"
+        case .testimonials: "Collect student proof"
+        case .requests: "Pending access requests"
+        }
+    }
+
+    public var symbol: String {
+        switch self {
+        case .students: "graduationcap.fill"
+        case .csm: "person.2.fill"
+        case .oneOnOne: "phone.fill"
+        case .testimonials: "quote.bubble.fill"
+        case .requests: "envelope.fill"
+        }
+    }
 }
 
 public enum MetricDetailKind: Hashable, Sendable {

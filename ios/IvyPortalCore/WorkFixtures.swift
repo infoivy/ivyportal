@@ -16,23 +16,28 @@ public enum CRMSource: String, CaseIterable, Hashable, Sendable {
 }
 
 public enum MoneyInTab: String, CaseIterable, Hashable, Sendable {
-    case overview, deals, paymentPlans, setters
+    case overview, payouts, deals, paymentPlans, setters, clients, costs, expenses
+
+    /// Payouts mirrors the web page gate (admin or co-founder); every other
+    /// tab rides the Payments sheet's own leader gating.
+    public static func tabs(for roles: [PortalRole]) -> [MoneyInTab] {
+        allCases.filter { $0 != .payouts || !Set(roles).isDisjoint(with: [.admin, .cofounder]) }
+    }
 }
 
+/// Consolidated 2026-08-14 (founder feedback: "a million tabs"): Set tracker
+/// lives inside Calendar; CRM, the redundant Payments summary, and Team chat
+/// were removed; the money surface moved out of Work into the leader-only
+/// Payments sheet opened from Home tiles.
 public enum WorkTab: String, CaseIterable, Hashable, Sendable {
-    case actionItems, calendar, crm, money, myEOD, setTracker, paymentCalendar, expenses, teamChat, knowledge
+    // Order IS the chip order (founder-directed 2026-08-14: End of day first).
+    case myEOD, calendar, actionItems, knowledge
 
     public var label: String {
         switch self {
-        case .actionItems: "Actions"
+        case .myEOD: "End of day"
         case .calendar: "Calendar"
-        case .crm: "CRM"
-        case .money: "Money"
-        case .myEOD: "My EOD"
-        case .setTracker: "Set tracker"
-        case .paymentCalendar: "Payments"
-        case .expenses: "Expenses"
-        case .teamChat: "Chat"
+        case .actionItems: "Actions"
         case .knowledge: "Knowledge"
         }
     }

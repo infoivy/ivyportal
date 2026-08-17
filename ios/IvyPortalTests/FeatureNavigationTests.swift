@@ -23,8 +23,11 @@ final class FeatureNavigationTests: XCTestCase {
         XCTAssertNil(PortalFeature.payments.rootDestination)
     }
 
-    func testPaymentsTabsUseStableOrder() {
-        XCTAssertEqual(PaymentsTab.allCases, [.overview, .clients, .costs])
+    func testMoneyTabsUseStableOrder() {
+        // Clients + Costs folded in from the removed standalone Payments
+        // screen (2026-08-14); Payouts added by Phase E2 right after
+        // Overview. The chip order is part of the founder's layout.
+        XCTAssertEqual(MoneyInTab.allCases, [.overview, .payouts, .deals, .paymentPlans, .setters, .clients, .costs, .expenses])
     }
 
     func testMetricDrilldownsExposeExpectedPresentationType() {
