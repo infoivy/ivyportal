@@ -17,6 +17,7 @@
 		14DA2307559AE8A9A4589FBD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 814E4A86E1B80C172C803B1C /* Assets.xcassets */; };
 		1C871F192594E2CD02119751 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 313622262ECC323AC7B8136E /* PrivacyInfo.xcprivacy */; };
 		22CEA37A0E1631C85E480CA9 /* PayoutsCalcTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78F9682CCCAE30FB583FC435 /* PayoutsCalcTests.swift */; };
+		22F1535320ACE135308A202A /* BunIcons.swift in Sources */ = {isa = PBXBuildFile; fileRef = D38CDD223C89CC2E7CC1540C /* BunIcons.swift */; };
 		25EB1150A2EA1A9E6D833411 /* IvyPortalInteractionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B7128A183BCF55AA4436966 /* IvyPortalInteractionTests.swift */; };
 		34499D37FEA0C43D28E4CEF4 /* StudentHealth.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFCC906957CB7A8FC6F83144 /* StudentHealth.swift */; };
 		34770BF0A9ACD8B28D7DCAFB /* Apercu Pro Regular.otf in Resources */ = {isa = PBXBuildFile; fileRef = 9D5CE19D6C58F3F1E825D3FD /* Apercu Pro Regular.otf */; };
@@ -136,6 +137,7 @@
 		C9FAA38FA65B3A14F178C873 /* RoleDestinationPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoleDestinationPolicyTests.swift; sourceTree = "<group>"; };
 		CF338E3D5B2C449A216FDAB1 /* Apercu Pro Mono.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Apercu Pro Mono.otf"; sourceTree = "<group>"; };
 		CF88E880BC02646266330FEA /* BunHome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BunHome.swift; sourceTree = "<group>"; };
+		D38CDD223C89CC2E7CC1540C /* BunIcons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BunIcons.swift; sourceTree = "<group>"; };
 		D419C7626EBE60B038AEFF4B /* BunFlows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BunFlows.swift; sourceTree = "<group>"; };
 		D63FFEC06CAD25DFE92B0B4B /* HomeActionRoutingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeActionRoutingTests.swift; sourceTree = "<group>"; };
 		D6A44331B1380EC5E1F6953D /* FeatureNavigationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureNavigationTests.swift; sourceTree = "<group>"; };
@@ -199,6 +201,7 @@
 				DB01449E5CC3B6A6B22566D9 /* BunFixtures.swift */,
 				D419C7626EBE60B038AEFF4B /* BunFlows.swift */,
 				CF88E880BC02646266330FEA /* BunHome.swift */,
+				D38CDD223C89CC2E7CC1540C /* BunIcons.swift */,
 				0EA039451EA47DFD0470E606 /* BunMoneyActions.swift */,
 				08B13346B8920822C1616475 /* BunMovement.swift */,
 				AD534AEACCB71381EDEE0B56 /* BunMoveMoney.swift */,
@@ -520,6 +523,7 @@
 				552CDA45CF94A867EA2AB5E9 /* BunFixtures.swift in Sources */,
 				6193F96F7E1C37D4B9AD5080 /* BunFlows.swift in Sources */,
 				0A83CF32BEA860C53DEF77B4 /* BunHome.swift in Sources */,
+				22F1535320ACE135308A202A /* BunIcons.swift in Sources */,
 				A4E17DAB462FCED5A1E218D3 /* BunMoneyActions.swift in Sources */,
 				90B6A7E99CC314FF1CA5EDC1 /* BunMoveMoney.swift in Sources */,
 				7F1B7C56C4AC5F6B91018DFE /* BunMovement.swift in Sources */,

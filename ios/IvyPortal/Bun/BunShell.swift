@@ -7,10 +7,12 @@ import SwiftUI
 enum BunTab: String, CaseIterable {
     case home, money, team, clients, banking
 
-    var symbol: String {
+    /// SF Symbol name, or nil where the reference glyph is drawn (see
+    /// BunIcons): the house and the list are traced from Mercury.
+    var symbol: String? {
         switch self {
-        case .home: "house"
-        case .money: "arrow.left.arrow.right"
+        case .home: nil
+        case .money: nil
         case .team: "person.2"
         case .clients: "person.3"
         case .banking: "building.columns"
@@ -67,19 +69,23 @@ struct BunShell: View {
         }
     }
 
+    // Bar metrics measured off the reference at @3x: capsule 360x58pt with
+    // 21pt side margins, five ~69pt cells, and an active pill 77x50 that is
+    // wider than its cell and inset from the bar's top and bottom. Icons sit
+    // at 20pt, not 22.
     private var bar: some View {
         HStack(spacing: 0) {
             ForEach(BunTab.allCases, id: \.self) { item in
                 // Plain tap gesture, not Button: the bar floats over live
                 // ScrollViews and UIKit's scroll touch delays can swallow
                 // rapid Button taps (observed as flaky switches).
-                Image(systemName: item.symbol)
-                    .font(.system(size: 22, weight: .regular))
-                    .foregroundStyle(tab == item ? BunTheme.indigoLight : BunTheme.secondary)
-                    .frame(maxWidth: .infinity, minHeight: 58)
+                glyph(item)
+                    .foregroundStyle(tab == item ? BunTheme.barIconActive : BunTheme.barIcon)
+                    .frame(maxWidth: .infinity, minHeight: 50)
                     .background {
                         if tab == item {
                             Capsule().fill(BunTheme.barActive)
+                                .frame(width: 77, height: 50)
                                 .matchedGeometryEffect(id: "activeBunTab", in: barNamespace)
                         }
                     }
@@ -92,8 +98,19 @@ struct BunShell: View {
                     .accessibilityIdentifier("tab-\(item.rawValue)")
             }
         }
-        .padding(6)
+        .padding(.vertical, 4)
+        .padding(.horizontal, 8)
         .bunGlassSurface(Capsule(), tint: BunTheme.barBg, interactive: false)
-        .padding(.horizontal, 12)
+        .padding(.horizontal, 21)
+    }
+
+    @ViewBuilder private func glyph(_ item: BunTab) -> some View {
+        switch item {
+        case .home: BunHouseIcon(size: 21)
+        case .money: BunListIcon(size: 19)
+        default:
+            Image(systemName: item.symbol ?? "circle")
+                .font(.system(size: 20, weight: .regular))
+        }
     }
 }

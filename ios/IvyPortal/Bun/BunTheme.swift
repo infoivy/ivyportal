@@ -28,8 +28,13 @@ enum BunTheme {
     static let green = dyn(light: (0.115, 0.545, 0.360), dark: (0.306, 0.770, 0.550))
     static let pink = dyn(light: (0.790, 0.290, 0.395), dark: (0.910, 0.533, 0.607))
     static let chartLine = dyn(light: (0.380, 0.430, 0.870), dark: (0.486, 0.537, 0.949))
-    static let barBg = dyn(light: (0.910, 0.913, 0.932), dark: (0.090, 0.098, 0.133))
-    static let barActive = dyn(light: (0.830, 0.838, 0.875), dark: (0.165, 0.180, 0.240))
+    // Tab bar, sampled off the reference at @3x: the ground is a NEUTRAL
+    // near-black (#141416), not the blue-grey we had, the active pill is
+    // #353538, and the icons are near-white rather than dimmed grey.
+    static let barBg = dyn(light: (0.925, 0.925, 0.937), dark: (0.078, 0.078, 0.086))
+    static let barActive = dyn(light: (0.835, 0.835, 0.851), dark: (0.208, 0.208, 0.220))
+    static let barIcon = dyn(light: (0.145, 0.145, 0.165), dark: (0.867, 0.867, 0.898))
+    static let barIconActive = dyn(light: (0.220, 0.290, 0.780), dark: (0.718, 0.800, 0.984))
     /// Balance-chart stroke and fill anchors, read off the reference: a thin
     /// sky-blue line over a deep navy wash that fades out toward the floor.
     /// The alphas live in the tokens so the gradient stops stay literal.
