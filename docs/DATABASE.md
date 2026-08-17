@@ -82,3 +82,15 @@ The application database lives in Supabase `public`. The migration history in `s
 ## Deployment verification
 
 Run `npm run supabase:verify` with local `.env`. It calls the service-role-only verification function and fails if any of the 33 application tables is missing, has RLS disabled, or has no policy. This is a structural check; it does not replace role-by-role human testing.
+
+## Bun multi-tenant foundation (Phase 1, 2026-08-17)
+
+Bun is becoming a multi-tenant product; this phase is purely additive:
+
+- **orgs** — one row per business. Ivy Sales Academy is tenant #1 (slug `ivy-sales-academy`).
+- **org_members** — (org_id, user_id, roles text[]). Every existing role-holder was backfilled as an Ivy member. Membership is checked via SECURITY DEFINER `is_org_member(org)` / `is_org_admin(org)` (also avoids RLS self-recursion).
+- **org_id** was added (nullable, `DEFAULT default_org_id()`, backfilled, indexed) to the 23 top-level business tables. Legacy writers that do not send org_id keep stamping Ivy. Child tables (installment_payments, student_*) reach their org through their parent.
+- **create_organization(name)** RPC — self-serve: the caller becomes owner/admin/founder of the NEW org only; existing table RLS still keys on `user_roles`, so a new business sees none of Ivy's data.
+- **invitations.org_id** + additive org-admin insert/select policies; `handle_new_user` now also enrolls invitees (and auto-linked students) into their org.
+
+**Phase 2 (not applied):** rewrite table RLS to org scope, make org_id NOT NULL, org switcher, and the Bun web app. Do this against a branch database with founder testing before cutover.
