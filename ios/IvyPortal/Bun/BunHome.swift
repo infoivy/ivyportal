@@ -8,7 +8,6 @@ struct BunHome: View {
     @State private var showMovement = false
     @State private var selectedTransaction: BunTransaction?
     @State private var store = BunStore.shared
-    @State private var showTeam = false
     @State private var showEOD = false
     @State private var showOrgSwitcher = false
     @State private var scrub: Int?
@@ -139,11 +138,6 @@ struct BunHome: View {
         }
         .sheet(isPresented: $showMovement) {
             BunMovementSheet()
-                .presentationBackground(BunTheme.ground)
-                .presentationCornerRadius(40)
-        }
-        .sheet(isPresented: $showTeam) {
-            BunTeamSheet()
                 .presentationBackground(BunTheme.ground)
                 .presentationCornerRadius(40)
         }
@@ -457,7 +451,7 @@ struct BunHome: View {
 
     private var teamSection: some View {
         VStack(alignment: .leading, spacing: 20) {
-            sectionHeader("Team") { showTeam = true }
+            sectionHeader("Team") { tab = .team }
             HStack(alignment: .top, spacing: 0) {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("EOD coverage").font(BunType.label).foregroundStyle(BunTheme.secondary)

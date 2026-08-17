@@ -1,13 +1,18 @@
 import SwiftUI
 
+/// Five tabs (founder 2026-08-18). Studio was two jobs behind a segment and
+/// team coverage was buried in a Home sheet, so both of the surfaces the
+/// founder reads daily were several taps down. Split so each tab does one
+/// thing: Team owns coverage + performance, Clients owns the client book.
 enum BunTab: String, CaseIterable {
-    case home, money, people, banking
+    case home, money, team, clients, banking
 
     var symbol: String {
         switch self {
         case .home: "house"
         case .money: "arrow.left.arrow.right"
-        case .people: "person.2"
+        case .team: "person.2"
+        case .clients: "person.3"
         case .banking: "building.columns"
         }
     }
@@ -15,7 +20,8 @@ enum BunTab: String, CaseIterable {
         switch self {
         case .home: "Home"
         case .money: "Money"
-        case .people: "Studio"
+        case .team: "Team"
+        case .clients: "Clients"
         case .banking: "Banking"
         }
     }
@@ -55,7 +61,8 @@ struct BunShell: View {
         switch tab {
         case .home: BunHome(tab: $tab)
         case .money: BunMoneyPage()
-        case .people: BunStudioPage()
+        case .team: BunTeamPage()
+        case .clients: BunClientsPage()
         case .banking: BunBanking(tab: $tab)
         }
     }

@@ -11,7 +11,7 @@ final class BunSmokeTests: XCTestCase {
 
     func testBarShowsAllFiveTabs() {
         let app = launch()
-        for id in ["tab-home", "tab-money", "tab-people", "tab-banking"] {
+        for id in ["tab-home", "tab-money", "tab-team", "tab-clients", "tab-banking"] {
             XCTAssertTrue(app.buttons[id].waitForExistence(timeout: 4), id)
         }
     }
@@ -28,10 +28,16 @@ final class BunSmokeTests: XCTestCase {
                       "direct money: \(app.staticTexts.allElementsBoundByIndex.prefix(10).map(\.label))")
     }
 
-    func testPeopleDirectLaunch() {
-        let app = launch(tab: "people")
-        XCTAssertTrue(app.staticTexts["Studio"].waitForExistence(timeout: 6),
-                      "direct studio: \(app.staticTexts.allElementsBoundByIndex.prefix(10).map(\.label))")
+    func testTeamDirectLaunch() {
+        let app = launch(tab: "team")
+        XCTAssertTrue(app.staticTexts["Team"].waitForExistence(timeout: 6),
+                      "direct team: \(app.staticTexts.allElementsBoundByIndex.prefix(10).map(\.label))")
+    }
+
+    func testClientsDirectLaunch() {
+        let app = launch(tab: "clients")
+        XCTAssertTrue(app.staticTexts["Clients"].waitForExistence(timeout: 6),
+                      "direct clients: \(app.staticTexts.allElementsBoundByIndex.prefix(10).map(\.label))")
     }
 
     private func switchTab(_ app: XCUIApplication, id: String, expect title: String) {
@@ -47,7 +53,8 @@ final class BunSmokeTests: XCTestCase {
     func testTabSwitching() {
         let app = launch()
         switchTab(app, id: "tab-money", expect: "Money")
-        switchTab(app, id: "tab-people", expect: "Studio")
+        switchTab(app, id: "tab-team", expect: "Team")
+        switchTab(app, id: "tab-clients", expect: "Clients")
         switchTab(app, id: "tab-banking", expect: "Total balance")
     }
 }

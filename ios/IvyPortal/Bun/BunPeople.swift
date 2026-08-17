@@ -1,47 +1,29 @@
 import SwiftUI
 
-/// Studio tab (founder 2026-08-17): Performance (setter/closer funnel, CRM
-/// shape borrowed from Mochi) and Students (tally, check-in queue, client
-/// book). Team roster moved to Home → Team.
-struct BunStudioPage: View {
+/// Team tab (founder 2026-08-18): coverage and the written EODs up top, then
+/// the setter/closer funnel that used to sit behind the Studio segment.
+struct BunTeamPage: View {
     @State private var store = BunStore.shared
-    @State private var segment = 0
-    @State private var selectedStudent: StudentRosterItem?
-    @State private var opsError: String?
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 26) {
-                BunTitle(text: "Studio")
-                BunSegment(options: ["Performance", "Students"], selection: $segment)
-                if segment == 0 {
-                    performanceSection
-                } else {
-                    clientsSection
-                }
+                BunTitle(text: "Team")
+                BunTeamCoverage()
+                hairline
+                performanceSection
             }
             .padding(.horizontal, 22)
             .padding(.top, 12)
             .padding(.bottom, 96)
         }
         .scrollIndicators(.hidden)
-        .task {
-            await store.loadTeam()
-            await store.loadClients()
-            await store.loadOps()
-        }
+        .task { await store.loadTeam() }
         .refreshable {
             store.teamSummary = nil
             store.teamRows = nil
-            store.roster = nil
-            store.health = nil
+            store.teamNotes = nil
             await store.loadTeam()
-            await store.loadClients()
-        }
-        .sheet(item: $selectedStudent) { student in
-            BunClientSheet(student: student)
-                .presentationBackground(BunTheme.ground)
-                .presentationCornerRadius(40)
         }
     }
 
@@ -53,10 +35,10 @@ struct BunStudioPage: View {
         VStack(alignment: .leading, spacing: 22) {
             funnelRow
             hairline
-            Text("Setters").font(bunFont(24)).foregroundStyle(BunTheme.ink)
+            Text("Setters").font(BunType.section).foregroundStyle(BunTheme.ink)
             setterRows
             hairline
-            Text("Closers").font(bunFont(24)).foregroundStyle(BunTheme.ink)
+            Text("Closers").font(BunType.section).foregroundStyle(BunTheme.ink)
             closerRows
         }
     }
@@ -141,11 +123,63 @@ struct BunStudioPage: View {
         return bits.joined(separator: " · ")
     }
 
-    // MARK: Clients
+    private var hairline: some View {
+        Rectangle().fill(BunTheme.hairline).frame(height: 1)
+            .padding(.horizontal, -22)
+    }
+}
+
+/// Clients tab (founder 2026-08-18): the client book that used to sit behind
+/// the Studio segment. The + logs a close — its only entry point since the
+/// Money chips were removed, and the flow starts by picking a client anyway.
+struct BunClientsPage: View {
+    @State private var store = BunStore.shared
+    @State private var selectedStudent: StudentRosterItem?
+    @State private var opsError: String?
+    @State private var showLogClose = false
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 26) {
+                HStack {
+                    BunTitle(text: "Clients")
+                    Spacer()
+                    BunChipButton(symbol: "plus") { showLogClose = true }
+                        .accessibilityLabel("Log a close")
+                }
+                clientsSection
+            }
+            .padding(.horizontal, 22)
+            .padding(.top, 12)
+            .padding(.bottom, 96)
+        }
+        .scrollIndicators(.hidden)
+        .task {
+            await store.loadClients()
+            await store.loadOps()
+        }
+        .refreshable {
+            store.roster = nil
+            store.health = nil
+            store.callCounts = nil
+            await store.loadClients()
+        }
+        .sheet(item: $selectedStudent) { student in
+            BunClientSheet(student: student)
+                .presentationBackground(BunTheme.ground)
+                .presentationCornerRadius(40)
+        }
+        .sheet(isPresented: $showLogClose) {
+            BunLogCloseFlow()
+                .presentationBackground(BunTheme.ground)
+                .presentationCornerRadius(40)
+        }
+    }
+
 
     private var clientsSection: some View {
         VStack(alignment: .leading, spacing: 22) {
-            Text("Today's tally").font(bunFont(24)).foregroundStyle(BunTheme.ink)
+            Text("Today's tally").font(BunType.section).foregroundStyle(BunTheme.ink)
             HStack(spacing: 10) {
                 tallyChip("loom", label: "Loom", symbol: "video")
                 tallyChip("roleplay", label: "Roleplay", symbol: "person.2.wave.2")
@@ -156,7 +190,7 @@ struct BunStudioPage: View {
                 Text(opsError).font(bunFont(15)).foregroundStyle(BunTheme.pink)
             }
             HStack {
-                Text("Needs a check-in").font(bunFont(24)).foregroundStyle(BunTheme.ink)
+                Text("Needs a check-in").font(BunType.section).foregroundStyle(BunTheme.ink)
                 Spacer()
                 Text("Coldest first").font(bunFont(15)).foregroundStyle(BunTheme.secondary)
             }
@@ -176,7 +210,7 @@ struct BunStudioPage: View {
                 }
             }
             hairline
-            Text("Students").font(bunFont(24)).foregroundStyle(BunTheme.ink)
+            Text("All clients").font(BunType.section).foregroundStyle(BunTheme.ink)
             clientsList
         }
     }

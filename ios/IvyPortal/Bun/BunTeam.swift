@@ -5,19 +5,15 @@ import SwiftUI
 // day surfaces honestly), setter_type gates which FIELDS show (never what
 // submits), founders never reach this (owesTodayEOD excludes them).
 
-struct BunTeamSheet: View {
-    @Environment(\.dismiss) private var dismiss
+/// Coverage, the tappable week strip with each member's written EOD, and the
+/// member roster. Lives on the Team tab (founder 2026-08-18); previously this
+/// was a sheet reached from Home.
+struct BunTeamCoverage: View {
     @State private var store = BunStore.shared
     @State private var selectedDay: String?
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                HStack {
-                    BunTitle(text: "Team")
-                    Spacer()
-                    BunChipButton(symbol: "xmark") { dismiss() }
-                }
+        VStack(alignment: .leading, spacing: 24) {
                 if let summary = store.teamSummary {
                     HStack(alignment: .top) {
                         VStack(alignment: .leading, spacing: 6) {
@@ -39,12 +35,7 @@ struct BunTeamSheet: View {
                 }
                 Rectangle().fill(BunTheme.hairline).frame(height: 1).padding(.horizontal, -22)
                 memberRows
-            }
-            .padding(.horizontal, 22)
-            .padding(.top, 16)
-            .padding(.bottom, 60)
         }
-        .scrollIndicators(.hidden)
         .task { await store.loadTeam() }
     }
 
