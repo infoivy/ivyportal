@@ -67,11 +67,11 @@ struct BunHome: View {
                     .padding(.top, 8)
 
                 Text("Welcome, \(welcomeName)")
-                    .font(bunFont(24))
+                    .font(BunType.headline)
                     .foregroundStyle(BunTheme.ink)
                     .padding(.top, 26)
 
-                BunMoney(amount: headlineAmount, size: 34, weight: .medium)
+                BunMoney(amount: headlineAmount, size: BunType.Money.hero)
                     .redacted(reason: loadingLive ? .placeholder : [])
                     .padding(.top, 8)
 
@@ -181,7 +181,7 @@ struct BunHome: View {
                                 .foregroundStyle(BunTheme.ink)
                         )
                     Text(store.orgName)
-                        .font(bunFont(19, .medium))
+                        .font(bunFont(17, .medium))
                         .foregroundStyle(BunTheme.ink)
                     Image(systemName: "arrowtriangle.down.fill")
                         .font(.system(size: 8, weight: .regular))
@@ -218,7 +218,7 @@ struct BunHome: View {
             } label: {
                 HStack(spacing: 6) {
                     Text("\(store.rangeDays)D")
-                        .font(bunFont(15, .medium))
+                        .font(BunType.chip)
                         .foregroundStyle(BunTheme.ink)
                     Image(systemName: "arrowtriangle.down.fill")
                         .font(.system(size: 8, weight: .regular))
@@ -230,14 +230,14 @@ struct BunHome: View {
                 Image(systemName: "arrow.up.right")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(BunTheme.green)
-                BunMoney(amount: range30In, size: 15)
+                BunMoney(amount: range30In, size: BunType.Money.chip)
             }
 
             HStack(spacing: 5) {
                 Image(systemName: "arrow.down.right")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(BunTheme.pink)
-                BunMoney(amount: range30Out, size: 15)
+                BunMoney(amount: range30Out, size: BunType.Money.chip)
             }
         }
     }
@@ -349,7 +349,7 @@ struct BunHome: View {
             Button { showMovement = true } label: {
                 HStack(spacing: 8) {
                     Text(monthLabel)
-                        .font(bunFont(26))
+                        .font(BunType.section)
                         .foregroundStyle(BunTheme.ink)
                     Image(systemName: "chevron.right")
                         .font(.system(size: 15, weight: .regular))
@@ -361,26 +361,26 @@ struct BunHome: View {
             HStack(alignment: .top, spacing: 0) {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Money in")
-                        .font(bunFont(17))
+                        .font(BunType.label)
                         .foregroundStyle(BunTheme.secondary)
                     HStack(spacing: 6) {
                         Image(systemName: "arrow.up.right")
                             .font(.system(size: 13, weight: .regular))
                             .foregroundStyle(BunTheme.green)
-                        BunMoney(amount: monthIn, size: 19)
+                        BunMoney(amount: monthIn, size: BunType.Money.value)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Money spent")
-                        .font(bunFont(17))
+                        .font(BunType.label)
                         .foregroundStyle(BunTheme.secondary)
                     HStack(spacing: 6) {
                         Image(systemName: "arrow.down.right")
                             .font(.system(size: 13, weight: .regular))
                             .foregroundStyle(BunTheme.pink)
-                        BunMoney(amount: monthOut, size: 19)
+                        BunMoney(amount: monthOut, size: BunType.Money.value)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -398,8 +398,8 @@ struct BunHome: View {
                     .frame(width: 44, height: 44)
                     .background(BunTheme.field, in: Circle())
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("EOD due").font(bunFont(19)).foregroundStyle(BunTheme.ink)
-                    Text("File today's numbers").font(bunFont(15)).foregroundStyle(BunTheme.secondary)
+                    Text("EOD due").font(BunType.rowTitle).foregroundStyle(BunTheme.ink)
+                    Text("File today's numbers").font(BunType.caption).foregroundStyle(BunTheme.secondary)
                 }
                 Spacer()
                 Image(systemName: "chevron.right")
@@ -416,7 +416,7 @@ struct BunHome: View {
     private var setsSection: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack(spacing: 8) {
-                Text("Upcoming sets").font(bunFont(26)).foregroundStyle(BunTheme.ink)
+                Text("Upcoming sets").font(BunType.section).foregroundStyle(BunTheme.ink)
                 Spacer()
                 if let unclaimed = store.unclaimedSetCount, unclaimed > 0 {
                     Button { showUnclaimed = true } label: {
@@ -430,10 +430,10 @@ struct BunHome: View {
                     HStack(spacing: 14) {
                         BunAvatar(text: String(set.prospect.prefix(1)), size: 44, fill: BunStore.fill(for: set.prospect))
                         VStack(alignment: .leading, spacing: 3) {
-                            Text(set.prospect).font(bunFont(19)).foregroundStyle(BunTheme.ink).lineLimit(1)
+                            Text(set.prospect).font(BunType.rowTitle).foregroundStyle(BunTheme.ink).lineLimit(1)
                             Text(PortalAPI.friendlyEventTime(set.eventStart)
                                  + (set.notes.map { " · \($0)" } ?? ""))
-                                .font(bunFont(15)).foregroundStyle(BunTheme.secondary).lineLimit(1)
+                                .font(BunType.caption).foregroundStyle(BunTheme.secondary).lineLimit(1)
                         }
                         Spacer()
                         if set.confirmedAt != nil {
@@ -460,15 +460,15 @@ struct BunHome: View {
             sectionHeader("Team") { showTeam = true }
             HStack(alignment: .top, spacing: 0) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("EOD coverage").font(bunFont(17)).foregroundStyle(BunTheme.secondary)
+                    Text("EOD coverage").font(BunType.label).foregroundStyle(BunTheme.secondary)
                     Text(store.teamSummary.map { "\($0.coverage)%" } ?? "…")
-                        .font(bunFont(20, .medium)).foregroundStyle(BunTheme.ink).monospacedDigit()
+                        .font(bunFont(19, .medium)).foregroundStyle(BunTheme.ink).monospacedDigit()
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Sets · 7 days").font(bunFont(17)).foregroundStyle(BunTheme.secondary)
+                    Text("Sets · 7 days").font(BunType.label).foregroundStyle(BunTheme.secondary)
                     Text(store.teamRows.map { "\($0.reduce(0) { $0 + $1.sets })" } ?? "…")
-                        .font(bunFont(20, .medium)).foregroundStyle(BunTheme.ink).monospacedDigit()
+                        .font(bunFont(19, .medium)).foregroundStyle(BunTheme.ink).monospacedDigit()
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -501,11 +501,11 @@ struct BunHome: View {
             )
             VStack(alignment: .leading, spacing: 2) {
                 Text(transaction.counterparty)
-                    .font(bunFont(19))
+                    .font(BunType.rowTitle)
                     .foregroundStyle(BunTheme.ink)
                 HStack(spacing: 8) {
                     Text(transaction.method)
-                        .font(bunFont(16))
+                        .font(BunType.caption)
                         .foregroundStyle(BunTheme.secondary)
                     if let tag = transaction.tag {
                         BunTag(text: tag, tint: BunTheme.pink, fill: BunTheme.pink.opacity(0.15))
@@ -514,12 +514,12 @@ struct BunHome: View {
             }
             Spacer()
             if failed {
-                BunMoney(amount: transaction.amount, size: 19, color: BunTheme.secondary)
+                BunMoney(amount: transaction.amount, size: BunType.Money.row, color: BunTheme.secondary)
                     .strikethrough()
             } else {
                 BunMoney(
                     amount: transaction.amount,
-                    size: 19,
+                    size: BunType.Money.row,
                     color: transaction.amount > 0 ? BunTheme.green : BunTheme.ink
                 )
             }
@@ -533,7 +533,7 @@ struct BunHome: View {
         Button(action: action) {
             HStack(spacing: 8) {
                 Text(title)
-                    .font(bunFont(26))
+                    .font(BunType.section)
                     .foregroundStyle(BunTheme.ink)
                 Image(systemName: "chevron.right")
                     .font(.system(size: 16, weight: .regular))
