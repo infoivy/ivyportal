@@ -50,8 +50,11 @@ struct BunTeamPage: View {
         let shows = rows.reduce(0) { $0 + $1.shows }
         let closes = rows.reduce(0) { $0 + $1.closes }
         return VStack(alignment: .leading, spacing: 14) {
-            Text("Last 7 days").font(bunFont(17)).foregroundStyle(BunTheme.secondary)
-            HStack(spacing: 0) {
+            Text("Last 7 days").font(BunType.label).foregroundStyle(BunTheme.secondary)
+            // .top, not the default .center: Sets carries no rate caption, so
+            // centering made it a line shorter and dropped it below the other
+            // two. Stat values share one baseline (founder rule).
+            HStack(alignment: .top, spacing: 0) {
                 funnelStat(label: "Sets", value: "\(sets)", tone: BunTheme.ink)
                 funnelStat(label: "Showed", value: "\(shows)",
                            tone: BunTheme.ink,
@@ -65,11 +68,13 @@ struct BunTeamPage: View {
 
     private func funnelStat(label: String, value: String, tone: Color, caption: String? = nil) -> some View {
         VStack(alignment: .leading, spacing: 5) {
-            Text(label).font(bunFont(16)).foregroundStyle(BunTheme.secondary)
+            Text(label).font(BunType.label).foregroundStyle(BunTheme.secondary)
             Text(value).font(bunFont(28, .medium)).foregroundStyle(tone).monospacedDigit()
-            if let caption {
-                Text(caption).font(bunFont(14)).foregroundStyle(BunTheme.tertiary)
-            }
+            // Reserve the caption line even when empty so the three tiles are
+            // the same height and the block reads as one rectangle.
+            Text(caption ?? " ")
+                .font(bunFont(14))
+                .foregroundStyle(caption == nil ? .clear : BunTheme.tertiary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

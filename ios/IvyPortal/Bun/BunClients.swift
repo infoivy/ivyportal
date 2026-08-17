@@ -76,7 +76,7 @@ struct BunClientSheet: View {
     /// read the moment a client opens (2026-08-18). Group students never show
     /// a call line — they own no 1:1 surfaces.
     private var statusStrip: some View {
-        HStack(spacing: 0) {
+        HStack(alignment: .top, spacing: 0) {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Status").font(BunType.label).foregroundStyle(BunTheme.secondary)
                 HStack(spacing: 7) {
