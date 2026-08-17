@@ -184,15 +184,10 @@ struct BunClientsPage: View {
 
     private var clientsSection: some View {
         VStack(alignment: .leading, spacing: 22) {
-            Text("Today's tally").font(BunType.section).foregroundStyle(BunTheme.ink)
-            HStack(spacing: 10) {
-                tallyChip("loom", label: "Loom", symbol: "video")
-                tallyChip("roleplay", label: "Roleplay", symbol: "person.2.wave.2")
-                tallyChip("checkin", label: "Check-in", symbol: "message")
-                tallyChip("escalation", label: "Escalation", symbol: "exclamationmark.bubble")
-            }
+            // Today's tally removed 2026-08-18 (founder): the Clients tab
+            // opens on the work, not on a counter.
             if let opsError {
-                Text(opsError).font(bunFont(15)).foregroundStyle(BunTheme.pink)
+                Text(opsError).font(BunType.caption).foregroundStyle(BunTheme.pink)
             }
             HStack {
                 Text("Needs a check-in").font(BunType.section).foregroundStyle(BunTheme.ink)
@@ -217,36 +212,6 @@ struct BunClientsPage: View {
             hairline
             Text("All clients").font(BunType.section).foregroundStyle(BunTheme.ink)
             clientsList
-        }
-    }
-
-    private func tallyChip(_ kind: String, label: String, symbol: String) -> some View {
-        Button {
-            Task {
-                do { try await store.tally(kind); opsError = nil }
-                catch { opsError = "Tally failed: \(error.localizedDescription)" }
-            }
-        } label: {
-            VStack(spacing: 6) {
-                Image(systemName: symbol).font(.system(size: 16, weight: .regular))
-                    .foregroundStyle(BunTheme.indigoLight)
-                Text(label).font(bunFont(13)).foregroundStyle(BunTheme.secondary)
-                Text("\(store.tallyCounts[kind, default: 0])")
-                    .font(bunFont(18, .medium)).foregroundStyle(BunTheme.ink).monospacedDigit()
-                    .contentTransition(.numericText())
-            }
-            .frame(maxWidth: .infinity, minHeight: 84)
-            .background(BunTheme.raised, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        }
-        .buttonStyle(BunPressStyle())
-        .contextMenu {
-            Button("Undo last \(label.lowercased())", systemImage: "arrow.uturn.backward") {
-                Task {
-                    do { try await store.undoTally(kind); opsError = nil }
-                    catch { opsError = "Undo failed: \(error.localizedDescription)" }
-                }
-            }
         }
     }
 

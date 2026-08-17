@@ -90,6 +90,15 @@ struct BunHome: View {
                 monthBlock
                     .padding(.top, 26)
 
+                // Founder order (2026-08-18): Team, Transactions, Upcoming
+                // sets. The month block stays welded to the chart above —
+                // balance, chart, month is one money block in the reference.
+                hairline
+                    .padding(.top, 26)
+
+                teamSection
+                    .padding(.top, 26)
+
                 hairline
                     .padding(.top, 26)
 
@@ -102,10 +111,6 @@ struct BunHome: View {
                     setsSection
                         .padding(.top, 26)
                 }
-                hairline
-                    .padding(.top, 26)
-                teamSection
-                    .padding(.top, 26)
             }
             .padding(.horizontal, 22)
             .padding(.bottom, 24)
