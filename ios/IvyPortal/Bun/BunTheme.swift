@@ -54,6 +54,16 @@ struct BunMoney: View {
     var color: Color = BunTheme.ink
     var showSign = false     // explicit − for outflows, nothing for inflows
 
+    /// Cents ride at this fraction of the dollars' size.
+    private static let centsScale: CGFloat = 0.62
+
+    /// Apercu's cap height is 0.70em, so the cents' own caps stand
+    /// 0.70 * size * centsScale above their baseline. Raising that baseline by
+    /// the REMAINDER lands their tops exactly on the dollars' tops — one
+    /// invisible line across the whole number (founder spec 2026-08-18, and
+    /// what the Mercury reference does). A flat guess sat ~3px proud of it.
+    private static var centsLift: CGFloat { 0.70 * (1 - centsScale) }
+
     var body: some View {
         let negative = amount < 0
         let absolute = abs(amount)
@@ -62,8 +72,8 @@ struct BunMoney: View {
         (Text("\(negative ? "−" : (showSign ? "+" : ""))$\(whole.formatted(.number.grouping(.automatic).locale(Locale(identifier: "en_US"))))")
             .font(bunFont(size, weight))
          + Text(".\(String(format: "%02d", cents))")
-            .font(bunFont(size * 0.62, weight))
-            .baselineOffset(size * 0.30))
+            .font(bunFont(size * Self.centsScale, weight))
+            .baselineOffset(size * Self.centsLift))
             .foregroundStyle(color)
             .monospacedDigit()
     }

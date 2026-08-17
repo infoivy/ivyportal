@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// Money page (founder 2026-08-17): Move money and Transactions merged.
 /// Action chips, what's due next, the payments lists, and the full feed.
@@ -6,12 +7,10 @@ struct BunMoneyPage: View {
     @State private var store = BunStore.shared
     @State private var listKind: BunPaymentListSheet.Kind?
     @State private var showCalendar = false
-    @State private var showLogClose = false
     @State private var emptyListTitle: String?
-    @State private var showSend = false
-    @State private var showTransfer = false
-    @State private var showDeposit = false
     @State private var showRequest = false
+    /// Rows showing the "collected" confirmation before they animate out.
+    @State private var settled: Set<UUID> = []
 
     var body: some View {
         ScrollView {
@@ -33,21 +32,6 @@ struct BunMoneyPage: View {
             .padding(.bottom, 96)
         }
         .scrollIndicators(.hidden)
-        .sheet(isPresented: $showSend) {
-            BunSendFlow()
-                .presentationBackground(BunTheme.ground)
-                .presentationCornerRadius(40)
-        }
-        .sheet(isPresented: $showTransfer) {
-            BunTransferFlow()
-                .presentationBackground(BunTheme.ground)
-                .presentationCornerRadius(40)
-        }
-        .sheet(isPresented: $showDeposit) {
-            BunDepositFlow()
-                .presentationBackground(BunTheme.ground)
-                .presentationCornerRadius(40)
-        }
         .sheet(isPresented: $showRequest) {
             BunRequestFlow()
                 .presentationBackground(BunTheme.ground)
@@ -61,11 +45,6 @@ struct BunMoneyPage: View {
         }
         .sheet(isPresented: Binding(get: { listKind != nil }, set: { if !$0 { listKind = nil } })) {
             BunPaymentListSheet(kind: listKind ?? .inbox)
-                .presentationBackground(BunTheme.ground)
-                .presentationCornerRadius(40)
-        }
-        .sheet(isPresented: $showLogClose) {
-            BunLogCloseFlow()
                 .presentationBackground(BunTheme.ground)
                 .presentationCornerRadius(40)
         }
@@ -83,20 +62,11 @@ struct BunMoneyPage: View {
         }
     }
 
+    /// Founder 2026-08-18: Transfer, Deposit, and Log close removed — Bun is
+    /// not a bank, and money arrives rather than being sent. Request stays.
     private var actionChips: some View {
         ScrollView(.horizontal) {
             HStack(spacing: 10) {
-                BunActionChip(symbol: "paperplane.fill",
-                              label: store.signedIn ? "Log close" : "Send",
-                              filled: true) {
-                    if store.signedIn { showLogClose = true } else { showSend = true }
-                }
-                BunActionChip(symbol: "arrow.left.and.right", label: "Transfer") {
-                    showTransfer = true
-                }
-                BunActionChip(symbol: "plus", label: "Deposit") {
-                    showDeposit = true
-                }
                 BunActionChip(symbol: "arrow.left.to.line", label: "Request") {
                     showRequest = true
                 }
@@ -144,42 +114,84 @@ struct BunMoneyPage: View {
             if !items.isEmpty {
                 VStack(alignment: .leading, spacing: 14) {
                     Text("Up next")
-                        .font(bunFont(26))
+                        .font(BunType.section)
                         .foregroundStyle(BunTheme.ink)
                     VStack(spacing: 0) {
                         ForEach(items) { item in
-                            HStack(spacing: 14) {
-                                BunAvatar(text: String(item.student.prefix(1)), size: 44,
-                                          fill: BunStore.fill(for: item.student))
-                                VStack(alignment: .leading, spacing: 3) {
-                                    Text(item.student).font(bunFont(19)).foregroundStyle(BunTheme.ink).lineLimit(1)
-                                    Text(item.due).font(bunFont(15))
-                                        .foregroundStyle(item.overdue ? BunTheme.pink : BunTheme.secondary)
-                                }
-                                Spacer()
-                                BunMoney(amount: item.amount, size: 17)
-                                Button {
-                                    Task { try? await store.markPaid(item) }
-                                } label: {
-                                    Text("Came in")
-                                        .font(bunFont(15, .medium)).foregroundStyle(.white)
-                                        .padding(.horizontal, 14).frame(height: 38)
-                                        .background(BunTheme.indigo, in: Capsule())
-                                }
-                                .buttonStyle(BunPressStyle())
-                            }
-                            .frame(minHeight: 66)
+                            upNextRow(item)
+                                .transition(.asymmetric(
+                                    insertion: .opacity,
+                                    removal: .opacity.combined(with: .scale(scale: 0.94, anchor: .leading))))
                         }
                     }
+                    // Keyed on the ids so a settled row slides out instead of
+                    // blinking away the instant the store drops it.
+                    .animation(.smooth(duration: 0.42), value: items.map(\.id))
                 }
             }
+        }
+    }
+
+    /// Collecting money should FEEL collected: the button flips to a green
+    /// check, the amount turns green, a success haptic fires, and only then
+    /// does the row leave. Previously the row vanished mid-tap with no
+    /// acknowledgement, which read as a glitch (founder 2026-08-18).
+    private func upNextRow(_ item: BunStore.BunPlanItem) -> some View {
+        let done = settled.contains(item.id)
+        return HStack(spacing: 14) {
+            BunAvatar(text: String(item.student.prefix(1)), size: 44,
+                      fill: BunStore.fill(for: item.student))
+            VStack(alignment: .leading, spacing: 3) {
+                Text(item.student).font(BunType.rowTitle).foregroundStyle(BunTheme.ink).lineLimit(1)
+                Text(done ? "Collected" : item.due)
+                    .font(BunType.caption)
+                    .foregroundStyle(done ? BunTheme.green
+                                     : (item.overdue ? BunTheme.pink : BunTheme.secondary))
+            }
+            Spacer()
+            BunMoney(amount: item.amount, size: BunType.Money.chip,
+                     color: done ? BunTheme.green : BunTheme.ink)
+            Button {
+                collect(item)
+            } label: {
+                Group {
+                    if done {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundStyle(.white)
+                    } else {
+                        Text("Came in")
+                            .font(bunFont(15, .medium)).foregroundStyle(.white)
+                    }
+                }
+                .padding(.horizontal, done ? 0 : 14)
+                .frame(width: done ? 38 : nil, height: 38)
+                .background(done ? BunTheme.green : BunTheme.indigo, in: Capsule())
+            }
+            .buttonStyle(BunPressStyle())
+            .disabled(done)
+        }
+        .frame(minHeight: 66)
+        .animation(.spring(response: 0.32, dampingFraction: 0.72), value: done)
+    }
+
+    private func collect(_ item: BunStore.BunPlanItem) {
+        guard !settled.contains(item.id) else { return }
+        settled.insert(item.id)
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        Task {
+            // Hold the confirmed state long enough to read, then write and let
+            // the row animate out.
+            try? await Task.sleep(for: .seconds(0.75))
+            try? await store.markPaid(item)
+            settled.remove(item.id)
         }
     }
 
     private var paymentsSection: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Payments")
-                .font(bunFont(26))
+                .font(BunType.section)
                 .foregroundStyle(BunTheme.ink)
             VStack(spacing: 6) {
                 BunIconRow(symbol: "envelope", title: "Inbox", subtitle: inboxSubtitle) { open(.inbox) }
