@@ -1,6 +1,7 @@
 name: IvyPortal
 options:
-  bundleIdPrefix: com.ivysalesacademy.dev
+  # Final shipping identifier (locked at first App Store Connect upload).
+  bundleIdPrefix: com.ivysalesacademy
   deploymentTarget:
     iOS: "18.0"
 packages:
@@ -24,12 +25,34 @@ targets:
       - path: IvyPortalCore
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.ivysalesacademy.dev.IvyPortal
+        PRODUCT_BUNDLE_IDENTIFIER: com.ivysalesacademy.ivyportal
         PRODUCT_NAME: IvyPortal
-        INFOPLIST_KEY_CFBundleDisplayName: Ivy Portal
-        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
-        INFOPLIST_KEY_UILaunchScreen_Generation: YES
-        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait
+        GENERATE_INFOPLIST_FILE: NO
+    info:
+      path: IvyPortal/Info.plist
+      properties:
+        CFBundleDisplayName: Bun
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        # Launch matches the onboarding splash ground (no white flash).
+        UILaunchScreen:
+          UIColorName: LaunchGround
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        # No custom encryption beyond HTTPS — skips the TestFlight export
+        # compliance question on every upload.
+        ITSAppUsesNonExemptEncryption: false
+        # Google sign-in (Supabase OAuth) returns to ivyportal://auth-callback
+        CFBundleURLTypes:
+          - CFBundleURLName: com.ivysalesacademy.ivyportal
+            CFBundleURLSchemes: [ivyportal]
+        # Mercury rework (founder 2026-08-17): Apercu Pro is the app typeface.
+        UIAppFonts:
+          - Apercu Pro Light.otf
+          - Apercu Pro Regular.otf
+          - Apercu Pro Medium.otf
+          - Apercu Pro Bold.otf
+          - Apercu Pro Mono.otf
     dependencies:
       - package: Supabase
         product: Supabase
@@ -42,7 +65,7 @@ targets:
       - target: IvyPortal
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.ivysalesacademy.dev.IvyPortalTests
+        PRODUCT_BUNDLE_IDENTIFIER: com.ivysalesacademy.ivyportal.tests
   IvyPortalUITests:
     type: bundle.ui-testing
     platform: iOS
@@ -52,7 +75,7 @@ targets:
       - target: IvyPortal
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.ivysalesacademy.dev.IvyPortalUITests
+        PRODUCT_BUNDLE_IDENTIFIER: com.ivysalesacademy.ivyportal.uitests
 schemes:
   IvyPortal:
     build:
