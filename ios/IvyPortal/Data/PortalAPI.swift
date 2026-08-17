@@ -60,6 +60,25 @@ struct PerformanceSummary: Sendable {
     var coverage: Int { submitted + missing == 0 ? 0 : Int((Double(submitted) / Double(submitted + missing) * 100).rounded()) }
 }
 
+/// One member's written EOD for one day. Notes live on `eods`, never on the
+/// money-free activity view.
+struct TeamEODNote: Decodable, Identifiable, Sendable {
+    let id: UUID
+    let userId: UUID
+    let reportDate: String
+    let wins: String?
+    let blockers: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id, userId = "user_id", reportDate = "report_date", wins, blockers
+    }
+
+    var hasNote: Bool {
+        !(wins ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        || !(blockers ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+}
+
 struct TeamMemberRow: Identifiable, Sendable {
     let id: UUID
     let name: String
@@ -262,6 +281,27 @@ final class PortalAPI {
         return try await client().from("eods_activity_real")
             .select()
             .gte("report_date", value: start)
+            .order("report_date", ascending: false)
+            .execute()
+            .value
+    }
+
+    /// Team EOD notes — the wins/blockers people actually write.
+    ///
+    /// `eods_activity_real` is deliberately money-free AND note-free, so notes
+    /// have to come off the base table, exactly as the web's team-week does.
+    /// RLS is the wall: admins and closers get the team's rows, everyone else
+    /// gets only their own, so this needs no client-side role gate.
+    func teamEODNotes(days: Int = 7) async throws -> [TeamEODNote] {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.dateFormat = "yyyy-MM-dd"
+        let from = Calendar.current.date(byAdding: .day, value: -days, to: Date()) ?? Date()
+        return try await client().from("eods")
+            .select("id, user_id, report_date, wins, blockers")
+            .eq("is_demo", value: false)
+            .gte("report_date", value: formatter.string(from: from))
             .order("report_date", ascending: false)
             .execute()
             .value

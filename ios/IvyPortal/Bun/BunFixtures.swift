@@ -184,9 +184,11 @@ enum BunFixtures {
     }
 
     /// Per-day EOD coverage for the team week strip (Mon..Sun).
+    // Expected matches the six people in `teamRows` — a strip that promises
+    // seven filers against a six-person roster reads as broken.
     static let teamWeek: [(day: String, filed: Int, expected: Int)] = [
-        ("M", 7, 7), ("T", 6, 7), ("W", 7, 7), ("T", 5, 7),
-        ("F", 6, 7), ("S", 7, 7), ("S", 6, 7),
+        ("M", 6, 6), ("T", 5, 6), ("W", 6, 6), ("T", 4, 6),
+        ("F", 5, 6), ("S", 6, 6), ("S", 5, 6),
     ]
 
     static let teamSummary = PerformanceSummary(callsBooked: 23, submitted: 6, missing: 1)
@@ -200,6 +202,39 @@ enum BunFixtures {
         TeamMemberRow(id: UUID(), name: "Grace Okafor", role: "coach", sets: 0, eodDays: 6, booked: 0, shows: 0, closes: 0, dials: 0, dmsSent: 0, filedToday: true, missedYesterday: false),
     ]
 
+    /// What the demo team actually wrote in their EODs, so the notes surface
+    /// has something honest to render signed out.
+    static let teamNotes: [TeamEODNote] = {
+        func day(_ back: Int) -> String {
+            let formatter = DateFormatter()
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            formatter.calendar = Calendar(identifier: .gregorian)
+            formatter.dateFormat = "yyyy-MM-dd"
+            return formatter.string(from: Calendar.current.date(byAdding: .day, value: -back, to: Date()) ?? Date())
+        }
+        let written: [(Int, Int, String, String?)] = [
+            (0, 0, "1,840 DMs out and 8 sets. Best day this cycle.", nil),
+            (0, 1, "Hit 640 dials. Two sets booked for Thursday.", "Dialler dropped ~40 minutes mid-afternoon."),
+            (0, 2, "4 closes, $18.4k in. Two were self-set.", nil),
+            (0, 3, "Checked in with every red-band student.", "Two have not posted in 6 days."),
+            (0, 5, "Reviewed 9 looms, 4 students moved to applying.", nil),
+            (1, 0, "6 sets, ran the new opener on every conversation.", "Getting a lot of price questions before the call."),
+            (1, 1, "580 dials, 3 sets. Follow-up list is clean.", nil),
+            (1, 2, "2 closes and one deposit collected.", nil),
+            (1, 4, "5 sets off 512 dials.", "Struggling to get past the first objection on cold."),
+            (1, 5, "Ran two group calls, attendance was 80%.", nil),
+            (2, 0, "Cleared the whole inbox before noon.", nil),
+            (2, 2, "3 closes. Best show rate of the week.", nil),
+            (2, 3, "Six check-ins, two escalations raised.", "Nadia is behind on payment and not replying."),
+            (2, 5, "Loom review queue is empty.", nil),
+        ]
+        return written.compactMap { back, member, wins, blockers in
+            guard teamRows.indices.contains(member) else { return nil }
+            return TeamEODNote(id: UUID(), userId: teamRows[member].id,
+                               reportDate: day(back), wins: wins, blockers: blockers)
+        }
+    }()
+
     static var wallet: PortalAPI.WalletSummary {
         PortalAPI.WalletSummary(loaded: 2_995.00, spent: 2_650.62, recent: [
             .init(id: UUID(), entryDate: "2026-08-16", kind: "spend", amount: 248.60, note: "Meta Ads"),
@@ -212,6 +247,16 @@ enum BunFixtures {
 
     // Stable ids so health/check-in maps line up with the roster.
     private static let rosterIds = (0..<8).map { _ in UUID() }
+
+    /// Completed 1:1 calls per demo student, keyed to the roster ids.
+    /// Group students (0 allotted) never appear — they own no 1:1 surfaces.
+    static let callCounts: [UUID: Int] = {
+        let used = [0: 6, 1: 3, 4: 9]     // Marcus, Leila, Tariq
+        return used.reduce(into: [:]) { map, pair in
+            guard rosterIds.indices.contains(pair.key) else { return }
+            map[rosterIds[pair.key]] = pair.value
+        }
+    }()
 
     static var roster: [StudentRosterItem] {
         let rows: [(String, String, Int, String?)] = [

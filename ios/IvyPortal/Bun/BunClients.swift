@@ -69,6 +69,56 @@ struct BunClientSheet: View {
     }
 
     private var health: StudentHealthResult? { store.health?[student.id] }
+    private var callsUsed: Int { store.callCounts?[student.id] ?? 0 }
+    private var callsAllotted: Int { student.callsAllotted ?? 0 }
+
+    /// Status and coaching-call burn-down, the two things the founder wants to
+    /// read the moment a client opens (2026-08-18). Group students never show
+    /// a call line — they own no 1:1 surfaces.
+    private var statusStrip: some View {
+        HStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Status").font(BunType.label).foregroundStyle(BunTheme.secondary)
+                HStack(spacing: 7) {
+                    Circle()
+                        .fill(Self.statusTint(student.status))
+                        .frame(width: 8, height: 8)
+                    Text(Self.statusLabel(student.status))
+                        .font(BunType.rowTitle).foregroundStyle(BunTheme.ink)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            if student.isOneOnOne {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("1:1 calls").font(BunType.label).foregroundStyle(BunTheme.secondary)
+                    Text("\(callsUsed) of \(callsAllotted)")
+                        .font(BunType.rowTitle).foregroundStyle(BunTheme.ink).monospacedDigit()
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+
+    private static func statusLabel(_ status: String?) -> String {
+        switch status {
+        case "active": "Active"
+        case "paused": "Paused"
+        case "ghosting": "Ghosting"
+        case "refunded": "Refunded"
+        case let other?: other.replacingOccurrences(of: "_", with: " ").capitalized
+        case nil: "Unknown"
+        }
+    }
+
+    private static func statusTint(_ status: String?) -> Color {
+        switch status {
+        case "active": BunTheme.green
+        case "paused": BunTheme.secondary
+        case "ghosting", "refunded": BunTheme.pink
+        default: BunTheme.tertiary
+        }
+    }
     private var paid: Double { store.paidByStudent?[student.fullName] ?? 0 }
     private var total: Double { store.totalByStudent?[student.fullName] ?? 0 }
     private var transactions: [BunTransaction] {
@@ -97,12 +147,14 @@ struct BunClientSheet: View {
                         }
                     }
                 }
+                statusStrip
+
                 if total > 0 {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Paid").font(bunFont(17)).foregroundStyle(BunTheme.secondary)
-                        BunMoney(amount: paid, size: 34, weight: .medium)
+                        Text("Paid").font(BunType.label).foregroundStyle(BunTheme.secondary)
+                        BunMoney(amount: paid, size: BunType.Money.hero)
                         Text("of \(ivyMoney(total)) · \(ivyMoney(max(total - paid, 0))) open")
-                            .font(bunFont(16)).foregroundStyle(BunTheme.secondary)
+                            .font(BunType.caption).foregroundStyle(BunTheme.secondary)
                     }
                 }
                 if offerWon {

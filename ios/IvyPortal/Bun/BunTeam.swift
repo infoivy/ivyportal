@@ -75,22 +75,39 @@ struct BunTeamSheet: View {
         }
     }
 
-    /// Who filed on the tapped day. Derived from each member's EOD streak so
-    /// the split is stable rather than random.
+    /// Who filed on the tapped day, and what they wrote.
+    ///
+    /// Filed/missed comes from the real `eods` rows for that date when we have
+    /// them; it falls back to each member's streak only when notes could not
+    /// be read (RLS gives non-admins just their own rows).
     private func dayDetail(_ key: String) -> some View {
         let index = Int(key.split(separator: "-").first.map(String.init) ?? "0") ?? 0
         let week = store.teamWeek ?? []
         let day = week.indices.contains(index) ? week[index] : (day: "", filed: 0, expected: 0)
         let rows = store.teamRows ?? []
-        let filers = rows.filter { $0.eodDays >= 7 - index }
+        let notes = store.teamNotes ?? []
+        let date = dayDate(index)
+        let onDay = notes.filter { $0.reportDate == date }
+        let noteFor = Dictionary(onDay.map { ($0.userId, $0) }, uniquingKeysWith: { first, _ in first })
+        // Start from the streak split so the list agrees with the day's count,
+        // then fold in anyone who demonstrably filed (they left a note). A note
+        // must never appear under a row marked missed.
+        var filers = rows.filter { $0.eodDays >= 7 - index }
+        let streakIds = Set(filers.map(\.id))
+        filers += rows.filter { noteFor[$0.id] != nil && !streakIds.contains($0.id) }
         let filerIds = Set(filers.map(\.id))
         let missing = rows.filter { !filerIds.contains($0.id) }
         return VStack(alignment: .leading, spacing: 12) {
             Text("\(dayName(index)) · \(day.filed) of \(day.expected) filed")
-                .font(bunFont(20)).foregroundStyle(BunTheme.ink)
+                .font(BunType.section).foregroundStyle(BunTheme.ink)
             VStack(spacing: 0) {
                 ForEach(filers) { row in
-                    memberLine(row, filed: true)
+                    VStack(alignment: .leading, spacing: 0) {
+                        memberLine(row, filed: true)
+                        if let note = noteFor[row.id], note.hasNote {
+                            noteBlock(note)
+                        }
+                    }
                 }
                 ForEach(missing) { row in
                     memberLine(row, filed: false)
@@ -98,6 +115,48 @@ struct BunTeamSheet: View {
             }
         }
         .padding(.top, 4)
+    }
+
+    /// The wins/blockers a member typed that day. Blockers read pink so a
+    /// problem is visible without opening anything.
+    private func noteBlock(_ note: TeamEODNote) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if let wins = note.wins?.trimmingCharacters(in: .whitespacesAndNewlines), !wins.isEmpty {
+                Text(wins)
+                    .font(BunType.caption)
+                    .foregroundStyle(BunTheme.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if let blockers = note.blockers?.trimmingCharacters(in: .whitespacesAndNewlines), !blockers.isEmpty {
+                HStack(alignment: .top, spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.system(size: 12, weight: .regular))
+                        .foregroundStyle(BunTheme.pink)
+                    Text(blockers)
+                        .font(BunType.caption)
+                        .foregroundStyle(BunTheme.pink)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.leading, 48)
+        .padding(.bottom, 14)
+    }
+
+    /// The calendar date behind a week-strip column (index 0 = Monday).
+    private func dayDate(_ index: Int) -> String {
+        let calendar = Calendar(identifier: .gregorian)
+        let today = Date()
+        let weekday = calendar.component(.weekday, from: today)      // Sun = 1
+        let sinceMonday = (weekday + 5) % 7
+        guard let monday = calendar.date(byAdding: .day, value: -sinceMonday, to: today),
+              let target = calendar.date(byAdding: .day, value: index, to: monday) else { return "" }
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.calendar = calendar
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: target)
     }
 
     private func dayName(_ index: Int) -> String {

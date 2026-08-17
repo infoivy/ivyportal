@@ -98,11 +98,15 @@ final class BunStore {
 
     // Clients (students as accounts) + team
     var roster: [StudentRosterItem]?
+    /// Completed 1:1 calls per student (web parity: calls used vs allotted).
+    var callCounts: [UUID: Int]?
     var health: [UUID: StudentHealthResult]?
     var paidByStudent: [String: Double]?      // student name -> paid
     var totalByStudent: [String: Double]?     // student name -> plan total
     var teamSummary: PerformanceSummary?
     var teamRows: [TeamMemberRow]?
+    /// Written EOD notes (wins/blockers) keyed by member and day.
+    var teamNotes: [TeamEODNote]?
     var eodDue: Bool?
     var setterType: String?
 
@@ -315,6 +319,9 @@ final class BunStore {
         if health == nil {
             health = try? await PortalAPI.shared.studentHealthMap()
         }
+        if callCounts == nil {
+            callCounts = try? await PortalAPI.shared.studentCallCounts()
+        }
         if paidByStudent == nil, let (plans, payments) = try? await PortalAPI.shared.paymentPlans() {
             let nameByPlan = Dictionary(uniqueKeysWithValues: plans.map { ($0.id, $0.studentName) })
             var paid: [String: Double] = [:]
@@ -432,6 +439,10 @@ final class BunStore {
             teamSummary = result.summary
             teamRows = result.rows
         }
+        if teamNotes == nil {
+            // RLS decides what comes back; non-admins simply see their own.
+            teamNotes = (try? await PortalAPI.shared.teamEODNotes(days: 7)) ?? []
+        }
         if eodDue == nil {
             eodDue = await PortalAPI.shared.owesTodayEOD(roles: AuthStore.shared.roles)
         }
@@ -461,11 +472,13 @@ final class BunStore {
         payoutPeriodStart = nil
         orgs = nil
         roster = nil
+        callCounts = nil
         health = nil
         paidByStudent = nil
         totalByStudent = nil
         teamSummary = nil
         teamRows = nil
+        teamNotes = nil
         setterType = nil
         eodDue = nil
         checkinStamps = nil
@@ -514,11 +527,13 @@ final class BunStore {
         if unconfirmedPayouts == nil { unconfirmedPayouts = BunFixtures.unconfirmedPayouts }
         if payoutPeriodLabel == nil { payoutPeriodLabel = BunFixtures.payoutPeriodLabel }
         if roster == nil { roster = BunFixtures.roster }
+        if callCounts == nil { callCounts = BunFixtures.callCounts }
         if health == nil { health = BunFixtures.health }
         if paidByStudent == nil { paidByStudent = BunFixtures.paidByStudent }
         if totalByStudent == nil { totalByStudent = BunFixtures.totalByStudent }
         if teamSummary == nil { teamSummary = BunFixtures.teamSummary }
         if teamRows == nil { teamRows = BunFixtures.teamRows }
+        if teamNotes == nil { teamNotes = BunFixtures.teamNotes }
         if setterType == nil { setterType = "dm" }
         if eodDue == nil { eodDue = false }   // admin view: never owes an EOD
         if checkinStamps == nil { checkinStamps = BunFixtures.checkinStamps }
