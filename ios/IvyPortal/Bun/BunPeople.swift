@@ -1,0 +1,279 @@
+import SwiftUI
+
+/// Studio tab (founder 2026-08-17): Performance (setter/closer funnel, CRM
+/// shape borrowed from Mochi) and Students (tally, check-in queue, client
+/// book). Team roster moved to Home → Team.
+struct BunStudioPage: View {
+    @State private var store = BunStore.shared
+    @State private var segment = 0
+    @State private var selectedStudent: StudentRosterItem?
+    @State private var opsError: String?
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 26) {
+                BunTitle(text: "Studio")
+                BunSegment(options: ["Performance", "Students"], selection: $segment)
+                if segment == 0 {
+                    performanceSection
+                } else {
+                    clientsSection
+                }
+            }
+            .padding(.horizontal, 22)
+            .padding(.top, 12)
+            .padding(.bottom, 96)
+        }
+        .scrollIndicators(.hidden)
+        .task {
+            await store.loadTeam()
+            await store.loadClients()
+            await store.loadOps()
+        }
+        .refreshable {
+            store.teamSummary = nil
+            store.teamRows = nil
+            store.roster = nil
+            store.health = nil
+            await store.loadTeam()
+            await store.loadClients()
+        }
+        .sheet(item: $selectedStudent) { student in
+            BunClientSheet(student: student)
+                .presentationBackground(BunTheme.ground)
+                .presentationCornerRadius(40)
+        }
+    }
+
+    // MARK: Performance
+
+    /// Funnel + per-setter performance (Mochi shape: sets → shows → closes,
+    /// with the outreach volume behind each).
+    private var performanceSection: some View {
+        VStack(alignment: .leading, spacing: 22) {
+            funnelRow
+            hairline
+            Text("Setters").font(bunFont(24)).foregroundStyle(BunTheme.ink)
+            setterRows
+            hairline
+            Text("Closers").font(bunFont(24)).foregroundStyle(BunTheme.ink)
+            closerRows
+        }
+    }
+
+    private var rows: [TeamMemberRow] { store.teamRows ?? [] }
+
+    private var funnelRow: some View {
+        let sets = rows.reduce(0) { $0 + $1.sets }
+        let shows = rows.reduce(0) { $0 + $1.shows }
+        let closes = rows.reduce(0) { $0 + $1.closes }
+        return VStack(alignment: .leading, spacing: 14) {
+            Text("Last 7 days").font(bunFont(17)).foregroundStyle(BunTheme.secondary)
+            HStack(spacing: 0) {
+                funnelStat(label: "Sets", value: "\(sets)", tone: BunTheme.ink)
+                funnelStat(label: "Showed", value: "\(shows)",
+                           tone: BunTheme.ink,
+                           caption: sets > 0 ? "\(Int((Double(shows) / Double(sets) * 100).rounded()))% show" : nil)
+                funnelStat(label: "Closed", value: "\(closes)",
+                           tone: BunTheme.green,
+                           caption: shows > 0 ? "\(Int((Double(closes) / Double(shows) * 100).rounded()))% close" : nil)
+            }
+        }
+    }
+
+    private func funnelStat(label: String, value: String, tone: Color, caption: String? = nil) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(label).font(bunFont(16)).foregroundStyle(BunTheme.secondary)
+            Text(value).font(bunFont(28, .medium)).foregroundStyle(tone).monospacedDigit()
+            if let caption {
+                Text(caption).font(bunFont(14)).foregroundStyle(BunTheme.tertiary)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var setterRows: some View {
+        VStack(spacing: 0) {
+            ForEach(rows.filter { $0.role.lowercased() == "setter" }) { row in
+                performanceRow(row, primary: "\(row.sets) sets",
+                               secondary: volumeLine(row))
+            }
+        }
+    }
+
+    private var closerRows: some View {
+        VStack(spacing: 0) {
+            ForEach(rows.filter { $0.role.lowercased() == "closer" }) { row in
+                performanceRow(row, primary: "\(row.closes) closes",
+                               secondary: "\(row.booked) booked · \(row.shows) showed")
+            }
+        }
+    }
+
+    private func volumeLine(_ row: TeamMemberRow) -> String {
+        var bits: [String] = []
+        if row.dials > 0 { bits.append("\(row.dials) dials") }
+        if row.dmsSent > 0 { bits.append("\(row.dmsSent) DMs") }
+        bits.append("\(row.shows) showed")
+        return bits.joined(separator: " · ")
+    }
+
+    private func performanceRow(_ row: TeamMemberRow, primary: String, secondary: String) -> some View {
+        HStack(spacing: 14) {
+            BunAvatar(text: String(row.name.prefix(1)), size: 44, fill: BunStore.fill(for: row.name))
+            VStack(alignment: .leading, spacing: 3) {
+                Text(row.name).font(bunFont(19)).foregroundStyle(BunTheme.ink).lineLimit(1)
+                Text(secondary).font(bunFont(15)).foregroundStyle(BunTheme.secondary).lineLimit(1)
+            }
+            Spacer()
+            Text(primary).font(bunFont(17, .medium)).foregroundStyle(BunTheme.ink).monospacedDigit()
+        }
+        .frame(minHeight: 68)
+    }
+
+    private func memberLine(_ row: TeamMemberRow) -> String {
+        var bits: [String] = [row.role.capitalized]
+        if row.sets > 0 { bits.append("\(row.sets) sets") }
+        if row.dials > 0 { bits.append("\(row.dials) dials") }
+        if row.dmsSent > 0 { bits.append("\(row.dmsSent) DMs") }
+        if row.closes > 0 { bits.append("\(row.closes) closes") }
+        bits.append("EOD \(row.eodDays)/7")
+        return bits.joined(separator: " · ")
+    }
+
+    // MARK: Clients
+
+    private var clientsSection: some View {
+        VStack(alignment: .leading, spacing: 22) {
+            Text("Today's tally").font(bunFont(24)).foregroundStyle(BunTheme.ink)
+            HStack(spacing: 10) {
+                tallyChip("loom", label: "Loom", symbol: "video")
+                tallyChip("roleplay", label: "Roleplay", symbol: "person.2.wave.2")
+                tallyChip("checkin", label: "Check-in", symbol: "message")
+                tallyChip("escalation", label: "Escalation", symbol: "exclamationmark.bubble")
+            }
+            if let opsError {
+                Text(opsError).font(bunFont(15)).foregroundStyle(BunTheme.pink)
+            }
+            HStack {
+                Text("Needs a check-in").font(bunFont(24)).foregroundStyle(BunTheme.ink)
+                Spacer()
+                Text("Coldest first").font(bunFont(15)).foregroundStyle(BunTheme.secondary)
+            }
+            if store.checkinStamps == nil || store.roster == nil {
+                RoundedRectangle(cornerRadius: 12).fill(BunTheme.field).frame(height: 60)
+            } else {
+                let queue = Array(store.checkinQueue.prefix(5))
+                if queue.isEmpty {
+                    Text("Roster is warm. Students land here as they cool down.")
+                        .font(bunFont(16)).foregroundStyle(BunTheme.secondary)
+                } else {
+                    VStack(spacing: 0) {
+                        ForEach(queue) { student in
+                            checkinRow(student)
+                        }
+                    }
+                }
+            }
+            hairline
+            Text("Students").font(bunFont(24)).foregroundStyle(BunTheme.ink)
+            clientsList
+        }
+    }
+
+    private func tallyChip(_ kind: String, label: String, symbol: String) -> some View {
+        Button {
+            Task {
+                do { try await store.tally(kind); opsError = nil }
+                catch { opsError = "Tally failed: \(error.localizedDescription)" }
+            }
+        } label: {
+            VStack(spacing: 6) {
+                Image(systemName: symbol).font(.system(size: 16, weight: .regular))
+                    .foregroundStyle(BunTheme.indigoLight)
+                Text(label).font(bunFont(13)).foregroundStyle(BunTheme.secondary)
+                Text("\(store.tallyCounts[kind, default: 0])")
+                    .font(bunFont(18, .medium)).foregroundStyle(BunTheme.ink).monospacedDigit()
+                    .contentTransition(.numericText())
+            }
+            .frame(maxWidth: .infinity, minHeight: 84)
+            .background(BunTheme.raised, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        }
+        .buttonStyle(BunPressStyle())
+        .contextMenu {
+            Button("Undo last \(label.lowercased())", systemImage: "arrow.uturn.backward") {
+                Task {
+                    do { try await store.undoTally(kind); opsError = nil }
+                    catch { opsError = "Undo failed: \(error.localizedDescription)" }
+                }
+            }
+        }
+    }
+
+    private func checkinRow(_ student: StudentRosterItem) -> some View {
+        let days = store.daysSinceCheckin(student.id)
+        let done = store.checkedNow.contains(student.id) || days == 0
+        let label = done ? "Checked in today" : (days.map { "\($0)d since last check-in" } ?? "No check-in on record")
+        let tone: Color = done ? BunTheme.green : (days == nil || days! >= 4 ? BunTheme.pink : days! >= 2 ? Color(red: 0.95, green: 0.72, blue: 0.35) : BunTheme.secondary)
+        return HStack(spacing: 14) {
+            BunAvatar(text: String(student.fullName.prefix(1)), size: 44, fill: BunStore.fill(for: student.fullName))
+            VStack(alignment: .leading, spacing: 3) {
+                Text(student.fullName).font(bunFont(19)).foregroundStyle(BunTheme.ink).lineLimit(1)
+                Text(label).font(bunFont(15)).foregroundStyle(tone)
+            }
+            Spacer()
+            Button {
+                guard !done else { return }
+                Task {
+                    do { try await store.quickCheckin(student); opsError = nil }
+                    catch { opsError = "Check-in failed: \(error.localizedDescription)" }
+                }
+            } label: {
+                Image(systemName: done ? "checkmark.circle" : "message.badge")
+                    .font(.system(size: 22, weight: .regular))
+                    .foregroundStyle(done ? BunTheme.green : BunTheme.indigoLight)
+                    .frame(width: 44, height: 44)
+                    .background(BunTheme.field, in: Circle())
+            }
+            .buttonStyle(BunPressStyle())
+            .disabled(done)
+            .accessibilityLabel(done ? "\(student.fullName) checked in" : "Check in with \(student.fullName)")
+        }
+        .frame(minHeight: 64)
+    }
+
+    /// Priority-ordered clients (founder rule: struggling 1:1 lead,
+    /// scholarship closes the list — ClientPriority, unchanged).
+    @ViewBuilder private var clientsList: some View {
+        if store.roster == nil {
+            ForEach(0..<4, id: \.self) { _ in
+                HStack(spacing: 14) {
+                    Circle().fill(BunTheme.field).frame(width: 44, height: 44)
+                    RoundedRectangle(cornerRadius: 8).fill(BunTheme.field).frame(width: 190, height: 16)
+                    Spacer()
+                }
+                .frame(minHeight: 60)
+            }
+        } else if store.prioritizedRoster.isEmpty {
+            Text("No active clients yet. Logged closes create client accounts.")
+                .font(bunFont(17)).foregroundStyle(BunTheme.secondary)
+        } else {
+            VStack(spacing: 0) {
+                ForEach(store.prioritizedRoster) { student in
+                    BunClientRow(
+                        student: student,
+                        health: store.health?[student.id],
+                        paid: store.paidByStudent?[student.fullName] ?? 0,
+                        total: store.totalByStudent?[student.fullName] ?? 0
+                    ) { selectedStudent = student }
+                }
+            }
+        }
+    }
+
+    private var hairline: some View {
+        Rectangle().fill(BunTheme.hairline).frame(height: 1)
+            .padding(.horizontal, -22)
+    }
+}
