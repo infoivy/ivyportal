@@ -3477,6 +3477,11 @@ struct CRMSummary: Decodable, Sendable {
         var response: Response?
         var hours: [Hour]?
         var peakHourUTC: Int?
+        var hourTotal: Int?
+        var weekdays: [Weekday]?
+        var peakWeekday: String?
+        /// Sends, replies and time online merged into one row per person.
+        var setters: [Setter]?
         var revenue: Revenue?
         var funnel: [Day]?
         var sources: [Source]?
@@ -3547,6 +3552,21 @@ struct CRMSummary: Decodable, Sendable {
             var count: Int
             var id: Int { hour }
         }
+        struct Weekday: Decodable, Sendable, Identifiable {
+            var day: String
+            var count: Int
+            var id: String { day }
+        }
+        struct Setter: Decodable, Sendable, Identifiable {
+            var name: String
+            var messages: Int
+            var replies: Int
+            var rate: Double?
+            var activeMinutes: Double?
+            var daysActive: Int?
+            var avgDailyMinutes: Double?
+            var id: String { name }
+        }
         struct Revenue: Decodable, Sendable {
             var net: Double?
             var gross: Double?
@@ -3584,12 +3604,34 @@ struct CRMSummary: Decodable, Sendable {
         var pipeline: Double?
         var closeRate: Double?
         var stages: [Stage]?
+        var activity: Activity?
+        var recent: [Lead]?
 
         struct Stage: Decodable, Sendable, Identifiable {
             var name: String
             var count: Int
             var value: Double
             var id: String { name }
+        }
+        struct Activity: Decodable, Sendable {
+            var dials: Int?
+            var newLeads: Int?
+            var avgCallSeconds: Int?
+            var daily: [Day]?
+
+            struct Day: Decodable, Sendable, Identifiable {
+                var day: String
+                var dials: Int
+                var leads: Int
+                var id: String { day }
+            }
+        }
+        struct Lead: Decodable, Sendable, Identifiable {
+            var name: String
+            var status: String
+            var value: Double
+            var updatedAt: String
+            var id: String { name + updatedAt }
         }
     }
 }

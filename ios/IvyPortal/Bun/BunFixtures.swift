@@ -586,6 +586,22 @@ enum BunFixtures {
             callsBooked: 19, qualified: 8, bookingRate: 0.19)
         mochi.hours = hours
         mochi.peakHourUTC = 17
+        mochi.hourTotal = hours.reduce(0) { $0 + $1.count }
+        mochi.weekdays = [
+            .init(day: "Monday", count: 970), .init(day: "Tuesday", count: 931),
+            .init(day: "Wednesday", count: 576), .init(day: "Thursday", count: 809),
+            .init(day: "Friday", count: 500), .init(day: "Saturday", count: 682),
+            .init(day: "Sunday", count: 858),
+        ]
+        mochi.peakWeekday = "Monday"
+        mochi.setters = [
+            .init(name: "Sofia Marin", messages: 420, replies: 319, rate: 0.76,
+                  activeMinutes: 3_026, daysActive: 7, avgDailyMinutes: 432),
+            .init(name: "Danny Cole", messages: 94, replies: 45, rate: 0.48,
+                  activeMinutes: 651, daysActive: 2, avgDailyMinutes: 326),
+            .init(name: "Ibrahim Sy", messages: 58, replies: 42, rate: 0.72,
+                  activeMinutes: 1_110, daysActive: 6, avgDailyMinutes: 185),
+        ]
         mochi.revenue = CRMSummary.Mochi.Revenue(net: 18_240, gross: 19_100, count: 7, crm: 18_240)
         mochi.funnel = funnel
         mochi.sources = [
@@ -599,7 +615,7 @@ enum BunFixtures {
             .init(name: "Ibrahim Sy", outbound: 328),
         ]
 
-        let close = CRMSummary.Close(
+        var close = CRMSummary.Close(
             configured: true, error: nil, leads: 156, active: 38, won: 11,
             pipeline: 413_514, closeRate: 7.1,
             stages: [
@@ -608,6 +624,26 @@ enum BunFixtures {
                 .init(name: "Follow up", count: 12, value: 54_000),
                 .init(name: "Won", count: 11, value: 42_800),
             ])
+        var closeDaily: [CRMSummary.Close.Activity.Day] = []
+        for back in (0..<min(days, 14)).reversed() {
+            let date = Calendar.current.date(byAdding: .day, value: -back, to: Date()) ?? Date()
+            closeDaily.append(.init(day: BunStore.dayKey(date),
+                                    dials: 40 + (back * 7) % 35, leads: 4 + back % 5))
+        }
+        close.activity = CRMSummary.Close.Activity(
+            dials: closeDaily.reduce(0) { $0 + $1.dials },
+            newLeads: closeDaily.reduce(0) { $0 + $1.leads },
+            avgCallSeconds: 252, daily: closeDaily)
+        var recent: [CRMSummary.Close.Lead] = []
+        let names = ["Yusuf Rahman", "Dana Whitfield", "Omar Diallo", "Priya Nair", "Hamid Farouk"]
+        let statuses = ["Booked appointment", "Working", "Follow up", "New", "Won"]
+        for (index, name) in names.enumerated() {
+            let date = Calendar.current.date(byAdding: .hour, value: -index * 9, to: Date()) ?? Date()
+            recent.append(.init(name: name, status: statuses[index],
+                                value: index == 4 ? 5_800 : Double(2_000 + index * 900),
+                                updatedAt: ISO8601DateFormatter().string(from: date)))
+        }
+        close.recent = recent
         return CRMSummary(mochi: mochi, close: close)
     }
 

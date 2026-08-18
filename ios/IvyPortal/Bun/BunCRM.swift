@@ -12,6 +12,10 @@ struct BunCRMSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var store = BunStore.shared
     @State private var period = 1
+    /// Founder 2026-08-18: Mochi and Close count different things, so they
+    /// get a tab each rather than one stacked page.
+    @State private var source = 0
+    @State private var showSetters = false
 
     private var mochi: CRMSummary.Mochi? { store.crm?.mochi }
     private var close: CRMSummary.Close? { store.crm?.close }
@@ -28,6 +32,8 @@ struct BunCRMSheet: View {
                     .font(BunType.caption).foregroundStyle(BunTheme.secondary)
                     .fixedSize(horizontal: false, vertical: true)
 
+                BunSegment(options: ["Mochi", "Close"], selection: $source)
+
                 BunSegment(options: PortalAPI.CRMPeriod.allCases.map(\.label), selection: $period)
                     .onChange(of: period) { _, index in
                         Task { await store.loadCRM(PortalAPI.CRMPeriod.allCases[index], force: true) }
@@ -41,9 +47,9 @@ struct BunCRMSheet: View {
                     ForEach(0..<3, id: \.self) { _ in
                         RoundedRectangle(cornerRadius: 12).fill(BunTheme.field).frame(height: 72)
                     }
-                } else {
+                } else if source == 0 {
                     mochiBlock
-                    edgeHairline
+                } else {
                     closeBlock
                 }
             }
@@ -52,6 +58,11 @@ struct BunCRMSheet: View {
             .padding(.bottom, 60)
         }
         .scrollIndicators(.hidden)
+        .sheet(isPresented: $showSetters) {
+            BunSetterActivitySheet()
+                .presentationBackground(BunTheme.ground)
+                .presentationCornerRadius(40)
+        }
         .task { await store.loadCRM(PortalAPI.CRMPeriod.allCases[period]) }
         .refreshable { await store.loadCRM(PortalAPI.CRMPeriod.allCases[period], force: true) }
     }
@@ -269,9 +280,12 @@ struct BunCRMSheet: View {
             (label: ((hour.hour + offset) % 24 + 24) % 24, count: hour.count)
         }.sorted { $0.label < $1.label }
         let top = max(shifted.map(\.count).max() ?? 1, 1)
-        return VStack(alignment: .leading, spacing: 10) {
-            HStack {
+        return Button { showSetters = true } label: {
+            VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
                 Text("When leads message").font(BunType.label).foregroundStyle(BunTheme.secondary)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 11, weight: .regular)).foregroundStyle(BunTheme.secondary)
                 Spacer()
                 if let peak {
                     let local = ((peak + offset) % 24 + 24) % 24
@@ -297,10 +311,13 @@ struct BunCRMSheet: View {
             }
             .chartYAxis(.hidden)
             .frame(height: 110)
+            }
+            .contentShape(Rectangle())
         }
+        .buttonStyle(BunPressStyle())
     }
 
-    private static func hourLabel(_ hour: Int) -> String {
+    static func hourLabel(_ hour: Int) -> String {
         switch hour {
         case 0: "12am"
         case 12: "12pm"
@@ -309,12 +326,17 @@ struct BunCRMSheet: View {
         }
     }
 
-    private static func percent(_ value: Double) -> String {
+    static func percent(_ value: Double) -> String {
         "\(Int((value * 100).rounded()))%"
     }
 
+    /// Close reports call length in seconds; "4m 12s" reads better.
+    static func callLength(_ seconds: Int) -> String {
+        seconds < 60 ? "\(seconds)s" : "\(seconds / 60)m \(seconds % 60)s"
+    }
+
     /// "22m", "3h 15m" — the shape Mochi shows for reply time.
-    private static func duration(_ minutes: Double) -> String {
+    static func duration(_ minutes: Double) -> String {
         let total = Int(minutes.rounded())
         if total < 60 { return "\(total)m" }
         let hours = total / 60
@@ -412,6 +434,13 @@ struct BunCRMSheet: View {
                         moneyStat("In play", amount: close.pipeline)
                         stat("Close rate", value: close.closeRate.map { "\(Int($0.rounded()))%" } ?? "–")
                     }
+                    if let activity = close.activity {
+                        HStack(alignment: .top, spacing: 0) {
+                            stat("Dials", value: Self.count(activity.dials))
+                            stat("New leads", value: Self.count(activity.newLeads))
+                            stat("Avg call", value: activity.avgCallSeconds.map(Self.callLength) ?? "–")
+                        }
+                    }
                     if let stages = close.stages, !stages.isEmpty {
                         VStack(spacing: 0) {
                             ForEach(stages) { stage in
@@ -426,6 +455,32 @@ struct BunCRMSheet: View {
                                     }
                                 }
                                 .frame(minHeight: 52)
+                            }
+                        }
+                    }
+                    if let recent = close.recent, !recent.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Latest leads").font(BunType.label).foregroundStyle(BunTheme.secondary)
+                            VStack(spacing: 0) {
+                                ForEach(recent.prefix(12)) { lead in
+                                    HStack(spacing: 12) {
+                                        VStack(alignment: .leading, spacing: 3) {
+                                            Text(lead.name).font(BunType.rowTitle)
+                                                .foregroundStyle(BunTheme.ink).lineLimit(1)
+                                            Text([lead.status,
+                                                  PortalAPI.parseTimestamp(lead.updatedAt)
+                                                      .map { BunStore.friendlyDay($0).lowercased() }]
+                                                    .compactMap { $0 }.joined(separator: " · "))
+                                                .font(BunType.caption).foregroundStyle(BunTheme.secondary)
+                                                .lineLimit(1)
+                                        }
+                                        Spacer()
+                                        if lead.value > 0 {
+                                            BunMoney(amount: lead.value, size: BunType.Money.row)
+                                        }
+                                    }
+                                    .frame(minHeight: 60)
+                                }
                             }
                         }
                     }

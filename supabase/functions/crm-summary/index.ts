@@ -205,8 +205,12 @@ Deno.serve(async (req) => {
         median_response_time_minutes?: number;
       };
       type Hours = { distribution?: { hour: number; count: number }[]; peak_hour_utc?: number; total_messages?: number };
+      type Weekday = { distribution?: { weekday: string; count: number }[]; peak_weekday_name?: string; total_messages?: number };
+      type Windows = {
+        members?: { name?: string; role?: string; total_active_minutes?: number; days_active?: number; avg_daily_active_minutes?: number }[];
+      };
 
-      const [counts, trend, sources, payments, health, overview, funnelMetrics, replies, setter, hours] = await Promise.all([
+      const [counts, trend, sources, payments, health, overview, funnelMetrics, replies, setter, hours, weekday, windows] = await Promise.all([
         callTool<Counts>(token, "get_message_counts", { time_period: period }),
         callTool<Trend>(token, "get_funnel_trend", { time_period: period }),
         callTool<Sources>(token, "get_lead_source_breakdown", { time_period: period }),
@@ -217,6 +221,122 @@ Deno.serve(async (req) => {
         callTool<Replies>(token, "get_lead_reply_rate", { time_period: period }),
         callTool<Setter>(token, "get_setter_metrics", { time_period: period }),
         callTool<Hours>(token, "get_message_time_distribution", { time_period: period }),
+        callTool<Weekday>(token, "get_message_dayofweek_distribution", { time_period: period }),
+        callTool<Windows>(token, "get_setter_active_windows", { time_period: period }),
+      ]);
+
+      const funnel = trend?.trend ?? [];
+      const money = (value?: string) => {
+        if (!value) return null;
+        const parsed = Number(String(value).replace(/[^0-9.-]/g, ""));
+        return Number.isFinite(parsed) ? parsed : null;
+      };
+      const pipeline = funnelMetrics?.pipeline_now ?? {};
+      const rate = (key: string) => funnelMetrics?.conversion?.rates?.[key]?.value ?? null;
+      const protection = health?.instagram_protection?.protection;
+
+      // One row per setter: sends, replies and time online merged, because
+      // Mochi answers those from three different tools.
+      const setterRows = new Map<string, {
+        name: string; messages: number; replies: number; rate: number | null;
+        activeMinutes: number | null; daysActive: number | null; avgDailyMinutes: number | null;
+      }>();
+      const putSetter = (name: string) => {
+        const key = (name ?? "").trim();
+        if (!key) return null;
+        if (!setterRows.has(key)) {
+          setterRows.set(key, {
+            name: key, messages: 0, replies: 0, rate: null,
+            activeMinutes: null, daysActive: null, avgDailyMinutes: null,
+          });
+        }
+        return setterRows.get(key)!;
+      };
+      for (const m of replies?.members_breakdown ?? []) {
+        const row = putSetter(m.name ?? "");
+        if (!row) continue;
+        row.messages = m.total_messages ?? 0;
+        row.replies = m.replies_received ?? 0;
+        row.rate = m.reply_rate ?? null;
+      }
+      for (const m of counts?.messages_by_member ?? []) {
+        const row = putSetter(m.member_name ?? m.name ?? "");
+        if (!row) continue;
+        const sent = m.messages_sent ?? m.outbound ?? m.outbound_messages ?? 0;
+        if (sent > row.messages) row.messages = sent;
+      }
+      for (const m of windows?.members ?? []) {
+        const row = putSetter(m.name ?? "");
+        if (!row) continue;
+        row.activeMinutes = m.total_active_minutes ?? null;
+        row.daysActive = m.days_active ?? null;
+        row.avgDailyMinutes = m.avg_daily_active_minutes ?? null;
+      }
+
+      out.mochi = { connected: false, period };
+    } else {
+      type Counts = {
+        inbound_messages?: number;
+        outbound_messages?: number;
+        total_messages?: number;
+        active_conversations?: number;
+        messages_by_member?: { member_name?: string; name?: string; outbound?: number; outbound_messages?: number; messages_sent?: number }[];
+      };
+      type Trend = { trend?: { day: string; new_leads?: number; qualified?: number; booked?: number; won?: number }[] };
+      type Sources = { sources?: { source: string; label?: string; lead_count?: number; calls_booked?: number }[] };
+      type Payments = { net_revenue?: string; you_keep?: string; gross_volume?: string; payments_count?: number };
+      type Health = {
+        status?: string;
+        message?: string;
+        connection?: { username?: string; is_connected?: boolean; send_paused?: boolean };
+        recent_sends?: { total?: number; failed?: number; failure_rate?: number };
+        instagram_protection?: { protection?: { status?: string; active_flag_count?: number } };
+      };
+      type Overview = {
+        account?: { username?: string; is_connected?: boolean; is_send_paused?: boolean };
+        growth?: { total_leads?: number; new_leads_last_30_days?: number };
+      };
+      type Funnel = {
+        pipeline_now?: Record<string, number>;
+        conversion?: {
+          cohort_size?: number;
+          rates?: Record<string, { value?: number | null }>;
+        };
+        total_revenue?: number;
+      };
+      type Replies = {
+        total_outbound_messages?: number;
+        messages_with_reply?: number;
+        reply_rate?: number;
+        members_breakdown?: { name?: string; total_messages?: number; replies_received?: number; reply_rate?: number }[];
+      };
+      type Setter = {
+        new_leads?: number;
+        calls_booked?: number;
+        leads_qualified?: number;
+        booking_rate?: number;
+        avg_response_time_minutes?: number;
+        median_response_time_minutes?: number;
+      };
+      type Hours = { distribution?: { hour: number; count: number }[]; peak_hour_utc?: number; total_messages?: number };
+      type Weekday = { distribution?: { weekday: string; count: number }[]; peak_weekday_name?: string; total_messages?: number };
+      type Windows = {
+        members?: { name?: string; role?: string; total_active_minutes?: number; days_active?: number; avg_daily_active_minutes?: number }[];
+      };
+
+      const [counts, trend, sources, payments, health, overview, funnelMetrics, replies, setter, hours, weekday, windows] = await Promise.all([
+        callTool<Counts>(token, "get_message_counts", { time_period: period }),
+        callTool<Trend>(token, "get_funnel_trend", { time_period: period }),
+        callTool<Sources>(token, "get_lead_source_breakdown", { time_period: period }),
+        callTool<Payments>(token, "get_payment_overview", { time_period: period }),
+        callTool<Health>(token, "get_account_health", {}),
+        callTool<Overview>(token, "get_account_overview", {}),
+        callTool<Funnel>(token, "get_funnel_metrics", { time_period: period }),
+        callTool<Replies>(token, "get_lead_reply_rate", { time_period: period }),
+        callTool<Setter>(token, "get_setter_metrics", { time_period: period }),
+        callTool<Hours>(token, "get_message_time_distribution", { time_period: period }),
+        callTool<Weekday>(token, "get_message_dayofweek_distribution", { time_period: period }),
+        callTool<Windows>(token, "get_setter_active_windows", { time_period: period }),
       ]);
 
       const funnel = trend?.trend ?? [];
@@ -316,6 +436,10 @@ Deno.serve(async (req) => {
             outbound: m.messages_sent ?? m.outbound ?? m.outbound_messages ?? 0,
           }))
           .filter((m) => m.name),
+        hourTotal: hours?.total_messages ?? null,
+        weekdays: (weekday?.distribution ?? []).map((d) => ({ day: d.weekday, count: d.count })),
+        peakWeekday: weekday?.peak_weekday_name ?? null,
+        setters: [...setterRows.values()].sort((a, b) => b.messages - a.messages),
       };
     }
   }
@@ -340,9 +464,11 @@ Deno.serve(async (req) => {
           const value = Math.round(opps.reduce((a, o) => a + Number(o.value ?? 0), 0)) / 100;
           const activeOpp = opps.find((o) => o.status_type === "active") ?? opps[0];
           return {
+            name: String(l.display_name ?? l.name ?? "Unnamed"),
             status: String(l.status_label ?? "Unknown"),
             statusType: String(activeOpp?.status_type ?? l.status_type ?? ""),
             value,
+            updatedAt: String(l.date_updated ?? ""),
           };
         });
         const won = leads.filter((l) => l.statusType === "won").length;
@@ -354,6 +480,56 @@ Deno.serve(async (req) => {
           row.value += lead.value;
           stages.set(lead.status, row);
         }
+        // Dials, new leads and average call length for the same window the
+        // Mochi side uses, so the two tabs are comparable.
+        const days = period === "today" ? 1 : (period === "last_7_days" ? 7 : 30);
+        const end = new Date();
+        const start = new Date(end.getTime() - (days - 1) * 86400000);
+        let activity: Record<string, unknown> | null = null;
+        try {
+          const report = await fetch("https://api.close.com/api/v1/report/activity/", {
+            method: "POST",
+            headers: {
+              Authorization: `Basic ${basic}`,
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            body: JSON.stringify({
+              datetime_range: { start: start.toISOString(), end: end.toISOString() },
+              metrics: ["calls.outbound.all.count", "calls.outbound.all.avg_duration", "leads.created.all.count"],
+              type: "overview",
+            }),
+          });
+          if (report.ok) {
+            const body = await report.json() as {
+              aggregations?: { totals?: Record<string, number | string | undefined> };
+              data?: ({ datetime?: string } & Record<string, number | string | undefined>)[];
+            };
+            const totals = body.aggregations?.totals ?? {};
+            const byDay = new Map<string, { dials: number; leads: number }>();
+            for (const point of body.data ?? []) {
+              if (!point.datetime) continue;
+              const day = String(point.datetime).slice(0, 10);
+              const row = byDay.get(day) ?? { dials: 0, leads: 0 };
+              row.dials += Number(point["calls.outbound.all.count"]) || 0;
+              row.leads += Number(point["leads.created.all.count"]) || 0;
+              byDay.set(day, row);
+            }
+            const daily = [...byDay.entries()].map(([day, row]) => ({ day, ...row }))
+              .sort((a, b) => a.day.localeCompare(b.day));
+            activity = {
+              dials: Number(totals["calls.outbound.all.count"]) || daily.reduce((s, d) => s + d.dials, 0),
+              newLeads: Number(totals["leads.created.all.count"]) || daily.reduce((s, d) => s + d.leads, 0),
+              avgCallSeconds: totals["calls.outbound.all.avg_duration"] == null
+                ? null
+                : Math.round(Number(totals["calls.outbound.all.avg_duration"]) || 0),
+              daily,
+            };
+          }
+        } catch {
+          activity = null;
+        }
+
         out.close = {
           configured: true,
           leads: leads.length,
@@ -365,6 +541,13 @@ Deno.serve(async (req) => {
             .map(([name, row]) => ({ name, count: row.count, value: row.value }))
             .sort((a, b) => b.count - a.count)
             .slice(0, 8),
+          activity,
+          // Newest touched first: that is the order a closer works them in.
+          recent: leads
+            .slice()
+            .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+            .slice(0, 20)
+            .map((l) => ({ name: l.name, status: l.status, value: l.value, updatedAt: l.updatedAt })),
         };
       }
     } catch (error) {

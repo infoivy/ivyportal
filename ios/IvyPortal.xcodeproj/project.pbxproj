@@ -35,6 +35,7 @@
 		5C95D428766135D64E898F87 /* BunCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E0D004EB78CEC743DA4B30E /* BunCards.swift */; };
 		6193F96F7E1C37D4B9AD5080 /* BunFlows.swift in Sources */ = {isa = PBXBuildFile; fileRef = D419C7626EBE60B038AEFF4B /* BunFlows.swift */; };
 		62774EEB02BFB8525D882A7D /* Typography.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F88500C81536C1930C96266 /* Typography.swift */; };
+		656CB58BED651EFF41A4C246 /* BunSetterActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70F800E7331960E6584FFB72 /* BunSetterActivity.swift */; };
 		73F79BE350AC53836331381A /* PortalConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7D5D8C7EB8E956CCC461583 /* PortalConfig.swift */; };
 		74768A9B479074E2A7E9E309 /* AuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B861E432E91DCD6B7D8C6A /* AuthView.swift */; };
 		74DE9D4302D252C6829D8046 /* IvyPortalApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBCF822DA31E8719AFB8220C /* IvyPortalApp.swift */; };
@@ -128,6 +129,7 @@
 		691002273A01224D93FBBEF0 /* RoleDestinationPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoleDestinationPolicy.swift; sourceTree = "<group>"; };
 		6F3CED060763D625C62112D7 /* IvyPortal.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = IvyPortal.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7071081907CE6680BBC714C8 /* BunBanking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BunBanking.swift; sourceTree = "<group>"; };
+		70F800E7331960E6584FFB72 /* BunSetterActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BunSetterActivity.swift; sourceTree = "<group>"; };
 		71296072CE3006F177B72061 /* objection-handling-playbook.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "objection-handling-playbook.md"; sourceTree = "<group>"; };
 		72CB90E12D322E37278736F0 /* BunPeople.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BunPeople.swift; sourceTree = "<group>"; };
 		775FD769787E7D149EF81812 /* BunCallLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BunCallLog.swift; sourceTree = "<group>"; };
@@ -236,6 +238,7 @@
 				34642B044BD0E7D79FF89586 /* BunOnboarding.swift */,
 				72CB90E12D322E37278736F0 /* BunPeople.swift */,
 				98FA19A4B4B43D3EFABB1D62 /* BunSchedule.swift */,
+				70F800E7331960E6584FFB72 /* BunSetterActivity.swift */,
 				468266E0B9C82788DE8BEB6D /* BunSheets.swift */,
 				EFA3B0E7E49DC4A60E64C024 /* BunShell.swift */,
 				784A154A1E528170728B6268 /* BunTeam.swift */,
@@ -568,6 +571,7 @@
 				D7CEF885C3F5C6D994DE05C4 /* BunOnboarding.swift in Sources */,
 				CB5CA7854B1C4F109116C21A /* BunPeople.swift in Sources */,
 				0165D59B585B6BF845AB6F55 /* BunSchedule.swift in Sources */,
+				656CB58BED651EFF41A4C246 /* BunSetterActivity.swift in Sources */,
 				77B7A921E7D0F310ABE82B51 /* BunSheets.swift in Sources */,
 				5663021EED0C0A46A7DDF5CD /* BunShell.swift in Sources */,
 				FBDAF4D22974EBF0CE5C697F /* BunTeam.swift in Sources */,

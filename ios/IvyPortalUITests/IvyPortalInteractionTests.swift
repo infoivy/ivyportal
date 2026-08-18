@@ -264,20 +264,47 @@ final class BunSettingsToggleTests: XCTestCase {
     }
 }
 
-/// The CRM sheet is long; the pipeline census and the setter table sit well
-/// below the fold.
+/// Mochi and Close are separate tabs now (founder 2026-08-18); the census and
+/// the source table sit below the fold on the Mochi side.
 @MainActor
 final class BunCRMTests: XCTestCase {
-    func testCRMCarriesPipelineAndSetters() {
+    func testCRMCarriesBothSources() {
         let app = XCUIApplication()
         app.launchArguments = ["-bunTab", "team", "-bunSheet", "crm"]
         app.launch()
         XCTAssertTrue(app.staticTexts["CRM"].waitForExistence(timeout: 8))
+        // Segment options are buttons; their text is the accessibility label.
+        XCTAssertTrue(app.buttons["segment-Mochi"].exists, "Mochi tab")
+        XCTAssertTrue(app.buttons["segment-Close"].exists, "Close tab")
         for _ in 0..<4 { app.swipeUp() }
+        let mochiShot = XCTAttachment(screenshot: app.screenshot())
+        mochiShot.name = "crm-mochi-lower"
+        mochiShot.lifetime = .keepAlways
+        add(mochiShot)
+        XCTAssertTrue(app.staticTexts["Pipeline now"].exists, "the live stage census")
+
+        app.buttons["segment-Close"].tap()
+        XCTAssertTrue(app.staticTexts["Pipeline"].waitForExistence(timeout: 5), "Close pipeline")
+        let closeShot = XCTAttachment(screenshot: app.screenshot())
+        closeShot.name = "crm-close"
+        closeShot.lifetime = .keepAlways
+        add(closeShot)
+    }
+}
+
+/// Setter activity: the per-setter rows sit under two charts.
+@MainActor
+final class BunSetterActivityTests: XCTestCase {
+    func testSetterActivityCarriesPerSetterRows() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-bunTab", "team", "-bunSheet", "setters"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["Setter activity"].waitForExistence(timeout: 8))
+        for _ in 0..<3 { app.swipeUp() }
         let shot = XCTAttachment(screenshot: app.screenshot())
-        shot.name = "crm-lower"
+        shot.name = "setter-activity"
         shot.lifetime = .keepAlways
         add(shot)
-        XCTAssertTrue(app.staticTexts["Pipeline"].exists, "close pipeline section")
+        XCTAssertTrue(app.staticTexts["Per setter"].exists, "per-setter section")
     }
 }

@@ -235,3 +235,23 @@ The Mochi MCP is connected to this session, so rather than guessing field names 
 ### What was challenging
 
 The fixture was one nested literal and the Swift type checker gave up on it ("unable to type-check this expression in reasonable time"). Rebuilt as step-by-step assignments.
+
+---
+
+## Batch 10 — setter activity, and a tab each for Mochi and Close
+
+### Prompt
+
+"When I click on the times that people message, I wanna be able to see, per setter, what time they messaged and how many messages, just like what Mochi has ... In the CRM section, have one tab for Mochi and one for Close, because Close has different numbers as well."
+
+### What I did
+
+- **Mochi and Close are separate tabs** in the CRM sheet. They count different things and stacking them invited comparisons between numbers that do not correspond.
+- **The hours chart is a tap** into `BunSetterActivitySheet`: total messages in the window, hour-of-day in the reader's own timezone, day-of-week, and a row per setter with messages, replies, reply rate as a bar, time online per day, and days active.
+- Edge function v3 adds `get_message_dayofweek_distribution` and `get_setter_active_windows`, and merges three Mochi tools into one row per setter (reply-rate breakdown, message counts, active windows).
+- **The Close tab gained its own numbers**: dials, new leads and average call length from Close's activity report, plus the twenty most recently touched leads with status and value.
+- `BunSegment` options now carry an accessibility identifier, because a segment option and a close chip can both be called "Close" and the tap became ambiguous.
+
+### The honest limit
+
+Mochi's app draws a setter-by-hour grid. No MCP tool returns that cross-tab: hours come from `get_message_time_distribution` (whole team) and per-setter numbers come from three other tools (totals and active windows). Rather than invent a split, the sheet shows the real per-setter numbers beside the team's hours and says so on screen.

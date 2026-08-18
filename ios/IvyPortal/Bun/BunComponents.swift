@@ -189,6 +189,9 @@ struct BunSegment: View {
                         .background(selection == index ? BunTheme.fieldBright : .clear, in: Capsule())
                 }
                 .buttonStyle(BunPressStyle())
+                // A segment option and a close chip can carry the same word;
+                // the identifier keeps them apart for tests and VoiceOver.
+                .accessibilityIdentifier("segment-\(options[index])")
             }
         }
         .padding(3)
