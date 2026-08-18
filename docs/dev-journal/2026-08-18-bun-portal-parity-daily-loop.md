@@ -181,3 +181,32 @@ Rather than re-reading the web routes, I listed every `PortalAPI` function with 
 ### Still unreachable, deliberately
 
 `roleAccess` (admin access-defaults grid), `updateProcessorBalance`, `unconfirmPayout` / `deletePayoutAdjustment` (undo paths), testimonial file upload, and the analytics duplicates (`setterDailyLogs`, `studentOutput`, `activityDrilldown`, `moneySummary`) whose numbers already appear elsewhere.
+
+---
+
+## Batch 8 — CRM, through an edge function
+
+### Prompt
+
+"i need the crm data, just like what we had in ivyportal ios app and in the web portal, like the mochi app"
+
+### Issue
+
+I had left CRM out twice, correctly: Mochi's OAuth tokens and the Close API key live in `service_credentials`, admin-only by RLS. The web reaches them through TanStack server functions running on the server; the phone had no equivalent, and shipping either credential to a device was never an option.
+
+### What I did
+
+Built the missing server. `supabase/functions/crm-summary` (deployed, `verify_jwt` on):
+
+1. Verifies the caller's JWT with their own client and role-checks through `has_role` — Mochi analytics for admin/founder/cofounder, Close pipeline for those plus closers, exactly the web's gates.
+2. Reads the credentials with the service role. They never enter the response.
+3. Refreshes Mochi's access token when it has expired and writes the rotation back, so web and app share one live token rather than fighting over it.
+4. Calls Mochi's MCP endpoint (`get_message_counts`, `get_funnel_trend`, `get_lead_source_breakdown`, `get_payment_overview`) and Close's lead API, and returns derived numbers only.
+
+The app side is `PortalAPI.crmSummary(period:)` and `BunCRMSheet`, opened from the Team tab: collected/gross/payments, DMs out/in and active conversations, the funnel as one bar per stage with the drop-off visible, new leads by day, lead sources, DMs by setter, then the Close pipeline with its stages.
+
+Verified that all five credential rows are present in production, so the live app has real data to draw rather than a "not connected" state.
+
+### What was challenging
+
+Mochi's endpoint answers either plain JSON or a single SSE frame, and its payload is a JSON string nested inside the JSON-RPC result. The web already handled both; the edge function had to carry the same parsing rather than assume one shape.

@@ -56,6 +56,7 @@
 		B02157FCD3E396D7BFDBADC1 /* BunActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60C54485ED7207D8DA4D0EB7 /* BunActions.swift */; };
 		B81AC2EA56708288101A5555 /* objection-handling-playbook.md in Resources */ = {isa = PBXBuildFile; fileRef = 71296072CE3006F177B72061 /* objection-handling-playbook.md */; };
 		B9CCA69A4358D2099BB2E931 /* simple-discovery-framework-phone-setters.md in Resources */ = {isa = PBXBuildFile; fileRef = BD461171928EC09573041F45 /* simple-discovery-framework-phone-setters.md */; };
+		BFCB7FC9925EBF2774270583 /* BunCRM.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61D189B48AC54F61F6CB82C6 /* BunCRM.swift */; };
 		C3696207A9EE0C582553943A /* BunWork.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8B449D0E696174FC6ACB249 /* BunWork.swift */; };
 		C36F2D86492FDAD2E1E4849F /* BunTransactions.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADD8AE473F23EC43644F4E22 /* BunTransactions.swift */; };
 		C5B7A6E28FC0E6FEED0ADAA7 /* Apercu Pro Light.otf in Resources */ = {isa = PBXBuildFile; fileRef = F88DA57E6CAD7D65DD014A5E /* Apercu Pro Light.otf */; };
@@ -122,6 +123,7 @@
 		52CBBE9140859B30E11369EF /* BunOrgProbeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BunOrgProbeTests.swift; sourceTree = "<group>"; };
 		5B7128A183BCF55AA4436966 /* IvyPortalInteractionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IvyPortalInteractionTests.swift; sourceTree = "<group>"; };
 		60C54485ED7207D8DA4D0EB7 /* BunActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BunActions.swift; sourceTree = "<group>"; };
+		61D189B48AC54F61F6CB82C6 /* BunCRM.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BunCRM.swift; sourceTree = "<group>"; };
 		65B861E432E91DCD6B7D8C6A /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
 		691002273A01224D93FBBEF0 /* RoleDestinationPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoleDestinationPolicy.swift; sourceTree = "<group>"; };
 		6F3CED060763D625C62112D7 /* IvyPortal.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = IvyPortal.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -220,6 +222,7 @@
 				4E0D004EB78CEC743DA4B30E /* BunCards.swift */,
 				E26B181DB55FF6F2927121E9 /* BunClients.swift */,
 				3A0296FBF3AD1C5F202F3BA6 /* BunComponents.swift */,
+				61D189B48AC54F61F6CB82C6 /* BunCRM.swift */,
 				FFAA7B3C1D0538A8B06B26B8 /* BunCSM.swift */,
 				1E752A72B4A1BB295055678F /* BunData.swift */,
 				DB01449E5CC3B6A6B22566D9 /* BunFixtures.swift */,
@@ -546,6 +549,7 @@
 				B02157FCD3E396D7BFDBADC1 /* BunActions.swift in Sources */,
 				FCA3A36A3E06BBB192EC9ABC /* BunAlerts.swift in Sources */,
 				F04F8F8CA9DF3F0B0A4EE294 /* BunBanking.swift in Sources */,
+				BFCB7FC9925EBF2774270583 /* BunCRM.swift in Sources */,
 				DED7B36B11995DD4C6E37850 /* BunCSM.swift in Sources */,
 				81517A8D3F478F3D60238DCF /* BunCalendar.swift in Sources */,
 				162135FE67E49B4D0D199AF3 /* BunCallLog.swift in Sources */,

@@ -6,13 +6,19 @@ import Charts
 struct BunTeamPage: View {
     @State private var store = BunStore.shared
     @State private var selectedMember: TeamMemberRow?
+    @State private var showCRM = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 26) {
-                HStack {
+                HStack(spacing: 10) {
                     BunTitle(text: "Team")
                     Spacer()
+                    // Pipeline lives next to the people working it.
+                    if store.canSeeCRM {
+                        BunChipButton(symbol: "chart.line.uptrend.xyaxis", size: 40) { showCRM = true }
+                            .accessibilityLabel("CRM")
+                    }
                     rangeMenu
                 }
                 salesSection
@@ -26,6 +32,11 @@ struct BunTeamPage: View {
             .padding(.bottom, 96)
         }
         .scrollIndicators(.hidden)
+        .sheet(isPresented: $showCRM) {
+            BunCRMSheet()
+                .presentationBackground(BunTheme.ground)
+                .presentationCornerRadius(40)
+        }
         .sheet(item: $selectedMember) { member in
             BunMemberSheet(member: member)
                 .presentationBackground(BunTheme.ground)

@@ -226,6 +226,35 @@ final class BunStore {
         await loadPayouts()
     }
 
+    // CRM (Mochi + Close, through the crm-summary edge function)
+    var crm: CRMSummary?
+    var crmError: String?
+    var crmPeriod: PortalAPI.CRMPeriod = .last_7_days
+
+    /// Same gate the web puts on the CRM page.
+    var canSeeCRM: Bool {
+        guard signedIn else { return true }
+        let roles = Set(AuthStore.shared.roles)
+        return !roles.isDisjoint(with: [.admin, .founder, .cofounder, .closer])
+    }
+
+    func loadCRM(_ period: PortalAPI.CRMPeriod, force: Bool = false) async {
+        crmPeriod = period
+        guard signedIn else {
+            crm = BunFixtures.crm(period: period)
+            return
+        }
+        guard canSeeCRM else { return }
+        guard force || crm == nil else { return }
+        crm = nil
+        do {
+            crm = try await PortalAPI.shared.crmSummary(period: period)
+            crmError = nil
+        } catch {
+            crmError = "Could not reach the CRM: \(error.localizedDescription)"
+        }
+    }
+
     // My own profile (the setter type and timezone are load-bearing)
     var displayName: String?
     var phone: String?
@@ -666,6 +695,8 @@ final class BunStore {
         displayName = nil
         phone = nil
         timezone = nil
+        crm = nil
+        crmError = nil
         adminProfiles = nil
         adminRoles = [:]
         pendingRequests = nil

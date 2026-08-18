@@ -537,6 +537,49 @@ enum BunFixtures {
         }
     }
 
+    /// The demo CRM: a healthy Instagram week and a live Close pipeline.
+    static func crm(period: PortalAPI.CRMPeriod) -> CRMSummary {
+        let days = period == .today ? 1 : (period == .last_7_days ? 7 : 30)
+        let funnel = (0..<days).reversed().map { back -> CRMSummary.Mochi.Day in
+            let date = Calendar.current.date(byAdding: .day, value: -back, to: Date()) ?? Date()
+            let swing = (back * 3) % 5
+            return CRMSummary.Mochi.Day(day: BunStore.dayKey(date),
+                                        newLeads: 12 + swing * 4, qualified: 6 + swing,
+                                        booked: 2 + swing % 3, won: swing == 0 ? 1 : 0)
+        }
+        let scale = Double(days)
+        return CRMSummary(
+            mochi: CRMSummary.Mochi(
+                connected: true, period: period.rawValue,
+                messages: .init(inbound: Int(212 * scale / 7), outbound: Int(1_480 * scale / 7),
+                                total: Int(1_692 * scale / 7), activeConversations: 63),
+                totals: .init(newLeads: funnel.reduce(0) { $0 + $1.newLeads },
+                              qualified: funnel.reduce(0) { $0 + $1.qualified },
+                              booked: funnel.reduce(0) { $0 + $1.booked },
+                              won: funnel.reduce(0) { $0 + $1.won }),
+                revenue: .init(net: 18_240, gross: 19_100, count: 7),
+                funnel: funnel,
+                sources: [
+                    .init(source: "DM", label: "Direct message", leads: 84, booked: 19),
+                    .init(source: "COMMENT", label: "Comment", leads: 41, booked: 7),
+                    .init(source: "STORY_REPLY", label: "Story reply", leads: 23, booked: 4),
+                ],
+                members: [
+                    .init(name: "Sofia Marin", outbound: 640),
+                    .init(name: "Danny Cole", outbound: 512),
+                    .init(name: "Ibrahim Sy", outbound: 328),
+                ]),
+            close: CRMSummary.Close(
+                configured: true, error: nil, leads: 156, active: 38, won: 11,
+                pipeline: 413_514, closeRate: 7.1,
+                stages: [
+                    .init(name: "Booked appointment", count: 22, value: 118_000),
+                    .init(name: "Working", count: 16, value: 96_500),
+                    .init(name: "Follow up", count: 12, value: 54_000),
+                    .init(name: "Won", count: 11, value: 42_800),
+                ]))
+    }
+
     /// What the demo bell carries: one of each family that matters.
     static var alerts: PortalAlerts {
         var out = PortalAlerts()

@@ -3455,3 +3455,103 @@ extension PortalAPI {
         return try await profiles(ids: ids).sorted { ($0.displayName ?? "") < ($1.displayName ?? "") }
     }
 }
+
+// MARK: - CRM (Mochi + Close, through the crm-summary edge function)
+
+/// The CRM read. Mochi's OAuth tokens and the Close API key are admin-only by
+/// RLS and must never reach a device, so the phone calls an edge function that
+/// holds them server-side and answers with derived numbers only.
+struct CRMSummary: Decodable, Sendable {
+    var mochi: Mochi?
+    var close: Close?
+
+    struct Mochi: Decodable, Sendable {
+        var connected: Bool
+        var period: String?
+        var messages: Messages?
+        var totals: Totals?
+        var revenue: Revenue?
+        var funnel: [Day]?
+        var sources: [Source]?
+        var members: [Member]?
+
+        struct Messages: Decodable, Sendable {
+            var inbound: Int
+            var outbound: Int
+            var total: Int
+            var activeConversations: Int
+        }
+        struct Totals: Decodable, Sendable {
+            var newLeads: Int
+            var qualified: Int
+            var booked: Int
+            var won: Int
+        }
+        struct Revenue: Decodable, Sendable {
+            var net: Double?
+            var gross: Double?
+            var count: Int?
+        }
+        struct Day: Decodable, Sendable, Identifiable {
+            var day: String
+            var newLeads: Int
+            var qualified: Int
+            var booked: Int
+            var won: Int
+            var id: String { day }
+        }
+        struct Source: Decodable, Sendable, Identifiable {
+            var source: String
+            var label: String
+            var leads: Int
+            var booked: Int
+            var id: String { source }
+        }
+        struct Member: Decodable, Sendable, Identifiable {
+            var name: String
+            var outbound: Int
+            var id: String { name }
+        }
+    }
+
+    struct Close: Decodable, Sendable {
+        var configured: Bool
+        var error: String?
+        var leads: Int?
+        var active: Int?
+        var won: Int?
+        var pipeline: Double?
+        var closeRate: Double?
+        var stages: [Stage]?
+
+        struct Stage: Decodable, Sendable, Identifiable {
+            var name: String
+            var count: Int
+            var value: Double
+            var id: String { name }
+        }
+    }
+}
+
+extension PortalAPI {
+    /// Windows the CRM read accepts, matching the web's picker.
+    enum CRMPeriod: String, CaseIterable, Sendable {
+        case today, last_7_days, last_30_days
+
+        var label: String {
+            switch self {
+            case .today: "Today"
+            case .last_7_days: "7D"
+            case .last_30_days: "30D"
+            }
+        }
+    }
+
+    func crmSummary(period: CRMPeriod) async throws -> CRMSummary {
+        struct Body: Encodable { let period: String }
+        return try await client().functions.invoke(
+            "crm-summary",
+            options: FunctionInvokeOptions(body: Body(period: period.rawValue))
+        )
+    }
+}
