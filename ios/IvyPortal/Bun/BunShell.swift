@@ -91,7 +91,6 @@ struct BunShell: View {
         case "plans": BunPaymentPlansSheet()
         case "payouts": BunPayoutLedgerSheet()
         case "csm": BunCSMSheet()
-        case "chat": BunChatSheet()
         case "knowledge": BunKnowledgeSheet()
         case "testimonials": BunTestimonialsSheet()
         case "logSet": BunLogSetFlow()

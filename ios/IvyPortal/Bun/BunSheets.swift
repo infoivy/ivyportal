@@ -1024,7 +1024,7 @@ private struct BunHelpScreen: View {
                 }
                 BunTitle(text: "Help")
                 BunIconRow(symbol: "book", title: "Knowledge", subtitle: "Playbooks and SOPs")
-                BunIconRow(symbol: "envelope", title: "Contact the team", subtitle: "Ask in your team chat")
+                BunIconRow(symbol: "envelope", title: "Contact the team", subtitle: "However your team already talks")
                 Text("Admin tools, team management, and doc editing live in Bun on the web.")
                     .font(bunFont(16)).foregroundStyle(BunTheme.secondary)
             }

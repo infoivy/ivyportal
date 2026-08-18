@@ -226,7 +226,7 @@ final class BunCardLedgerTests: XCTestCase {
     }
 }
 
-/// The Work shelf (schedule, channel, knowledge, testimonials) sits under the
+/// The Work shelf (schedule, knowledge, testimonials) sits under the
 /// action-item queue.
 @MainActor
 final class BunWorkShelfTests: XCTestCase {
@@ -240,8 +240,7 @@ final class BunWorkShelfTests: XCTestCase {
         shot.name = "work-shelf"
         shot.lifetime = .keepAlways
         add(shot)
-        XCTAssertTrue(app.staticTexts["Team channel"].isHittable, "channel row on screen")
-        XCTAssertTrue(app.staticTexts["Knowledge"].exists, "knowledge row")
+        XCTAssertTrue(app.staticTexts["Knowledge"].isHittable, "knowledge row on screen")
         XCTAssertTrue(app.staticTexts["Testimonials"].exists, "testimonials row")
     }
 }

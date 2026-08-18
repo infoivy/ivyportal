@@ -3,12 +3,11 @@ import SwiftUI
 // Work (founder 2026-08-18): the fifth tab, freed by folding Banking into
 // Money. It is the person's own queue — today's report and the action items —
 // and the landing place for the daily surfaces still coming over from the web
-// portal (schedule, knowledge, chat).
+// portal (schedule, knowledge, testimonials).
 
 struct BunWorkPage: View {
     @State private var store = BunStore.shared
     @State private var showEOD = false
-    @State private var showChat = false
     @State private var showKnowledge = false
     @State private var showTestimonials = false
     @State private var showLogSet = false
@@ -43,11 +42,6 @@ struct BunWorkPage: View {
                 .presentationBackground(BunTheme.ground)
                 .presentationCornerRadius(40)
         }
-        .sheet(isPresented: $showChat) {
-            BunChatSheet()
-                .presentationBackground(BunTheme.ground)
-                .presentationCornerRadius(40)
-        }
         .sheet(isPresented: $showKnowledge) {
             BunKnowledgeSheet()
                 .presentationBackground(BunTheme.ground)
@@ -68,7 +62,6 @@ struct BunWorkPage: View {
             await store.loadMyEODs()
             await store.loadActionItems()
             await store.loadSets()
-            await store.loadChat()
             await store.loadTestimonials()
         }
         .refreshable {
@@ -145,9 +138,6 @@ struct BunWorkPage: View {
             }
 
             VStack(spacing: 12) {
-                BunIconRow(symbol: "bubble.left.and.bubble.right", title: "Team channel",
-                           subtitle: chatSubtitle) { showChat = true }
-                    .frame(minHeight: 60)
                 BunIconRow(symbol: "book", title: "Knowledge",
                            subtitle: "playbooks, policies and docs") { showKnowledge = true }
                     .frame(minHeight: 60)
@@ -157,11 +147,6 @@ struct BunWorkPage: View {
             }
             .padding(.top, 4)
         }
-    }
-
-    private var chatSubtitle: String {
-        guard let chat = store.chat, let last = chat.last else { return "the team's channel" }
-        return "\(last.author): \(last.body)"
     }
 
     private var testimonialSubtitle: String {

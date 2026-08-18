@@ -226,9 +226,8 @@ final class BunStore {
         await loadPayouts()
     }
 
-    // Testimonials, chat, team admin (web parity batch 2026-08-18)
+    // Testimonials and team admin (web parity batch 2026-08-18)
     var testimonials: [PortalAPI.TestimonialRow]?
-    var chat: [PortalAPI.ChatMessage]?
     var adminProfiles: [StaffProfile]?
     var adminRoles: [UUID: [String]] = [:]
     var pendingRequests: [PortalAPI.PendingSignup]?
@@ -261,31 +260,6 @@ final class BunStore {
         try await PortalAPI.shared.setTestimonialStatus(id: row.id, status: status)
         testimonials = nil
         await loadTestimonials()
-    }
-
-    func loadChat() async {
-        guard signedIn else {
-            seedFixturesIfNeeded()
-            if chat == nil { chat = BunFixtures.chat }
-            return
-        }
-        guard chat == nil else { return }
-        chat = (try? await PortalAPI.shared.teamChat()) ?? []
-    }
-
-    func post(_ body: String, kind: String) async throws {
-        let trimmed = body.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        guard signedIn else {
-            chat = (chat ?? []) + [PortalAPI.ChatMessage(
-                id: UUID(), body: trimmed, kind: kind, author: BunFixtures.userFullName,
-                authorId: meId, studentName: nil,
-                createdAt: ISO8601DateFormatter().string(from: Date()))]
-            return
-        }
-        try await PortalAPI.shared.postChat(body: trimmed, kind: kind)
-        chat = nil
-        await loadChat()
     }
 
     func loadTeamAdmin() async {
@@ -376,7 +350,6 @@ final class BunStore {
             seedFixturesIfNeeded()
             if csmFeed == nil { csmFeed = BunFixtures.csmFeed }
         if testimonials == nil { testimonials = BunFixtures.testimonials }
-        if chat == nil { chat = BunFixtures.chat }
             return
         }
         guard canSeeCSM, csmFeed == nil else { return }
@@ -533,7 +506,6 @@ final class BunStore {
         cardLedgers = nil
         csmFeed = nil
         testimonials = nil
-        chat = nil
         adminProfiles = nil
         adminRoles = [:]
         pendingRequests = nil

@@ -1,9 +1,10 @@
 import SwiftUI
 
 // The daily surfaces that were still web-only (founder 2026-08-18): the
-// testimonial library, the team channel, the schedule with a log-a-set, the
-// knowledge shelf, and team administration. Each opens from the tab that
-// already owns that work rather than adding another root tab.
+// testimonial library, the schedule with a log-a-set, the knowledge shelf,
+// and team administration. Each opens from the tab that already owns that
+// work rather than adding another root tab. (A team channel shipped here
+// too and came straight back out — founder 2026-08-18: "we dont use it".)
 
 // MARK: - Testimonials
 
@@ -106,119 +107,6 @@ struct BunTestimonialsSheet: View {
         case "received": BunTheme.indigoLight
         default: Color(red: 0.95, green: 0.72, blue: 0.35)
         }
-    }
-}
-
-// MARK: - Team channel
-
-struct BunChatSheet: View {
-    @Environment(\.dismiss) private var dismiss
-    @State private var store = BunStore.shared
-    @State private var draft = ""
-    @State private var kind = 0
-    @State private var sendError: String?
-
-    private static let kinds = ["General", "Issue", "Tip", "Bug"]
-
-    var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                BunTitle(text: "Team")
-                Spacer()
-                BunChipButton(symbol: "xmark") { dismiss() }
-            }
-            .padding(.horizontal, 22)
-            .padding(.top, 18)
-            .padding(.bottom, 12)
-
-            ScrollViewReader { proxy in
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 18) {
-                        if store.chat == nil {
-                            RoundedRectangle(cornerRadius: 12).fill(BunTheme.field).frame(height: 60)
-                        } else if (store.chat ?? []).isEmpty {
-                            Text("Nothing said yet. History stays forever.")
-                                .font(bunFont(17)).foregroundStyle(BunTheme.secondary)
-                        } else {
-                            ForEach(store.chat ?? []) { message in
-                                messageRow(message).id(message.id)
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 22)
-                    .padding(.bottom, 12)
-                }
-                .scrollIndicators(.hidden)
-                .onChange(of: (store.chat ?? []).count) { _, _ in
-                    // New messages land at the bottom; follow them.
-                    if let last = (store.chat ?? []).last { proxy.scrollTo(last.id, anchor: .bottom) }
-                }
-            }
-
-            composer
-        }
-        .task { await store.loadChat() }
-    }
-
-    private func messageRow(_ message: PortalAPI.ChatMessage) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 8) {
-                Text(message.author).font(BunType.caption).foregroundStyle(BunTheme.ink)
-                if message.kind != "general" {
-                    BunTag(text: message.kind.capitalized,
-                           tint: message.kind == "issue" || message.kind == "bug" ? BunTheme.pink : BunTheme.indigoLight,
-                           fill: (message.kind == "issue" || message.kind == "bug" ? BunTheme.pink : BunTheme.indigoLight).opacity(0.14))
-                }
-                if let client = message.studentName {
-                    BunTag(text: client)
-                }
-                Spacer()
-                Text(PortalAPI.parseTimestamp(message.createdAt).map { BunStore.friendlyDay($0) } ?? "")
-                    .font(BunType.caption).foregroundStyle(BunTheme.tertiary)
-            }
-            Text(message.body).font(BunType.rowTitle).foregroundStyle(BunTheme.ink)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private var composer: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            if let sendError {
-                Text(sendError).font(bunFont(15)).foregroundStyle(BunTheme.pink)
-            }
-            BunSegment(options: Self.kinds, selection: $kind)
-            HStack(spacing: 10) {
-                TextField("", text: $draft,
-                          prompt: Text("Say something").font(bunFont(18)).foregroundStyle(BunTheme.tertiary),
-                          axis: .vertical)
-                    .font(bunFont(18)).foregroundStyle(BunTheme.ink)
-                    .lineLimit(1...4)
-                    .padding(.horizontal, 16).padding(.vertical, 12)
-                    .background(BunTheme.field, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                Button {
-                    let body = draft
-                    let channel = Self.kinds[kind].lowercased()
-                    draft = ""
-                    Task {
-                        do { try await store.post(body, kind: channel); sendError = nil }
-                        catch { sendError = "Could not send: \(error.localizedDescription)" }
-                    }
-                } label: {
-                    Image(systemName: "arrow.up")
-                        .font(.system(size: 17, weight: .medium)).foregroundStyle(.white)
-                        .frame(width: 46, height: 46)
-                        .background(BunTheme.indigo, in: Circle())
-                }
-                .buttonStyle(BunPressStyle())
-                .disabled(draft.trimmingCharacters(in: .whitespaces).isEmpty)
-                .opacity(draft.trimmingCharacters(in: .whitespaces).isEmpty ? 0.4 : 1)
-            }
-        }
-        .padding(.horizontal, 22)
-        .padding(.top, 12)
-        .padding(.bottom, 8)
-        .background(BunTheme.ground)
     }
 }
 
