@@ -122,6 +122,23 @@ final class BunStore {
     var customCategories: [String] = []
     var docs: [PortalAPI.Doc]?
 
+    // Daily loop (2026-08-18): action items, 1:1 call history, my own EODs
+    var actionItems: [ActionItemRow]?
+    var callItems: [CallActionItemRow]?
+    var teamMembers: [StaffProfile]?
+    var staffNames: [UUID: String] = [:]
+    var callsByStudent: [UUID: [StudentCall]] = [:]
+    var myEODs: [PortalAPI.MyEOD]?
+    /// Optimistic ticks, demo-mode ticks, demo-mode additions and removals.
+    /// One layer serves both: signed out there is no server to reconcile with,
+    /// signed in the override holds until the next load returns the truth.
+    var taskDoneOverride: [String: Bool] = [:]
+    var taskRemoved: Set<String> = []
+    var localTasks: [BunTask] = []
+
+    /// Whoever is filing: the signed-in id, or the demo person signed out.
+    var meId: UUID { PortalAPI.shared.currentUserID ?? BunFixtures.meId }
+
     // Movement (4 months, oldest first)
     var movementIn: [(label: String, amount: Double)]?
     var movementOut: [(label: String, amount: Double)]?
@@ -451,6 +468,192 @@ final class BunStore {
         }
     }
 
+    // MARK: - Action items (the two sources the web hub merges)
+
+    /// One row in the action queue, whichever table it came from.
+    struct BunTask: Identifiable, Sendable {
+        enum Source: Sendable, Equatable {
+            case adhoc(UUID)
+            case call(UUID, Int)
+        }
+        let id: String
+        let text: String
+        let done: Bool
+        let due: String?
+        /// Client name for a client item, member name for a team item.
+        let subject: String
+        let isClient: Bool
+        let ownerId: UUID?
+        let source: Source
+        let canDelete: Bool
+
+        var isOverdue: Bool {
+            guard !done, let due else { return false }
+            let today = BunStore.dayKey(Date())
+            return due < today
+        }
+    }
+
+    func loadActionItems() async {
+        guard signedIn else { seedFixturesIfNeeded(); return }
+        if teamMembers == nil {
+            let members = (try? await PortalAPI.shared.teamMembers()) ?? []
+            teamMembers = members
+            for member in members { staffNames[member.id] = member.displayName ?? "Team member" }
+        }
+        if roster == nil { roster = try? await PortalAPI.shared.students() }
+        if actionItems == nil { actionItems = (try? await PortalAPI.shared.actionItems()) ?? [] }
+        if callItems == nil { callItems = (try? await PortalAPI.shared.callActionItems()) ?? [] }
+    }
+
+    /// Both sources merged, overrides applied, open first then soonest due.
+    var tasks: [BunTask] {
+        let names = Dictionary(uniqueKeysWithValues: (roster ?? []).map { ($0.id, $0.fullName) })
+        var out: [BunTask] = []
+
+        for row in actionItems ?? [] {
+            let id = "adhoc-\(row.id.uuidString)"
+            let client = row.studentId.flatMap { names[$0] }
+            out.append(BunTask(
+                id: id,
+                text: row.text,
+                done: taskDoneOverride[id] ?? row.done,
+                due: row.dueDate,
+                subject: client ?? staffNames[row.assigneeId ?? row.createdBy] ?? "Team",
+                isClient: row.studentId != nil,
+                ownerId: row.ownerId,
+                source: .adhoc(row.id),
+                canDelete: row.createdBy == meId
+            ))
+        }
+
+        for row in callItems ?? [] {
+            let id = row.id
+            out.append(BunTask(
+                id: id,
+                text: row.item.text,
+                done: taskDoneOverride[id] ?? row.item.done,
+                due: row.item.due,
+                subject: names[row.studentId] ?? "Client",
+                isClient: true,
+                ownerId: row.coachId,
+                source: .call(row.callId, row.index),
+                canDelete: false
+            ))
+        }
+
+        out.append(contentsOf: localTasks)
+
+        return out
+            .filter { !taskRemoved.contains($0.id) }
+            .sorted { a, b in
+                if a.done != b.done { return !a.done }
+                let left = a.due ?? "9999-99-99"
+                let right = b.due ?? "9999-99-99"
+                if left != right { return left < right }
+                return a.text < b.text
+            }
+    }
+
+    var myOpenTasks: [BunTask] { tasks.filter { !$0.done && $0.ownerId == meId } }
+
+    /// Tick optimistically, then write. A failed write puts the tick back.
+    func setTaskDone(_ task: BunTask, done: Bool) async throws {
+        taskDoneOverride[task.id] = done
+        guard signedIn else { return }
+        do {
+            switch task.source {
+            case .adhoc(let id):
+                try await PortalAPI.shared.setActionItemDone(id: id, done: done)
+            case .call(let callId, let index):
+                try await PortalAPI.shared.setCallActionItemDone(callId: callId, index: index, done: done)
+            }
+        } catch {
+            taskDoneOverride[task.id] = !done
+            throw error
+        }
+    }
+
+    func deleteTask(_ task: BunTask) async throws {
+        guard case .adhoc(let id) = task.source else { return }
+        taskRemoved.insert(task.id)
+        localTasks.removeAll { $0.id == task.id }
+        guard signedIn else { return }
+        do {
+            try await PortalAPI.shared.deleteActionItem(id: id)
+        } catch {
+            taskRemoved.remove(task.id)
+            throw error
+        }
+    }
+
+    /// One row per target, exactly like the web composer's broadcast insert.
+    func addTasks(text: String, due: String?, students: [StudentRosterItem], members: [StaffProfile]) async throws {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        guard signedIn, let me = PortalAPI.shared.currentUserID else {
+            // Demo workspace: the composer still has to produce a real row.
+            for student in students {
+                localTasks.append(BunTask(id: "local-\(UUID().uuidString)", text: trimmed, done: false,
+                                          due: due, subject: student.fullName, isClient: true,
+                                          ownerId: meId, source: .adhoc(UUID()), canDelete: true))
+            }
+            for member in members {
+                localTasks.append(BunTask(id: "local-\(UUID().uuidString)", text: trimmed, done: false,
+                                          due: due, subject: member.displayName ?? "Team member",
+                                          isClient: false, ownerId: member.id,
+                                          source: .adhoc(UUID()), canDelete: true))
+            }
+            return
+        }
+        var rows: [NewActionItem] = students.map {
+            NewActionItem(studentId: $0.id, assigneeId: nil, createdBy: me, text: trimmed, dueDate: due)
+        }
+        rows += members.map {
+            NewActionItem(studentId: nil, assigneeId: $0.id, createdBy: me, text: trimmed, dueDate: due)
+        }
+        guard !rows.isEmpty else { return }
+        try await PortalAPI.shared.createActionItems(rows)
+        actionItems = nil
+        await loadActionItems()
+    }
+
+    // MARK: - 1:1 calls and my own EOD history
+
+    func loadCalls(for studentId: UUID) async {
+        guard signedIn else {
+            seedFixturesIfNeeded()
+            if callsByStudent[studentId] == nil { callsByStudent[studentId] = [] }
+            return
+        }
+        guard callsByStudent[studentId] == nil else { return }
+        callsByStudent[studentId] = (try? await PortalAPI.shared.studentCalls(studentId: studentId)) ?? []
+    }
+
+    func logCall(_ call: NewStudentCall) async throws {
+        guard signedIn else {
+            // Demo: show the call immediately so the flow is not a dead end.
+            let fake = StudentCall(id: UUID(), studentId: call.studentId, callDate: call.callDate,
+                                   coachNotes: call.coachNotes, coachId: call.coachId, status: call.status,
+                                   progressRating: call.progressRating, nextStep: call.nextStep,
+                                   fathomUrl: call.fathomUrl, actionItemsJson: call.actionItemsJson)
+            callsByStudent[call.studentId, default: []].insert(fake, at: 0)
+            callCounts?[call.studentId, default: 0] += 1
+            return
+        }
+        try await PortalAPI.shared.logStudentCall(call)
+        callsByStudent[call.studentId] = nil
+        callCounts = nil
+        callItems = nil
+        await loadCalls(for: call.studentId)
+        callCounts = try? await PortalAPI.shared.studentCallCounts()
+    }
+
+    func loadMyEODs() async {
+        guard signedIn else { seedFixturesIfNeeded(); return }
+        if myEODs == nil { myEODs = (try? await PortalAPI.shared.myEODs(days: 7)) ?? [] }
+    }
+
     /// Fresh sign-in: pull everything.
     private func clearAll() {
         firstName = nil
@@ -489,6 +692,15 @@ final class BunStore {
         unclaimedSets = nil
         teamWeek = nil
         docs = nil
+        actionItems = nil
+        callItems = nil
+        teamMembers = nil
+        staffNames = [:]
+        callsByStudent = [:]
+        myEODs = nil
+        taskDoneOverride = [:]
+        taskRemoved = []
+        localTasks = []
     }
 
     func refreshAll() async {
@@ -499,6 +711,7 @@ final class BunStore {
         await loadMove()
         await loadClients()
         await loadTeam()
+        await loadActionItems()
     }
 
     // MARK: - Fixture seeding (signed-out demo workspace)
@@ -543,6 +756,12 @@ final class BunStore {
         if unclaimedSetCount == nil { unclaimedSetCount = 1 }
         if teamWeek == nil { teamWeek = BunFixtures.teamWeek }
         if docs == nil { docs = BunFixtures.docs }
+        if actionItems == nil { actionItems = BunFixtures.actionItems }
+        if callItems == nil { callItems = BunFixtures.callItems }
+        if teamMembers == nil { teamMembers = BunFixtures.teamMembers }
+        if staffNames.isEmpty { staffNames = BunFixtures.staffNames }
+        if myEODs == nil { myEODs = BunFixtures.myEODs }
+        if callsByStudent.isEmpty { callsByStudent = BunFixtures.callsByStudent }
     }
 
     /// Sign-out path: drop live data and restore the demo workspace.
@@ -561,21 +780,48 @@ final class BunStore {
 
     // MARK: - Helpers
 
-    static func parseDay(_ day: String) -> Date? {
+    /// "yyyy-MM-dd" in the device calendar — the key every due-date compare
+    /// and EOD day uses.
+    nonisolated static func dayKey(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: date)
+    }
+
+    nonisolated static func parseDay(_ day: String) -> Date? {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter.date(from: String(day.prefix(10)))
     }
 
-    static func dayLabel(_ date: Date) -> String {
+    /// Today / Yesterday / weekday / "Last Friday", and only beyond two weeks
+    /// a short "Jul 10" — the same rule the web enforces everywhere.
+    nonisolated static func friendlyDay(_ date: Date) -> String {
+        let calendar = Calendar.current
+        let days = calendar.dateComponents([.day], from: calendar.startOfDay(for: date),
+                                           to: calendar.startOfDay(for: Date())).day ?? 0
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.dateFormat = "MMM d, yyyy"
-        return formatter.string(from: date)
+        switch days {
+        case 0: return "Today"
+        case 1: return "Yesterday"
+        case 2...6:
+            formatter.dateFormat = "EEEE"
+            return formatter.string(from: date)
+        case 7...13:
+            formatter.dateFormat = "EEEE"
+            return "Last \(formatter.string(from: date))"
+        default:
+            formatter.dateFormat = days > 300 ? "MMM d, yyyy" : "MMM d"
+            return formatter.string(from: date)
+        }
     }
 
-    static func friendlyDue(_ day: String) -> String {
+    nonisolated static func dayLabel(_ date: Date) -> String { friendlyDay(date) }
+
+    nonisolated static func friendlyDue(_ day: String) -> String {
         guard let date = parseDay(day) else { return "Due soon" }
         let days = Calendar.current.dateComponents([.day], from: Calendar.current.startOfDay(for: Date()),
                                                    to: Calendar.current.startOfDay(for: date)).day ?? 0

@@ -62,6 +62,7 @@ struct BunClientSheet: View {
     @State private var store = BunStore.shared
     @State private var testimonialRequested = false
     @State private var requestError: String?
+    @State private var showLogCall = false
     let student: StudentRosterItem
 
     private var offerWon: Bool {
@@ -183,6 +184,18 @@ struct BunClientSheet: View {
                         }
                     }
                 }
+                // 1:1 surfaces are gated on the coaching allowance — a group
+                // client never grows a call history or a log button.
+                if student.isOneOnOne {
+                    Rectangle().fill(BunTheme.hairline).frame(height: 1).padding(.horizontal, -22)
+                    HStack {
+                        Text("1:1 calls").font(bunFont(24)).foregroundStyle(BunTheme.ink)
+                        Spacer()
+                        BunPillChip(symbol: "plus", label: "Log a call") { showLogCall = true }
+                    }
+                    BunCallHistory(student: student)
+                }
+
                 Rectangle().fill(BunTheme.hairline).frame(height: 1).padding(.horizontal, -22)
                 Text("Transactions").font(bunFont(24)).foregroundStyle(BunTheme.ink)
                 if transactions.isEmpty {
@@ -211,6 +224,11 @@ struct BunClientSheet: View {
             .padding(.bottom, 60)
         }
         .scrollIndicators(.hidden)
+        .sheet(isPresented: $showLogCall) {
+            BunLogCallFlow(student: student)
+                .presentationBackground(BunTheme.ground)
+                .presentationCornerRadius(40)
+        }
     }
 
     static func phaseLabel(_ raw: String?) -> String {

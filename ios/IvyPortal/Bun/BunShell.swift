@@ -38,6 +38,16 @@ struct BunShell: View {
     }()
     @Namespace private var barNamespace
     @State private var store = BunStore.shared
+    /// Screenshot/UI-test presets: `-bunSheet actions|eod|logClose|client|logCall`
+    /// opens one surface straight from launch, the same trick the older shell
+    /// used for the payments sheet.
+    @State private var launchSheet: String?
+
+    private static var launchSheetArg: String? {
+        let args = ProcessInfo.processInfo.arguments
+        guard let i = args.firstIndex(of: "-bunSheet"), args.indices.contains(i + 1) else { return nil }
+        return args[i + 1]
+    }
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -51,9 +61,36 @@ struct BunShell: View {
             bar
         }
         .sensoryFeedback(.selection, trigger: tab)
-        .task { store.seedFixturesIfNeeded() }
+        .sheet(item: $launchSheet) { kind in
+            launchSheetView(kind)
+                .presentationBackground(BunTheme.ground)
+                .presentationCornerRadius(40)
+        }
+        .task {
+            store.seedFixturesIfNeeded()
+            // Present after the first frame: a sheet asked for during the
+            // very first render is dropped.
+            if let kind = Self.launchSheetArg, launchSheet == nil {
+                try? await Task.sleep(for: .milliseconds(400))
+                launchSheet = kind
+            }
+        }
         .onChange(of: store.signedIn) { _, signedIn in
             if !signedIn { store.resetToFixtures() }
+        }
+    }
+
+    @ViewBuilder private func launchSheetView(_ kind: String) -> some View {
+        switch kind {
+        case "actions": BunActionItemsSheet()
+        case "eod": BunEODFlow()
+        case "logClose": BunLogCloseFlow()
+        case "client", "logCall":
+            if let student = store.prioritizedRoster.first(where: \.isOneOnOne) {
+                if kind == "client" { BunClientSheet(student: student) }
+                else { BunLogCallFlow(student: student) }
+            }
+        default: EmptyView()
         }
     }
 

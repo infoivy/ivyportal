@@ -57,21 +57,26 @@ enum BunFixtures {
     private static let adsFill = Color(red: 0.27, green: 0.30, blue: 0.44)
     private static let peopleFill = Color(red: 0.42, green: 0.29, blue: 0.25)
 
+    /// n days back, rendered the way every other surface renders a day.
+    static func dayBack(_ days: Int) -> String {
+        BunStore.friendlyDay(Calendar.current.date(byAdding: .day, value: -days, to: Date()) ?? Date())
+    }
+
     static let transactions = [
-        BunTransaction(counterparty: "Jordan Blake", method: "Deal · PIF", amount: 5_800.00, day: "Aug 17, 2026", tag: nil, category: nil, avatarFill: clientFill),
-        BunTransaction(counterparty: "Marcus Reed", method: "Installment 2 of 4", amount: 550.00, day: "Aug 17, 2026", tag: nil, category: nil, avatarFill: clientFill),
-        BunTransaction(counterparty: "Meta Ads", method: "Expense · Card ••1509", amount: -248.60, day: "Aug 16, 2026", tag: nil, category: "Marketing & Advertising", avatarFill: adsFill),
-        BunTransaction(counterparty: "Tariq Aziz", method: "Deal · Split close", amount: 1_450.00, day: "Aug 16, 2026", tag: nil, category: nil, avatarFill: clientFill),
-        BunTransaction(counterparty: "Leila Hassan", method: "Deal · PIF", amount: 2_900.00, day: "Aug 15, 2026", tag: nil, category: nil, avatarFill: clientFill),
-        BunTransaction(counterparty: "Nadia Osman", method: "Installment 1 of 6", amount: 550.00, day: "Aug 15, 2026", tag: "Pending", category: nil, avatarFill: clientFill),
-        BunTransaction(counterparty: "Ava Contractor Payroll", method: "Expense · Payroll", amount: -1_200.00, day: "Aug 14, 2026", tag: nil, category: "Payroll", avatarFill: peopleFill),
-        BunTransaction(counterparty: "Zapier", method: "Expense · Card ••1509", amount: -96.00, day: "Aug 14, 2026", tag: nil, category: "Software", avatarFill: softwareFill),
-        BunTransaction(counterparty: "Stripe Payout", method: "Deal · payout", amount: 0, day: "Aug 13, 2026", tag: "Failed", category: nil, avatarFill: softwareFill),
-        BunTransaction(counterparty: "Google Workspace", method: "Expense · Card ••1509", amount: -39.99, day: "Aug 13, 2026", tag: nil, category: "Software", avatarFill: softwareFill, account: "Savings ••7021"),
-        BunTransaction(counterparty: "Sami Idris", method: "Deal · PIF", amount: 4_200.00, day: "Aug 12, 2026", tag: nil, category: nil, avatarFill: clientFill),
-        BunTransaction(counterparty: "Twilio", method: "Expense · Card ••1509", amount: -19.95, day: "Aug 12, 2026", tag: nil, category: "Software", avatarFill: Color(red: 0.75, green: 0.22, blue: 0.25)),
-        BunTransaction(counterparty: "Render", method: "Expense · Card ••1509", amount: -44.00, day: "Aug 11, 2026", tag: nil, category: "Software", avatarFill: softwareFill),
-        BunTransaction(counterparty: "Marcus Reed", method: "Installment 1 of 4", amount: 550.00, day: "Aug 10, 2026", tag: nil, category: nil, avatarFill: clientFill),
+        BunTransaction(counterparty: "Jordan Blake", method: "Deal · PIF", amount: 5_800.00, day: dayBack(1), tag: nil, category: nil, avatarFill: clientFill),
+        BunTransaction(counterparty: "Marcus Reed", method: "Installment 2 of 4", amount: 550.00, day: dayBack(1), tag: nil, category: nil, avatarFill: clientFill),
+        BunTransaction(counterparty: "Meta Ads", method: "Expense · Card ••1509", amount: -248.60, day: dayBack(2), tag: nil, category: "Marketing & Advertising", avatarFill: adsFill),
+        BunTransaction(counterparty: "Tariq Aziz", method: "Deal · Split close", amount: 1_450.00, day: dayBack(2), tag: nil, category: nil, avatarFill: clientFill),
+        BunTransaction(counterparty: "Leila Hassan", method: "Deal · PIF", amount: 2_900.00, day: dayBack(3), tag: nil, category: nil, avatarFill: clientFill),
+        BunTransaction(counterparty: "Nadia Osman", method: "Installment 1 of 6", amount: 550.00, day: dayBack(3), tag: "Pending", category: nil, avatarFill: clientFill),
+        BunTransaction(counterparty: "Ava Contractor Payroll", method: "Expense · Payroll", amount: -1_200.00, day: dayBack(4), tag: nil, category: "Payroll", avatarFill: peopleFill),
+        BunTransaction(counterparty: "Zapier", method: "Expense · Card ••1509", amount: -96.00, day: dayBack(4), tag: nil, category: "Software", avatarFill: softwareFill),
+        BunTransaction(counterparty: "Stripe Payout", method: "Deal · payout", amount: 0, day: dayBack(5), tag: "Failed", category: nil, avatarFill: softwareFill),
+        BunTransaction(counterparty: "Google Workspace", method: "Expense · Card ••1509", amount: -39.99, day: dayBack(5), tag: nil, category: "Software", avatarFill: softwareFill, account: "Savings ••7021"),
+        BunTransaction(counterparty: "Sami Idris", method: "Deal · PIF", amount: 4_200.00, day: dayBack(6), tag: nil, category: nil, avatarFill: clientFill),
+        BunTransaction(counterparty: "Twilio", method: "Expense · Card ••1509", amount: -19.95, day: dayBack(6), tag: nil, category: "Software", avatarFill: Color(red: 0.75, green: 0.22, blue: 0.25)),
+        BunTransaction(counterparty: "Render", method: "Expense · Card ••1509", amount: -44.00, day: dayBack(7), tag: nil, category: "Software", avatarFill: softwareFill),
+        BunTransaction(counterparty: "Marcus Reed", method: "Installment 1 of 4", amount: 550.00, day: dayBack(8), tag: nil, category: nil, avatarFill: clientFill),
     ]
 
     static var transactionDays: [String] {
@@ -348,18 +353,24 @@ enum BunFixtures {
         }
     }
 
+    /// Due phrasing for a day n days from now ("Overdue 3d" / "Due in 6d").
+    static func dueIn(_ days: Int) -> String {
+        let date = Calendar.current.date(byAdding: .day, value: days, to: Date()) ?? Date()
+        return BunStore.friendlyDue(BunStore.dayKey(date))
+    }
+
     static var overduePayments: [BunStore.BunPlanItem] {
         [
-            .init(id: UUID(), student: "Nadia Osman", amount: 550, due: "was due Aug 12", overdue: true),
-            .init(id: UUID(), student: "Marcus Reed", amount: 550, due: "was due Aug 15", overdue: true),
+            .init(id: UUID(), student: "Nadia Osman", amount: 550, due: dueIn(-6), overdue: true),
+            .init(id: UUID(), student: "Marcus Reed", amount: 550, due: dueIn(-3), overdue: true),
         ]
     }
 
     static var upcomingPayments: [BunStore.BunPlanItem] {
         [
-            .init(id: UUID(), student: "Marcus Reed", amount: 550, due: "due Aug 24", overdue: false),
-            .init(id: UUID(), student: "Nadia Osman", amount: 550, due: "due Aug 28", overdue: false),
-            .init(id: UUID(), student: "Tariq Aziz", amount: 700, due: "due Sep 1", overdue: false),
+            .init(id: UUID(), student: "Marcus Reed", amount: 550, due: dueIn(6), overdue: false),
+            .init(id: UUID(), student: "Nadia Osman", amount: 550, due: dueIn(10), overdue: false),
+            .init(id: UUID(), student: "Tariq Aziz", amount: 700, due: dueIn(14), overdue: false),
         ]
     }
 
@@ -371,4 +382,97 @@ enum BunFixtures {
     }
 
     static let payoutPeriodLabel = "Aug 16–31"
+
+    // MARK: - Daily loop (action items, 1:1 calls, my EOD history)
+
+    /// The demo operator. Signed out there is no auth id, so "mine" filters
+    /// and ownership need one stable stand-in.
+    static let meId = UUID()
+
+    private static let staffIds = (0..<4).map { _ in UUID() }
+
+    static var teamMembers: [StaffProfile] {
+        let rows: [(UUID, String, String?)] = [
+            (meId, userFullName, "dm"),
+            (staffIds[0], "Sofia Marin", "dm"),
+            (staffIds[1], "Danny Cole", "phone"),
+            (staffIds[2], "Ray Ortega", nil),
+            (staffIds[3], "Mia Chen", nil),
+        ]
+        return rows.map { StaffProfile(id: $0.0, displayName: $0.1, eodExempt: false, setterType: $0.2) }
+    }
+
+    static var staffNames: [UUID: String] {
+        Dictionary(uniqueKeysWithValues: teamMembers.map { ($0.id, $0.displayName ?? "Team member") })
+    }
+
+    /// Ad-hoc items: some on clients, some on the team, one already overdue.
+    static var actionItems: [ActionItemRow] {
+        func day(_ offset: Int) -> String {
+            BunStore.dayKey(Calendar.current.date(byAdding: .day, value: offset, to: Date()) ?? Date())
+        }
+        let rows: [(UUID?, UUID?, String, String?, Bool)] = [
+            (rosterIds[3], nil, "Call Nadia about the missed installment", day(-2), false),
+            (nil, meId, "Approve Leila's looms so she can start applying", day(0), false),
+            (rosterIds[2], nil, "Chase Jordan on Start Here, still on step 2", day(1), false),
+            (nil, staffIds[0], "Rewrite the DM opener for the new offer", day(3), false),
+            (rosterIds[6], nil, "Book Dahlia's first roleplay", day(-5), true),
+        ]
+        return rows.map { row in
+            ActionItemRow(id: UUID(), studentId: row.0, assigneeId: row.1, createdBy: meId,
+                          text: row.2, dueDate: row.3, done: row.4,
+                          createdAt: day(-7) + "T09:00:00Z")
+        }
+    }
+
+    /// Items a coach wrote onto a call — the other half of the queue.
+    static var callItems: [CallActionItemRow] {
+        let callId = UUID()
+        return [
+            CallActionItemRow(callId: callId, index: 0, studentId: rosterIds[0], coachId: staffIds[3],
+                              callDate: "2026-08-14",
+                              item: CallActionItem(text: "Send 5 applications before Friday", done: false, due: nil)),
+            CallActionItemRow(callId: callId, index: 1, studentId: rosterIds[0], coachId: staffIds[3],
+                              callDate: "2026-08-14",
+                              item: CallActionItem(text: "Rewrite the portfolio intro", done: true, due: nil)),
+        ]
+    }
+
+    static var callsByStudent: [UUID: [StudentCall]] {
+        let notes = [
+            "Portfolio is close. Wants help framing the offer.",
+            "Reset the weekly cadence, energy is back.",
+            "Looms are getting sharper, one more round to approval.",
+            "Went through the first two objections line by line.",
+            "Slow week. Agreed on three applications a day.",
+        ]
+        var out: [UUID: [StudentCall]] = [:]
+        for (studentId, used) in callCounts where used > 0 {
+            out[studentId] = (0..<used).map { index in
+                let date = Calendar.current.date(byAdding: .day, value: -7 * index - 1, to: Date()) ?? Date()
+                return StudentCall(id: UUID(), studentId: studentId,
+                                   callDate: BunStore.dayKey(date),
+                                   coachNotes: notes[index % notes.count],
+                                   coachId: staffIds[3], status: "completed",
+                                   progressRating: 3 + (index % 3 == 0 ? 1 : 0),
+                                   nextStep: index == 0 ? "Five applications before Friday" : nil,
+                                   fathomUrl: nil, actionItemsJson: nil)
+            }
+        }
+        return out
+    }
+
+    /// My own last week of reports, for the EOD history strip.
+    static var myEODs: [PortalAPI.MyEOD] {
+        let numbers: [(Int, Int, Int, Int, Int)] = [
+            (0, 310, 7, 4, 1), (1, 288, 6, 3, 0), (2, 301, 6, 5, 2),
+            (3, 264, 4, 2, 0), (4, 322, 8, 6, 1),
+        ]
+        return numbers.map { offset, dms, sets, shows, closes in
+            let date = Calendar.current.date(byAdding: .day, value: -offset, to: Date()) ?? Date()
+            return PortalAPI.MyEOD(id: UUID(), reportDate: BunStore.dayKey(date), dials: 0,
+                                   dmsSent: dms, leadsContacted: 0, convosStarted: 0,
+                                   callsBooked: sets, shows: shows, noShows: 0, closes: closes)
+        }
+    }
 }

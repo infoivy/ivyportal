@@ -240,6 +240,7 @@ struct BunEODFlow: View {
                         Text(submitError).font(bunFont(16)).foregroundStyle(BunTheme.pink)
                     }
                 }
+                historySection
             }
             .padding(.horizontal, 22)
             .padding(.top, 14)
@@ -254,7 +255,50 @@ struct BunEODFlow: View {
                     .background(BunTheme.ground.opacity(0.94))
             }
         }
-        .task { await store.loadTeam() }
+        .task {
+            await store.loadTeam()
+            await store.loadMyEODs()
+        }
+    }
+
+    /// My own week. The web EOD page shows it under the form and it is what
+    /// tells you whether today's number is a good day or a bad one.
+    @ViewBuilder private var historySection: some View {
+        let reports = store.myEODs ?? []
+        if !reports.isEmpty {
+            VStack(alignment: .leading, spacing: 4) {
+                Rectangle().fill(BunTheme.hairline).frame(height: 1)
+                    .padding(.horizontal, -22).padding(.vertical, 8)
+                Text("MY LAST 7 DAYS")
+                    .font(bunFont(13, .medium)).tracking(0.8)
+                    .foregroundStyle(BunTheme.secondary)
+                ForEach(reports) { report in
+                    HStack(spacing: 12) {
+                        Text(BunStore.parseDay(report.reportDate).map { BunStore.friendlyDay($0) } ?? "Recently")
+                            .font(BunType.rowTitle).foregroundStyle(BunTheme.ink)
+                        Spacer()
+                        Text(summary(report))
+                            .font(BunType.caption).foregroundStyle(BunTheme.secondary)
+                            .monospacedDigit().lineLimit(1)
+                    }
+                    .frame(minHeight: 52)
+                }
+            }
+        }
+    }
+
+    /// Only the numbers this person's role actually files, in the web's order.
+    private func summary(_ report: PortalAPI.MyEOD) -> String {
+        var parts: [String] = []
+        if showsDials, let dials = report.dials, dials > 0 { parts.append("\(dials) dials") }
+        if showsDMs {
+            let dms = max(report.dmsSent ?? 0, report.leadsContacted ?? 0)
+            if dms > 0 { parts.append("\(dms) DMs") }
+        }
+        if let sets = report.callsBooked, sets > 0 { parts.append("\(sets) sets") }
+        if let shows = report.shows, shows > 0 { parts.append("\(shows) shows") }
+        if let closes = report.closes, closes > 0 { parts.append("\(closes) closes") }
+        return parts.isEmpty ? "No activity" : parts.joined(separator: " · ")
     }
 
     private func counter(_ label: String, value: Binding<Int>, target: Int?) -> some View {

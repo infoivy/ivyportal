@@ -142,9 +142,20 @@ struct StudentCall: Decodable, Identifiable, Sendable {
     let studentId: UUID
     let callDate: String
     let coachNotes: String?
+    // Call-history depth (web /calls parity): the rating a coach gave, what
+    // the student owes next, and the recording.
+    let coachId: UUID?
+    let status: String?
+    let progressRating: Int?
+    let nextStep: String?
+    let fathomUrl: String?
+    let actionItemsJson: [CallActionItem]?
 
     enum CodingKeys: String, CodingKey {
         case id, studentId = "student_id", callDate = "call_date", coachNotes = "coach_notes"
+        case coachId = "coach_id", status, progressRating = "progress_rating"
+        case nextStep = "next_step", fathomUrl = "fathom_url"
+        case actionItemsJson = "action_items_json"
     }
 }
 
@@ -352,7 +363,7 @@ final class PortalAPI {
 
     func studentCalls(studentId: UUID) async throws -> [StudentCall] {
         try await client().from("student_calls")
-            .select("id, student_id, call_date, coach_notes")
+            .select("id, student_id, call_date, coach_notes, coach_id, status, progress_rating, next_step, fathom_url, action_items_json")
             .eq("student_id", value: studentId)
             .is("voided_at", value: nil)
             .order("call_date", ascending: false)
@@ -2627,5 +2638,127 @@ extension PortalAPI {
         let formatter = DateFormatter()
         formatter.dateFormat = "EEE h:mm a"
         return formatter.string(from: date)
+    }
+}
+
+// MARK: - Action items and 1:1 call logging (daily loop, 2026-08-18)
+
+/// One ad-hoc action item with its attribution. Same row the web hub reads
+/// (`_authenticated.action-items.tsx`): `student_id` set = a client item the
+/// whole team sees, `assignee_id` set = a team item.
+struct ActionItemRow: Decodable, Identifiable, Sendable {
+    let id: UUID
+    let studentId: UUID?
+    let assigneeId: UUID?
+    let createdBy: UUID
+    let text: String
+    let dueDate: String?
+    let done: Bool
+    let createdAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id, studentId = "student_id", assigneeId = "assignee_id"
+        case createdBy = "created_by", text, dueDate = "due_date", done
+        case createdAt = "created_at"
+    }
+
+    /// Owner is the assignee when there is one, else whoever wrote it — the
+    /// same rule the web hub sorts and filters on.
+    var ownerId: UUID { assigneeId ?? createdBy }
+}
+
+/// An action item living inside a logged call's JSON array, flattened so the
+/// hub can queue call items and ad-hoc items together.
+struct CallActionItemRow: Identifiable, Sendable {
+    let callId: UUID
+    let index: Int
+    let studentId: UUID
+    let coachId: UUID?
+    let callDate: String
+    let item: CallActionItem
+
+    var id: String { "\(callId.uuidString)-\(index)" }
+}
+
+extension PortalAPI {
+    /// Every ad-hoc item, open and done. RLS decides whose rows come back —
+    /// team items stay founder + assignee by policy, so nothing is re-gated
+    /// here on top of the server's answer.
+    func actionItems() async throws -> [ActionItemRow] {
+        try await client().from("student_action_items")
+            .select("id, student_id, assignee_id, created_by, text, due_date, done, created_at")
+            .eq("is_demo", value: false)
+            .order("created_at", ascending: false)
+            .limit(400)
+            .execute()
+            .value
+    }
+
+    /// Action items coaches wrote onto calls. The web hub lists these beside
+    /// ad-hoc ones; without them the open count on the phone would undercount.
+    func callActionItems() async throws -> [CallActionItemRow] {
+        struct Row: Decodable {
+            let id: UUID
+            let studentId: UUID
+            let coachId: UUID?
+            let callDate: String
+            let actionItemsJson: [CallActionItem]?
+
+            enum CodingKeys: String, CodingKey {
+                case id, studentId = "student_id", coachId = "coach_id"
+                case callDate = "call_date", actionItemsJson = "action_items_json"
+            }
+        }
+        let rows: [Row] = try await client().from("student_calls")
+            .select("id, student_id, coach_id, call_date, action_items_json")
+            .is("voided_at", value: nil)
+            .order("call_date", ascending: false)
+            .limit(400)
+            .execute()
+            .value
+        return rows.flatMap { row in
+            (row.actionItemsJson ?? []).enumerated().map { index, item in
+                CallActionItemRow(callId: row.id, index: index, studentId: row.studentId,
+                                  coachId: row.coachId, callDate: row.callDate, item: item)
+            }
+        }
+    }
+
+    /// Tick a call-embedded item: read the array, flip one entry, write it
+    /// back — the web does exactly this (the array has no row identity).
+    func setCallActionItemDone(callId: UUID, index: Int, done: Bool) async throws {
+        struct Row: Decodable {
+            let actionItemsJson: [CallActionItem]?
+            enum CodingKeys: String, CodingKey { case actionItemsJson = "action_items_json" }
+        }
+        let row: Row = try await client().from("student_calls")
+            .select("action_items_json")
+            .eq("id", value: callId)
+            .single()
+            .execute()
+            .value
+        var items = row.actionItemsJson ?? []
+        guard items.indices.contains(index) else { return }
+        items[index].done = done
+        try await client().from("student_calls")
+            .update(["action_items_json": items])
+            .eq("id", value: callId)
+            .execute()
+    }
+
+    /// Only the author or an admin may delete; RLS enforces it, this is the
+    /// call the row's delete action makes.
+    func deleteActionItem(id: UUID) async throws {
+        try await client().from("student_action_items").delete().eq("id", value: id).execute()
+    }
+
+    /// Staff profiles for the assignee picker and for naming owners.
+    func teamMembers() async throws -> [StaffProfile] {
+        let roles = try await staffRoles()
+        let staff: Set<String> = ["admin", "founder", "cofounder", "closer", "setter", "coach", "csm"]
+        let ids = Array(Set(roles.filter { staff.contains($0.role) }.map(\.userId)))
+        guard !ids.isEmpty else { return [] }
+        return try await profiles(ids: ids)
+            .sorted { ($0.displayName ?? "") < ($1.displayName ?? "") }
     }
 }

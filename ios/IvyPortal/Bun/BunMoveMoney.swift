@@ -9,13 +9,21 @@ struct BunMoneyPage: View {
     @State private var showCalendar = false
     @State private var emptyListTitle: String?
     @State private var showRequest = false
+    @State private var showLogClose = false
     /// Rows showing the "collected" confirmation before they animate out.
     @State private var settled: Set<UUID> = []
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 26) {
-                BunTitle(text: "Money")
+                HStack {
+                    BunTitle(text: "Money")
+                    Spacer()
+                    // Logging a close is the one money WRITE the business
+                    // depends on; it lost its home when the bank-style chips
+                    // went, so it lives on the title row now.
+                    BunPillChip(symbol: "plus", label: "Log close") { showLogClose = true }
+                }
 
                 actionChips
 
@@ -32,6 +40,11 @@ struct BunMoneyPage: View {
             .padding(.bottom, 96)
         }
         .scrollIndicators(.hidden)
+        .sheet(isPresented: $showLogClose) {
+            BunLogCloseFlow()
+                .presentationBackground(BunTheme.ground)
+                .presentationCornerRadius(40)
+        }
         .sheet(isPresented: $showRequest) {
             BunRequestFlow()
                 .presentationBackground(BunTheme.ground)

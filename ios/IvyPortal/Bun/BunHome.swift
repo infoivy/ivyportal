@@ -12,6 +12,7 @@ struct BunHome: View {
     @State private var showOrgSwitcher = false
     @State private var scrub: Int?
     @State private var showUnclaimed = false
+    @State private var showActions = false
 
     // MARK: Live-or-fixture values (signed-in reads real portal money)
 
@@ -90,6 +91,16 @@ struct BunHome: View {
                 monthBlock
                     .padding(.top, 26)
 
+                // Your items first: the day's own list before the team's.
+                // Hidden entirely when the queue is clear, so a quiet day
+                // keeps the reference's short Home.
+                if !store.myOpenTasks.isEmpty {
+                    hairline
+                        .padding(.top, 26)
+                    itemsSection
+                        .padding(.top, 26)
+                }
+
                 // Founder order (2026-08-18): Team, Transactions, Upcoming
                 // sets. The month block stays welded to the chart above —
                 // balance, chart, month is one money block in the reference.
@@ -121,6 +132,7 @@ struct BunHome: View {
             await store.loadLedger()
             await store.loadTeam()
             await store.loadSets()
+            await store.loadActionItems()
         }
         .refreshable {
             store.cashSeries = nil
@@ -154,6 +166,11 @@ struct BunHome: View {
         .sheet(isPresented: $showOrgSwitcher) {
             BunOrgSwitcherSheet()
                 .presentationDetents([.medium])
+                .presentationBackground(BunTheme.ground)
+                .presentationCornerRadius(40)
+        }
+        .sheet(isPresented: $showActions) {
+            BunActionItemsSheet()
                 .presentationBackground(BunTheme.ground)
                 .presentationCornerRadius(40)
         }
@@ -450,6 +467,28 @@ struct BunHome: View {
                     }
                     .frame(minHeight: 64)
                 }
+            }
+        }
+    }
+
+    /// What is on ME today. Everything else in the queue lives one tap away
+    /// in the hub, so Home stays the day's own list rather than the team's.
+    private var itemsSection: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            sectionHeader("Your items") { showActions = true }
+            VStack(spacing: 0) {
+                ForEach(store.myOpenTasks.prefix(3)) { task in
+                    BunTaskRow(task: task) {
+                        Task { try? await store.setTaskDone(task, done: true) }
+                    }
+                }
+            }
+            if store.myOpenTasks.count > 3 {
+                Button { showActions = true } label: {
+                    Text("\(store.myOpenTasks.count - 3) more")
+                        .font(BunType.caption).foregroundStyle(BunTheme.indigoLight)
+                }
+                .buttonStyle(BunPressStyle())
             }
         }
     }
