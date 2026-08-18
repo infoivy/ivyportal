@@ -124,7 +124,7 @@ struct BunShell: View {
         // boxes match — box-matching is what left them different sizes.
         Group {
             switch item {
-            case .home: BunHouseIcon(size: 20.8)
+            case .home: BunHouseIcon(size: 21.5)
             case .money: BunTransferIcon(size: 18.3)
             case .team: BunListIcon(size: 18.2)
             case .banking: BunBankIcon(size: 19.6)

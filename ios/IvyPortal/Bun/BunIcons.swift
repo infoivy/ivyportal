@@ -39,22 +39,26 @@ struct BunHouseIcon: View {
             roof.addQuadCurve(to: p(12.76, 1.65), control: p(12, 1.0))
             roof.addLine(to: p(22.9, 10.2))
 
+            // Base corners turn over ~2.2 units. Measured: the reference's
+            // bottom edge pulls in 5px across its last rows where a 1.3-unit
+            // radius only managed 3px, which is why ours read sharper.
             var walls = Path()
             walls.move(to: p(3.7, 9.0))
-            walls.addLine(to: p(3.7, 19.0))
-            walls.addQuadCurve(to: p(5.0, 20.3), control: p(3.7, 20.3))
-            walls.addLine(to: p(19.0, 20.3))
-            walls.addQuadCurve(to: p(20.3, 19.0), control: p(20.3, 20.3))
+            walls.addLine(to: p(3.7, 18.1))
+            walls.addQuadCurve(to: p(5.9, 20.3), control: p(3.7, 20.3))
+            walls.addLine(to: p(18.1, 20.3))
+            walls.addQuadCurve(to: p(20.3, 18.1), control: p(20.3, 20.3))
             walls.addLine(to: p(20.3, 9.0))
 
-            // Doorway: open at the bottom, near-square head with small
-            // corners (the reference lintel is flat, not an arch).
+            // Doorway: open at the bottom. The head curves over ~4px in the
+            // trace, so a 1.4-unit radius — rounded, but not the arch that
+            // an unbounded quad gave.
             var door = Path()
             door.move(to: p(8.8, 20.3))
-            door.addLine(to: p(8.8, 13.0))
-            door.addQuadCurve(to: p(9.7, 12.1), control: p(8.8, 12.1))
-            door.addLine(to: p(14.3, 12.1))
-            door.addQuadCurve(to: p(15.2, 13.0), control: p(15.2, 12.1))
+            door.addLine(to: p(8.8, 13.5))
+            door.addQuadCurve(to: p(10.2, 12.1), control: p(8.8, 12.1))
+            door.addLine(to: p(13.8, 12.1))
+            door.addQuadCurve(to: p(15.2, 13.5), control: p(15.2, 12.1))
             door.addLine(to: p(15.2, 20.3))
 
             let stroke = StrokeStyle(lineWidth: unitStroke * u,
