@@ -40,3 +40,31 @@ The Bun iOS app was a Mercury-styled money clone with a partial data layer. The 
 ### Future work
 
 In value order: Home's Sales/Delivery picture tiles with exact-element routing, Performance (metric chart, filters, day drilldown), Money in analytics + payment plans, the Payouts ledger with base pay and adjustments, Finance, per-member card ledgers, Students kanban with filters, the deep student record, CSM workspace, testimonials, calendar + log-a-set + setter tracker, CRM, team chat, knowledge SOPs/policies, admin + team administration. Then the student-facing app mode, which is still entirely absent.
+
+---
+
+## Batch 2 — tab merge and the home pictures
+
+### Prompt
+
+"turn money and banking into one and then add one more item in navbar. because we need to add some more stuff. then also start with what you wanted"
+
+### What I did
+
+- Folded Banking into Money: `BunBanking` gained an `embedded` mode and renders as sections (accounts, cards, wallet) under the payments block. Its account rows lost their chevrons, because the surface they linked to now sits directly above them.
+- Added the Work tab in the freed slot: today's EOD (status plus the week behind it) and the action-items queue inline. `BunActionItemsView(embedded:)` is one implementation used by both the tab and the sheet; Home's "Your items" now routes to the tab.
+- Brought over the two home pictures, each to the tab that owns its rows:
+  - `PortalAPI.salesPicture()` mirrors `home-sales-picture.tsx` — live sets since Monday, attendance-based show rate, yesterday's dials/DMs/sets summed per setter against `kpiTargets(for:)`, and closes in the current payout period.
+  - The delivery read is computed in `BunStore.delivery` off the roster the Clients tab already holds, so the tiles and the rows they filter can never disagree. `ClientFilter` turns each tile into a roster filter.
+- Home gained show rate on the Team strip and a matching Clients strip; nothing else on Home moved.
+- `StudentRosterItem` now selects `created_at`, `onboarding_completed_at`, `first_win_at`, `testimonial_collected`.
+
+### What was challenging
+
+- Deciding what the sales block should NOT show: the Team funnel already answers sets/shows/closes from EOD rows, and the set records answer the same questions from a different source. Showing both would have been two truths on one screen, so the block only carries what the funnel cannot answer.
+- Stat captions overflowed their third of the row into the neighbouring column ("11 showed · 3 did not" ran into the period label). Fixed by clipping each caption to its column frame and shortening the copy.
+- The first Home strip test passed without ever scrolling: XCUITest counts off-screen elements as existing, so the assertion was meaningless until it scrolled first and checked `isHittable`.
+
+### Future work
+
+Unchanged from batch 1, minus the pictures: Performance depth, Money in analytics and payment plans, Payouts, Finance, per-member cards, the deep client record, CSM workspace, testimonials, calendar and log-a-set, CRM, chat, knowledge, admin. Then the student app mode. The Work tab is the intended home for schedule, knowledge and chat.
