@@ -65,38 +65,27 @@ struct BunCRMSheet: View {
 
                 Text("Instagram").font(BunType.section).foregroundStyle(BunTheme.ink)
 
-                if let account = mochi.account {
-                    HStack(alignment: .top, spacing: 0) {
-                        stat("All leads", value: Self.count(account.totalLeads))
-                        stat("New · 30 days", value: Self.count(account.newLeads30))
-                        stat("Active convos", value: mochi.messages.map { "\($0.activeConversations)" } ?? "–")
-                    }
-                }
-
+                // One hero, one context line, then a table. Twelve numbers in
+                // a 3-wide grid read as noise (founder 2026-08-18: "so
+                // messy") — rows scan, tiles do not.
                 if let revenue = mochi.revenue, revenue.net != nil || revenue.gross != nil {
-                    HStack(alignment: .top, spacing: 0) {
-                        moneyStat("Collected", amount: revenue.net, tone: BunTheme.green)
-                        moneyStat("Gross", amount: revenue.gross)
-                        stat("Payments", value: revenue.count.map(String.init) ?? "–")
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Collected").font(BunType.label).foregroundStyle(BunTheme.secondary)
+                        BunMoney(amount: revenue.net ?? revenue.gross ?? 0,
+                                 size: BunType.Money.hero, color: BunTheme.green)
+                        Text(revenueCaption(revenue))
+                            .font(BunType.caption).foregroundStyle(BunTheme.secondary)
+                            .lineLimit(1).minimumScaleFactor(0.8)
                     }
                 }
 
-                if let messages = mochi.messages {
-                    HStack(alignment: .top, spacing: 0) {
-                        stat("DMs out", value: Self.count(messages.outbound))
-                        stat("DMs in", value: Self.count(messages.inbound))
-                        stat("Replied", value: mochi.replies?.rate.map { "\(Int(($0 * 100).rounded()))%" } ?? "–",
-                             tone: BunTheme.green)
-                    }
+                if let account = mochi.account {
+                    Text(accountLine(account, messages: mochi.messages))
+                        .font(BunType.caption).foregroundStyle(BunTheme.secondary)
+                        .lineLimit(1).minimumScaleFactor(0.75)
                 }
 
-                if let response = mochi.response {
-                    HStack(alignment: .top, spacing: 0) {
-                        stat("Median reply", value: response.medianMinutes.map(Self.duration) ?? "–")
-                        stat("Booked", value: response.callsBooked.map(String.init) ?? "–")
-                        stat("Qualified", value: response.qualified.map(String.init) ?? "–")
-                    }
-                }
+                outreachTable(mochi)
 
                 if let pipeline = mochi.pipeline {
                     pipelineBar(pipeline, conversion: mochi.conversion)
@@ -164,6 +153,63 @@ struct BunCRMSheet: View {
                 Text("Mochi is not connected. An admin connects it in Bun on the web.")
                     .font(bunFont(17)).foregroundStyle(BunTheme.secondary)
                     .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private func revenueCaption(_ revenue: CRMSummary.Mochi.Revenue) -> String {
+        var bits: [String] = []
+        if let gross = revenue.gross, gross > 0 { bits.append("\(ivyMoney(gross)) gross") }
+        if let count = revenue.count, count > 0 { bits.append("\(count) payment\(count == 1 ? "" : "s")") }
+        return bits.isEmpty ? "in this window" : bits.joined(separator: " · ")
+    }
+
+    private func accountLine(_ account: CRMSummary.Mochi.Account,
+                             messages: CRMSummary.Mochi.Messages?) -> String {
+        var bits: [String] = []
+        if let total = account.totalLeads { bits.append("\(Self.count(total)) leads") }
+        if let new = account.newLeads30 { bits.append("\(Self.count(new)) new in 30 days") }
+        if let convos = messages?.activeConversations, convos > 0 {
+            bits.append("\(convos) live conversations")
+        }
+        return bits.joined(separator: " · ")
+    }
+
+    /// Mercury's anatomy: label left, value right, hairline between. Reads as
+    /// a table rather than a grid of boxes.
+    private func outreachTable(_ mochi: CRMSummary.Mochi) -> some View {
+        var rows: [(String, String, Color)] = []
+        if let messages = mochi.messages {
+            rows.append(("DMs sent", Self.count(messages.outbound), BunTheme.ink))
+            if let replies = mochi.replies, let rate = replies.rate {
+                rows.append(("Replies", "\(Self.count(messages.inbound)) · \(Self.percent(rate))",
+                             rate >= 0.5 ? BunTheme.green : BunTheme.ink))
+            } else {
+                rows.append(("Replies", Self.count(messages.inbound), BunTheme.ink))
+            }
+        }
+        if let response = mochi.response {
+            if let median = response.medianMinutes {
+                rows.append(("Median reply", Self.duration(median), BunTheme.ink))
+            }
+            if let qualified = response.qualified {
+                rows.append(("Qualified", Self.count(qualified), BunTheme.ink))
+            }
+            if let booked = response.callsBooked {
+                rows.append(("Calls booked", Self.count(booked), BunTheme.ink))
+            }
+        }
+        return VStack(spacing: 0) {
+            ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
+                HStack {
+                    Text(row.0).font(BunType.rowTitle).foregroundStyle(BunTheme.secondary)
+                    Spacer()
+                    Text(row.1).font(bunFont(19, .medium)).foregroundStyle(row.2).monospacedDigit()
+                }
+                .frame(minHeight: 54)
+                if index < rows.count - 1 {
+                    Rectangle().fill(BunTheme.hairline).frame(height: 1)
+                }
             }
         }
     }
@@ -399,7 +445,12 @@ struct BunCRMSheet: View {
         guard let value else { return "–" }
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
+        // en_US_POSIX deliberately drops locale formatting, grouping included,
+        // so the separator has to be set explicitly rather than inherited.
         formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.usesGroupingSeparator = true
+        formatter.groupingSeparator = ","
+        formatter.groupingSize = 3
         return formatter.string(from: NSNumber(value: value)) ?? "\(value)"
     }
 
