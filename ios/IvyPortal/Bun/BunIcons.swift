@@ -29,23 +29,32 @@ struct BunHouseIcon: View {
                 CGPoint(x: x * u, y: (y + dy) * u)
             }
 
+            // Corners carry a real radius rather than leaning on the stroke's
+            // round join, but a TIGHT one: the trace widens from 2px to 10px
+            // over three rows at the apex, and the base corners turn inside
+            // ~1.1 units. Generous radii read as a blob, not this icon.
             var roof = Path()
             roof.move(to: p(1.1, 10.2))
-            roof.addLine(to: p(12, 1.0))
+            roof.addLine(to: p(11.24, 1.65))
+            roof.addQuadCurve(to: p(12.76, 1.65), control: p(12, 1.0))
             roof.addLine(to: p(22.9, 10.2))
 
             var walls = Path()
             walls.move(to: p(3.7, 9.0))
-            walls.addLine(to: p(3.7, 20.3))
-            walls.addLine(to: p(20.3, 20.3))
+            walls.addLine(to: p(3.7, 19.0))
+            walls.addQuadCurve(to: p(5.0, 20.3), control: p(3.7, 20.3))
+            walls.addLine(to: p(19.0, 20.3))
+            walls.addQuadCurve(to: p(20.3, 19.0), control: p(20.3, 20.3))
             walls.addLine(to: p(20.3, 9.0))
 
-            // Doorway: open at the bottom, generously rounded lintel.
+            // Doorway: open at the bottom, near-square head with small
+            // corners (the reference lintel is flat, not an arch).
             var door = Path()
             door.move(to: p(8.8, 20.3))
-            door.addLine(to: p(8.8, 14.0))
-            door.addQuadCurve(to: p(12, 12.1), control: p(8.8, 12.1))
-            door.addQuadCurve(to: p(15.2, 14.0), control: p(15.2, 12.1))
+            door.addLine(to: p(8.8, 13.0))
+            door.addQuadCurve(to: p(9.7, 12.1), control: p(8.8, 12.1))
+            door.addLine(to: p(14.3, 12.1))
+            door.addQuadCurve(to: p(15.2, 13.0), control: p(15.2, 12.1))
             door.addLine(to: p(15.2, 20.3))
 
             let stroke = StrokeStyle(lineWidth: unitStroke * u,

@@ -67,10 +67,13 @@ struct BunShell: View {
         }
     }
 
-    // Bar metrics measured off the reference at @3x: capsule 360x58pt with
-    // 21pt side margins, five ~69pt cells, and an active pill 77x50 that is
-    // wider than its cell and inset from the bar's top and bottom. Icons sit
-    // at 20pt, not 22.
+    // Bar metrics re-measured on a reference screen with an EMPTY area behind
+    // the bar (Cards), because on a busy screen the glass blurs page content
+    // into the edges and inflates the read. Clean values at @3x:
+    //   bar   y 2373..2558 -> 62pt tall, x 63..1142 -> 360pt (21pt margins)
+    //   pill  y 2385..2546 -> 54pt tall, 77pt wide, so 4pt inset top/bottom
+    //   fills bar #141416, pill #353538
+    // The earlier 58/50 came from the contaminated read.
     private var bar: some View {
         HStack(spacing: 0) {
             ForEach(BunTab.allCases, id: \.self) { item in
@@ -79,11 +82,11 @@ struct BunShell: View {
                 // rapid Button taps (observed as flaky switches).
                 glyph(item)
                     .foregroundStyle(tab == item ? BunTheme.barIconActive : BunTheme.barIcon)
-                    .frame(maxWidth: .infinity, minHeight: 50)
+                    .frame(maxWidth: .infinity, minHeight: 54)
                     .background {
                         if tab == item {
                             Capsule().fill(BunTheme.barActive)
-                                .frame(width: 77, height: 50)
+                                .frame(width: 77, height: 54)
                                 .matchedGeometryEffect(id: "activeBunTab", in: barNamespace)
                         }
                     }
@@ -98,14 +101,18 @@ struct BunShell: View {
         }
         .padding(.vertical, 4)
         .padding(.horizontal, 8)
-        // Matte, not glass. Liquid Glass put a specular sheen on the bar and
-        // let page content bleed through it; the reference is a flat, opaque
-        // capsule with a hairline rim (founder: "why is our navbar so shiny").
-        .background {
-            Capsule()
-                .fill(BunTheme.barBg)
-                .overlay(Capsule().strokeBorder(BunTheme.barStroke, lineWidth: 1))
-        }
+        // Real Liquid Glass, not a painted imitation. The reference has it too
+        // — the uneven rim the founder spotted (faded at bottom-left and top
+        // right) is the specular highlight tracking the device's gyroscope, so
+        // a static gradient would be wrong the moment the phone tilts.
+        //
+        // NOTE: that highlight does NOT render correctly in the Simulator, so
+        // simulator screenshots cannot be used to judge this; it needs a device
+        // or TestFlight build.
+        //
+        // The tint carries the measured #141416 so the glass reads as the
+        // reference's near-opaque surface rather than the strong sheen we had.
+        .bunGlassSurface(Capsule(), tint: BunTheme.barBg, interactive: false)
         .padding(.horizontal, 21)
     }
 
