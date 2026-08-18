@@ -300,7 +300,6 @@ struct BunClientsPage: View {
                         .accessibilityLabel("Log a close")
                 }
                 deliverySection
-                hairline
                 clientsSection
             }
             .padding(.horizontal, 22)
@@ -336,64 +335,79 @@ struct BunClientsPage: View {
     }
 
 
-    /// The web's delivery picture, phone-shaped: six numbers, each one a
-    /// filter on the roster below rather than a link to a general page.
+    /// The delivery picture as a chip rail, not a tile grid (founder
+    /// 2026-08-18: the grid "takes way too much space and looks
+    /// unprofessional"). One line of summary, one scrollable line of
+    /// exceptions, each chip still filtering the roster to its own rows.
+    /// Zero-count states stay hidden — a chip that filters to nothing is a
+    /// dead tap dressed as information.
     private var deliverySection: some View {
         let delivery = store.delivery
-        return VStack(alignment: .leading, spacing: 16) {
-            Text("Delivery").font(BunType.section).foregroundStyle(BunTheme.ink)
-            let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
-            LazyVGrid(columns: columns, spacing: 12) {
-                tile("Active", value: delivery.active,
-                     detail: "\(delivery.newThisWeek) joined this week", filter: .all)
-                tile("At risk", value: delivery.atRisk,
-                     detail: "\(delivery.watch) more to watch", filter: .atRisk,
-                     tone: delivery.atRisk > 0 ? BunTheme.pink : nil)
-                tile("Needs a check-in", value: delivery.dueCheckin,
-                     detail: "\(delivery.checkedToday) done today", filter: .needsCheckin,
-                     tone: delivery.dueCheckin > 0 ? amber : nil)
-                tile("Quiet 14 days", value: delivery.quiet14,
-                     detail: "\(delivery.filedToday) filed today", filter: .quiet)
-                tile("Stuck in onboarding", value: delivery.stuck,
-                     detail: "7+ days in Start Here", filter: .onboarding,
-                     tone: delivery.stuck > 0 ? amber : nil)
-                tile("Testimonial ready", value: delivery.testimonialsReady,
-                     detail: "first win, not collected", filter: .testimonial)
-            }
-            if delivery.callsWeek > 0 || delivery.openItems > 0 {
-                Text("\(delivery.callsWeek) 1:1 call\(delivery.callsWeek == 1 ? "" : "s") booked this week · \(delivery.openItems) open item\(delivery.openItems == 1 ? "" : "s")")
-                    .font(BunType.caption).foregroundStyle(BunTheme.secondary)
+        let chips: [(BunStore.ClientFilter, String, Int, Color?)] = [
+            (.atRisk, "at risk", delivery.atRisk, BunTheme.pink),
+            (.needsCheckin, "need a check-in", delivery.dueCheckin, amber),
+            (.quiet, "quiet 14d", delivery.quiet14, nil),
+            (.onboarding, "in onboarding", delivery.stuck, amber),
+            (.testimonial, "testimonial ready", delivery.testimonialsReady, nil),
+        ].filter { $0.2 > 0 }
+
+        return VStack(alignment: .leading, spacing: 12) {
+            Text(summaryLine(delivery))
+                .font(BunType.caption).foregroundStyle(BunTheme.secondary)
+                .lineLimit(1).minimumScaleFactor(0.85)
+            if !chips.isEmpty {
+                ScrollView(.horizontal) {
+                    HStack(spacing: 8) {
+                        ForEach(chips, id: \.0) { filter, label, count, tone in
+                            statChip(filter: filter, label: label, count: count, tone: tone)
+                        }
+                    }
+                    .padding(.horizontal, 22)
+                }
+                .scrollIndicators(.hidden)
+                .padding(.horizontal, -22)
             }
         }
     }
 
-    private var amber: Color { Color(red: 0.95, green: 0.72, blue: 0.35) }
+    private func summaryLine(_ delivery: BunStore.Delivery) -> String {
+        var bits = ["\(delivery.active) active"]
+        if delivery.newThisWeek > 0 { bits.append("\(delivery.newThisWeek) joined this week") }
+        if delivery.checkedToday > 0 { bits.append("\(delivery.checkedToday) checked in today") }
+        if delivery.callsWeek > 0 { bits.append("\(delivery.callsWeek) calls booked") }
+        return bits.joined(separator: " · ")
+    }
 
-    /// Tiles share one height and one value baseline (founder rule), so the
-    /// detail line is always rendered even when it is blank.
-    private func tile(_ label: String, value: Int, detail: String,
-                      filter: BunStore.ClientFilter, tone: Color? = nil) -> some View {
-        Button {
+    /// Count first, label second, a semantic dot only where the state is a
+    /// warning. Selected reads indigo rather than growing a border.
+    private func statChip(filter: BunStore.ClientFilter, label: String,
+                          count: Int, tone: Color?) -> some View {
+        let selected = store.clientFilter == filter
+        return Button {
             withAnimation(.snappy(duration: 0.2)) {
-                store.clientFilter = store.clientFilter == filter ? .all : filter
+                store.clientFilter = selected ? .all : filter
             }
         } label: {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(label).font(BunType.label).foregroundStyle(BunTheme.secondary)
-                    .lineLimit(1).minimumScaleFactor(0.85)
-                Text("\(value)").font(bunFont(26, .medium))
-                    .foregroundStyle(tone ?? BunTheme.ink).monospacedDigit()
-                Text(detail).font(bunFont(13)).foregroundStyle(BunTheme.tertiary)
-                    .lineLimit(1).minimumScaleFactor(0.8)
+            HStack(spacing: 7) {
+                if let tone, !selected {
+                    Circle().fill(tone).frame(width: 6, height: 6)
+                }
+                Text("\(count)")
+                    .font(bunFont(16, .medium)).monospacedDigit()
+                    .foregroundStyle(selected ? .white : (tone ?? BunTheme.ink))
+                Text(label)
+                    .font(bunFont(15))
+                    .foregroundStyle(selected ? .white.opacity(0.9) : BunTheme.secondary)
             }
-            .frame(maxWidth: .infinity, minHeight: 96, alignment: .topLeading)
-            .padding(14)
-            .background(store.clientFilter == filter && filter != .all ? BunTheme.fieldBright : BunTheme.raised,
-                        in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .padding(.horizontal, 13)
+            .frame(height: 38)
+            .background(selected ? AnyShapeStyle(BunTheme.indigo) : AnyShapeStyle(BunTheme.raised),
+                        in: Capsule())
         }
         .buttonStyle(BunPressStyle())
     }
+
+    private var amber: Color { Color(red: 0.95, green: 0.72, blue: 0.35) }
 
     private var clientsSection: some View {
         VStack(alignment: .leading, spacing: 22) {

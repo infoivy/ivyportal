@@ -8,8 +8,8 @@ enum BunTab: String, CaseIterable {
     case home, money, team, clients, work
 
     /// SF Symbol name, or nil where the glyph is drawn (see BunIcons).
-    /// Founder 2026-08-18: Money takes Mercury's transfers arrows, Team takes
-    /// the list, Clients takes the two-person glyph.
+    /// Founder 2026-08-18: Money carries the bank glyph now that it holds the
+    /// accounts and cards, Team takes the list, Clients the two-person glyph.
     var symbol: String? {
         switch self {
         case .home, .money, .team: nil
@@ -39,7 +39,8 @@ struct BunShell: View {
     }()
     @Namespace private var barNamespace
     @State private var store = BunStore.shared
-    /// Screenshot/UI-test presets: `-bunSheet actions|eod|logClose|client|logCall`
+    /// Screenshot/UI-test presets:
+    /// `-bunSheet actions|eod|logClose|client|logCall|moneyIn|plans|payouts`
     /// opens one surface straight from launch, the same trick the older shell
     /// used for the payments sheet.
     @State private var launchSheet: String?
@@ -86,6 +87,9 @@ struct BunShell: View {
         case "actions": BunActionItemsSheet()
         case "eod": BunEODFlow()
         case "logClose": BunLogCloseFlow()
+        case "moneyIn": BunMoneyInSheet()
+        case "plans": BunPaymentPlansSheet()
+        case "payouts": BunPayoutLedgerSheet()
         case "client", "logCall":
             if let student = store.prioritizedRoster.first(where: \.isOneOnOne) {
                 if kind == "client" { BunClientSheet(student: student) }
@@ -163,7 +167,7 @@ struct BunShell: View {
         Group {
             switch item {
             case .home: BunHouseIcon(size: 21.5)
-            case .money: BunTransferIcon(size: 18.3)
+            case .money: BunBankIcon(size: 19.6)
             case .team: BunListIcon(size: 18.2)
             case .clients, .work:
                 // SF's glyphs sit ~0.5pt proud of the drawn ones.

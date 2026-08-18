@@ -471,6 +471,91 @@ enum BunFixtures {
         return out
     }
 
+    /// The demo payout ledger: two people owed, one already marked paid, so
+    /// the confirm flow has something honest to act on signed out.
+    static var payoutLedger: PayoutLedgerData {
+        let period = PayoutPeriods.period()
+        let members = [
+            OwedMember(id: staffIds[2].uuidString, name: "Ray Ortega", commission: 1_240,
+                       basePay: 0, adjustment: 0, adjustmentLines: [], total: 1_240),
+            OwedMember(id: staffIds[0].uuidString, name: "Sofia Marin", commission: 620,
+                       basePay: 0, adjustment: 0, adjustmentLines: [], total: 620),
+            OwedMember(id: staffIds[3].uuidString, name: "Mia Chen", commission: 0,
+                       basePay: 500, adjustment: -50, adjustmentLines: [], total: 450),
+        ]
+        return PayoutLedgerData(
+            period: period,
+            rows: PayoutRows(setterRows: [], closerRows: [], periodDeals: [], periodPayments: []),
+            owed: members,
+            confirmations: [PayoutConfirmationRow(periodStart: period.start, userId: staffIds[3],
+                                                  amountPaid: 450, confirmedAt: BunStore.dayKey(Date()) + "T09:00:00Z",
+                                                  note: nil)],
+            adjustments: [],
+            teamIds: members.map(\.id),
+            names: Dictionary(uniqueKeysWithValues: members.map { ($0.id, $0.name) })
+        )
+    }
+
+    /// Deals behind the Money-in read: a spread of pathways and payment types.
+    static var deals: [PayoutDealRow] {
+        let rows: [(String, Double, Double, String, Int)] = [
+            ("Jordan Blake", 5_800, 5_800, "pif", 1),
+            ("Tariq Aziz", 2_800, 1_450, "split", 2),
+            ("Leila Hassan", 2_900, 2_900, "pif", 3),
+            ("Nadia Osman", 3_300, 550, "deposit", 5),
+            ("Sami Idris", 4_200, 4_200, "pif", 6),
+            ("Marcus Reed", 2_200, 550, "deposit", 9),
+            ("Elias Vance", 1_800, 900, "split", 14),
+            ("Dahlia Krum", 0, 0, "scholarship", 18),
+            ("Priya Nair", 3_600, 3_600, "pif", 24),
+            ("Omar Diallo", 2_400, 800, "deposit", 31),
+        ]
+        return rows.map { name, total, cash, type, back in
+            let date = Calendar.current.date(byAdding: .day, value: -back, to: Date()) ?? Date()
+            return PayoutDealRow(id: UUID(), studentId: nil, studentName: name,
+                                 closerId: staffIds[2], setterId: staffIds[0],
+                                 programType: total > 3_000 ? "1:1 Pathway" : "Group Expertise Pathway",
+                                 totalValue: total, cashCollectedUpfront: cash,
+                                 paymentType: type, dealDate: BunStore.dayKey(date), notes: nil)
+        }
+    }
+
+    /// Payment plans and their instalments, matching the roster's money.
+    static var plans: [PlanHeader] {
+        [("Marcus Reed", 2_200.0), ("Nadia Osman", 3_300.0), ("Tariq Aziz", 2_800.0),
+         ("Elias Vance", 1_800.0)].enumerated().map { index, row in
+            let start = Calendar.current.date(byAdding: .day, value: -30 * (index + 1), to: Date()) ?? Date()
+            return PlanHeader(id: planIds[index], studentId: rosterIds[[0, 3, 4, 7][index]],
+                              studentName: row.0, totalAmount: row.1, currency: "USD",
+                              createdAt: BunStore.dayKey(start) + "T10:00:00Z")
+        }
+    }
+
+    private static let planIds = (0..<4).map { _ in UUID() }
+
+    static var planPayments: [PlanPayment] {
+        var out: [PlanPayment] = []
+        let counts = [4, 6, 4, 3]
+        let amounts = [550.0, 550.0, 700.0, 600.0]
+        for (index, planId) in planIds.enumerated() {
+            for sequence in 1...counts[index] {
+                // Stagger the plans so the demo does not show three
+                // instalments all landing today.
+                let due = Calendar.current.date(byAdding: .day,
+                                                value: -30 * (index + 1) + 30 * (sequence - 1) + index * 6 + 4,
+                                                to: Date()) ?? Date()
+                let past = due < Date()
+                out.append(PlanPayment(id: UUID(), installmentId: planId, sequence: sequence,
+                                       amount: amounts[index], currency: "USD",
+                                       dueDate: BunStore.dayKey(due),
+                                       status: past ? (sequence == counts[index] ? "late" : "paid") : "upcoming",
+                                       paidAt: past ? BunStore.dayKey(due) + "T10:00:00Z" : nil,
+                                       notes: nil))
+            }
+        }
+        return out
+    }
+
     /// Demo activity behind the performance graph and the member drilldown:
     /// the same six people as `teamRows`, filing most days.
     static func perfActivity(days: Int) -> [EODActivity] {

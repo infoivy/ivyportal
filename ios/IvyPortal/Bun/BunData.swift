@@ -139,6 +139,93 @@ final class BunStore {
     /// Whoever is filing: the signed-in id, or the demo person signed out.
     var meId: UUID { PortalAPI.shared.currentUserID ?? BunFixtures.meId }
 
+    // Money depth (web Money in / Payment plans / Payouts)
+    var deals: [PayoutDealRow]?
+    var plans: [PlanHeader]?
+    var planPayments: [PlanPayment]?
+    var payoutOffset = 0
+    var payoutData: PayoutLedgerData?
+    var payoutError: String?
+
+    /// Deals inside a window, newest first — the Money-in read.
+    func deals(days: Int) -> [PayoutDealRow] {
+        let from = Self.dayKey(Calendar.current.date(byAdding: .day, value: -days, to: Date()) ?? Date())
+        return (deals ?? []).filter { $0.dealDate >= from }.sorted { $0.dealDate > $1.dealDate }
+    }
+
+    func loadMoneyDepth() async {
+        guard signedIn else { seedFixturesIfNeeded(); return }
+        if deals == nil { deals = (try? await PortalAPI.shared.recentDeals(limit: 120)) ?? [] }
+        if plans == nil, let (headers, payments) = try? await PortalAPI.shared.paymentPlans() {
+            plans = headers
+            planPayments = payments
+        }
+    }
+
+    /// One payout period, walked with the arrows. Errors surface rather than
+    /// leaving an empty ledger that reads like "nobody is owed anything".
+    func loadPayouts(offset: Int? = nil) async {
+        if let offset { payoutOffset = offset }
+        guard signedIn else {
+            seedFixturesIfNeeded()
+            if payoutData == nil { payoutData = BunFixtures.payoutLedger }
+            return
+        }
+        payoutData = nil
+        do {
+            payoutData = try await PortalAPI.shared.payoutLedger(offset: payoutOffset)
+            payoutError = nil
+        } catch {
+            payoutError = "Could not load the ledger: \(error.localizedDescription)"
+        }
+    }
+
+    func confirm(_ member: OwedMember) async throws {
+        guard signedIn else {
+            // Demo: the confirmation lands so the flow is not a dead end.
+            if let data = payoutData {
+                let row = PayoutConfirmationRow(periodStart: data.period.start,
+                                                userId: UUID(uuidString: member.id) ?? UUID(),
+                                                amountPaid: member.total,
+                                                confirmedAt: Self.dayKey(Date()) + "T09:00:00Z", note: nil)
+                payoutData = PayoutLedgerData(period: data.period, rows: data.rows, owed: data.owed,
+                                              confirmations: data.confirmations + [row],
+                                              adjustments: data.adjustments, teamIds: data.teamIds,
+                                              names: data.names)
+            }
+            unconfirmedPayouts?.removeAll { $0.id == member.id }
+            return
+        }
+        guard let start = payoutData?.period.start else { return }
+        try await PortalAPI.shared.confirmPayout(periodStart: start, memberId: member.id, amount: member.total)
+        unconfirmedPayouts?.removeAll { $0.id == member.id }
+        await loadPayouts()
+    }
+
+    func addAdjustment(memberId: String, amount: Double, note: String) async throws {
+        guard signedIn else {
+            // Demo: fold the correction into the member's total in place.
+            if let data = payoutData {
+                let owed = data.owed.map { member -> OwedMember in
+                    guard member.id == memberId else { return member }
+                    var updated = member
+                    updated.adjustment += amount
+                    updated.total += amount
+                    return updated
+                }
+                payoutData = PayoutLedgerData(period: data.period, rows: data.rows, owed: owed,
+                                              confirmations: data.confirmations,
+                                              adjustments: data.adjustments, teamIds: data.teamIds,
+                                              names: data.names)
+            }
+            return
+        }
+        guard let start = payoutData?.period.start else { return }
+        try await PortalAPI.shared.addPayoutAdjustment(memberId: memberId, periodStart: start,
+                                                       amount: amount, note: note)
+        await loadPayouts()
+    }
+
     // Performance (web /performance: range, one canonical graph, drilldown)
     var perfDays = 7
     var perfActivity: [EODActivity]?
@@ -879,6 +966,12 @@ final class BunStore {
         taskRemoved = []
         localTasks = []
         perfActivity = nil
+        deals = nil
+        plans = nil
+        planPayments = nil
+        payoutData = nil
+        payoutError = nil
+        payoutOffset = 0
         sales = nil
         studentEODs = nil
         scheduledCalls = nil
@@ -946,6 +1039,11 @@ final class BunStore {
         if myEODs == nil { myEODs = BunFixtures.myEODs }
         if callsByStudent.isEmpty { callsByStudent = BunFixtures.callsByStudent }
         if perfActivity == nil { perfActivity = BunFixtures.perfActivity(days: perfDays) }
+        if deals == nil { deals = BunFixtures.deals }
+        if plans == nil {
+            plans = BunFixtures.plans
+            planPayments = BunFixtures.planPayments
+        }
         if sales == nil { sales = BunFixtures.sales }
         if studentEODs == nil { studentEODs = BunFixtures.studentEODs }
         if scheduledCalls == nil { scheduledCalls = 4 }

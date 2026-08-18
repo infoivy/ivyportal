@@ -8,8 +8,14 @@ struct BunMoneyPage: View {
     @State private var listKind: BunPaymentListSheet.Kind?
     @State private var showCalendar = false
     @State private var emptyListTitle: String?
-    @State private var showRequest = false
     @State private var showLogClose = false
+    @State private var showMoneyIn = false
+    @State private var showPlans = false
+    @State private var showPayouts = false
+    /// Founder 2026-08-18: accounts and cards are their own tab inside Money.
+    /// `-bunMoneySection accounts` opens straight there for screenshots.
+    @State private var section = ProcessInfo.processInfo.arguments.contains("accounts")
+        && ProcessInfo.processInfo.arguments.contains("-bunMoneySection") ? 1 : 0
     /// Rows showing the "collected" confirmation before they animate out.
     @State private var settled: Set<UUID> = []
 
@@ -25,21 +31,21 @@ struct BunMoneyPage: View {
                     BunPillChip(symbol: "plus", label: "Log close") { showLogClose = true }
                 }
 
-                actionChips
+                BunSegment(options: ["Money", "Accounts"], selection: $section)
 
-                upNextSection
+                if section == 0 {
+                    upNextSection
 
-                paymentsSection
+                    paymentsSection
 
-                edgeHairline
+                    edgeHairline
 
-                // Banking folded in (founder 2026-08-18): accounts, cards and
-                // the wallet are the same money as the payments above.
-                BunBanking(embedded: true)
-
-                edgeHairline
-
-                BunTransactions(embedded: true)
+                    BunTransactions(embedded: true)
+                } else {
+                    // Accounts and cards together (founder 2026-08-18), one
+                    // tab away from the payments rather than below them.
+                    BunBanking(embedded: true)
+                }
             }
             .padding(.horizontal, 22)
             .padding(.top, 12)
@@ -51,8 +57,18 @@ struct BunMoneyPage: View {
                 .presentationBackground(BunTheme.ground)
                 .presentationCornerRadius(40)
         }
-        .sheet(isPresented: $showRequest) {
-            BunRequestFlow()
+        .sheet(isPresented: $showMoneyIn) {
+            BunMoneyInSheet()
+                .presentationBackground(BunTheme.ground)
+                .presentationCornerRadius(40)
+        }
+        .sheet(isPresented: $showPlans) {
+            BunPaymentPlansSheet()
+                .presentationBackground(BunTheme.ground)
+                .presentationCornerRadius(40)
+        }
+        .sheet(isPresented: $showPayouts) {
+            BunPayoutLedgerSheet()
                 .presentationBackground(BunTheme.ground)
                 .presentationCornerRadius(40)
         }
@@ -72,28 +88,16 @@ struct BunMoneyPage: View {
                 .presentationBackground(BunTheme.ground)
                 .presentationCornerRadius(40)
         }
-        .task { await store.loadMove() }
+        .task {
+            await store.loadMove()
+            await store.loadMoneyDepth()
+        }
         .refreshable {
             store.overduePayments = nil
             store.upcomingPayments = nil
             store.unconfirmedPayouts = nil
             await store.loadMove()
         }
-    }
-
-    /// Founder 2026-08-18: Transfer, Deposit, and Log close removed — Bun is
-    /// not a bank, and money arrives rather than being sent. Request stays.
-    private var actionChips: some View {
-        ScrollView(.horizontal) {
-            HStack(spacing: 10) {
-                BunActionChip(symbol: "arrow.left.to.line", label: "Request") {
-                    showRequest = true
-                }
-            }
-            .padding(.horizontal, 22)
-        }
-        .scrollIndicators(.hidden)
-        .padding(.horizontal, -22)
     }
 
     private var inboxSubtitle: String {
@@ -103,7 +107,7 @@ struct BunMoneyPage: View {
 
     private var approvalsSubtitle: String {
         guard let payouts = store.unconfirmedPayouts else { return "…" }
-        return "\(payouts.count) payout\(payouts.count == 1 ? "" : "s")"
+        return payouts.isEmpty ? "all confirmed" : "\(payouts.count) to confirm"
     }
 
     private var scheduledSubtitle: String {
@@ -207,15 +211,35 @@ struct BunMoneyPage: View {
         }
     }
 
+    private var dealsSubtitle: String {
+        guard store.deals != nil else { return "…" }
+        let count = store.deals(days: 30).count
+        return "\(count) close\(count == 1 ? "" : "s") in 30 days"
+    }
+
+    private var plansSubtitle: String {
+        guard let plans = store.plans else { return "…" }
+        return "\(plans.count) plan\(plans.count == 1 ? "" : "s") running"
+    }
+
+    /// Rows sat on 6pt of air and read as one cramped block (founder
+    /// 2026-08-18). Each row now owns its own height and the gaps are real.
     private var paymentsSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 18) {
             Text("Payments")
                 .font(BunType.section)
                 .foregroundStyle(BunTheme.ink)
-            VStack(spacing: 6) {
+            VStack(spacing: 14) {
                 BunIconRow(symbol: "envelope", title: "Inbox", subtitle: inboxSubtitle) { open(.inbox) }
-                BunIconRow(symbol: "checklist", title: "Needs approval", subtitle: approvalsSubtitle) { open(.approvals) }
+                    .frame(minHeight: 60)
+                BunIconRow(symbol: "wallet.bifold", title: "Payouts", subtitle: approvalsSubtitle) { showPayouts = true }
+                    .frame(minHeight: 60)
                 BunIconRow(symbol: "calendar", title: "Scheduled", subtitle: scheduledSubtitle) { open(.scheduled) }
+                    .frame(minHeight: 60)
+                BunIconRow(symbol: "arrow.down.left", title: "Money in", subtitle: dealsSubtitle) { showMoneyIn = true }
+                    .frame(minHeight: 60)
+                BunIconRow(symbol: "chart.bar.doc.horizontal", title: "Payment plans", subtitle: plansSubtitle) { showPlans = true }
+                    .frame(minHeight: 60)
             }
         }
     }

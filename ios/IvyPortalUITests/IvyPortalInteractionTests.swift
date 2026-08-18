@@ -16,9 +16,12 @@ final class BunSmokeTests: XCTestCase {
         }
     }
 
-    /// Banking folded into Money (2026-08-18): the cards live there now.
+    /// Banking folded into Money (2026-08-18), then accounts and cards became
+    /// their own tab inside it.
     func testCardsLiveOnMoney() {
-        let app = launch(tab: "money")
+        let app = XCUIApplication()
+        app.launchArguments = ["-bunTab", "money", "-bunMoneySection", "accounts"]
+        app.launch()
         XCTAssertTrue(app.staticTexts["Your cards"].waitForExistence(timeout: 6),
                       "cards on money: \(app.staticTexts.allElementsBoundByIndex.prefix(12).map(\.label))")
     }
