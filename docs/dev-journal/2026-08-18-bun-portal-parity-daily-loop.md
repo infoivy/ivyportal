@@ -68,3 +68,27 @@ In value order: Home's Sales/Delivery picture tiles with exact-element routing, 
 ### Future work
 
 Unchanged from batch 1, minus the pictures: Performance depth, Money in analytics and payment plans, Payouts, Finance, per-member cards, the deep client record, CSM workspace, testimonials, calendar and log-a-set, CRM, chat, knowledge, admin. Then the student app mode. The Work tab is the intended home for schedule, knowledge and chat.
+
+---
+
+## Batch 3 — performance depth, money depth, and a density correction
+
+### Prompt
+
+"go ahead" (continue with Performance and the money block), then mid-build: "change the money icon to the previous bank icon. also remove request in money" · "your cards should be a different tab in the money page" · "same with bun accounts, make bun accounts and cards 1 tab" · "fix the spacing here its too cramped" · "those 6 tiles in clients takes way too much space and just looks ugly and unprofessional, doesnt fit the app style. use different elements."
+
+### What I did
+
+- **Team**: 7/30/90 range driving the funnel, graph and member rows; one canonical activity graph with a metric picker (calls booked / shows / closes / dials / DMs / convos) and bar intensity tracking each day's share of the peak; member rows became taps into `BunMemberSheet` — their days, their numbers, and the wins and blockers they wrote.
+- **Money**: a Money / Accounts segment inside the tab, the bank glyph in the bar, Request removed, payments rows given real height and gaps, and three new sheets — `BunMoneyInSheet`, `BunPaymentPlansSheet`, `BunPayoutLedgerSheet` (period nav, commission/base-pay breakdown, mark paid, adjustments, with a demo ledger so the flow works signed out).
+- **Clients**: the six-tile grid became one summary line plus a horizontal chip rail, each chip still filtering the roster, zero-count chips hidden.
+
+### What was challenging
+
+- The payout ledger renders from `PayoutLedgerData`, which the signed-out path never produced, so the demo workspace showed a permanent skeleton. It needed a fixture ledger plus demo-mode confirm and adjustment paths that fold into it.
+- `xcodegen generate` has to run before a build after adding a file, or the new types are "not in scope" while the file sits on disk looking fine.
+- The cards smoke test broke the moment cards moved behind the Accounts segment — fixed by launching with `-bunMoneySection accounts` rather than asserting against the default view.
+
+### Future work
+
+Finance (needs founder_settings for the cash goal and profit split), per-member card ledgers, the deep client record, CSM workspace, testimonials, calendar and log-a-set, CRM, chat, knowledge, admin. Then the student app mode. The founder's density note applies app-wide: exception counts belong in chips or rows, never in grids of boxes.
