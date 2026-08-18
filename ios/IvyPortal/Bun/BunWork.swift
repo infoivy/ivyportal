@@ -10,7 +10,8 @@ struct BunWorkPage: View {
     @State private var showEOD = false
     @State private var showKnowledge = false
     @State private var showTestimonials = false
-    @State private var showLogSet = false
+    @State private var showCalendar = false
+    @State private var showChat = false
 
     private var filed: Bool { store.eodDue == false }
 
@@ -52,8 +53,13 @@ struct BunWorkPage: View {
                 .presentationBackground(BunTheme.ground)
                 .presentationCornerRadius(40)
         }
-        .sheet(isPresented: $showLogSet) {
-            BunLogSetFlow()
+        .sheet(isPresented: $showChat) {
+            BunChatSheet()
+                .presentationBackground(BunTheme.ground)
+                .presentationCornerRadius(40)
+        }
+        .sheet(isPresented: $showCalendar) {
+            BunCalendarSheet()
                 .presentationBackground(BunTheme.ground)
                 .presentationCornerRadius(40)
         }
@@ -63,6 +69,8 @@ struct BunWorkPage: View {
             await store.loadActionItems()
             await store.loadSets()
             await store.loadTestimonials()
+            await store.loadOrgs()
+            await store.loadChat()
         }
         .refreshable {
             store.myEODs = nil
@@ -105,11 +113,20 @@ struct BunWorkPage: View {
     /// a booked call is the thing most likely to need recording mid-day.
     private var shelf: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                Text("Schedule").font(BunType.section).foregroundStyle(BunTheme.ink)
-                Spacer()
-                BunPillChip(symbol: "plus", label: "Log a set") { showLogSet = true }
+            Button { showCalendar = true } label: {
+                HStack(spacing: 8) {
+                    Text("Schedule").font(BunType.section).foregroundStyle(BunTheme.ink)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 15, weight: .regular)).foregroundStyle(BunTheme.secondary)
+                    Spacer()
+                    if let unclaimed = store.unclaimedSetCount, unclaimed > 0 {
+                        BunTag(text: "\(unclaimed) to claim", tint: BunTheme.pink,
+                               fill: BunTheme.pink.opacity(0.15))
+                    }
+                }
+                .contentShape(Rectangle())
             }
+            .buttonStyle(BunPressStyle())
             let sets = Array((store.mySets ?? []).prefix(3))
             if sets.isEmpty {
                 Text("Nothing booked yet.")
@@ -138,6 +155,11 @@ struct BunWorkPage: View {
             }
 
             VStack(spacing: 12) {
+                if store.chatEnabled {
+                    BunIconRow(symbol: "bubble.left.and.bubble.right", title: "Team channel",
+                               subtitle: chatSubtitle) { showChat = true }
+                        .frame(minHeight: 60)
+                }
                 BunIconRow(symbol: "book", title: "Knowledge",
                            subtitle: "playbooks, policies and docs") { showKnowledge = true }
                     .frame(minHeight: 60)
@@ -147,6 +169,11 @@ struct BunWorkPage: View {
             }
             .padding(.top, 4)
         }
+    }
+
+    private var chatSubtitle: String {
+        guard let chat = store.chat, let last = chat.last else { return "the team's channel" }
+        return "\(last.author): \(last.body)"
     }
 
     private var testimonialSubtitle: String {

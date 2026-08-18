@@ -31,6 +31,25 @@ private enum BunSettingsRoute: Hashable {
     case split
 }
 
+/// Org options that are a switch rather than a screen.
+private struct BunSettingsToggle: View {
+    let title: String
+    let caption: String
+    @Binding var isOn: Bool
+
+    var body: some View {
+        Toggle(isOn: $isOn) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(bunFont(19)).foregroundStyle(BunTheme.ink)
+                Text(caption).font(BunType.caption).foregroundStyle(BunTheme.secondary)
+                    .lineLimit(1).minimumScaleFactor(0.85)
+            }
+        }
+        .tint(BunTheme.indigo)
+        .frame(minHeight: 64)
+    }
+}
+
 /// Plain 64pt settings row: title, optional trailing pill, chevron.
 private struct BunSettingsRow: View {
     let title: String
@@ -75,6 +94,19 @@ struct BunSettingsSheet: View {
 
     private var displayEmail: String {
         auth.isSignedIn ? (auth.session?.user.email ?? "") : BunFixtures.userEmail
+    }
+
+    /// The owner's switch for the team channel. Off by default: Ivy does not
+    /// use it, another business might (founder 2026-08-18).
+    private var chatToggleRow: some View {
+        BunSettingsToggle(
+            title: "Team chat",
+            caption: store.chatEnabled ? "on for \(store.orgName)" : "off for \(store.orgName)",
+            isOn: Binding(
+                get: { store.chatEnabled },
+                set: { value in Task { try? await store.setChatEnabled(value) } }
+            )
+        )
     }
 
     var body: some View {
@@ -156,6 +188,8 @@ struct BunSettingsSheet: View {
                             .font(bunFont(19)).foregroundStyle(BunTheme.ink)
                         Text(displayEmail)
                             .font(bunFont(16)).foregroundStyle(BunTheme.secondary)
+                            // An address that wraps mid-domain reads as broken.
+                            .lineLimit(1).truncationMode(.middle)
                     }
                     Spacer()
                     BunTag(text: "Admin", tint: BunTheme.green, fill: .clear)
@@ -190,6 +224,7 @@ struct BunSettingsSheet: View {
             if BunStore.shared.canSeeFinance {
                 BunSettingsRow(title: "Profit split") { path.append(.split) }
             }
+            if BunStore.shared.canSetOrgOptions { chatToggleRow }
             BunSettingsRow(title: "Knowledge") { path.append(.knowledge) }
             BunSettingsRow(title: "Notifications") { path.append(.notifications) }
             BunSettingsRow(title: "Security") { path.append(.security) }
@@ -1199,45 +1234,3 @@ struct BunProfileScreen: View {
 
 
 /// Which booked calls still have no owner (tap-through from the Home tag).
-struct BunUnclaimedSetsSheet: View {
-    @Environment(\.dismiss) private var dismiss
-    @State private var store = BunStore.shared
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            HStack {
-                BunTitle(text: "Unclaimed sets")
-                Spacer()
-                BunChipButton(symbol: "xmark") { dismiss() }
-            }
-            Text("Booked calls waiting for a closer to claim them.")
-                .font(bunFont(17)).foregroundStyle(BunTheme.secondary)
-            let sets = store.unclaimedSets ?? []
-            if sets.isEmpty {
-                Text("Every booked call has an owner right now.")
-                    .font(bunFont(17)).foregroundStyle(BunTheme.secondary)
-            } else {
-                VStack(spacing: 0) {
-                    ForEach(sets) { set in
-                        HStack(spacing: 14) {
-                            BunAvatar(text: String(set.prospect.prefix(1)), size: 44,
-                                      fill: BunStore.fill(for: set.prospect))
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(set.prospect).font(bunFont(19)).foregroundStyle(BunTheme.ink)
-                                .lineLimit(1)
-                                Text(PortalAPI.friendlyEventTime(set.eventStart))
-                                    .font(bunFont(15)).foregroundStyle(BunTheme.secondary)
-                            }
-                            Spacer()
-                            BunTag(text: "Unclaimed", tint: BunTheme.pink, fill: BunTheme.pink.opacity(0.15))
-                        }
-                        .frame(minHeight: 64)
-                    }
-                }
-            }
-            Spacer()
-        }
-        .padding(.horizontal, 22)
-        .padding(.top, 18)
-    }
-}

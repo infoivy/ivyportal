@@ -522,6 +522,21 @@ enum BunFixtures {
         }
     }
 
+    static var chat: [PortalAPI.ChatMessage] {
+        let rows: [(Int, String, String, String)] = [
+            (3, "Sofia Marin", "general", "Two sets already this morning, the new opener is landing."),
+            (2, "Ray Ortega", "tip", "If they stall on price, go back to the gap before the number."),
+            (1, "Mia Chen", "issue", "Nadia's card failed again. Closer needs to redo the link."),
+            (0, "Alex Doe", "general", "Jordan finished Start Here. Portal unlocked, now in training."),
+        ]
+        return rows.map { back, author, kind, body in
+            let date = Calendar.current.date(byAdding: .hour, value: -back * 5, to: Date()) ?? Date()
+            return PortalAPI.ChatMessage(id: UUID(), body: body, kind: kind, author: author,
+                                         authorId: nil, studentName: nil,
+                                         createdAt: ISO8601DateFormatter().string(from: date))
+        }
+    }
+
     static var adminRoles: [UUID: [String]] {
         [
             meId: ["admin", "founder"],

@@ -178,8 +178,7 @@ struct BunHome: View {
                 .presentationCornerRadius(40)
         }
         .sheet(isPresented: $showUnclaimed) {
-            BunUnclaimedSetsSheet()
-                .presentationDetents([.medium])
+            BunCalendarSheet()
                 .presentationBackground(BunTheme.ground)
                 .presentationCornerRadius(40)
         }
@@ -439,7 +438,7 @@ struct BunHome: View {
                 Spacer()
                 if let unclaimed = store.unclaimedSetCount, unclaimed > 0 {
                     Button { showUnclaimed = true } label: {
-                        BunTag(text: "\(unclaimed) unclaimed", tint: BunTheme.pink, fill: BunTheme.pink.opacity(0.15))
+                        BunTag(text: "\(unclaimed) to claim", tint: BunTheme.pink, fill: BunTheme.pink.opacity(0.15))
                     }
                     .buttonStyle(BunPressStyle())
                 }

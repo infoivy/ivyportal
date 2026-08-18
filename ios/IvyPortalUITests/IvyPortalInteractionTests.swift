@@ -244,3 +244,22 @@ final class BunWorkShelfTests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Testimonials"].exists, "testimonials row")
     }
 }
+
+
+/// The org owner's switches live in Settings, which opens from the Home
+/// avatar rather than a launch preset.
+@MainActor
+final class BunSettingsToggleTests: XCTestCase {
+    func testSettingsCarriesTheTeamChatSwitch() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-bunTab", "home"]
+        app.launch()
+        XCTAssertTrue(app.buttons["Account"].waitForExistence(timeout: 8))
+        app.buttons["Account"].tap()
+        XCTAssertTrue(app.staticTexts["Team chat"].waitForExistence(timeout: 6), "toggle row")
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = "settings-toggle"
+        shot.lifetime = .keepAlways
+        add(shot)
+    }
+}

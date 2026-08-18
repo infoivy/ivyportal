@@ -228,6 +228,7 @@ final class BunStore {
 
     // Testimonials and team admin (web parity batch 2026-08-18)
     var testimonials: [PortalAPI.TestimonialRow]?
+    var chat: [PortalAPI.ChatMessage]?
     var adminProfiles: [StaffProfile]?
     var adminRoles: [UUID: [String]] = [:]
     var pendingRequests: [PortalAPI.PendingSignup]?
@@ -260,6 +261,57 @@ final class BunStore {
         try await PortalAPI.shared.setTestimonialStatus(id: row.id, status: status)
         testimonials = nil
         await loadTestimonials()
+    }
+
+    /// The channel only exists where an org owner switched it on.
+    var chatEnabled: Bool {
+        signedIn ? (activeOrg?.teamChatEnabled ?? false) : fixtureChatEnabled
+    }
+
+    /// Demo-mode toggle, so the switch does something signed out too.
+    var fixtureChatEnabled = false
+
+    /// Only an org owner/admin/founder may flip it (policy orgs_admin_update).
+    var canSetOrgOptions: Bool {
+        guard signedIn else { return true }
+        let roles = Set(AuthStore.shared.roles)
+        return roles.contains(.founder) || roles.contains(.admin) || roles.contains(.cofounder)
+    }
+
+    func setChatEnabled(_ enabled: Bool) async throws {
+        guard signedIn, let org = activeOrg else {
+            fixtureChatEnabled = enabled
+            return
+        }
+        try await PortalAPI.shared.setTeamChat(orgId: org.id, enabled: enabled)
+        orgs = nil
+        await loadOrgs()
+    }
+
+    func loadChat() async {
+        guard chatEnabled else { return }
+        guard signedIn else {
+            seedFixturesIfNeeded()
+            if chat == nil { chat = BunFixtures.chat }
+            return
+        }
+        guard chat == nil else { return }
+        chat = (try? await PortalAPI.shared.teamChat()) ?? []
+    }
+
+    func post(_ body: String, kind: String) async throws {
+        let trimmed = body.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        guard signedIn else {
+            chat = (chat ?? []) + [PortalAPI.ChatMessage(
+                id: UUID(), body: trimmed, kind: kind, author: BunFixtures.userFullName,
+                authorId: meId, studentName: nil,
+                createdAt: ISO8601DateFormatter().string(from: Date()))]
+            return
+        }
+        try await PortalAPI.shared.postChat(body: trimmed, kind: kind)
+        chat = nil
+        await loadChat()
     }
 
     func loadTeamAdmin() async {
@@ -320,17 +372,22 @@ final class BunStore {
     /// Demo-mode split, so the editor works signed out too.
     var fixtureSplit: [PortalAPI.ProfitShare] = BunFixtures.profitSplit
 
-    func logSet(prospect: String, start: Date, notes: String?) async throws {
+    /// Claim an unclaimed set: it leaves the pool and joins my calendar.
+    func claim(_ set: PortalAPI.SetReminderFull) async throws {
         guard signedIn else {
-            let set = PortalAPI.SetReminderFull(
-                id: UUID(), prospect: prospect,
-                eventStart: ISO8601DateFormatter().string(from: start),
-                ownerId: meId, status: "active", confirmedAt: nil, notes: notes, reminderLog: nil)
-            mySets = ((mySets ?? []) + [set]).sorted { $0.eventStart < $1.eventStart }
+            unclaimedSets?.removeAll { $0.id == set.id }
+            unclaimedSetCount = unclaimedSets?.count ?? 0
+            let mine = PortalAPI.SetReminderFull(
+                id: set.id, prospect: set.prospect, eventStart: set.eventStart,
+                ownerId: meId, status: set.status, confirmedAt: set.confirmedAt,
+                notes: set.notes, reminderLog: set.reminderLog)
+            mySets = ((mySets ?? []) + [mine]).sorted { $0.eventStart < $1.eventStart }
             return
         }
-        try await PortalAPI.shared.logSet(prospect: prospect, start: start, notes: notes)
+        try await PortalAPI.shared.claimSet(id: set.id)
         mySets = nil
+        unclaimedSets = nil
+        unclaimedSetCount = nil
         await loadSets()
     }
 
@@ -506,6 +563,7 @@ final class BunStore {
         cardLedgers = nil
         csmFeed = nil
         testimonials = nil
+        chat = nil
         adminProfiles = nil
         adminRoles = [:]
         pendingRequests = nil

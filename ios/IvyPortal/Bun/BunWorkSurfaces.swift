@@ -3,8 +3,9 @@ import SwiftUI
 // The daily surfaces that were still web-only (founder 2026-08-18): the
 // testimonial library, the schedule with a log-a-set, the knowledge shelf,
 // and team administration. Each opens from the tab that already owns that
-// work rather than adding another root tab. (A team channel shipped here
-// too and came straight back out — founder 2026-08-18: "we dont use it".)
+// work rather than adding another root tab. The team channel is here too but
+// OFF unless an org owner turns it on (founder 2026-08-18: Ivy does not use
+// it, another business might).
 
 // MARK: - Testimonials
 
@@ -110,70 +111,116 @@ struct BunTestimonialsSheet: View {
     }
 }
 
-// MARK: - Log a set
+// MARK: - Team channel
 
-struct BunLogSetFlow: View {
+struct BunChatSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var store = BunStore.shared
-    @State private var prospect = ""
-    @State private var when = Date().addingTimeInterval(3600)
-    @State private var notes = ""
-    @State private var saving = false
-    @State private var saveError: String?
+    @State private var draft = ""
+    @State private var kind = 0
+    @State private var sendError: String?
+
+    private static let kinds = ["General", "Issue", "Tip", "Bug"]
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
-                HStack {
-                    BunTitle(text: "Log a set")
-                    Spacer()
-                    BunChipButton(symbol: "xmark") { dismiss() }
-                }
-                Text("Records the booked call. The calendar invite is still created on the web.")
-                    .font(BunType.caption).foregroundStyle(BunTheme.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                BunField(label: "Prospect", placeholder: "Who is on the call", text: $prospect)
-
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("When").font(bunFont(19)).foregroundStyle(BunTheme.ink)
-                    DatePicker("", selection: $when, in: Date()...)
-                        .datePickerStyle(.compact)
-                        .labelsHidden()
-                        .tint(BunTheme.indigo)
-                }
-
-                BunField(label: "Notes (optional)", placeholder: "Where they came from, what they want", text: $notes)
-
-                if let saveError {
-                    Text(saveError).font(bunFont(15)).foregroundStyle(BunTheme.pink)
-                }
+        VStack(spacing: 0) {
+            HStack {
+                BunTitle(text: "Team")
+                Spacer()
+                BunChipButton(symbol: "xmark") { dismiss() }
             }
             .padding(.horizontal, 22)
             .padding(.top, 18)
-            .padding(.bottom, 120)
-        }
-        .scrollIndicators(.hidden)
-        .safeAreaInset(edge: .bottom) {
-            BunCTA(label: saving ? "Saving…" : "Save set",
-                   enabled: !prospect.trimmingCharacters(in: .whitespaces).isEmpty && !saving,
-                   filled: !prospect.trimmingCharacters(in: .whitespaces).isEmpty) {
-                saving = true
-                Task {
-                    do {
-                        try await store.logSet(prospect: prospect, start: when,
-                                               notes: notes.isEmpty ? nil : notes)
-                        saving = false
-                        dismiss()
-                    } catch {
-                        saving = false
-                        saveError = "Could not save the set: \(error.localizedDescription)"
+            .padding(.bottom, 12)
+
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 18) {
+                        if store.chat == nil {
+                            RoundedRectangle(cornerRadius: 12).fill(BunTheme.field).frame(height: 60)
+                        } else if (store.chat ?? []).isEmpty {
+                            Text("Nothing said yet. History stays forever.")
+                                .font(bunFont(17)).foregroundStyle(BunTheme.secondary)
+                        } else {
+                            ForEach(store.chat ?? []) { message in
+                                messageRow(message).id(message.id)
+                            }
+                        }
                     }
+                    .padding(.horizontal, 22)
+                    .padding(.bottom, 12)
+                }
+                .scrollIndicators(.hidden)
+                .onChange(of: (store.chat ?? []).count) { _, _ in
+                    // New messages land at the bottom; follow them.
+                    if let last = (store.chat ?? []).last { proxy.scrollTo(last.id, anchor: .bottom) }
                 }
             }
-            .padding(.horizontal, 22).padding(.bottom, 8)
-            .background(BunTheme.ground.opacity(0.94))
+
+            composer
         }
+        .task { await store.loadChat() }
+    }
+
+    private func messageRow(_ message: PortalAPI.ChatMessage) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+                Text(message.author).font(BunType.caption).foregroundStyle(BunTheme.ink)
+                if message.kind != "general" {
+                    BunTag(text: message.kind.capitalized,
+                           tint: message.kind == "issue" || message.kind == "bug" ? BunTheme.pink : BunTheme.indigoLight,
+                           fill: (message.kind == "issue" || message.kind == "bug" ? BunTheme.pink : BunTheme.indigoLight).opacity(0.14))
+                }
+                if let client = message.studentName {
+                    BunTag(text: client)
+                }
+                Spacer()
+                Text(PortalAPI.parseTimestamp(message.createdAt).map { BunStore.friendlyDay($0) } ?? "")
+                    .font(BunType.caption).foregroundStyle(BunTheme.tertiary)
+            }
+            Text(message.body).font(BunType.rowTitle).foregroundStyle(BunTheme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var composer: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if let sendError {
+                Text(sendError).font(bunFont(15)).foregroundStyle(BunTheme.pink)
+            }
+            BunSegment(options: Self.kinds, selection: $kind)
+            HStack(spacing: 10) {
+                TextField("", text: $draft,
+                          prompt: Text("Say something").font(bunFont(18)).foregroundStyle(BunTheme.tertiary),
+                          axis: .vertical)
+                    .font(bunFont(18)).foregroundStyle(BunTheme.ink)
+                    .lineLimit(1...4)
+                    .padding(.horizontal, 16).padding(.vertical, 12)
+                    .background(BunTheme.field, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                Button {
+                    let body = draft
+                    let channel = Self.kinds[kind].lowercased()
+                    draft = ""
+                    Task {
+                        do { try await store.post(body, kind: channel); sendError = nil }
+                        catch { sendError = "Could not send: \(error.localizedDescription)" }
+                    }
+                } label: {
+                    Image(systemName: "arrow.up")
+                        .font(.system(size: 17, weight: .medium)).foregroundStyle(.white)
+                        .frame(width: 46, height: 46)
+                        .background(BunTheme.indigo, in: Circle())
+                }
+                .buttonStyle(BunPressStyle())
+                .disabled(draft.trimmingCharacters(in: .whitespaces).isEmpty)
+                .opacity(draft.trimmingCharacters(in: .whitespaces).isEmpty ? 0.4 : 1)
+            }
+        }
+        .padding(.horizontal, 22)
+        .padding(.top, 12)
+        .padding(.bottom, 8)
+        .background(BunTheme.ground)
     }
 }
 

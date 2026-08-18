@@ -413,12 +413,18 @@ final class PortalAPI {
         let id: UUID
         let name: String
         let slug: String?
+        /// Whether this org runs the team channel (migration 20260818050000).
+        /// Off unless the owner turns it on.
+        var teamChatEnabled: Bool?
         /// Profit split rows, a per-org setting (migration 20260818040000).
         /// The web still carries a hardcoded constant; this is the version
         /// that can ship to a second business.
         var profitSplit: [ProfitShare]?
 
-        enum CodingKeys: String, CodingKey { case id, name, slug, profitSplit = "profit_split" }
+        enum CodingKeys: String, CodingKey {
+            case id, name, slug, profitSplit = "profit_split"
+            case teamChatEnabled = "team_chat_enabled"
+        }
     }
 
     struct ProfitShare: Codable, Sendable, Hashable, Identifiable {
@@ -435,7 +441,7 @@ final class PortalAPI {
             let orgs: BunOrg
         }
         let rows: [Row] = try await client().from("org_members")
-            .select("orgs(id, name, slug, profit_split)")
+            .select("orgs(id, name, slug, profit_split, team_chat_enabled)")
             .eq("user_id", value: me)
             .execute().value
         return rows.map(\.orgs)
@@ -3341,6 +3347,15 @@ extension PortalAPI {
             .execute()
     }
 
+    /// Turn the team channel on or off for an org. Same policy as the split:
+    /// owner, admin or founder of that org.
+    func setTeamChat(orgId: UUID, enabled: Bool) async throws {
+        try await client().from("orgs")
+            .update(["team_chat_enabled": enabled])
+            .eq("id", value: orgId)
+            .execute()
+    }
+
     /// Testimonial pipeline: requested → received → approved → published.
     func setTestimonialStatus(id: UUID, status: String) async throws {
         var patch: [String: AnyJSON] = ["status": .string(status)]
@@ -3350,28 +3365,72 @@ extension PortalAPI {
         try await client().from("testimonials").update(patch).eq("id", value: id).execute()
     }
 
-    /// Record a booked call. The web version also writes a Google Calendar
-    /// event through a server function; from the phone this records the set
-    /// itself, which is what every set surface in the app reads.
-    func logSet(prospect: String, start: Date, durationMin: Int = 30, notes: String?) async throws {
-        guard let me = currentUserID else { return }
-        struct Row: Encodable {
-            let ownerId: UUID
-            let prospect: String
-            let eventStart: String
-            let durationMin: Int
-            let notes: String?
-            let source: String
+    struct ChatMessage: Identifiable, Sendable {
+        let id: UUID
+        let body: String
+        let kind: String
+        let author: String
+        let authorId: UUID?
+        let studentName: String?
+        let createdAt: String
+    }
+
+    /// The team channel. RLS decides visibility; the app posts as the caller.
+    func teamChat(limit: Int = 80) async throws -> [ChatMessage] {
+        struct Row: Decodable {
+            let id: UUID
+            let body: String
+            let kind: String?
+            let createdBy: UUID?
+            let studentId: UUID?
+            let createdAt: String
             enum CodingKeys: String, CodingKey {
-                case ownerId = "owner_id", prospect, eventStart = "event_start"
-                case durationMin = "duration_min", notes, source
+                case id, body, kind, createdBy = "created_by"
+                case studentId = "student_id", createdAt = "created_at"
             }
         }
-        try await client().from("set_reminders").insert(Row(
-            ownerId: me, prospect: prospect,
-            eventStart: ISO8601DateFormatter().string(from: start),
-            durationMin: durationMin, notes: notes, source: "app"
-        )).execute()
+        let rows: [Row] = try await client().from("team_chat")
+            .select("id, body, kind, created_by, student_id, created_at")
+            .order("created_at", ascending: false)
+            .limit(limit)
+            .execute().value
+        guard !rows.isEmpty else { return [] }
+        async let peopleTask = profiles(ids: Array(Set(rows.compactMap(\.createdBy))))
+        async let rosterTask = students()
+        let names = Dictionary(uniqueKeysWithValues: (try await peopleTask).map { ($0.id, $0.displayName ?? "Teammate") })
+        let clients = Dictionary(uniqueKeysWithValues: (try await rosterTask).map { ($0.id, $0.fullName) })
+        return rows.reversed().map {
+            ChatMessage(id: $0.id, body: $0.body, kind: $0.kind ?? "general",
+                        author: $0.createdBy.flatMap { names[$0] } ?? "Teammate",
+                        authorId: $0.createdBy,
+                        studentName: $0.studentId.flatMap { clients[$0] },
+                        createdAt: $0.createdAt)
+        }
+    }
+
+    func postChat(body: String, kind: String) async throws {
+        guard let me = currentUserID else { return }
+        struct Row: Encodable {
+            let body: String
+            let kind: String
+            let createdBy: UUID
+            enum CodingKeys: String, CodingKey { case body, kind, createdBy = "created_by" }
+        }
+        try await client().from("team_chat")
+            .insert(Row(body: body, kind: kind, createdBy: me))
+            .execute()
+    }
+
+    /// Take an unclaimed set. The database decides who may: sales staff
+    /// only, unclaimed rows only, and the new owner must be the caller
+    /// (policy "Sales staff claim unclaimed sets").
+    func claimSet(id: UUID) async throws {
+        guard let me = currentUserID else { return }
+        try await client().from("set_reminders")
+            .update(["owner_id": me.uuidString])
+            .eq("id", value: id)
+            .is("owner_id", value: nil)
+            .execute()
     }
 
     /// Admin toggle: an exempt member disappears from every expected-filer

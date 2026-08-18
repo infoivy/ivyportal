@@ -43,6 +43,7 @@
 		7F1B7C56C4AC5F6B91018DFE /* BunMovement.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08B13346B8920822C1616475 /* BunMovement.swift */; };
 		7FA7FD5BDF411CF5C28295EE /* ClientPriority.swift in Sources */ = {isa = PBXBuildFile; fileRef = C494629DA41410A3B36DBB04 /* ClientPriority.swift */; };
 		7FFEF2C2F27346D60739DFD7 /* policy-eod-hygiene.md in Resources */ = {isa = PBXBuildFile; fileRef = 4753324F70B70BCD58BEF918 /* policy-eod-hygiene.md */; };
+		81517A8D3F478F3D60238DCF /* BunCalendar.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE57AF16A51CA2E0972BD54F /* BunCalendar.swift */; };
 		8A7BFD81C96F98343FC989A8 /* world-class-client-delivery-systems.md in Resources */ = {isa = PBXBuildFile; fileRef = 992F4832248286E242C6CB36 /* world-class-client-delivery-systems.md */; };
 		909636404B9D05D730AFF995 /* PayoutsCalc.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5C6BC5C2F409FC5C4B9804 /* PayoutsCalc.swift */; };
 		90B6A7E99CC314FF1CA5EDC1 /* BunMoveMoney.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD534AEACCB71381EDEE0B56 /* BunMoveMoney.swift */; };
@@ -141,6 +142,7 @@
 		A8B449D0E696174FC6ACB249 /* BunWork.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BunWork.swift; sourceTree = "<group>"; };
 		AD534AEACCB71381EDEE0B56 /* BunMoveMoney.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BunMoveMoney.swift; sourceTree = "<group>"; };
 		ADD8AE473F23EC43644F4E22 /* BunTransactions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BunTransactions.swift; sourceTree = "<group>"; };
+		AE57AF16A51CA2E0972BD54F /* BunCalendar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BunCalendar.swift; sourceTree = "<group>"; };
 		AEF974AF4E88ED4AF97F20A1 /* Apercu Pro Bold.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Apercu Pro Bold.otf"; sourceTree = "<group>"; };
 		B15CF4267CBF0C60B19D5E29 /* BunWelcome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BunWelcome.swift; sourceTree = "<group>"; };
 		BD461171928EC09573041F45 /* simple-discovery-framework-phone-setters.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "simple-discovery-framework-phone-setters.md"; sourceTree = "<group>"; };
@@ -210,6 +212,7 @@
 			children = (
 				60C54485ED7207D8DA4D0EB7 /* BunActions.swift */,
 				7071081907CE6680BBC714C8 /* BunBanking.swift */,
+				AE57AF16A51CA2E0972BD54F /* BunCalendar.swift */,
 				775FD769787E7D149EF81812 /* BunCallLog.swift */,
 				4E0D004EB78CEC743DA4B30E /* BunCards.swift */,
 				E26B181DB55FF6F2927121E9 /* BunClients.swift */,
@@ -540,6 +543,7 @@
 				B02157FCD3E396D7BFDBADC1 /* BunActions.swift in Sources */,
 				F04F8F8CA9DF3F0B0A4EE294 /* BunBanking.swift in Sources */,
 				DED7B36B11995DD4C6E37850 /* BunCSM.swift in Sources */,
+				81517A8D3F478F3D60238DCF /* BunCalendar.swift in Sources */,
 				162135FE67E49B4D0D199AF3 /* BunCallLog.swift in Sources */,
 				5C95D428766135D64E898F87 /* BunCards.swift in Sources */,
 				07FC20939BBBF3A4C3B1091D /* BunClients.swift in Sources */,
