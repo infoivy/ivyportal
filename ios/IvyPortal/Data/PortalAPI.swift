@@ -3565,6 +3565,12 @@ struct CRMSummary: Decodable, Sendable {
             var activeMinutes: Double?
             var daysActive: Int?
             var avgDailyMinutes: Double?
+            // From get_member_metrics, one call per setter keyed by email.
+            var newLeads: Int?
+            var callsBooked: Int?
+            var qualified: Int?
+            var bookingRate: Double?
+            var medianReplyMinutes: Double?
             var id: String { name }
         }
         struct Revenue: Decodable, Sendable {

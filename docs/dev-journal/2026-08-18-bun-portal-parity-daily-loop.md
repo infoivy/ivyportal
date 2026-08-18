@@ -255,3 +255,28 @@ The fixture was one nested literal and the Swift type checker gave up on it ("un
 ### The honest limit
 
 Mochi's app draws a setter-by-hour grid. No MCP tool returns that cross-tab: hours come from `get_message_time_distribution` (whole team) and per-setter numbers come from three other tools (totals and active windows). Rather than invent a split, the sheet shows the real per-setter numbers beside the team's hours and says so on screen.
+
+---
+
+## Batch 11 — chasing the setter-by-hour grid
+
+### Prompt
+
+"Just grab that from Mochi. Yeah, you can do that, Masood. 98 at 3 am, you can do that ... It is definitely able to look at the code that we have. It's somewhere in there because we made it for the iOS app for the Ivy Portal."
+
+### What I found
+
+The founder was right that we built it. `ios/IvyPortal/Features/Performance/SetterActivityDetail.swift` (commit `72369a5`, deleted with the pre-Bun feature layer) draws exactly that grid — "Setter Activity detail ... and a per-member x per-hour grid". Its data source is `ActivityDataset.fixture(source)` and the screen printed "Debug fixture" at the bottom. The grid was real UI over invented numbers; it was never wired to Mochi.
+
+Four checks on whether Mochi can supply it:
+
+1. `get_message_time_distribution` accepts `member_name` but IGNORES it — same 24 buckets, same totals, filtered or not.
+2. `query_oracle`, Mochi's own natural-language layer, answered: "I don't have the granular hour-by-hour breakdown for each setter right now, just the total volume."
+3. `get_conversation_detail` states plainly: "Does not include raw message transcripts" — so it cannot be aggregated from message timestamps either.
+4. No other tool in the MCP returns a member x hour cross-tab.
+
+### What I shipped instead
+
+`get_member_metrics`, keyed by EMAIL rather than name (the name lookup answers "no active team member found" for the very names the other tools return). That gives per-setter new leads, qualified, calls booked, booking rate and their own median reply time, merged into the setter rows next to messages, replies, reply rate and time online. Edge function is v4.
+
+The one honest gap stays labelled on screen: the hours are the team's, not a per-setter split.

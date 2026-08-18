@@ -1,17 +1,12 @@
-// CRM summary for the Bun iOS app (founder-directed 2026-08-18: "i need the
-// crm data, just like what we had in ivyportal ios app and in the web portal,
-// like the mochi app").
+// CRM summary for the Bun iOS app (founder-directed 2026-08-18).
 //
-// Why an edge function: Mochi's OAuth tokens and the Close API key live in
-// `service_credentials`, which is admin-only by RLS and must never reach a
-// device. The web reaches them through TanStack server functions; the phone
-// has no equivalent, so this function is that server. It verifies the caller,
-// reads the credentials with the service role, calls both providers, and
-// returns DERIVED NUMBERS ONLY. No credential is ever in the response.
+// Mochi's OAuth tokens and the Close API key live in `service_credentials`,
+// admin-only by RLS, and must never reach a device. This function is the
+// server the phone lacked: it verifies the caller, reads the credentials with
+// the service role, calls both providers, and returns DERIVED NUMBERS ONLY.
 //
-// Roles mirror the web exactly:
-//   · Mochi analytics  → admin, founder, cofounder
-//   · Close pipeline   → admin, founder, cofounder, closer
+// Roles mirror the web: Mochi -> admin/founder/cofounder, Close -> those plus
+// closer.
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
@@ -49,7 +44,6 @@ Deno.serve(async (req) => {
   const authHeader = req.headers.get("Authorization") ?? "";
   if (!authHeader) return json({ error: "Not signed in" }, 401);
 
-  // The caller's own client: their JWT, their RLS, their roles.
   const caller = createClient(url, anonKey, {
     global: { headers: { Authorization: authHeader } },
   });
@@ -76,17 +70,14 @@ Deno.serve(async (req) => {
     // No body is fine: the default window stands.
   }
 
-  // Credentials are read with the service role and never leave this function.
-  const admin_ = createClient(url, serviceKey);
-  const { data: credRows } = await admin_
+  const privileged = createClient(url, serviceKey);
+  const { data: credRows } = await privileged
     .from("service_credentials")
     .select("key, value")
     .in("key", Object.values(KEYS));
   const creds = new Map<string, string>((credRows ?? []).map((r) => [r.key, r.value]));
 
   const out: Record<string, unknown> = {};
-
-  // ---- Mochi ---------------------------------------------------------------
 
   async function freshToken(): Promise<string | null> {
     const access = creds.get(KEYS.access);
@@ -111,7 +102,7 @@ Deno.serve(async (req) => {
       refresh_token?: string;
       expires_in?: number;
     };
-    // Write the rotation back so the web and the app share one live token.
+    // Write the rotation back so web and app share one live token.
     const rows = [
       { key: KEYS.access, value: tokens.access_token, label: "Mochi access token", updated_by: userId },
       {
@@ -124,7 +115,7 @@ Deno.serve(async (req) => {
         ? [{ key: KEYS.refresh, value: tokens.refresh_token, label: "Mochi refresh token", updated_by: userId }]
         : []),
     ];
-    await admin_.from("service_credentials").upsert(rows, { onConflict: "key" });
+    await privileged.from("service_credentials").upsert(rows, { onConflict: "key" });
     return tokens.access_token;
   }
 
@@ -139,7 +130,8 @@ Deno.serve(async (req) => {
       body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name, arguments: args } }),
     });
     if (!res.ok) return null;
-    // The endpoint answers either plain JSON or a single SSE frame.
+    // The endpoint answers either plain JSON or a single SSE frame, and the
+    // real payload is a JSON string nested in the JSON-RPC result.
     const raw = await res.text();
     const payload = raw.startsWith("event:") || raw.includes("\ndata:")
       ? raw.split("\n").find((l) => l.startsWith("data:"))?.slice(5).trim() ?? "{}"
@@ -184,10 +176,7 @@ Deno.serve(async (req) => {
       };
       type Funnel = {
         pipeline_now?: Record<string, number>;
-        conversion?: {
-          cohort_size?: number;
-          rates?: Record<string, { value?: number | null }>;
-        };
+        conversion?: { cohort_size?: number; rates?: Record<string, { value?: number | null }> };
         total_revenue?: number;
       };
       type Replies = {
@@ -196,7 +185,7 @@ Deno.serve(async (req) => {
         reply_rate?: number;
         members_breakdown?: { name?: string; total_messages?: number; replies_received?: number; reply_rate?: number }[];
       };
-      type Setter = {
+      type SetterMetrics = {
         new_leads?: number;
         calls_booked?: number;
         leads_qualified?: number;
@@ -205,25 +194,52 @@ Deno.serve(async (req) => {
         median_response_time_minutes?: number;
       };
       type Hours = { distribution?: { hour: number; count: number }[]; peak_hour_utc?: number; total_messages?: number };
-      type Weekday = { distribution?: { weekday: string; count: number }[]; peak_weekday_name?: string; total_messages?: number };
+      type Weekday = { distribution?: { weekday: string; count: number }[]; peak_weekday_name?: string };
       type Windows = {
         members?: { name?: string; role?: string; total_active_minutes?: number; days_active?: number; avg_daily_active_minutes?: number }[];
       };
+      type Roster = {
+        members?: { email?: string; first_name?: string; last_name?: string; role?: string; is_active?: boolean }[];
+      };
+      type MemberMetrics = {
+        member_name?: string;
+        metrics?: {
+          new_leads?: number; calls_booked?: number; leads_qualified?: number;
+          booking_rate?: number; median_response_time_minutes?: number;
+        };
+      };
 
-      const [counts, trend, sources, payments, health, overview, funnelMetrics, replies, setter, hours, weekday, windows] = await Promise.all([
-        callTool<Counts>(token, "get_message_counts", { time_period: period }),
-        callTool<Trend>(token, "get_funnel_trend", { time_period: period }),
-        callTool<Sources>(token, "get_lead_source_breakdown", { time_period: period }),
-        callTool<Payments>(token, "get_payment_overview", { time_period: period }),
-        callTool<Health>(token, "get_account_health", {}),
-        callTool<Overview>(token, "get_account_overview", {}),
-        callTool<Funnel>(token, "get_funnel_metrics", { time_period: period }),
-        callTool<Replies>(token, "get_lead_reply_rate", { time_period: period }),
-        callTool<Setter>(token, "get_setter_metrics", { time_period: period }),
-        callTool<Hours>(token, "get_message_time_distribution", { time_period: period }),
-        callTool<Weekday>(token, "get_message_dayofweek_distribution", { time_period: period }),
-        callTool<Windows>(token, "get_setter_active_windows", { time_period: period }),
-      ]);
+      const [counts, trend, sources, payments, health, overview, funnelMetrics, replies, setter, hours, weekday, windows, roster] =
+        await Promise.all([
+          callTool<Counts>(token, "get_message_counts", { time_period: period }),
+          callTool<Trend>(token, "get_funnel_trend", { time_period: period }),
+          callTool<Sources>(token, "get_lead_source_breakdown", { time_period: period }),
+          callTool<Payments>(token, "get_payment_overview", { time_period: period }),
+          callTool<Health>(token, "get_account_health", {}),
+          callTool<Overview>(token, "get_account_overview", {}),
+          callTool<Funnel>(token, "get_funnel_metrics", { time_period: period }),
+          callTool<Replies>(token, "get_lead_reply_rate", { time_period: period }),
+          callTool<SetterMetrics>(token, "get_setter_metrics", { time_period: period }),
+          callTool<Hours>(token, "get_message_time_distribution", { time_period: period }),
+          callTool<Weekday>(token, "get_message_dayofweek_distribution", { time_period: period }),
+          callTool<Windows>(token, "get_setter_active_windows", { time_period: period }),
+          callTool<Roster>(token, "get_team_members", {}),
+        ]);
+
+      // Per-setter booked / qualified / response time is one call per person,
+      // keyed by EMAIL: get_member_metrics answers "no active team member"
+      // for the very names the other tools return.
+      const setterEmails = (roster?.members ?? [])
+        .filter((m) => m.role === "SETTER" && m.is_active !== false && m.email)
+        .slice(0, 12);
+      const memberMetrics = await Promise.all(
+        setterEmails.map((m) =>
+          callTool<MemberMetrics>(token, "get_member_metrics", {
+            member_name: m.email,
+            time_period: period,
+          })
+        ),
+      );
 
       const funnel = trend?.trend ?? [];
       const money = (value?: string) => {
@@ -233,21 +249,27 @@ Deno.serve(async (req) => {
       };
       const pipeline = funnelMetrics?.pipeline_now ?? {};
       const rate = (key: string) => funnelMetrics?.conversion?.rates?.[key]?.value ?? null;
+      // Protection carries the canonical status; the v1 status is the fallback.
       const protection = health?.instagram_protection?.protection;
 
-      // One row per setter: sends, replies and time online merged, because
-      // Mochi answers those from three different tools.
-      const setterRows = new Map<string, {
+      // One row per setter. Mochi answers sends, replies, time online and
+      // booking from four different tools, so they are merged by name here.
+      type SetterRow = {
         name: string; messages: number; replies: number; rate: number | null;
         activeMinutes: number | null; daysActive: number | null; avgDailyMinutes: number | null;
-      }>();
-      const putSetter = (name: string) => {
+        newLeads: number | null; callsBooked: number | null; qualified: number | null;
+        bookingRate: number | null; medianReplyMinutes: number | null;
+      };
+      const setterRows = new Map<string, SetterRow>();
+      const putSetter = (name: string): SetterRow | null => {
         const key = (name ?? "").trim();
         if (!key) return null;
         if (!setterRows.has(key)) {
           setterRows.set(key, {
             name: key, messages: 0, replies: 0, rate: null,
             activeMinutes: null, daysActive: null, avgDailyMinutes: null,
+            newLeads: null, callsBooked: null, qualified: null,
+            bookingRate: null, medianReplyMinutes: null,
           });
         }
         return setterRows.get(key)!;
@@ -272,83 +294,15 @@ Deno.serve(async (req) => {
         row.daysActive = m.days_active ?? null;
         row.avgDailyMinutes = m.avg_daily_active_minutes ?? null;
       }
-
-      out.mochi = { connected: false, period };
-    } else {
-      type Counts = {
-        inbound_messages?: number;
-        outbound_messages?: number;
-        total_messages?: number;
-        active_conversations?: number;
-        messages_by_member?: { member_name?: string; name?: string; outbound?: number; outbound_messages?: number; messages_sent?: number }[];
-      };
-      type Trend = { trend?: { day: string; new_leads?: number; qualified?: number; booked?: number; won?: number }[] };
-      type Sources = { sources?: { source: string; label?: string; lead_count?: number; calls_booked?: number }[] };
-      type Payments = { net_revenue?: string; you_keep?: string; gross_volume?: string; payments_count?: number };
-      type Health = {
-        status?: string;
-        message?: string;
-        connection?: { username?: string; is_connected?: boolean; send_paused?: boolean };
-        recent_sends?: { total?: number; failed?: number; failure_rate?: number };
-        instagram_protection?: { protection?: { status?: string; active_flag_count?: number } };
-      };
-      type Overview = {
-        account?: { username?: string; is_connected?: boolean; is_send_paused?: boolean };
-        growth?: { total_leads?: number; new_leads_last_30_days?: number };
-      };
-      type Funnel = {
-        pipeline_now?: Record<string, number>;
-        conversion?: {
-          cohort_size?: number;
-          rates?: Record<string, { value?: number | null }>;
-        };
-        total_revenue?: number;
-      };
-      type Replies = {
-        total_outbound_messages?: number;
-        messages_with_reply?: number;
-        reply_rate?: number;
-        members_breakdown?: { name?: string; total_messages?: number; replies_received?: number; reply_rate?: number }[];
-      };
-      type Setter = {
-        new_leads?: number;
-        calls_booked?: number;
-        leads_qualified?: number;
-        booking_rate?: number;
-        avg_response_time_minutes?: number;
-        median_response_time_minutes?: number;
-      };
-      type Hours = { distribution?: { hour: number; count: number }[]; peak_hour_utc?: number; total_messages?: number };
-      type Weekday = { distribution?: { weekday: string; count: number }[]; peak_weekday_name?: string; total_messages?: number };
-      type Windows = {
-        members?: { name?: string; role?: string; total_active_minutes?: number; days_active?: number; avg_daily_active_minutes?: number }[];
-      };
-
-      const [counts, trend, sources, payments, health, overview, funnelMetrics, replies, setter, hours, weekday, windows] = await Promise.all([
-        callTool<Counts>(token, "get_message_counts", { time_period: period }),
-        callTool<Trend>(token, "get_funnel_trend", { time_period: period }),
-        callTool<Sources>(token, "get_lead_source_breakdown", { time_period: period }),
-        callTool<Payments>(token, "get_payment_overview", { time_period: period }),
-        callTool<Health>(token, "get_account_health", {}),
-        callTool<Overview>(token, "get_account_overview", {}),
-        callTool<Funnel>(token, "get_funnel_metrics", { time_period: period }),
-        callTool<Replies>(token, "get_lead_reply_rate", { time_period: period }),
-        callTool<Setter>(token, "get_setter_metrics", { time_period: period }),
-        callTool<Hours>(token, "get_message_time_distribution", { time_period: period }),
-        callTool<Weekday>(token, "get_message_dayofweek_distribution", { time_period: period }),
-        callTool<Windows>(token, "get_setter_active_windows", { time_period: period }),
-      ]);
-
-      const funnel = trend?.trend ?? [];
-      const money = (value?: string) => {
-        if (!value) return null;
-        const parsed = Number(String(value).replace(/[^0-9.-]/g, ""));
-        return Number.isFinite(parsed) ? parsed : null;
-      };
-      const pipeline = funnelMetrics?.pipeline_now ?? {};
-      const rate = (key: string) => funnelMetrics?.conversion?.rates?.[key]?.value ?? null;
-      // Protection carries the canonical status; the v1 status is the fallback.
-      const protection = health?.instagram_protection?.protection;
+      for (const res of memberMetrics) {
+        const row = putSetter(res?.member_name ?? "");
+        if (!row || !res?.metrics) continue;
+        row.newLeads = res.metrics.new_leads ?? null;
+        row.callsBooked = res.metrics.calls_booked ?? null;
+        row.qualified = res.metrics.leads_qualified ?? null;
+        row.bookingRate = res.metrics.booking_rate ?? null;
+        row.medianReplyMinutes = res.metrics.median_response_time_minutes ?? null;
+      }
 
       out.mochi = {
         connected: true,
@@ -411,6 +365,10 @@ Deno.serve(async (req) => {
         },
         hours: (hours?.distribution ?? []).map((h) => ({ hour: h.hour, count: h.count })),
         peakHourUTC: hours?.peak_hour_utc ?? null,
+        hourTotal: hours?.total_messages ?? null,
+        weekdays: (weekday?.distribution ?? []).map((d) => ({ day: d.weekday, count: d.count })),
+        peakWeekday: weekday?.peak_weekday_name ?? null,
+        setters: [...setterRows.values()].sort((a, b) => b.messages - a.messages),
         revenue: {
           net: money(payments?.net_revenue ?? payments?.you_keep),
           gross: money(payments?.gross_volume),
@@ -436,10 +394,6 @@ Deno.serve(async (req) => {
             outbound: m.messages_sent ?? m.outbound ?? m.outbound_messages ?? 0,
           }))
           .filter((m) => m.name),
-        hourTotal: hours?.total_messages ?? null,
-        weekdays: (weekday?.distribution ?? []).map((d) => ({ day: d.weekday, count: d.count })),
-        peakWeekday: weekday?.peak_weekday_name ?? null,
-        setters: [...setterRows.values()].sort((a, b) => b.messages - a.messages),
       };
     }
   }
@@ -480,8 +434,9 @@ Deno.serve(async (req) => {
           row.value += lead.value;
           stages.set(lead.status, row);
         }
-        // Dials, new leads and average call length for the same window the
-        // Mochi side uses, so the two tabs are comparable.
+
+        // Dials, new leads and average call length over the same window the
+        // Mochi tab uses, so the two tabs are comparable.
         const days = period === "today" ? 1 : (period === "last_7_days" ? 7 : 30);
         const end = new Date();
         const start = new Date(end.getTime() - (days - 1) * 86400000);
@@ -501,13 +456,13 @@ Deno.serve(async (req) => {
             }),
           });
           if (report.ok) {
-            const body = await report.json() as {
+            const reportBody = await report.json() as {
               aggregations?: { totals?: Record<string, number | string | undefined> };
               data?: ({ datetime?: string } & Record<string, number | string | undefined>)[];
             };
-            const totals = body.aggregations?.totals ?? {};
+            const totals = reportBody.aggregations?.totals ?? {};
             const byDay = new Map<string, { dials: number; leads: number }>();
-            for (const point of body.data ?? []) {
+            for (const point of reportBody.data ?? []) {
               if (!point.datetime) continue;
               const day = String(point.datetime).slice(0, 10);
               const row = byDay.get(day) ?? { dials: 0, leads: 0 };
@@ -542,7 +497,7 @@ Deno.serve(async (req) => {
             .sort((a, b) => b.count - a.count)
             .slice(0, 8),
           activity,
-          // Newest touched first: that is the order a closer works them in.
+          // Newest touched first: the order a closer works them in.
           recent: leads
             .slice()
             .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))

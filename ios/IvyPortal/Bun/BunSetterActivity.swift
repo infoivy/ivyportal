@@ -176,6 +176,12 @@ struct BunSetterActivitySheet: View {
                                     .font(bunFont(19, .medium)).foregroundStyle(BunTheme.ink)
                                     .monospacedDigit()
                             }
+                            // What Mochi credits them with beyond volume.
+                            if setter.newLeads != nil || setter.callsBooked != nil {
+                                Text(bookingLine(setter))
+                                    .font(BunType.caption).foregroundStyle(BunTheme.secondary)
+                                    .lineLimit(1).minimumScaleFactor(0.8)
+                            }
                             // Reply rate as a bar: the eye compares lengths
                             // faster than it compares percentages.
                             if let rate = setter.rate {
@@ -203,6 +209,18 @@ struct BunSetterActivitySheet: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
+    }
+
+    /// New leads, booked calls, qualified and their own median reply time.
+    private func bookingLine(_ setter: CRMSummary.Mochi.Setter) -> String {
+        var bits: [String] = []
+        if let leads = setter.newLeads { bits.append("\(leads) new leads") }
+        if let qualified = setter.qualified, qualified > 0 { bits.append("\(qualified) qualified") }
+        if let booked = setter.callsBooked { bits.append("\(booked) booked") }
+        if let median = setter.medianReplyMinutes {
+            bits.append("\(BunCRMSheet.duration(median)) to reply")
+        }
+        return bits.joined(separator: " · ")
     }
 
     /// Replies, time online, days worked — whichever Mochi actually returned.

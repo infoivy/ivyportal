@@ -596,11 +596,17 @@ enum BunFixtures {
         mochi.peakWeekday = "Monday"
         mochi.setters = [
             .init(name: "Sofia Marin", messages: 420, replies: 319, rate: 0.76,
-                  activeMinutes: 3_026, daysActive: 7, avgDailyMinutes: 432),
+                  activeMinutes: 3_026, daysActive: 7, avgDailyMinutes: 432,
+                  newLeads: 31, callsBooked: 6, qualified: 9, bookingRate: 0.19,
+                  medianReplyMinutes: 18),
             .init(name: "Danny Cole", messages: 94, replies: 45, rate: 0.48,
-                  activeMinutes: 651, daysActive: 2, avgDailyMinutes: 326),
+                  activeMinutes: 651, daysActive: 2, avgDailyMinutes: 326,
+                  newLeads: 12, callsBooked: 1, qualified: 2, bookingRate: 0.08,
+                  medianReplyMinutes: 128),
             .init(name: "Ibrahim Sy", messages: 58, replies: 42, rate: 0.72,
-                  activeMinutes: 1_110, daysActive: 6, avgDailyMinutes: 185),
+                  activeMinutes: 1_110, daysActive: 6, avgDailyMinutes: 185,
+                  newLeads: 13, callsBooked: 2, qualified: 3, bookingRate: 0.15,
+                  medianReplyMinutes: 41),
         ]
         mochi.revenue = CRMSummary.Mochi.Revenue(net: 18_240, gross: 19_100, count: 7, crm: 18_240)
         mochi.funnel = funnel
