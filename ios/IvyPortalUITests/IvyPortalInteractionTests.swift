@@ -263,3 +263,21 @@ final class BunSettingsToggleTests: XCTestCase {
         add(shot)
     }
 }
+
+/// The CRM sheet is long; the pipeline census and the setter table sit well
+/// below the fold.
+@MainActor
+final class BunCRMTests: XCTestCase {
+    func testCRMCarriesPipelineAndSetters() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-bunTab", "team", "-bunSheet", "crm"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["CRM"].waitForExistence(timeout: 8))
+        for _ in 0..<4 { app.swipeUp() }
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = "crm-lower"
+        shot.lifetime = .keepAlways
+        add(shot)
+        XCTAssertTrue(app.staticTexts["Pipeline"].exists, "close pipeline section")
+    }
+}

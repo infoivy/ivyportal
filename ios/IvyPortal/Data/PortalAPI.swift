@@ -3468,29 +3468,90 @@ struct CRMSummary: Decodable, Sendable {
     struct Mochi: Decodable, Sendable {
         var connected: Bool
         var period: String?
+        var health: Health?
+        var account: Account?
         var messages: Messages?
-        var totals: Totals?
+        var pipeline: Pipeline?
+        var conversion: Conversion?
+        var replies: Replies?
+        var response: Response?
+        var hours: [Hour]?
+        var peakHourUTC: Int?
         var revenue: Revenue?
         var funnel: [Day]?
         var sources: [Source]?
         var members: [Member]?
 
+        /// Instagram protection: the thing that stops the whole operation if
+        /// it goes wrong, so it reads first in the app too.
+        struct Health: Decodable, Sendable {
+            var status: String?
+            var message: String?
+            var username: String?
+            var isConnected: Bool?
+            var sendPaused: Bool?
+            var activeFlags: Int?
+            var sends24h: Int?
+            var failed24h: Int?
+            var failureRate: Double?
+        }
+        struct Account: Decodable, Sendable {
+            var totalLeads: Int?
+            var newLeads30: Int?
+        }
         struct Messages: Decodable, Sendable {
             var inbound: Int
             var outbound: Int
             var total: Int
             var activeConversations: Int
         }
-        struct Totals: Decodable, Sendable {
+        /// Live census by stage — a snapshot, never a conversion denominator.
+        struct Pipeline: Decodable, Sendable {
             var newLeads: Int
+            var inContact: Int
             var qualified: Int
-            var booked: Int
+            var bookedCall: Int
             var won: Int
+            var unqualified: Int
+        }
+        struct Conversion: Decodable, Sendable {
+            var cohort: Int?
+            var newToQualified: Double?
+            var newToBooked: Double?
+            var newToWon: Double?
+        }
+        struct Replies: Decodable, Sendable {
+            var rate: Double?
+            var outbound: Int?
+            var withReply: Int?
+            var members: [MemberReply]?
+
+            struct MemberReply: Decodable, Sendable, Identifiable {
+                var name: String
+                var messages: Int
+                var replies: Int
+                var rate: Double?
+                var id: String { name }
+            }
+        }
+        struct Response: Decodable, Sendable {
+            var medianMinutes: Double?
+            var avgMinutes: Double?
+            var newLeads: Int?
+            var callsBooked: Int?
+            var qualified: Int?
+            var bookingRate: Double?
+        }
+        struct Hour: Decodable, Sendable, Identifiable {
+            var hour: Int
+            var count: Int
+            var id: Int { hour }
         }
         struct Revenue: Decodable, Sendable {
             var net: Double?
             var gross: Double?
             var count: Int?
+            var crm: Double?
         }
         struct Day: Decodable, Sendable, Identifiable {
             var day: String

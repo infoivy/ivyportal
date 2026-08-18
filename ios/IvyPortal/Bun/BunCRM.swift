@@ -61,7 +61,17 @@ struct BunCRMSheet: View {
     @ViewBuilder private var mochiBlock: some View {
         if let mochi, mochi.connected {
             VStack(alignment: .leading, spacing: 18) {
+                if let health = mochi.health { healthBanner(health) }
+
                 Text("Instagram").font(BunType.section).foregroundStyle(BunTheme.ink)
+
+                if let account = mochi.account {
+                    HStack(alignment: .top, spacing: 0) {
+                        stat("All leads", value: Self.count(account.totalLeads))
+                        stat("New · 30 days", value: Self.count(account.newLeads30))
+                        stat("Active convos", value: mochi.messages.map { "\($0.activeConversations)" } ?? "–")
+                    }
+                }
 
                 if let revenue = mochi.revenue, revenue.net != nil || revenue.gross != nil {
                     HStack(alignment: .top, spacing: 0) {
@@ -73,14 +83,27 @@ struct BunCRMSheet: View {
 
                 if let messages = mochi.messages {
                     HStack(alignment: .top, spacing: 0) {
-                        stat("DMs out", value: "\(messages.outbound)")
-                        stat("DMs in", value: "\(messages.inbound)")
-                        stat("Active convos", value: "\(messages.activeConversations)")
+                        stat("DMs out", value: Self.count(messages.outbound))
+                        stat("DMs in", value: Self.count(messages.inbound))
+                        stat("Replied", value: mochi.replies?.rate.map { "\(Int(($0 * 100).rounded()))%" } ?? "–",
+                             tone: BunTheme.green)
                     }
                 }
 
-                if let totals = mochi.totals {
-                    funnelBar(totals)
+                if let response = mochi.response {
+                    HStack(alignment: .top, spacing: 0) {
+                        stat("Median reply", value: response.medianMinutes.map(Self.duration) ?? "–")
+                        stat("Booked", value: response.callsBooked.map(String.init) ?? "–")
+                        stat("Qualified", value: response.qualified.map(String.init) ?? "–")
+                    }
+                }
+
+                if let pipeline = mochi.pipeline {
+                    pipelineBar(pipeline, conversion: mochi.conversion)
+                }
+
+                if let hours = mochi.hours, hours.contains(where: { $0.count > 0 }) {
+                    activeHours(hours, peak: mochi.peakHourUTC)
                 }
 
                 if let funnel = mochi.funnel, funnel.contains(where: { $0.newLeads > 0 || $0.booked > 0 }) {
@@ -106,22 +129,30 @@ struct BunCRMSheet: View {
                     }
                 }
 
-                if let members = mochi.members, !members.isEmpty {
+                // Per setter: what they sent AND what came back, because
+                // volume without replies is not performance.
+                if let members = mochi.replies?.members, !members.isEmpty {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("DMs by setter").font(BunType.label).foregroundStyle(BunTheme.secondary)
+                        Text("By setter").font(BunType.label).foregroundStyle(BunTheme.secondary)
                         VStack(spacing: 0) {
-                            ForEach(members.sorted { $0.outbound > $1.outbound }) { member in
+                            ForEach(members.sorted { $0.messages > $1.messages }) { member in
                                 HStack(spacing: 14) {
                                     BunAvatar(text: String(member.name.prefix(1)), size: 40,
                                               fill: BunStore.fill(for: member.name))
-                                    Text(member.name).font(BunType.rowTitle)
-                                        .foregroundStyle(BunTheme.ink).lineLimit(1)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(member.name).font(BunType.rowTitle)
+                                            .foregroundStyle(BunTheme.ink).lineLimit(1)
+                                        Text("\(member.messages) sent · \(member.replies) replied")
+                                            .font(BunType.caption).foregroundStyle(BunTheme.secondary)
+                                            .lineLimit(1).minimumScaleFactor(0.85)
+                                    }
                                     Spacer()
-                                    Text("\(member.outbound)")
-                                        .font(bunFont(17, .medium)).foregroundStyle(BunTheme.ink)
+                                    Text(member.rate.map { Self.percent($0) } ?? "–")
+                                        .font(bunFont(17, .medium))
+                                        .foregroundStyle((member.rate ?? 0) >= 0.5 ? BunTheme.green : BunTheme.ink)
                                         .monospacedDigit()
                                 }
-                                .frame(minHeight: 58)
+                                .frame(minHeight: 62)
                             }
                         }
                     }
@@ -137,22 +168,27 @@ struct BunCRMSheet: View {
         }
     }
 
-    /// New leads → qualified → booked → won, as one bar with the drop-off
-    /// visible rather than four numbers to compare by eye.
-    private func funnelBar(_ totals: CRMSummary.Mochi.Totals) -> some View {
+    /// The live stage census, which is what Mochi's Default Funnel shows.
+    /// Conversion is stated separately because a snapshot is never a rate —
+    /// Mochi is explicit about that and the app should not blur it.
+    private func pipelineBar(_ pipeline: CRMSummary.Mochi.Pipeline,
+                             conversion: CRMSummary.Mochi.Conversion?) -> some View {
         let stages: [(String, Int, Color)] = [
-            ("New", totals.newLeads, BunTheme.indigoLight),
-            ("Qualified", totals.qualified, Color(red: 0.63, green: 0.53, blue: 0.97)),
-            ("Booked", totals.booked, Color(red: 0.28, green: 0.75, blue: 0.70)),
-            ("Won", totals.won, BunTheme.green),
+            ("New", pipeline.newLeads, BunTheme.indigoLight),
+            ("In contact", pipeline.inContact, Color(red: 0.63, green: 0.53, blue: 0.97)),
+            ("Qualified", pipeline.qualified, Color(red: 0.28, green: 0.75, blue: 0.70)),
+            ("Booked", pipeline.bookedCall, Color(red: 0.95, green: 0.72, blue: 0.35)),
+            ("Won", pipeline.won, BunTheme.green),
+            ("Unqualified", pipeline.unqualified, BunTheme.secondary),
         ]
         let peak = max(stages.map(\.1).max() ?? 1, 1)
         return VStack(alignment: .leading, spacing: 10) {
-            Text("Funnel").font(BunType.label).foregroundStyle(BunTheme.secondary)
+            Text("Pipeline now").font(BunType.label).foregroundStyle(BunTheme.secondary)
             ForEach(stages, id: \.0) { name, count, tone in
                 HStack(spacing: 12) {
                     Text(name).font(BunType.caption).foregroundStyle(BunTheme.secondary)
-                        .frame(width: 74, alignment: .leading)
+                        .frame(width: 88, alignment: .leading)
+                        .lineLimit(1).minimumScaleFactor(0.8)
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
                             Capsule().fill(BunTheme.field).frame(height: 10)
@@ -161,13 +197,132 @@ struct BunCRMSheet: View {
                         }
                     }
                     .frame(height: 10)
-                    Text("\(count)").font(bunFont(16, .medium))
+                    Text(Self.count(count)).font(bunFont(16, .medium))
                         .foregroundStyle(BunTheme.ink).monospacedDigit()
-                        .frame(width: 44, alignment: .trailing)
+                        .frame(width: 48, alignment: .trailing)
                 }
                 .frame(height: 32)
             }
+            if let conversion, let cohort = conversion.cohort, cohort > 0 {
+                Text("Of \(cohort) new leads this window: "
+                     + [conversion.newToQualified.map { "\(Self.percent($0)) qualified" },
+                        conversion.newToBooked.map { "\(Self.percent($0)) booked" },
+                        conversion.newToWon.map { "\(Self.percent($0)) won" }]
+                        .compactMap { $0 }.joined(separator: " · "))
+                    .font(BunType.caption).foregroundStyle(BunTheme.tertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
+    }
+
+    /// When leads are actually messaging, in the reader's own timezone rather
+    /// than the UTC the API answers in.
+    private func activeHours(_ hours: [CRMSummary.Mochi.Hour], peak: Int?) -> some View {
+        let offset = TimeZone.current.secondsFromGMT() / 3600
+        let shifted = hours.map { hour -> (label: Int, count: Int) in
+            (label: ((hour.hour + offset) % 24 + 24) % 24, count: hour.count)
+        }.sorted { $0.label < $1.label }
+        let top = max(shifted.map(\.count).max() ?? 1, 1)
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("When leads message").font(BunType.label).foregroundStyle(BunTheme.secondary)
+                Spacer()
+                if let peak {
+                    let local = ((peak + offset) % 24 + 24) % 24
+                    Text("busiest \(Self.hourLabel(local))")
+                        .font(BunType.caption).foregroundStyle(BunTheme.tertiary)
+                }
+            }
+            Chart {
+                ForEach(shifted, id: \.label) { point in
+                    BarMark(x: .value("Hour", point.label), y: .value("Messages", point.count), width: .fixed(9))
+                        .cornerRadius(3)
+                        .foregroundStyle(BunTheme.indigo.opacity(0.35 + 0.65 * Double(point.count) / Double(top)))
+                }
+            }
+            .chartXAxis {
+                AxisMarks(values: [0, 6, 12, 18]) { value in
+                    AxisValueLabel {
+                        if let hour = value.as(Int.self) {
+                            Text(Self.hourLabel(hour)).font(bunFont(12)).foregroundStyle(BunTheme.tertiary)
+                        }
+                    }
+                }
+            }
+            .chartYAxis(.hidden)
+            .frame(height: 110)
+        }
+    }
+
+    private static func hourLabel(_ hour: Int) -> String {
+        switch hour {
+        case 0: "12am"
+        case 12: "12pm"
+        case let h where h < 12: "\(h)am"
+        default: "\(hour - 12)pm"
+        }
+    }
+
+    private static func percent(_ value: Double) -> String {
+        "\(Int((value * 100).rounded()))%"
+    }
+
+    /// "22m", "3h 15m" — the shape Mochi shows for reply time.
+    private static func duration(_ minutes: Double) -> String {
+        let total = Int(minutes.rounded())
+        if total < 60 { return "\(total)m" }
+        let hours = total / 60
+        let rest = total % 60
+        return rest == 0 ? "\(hours)h" : "\(hours)h \(rest)m"
+    }
+
+    /// Healthy / warning / restricted, with the send numbers behind it. This
+    /// is the first thing Mochi shows and the first thing that matters.
+    private func healthBanner(_ health: CRMSummary.Mochi.Health) -> some View {
+        let status = (health.status ?? "unknown").lowercased()
+        let tone: Color = switch status {
+        case "healthy", "ok": BunTheme.green
+        case "warning", "at_risk", "at risk": Color(red: 0.95, green: 0.72, blue: 0.35)
+        case "critical", "restricted": BunTheme.pink
+        default: BunTheme.secondary
+        }
+        let label = switch status {
+        case "healthy", "ok": "Healthy"
+        case "warning": "At risk"
+        case "critical": "Restricted"
+        default: status.capitalized
+        }
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 10) {
+                Circle().fill(tone).frame(width: 9, height: 9)
+                Text(label).font(BunType.rowTitle).foregroundStyle(tone)
+                if let username = health.username {
+                    Text("@\(username)").font(BunType.caption).foregroundStyle(BunTheme.secondary)
+                        .lineLimit(1)
+                }
+                Spacer()
+                if (health.activeFlags ?? 0) > 0 {
+                    BunTag(text: "\(health.activeFlags ?? 0) flag\((health.activeFlags ?? 0) == 1 ? "" : "s")",
+                           tint: tone, fill: tone.opacity(0.14))
+                }
+            }
+            Text(sendLine(health))
+                .font(BunType.caption).foregroundStyle(BunTheme.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(tone.opacity(0.10), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
+
+    private func sendLine(_ health: CRMSummary.Mochi.Health) -> String {
+        if health.sendPaused == true { return "Sending is paused on this account." }
+        if health.isConnected == false { return "Instagram is disconnected. Reconnect it on the web." }
+        guard let sends = health.sends24h else { return health.message ?? "" }
+        let failed = health.failed24h ?? 0
+        return failed == 0
+            ? "\(sends) messages sent in 24 hours, none failed"
+            : "\(sends) sent in 24 hours · \(failed) failed"
     }
 
     private func leadChart(_ funnel: [CRMSummary.Mochi.Day]) -> some View {
@@ -203,9 +358,9 @@ struct BunCRMSheet: View {
                     Text(error).font(bunFont(15)).foregroundStyle(BunTheme.pink)
                 } else {
                     HStack(alignment: .top, spacing: 0) {
-                        stat("Leads", value: close.leads.map(String.init) ?? "–")
-                        stat("Active", value: close.active.map(String.init) ?? "–")
-                        stat("Won", value: close.won.map(String.init) ?? "–", tone: BunTheme.green)
+                        stat("Leads", value: Self.count(close.leads))
+                        stat("Active", value: Self.count(close.active))
+                        stat("Won", value: Self.count(close.won), tone: BunTheme.green)
                     }
                     HStack(alignment: .top, spacing: 0) {
                         moneyStat("In play", amount: close.pipeline)
@@ -238,6 +393,15 @@ struct BunCRMSheet: View {
     }
 
     // MARK: Shared
+
+    /// Four-figure counts read as dates without a separator (1484 vs 1,484).
+    static func count(_ value: Int?) -> String {
+        guard let value else { return "–" }
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter.string(from: NSNumber(value: value)) ?? "\(value)"
+    }
 
     private func stat(_ label: String, value: String, tone: Color = BunTheme.ink) -> some View {
         VStack(alignment: .leading, spacing: 5) {

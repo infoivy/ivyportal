@@ -210,3 +210,28 @@ Verified that all five credential rows are present in production, so the live ap
 ### What was challenging
 
 Mochi's endpoint answers either plain JSON or a single SSE frame, and its payload is a JSON string nested inside the JSON-RPC result. The web already handled both; the edge function had to carry the same parsing rather than assume one shape.
+
+---
+
+## Batch 9 — the CRM read, matched against the real Mochi app
+
+### Prompt
+
+"the crm is lacking some stuff, here's mochi" (fourteen screenshots of the Mochi app: account health ring, lead/seat/contact limits, latest activity, the Default Funnel, Performance with active hours, setter replies and script analysis, and per-setter message tables).
+
+### How I closed the gap
+
+The Mochi MCP is connected to this session, so rather than guessing field names off screenshots I called the tools directly and read the real shapes: `get_account_health`, `get_account_overview`, `get_funnel_metrics`, `get_lead_reply_rate`, `get_setter_metrics`, `get_message_time_distribution`. Then the edge function (version 2) fetches all ten Mochi tools in parallel and the app renders them.
+
+### What the CRM sheet gained
+
+- **Account health first**, because a restricted account stops everything: status, the handle, active flag count, and the 24-hour send/failure numbers behind it.
+- All leads and new-in-30-days.
+- **Reply rate** beside the DM counts, and **median reply time** in Mochi's own shape ("22m", "3h 15m").
+- **Pipeline now**: the live stage census (new, in contact, qualified, booked, won, unqualified) as one bar per stage, with conversion stated *separately* underneath. Mochi's own API note is explicit that a snapshot is never a conversion denominator, and the app says it the same way.
+- **When leads message**: the hour-of-day distribution, shifted from the API's UTC into the reader's timezone, with the busiest hour called out.
+- **By setter**: sent, replied, and reply rate together, because volume without replies is not performance.
+
+### What was challenging
+
+The fixture was one nested literal and the Swift type checker gave up on it ("unable to type-check this expression in reasonable time"). Rebuilt as step-by-step assignments.

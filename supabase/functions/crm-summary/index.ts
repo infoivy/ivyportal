@@ -171,12 +171,52 @@ Deno.serve(async (req) => {
       type Trend = { trend?: { day: string; new_leads?: number; qualified?: number; booked?: number; won?: number }[] };
       type Sources = { sources?: { source: string; label?: string; lead_count?: number; calls_booked?: number }[] };
       type Payments = { net_revenue?: string; you_keep?: string; gross_volume?: string; payments_count?: number };
+      type Health = {
+        status?: string;
+        message?: string;
+        connection?: { username?: string; is_connected?: boolean; send_paused?: boolean };
+        recent_sends?: { total?: number; failed?: number; failure_rate?: number };
+        instagram_protection?: { protection?: { status?: string; active_flag_count?: number } };
+      };
+      type Overview = {
+        account?: { username?: string; is_connected?: boolean; is_send_paused?: boolean };
+        growth?: { total_leads?: number; new_leads_last_30_days?: number };
+      };
+      type Funnel = {
+        pipeline_now?: Record<string, number>;
+        conversion?: {
+          cohort_size?: number;
+          rates?: Record<string, { value?: number | null }>;
+        };
+        total_revenue?: number;
+      };
+      type Replies = {
+        total_outbound_messages?: number;
+        messages_with_reply?: number;
+        reply_rate?: number;
+        members_breakdown?: { name?: string; total_messages?: number; replies_received?: number; reply_rate?: number }[];
+      };
+      type Setter = {
+        new_leads?: number;
+        calls_booked?: number;
+        leads_qualified?: number;
+        booking_rate?: number;
+        avg_response_time_minutes?: number;
+        median_response_time_minutes?: number;
+      };
+      type Hours = { distribution?: { hour: number; count: number }[]; peak_hour_utc?: number; total_messages?: number };
 
-      const [counts, trend, sources, payments] = await Promise.all([
+      const [counts, trend, sources, payments, health, overview, funnelMetrics, replies, setter, hours] = await Promise.all([
         callTool<Counts>(token, "get_message_counts", { time_period: period }),
         callTool<Trend>(token, "get_funnel_trend", { time_period: period }),
         callTool<Sources>(token, "get_lead_source_breakdown", { time_period: period }),
         callTool<Payments>(token, "get_payment_overview", { time_period: period }),
+        callTool<Health>(token, "get_account_health", {}),
+        callTool<Overview>(token, "get_account_overview", {}),
+        callTool<Funnel>(token, "get_funnel_metrics", { time_period: period }),
+        callTool<Replies>(token, "get_lead_reply_rate", { time_period: period }),
+        callTool<Setter>(token, "get_setter_metrics", { time_period: period }),
+        callTool<Hours>(token, "get_message_time_distribution", { time_period: period }),
       ]);
 
       const funnel = trend?.trend ?? [];
@@ -185,26 +225,77 @@ Deno.serve(async (req) => {
         const parsed = Number(String(value).replace(/[^0-9.-]/g, ""));
         return Number.isFinite(parsed) ? parsed : null;
       };
+      const pipeline = funnelMetrics?.pipeline_now ?? {};
+      const rate = (key: string) => funnelMetrics?.conversion?.rates?.[key]?.value ?? null;
+      // Protection carries the canonical status; the v1 status is the fallback.
+      const protection = health?.instagram_protection?.protection;
 
       out.mochi = {
         connected: true,
         period,
+        health: {
+          status: protection?.status ?? health?.status ?? null,
+          message: health?.message ?? null,
+          username: health?.connection?.username ?? overview?.account?.username ?? null,
+          isConnected: health?.connection?.is_connected ?? overview?.account?.is_connected ?? null,
+          sendPaused: health?.connection?.send_paused ?? overview?.account?.is_send_paused ?? null,
+          activeFlags: protection?.active_flag_count ?? 0,
+          sends24h: health?.recent_sends?.total ?? null,
+          failed24h: health?.recent_sends?.failed ?? null,
+          failureRate: health?.recent_sends?.failure_rate ?? null,
+        },
+        account: {
+          totalLeads: overview?.growth?.total_leads ?? null,
+          newLeads30: overview?.growth?.new_leads_last_30_days ?? null,
+        },
         messages: {
           inbound: counts?.inbound_messages ?? 0,
           outbound: counts?.outbound_messages ?? 0,
           total: counts?.total_messages ?? 0,
           activeConversations: counts?.active_conversations ?? 0,
         },
-        totals: {
-          newLeads: funnel.reduce((s, d) => s + (d.new_leads ?? 0), 0),
-          qualified: funnel.reduce((s, d) => s + (d.qualified ?? 0), 0),
-          booked: funnel.reduce((s, d) => s + (d.booked ?? 0), 0),
-          won: funnel.reduce((s, d) => s + (d.won ?? 0), 0),
+        pipeline: {
+          newLeads: pipeline.NEW ?? 0,
+          inContact: pipeline.IN_CONTACT ?? 0,
+          qualified: pipeline.QUALIFIED ?? 0,
+          bookedCall: pipeline.BOOKED_CALL ?? 0,
+          won: pipeline.WON ?? 0,
+          unqualified: pipeline.UNQUALIFIED ?? 0,
         },
+        conversion: {
+          cohort: funnelMetrics?.conversion?.cohort_size ?? null,
+          newToQualified: rate("new_to_qualified"),
+          newToBooked: rate("new_to_booked"),
+          newToWon: rate("new_to_won"),
+        },
+        replies: {
+          rate: replies?.reply_rate ?? null,
+          outbound: replies?.total_outbound_messages ?? null,
+          withReply: replies?.messages_with_reply ?? null,
+          members: (replies?.members_breakdown ?? [])
+            .map((m) => ({
+              name: (m.name ?? "").trim(),
+              messages: m.total_messages ?? 0,
+              replies: m.replies_received ?? 0,
+              rate: m.reply_rate ?? null,
+            }))
+            .filter((m) => m.name),
+        },
+        response: {
+          medianMinutes: setter?.median_response_time_minutes ?? null,
+          avgMinutes: setter?.avg_response_time_minutes ?? null,
+          newLeads: setter?.new_leads ?? null,
+          callsBooked: setter?.calls_booked ?? null,
+          qualified: setter?.leads_qualified ?? null,
+          bookingRate: setter?.booking_rate ?? null,
+        },
+        hours: (hours?.distribution ?? []).map((h) => ({ hour: h.hour, count: h.count })),
+        peakHourUTC: hours?.peak_hour_utc ?? null,
         revenue: {
           net: money(payments?.net_revenue ?? payments?.you_keep),
           gross: money(payments?.gross_volume),
           count: payments?.payments_count ?? null,
+          crm: funnelMetrics?.total_revenue ?? null,
         },
         funnel: funnel.map((d) => ({
           day: d.day,
@@ -228,8 +319,6 @@ Deno.serve(async (req) => {
       };
     }
   }
-
-  // ---- Close ---------------------------------------------------------------
 
   const closeKey = creds.get(KEYS.closeKey);
   if (!closeKey) {
