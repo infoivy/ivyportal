@@ -92,3 +92,18 @@ Unchanged from batch 1, minus the pictures: Performance depth, Money in analytic
 ### Future work
 
 Finance (needs founder_settings for the cash goal and profit split), per-member card ledgers, the deep client record, CSM workspace, testimonials, calendar and log-a-set, CRM, chat, knowledge, admin. Then the student app mode. The founder's density note applies app-wide: exception counts belong in chips or rows, never in grids of boxes.
+
+---
+
+## Batch 4 — Finance
+
+### What I did
+
+- `PortalAPI.finance()` mirrors the web page's month: cash in (deal upfront + paid instalments), expenses (recurring plus this month's one-offs), payouts for BOTH semi-monthly halves, what is still scheduled, and a flow of what lands and what leaves before month end. Profit is computed after payouts, never just after expenses.
+- Finance is a third tab inside Money, and the tab only exists for founder and co-founder — RLS is still the wall, this just avoids offering a surface that comes back empty.
+- Cash in reads against `founder_settings.monthly_cash_goal` with a pace projection; expenses can be added and deleted from the phone.
+- `friendlyDay` now reads forward as well (Tomorrow / weekday / "Next Wednesday"), because scheduled money is future-dated and the no-raw-dates rule covers the next two weeks the same as the last two.
+
+### What I deliberately left out
+
+The web's profit split is a hardcoded constant with three real names in it. That cannot ship in a multi-tenant product, so the app shows profit without the split until it becomes a per-org setting.

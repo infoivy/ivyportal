@@ -226,6 +226,68 @@ final class BunStore {
         await loadPayouts()
     }
 
+    // Finance (founder + co-founder only, RLS is the wall)
+    var finance: FinanceRead?
+    var financeError: String?
+
+    /// Only leadership reads the business's own numbers. Signed out the demo
+    /// workspace shows them, because the whole point is to sell the product.
+    var canSeeFinance: Bool {
+        guard signedIn else { return true }
+        let roles = Set(AuthStore.shared.roles)
+        return roles.contains(.founder) || roles.contains(.cofounder)
+    }
+
+    func loadFinance() async {
+        guard signedIn else {
+            seedFixturesIfNeeded()
+            if finance == nil { finance = BunFixtures.finance }
+            return
+        }
+        guard canSeeFinance, finance == nil else { return }
+        do {
+            finance = try await PortalAPI.shared.finance()
+            financeError = nil
+        } catch {
+            financeError = "Could not load finance: \(error.localizedDescription)"
+        }
+    }
+
+    func addExpense(name: String, amount: Double, recurring: Bool, dueDay: Int?) async throws {
+        guard signedIn else {
+            // Demo: the expense lands in the month immediately.
+            if var read = finance {
+                read.expenseRows.append(BusinessExpense(id: UUID(), name: name, amount: amount,
+                                                        recurring: recurring, dueDay: dueDay,
+                                                        oneOffDate: recurring ? nil : Self.dayKey(Date()),
+                                                        category: nil))
+                read.expenses += amount
+                finance = read
+            }
+            return
+        }
+        try await PortalAPI.shared.addExpense(
+            PortalAPI.NewExpense(name: name, amount: amount, recurring: recurring,
+                                 dueDay: dueDay, oneOffDate: recurring ? nil : Self.dayKey(Date()),
+                                 category: nil))
+        finance = nil
+        await loadFinance()
+    }
+
+    func deleteExpense(_ expense: BusinessExpense) async throws {
+        guard signedIn else {
+            if var read = finance {
+                read.expenseRows.removeAll { $0.id == expense.id }
+                read.expenses -= expense.amount
+                finance = read
+            }
+            return
+        }
+        try await PortalAPI.shared.deleteExpense(id: expense.id)
+        finance = nil
+        await loadFinance()
+    }
+
     // Performance (web /performance: range, one canonical graph, drilldown)
     var perfDays = 7
     var perfActivity: [EODActivity]?
@@ -972,6 +1034,8 @@ final class BunStore {
         payoutData = nil
         payoutError = nil
         payoutOffset = 0
+        finance = nil
+        financeError = nil
         sales = nil
         studentEODs = nil
         scheduledCalls = nil
@@ -1040,6 +1104,7 @@ final class BunStore {
         if callsByStudent.isEmpty { callsByStudent = BunFixtures.callsByStudent }
         if perfActivity == nil { perfActivity = BunFixtures.perfActivity(days: perfDays) }
         if deals == nil { deals = BunFixtures.deals }
+        if finance == nil { finance = BunFixtures.finance }
         if plans == nil {
             plans = BunFixtures.plans
             planPayments = BunFixtures.planPayments
@@ -1098,8 +1163,17 @@ final class BunStore {
         case 7...13:
             formatter.dateFormat = "EEEE"
             return "Last \(formatter.string(from: date))"
+        // Scheduled money reads forward as well; the no-raw-dates rule covers
+        // the next two weeks exactly as it covers the last two.
+        case -1: return "Tomorrow"
+        case (-6)...(-2):
+            formatter.dateFormat = "EEEE"
+            return formatter.string(from: date)
+        case (-13)...(-7):
+            formatter.dateFormat = "EEEE"
+            return "Next \(formatter.string(from: date))"
         default:
-            formatter.dateFormat = days > 300 ? "MMM d, yyyy" : "MMM d"
+            formatter.dateFormat = abs(days) > 300 ? "MMM d, yyyy" : "MMM d"
             return formatter.string(from: date)
         }
     }

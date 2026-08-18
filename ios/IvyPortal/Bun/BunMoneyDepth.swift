@@ -441,3 +441,221 @@ struct BunPayoutLedgerSheet: View {
         .padding(.top, 18)
     }
 }
+
+/// Finance: the month's cash against its goal, what leaves, and what profit
+/// is left after the team is paid. Founder and co-founder only — RLS is the
+/// wall, this just avoids offering a surface that would come back empty.
+struct BunFinanceView: View {
+    @State private var store = BunStore.shared
+    @State private var showAddExpense = false
+    @State private var expenseName = ""
+    @State private var expenseAmount = ""
+    @State private var expenseRecurring = true
+    @State private var writeError: String?
+
+    private var read: FinanceRead? { store.finance }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 26) {
+            if let error = store.financeError {
+                Text(error).font(bunFont(15)).foregroundStyle(BunTheme.pink)
+            }
+            if let read {
+                goalBlock(read)
+                edgeHairline
+                profitBlock(read)
+                edgeHairline
+                flowBlock(read)
+                edgeHairline
+                expensesBlock(read)
+            } else {
+                RoundedRectangle(cornerRadius: 12).fill(BunTheme.field).frame(height: 120)
+            }
+        }
+        .sheet(isPresented: $showAddExpense) {
+            addExpenseSheet
+                .presentationBackground(BunTheme.ground)
+                .presentationCornerRadius(40)
+                .presentationDetents([.height(430)])
+        }
+        .task { await store.loadFinance() }
+    }
+
+    /// Cash in against the goal, with where the month lands at today's rate.
+    private func goalBlock(_ read: FinanceRead) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Cash in · \(read.monthLabel)").font(BunType.label).foregroundStyle(BunTheme.secondary)
+            BunMoney(amount: read.cashIn, size: BunType.Money.hero)
+            if let goal, goal > 0 {
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(BunTheme.field).frame(height: 6)
+                        Capsule().fill(read.pace >= goal ? BunTheme.green : BunTheme.indigo)
+                            .frame(width: geo.size.width * min(read.cashIn / goal, 1), height: 6)
+                    }
+                }
+                .frame(height: 6)
+                Text("\(ivyMoney(goal)) goal · \(ivyMoney(read.pace)) at this pace")
+                    .font(BunType.caption)
+                    .foregroundStyle(read.pace >= goal ? BunTheme.green : BunTheme.secondary)
+            } else {
+                Text("No monthly goal set yet.")
+                    .font(BunType.caption).foregroundStyle(BunTheme.secondary)
+            }
+        }
+    }
+
+    private var goal: Double? { read?.goal }
+
+    /// Profit AFTER team payouts, never just after expenses.
+    private func profitBlock(_ read: FinanceRead) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .top, spacing: 0) {
+                stat("Profit so far", money: read.profitSoFar,
+                     tone: read.profitSoFar < 0 ? BunTheme.pink : BunTheme.green)
+                stat("Projected", money: read.profitProjected,
+                     tone: read.profitProjected < 0 ? BunTheme.pink : BunTheme.ink)
+            }
+            HStack(alignment: .top, spacing: 0) {
+                stat("Expenses", money: -read.expenses)
+                stat("Payouts", money: -read.payouts)
+            }
+            Text("After expenses and everything the team is owed this month.")
+                .font(BunType.caption).foregroundStyle(BunTheme.tertiary)
+            if read.installmentDue > 0 {
+                Text("\(ivyMoney(read.installmentCollected)) of instalments collected · \(ivyMoney(read.installmentDue)) still due")
+                    .font(BunType.caption).foregroundStyle(BunTheme.secondary)
+                    .lineLimit(1).minimumScaleFactor(0.8)
+            }
+        }
+    }
+
+    /// What still lands and what still leaves before month end.
+    private func flowBlock(_ read: FinanceRead) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Rest of \(read.monthLabel.split(separator: " ").first.map(String.init) ?? "the month")")
+                .font(BunType.section).foregroundStyle(BunTheme.ink)
+            if read.flow.isEmpty {
+                Text("Nothing else scheduled this month.")
+                    .font(bunFont(17)).foregroundStyle(BunTheme.secondary)
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(read.flow) { row in
+                        HStack(spacing: 12) {
+                            Text(BunStore.parseDay(row.date).map { BunStore.friendlyDay($0) } ?? row.date)
+                                .font(BunType.caption).foregroundStyle(BunTheme.secondary)
+                                .lineLimit(1).minimumScaleFactor(0.8)
+                                .frame(width: 112, alignment: .leading)
+                            Text(row.label).font(BunType.rowTitle).foregroundStyle(BunTheme.ink).lineLimit(1)
+                            Spacer()
+                            BunMoney(amount: row.incoming ? row.amount : -row.amount, size: 17,
+                                     color: row.incoming ? BunTheme.green : BunTheme.ink)
+                        }
+                        .frame(minHeight: 52)
+                    }
+                }
+            }
+        }
+    }
+
+    private func expensesBlock(_ read: FinanceRead) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text("Expenses").font(BunType.section).foregroundStyle(BunTheme.ink)
+                Spacer()
+                BunPillChip(symbol: "plus", label: "Add") {
+                    expenseName = ""
+                    expenseAmount = ""
+                    expenseRecurring = true
+                    showAddExpense = true
+                }
+            }
+            if let writeError {
+                Text(writeError).font(bunFont(15)).foregroundStyle(BunTheme.pink)
+            }
+            if read.expenseRows.isEmpty {
+                Text("No expenses recorded yet.")
+                    .font(bunFont(17)).foregroundStyle(BunTheme.secondary)
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(read.expenseRows) { expense in
+                        HStack(spacing: 12) {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(expense.name).font(BunType.rowTitle)
+                                    .foregroundStyle(BunTheme.ink).lineLimit(1)
+                                Text(expense.recurring
+                                     ? "monthly\(expense.dueDay.map { " · pays the \($0)" } ?? "")"
+                                     : "one-off")
+                                    .font(BunType.caption).foregroundStyle(BunTheme.secondary)
+                            }
+                            Spacer()
+                            BunMoney(amount: -expense.amount, size: 17)
+                        }
+                        .frame(minHeight: 56)
+                        .contextMenu {
+                            Button("Delete", role: .destructive) {
+                                Task {
+                                    do { try await store.deleteExpense(expense); writeError = nil }
+                                    catch { writeError = "Could not delete: \(error.localizedDescription)" }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private var addExpenseSheet: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            HStack {
+                BunTitle(text: "New expense")
+                Spacer()
+                BunChipButton(symbol: "xmark") { showAddExpense = false }
+            }
+            BunField(label: "What", placeholder: "Software, ads, contractor", text: $expenseName)
+            BunField(label: "Amount", placeholder: "0", text: $expenseAmount)
+            Toggle(isOn: $expenseRecurring) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Every month").font(bunFont(18)).foregroundStyle(BunTheme.ink)
+                    Text(expenseRecurring ? "counts every month from now on" : "counts once, this month")
+                        .font(BunType.caption).foregroundStyle(BunTheme.secondary)
+                }
+            }
+            .tint(BunTheme.indigo)
+            BunCTA(label: "Add expense",
+                   enabled: !expenseName.trimmingCharacters(in: .whitespaces).isEmpty && (Double(expenseAmount) ?? 0) > 0,
+                   filled: true) {
+                let name = expenseName
+                let amount = Double(expenseAmount) ?? 0
+                let recurring = expenseRecurring
+                showAddExpense = false
+                Task {
+                    do {
+                        try await store.addExpense(name: name, amount: amount, recurring: recurring,
+                                                   dueDay: recurring ? Calendar.current.component(.day, from: Date()) : nil)
+                        writeError = nil
+                    } catch {
+                        writeError = "Could not add: \(error.localizedDescription)"
+                    }
+                }
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 22)
+        .padding(.top, 18)
+    }
+
+    private func stat(_ label: String, money: Double, tone: Color = BunTheme.ink) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(label).font(BunType.label).foregroundStyle(BunTheme.secondary)
+                .lineLimit(1).minimumScaleFactor(0.8)
+            BunMoney(amount: money, size: 24, weight: .medium, color: tone)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var edgeHairline: some View {
+        Rectangle().fill(BunTheme.hairline).frame(height: 1).padding(.horizontal, -22)
+    }
+}

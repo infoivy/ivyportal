@@ -13,9 +13,17 @@ struct BunMoneyPage: View {
     @State private var showPlans = false
     @State private var showPayouts = false
     /// Founder 2026-08-18: accounts and cards are their own tab inside Money.
-    /// `-bunMoneySection accounts` opens straight there for screenshots.
-    @State private var section = ProcessInfo.processInfo.arguments.contains("accounts")
-        && ProcessInfo.processInfo.arguments.contains("-bunMoneySection") ? 1 : 0
+    /// `-bunMoneySection accounts|finance` opens straight there for screenshots.
+    @State private var section: Int = {
+        let args = ProcessInfo.processInfo.arguments
+        guard let i = args.firstIndex(of: "-bunMoneySection"), args.indices.contains(i + 1) else { return 0 }
+        return ["money": 0, "accounts": 1, "finance": 2][args[i + 1]] ?? 0
+    }()
+
+    /// Finance is leadership-only, so the tab itself only exists for them.
+    private var sections: [String] {
+        store.canSeeFinance ? ["Money", "Accounts", "Finance"] : ["Money", "Accounts"]
+    }
     /// Rows showing the "collected" confirmation before they animate out.
     @State private var settled: Set<UUID> = []
 
@@ -31,9 +39,11 @@ struct BunMoneyPage: View {
                     BunPillChip(symbol: "plus", label: "Log close") { showLogClose = true }
                 }
 
-                BunSegment(options: ["Money", "Accounts"], selection: $section)
+                BunSegment(options: sections, selection: $section)
 
-                if section == 0 {
+                if section == 2 {
+                    BunFinanceView()
+                } else if section == 0 {
                     upNextSection
 
                     paymentsSection

@@ -2945,3 +2945,209 @@ extension PortalAPI {
         return rows.count
     }
 }
+
+// MARK: - Finance (web /finance, founder + co-founder only)
+
+/// The month's money: what came in, what leaves, and what is still scheduled.
+/// Profit is computed AFTER team payouts, never just after expenses — the
+/// founder-locked rule the web page carries.
+struct FinanceRead: Sendable {
+    var monthLabel = ""
+    var cashIn: Double = 0
+    var goal: Double?
+    var expenses: Double = 0
+    var payouts: Double = 0
+    var expectedRest: Double = 0
+    var installmentCollected: Double = 0
+    var installmentDue: Double = 0
+    var processorBalance: Double?
+    var flow: [FinanceFlowRow] = []
+    var expenseRows: [BusinessExpense] = []
+
+    var profitSoFar: Double { cashIn - expenses - payouts }
+    var profitProjected: Double { cashIn + expectedRest - expenses - payouts }
+
+    /// Where the month should land at today's rate, so a goal reads as on or
+    /// off pace rather than just short.
+    var pace: Double {
+        let calendar = Calendar(identifier: .gregorian)
+        let day = calendar.component(.day, from: Date())
+        let total = calendar.range(of: .day, in: .month, for: Date())?.count ?? 30
+        guard day > 0 else { return cashIn }
+        return cashIn / Double(day) * Double(total)
+    }
+}
+
+struct FinanceFlowRow: Identifiable, Sendable {
+    let id: String
+    let date: String
+    let label: String
+    let amount: Double
+    /// true = money in, false = money out.
+    let incoming: Bool
+}
+
+extension PortalAPI {
+    struct FounderSettings: Decodable, Sendable {
+        let id: UUID
+        let processorBalance: Double?
+        let monthlyCashGoal: Double?
+        let basePayDay: Int?
+
+        enum CodingKeys: String, CodingKey {
+            case id, processorBalance = "processor_balance"
+            case monthlyCashGoal = "monthly_cash_goal", basePayDay = "base_pay_day"
+        }
+    }
+
+    func founderSettings() async throws -> FounderSettings? {
+        let rows: [FounderSettings] = try await client().from("founder_settings")
+            .select("id, processor_balance, monthly_cash_goal, base_pay_day")
+            .limit(1)
+            .execute()
+            .value
+        return rows.first
+    }
+
+    func updateProcessorBalance(id: UUID, amount: Double) async throws {
+        try await client().from("founder_settings")
+            .update(["processor_balance": AnyJSON.double(amount),
+                     "processor_balance_updated_at": .string(ISO8601DateFormatter().string(from: Date()))])
+            .eq("id", value: id)
+            .execute()
+    }
+
+    struct NewExpense: Encodable, Sendable {
+        var name: String
+        var amount: Double
+        var recurring: Bool
+        var dueDay: Int?
+        var oneOffDate: String?
+        var category: String?
+
+        enum CodingKeys: String, CodingKey {
+            case name, amount, recurring, dueDay = "due_day"
+            case oneOffDate = "one_off_date", category
+        }
+    }
+
+    func addExpense(_ expense: NewExpense) async throws {
+        try await client().from("business_expenses").insert(expense).execute()
+    }
+
+    func deleteExpense(id: UUID) async throws {
+        try await client().from("business_expenses").delete().eq("id", value: id).execute()
+    }
+
+    /// One month of finance. Cash in is collected cash (deal upfront + paid
+    /// instalments); payouts are the month's two semi-monthly ledgers.
+    func finance() async throws -> FinanceRead {
+        struct PaymentRow: Decodable {
+            let amount: Double
+            let dueDate: String
+            let status: String
+            let paidAt: String?
+            let installments: Parent?
+            struct Parent: Decodable {
+                let studentName: String?
+                enum CodingKeys: String, CodingKey { case studentName = "student_name" }
+            }
+            enum CodingKeys: String, CodingKey {
+                case amount, dueDate = "due_date", status, paidAt = "paid_at", installments
+            }
+        }
+        struct DealRow: Decodable {
+            let studentName: String
+            let cashCollectedUpfront: Double?
+            let dealDate: String
+            enum CodingKeys: String, CodingKey {
+                case studentName = "student_name", cashCollectedUpfront = "cash_collected_upfront"
+                case dealDate = "deal_date"
+            }
+        }
+
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = .current
+        let now = Date()
+        let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: now)) ?? now
+        let lastDay = calendar.range(of: .day, in: .month, for: now)?.count ?? 30
+        let monthEnd = calendar.date(byAdding: .day, value: lastDay - 1, to: monthStart) ?? now
+        let startKey = BunStore.dayKey(monthStart)
+        let endKey = BunStore.dayKey(monthEnd)
+        let today = BunStore.dayKey(now)
+
+        async let paymentsTask: [PaymentRow] = client().from("installment_payments")
+            .select("amount, due_date, status, paid_at, installments!inner(student_name, students!inner(is_demo))")
+            .eq("installments.students.is_demo", value: false)
+            .gte("due_date", value: startKey)
+            .lte("due_date", value: endKey)
+            .execute().value
+        async let dealsTask: [DealRow] = client().from("deals")
+            .select("student_name, cash_collected_upfront, deal_date")
+            .eq("is_demo", value: false)
+            .is("voided_at", value: nil)
+            .gte("deal_date", value: startKey)
+            .lte("deal_date", value: endKey)
+            .execute().value
+        async let expensesTask = businessExpenses()
+        async let settingsTask = founderSettings()
+        // Both halves of the month: profit is after the whole month's payouts.
+        async let firstHalfTask = payoutLedger(offset: PayoutPeriods.period().isSecondHalf ? -1 : 0)
+        async let secondHalfTask = payoutLedger(offset: PayoutPeriods.period().isSecondHalf ? 0 : 1)
+
+        var read = FinanceRead()
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "MMMM yyyy"
+        read.monthLabel = formatter.string(from: now)
+
+        let payments = try await paymentsTask
+        let deals = try await dealsTask
+        let paidPayments = payments.filter { $0.status == "paid" }
+        read.installmentCollected = paidPayments.reduce(0) { $0 + $1.amount }
+        // Waived and refunded money is not owed and never lands.
+        let stillDue = payments.filter { !["paid", "waived", "refunded"].contains($0.status) }
+        read.installmentDue = stillDue.reduce(0) { $0 + $1.amount }
+        read.expectedRest = stillDue.filter { $0.dueDate >= today }.reduce(0) { $0 + $1.amount }
+        read.cashIn = deals.reduce(0) { $0 + ($1.cashCollectedUpfront ?? 0) } + read.installmentCollected
+
+        let expenses = try await expensesTask
+        read.expenseRows = expenses
+        read.expenses = expenses.reduce(0) { total, expense in
+            if expense.recurring { return total + expense.amount }
+            guard let day = expense.oneOffDate, day >= startKey, day <= endKey else { return total }
+            return total + expense.amount
+        }
+
+        let settings = (try? await settingsTask) ?? nil
+        read.goal = settings?.monthlyCashGoal
+        read.processorBalance = settings?.processorBalance
+
+        let halves = [try? await firstHalfTask, try? await secondHalfTask].compactMap { $0 }
+        read.payouts = halves.reduce(0) { total, half in
+            total + half.owed.reduce(0) { $0 + $1.total }
+        }
+
+        // The flow: what still lands, and what still leaves, before month end.
+        var flow: [FinanceFlowRow] = stillDue.filter { $0.dueDate >= today }.map { payment in
+            FinanceFlowRow(id: "in-\(payment.dueDate)-\(payment.amount)-\(payment.installments?.studentName ?? "")",
+                           date: payment.dueDate,
+                           label: payment.installments?.studentName ?? "Instalment",
+                           amount: payment.amount, incoming: true)
+        }
+        for expense in expenses {
+            let day: String?
+            if expense.recurring, let dueDay = expense.dueDay {
+                let clamped = min(max(dueDay, 1), lastDay)
+                day = BunStore.dayKey(calendar.date(byAdding: .day, value: clamped - 1, to: monthStart) ?? monthStart)
+            } else {
+                day = expense.oneOffDate
+            }
+            guard let day, day >= today, day <= endKey else { continue }
+            flow.append(FinanceFlowRow(id: "out-\(expense.id.uuidString)", date: day,
+                                       label: expense.name, amount: expense.amount, incoming: false))
+        }
+        read.flow = flow.sorted { $0.date < $1.date }
+        return read
+    }
+}

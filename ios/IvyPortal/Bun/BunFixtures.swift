@@ -496,6 +496,42 @@ enum BunFixtures {
         )
     }
 
+    /// The demo month's finance: on pace, healthy margin, a handful of
+    /// expenses and the rest of the month still to land.
+    static var finance: FinanceRead {
+        var read = FinanceRead()
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "MMMM yyyy"
+        read.monthLabel = formatter.string(from: Date())
+        read.cashIn = monthMoneyIn
+        read.goal = 60_000
+        read.expenses = 3_180
+        read.payouts = 5_760
+        read.expectedRest = 4_150
+        read.installmentCollected = 3_300
+        read.installmentDue = 4_150
+        read.processorBalance = 12_480
+        read.expenseRows = [
+            BusinessExpense(id: UUID(), name: "Skool community", amount: 99, recurring: true, dueDay: 1, oneOffDate: nil, category: "Software"),
+            BusinessExpense(id: UUID(), name: "Close CRM", amount: 348, recurring: true, dueDay: 4, oneOffDate: nil, category: "Software"),
+            BusinessExpense(id: UUID(), name: "Meta ads", amount: 2_400, recurring: true, dueDay: 15, oneOffDate: nil, category: "Marketing"),
+            BusinessExpense(id: UUID(), name: "Editor · August", amount: 333, recurring: false, dueDay: nil, oneOffDate: dayKeyForward(6), category: "Contractors"),
+        ]
+        read.flow = [
+            FinanceFlowRow(id: "f1", date: dayKeyForward(2), label: "Marcus Reed", amount: 550, incoming: true),
+            FinanceFlowRow(id: "f2", date: dayKeyForward(4), label: "Meta ads", amount: 2_400, incoming: false),
+            FinanceFlowRow(id: "f3", date: dayKeyForward(6), label: "Editor · August", amount: 333, incoming: false),
+            FinanceFlowRow(id: "f4", date: dayKeyForward(8), label: "Nadia Osman", amount: 550, incoming: true),
+            FinanceFlowRow(id: "f5", date: dayKeyForward(12), label: "Tariq Aziz", amount: 700, incoming: true),
+        ]
+        return read
+    }
+
+    private static func dayKeyForward(_ days: Int) -> String {
+        BunStore.dayKey(Calendar.current.date(byAdding: .day, value: days, to: Date()) ?? Date())
+    }
+
     /// Deals behind the Money-in read: a spread of pathways and payment types.
     static var deals: [PayoutDealRow] {
         let rows: [(String, Double, Double, String, Int)] = [
