@@ -33,6 +33,8 @@ enum BunTheme {
     // #353538, and the icons are near-white rather than dimmed grey.
     static let barBg = dyn(light: (0.925, 0.925, 0.937), dark: (0.078, 0.078, 0.086))
     static let barActive = dyn(light: (0.835, 0.835, 0.851), dark: (0.208, 0.208, 0.220))
+    static let barStroke = dyn(light: (0, 0, 0), dark: (1, 1, 1),
+                               lightAlpha: 0.10, darkAlpha: 0.13)
     static let barIcon = dyn(light: (0.145, 0.145, 0.165), dark: (0.867, 0.867, 0.898))
     static let barIconActive = dyn(light: (0.220, 0.290, 0.780), dark: (0.718, 0.800, 0.984))
     /// Balance-chart stroke and fill anchors, read off the reference: a thin

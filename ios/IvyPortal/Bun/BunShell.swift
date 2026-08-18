@@ -7,15 +7,13 @@ import SwiftUI
 enum BunTab: String, CaseIterable {
     case home, money, team, clients, banking
 
-    /// SF Symbol name, or nil where the reference glyph is drawn (see
-    /// BunIcons): the house and the list are traced from Mercury.
+    /// SF Symbol name, or nil where the glyph is drawn (see BunIcons).
+    /// Founder 2026-08-18: Money takes Mercury's transfers arrows, Team takes
+    /// the list, Clients takes the two-person glyph.
     var symbol: String? {
         switch self {
-        case .home: nil
-        case .money: nil
-        case .team: "person.2"
-        case .clients: "person.3"
-        case .banking: "building.columns"
+        case .home, .money, .team, .banking: nil
+        case .clients: "person.2"
         }
     }
     var title: String {
@@ -100,17 +98,36 @@ struct BunShell: View {
         }
         .padding(.vertical, 4)
         .padding(.horizontal, 8)
-        .bunGlassSurface(Capsule(), tint: BunTheme.barBg, interactive: false)
+        // Matte, not glass. Liquid Glass put a specular sheen on the bar and
+        // let page content bleed through it; the reference is a flat, opaque
+        // capsule with a hairline rim (founder: "why is our navbar so shiny").
+        .background {
+            Capsule()
+                .fill(BunTheme.barBg)
+                .overlay(Capsule().strokeBorder(BunTheme.barStroke, lineWidth: 1))
+        }
         .padding(.horizontal, 21)
     }
 
+    /// Every glyph sits in the same box with its ink centred, so the row
+    /// shares one optical centre line.
     @ViewBuilder private func glyph(_ item: BunTab) -> some View {
-        switch item {
-        case .home: BunHouseIcon(size: 21)
-        case .money: BunListIcon(size: 19)
-        default:
-            Image(systemName: item.symbol ?? "circle")
-                .font(.system(size: 20, weight: .regular))
+        // Sizes tuned so each glyph's INK height matches the reference
+        // (house 57px, transfers 55, list 47, bank 57 at @3x), not so their
+        // boxes match — box-matching is what left them different sizes.
+        Group {
+            switch item {
+            case .home: BunHouseIcon(size: 20.8)
+            case .money: BunTransferIcon(size: 18.3)
+            case .team: BunListIcon(size: 18.2)
+            case .banking: BunBankIcon(size: 19.6)
+            case .clients:
+                // SF's person.2 sits ~0.5pt proud of the drawn glyphs.
+                Image(systemName: item.symbol ?? "circle")
+                    .font(.system(size: 18, weight: .regular))
+                    .offset(y: 0.5)
+            }
         }
+        .frame(width: 26, height: 26)
     }
 }
