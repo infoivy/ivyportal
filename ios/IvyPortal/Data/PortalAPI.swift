@@ -3151,3 +3151,123 @@ extension PortalAPI {
         return read
     }
 }
+
+// MARK: - Card ledgers (web /cards, founder + co-founder)
+
+/// One person's card: everything loaded, everything spent, and the entries
+/// grouped by month with what carried in and what carries out — the web's
+/// ledger, which is how the founder reads whose money is still sitting there.
+struct CardLedger: Identifiable, Sendable {
+    let id: UUID
+    let name: String
+    var loaded: Double = 0
+    var spent: Double = 0
+    var entries: [PortalAPI.WalletEntry] = []
+    var balance: Double { loaded - spent }
+
+    /// Newest month first; each month knows what it opened and closed with.
+    var months: [CardMonth] {
+        let calendar = Calendar(identifier: .gregorian)
+        let grouped = Dictionary(grouping: entries) { entry -> String in
+            String(entry.entryDate.prefix(7))
+        }
+        let keys = grouped.keys.sorted()
+        var running = 0.0
+        var out: [CardMonth] = []
+        for key in keys {
+            let rows = (grouped[key] ?? []).sorted { $0.entryDate > $1.entryDate }
+            let loaded = rows.filter { $0.kind == "credit" }.reduce(0) { $0 + $1.amount }
+            let spent = rows.filter { $0.kind == "spend" }.reduce(0) { $0 + $1.amount }
+            let carriedIn = running
+            running += loaded - spent
+            let formatter = DateFormatter()
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            formatter.dateFormat = "yyyy-MM"
+            let label: String
+            if let date = formatter.date(from: key) {
+                formatter.dateFormat = calendar.component(.year, from: date) == calendar.component(.year, from: Date())
+                    ? "MMMM" : "MMMM yyyy"
+                label = formatter.string(from: date)
+            } else {
+                label = key
+            }
+            out.append(CardMonth(id: key, label: label, loaded: loaded, spent: spent,
+                                 carriedIn: carriedIn, carriedOut: running, entries: rows))
+        }
+        return out.reversed()
+    }
+}
+
+struct CardMonth: Identifiable, Sendable {
+    let id: String
+    let label: String
+    let loaded: Double
+    let spent: Double
+    let carriedIn: Double
+    let carriedOut: Double
+    let entries: [PortalAPI.WalletEntry]
+}
+
+extension PortalAPI {
+    /// Every card the reader is allowed to see. RLS decides that: leadership
+    /// gets the team's, everyone else gets their own, and the caller does not
+    /// have to know which happened.
+    func cardLedgers() async throws -> [CardLedger] {
+        struct Row: Decodable {
+            let id: UUID
+            let userId: UUID
+            let entryDate: String
+            let kind: String
+            let amount: Double
+            let note: String
+
+            enum CodingKeys: String, CodingKey {
+                case id, userId = "user_id", entryDate = "entry_date", kind, amount, note
+            }
+        }
+        let rows: [Row] = try await client().from("wallet_entries")
+            .select("id, user_id, entry_date, kind, amount, note")
+            .order("entry_date", ascending: false)
+            .order("created_at", ascending: false)
+            .limit(600)
+            .execute().value
+        guard !rows.isEmpty else { return [] }
+        let people = try await profiles(ids: Array(Set(rows.map(\.userId))))
+        let nameById = Dictionary(uniqueKeysWithValues: people.map { ($0.id, $0.displayName ?? "Team member") })
+
+        return Dictionary(grouping: rows, by: \.userId).map { userId, entries in
+            var ledger = CardLedger(id: userId, name: nameById[userId] ?? "Team member")
+            ledger.loaded = entries.filter { $0.kind == "credit" }.reduce(0) { $0 + $1.amount }
+            ledger.spent = entries.filter { $0.kind == "spend" }.reduce(0) { $0 + $1.amount }
+            ledger.entries = entries.map {
+                WalletEntry(id: $0.id, entryDate: $0.entryDate, kind: $0.kind, amount: $0.amount, note: $0.note)
+            }
+            return ledger
+        }
+        .sorted { $0.balance > $1.balance }
+    }
+
+    /// A correction, not an edit: the ledger is append-only, so setting a
+    /// balance writes the difference as its own entry (web semantics).
+    func setCardBalance(userId: UUID, to target: Double, current: Double) async throws {
+        let delta = target - current
+        guard abs(delta) > 0.004 else { return }
+        struct Entry: Encodable {
+            let userId: UUID
+            let entryDate: String
+            let kind: String
+            let amount: Double
+            let note: String
+            enum CodingKeys: String, CodingKey {
+                case userId = "user_id", entryDate = "entry_date", kind, amount, note
+            }
+        }
+        try await client().from("wallet_entries").insert(Entry(
+            userId: userId,
+            entryDate: BunStore.dayKey(Date()),
+            kind: delta > 0 ? "credit" : "spend",
+            amount: abs(delta),
+            note: "Balance correction · set to \(ivyMoney(target))"
+        )).execute()
+    }
+}

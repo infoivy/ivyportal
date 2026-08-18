@@ -496,6 +496,80 @@ enum BunFixtures {
         )
     }
 
+    /// A couple of weeks of weekly self-reports for the client record.
+    static var weeklyEODs: [PortalAPI.WeeklyEOD] {
+        (0..<3).map { back in
+            let start = Calendar.current.date(byAdding: .day, value: -7 * back - 7, to: Date()) ?? Date()
+            return PortalAPI.WeeklyEOD(
+                id: UUID(), weekStart: BunStore.dayKey(start),
+                groupCallsAttended: 4 - back, oneOnOneCalls: back == 0 ? 1 : 0,
+                implementation: back == 0 ? "Rewrote the offer and sent it to eleven businesses."
+                                          : "Kept the daily loom habit going.",
+                biggestWin: back == 0 ? "First reply from a real prospect." : nil,
+                biggestBlocker: back == 1 ? "Lost two days to work travel." : nil,
+                nextWeekCommitment: "Five applications a day, no misses.")
+        }
+    }
+
+    static func csmNotes(for studentId: UUID) -> [CSMNote] {
+        let notes = [
+            "Called, walked through the loom feedback line by line.",
+            "Quiet for a few days. Agreed on a check-in every Tuesday.",
+            "Confidence is up after the first reply came in.",
+        ]
+        return notes.enumerated().map { index, note in
+            let date = Calendar.current.date(byAdding: .day, value: -3 * (index + 1), to: Date()) ?? Date()
+            return CSMNote(id: UUID(), studentId: studentId, note: note,
+                           createdAt: BunStore.dayKey(date) + "T10:00:00Z")
+        }
+    }
+
+    static var placements: [PortalAPI.Placement] {
+        [
+            PortalAPI.Placement(id: UUID(), businessName: "Northline Fitness", stage: "interviewing",
+                                interviewAt: BunStore.dayKey(Calendar.current.date(byAdding: .day, value: 3, to: Date()) ?? Date()) + "T15:00:00Z"),
+            PortalAPI.Placement(id: UUID(), businessName: "Calder Coaching", stage: "lead", interviewAt: nil),
+        ]
+    }
+
+    /// Three demo cards: the operator's own, plus two the business loads.
+    static var cardLedgers: [CardLedger] {
+        func entries(_ rows: [(Int, String, Double, String)]) -> [PortalAPI.WalletEntry] {
+            rows.map { back, kind, amount, note in
+                let date = Calendar.current.date(byAdding: .day, value: -back, to: Date()) ?? Date()
+                return PortalAPI.WalletEntry(id: UUID(), entryDate: BunStore.dayKey(date),
+                                             kind: kind, amount: amount, note: note)
+            }
+        }
+        let people: [(UUID, String, [(Int, String, Double, String)])] = [
+            (meId, userFullName, [
+                (2, "spend", 248.60, "Meta ads"),
+                (9, "spend", 96.00, "Zapier"),
+                (16, "credit", 2_000.00, "Monthly load"),
+                (38, "spend", 640.00, "Contractor"),
+                (44, "credit", 1_500.00, "Monthly load"),
+            ]),
+            (staffIds[2], "Ray Ortega", [
+                (4, "spend", 120.00, "Travel"),
+                (18, "credit", 1_000.00, "Monthly load"),
+                (46, "credit", 1_000.00, "Monthly load"),
+                (49, "spend", 980.00, "Equipment"),
+            ]),
+            (staffIds[3], "Mia Chen", [
+                (6, "spend", 64.00, "Software"),
+                (20, "credit", 600.00, "Monthly load"),
+            ]),
+        ]
+        return people.map { id, name, rows in
+            var ledger = CardLedger(id: id, name: name)
+            ledger.entries = entries(rows)
+            ledger.loaded = ledger.entries.filter { $0.kind == "credit" }.reduce(0) { $0 + $1.amount }
+            ledger.spent = ledger.entries.filter { $0.kind == "spend" }.reduce(0) { $0 + $1.amount }
+            return ledger
+        }
+        .sorted { $0.balance > $1.balance }
+    }
+
     /// The demo month's finance: on pace, healthy margin, a handful of
     /// expenses and the rest of the month still to land.
     static var finance: FinanceRead {

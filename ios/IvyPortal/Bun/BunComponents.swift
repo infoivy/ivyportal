@@ -177,7 +177,10 @@ struct BunSegment: View {
         HStack(spacing: 0) {
             ForEach(options.indices, id: \.self) { index in
                 Button { withAnimation(.snappy(duration: 0.2)) { selection = index } } label: {
-                    Text(options[index]).font(bunFont(18))
+                    // Five options do not fit at full size on a phone; scale
+                    // rather than wrap (a wrapped tab label reads as broken).
+                    Text(options[index]).font(bunFont(options.count > 3 ? 17 : 18))
+                        .lineLimit(1).minimumScaleFactor(0.72)
                         .foregroundStyle(selection == index ? BunTheme.ink : BunTheme.secondary)
                         .frame(maxWidth: .infinity, minHeight: 46)
                         .background(selection == index ? BunTheme.fieldBright : .clear, in: Capsule())

@@ -226,6 +226,150 @@ final class BunStore {
         await loadPayouts()
     }
 
+    // The client record (web /students/$id)
+    var studentEODsBy: [UUID: [StudentEOD]] = [:]
+    var weeklyEODsBy: [UUID: [PortalAPI.WeeklyEOD]] = [:]
+    var notesBy: [UUID: [CSMNote]] = [:]
+    var placementsBy: [UUID: [PortalAPI.Placement]] = [:]
+    var coachList: [StaffProfile]?
+    /// Local phase/coach patches so a change shows before the roster reloads.
+    var phasePatch: [UUID: String] = [:]
+    var coachPatch: [UUID: UUID?] = [:]
+
+    func phase(of student: StudentRosterItem) -> String {
+        phasePatch[student.id] ?? (student.phase == "coaching_1on1" ? "training" : (student.phase ?? "onboarding"))
+    }
+
+    func coachId(of student: StudentRosterItem) -> UUID? {
+        coachPatch[student.id] ?? student.coachId
+    }
+
+    func loadClientRecord(_ id: UUID) async {
+        guard signedIn else {
+            seedFixturesIfNeeded()
+            if studentEODsBy[id] == nil { studentEODsBy[id] = (studentEODs ?? []).filter { $0.studentId == id } }
+            if weeklyEODsBy[id] == nil { weeklyEODsBy[id] = BunFixtures.weeklyEODs }
+            if notesBy[id] == nil { notesBy[id] = BunFixtures.csmNotes(for: id) }
+            if placementsBy[id] == nil { placementsBy[id] = BunFixtures.placements }
+            if coachList == nil { coachList = BunFixtures.teamMembers }
+            return
+        }
+        if coachList == nil { coachList = try? await PortalAPI.shared.coaches() }
+        if studentEODsBy[id] == nil {
+            studentEODsBy[id] = (try? await PortalAPI.shared.studentEODs(studentId: id)) ?? []
+        }
+        if weeklyEODsBy[id] == nil {
+            weeklyEODsBy[id] = (try? await PortalAPI.shared.weeklyEODs(studentId: id)) ?? []
+        }
+        if notesBy[id] == nil {
+            notesBy[id] = (try? await PortalAPI.shared.csmNotes(studentId: id)) ?? []
+        }
+        if placementsBy[id] == nil {
+            placementsBy[id] = (try? await PortalAPI.shared.placements(studentId: id)) ?? []
+        }
+    }
+
+    func setPhase(_ student: StudentRosterItem, to phase: String) async throws {
+        phasePatch[student.id] = phase
+        guard signedIn else { return }
+        do {
+            try await PortalAPI.shared.updateStudentPhase(id: student.id, phase: phase)
+            roster = nil
+            await loadClients()
+        } catch {
+            phasePatch[student.id] = nil
+            throw error
+        }
+    }
+
+    func setCoach(_ student: StudentRosterItem, to coachId: UUID?) async throws {
+        coachPatch[student.id] = coachId
+        guard signedIn else { return }
+        do {
+            try await PortalAPI.shared.assignCoach(studentId: student.id, coachId: coachId)
+            roster = nil
+            await loadClients()
+        } catch {
+            coachPatch[student.id] = nil
+            throw error
+        }
+    }
+
+    func addNote(_ student: StudentRosterItem, note: String) async throws {
+        let trimmed = note.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        guard signedIn else {
+            let row = CSMNote(id: UUID(), studentId: student.id, note: trimmed,
+                              createdAt: ISO8601DateFormatter().string(from: Date()))
+            notesBy[student.id, default: []].insert(row, at: 0)
+            return
+        }
+        try await PortalAPI.shared.addCSMNote(studentId: student.id, note: trimmed)
+        notesBy[student.id] = nil
+        await loadClientRecord(student.id)
+    }
+
+    // Card ledgers (web /cards)
+    var cardLedgers: [CardLedger]?
+
+    func loadCards() async {
+        guard signedIn else {
+            seedFixturesIfNeeded()
+            if cardLedgers == nil { cardLedgers = BunFixtures.cardLedgers }
+            return
+        }
+        guard cardLedgers == nil else { return }
+        cardLedgers = (try? await PortalAPI.shared.cardLedgers()) ?? []
+    }
+
+    /// Load, spend, or correct. A correction is written as its own entry, so
+    /// the ledger stays a history rather than becoming an edit log.
+    func cardEntry(ledgerId: UUID, kind: String, amount: Double, note: String) async throws {
+        guard signedIn else {
+            guard var ledger = cardLedgers?.first(where: { $0.id == ledgerId }) else { return }
+            let resolved: (kind: String, amount: Double, note: String)
+            switch kind {
+            case "set":
+                let delta = amount - ledger.balance
+                guard abs(delta) > 0.004 else { return }
+                resolved = (delta > 0 ? "credit" : "spend", abs(delta),
+                            "Balance correction · set to \(ivyMoney(amount))")
+            default:
+                resolved = (kind, amount, note)
+            }
+            let entry = PortalAPI.WalletEntry(id: UUID(), entryDate: Self.dayKey(Date()),
+                                              kind: resolved.kind, amount: resolved.amount, note: resolved.note)
+            ledger.entries.insert(entry, at: 0)
+            if resolved.kind == "credit" { ledger.loaded += resolved.amount } else { ledger.spent += resolved.amount }
+            cardLedgers = (cardLedgers ?? []).map { $0.id == ledgerId ? ledger : $0 }
+            if ledgerId == meId { wallet = PortalAPI.WalletSummary(loaded: ledger.loaded, spent: ledger.spent, recent: Array(ledger.entries.prefix(6))) }
+            return
+        }
+        if kind == "set" {
+            let current = cardLedgers?.first { $0.id == ledgerId }?.balance ?? 0
+            try await PortalAPI.shared.setCardBalance(userId: ledgerId, to: amount, current: current)
+        } else if ledgerId == meId {
+            try await PortalAPI.shared.addWalletEntry(kind: kind, amount: amount, note: note)
+        } else {
+            // Another person's card: same append-only write, their user id.
+            try await PortalAPI.shared.setCardBalance(
+                userId: ledgerId,
+                to: (cardLedgers?.first { $0.id == ledgerId }?.balance ?? 0) + (kind == "credit" ? amount : -amount),
+                current: cardLedgers?.first { $0.id == ledgerId }?.balance ?? 0)
+        }
+        cardLedgers = nil
+        studentEODsBy = [:]
+        weeklyEODsBy = [:]
+        notesBy = [:]
+        placementsBy = [:]
+        coachList = nil
+        phasePatch = [:]
+        coachPatch = [:]
+        wallet = nil
+        await loadCards()
+        wallet = try? await PortalAPI.shared.myWallet()
+    }
+
     // Finance (founder + co-founder only, RLS is the wall)
     var finance: FinanceRead?
     var financeError: String?
@@ -242,6 +386,7 @@ final class BunStore {
         guard signedIn else {
             seedFixturesIfNeeded()
             if finance == nil { finance = BunFixtures.finance }
+        if cardLedgers == nil { cardLedgers = BunFixtures.cardLedgers }
             return
         }
         guard canSeeFinance, finance == nil else { return }
@@ -1036,6 +1181,7 @@ final class BunStore {
         payoutOffset = 0
         finance = nil
         financeError = nil
+        cardLedgers = nil
         sales = nil
         studentEODs = nil
         scheduledCalls = nil

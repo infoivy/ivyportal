@@ -73,7 +73,11 @@ struct BunBanking: View {
             accountsSection
             edgeHairline
             cardsSection
-            walletBlock
+            edgeHairline
+            // Per-person ledgers replaced the single wallet meter (founder
+            // 2026-08-18): the business reads whose money is still sitting
+            // on which card, not one aggregate number.
+            BunCardLedgersSection()
         }
     }
 

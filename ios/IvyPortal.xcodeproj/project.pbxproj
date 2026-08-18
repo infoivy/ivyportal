@@ -32,6 +32,7 @@
 		55D06F2F042CB2DCB6BED741 /* StudentHealthTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 489B417A9AFA4A0D3E538318 /* StudentHealthTests.swift */; };
 		5663021EED0C0A46A7DDF5CD /* BunShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFA3B0E7E49DC4A60E64C024 /* BunShell.swift */; };
 		5BF9D676D95F28D503E3DDAE /* Apercu Pro Mono.otf in Resources */ = {isa = PBXBuildFile; fileRef = CF338E3D5B2C449A216FDAB1 /* Apercu Pro Mono.otf */; };
+		5C95D428766135D64E898F87 /* BunCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E0D004EB78CEC743DA4B30E /* BunCards.swift */; };
 		6193F96F7E1C37D4B9AD5080 /* BunFlows.swift in Sources */ = {isa = PBXBuildFile; fileRef = D419C7626EBE60B038AEFF4B /* BunFlows.swift */; };
 		62774EEB02BFB8525D882A7D /* Typography.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F88500C81536C1930C96266 /* Typography.swift */; };
 		73F79BE350AC53836331381A /* PortalConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7D5D8C7EB8E956CCC461583 /* PortalConfig.swift */; };
@@ -109,6 +110,7 @@
 		4753324F70B70BCD58BEF918 /* policy-eod-hygiene.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "policy-eod-hygiene.md"; sourceTree = "<group>"; };
 		489B417A9AFA4A0D3E538318 /* StudentHealthTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudentHealthTests.swift; sourceTree = "<group>"; };
 		4DE1091E6711F7BE8002BBC9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		4E0D004EB78CEC743DA4B30E /* BunCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BunCards.swift; sourceTree = "<group>"; };
 		4E2D4CCB0A7230AD9B9C0FF8 /* WorkFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkFixtures.swift; sourceTree = "<group>"; };
 		4E950E18A48EAAA3CC4749EA /* Apercu Pro Medium.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Apercu Pro Medium.otf"; sourceTree = "<group>"; };
 		52CBBE9140859B30E11369EF /* BunOrgProbeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BunOrgProbeTests.swift; sourceTree = "<group>"; };
@@ -205,6 +207,7 @@
 				60C54485ED7207D8DA4D0EB7 /* BunActions.swift */,
 				7071081907CE6680BBC714C8 /* BunBanking.swift */,
 				775FD769787E7D149EF81812 /* BunCallLog.swift */,
+				4E0D004EB78CEC743DA4B30E /* BunCards.swift */,
 				E26B181DB55FF6F2927121E9 /* BunClients.swift */,
 				3A0296FBF3AD1C5F202F3BA6 /* BunComponents.swift */,
 				1E752A72B4A1BB295055678F /* BunData.swift */,
@@ -531,6 +534,7 @@
 				B02157FCD3E396D7BFDBADC1 /* BunActions.swift in Sources */,
 				F04F8F8CA9DF3F0B0A4EE294 /* BunBanking.swift in Sources */,
 				162135FE67E49B4D0D199AF3 /* BunCallLog.swift in Sources */,
+				5C95D428766135D64E898F87 /* BunCards.swift in Sources */,
 				07FC20939BBBF3A4C3B1091D /* BunClients.swift in Sources */,
 				3968DA0A1A83C6BAAEC25BA7 /* BunComponents.swift in Sources */,
 				37D303ED5FCFD30C46A293E7 /* BunData.swift in Sources */,
