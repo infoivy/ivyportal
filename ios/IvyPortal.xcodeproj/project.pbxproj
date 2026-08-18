@@ -76,6 +76,7 @@
 		FBDAF4D22974EBF0CE5C697F /* BunTeam.swift in Sources */ = {isa = PBXBuildFile; fileRef = 784A154A1E528170728B6268 /* BunTeam.swift */; };
 		FBE25B635AA8A68B5649DF22 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 0F30FD8C244FACB04A58F699 /* README.md */; };
 		FC36D8521EA779B953EFCA50 /* HomeAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 310F5EDFDA87D1BF05177AC0 /* HomeAction.swift */; };
+		FCA3A36A3E06BBB192EC9ABC /* BunAlerts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10E7EB573216F6CB0157B064 /* BunAlerts.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -101,6 +102,7 @@
 		0A3FC2C67C4BDA25B4ABCC2C /* PortalAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortalAPI.swift; sourceTree = "<group>"; };
 		0EA039451EA47DFD0470E606 /* BunMoneyActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BunMoneyActions.swift; sourceTree = "<group>"; };
 		0F30FD8C244FACB04A58F699 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		10E7EB573216F6CB0157B064 /* BunAlerts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BunAlerts.swift; sourceTree = "<group>"; };
 		1E752A72B4A1BB295055678F /* BunData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BunData.swift; sourceTree = "<group>"; };
 		2544936513249023A7CA4B1F /* BunMoneyDepth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BunMoneyDepth.swift; sourceTree = "<group>"; };
 		2DD51BEE6A265B624CAE96B0 /* LoadState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadState.swift; sourceTree = "<group>"; };
@@ -211,6 +213,7 @@
 			isa = PBXGroup;
 			children = (
 				60C54485ED7207D8DA4D0EB7 /* BunActions.swift */,
+				10E7EB573216F6CB0157B064 /* BunAlerts.swift */,
 				7071081907CE6680BBC714C8 /* BunBanking.swift */,
 				AE57AF16A51CA2E0972BD54F /* BunCalendar.swift */,
 				775FD769787E7D149EF81812 /* BunCallLog.swift */,
@@ -541,6 +544,7 @@
 				A9B9BC6CFD53E3166A0BB1C8 /* AuthStore.swift in Sources */,
 				74768A9B479074E2A7E9E309 /* AuthView.swift in Sources */,
 				B02157FCD3E396D7BFDBADC1 /* BunActions.swift in Sources */,
+				FCA3A36A3E06BBB192EC9ABC /* BunAlerts.swift in Sources */,
 				F04F8F8CA9DF3F0B0A4EE294 /* BunBanking.swift in Sources */,
 				DED7B36B11995DD4C6E37850 /* BunCSM.swift in Sources */,
 				81517A8D3F478F3D60238DCF /* BunCalendar.swift in Sources */,

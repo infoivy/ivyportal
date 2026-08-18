@@ -67,6 +67,8 @@ struct BunClientSheet: View {
     @State private var showLogCall = false
     @State private var tab = 0
     @State private var newNote = ""
+    @State private var confirmArchive = false
+    @State private var actionError: String?
     let student: StudentRosterItem
 
     private var offerWon: Bool {
@@ -118,7 +120,10 @@ struct BunClientSheet: View {
                 .presentationBackground(BunTheme.ground)
                 .presentationCornerRadius(40)
         }
-        .task { await store.loadClientRecord(student.id) }
+        .task {
+            await store.loadClientRecord(student.id)
+            await store.loadActionItems()
+        }
     }
 
     // MARK: Header
@@ -174,8 +179,10 @@ struct BunClientSheet: View {
             controls
             if total > 0 || paid > 0 { paidBlock }
             if offerWon { testimonialRow }
+            itemsBlock
             if !placements.isEmpty { placementsBlock }
             graduationBlock
+            archiveRow
             if let reasons = health?.reasons, !reasons.isEmpty, health?.band != .red {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Signals").font(BunType.section).foregroundStyle(BunTheme.ink)
@@ -311,6 +318,58 @@ struct BunClientSheet: View {
                 Text(requestError).font(bunFont(15)).foregroundStyle(BunTheme.pink)
             }
         }
+    }
+
+    /// What this client owes, from the same queue the Work tab shows.
+    @ViewBuilder private var itemsBlock: some View {
+        let mine = store.tasks.filter { $0.isClient && $0.subject == student.fullName && !$0.done }
+        if !mine.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Open items").font(BunType.section).foregroundStyle(BunTheme.ink)
+                VStack(spacing: 0) {
+                    ForEach(mine) { task in
+                        BunTaskRow(task: task, lines: 2) {
+                            Task { try? await store.setTaskDone(task, done: true) }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// Archiving, not deleting: they leave every roster and picker, and the
+    /// money and reporting history stays exactly where it is.
+    private var archiveRow: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if let actionError {
+                Text(actionError).font(bunFont(15)).foregroundStyle(BunTheme.pink)
+            }
+            if confirmArchive {
+                Text("Archive \(student.fullName)? They leave every roster and picker. Their money and reports stay.")
+                    .font(BunType.caption).foregroundStyle(BunTheme.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 10) {
+                    BunPillChip(symbol: "archivebox", label: "Yes, archive", tint: BunTheme.pink) {
+                        Task {
+                            do {
+                                try await store.archive(student)
+                                actionError = nil
+                                dismiss()
+                            } catch {
+                                actionError = "Could not archive: \(error.localizedDescription)"
+                                confirmArchive = false
+                            }
+                        }
+                    }
+                    BunPillChip(label: "Keep them") { confirmArchive = false }
+                }
+            } else {
+                BunPillChip(symbol: "archivebox", label: "Archive client", tint: BunTheme.secondary) {
+                    confirmArchive = true
+                }
+            }
+        }
+        .padding(.top, 6)
     }
 
     private var placementsBlock: some View {

@@ -94,6 +94,8 @@ struct BunShell: View {
         case "knowledge": BunKnowledgeSheet()
         case "testimonials": BunTestimonialsSheet()
         case "calendar": BunCalendarSheet()
+        case "alerts": BunAlertsSheet()
+        case "links": BunPaymentLinksSheet()
         case "client", "logCall":
             if let student = store.prioritizedRoster.first(where: \.isOneOnOne) {
                 if kind == "client" { BunClientSheet(student: student) }

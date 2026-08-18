@@ -12,6 +12,7 @@ struct BunHome: View {
     @State private var showOrgSwitcher = false
     @State private var scrub: Int?
     @State private var showUnclaimed = false
+    @State private var showAlerts = false
 
     // MARK: Live-or-fixture values (signed-in reads real portal money)
 
@@ -141,6 +142,7 @@ struct BunHome: View {
             await store.loadClients()
             await store.loadOps()
             await store.loadPictures()
+            await store.loadAlerts()
         }
         .refreshable {
             store.cashSeries = nil
@@ -177,6 +179,11 @@ struct BunHome: View {
                 .presentationBackground(BunTheme.ground)
                 .presentationCornerRadius(40)
         }
+        .sheet(isPresented: $showAlerts) {
+            BunAlertsSheet()
+                .presentationBackground(BunTheme.ground)
+                .presentationCornerRadius(40)
+        }
         .sheet(isPresented: $showUnclaimed) {
             BunCalendarSheet()
                 .presentationBackground(BunTheme.ground)
@@ -210,6 +217,23 @@ struct BunHome: View {
             .accessibilityLabel("Workspace")
 
             Spacer()
+
+            Button { showAlerts = true } label: {
+                ZStack(alignment: .topTrailing) {
+                    Image(systemName: "bell")
+                        .font(.system(size: 19, weight: .regular))
+                        .foregroundStyle(BunTheme.ink)
+                        .frame(width: 44, height: 44)
+                    if let alerts = store.alerts, alerts.count > 0 {
+                        Circle()
+                            .fill(alerts.badgeIsUrgent ? BunTheme.pink : Color(red: 0.95, green: 0.72, blue: 0.35))
+                            .frame(width: 9, height: 9)
+                            .offset(x: -8, y: 8)
+                    }
+                }
+            }
+            .buttonStyle(BunPressStyle())
+            .accessibilityLabel("Alerts")
 
             Button { showSettings = true } label: {
                 BunAvatar(

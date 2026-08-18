@@ -14,6 +14,10 @@ struct BunPaymentListSheet: View {
     /// Rows showing the confirmed state before they animate out — same
     /// acknowledgement the Money page's "Came in" gives.
     @State private var settled: Set<String> = []
+    /// The instalment a correction is being written for.
+    @State private var correcting: BunStore.BunPlanItem?
+    @State private var correctionKind = "waive"
+    @State private var reason = ""
     let kind: Kind
 
     /// Shared action pill: flips to a green check on success, then the row
@@ -51,6 +55,49 @@ struct BunPaymentListSheet: View {
         }
     }
 
+    private func openCorrection(_ item: BunStore.BunPlanItem, kind: String) {
+        correctionKind = kind
+        reason = ""
+        correcting = item
+    }
+
+    /// Every correction takes a reason: the row stays in the ledger, so the
+    /// note is the only thing that explains it later.
+    private func correctionSheet(_ item: BunStore.BunPlanItem) -> some View {
+        VStack(alignment: .leading, spacing: 20) {
+            HStack {
+                BunTitle(text: correctionKind == "waive" ? "No longer owed" : "Refunded")
+                Spacer()
+                BunChipButton(symbol: "xmark") { correcting = nil }
+            }
+            Text(correctionKind == "waive"
+                 ? "\(item.student) will not be asked for this \(ivyMoney(item.amount)) again. It stays on the record, marked waived."
+                 : "\(ivyMoney(item.amount)) went back to \(item.student). The payment stays on the record, marked refunded.")
+                .font(BunType.caption).foregroundStyle(BunTheme.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            BunField(label: "Why", placeholder: "The reason, for whoever reads this later", text: $reason)
+            BunCTA(label: correctionKind == "waive" ? "Mark waived" : "Mark refunded",
+                   enabled: !reason.trimmingCharacters(in: .whitespaces).isEmpty, filled: true) {
+                let note = reason
+                let target = item
+                let action = correctionKind
+                correcting = nil
+                Task {
+                    do {
+                        if action == "waive" { try await store.waive(target, reason: note) }
+                        else { try await store.refund(target, reason: note) }
+                        writeError = nil
+                    } catch {
+                        writeError = "Could not save that correction: \(error.localizedDescription)"
+                    }
+                }
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 22)
+        .padding(.top, 18)
+    }
+
     private func confirm(_ item: BunStore.BunPayoutItem) {
         guard !settled.contains(item.id) else { return }
         settled.insert(item.id)
@@ -79,6 +126,10 @@ struct BunPaymentListSheet: View {
                     BunChipButton(symbol: "xmark") { dismiss() }
                 }
                 BunTitle(text: title)
+                if kind != .approvals {
+                    Text("Hold a row to waive or refund it.")
+                        .font(BunType.caption).foregroundStyle(BunTheme.tertiary)
+                }
                 if kind == .approvals, let label = store.payoutPeriodLabel {
                     Text(label).font(BunType.label).foregroundStyle(BunTheme.secondary)
                 }
@@ -92,6 +143,12 @@ struct BunPaymentListSheet: View {
             .padding(.bottom, 60)
         }
         .scrollIndicators(.hidden)
+        .sheet(item: $correcting) { item in
+            correctionSheet(item)
+                .presentationBackground(BunTheme.ground)
+                .presentationCornerRadius(40)
+                .presentationDetents([.height(420)])
+        }
     }
 
     @ViewBuilder private var content: some View {
@@ -135,6 +192,13 @@ struct BunPaymentListSheet: View {
                         }
                         .frame(minHeight: 68)
                         .animation(.spring(response: 0.32, dampingFraction: 0.72), value: done)
+                        // Corrections hide behind a hold: waiving or refunding
+                        // money is not something to fat-finger next to "Came
+                        // in", and both keep the row rather than deleting it.
+                        .contextMenu {
+                            Button("No longer owed") { openCorrection(item, kind: "waive") }
+                            Button("Refunded", role: .destructive) { openCorrection(item, kind: "refund") }
+                        }
                     }
                 }
             }

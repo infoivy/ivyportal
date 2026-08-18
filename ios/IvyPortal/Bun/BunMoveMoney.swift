@@ -12,6 +12,7 @@ struct BunMoneyPage: View {
     @State private var showMoneyIn = false
     @State private var showPlans = false
     @State private var showPayouts = false
+    @State private var showLinks = false
     /// Founder 2026-08-18: accounts and cards are their own tab inside Money.
     /// `-bunMoneySection accounts|finance` opens straight there for screenshots.
     @State private var section: Int = {
@@ -77,6 +78,11 @@ struct BunMoneyPage: View {
                 .presentationBackground(BunTheme.ground)
                 .presentationCornerRadius(40)
         }
+        .sheet(isPresented: $showLinks) {
+            BunPaymentLinksSheet()
+                .presentationBackground(BunTheme.ground)
+                .presentationCornerRadius(40)
+        }
         .sheet(isPresented: $showPayouts) {
             BunPayoutLedgerSheet()
                 .presentationBackground(BunTheme.ground)
@@ -101,6 +107,7 @@ struct BunMoneyPage: View {
         .task {
             await store.loadMove()
             await store.loadMoneyDepth()
+            await store.loadPaymentLinks()
         }
         .refreshable {
             store.overduePayments = nil
@@ -227,6 +234,11 @@ struct BunMoneyPage: View {
         return "\(count) close\(count == 1 ? "" : "s") in 30 days"
     }
 
+    private var linksSubtitle: String {
+        guard let links = store.paymentLinks else { return "…" }
+        return links.isEmpty ? "none set up yet" : "\(links.count) ready to send"
+    }
+
     private var plansSubtitle: String {
         guard let plans = store.plans else { return "…" }
         return "\(plans.count) plan\(plans.count == 1 ? "" : "s") running"
@@ -249,6 +261,8 @@ struct BunMoneyPage: View {
                 BunIconRow(symbol: "arrow.down.left", title: "Money in", subtitle: dealsSubtitle) { showMoneyIn = true }
                     .frame(minHeight: 60)
                 BunIconRow(symbol: "chart.bar.doc.horizontal", title: "Payment plans", subtitle: plansSubtitle) { showPlans = true }
+                    .frame(minHeight: 60)
+                BunIconRow(symbol: "link", title: "Payment links", subtitle: linksSubtitle) { showLinks = true }
                     .frame(minHeight: 60)
             }
         }

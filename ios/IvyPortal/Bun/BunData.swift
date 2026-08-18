@@ -226,6 +226,101 @@ final class BunStore {
         await loadPayouts()
     }
 
+    // My own profile (the setter type and timezone are load-bearing)
+    var displayName: String?
+    var phone: String?
+    var timezone: String?
+
+    /// A short list beats a 400-row picker on a phone: the zones this team
+    /// actually works in, plus wherever the device is.
+    var timezoneChoices: [String] {
+        var zones = ["Asia/Riyadh", "Asia/Dubai", "Europe/London", "Europe/Amsterdam",
+                     "America/New_York", "America/Chicago", "America/Los_Angeles",
+                     "Asia/Karachi", "Asia/Kolkata", "Australia/Sydney"]
+        let current = TimeZone.current.identifier
+        if !zones.contains(current) { zones.insert(current, at: 0) }
+        if let mine = timezone, !zones.contains(mine) { zones.insert(mine, at: 0) }
+        return zones
+    }
+
+    func loadProfile() async {
+        guard signedIn else {
+            seedFixturesIfNeeded()
+            if displayName == nil { displayName = BunFixtures.userFullName }
+            if phone == nil { phone = "+966 55 000 0000" }
+            if timezone == nil { timezone = TimeZone.current.identifier }
+            if setterType == nil { setterType = "dm" }
+            return
+        }
+        if let profile = try? await PortalAPI.shared.myProfile() {
+            displayName = profile.displayName
+            phone = profile.phone
+            timezone = profile.timezone
+        }
+        if setterType == nil { setterType = try? await PortalAPI.shared.mySetterType() }
+    }
+
+    func saveProfile(name: String, phone newPhone: String) async throws {
+        displayName = name
+        phone = newPhone
+        guard signedIn else { return }
+        try await PortalAPI.shared.updateMyDisplayName(name)
+        try await PortalAPI.shared.updateMyPhone(newPhone)
+        firstName = name.split(separator: " ").first.map(String.init)
+    }
+
+    func setSetterType(_ type: String) async throws {
+        let previous = setterType
+        setterType = type
+        guard signedIn else { return }
+        do { try await PortalAPI.shared.updateMySetterType(type) }
+        catch {
+            setterType = previous
+            throw error
+        }
+    }
+
+    func setTimezone(_ zone: String) async throws {
+        let previous = timezone
+        timezone = zone
+        guard signedIn else { return }
+        do { try await PortalAPI.shared.updateMyTimezone(zone) }
+        catch {
+            timezone = previous
+            throw error
+        }
+    }
+
+    // The bell and the closer's payment links (2026-08-18)
+    var alerts: PortalAlerts?
+    var paymentLinks: [PortalAPI.PaymentLink]?
+
+    func loadAlerts() async {
+        guard signedIn else {
+            seedFixturesIfNeeded()
+            if alerts == nil { alerts = BunFixtures.alerts }
+            return
+        }
+        guard alerts == nil else { return }
+        if !AuthStore.shared.rolesLoaded { await AuthStore.shared.loadRoles() }
+        let roles = AuthStore.shared.roles
+        guard PortalAPI.bellApplies(to: roles) else {
+            alerts = PortalAlerts()
+            return
+        }
+        alerts = await PortalAPI.shared.portalAlerts(roles: roles)
+    }
+
+    func loadPaymentLinks() async {
+        guard signedIn else {
+            seedFixturesIfNeeded()
+            if paymentLinks == nil { paymentLinks = BunFixtures.paymentLinks }
+            return
+        }
+        guard paymentLinks == nil else { return }
+        paymentLinks = (try? await PortalAPI.shared.paymentLinks()) ?? []
+    }
+
     // Testimonials and team admin (web parity batch 2026-08-18)
     var testimonials: [PortalAPI.TestimonialRow]?
     var chat: [PortalAPI.ChatMessage]?
@@ -239,6 +334,8 @@ final class BunStore {
         guard signedIn else {
             seedFixturesIfNeeded()
             if testimonials == nil { testimonials = BunFixtures.testimonials }
+        if alerts == nil { alerts = BunFixtures.alerts }
+        if paymentLinks == nil { paymentLinks = BunFixtures.paymentLinks }
             return
         }
         guard testimonials == nil else { return }
@@ -564,6 +661,11 @@ final class BunStore {
         csmFeed = nil
         testimonials = nil
         chat = nil
+        alerts = nil
+        paymentLinks = nil
+        displayName = nil
+        phone = nil
+        timezone = nil
         adminProfiles = nil
         adminRoles = [:]
         pendingRequests = nil
@@ -895,6 +997,54 @@ final class BunStore {
                 avatarFill: BunStore.fill(for: item.student)), at: 0)
             monthIn = (monthIn ?? 0) + item.amount
         }
+    }
+
+    /// Waive: the money is no longer owed. Refund: it came back. Both are
+    /// corrections on a single instalment, and both leave the row in place —
+    /// money history is never deleted.
+    func waive(_ item: BunPlanItem, reason: String) async throws {
+        guard signedIn else {
+            overduePayments?.removeAll { $0.id == item.id }
+            upcomingPayments?.removeAll { $0.id == item.id }
+            return
+        }
+        try await PortalAPI.shared.waiveInstallment(id: item.id, existingNotes: nil, reason: reason)
+        overduePayments = nil
+        upcomingPayments = nil
+        plans = nil
+        planPayments = nil
+        await loadMove()
+        await loadMoneyDepth()
+    }
+
+    func refund(_ item: BunPlanItem, reason: String) async throws {
+        guard signedIn else {
+            overduePayments?.removeAll { $0.id == item.id }
+            upcomingPayments?.removeAll { $0.id == item.id }
+            return
+        }
+        try await PortalAPI.shared.refundInstallmentPayment(id: item.id, existingNotes: nil,
+                                                            originallyPaid: nil, reason: reason)
+        overduePayments = nil
+        upcomingPayments = nil
+        plans = nil
+        planPayments = nil
+        ledger = nil
+        await loadMove()
+        await loadLedger()
+    }
+
+    /// Archiving is how a client leaves every roster without losing their
+    /// money or reporting history (founder rule: never hard-delete).
+    func archive(_ student: StudentRosterItem) async throws {
+        guard signedIn else {
+            roster?.removeAll { $0.id == student.id }
+            return
+        }
+        try await PortalAPI.shared.archiveStudent(id: student.id)
+        roster = nil
+        health = nil
+        await loadClients()
     }
 
     func confirmPayout(_ item: BunPayoutItem) async throws {

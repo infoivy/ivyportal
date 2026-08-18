@@ -1176,61 +1176,146 @@ struct BunProfileScreen: View {
     @State private var auth = AuthStore.shared
     @State private var store = BunStore.shared
 
+    @State private var name = ""
+    @State private var phone = ""
+    @State private var loaded = false
+    @State private var saving = false
+    @State private var saveError: String?
+    @State private var saved = false
+
     private var live: Bool { auth.isSignedIn }
-    private var name: String { live ? (store.firstName ?? "Signed in") : BunFixtures.userFullName }
     private var email: String { live ? (auth.session?.user.email ?? "") : BunFixtures.userEmail }
     private var roleLine: String {
         live ? (auth.roles.isEmpty ? "No role yet" : auth.roles.map(\.rawValue).joined(separator: " · "))
              : "Admin · Founder"
     }
 
+    /// Setter type is a PROFILE field, not a device preference: it decides
+    /// which fields the EOD form shows and which targets judge the day.
+    private static let setterTypes: [(key: String, label: String)] = [
+        ("phone", "Phone"), ("dm", "DM"), ("full_cycle", "Full cycle"),
+    ]
+
     var body: some View {
         ZStack {
             BunTheme.ground.ignoresSafeArea()
             ScrollView {
-                VStack(alignment: .leading, spacing: 26) {
+                VStack(alignment: .leading, spacing: 24) {
                     HStack {
                         BunChipButton(symbol: "chevron.left") { dismiss() }
                         Spacer()
                     }
                     BunTitle(text: "Profile")
+
                     HStack(spacing: 16) {
-                        BunAvatar(text: String(name.prefix(1)), size: 64,
+                        BunAvatar(text: String((name.isEmpty ? "?" : name).prefix(1)), size: 64,
                                   fill: Color(red: 0.153, green: 0.400, blue: 0.420))
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(name).font(bunFont(22, .medium)).foregroundStyle(BunTheme.ink)
+                            Text(name.isEmpty ? "Your profile" : name)
+                                .font(bunFont(22, .medium)).foregroundStyle(BunTheme.ink)
                             Text(email).font(bunFont(16)).foregroundStyle(BunTheme.secondary)
+                                .lineLimit(1).truncationMode(.middle)
                         }
                     }
+
+                    BunField(label: "Display name", placeholder: "How your name appears", text: $name)
+                    BunField(label: "Phone", placeholder: "For reminders and calls", text: $phone)
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Setter type").font(bunFont(19)).foregroundStyle(BunTheme.ink)
+                        Text("Decides which numbers your EOD asks for.")
+                            .font(BunType.caption).foregroundStyle(BunTheme.secondary)
+                        HStack(spacing: 10) {
+                            ForEach(Self.setterTypes, id: \.key) { type in
+                                Button {
+                                    Task { try? await store.setSetterType(type.key) }
+                                } label: {
+                                    Text(type.label).font(bunFont(16))
+                                        .foregroundStyle(store.setterType == type.key ? .white : BunTheme.ink)
+                                        .padding(.horizontal, 16).frame(height: 42)
+                                        .background(store.setterType == type.key
+                                                    ? AnyShapeStyle(BunTheme.indigo) : AnyShapeStyle(BunTheme.raised),
+                                                    in: Capsule())
+                                }
+                                .buttonStyle(BunPressStyle())
+                            }
+                        }
+                    }
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Timezone").font(bunFont(19)).foregroundStyle(BunTheme.ink)
+                        Text("Your EOD day follows this, so a late night still files against the right date.")
+                            .font(BunType.caption).foregroundStyle(BunTheme.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Menu {
+                            ForEach(store.timezoneChoices, id: \.self) { zone in
+                                Button("\(zone)\(store.timezone == zone ? " ✓" : "")") {
+                                    Task { try? await store.setTimezone(zone) }
+                                }
+                            }
+                        } label: {
+                            HStack(spacing: 8) {
+                                Text(store.timezone ?? TimeZone.current.identifier)
+                                    .font(bunFont(17)).foregroundStyle(BunTheme.ink).lineLimit(1)
+                                Image(systemName: "arrowtriangle.down.fill")
+                                    .font(.system(size: 8, weight: .regular)).foregroundStyle(BunTheme.secondary)
+                                Spacer()
+                            }
+                            .padding(.horizontal, 16).frame(height: 54)
+                            .background(BunTheme.field, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        }
+                    }
+
                     VStack(spacing: 0) {
                         profileRow(label: "Workspace", value: store.orgName)
                         profileRow(label: "Roles", value: roleLine)
-                        profileRow(label: "Member since", value: live ? "This year" : "March 2025")
                     }
-                    Text("Name and photo edits arrive with the profile editor.")
-                        .font(bunFont(15)).foregroundStyle(BunTheme.tertiary)
-                    Spacer()
+
+                    if let saveError {
+                        Text(saveError).font(bunFont(15)).foregroundStyle(BunTheme.pink)
+                    }
+                    BunCTA(label: saving ? "Saving…" : (saved ? "Saved" : "Save changes"),
+                           enabled: !saving, filled: true) { save() }
+                    Spacer(minLength: 20)
                 }
                 .padding(.horizontal, 22)
                 .padding(.top, 14)
+                .padding(.bottom, 40)
             }
             .scrollIndicators(.hidden)
+        }
+        .task {
+            guard !loaded else { return }
+            await store.loadProfile()
+            name = store.displayName ?? (live ? "" : BunFixtures.userFullName)
+            phone = store.phone ?? ""
+            loaded = true
+        }
+    }
+
+    private func save() {
+        saving = true
+        Task {
+            do {
+                try await store.saveProfile(name: name, phone: phone)
+                saving = false
+                saved = true
+                saveError = nil
+            } catch {
+                saving = false
+                saveError = "Could not save: \(error.localizedDescription)"
+            }
         }
     }
 
     private func profileRow(label: String, value: String) -> some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text(label).font(bunFont(17)).foregroundStyle(BunTheme.secondary)
-                Spacer()
-                Text(value).font(bunFont(17)).foregroundStyle(BunTheme.ink)
-                    .multilineTextAlignment(.trailing)
-            }
-            .frame(minHeight: 58)
-            Rectangle().fill(BunTheme.hairline).frame(height: 1)
+        HStack {
+            Text(label).font(bunFont(17)).foregroundStyle(BunTheme.secondary)
+            Spacer()
+            Text(value).font(bunFont(17)).foregroundStyle(BunTheme.ink)
+                .lineLimit(1).minimumScaleFactor(0.8)
         }
+        .frame(height: 56)
     }
 }
 
-
-/// Which booked calls still have no owner (tap-through from the Home tag).

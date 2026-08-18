@@ -157,3 +157,27 @@ CRM. The Close pipeline and the Mochi dashboard are both served by TanStack serv
 ### Fixes found by screenshot
 
 An em dash in a fixture message and another in a card-ledger caption (the copy rule forbids them), and `BunIconRow` subtitles wrapping to three lines in the Work shelf — one line with a tail truncation now.
+
+---
+
+## Batch 7 — the surfaces that existed only in the data layer
+
+### Prompt
+
+"continue,. still stuff missing from from app thats in portal"
+
+### How I found them
+
+Rather than re-reading the web routes, I listed every `PortalAPI` function with zero call sites in the app. That produced the honest gap: work that had been built and wired to Supabase but had no screen to render into.
+
+### What I did
+
+- **The bell.** `portalAlerts` already computed exactly what the web's notification bell shows, family by family and role-gated, and nothing rendered it. Home's top row now carries a bell with the web's badge tone (red while anything urgent is open), opening the alert list.
+- **Payment links.** `paymentLinks` was unused. Closers now have them on the Money tab, tap to copy, which is the whole job on a call.
+- **Money corrections.** Waive and refund were in the API and unreachable. Both sit behind a hold on an instalment row (not next to "Came in", where they would be fat-fingered), both demand a reason, and both leave the row on the record.
+- **Profile editing.** The screen said "name and photo edits arrive with the profile editor". It now edits display name, phone, setter type and timezone — the last two being load-bearing: setter type decides which fields the EOD form asks for, timezone decides which day a late-night report files against.
+- **Client record**: their open items, and Archive (never delete: they leave every roster while money and reports stay).
+
+### Still unreachable, deliberately
+
+`roleAccess` (admin access-defaults grid), `updateProcessorBalance`, `unconfirmPayout` / `deletePayoutAdjustment` (undo paths), testimonial file upload, and the analytics duplicates (`setterDailyLogs`, `studentOutput`, `activityDrilldown`, `moneySummary`) whose numbers already appear elsewhere.

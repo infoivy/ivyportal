@@ -537,6 +537,41 @@ enum BunFixtures {
         }
     }
 
+    /// What the demo bell carries: one of each family that matters.
+    static var alerts: PortalAlerts {
+        var out = PortalAlerts()
+        out.alerts = [
+            PortalAlert(id: "a1", family: .installment, tone: .danger,
+                        title: "2 payments are past due",
+                        detail: "Nadia Osman and Marcus Reed"),
+            PortalAlert(id: "a2", family: .unclaimedSet, tone: .warning,
+                        title: "A booked call has no owner",
+                        detail: "Hamid Farouk, today"),
+            PortalAlert(id: "a3", family: .payout, tone: .warning,
+                        title: "2 payouts still to confirm",
+                        detail: "Aug 16–31 · $1,860"),
+            PortalAlert(id: "a4", family: .student, tone: .danger,
+                        title: "Nadia Osman is at risk",
+                        detail: "payment behind, no report in 6 days"),
+        ]
+        out.badgeIsUrgent = true
+        return out
+    }
+
+    static var paymentLinks: [PortalAPI.PaymentLink] {
+        [
+            PortalAPI.PaymentLink(id: UUID(), label: "1:1 Pathway · pay in full", currency: "USD",
+                                  amount: 5_800, url: "https://pay.acmecoaching.com/pif",
+                                  method: "stripe", notes: nil),
+            PortalAPI.PaymentLink(id: UUID(), label: "1:1 Pathway · deposit", currency: "USD",
+                                  amount: 1_500, url: "https://pay.acmecoaching.com/deposit",
+                                  method: "stripe", notes: "balance over 4 months"),
+            PortalAPI.PaymentLink(id: UUID(), label: "Group Pathway", currency: "USD",
+                                  amount: 2_800, url: "https://pay.acmecoaching.com/group",
+                                  method: "whop", notes: nil),
+        ]
+    }
+
     static var adminRoles: [UUID: [String]] {
         [
             meId: ["admin", "founder"],
