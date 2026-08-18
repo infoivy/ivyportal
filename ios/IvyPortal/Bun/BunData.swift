@@ -139,6 +139,71 @@ final class BunStore {
     /// Whoever is filing: the signed-in id, or the demo person signed out.
     var meId: UUID { PortalAPI.shared.currentUserID ?? BunFixtures.meId }
 
+    // Performance (web /performance: range, one canonical graph, drilldown)
+    var perfDays = 7
+    var perfActivity: [EODActivity]?
+
+    /// The one graph's metric, same list the web's picker offers.
+    enum PerfMetric: String, CaseIterable, Sendable {
+        case booked, shows, closes, dials, dms, convos
+
+        var label: String {
+            switch self {
+            case .booked: "Calls booked"
+            case .shows: "Shows"
+            case .closes: "Closes"
+            case .dials: "Dials"
+            case .dms: "DMs sent"
+            case .convos: "Convos started"
+            }
+        }
+
+        func value(_ row: EODActivity) -> Int {
+            switch self {
+            case .booked: row.callsBooked ?? 0
+            case .shows: row.shows ?? 0
+            case .closes: row.closes ?? 0
+            case .dials: row.dials ?? 0
+            // Leads contacted folded into DMs sent — old rows keep the old
+            // column, so the larger of the two is the honest number.
+            case .dms: max(row.dmsSent ?? 0, row.leadsContacted ?? 0)
+            case .convos: row.convosStarted ?? 0
+            }
+        }
+    }
+
+    var perfMetric: PerfMetric = .booked
+
+    var perfRangeLabel: String { perfDays == 7 ? "Last 7 days" : "Last \(perfDays) days" }
+
+    /// The metric by day, oldest first, with empty days filled in so the
+    /// graph shows a real week rather than only the days someone filed.
+    var perfSeries: [(day: String, value: Int)] {
+        guard let rows = perfActivity else { return [] }
+        var totals: [String: Int] = [:]
+        for row in rows { totals[row.reportDate, default: 0] += perfMetric.value(row) }
+        return (0..<perfDays).reversed().map { back in
+            let date = Calendar.current.date(byAdding: .day, value: -back, to: Date()) ?? Date()
+            let key = Self.dayKey(date)
+            return (day: key, value: totals[key] ?? 0)
+        }
+    }
+
+    func setPerfRange(_ days: Int) async {
+        guard days != perfDays else { return }
+        perfDays = days
+        teamSummary = nil
+        teamRows = nil
+        perfActivity = nil
+        await loadTeam()
+    }
+
+    /// One member's days in the range, newest first.
+    func perfDays(for memberId: UUID) -> [EODActivity] {
+        (perfActivity ?? []).filter { $0.userId == memberId }
+            .sorted { $0.reportDate > $1.reportDate }
+    }
+
     // Home pictures (web home-sales-picture / home-fulfillment-picture)
     var sales: SalesPicture?
     /// Client self-reports, last 14 days — filed-today and quiet-14 come off
@@ -460,13 +525,16 @@ final class BunStore {
         if !AuthStore.shared.rolesLoaded {
             await AuthStore.shared.loadRoles()
         }
-        if teamSummary == nil, let result = try? await PortalAPI.shared.performanceSummary(days: 7) {
+        if teamSummary == nil, let result = try? await PortalAPI.shared.performanceSummary(days: perfDays) {
             teamSummary = result.summary
             teamRows = result.rows
         }
         if teamNotes == nil {
             // RLS decides what comes back; non-admins simply see their own.
             teamNotes = (try? await PortalAPI.shared.teamEODNotes(days: 7)) ?? []
+        }
+        if perfActivity == nil {
+            perfActivity = (try? await PortalAPI.shared.eodActivity(days: perfDays)) ?? []
         }
         if eodDue == nil {
             eodDue = await PortalAPI.shared.owesTodayEOD(roles: AuthStore.shared.roles)
@@ -810,6 +878,7 @@ final class BunStore {
         taskDoneOverride = [:]
         taskRemoved = []
         localTasks = []
+        perfActivity = nil
         sales = nil
         studentEODs = nil
         scheduledCalls = nil
@@ -876,6 +945,7 @@ final class BunStore {
         if staffNames.isEmpty { staffNames = BunFixtures.staffNames }
         if myEODs == nil { myEODs = BunFixtures.myEODs }
         if callsByStudent.isEmpty { callsByStudent = BunFixtures.callsByStudent }
+        if perfActivity == nil { perfActivity = BunFixtures.perfActivity(days: perfDays) }
         if sales == nil { sales = BunFixtures.sales }
         if studentEODs == nil { studentEODs = BunFixtures.studentEODs }
         if scheduledCalls == nil { scheduledCalls = 4 }

@@ -186,3 +186,22 @@ final class BunHomeStripTests: XCTestCase {
         XCTAssertTrue(app.staticTexts["At risk"].isHittable, "clients strip on screen")
     }
 }
+
+/// The performance graph and the member rows sit below coverage, so they get
+/// the same below-the-fold treatment as Home's strips.
+@MainActor
+final class BunTeamGraphTests: XCTestCase {
+    func testTeamCarriesTheActivityGraph() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-bunTab", "team"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["Team"].waitForExistence(timeout: 8))
+        for _ in 0..<2 { app.swipeUp() }
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = "team-graph"
+        shot.lifetime = .keepAlways
+        add(shot)
+        XCTAssertTrue(app.staticTexts["Calls booked"].exists, "metric label")
+        XCTAssertTrue(app.staticTexts["Setters"].exists, "setter rows")
+    }
+}

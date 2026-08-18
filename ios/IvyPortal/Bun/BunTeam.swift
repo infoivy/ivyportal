@@ -369,3 +369,106 @@ struct BunEODFlow: View {
         }
     }
 }
+
+/// One member's days in the reporting window — the web's Performance
+/// drilldown. Numbers first, then what they wrote, because a bad day with an
+/// honest blocker reads differently from a bad day with silence.
+struct BunMemberSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var store = BunStore.shared
+    let member: TeamMemberRow
+
+    private var days: [EODActivity] { store.perfDays(for: member.id) }
+
+    private var notes: [String: TeamEODNote] {
+        Dictionary((store.teamNotes ?? []).filter { $0.userId == member.id }
+            .map { ($0.reportDate, $0) }, uniquingKeysWith: { first, _ in first })
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                HStack {
+                    BunTitle(text: "Member")
+                    Spacer()
+                    BunChipButton(symbol: "xmark") { dismiss() }
+                }
+
+                HStack(spacing: 14) {
+                    BunAvatar(text: String(member.name.prefix(1)), size: 52,
+                              fill: BunStore.fill(for: member.name))
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(member.name).font(bunFont(24)).foregroundStyle(BunTheme.ink)
+                        Text("\(member.role.capitalized) · filed \(member.eodDays) of \(store.perfDays) days")
+                            .font(BunType.caption).foregroundStyle(BunTheme.secondary)
+                    }
+                }
+
+                HStack(alignment: .top, spacing: 0) {
+                    stat("Sets", "\(member.sets)")
+                    stat("Showed", "\(member.shows)")
+                    stat("Closed", "\(member.closes)", tone: BunTheme.green)
+                }
+
+                Rectangle().fill(BunTheme.hairline).frame(height: 1).padding(.horizontal, -22)
+
+                Text(store.perfRangeLabel).font(BunType.section).foregroundStyle(BunTheme.ink)
+                if days.isEmpty {
+                    Text("No reports in this window.")
+                        .font(bunFont(17)).foregroundStyle(BunTheme.secondary)
+                } else {
+                    VStack(spacing: 0) {
+                        ForEach(days) { day in
+                            VStack(alignment: .leading, spacing: 6) {
+                                HStack(spacing: 10) {
+                                    Text(BunStore.parseDay(day.reportDate).map { BunStore.friendlyDay($0) } ?? "Recently")
+                                        .font(BunType.rowTitle).foregroundStyle(BunTheme.ink)
+                                    Spacer()
+                                    Text(line(day)).font(BunType.caption)
+                                        .foregroundStyle(BunTheme.secondary)
+                                        .monospacedDigit().lineLimit(1).minimumScaleFactor(0.8)
+                                }
+                                if let note = notes[day.reportDate] {
+                                    if let wins = note.wins?.trimmingCharacters(in: .whitespacesAndNewlines), !wins.isEmpty {
+                                        Text(wins).font(BunType.caption).foregroundStyle(BunTheme.secondary)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                    }
+                                    if let blockers = note.blockers?.trimmingCharacters(in: .whitespacesAndNewlines), !blockers.isEmpty {
+                                        Text(blockers).font(BunType.caption).foregroundStyle(BunTheme.pink)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                    }
+                                }
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.vertical, 12)
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, 22)
+            .padding(.top, 18)
+            .padding(.bottom, 60)
+        }
+        .scrollIndicators(.hidden)
+    }
+
+    /// Only the numbers this person actually files.
+    private func line(_ day: EODActivity) -> String {
+        var bits: [String] = []
+        if let dials = day.dials, dials > 0 { bits.append("\(dials) dials") }
+        let dms = max(day.dmsSent ?? 0, day.leadsContacted ?? 0)
+        if dms > 0 { bits.append("\(dms) DMs") }
+        if let booked = day.callsBooked, booked > 0 { bits.append("\(booked) sets") }
+        if let shows = day.shows, shows > 0 { bits.append("\(shows) shows") }
+        if let closes = day.closes, closes > 0 { bits.append("\(closes) closes") }
+        return bits.isEmpty ? "no activity" : bits.joined(separator: " · ")
+    }
+
+    private func stat(_ label: String, _ value: String, tone: Color = BunTheme.ink) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(label).font(BunType.label).foregroundStyle(BunTheme.secondary)
+            Text(value).font(bunFont(26, .medium)).foregroundStyle(tone).monospacedDigit()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}

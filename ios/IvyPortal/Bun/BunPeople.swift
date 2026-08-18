@@ -1,14 +1,20 @@
 import SwiftUI
+import Charts
 
 /// Team tab (founder 2026-08-18): coverage and the written EODs up top, then
 /// the setter/closer funnel that used to sit behind the Studio segment.
 struct BunTeamPage: View {
     @State private var store = BunStore.shared
+    @State private var selectedMember: TeamMemberRow?
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 26) {
-                BunTitle(text: "Team")
+                HStack {
+                    BunTitle(text: "Team")
+                    Spacer()
+                    rangeMenu
+                }
                 salesSection
                 hairline
                 BunTeamCoverage()
@@ -20,6 +26,11 @@ struct BunTeamPage: View {
             .padding(.bottom, 96)
         }
         .scrollIndicators(.hidden)
+        .sheet(item: $selectedMember) { member in
+            BunMemberSheet(member: member)
+                .presentationBackground(BunTheme.ground)
+                .presentationCornerRadius(40)
+        }
         .task {
             await store.loadTeam()
             await store.loadPictures()
@@ -31,6 +42,26 @@ struct BunTeamPage: View {
             store.sales = nil
             await store.loadTeam()
             await store.loadPictures()
+        }
+    }
+
+    /// 7 / 30 / 90, the web's reporting window. It drives the funnel, the
+    /// graph and the member rows; coverage stays a week strip and says so.
+    private var rangeMenu: some View {
+        Menu {
+            ForEach([7, 30, 90], id: \.self) { days in
+                Button("\(days)D\(store.perfDays == days ? " ✓" : "")") {
+                    Task { await store.setPerfRange(days) }
+                }
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Text("\(store.perfDays)D").font(BunType.chip).foregroundStyle(BunTheme.ink)
+                Image(systemName: "arrowtriangle.down.fill")
+                    .font(.system(size: 8, weight: .regular)).foregroundStyle(BunTheme.secondary)
+            }
+            .padding(.horizontal, 14).frame(height: 40)
+            .background(BunTheme.raised, in: Capsule())
         }
     }
 
@@ -86,6 +117,7 @@ struct BunTeamPage: View {
     private var performanceSection: some View {
         VStack(alignment: .leading, spacing: 22) {
             funnelRow
+            activityGraph
             hairline
             Text("Setters").font(BunType.section).foregroundStyle(BunTheme.ink)
             setterRows
@@ -97,12 +129,65 @@ struct BunTeamPage: View {
 
     private var rows: [TeamMemberRow] { store.teamRows ?? [] }
 
+    /// One canonical graph, one metric at a time — the web's rule, so nobody
+    /// argues from two different charts.
+    private var activityGraph: some View {
+        let series = store.perfSeries
+        let peak = max(series.map(\.value).max() ?? 0, 1)
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text(store.perfMetric.label).font(BunType.label).foregroundStyle(BunTheme.secondary)
+                Spacer()
+                Menu {
+                    ForEach(BunStore.PerfMetric.allCases, id: \.self) { metric in
+                        Button("\(metric.label)\(store.perfMetric == metric ? " ✓" : "")") {
+                            withAnimation(.snappy(duration: 0.2)) { store.perfMetric = metric }
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 6) {
+                        Text("Change").font(bunFont(15)).foregroundStyle(BunTheme.indigoLight)
+                        Image(systemName: "arrowtriangle.down.fill")
+                            .font(.system(size: 7, weight: .regular)).foregroundStyle(BunTheme.secondary)
+                    }
+                }
+            }
+            if series.isEmpty {
+                RoundedRectangle(cornerRadius: 12).fill(BunTheme.field).frame(height: 120)
+            } else {
+                Chart {
+                    ForEach(series, id: \.day) { point in
+                        BarMark(
+                            x: .value("Day", point.day),
+                            y: .value(store.perfMetric.label, point.value),
+                            width: .fixed(store.perfDays > 30 ? 3 : (store.perfDays > 7 ? 6 : 22))
+                        )
+                        .cornerRadius(4)
+                        // Intensity tracks the day's share of the peak, the
+                        // Mochi read the founder asked for — never flat tiles.
+                        .foregroundStyle(BunTheme.indigo.opacity(0.35 + 0.65 * Double(point.value) / Double(peak)))
+                    }
+                }
+                .chartXAxis(.hidden)
+                .chartYAxis {
+                    AxisMarks(position: .leading, values: .automatic(desiredCount: 3)) { value in
+                        AxisValueLabel().font(bunFont(12)).foregroundStyle(BunTheme.tertiary)
+                        AxisGridLine().foregroundStyle(BunTheme.hairline)
+                    }
+                }
+                .frame(height: 140)
+            }
+            Text("\(series.reduce(0) { $0 + $1.value }) total · \(store.perfRangeLabel.lowercased())")
+                .font(BunType.caption).foregroundStyle(BunTheme.tertiary)
+        }
+    }
+
     private var funnelRow: some View {
         let sets = rows.reduce(0) { $0 + $1.sets }
         let shows = rows.reduce(0) { $0 + $1.shows }
         let closes = rows.reduce(0) { $0 + $1.closes }
         return VStack(alignment: .leading, spacing: 14) {
-            Text("Last 7 days").font(BunType.label).foregroundStyle(BunTheme.secondary)
+            Text(store.perfRangeLabel).font(BunType.label).foregroundStyle(BunTheme.secondary)
             // .top, not the default .center: Sets carries no rate caption, so
             // centering made it a line shorter and dropped it below the other
             // two. Stat values share one baseline (founder rule).
@@ -158,6 +243,13 @@ struct BunTeamPage: View {
     }
 
     private func performanceRow(_ row: TeamMemberRow, primary: String, secondary: String) -> some View {
+        Button { selectedMember = row } label: {
+            performanceRowBody(row, primary: primary, secondary: secondary)
+        }
+        .buttonStyle(BunPressStyle())
+    }
+
+    private func performanceRowBody(_ row: TeamMemberRow, primary: String, secondary: String) -> some View {
         HStack(spacing: 14) {
             BunAvatar(text: String(row.name.prefix(1)), size: 44, fill: BunStore.fill(for: row.name))
             VStack(alignment: .leading, spacing: 3) {
@@ -166,8 +258,11 @@ struct BunTeamPage: View {
             }
             Spacer()
             Text(primary).font(bunFont(17, .medium)).foregroundStyle(BunTheme.ink).monospacedDigit()
+            Image(systemName: "chevron.right")
+                .font(.system(size: 13, weight: .regular)).foregroundStyle(BunTheme.secondary)
         }
         .frame(minHeight: 68)
+        .contentShape(Rectangle())
     }
 
     private func memberLine(_ row: TeamMemberRow) -> String {

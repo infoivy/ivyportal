@@ -471,6 +471,37 @@ enum BunFixtures {
         return out
     }
 
+    /// Demo activity behind the performance graph and the member drilldown:
+    /// the same six people as `teamRows`, filing most days.
+    static func perfActivity(days: Int) -> [EODActivity] {
+        var out: [EODActivity] = []
+        for (index, member) in teamRows.enumerated() {
+            for back in 0..<days {
+                // A couple of gaps so coverage is honest, not a perfect wall.
+                if (back + index) % 7 == 3 { continue }
+                let date = Calendar.current.date(byAdding: .day, value: -back, to: Date()) ?? Date()
+                let setter = member.role == "setter"
+                let closer = member.role == "closer"
+                let swing = (back * 7 + index * 3) % 5
+                out.append(EODActivity(
+                    id: UUID(), userId: member.id, reportDate: BunStore.dayKey(date),
+                    dials: setter && member.dials > 0 ? 80 + swing * 9 : 0,
+                    leadsContacted: 0,
+                    dmsSent: setter && member.dmsSent > 0 ? 240 + swing * 22 : 0,
+                    convosStarted: setter ? 12 + swing : 0,
+                    callsBooked: setter ? max(0, 2 + swing - 1) : 0,
+                    callsScheduled: nil,
+                    shows: closer ? 1 + swing % 3 : 0,
+                    noShows: closer && swing == 4 ? 1 : 0,
+                    closes: closer && swing % 3 == 0 ? 1 : 0,
+                    callsTaken: closer ? 2 + swing % 2 : 0,
+                    cashCollected: nil, studentCheckins: nil, loomsReviewed: nil,
+                    wins: nil, blockers: nil))
+            }
+        }
+        return out
+    }
+
     /// The sales read the demo workspace shows: a healthy week, one setter
     /// short yesterday.
     static var sales: SalesPicture {
