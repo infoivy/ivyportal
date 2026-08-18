@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 // Live money actions (data phase 2026-08-17): the Mercury anatomy carrying
 // the real portal writes — collect installments, confirm payouts, log closes.
@@ -9,9 +10,58 @@ struct BunPaymentListSheet: View {
     enum Kind { case inbox, approvals, scheduled }
     @Environment(\.dismiss) private var dismiss
     @State private var store = BunStore.shared
-    @State private var busyId: String?
     @State private var writeError: String?
+    /// Rows showing the confirmed state before they animate out — same
+    /// acknowledgement the Money page's "Came in" gives.
+    @State private var settled: Set<String> = []
     let kind: Kind
+
+    /// Shared action pill: flips to a green check on success, then the row
+    /// leaves. Identical feel across collecting money and confirming payouts.
+    private func settleButton(done: Bool, title: String,
+                              action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Group {
+                if done {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(.white)
+                } else {
+                    Text(title).font(bunFont(15, .medium)).foregroundStyle(.white)
+                }
+            }
+            .padding(.horizontal, done ? 0 : 14)
+            .frame(width: done ? 38 : nil, height: 38)
+            .background(done ? BunTheme.green : BunTheme.indigo, in: Capsule())
+        }
+        .buttonStyle(BunPressStyle())
+        .disabled(done)
+    }
+
+    private func collect(_ item: BunStore.BunPlanItem) {
+        let key = item.id.uuidString
+        guard !settled.contains(key) else { return }
+        settled.insert(key)
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        Task {
+            try? await Task.sleep(for: .seconds(0.75))
+            do { try await store.markPaid(item); writeError = nil }
+            catch { writeError = "Could not mark it paid: \(error.localizedDescription)" }
+            settled.remove(key)
+        }
+    }
+
+    private func confirm(_ item: BunStore.BunPayoutItem) {
+        guard !settled.contains(item.id) else { return }
+        settled.insert(item.id)
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        Task {
+            try? await Task.sleep(for: .seconds(0.75))
+            do { try await store.confirmPayout(item); writeError = nil }
+            catch { writeError = "Could not confirm: \(error.localizedDescription)" }
+            settled.remove(item.id)
+        }
+    }
 
     private var title: String {
         switch kind {
@@ -30,10 +80,10 @@ struct BunPaymentListSheet: View {
                 }
                 BunTitle(text: title)
                 if kind == .approvals, let label = store.payoutPeriodLabel {
-                    Text(label).font(bunFont(17)).foregroundStyle(BunTheme.secondary)
+                    Text(label).font(BunType.label).foregroundStyle(BunTheme.secondary)
                 }
                 if let writeError {
-                    Text(writeError).font(bunFont(16)).foregroundStyle(BunTheme.pink)
+                    Text(writeError).font(BunType.caption).foregroundStyle(BunTheme.pink)
                 }
                 content
             }
@@ -55,38 +105,36 @@ struct BunPaymentListSheet: View {
     private func planRows(_ items: [BunStore.BunPlanItem], emptyText: String) -> some View {
         Group {
             if items.isEmpty {
-                Text(emptyText).font(bunFont(19)).foregroundStyle(BunTheme.secondary)
+                Text(emptyText).font(BunType.rowTitle).foregroundStyle(BunTheme.secondary)
             } else {
                 VStack(spacing: 0) {
                     ForEach(items) { item in
-                        HStack(spacing: 14) {
+                        let done = settled.contains(item.id.uuidString)
+                        // The avatar, amount and action are fixed width, which
+                        // left the name about 116pt and wrapped it over two
+                        // lines. It now takes priority and stays on one line.
+                        HStack(spacing: 12) {
                             BunAvatar(text: String(item.student.prefix(1)), size: 44, fill: BunStore.fill(for: item.student))
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(item.student).font(bunFont(19)).foregroundStyle(BunTheme.ink)
-                                HStack(spacing: 8) {
-                                    Text(item.due).font(bunFont(16))
-                                        .foregroundStyle(item.overdue ? BunTheme.pink : BunTheme.secondary)
-                                }
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(item.student)
+                                    .font(BunType.rowTitle).foregroundStyle(BunTheme.ink)
+                                    .lineLimit(1).minimumScaleFactor(0.85)
+                                Text(done ? "Collected" : item.due)
+                                    .font(BunType.caption)
+                                    .foregroundStyle(done ? BunTheme.green
+                                                     : (item.overdue ? BunTheme.pink : BunTheme.secondary))
+                                    .lineLimit(1)
                             }
-                            Spacer()
-                            BunMoney(amount: item.amount, size: 17)
-                            Button {
-                                busyId = item.id.uuidString
-                                Task {
-                                    do { try await store.markPaid(item); writeError = nil }
-                                    catch { writeError = "Could not mark it paid: \(error.localizedDescription)" }
-                                    busyId = nil
-                                }
-                            } label: {
-                                Text(busyId == item.id.uuidString ? "…" : "Mark paid")
-                                    .font(bunFont(15, .medium)).foregroundStyle(.white)
-                                    .padding(.horizontal, 14).frame(height: 38)
-                                    .background(BunTheme.indigo, in: Capsule())
+                            .layoutPriority(1)
+                            Spacer(minLength: 8)
+                            BunMoney(amount: item.amount, size: BunType.Money.chip,
+                                     color: done ? BunTheme.green : BunTheme.ink)
+                            settleButton(done: done, title: "Came in") {
+                                collect(item)
                             }
-                            .buttonStyle(BunPressStyle())
-                            .disabled(busyId != nil)
                         }
                         .frame(minHeight: 68)
+                        .animation(.spring(response: 0.32, dampingFraction: 0.72), value: done)
                     }
                 }
             }
@@ -97,32 +145,32 @@ struct BunPaymentListSheet: View {
         Group {
             let items = store.unconfirmedPayouts ?? []
             if items.isEmpty {
-                Text("Everyone is paid for this period.").font(bunFont(19)).foregroundStyle(BunTheme.secondary)
+                Text("Everyone is paid for this period.").font(BunType.rowTitle).foregroundStyle(BunTheme.secondary)
             } else {
                 VStack(spacing: 0) {
                     ForEach(items) { item in
-                        HStack(spacing: 14) {
+                        let done = settled.contains(item.id)
+                        HStack(spacing: 12) {
                             BunAvatar(text: String(item.name.prefix(1)), size: 44, fill: BunStore.fill(for: item.name))
-                            Text(item.name).font(bunFont(19)).foregroundStyle(BunTheme.ink)
-                            Spacer()
-                            BunMoney(amount: item.amount, size: 17)
-                            Button {
-                                busyId = item.id
-                                Task {
-                                    do { try await store.confirmPayout(item); writeError = nil }
-                                    catch { writeError = "Could not confirm: \(error.localizedDescription)" }
-                                    busyId = nil
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(item.name)
+                                    .font(BunType.rowTitle).foregroundStyle(BunTheme.ink)
+                                    .lineLimit(1).minimumScaleFactor(0.85)
+                                if done {
+                                    Text("Confirmed").font(BunType.caption)
+                                        .foregroundStyle(BunTheme.green).lineLimit(1)
                                 }
-                            } label: {
-                                Text(busyId == item.id ? "…" : "Mark paid")
-                                    .font(bunFont(15, .medium)).foregroundStyle(.white)
-                                    .padding(.horizontal, 14).frame(height: 38)
-                                    .background(BunTheme.indigo, in: Capsule())
                             }
-                            .buttonStyle(BunPressStyle())
-                            .disabled(busyId != nil)
+                            .layoutPriority(1)
+                            Spacer(minLength: 8)
+                            BunMoney(amount: item.amount, size: BunType.Money.chip,
+                                     color: done ? BunTheme.green : BunTheme.ink)
+                            settleButton(done: done, title: "Mark paid") {
+                                confirm(item)
+                            }
                         }
                         .frame(minHeight: 68)
+                        .animation(.spring(response: 0.32, dampingFraction: 0.72), value: done)
                     }
                 }
             }

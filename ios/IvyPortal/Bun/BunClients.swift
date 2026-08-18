@@ -194,6 +194,7 @@ struct BunClientSheet: View {
                             HStack(spacing: 14) {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(transaction.method).font(bunFont(17)).foregroundStyle(BunTheme.ink)
+                                    .lineLimit(1)
                                     Text(transaction.day).font(bunFont(15)).foregroundStyle(BunTheme.secondary)
                                 }
                                 Spacer()

@@ -502,10 +502,12 @@ struct BunHome: View {
                 Text(transaction.counterparty)
                     .font(BunType.rowTitle)
                     .foregroundStyle(BunTheme.ink)
+                    .lineLimit(1)
                 HStack(spacing: 8) {
                     Text(transaction.method)
                         .font(BunType.caption)
                         .foregroundStyle(BunTheme.secondary)
+                        .lineLimit(1)
                     if let tag = transaction.tag {
                         BunTag(text: tag, tint: BunTheme.pink, fill: BunTheme.pink.opacity(0.15))
                     }

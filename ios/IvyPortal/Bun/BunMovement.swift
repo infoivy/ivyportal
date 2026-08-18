@@ -70,6 +70,7 @@ struct BunMovementSheet: View {
                         ForEach(Array(sources.enumerated()), id: \.offset) { _, source in
                             HStack {
                                 Text(source.name).font(bunFont(19)).foregroundStyle(BunTheme.ink)
+                                .lineLimit(1)
                                 Spacer()
                                 BunMoney(amount: source.amount, size: 19,
                                          color: showingSpent ? BunTheme.ink : BunTheme.green)

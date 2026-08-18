@@ -665,6 +665,7 @@ struct BunTransactionDetail: View {
             Text(transaction.counterparty)
                 .font(bunFont(24)).foregroundStyle(BunTheme.ink)
                 .padding(.top, 14)
+                .lineLimit(1)
             if let category = transaction.category {
                 Text(category).font(bunFont(17)).foregroundStyle(BunTheme.secondary)
                     .padding(.top, 4)
@@ -691,6 +692,7 @@ struct BunTransactionDetail: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(transaction.method)
                         .font(bunFont(19)).foregroundStyle(BunTheme.ink)
+                        .lineLimit(1)
                     Text(transaction.day)
                         .font(bunFont(16)).foregroundStyle(BunTheme.secondary)
                     Text("Bun \(transaction.account)")
@@ -699,6 +701,7 @@ struct BunTransactionDetail: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(transaction.counterparty)
                         .font(bunFont(19)).foregroundStyle(BunTheme.ink)
+                        .lineLimit(1)
                     Text(transaction.day)
                         .font(bunFont(16)).foregroundStyle(BunTheme.secondary)
                 }
@@ -1211,6 +1214,7 @@ struct BunUnclaimedSetsSheet: View {
                                       fill: BunStore.fill(for: set.prospect))
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(set.prospect).font(bunFont(19)).foregroundStyle(BunTheme.ink)
+                                .lineLimit(1)
                                 Text(PortalAPI.friendlyEventTime(set.eventStart))
                                     .font(bunFont(15)).foregroundStyle(BunTheme.secondary)
                             }

@@ -48,6 +48,7 @@ private struct BunAccountPickCard: View {
                     Text("\(account.name) ••\(account.last4)")
                         .font(bunFont(20))
                         .foregroundStyle(BunTheme.ink)
+                        .lineLimit(1)
                     BunMoney(amount: account.balance, size: 20, color: BunTheme.secondary)
                 }
                 Spacer()
@@ -353,6 +354,7 @@ struct BunDepositFlow: View {
                         Text("\(chosenAccount.name) ••\(chosenAccount.last4)")
                             .font(bunFont(19))
                             .foregroundStyle(BunTheme.ink)
+                            .lineLimit(1)
                         Spacer()
                         BunMoney(amount: chosenAccount.balance, size: 17, color: BunTheme.secondary)
                     }
