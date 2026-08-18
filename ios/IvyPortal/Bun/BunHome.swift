@@ -12,7 +12,6 @@ struct BunHome: View {
     @State private var showOrgSwitcher = false
     @State private var scrub: Int?
     @State private var showUnclaimed = false
-    @State private var showActions = false
 
     // MARK: Live-or-fixture values (signed-in reads real portal money)
 
@@ -113,6 +112,12 @@ struct BunHome: View {
                 hairline
                     .padding(.top, 26)
 
+                clientsSection
+                    .padding(.top, 26)
+
+                hairline
+                    .padding(.top, 26)
+
                 transactionsSection
                     .padding(.top, 26)
 
@@ -133,6 +138,9 @@ struct BunHome: View {
             await store.loadTeam()
             await store.loadSets()
             await store.loadActionItems()
+            await store.loadClients()
+            await store.loadOps()
+            await store.loadPictures()
         }
         .refreshable {
             store.cashSeries = nil
@@ -166,11 +174,6 @@ struct BunHome: View {
         .sheet(isPresented: $showOrgSwitcher) {
             BunOrgSwitcherSheet()
                 .presentationDetents([.medium])
-                .presentationBackground(BunTheme.ground)
-                .presentationCornerRadius(40)
-        }
-        .sheet(isPresented: $showActions) {
-            BunActionItemsSheet()
                 .presentationBackground(BunTheme.ground)
                 .presentationCornerRadius(40)
         }
@@ -475,7 +478,7 @@ struct BunHome: View {
     /// in the hub, so Home stays the day's own list rather than the team's.
     private var itemsSection: some View {
         VStack(alignment: .leading, spacing: 18) {
-            sectionHeader("Your items") { showActions = true }
+            sectionHeader("Your items") { tab = .work }
             VStack(spacing: 0) {
                 ForEach(store.myOpenTasks.prefix(3)) { task in
                     BunTaskRow(task: task) {
@@ -484,7 +487,7 @@ struct BunHome: View {
                 }
             }
             if store.myOpenTasks.count > 3 {
-                Button { showActions = true } label: {
+                Button { tab = .work } label: {
                     Text("\(store.myOpenTasks.count - 3) more")
                         .font(BunType.caption).foregroundStyle(BunTheme.indigoLight)
                 }
@@ -497,20 +500,36 @@ struct BunHome: View {
         VStack(alignment: .leading, spacing: 20) {
             sectionHeader("Team") { tab = .team }
             HStack(alignment: .top, spacing: 0) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("EOD coverage").font(BunType.label).foregroundStyle(BunTheme.secondary)
-                    Text(store.teamSummary.map { "\($0.coverage)%" } ?? "…")
-                        .font(bunFont(19, .medium)).foregroundStyle(BunTheme.ink).monospacedDigit()
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Sets · 7 days").font(BunType.label).foregroundStyle(BunTheme.secondary)
-                    Text(store.teamRows.map { "\($0.reduce(0) { $0 + $1.sets })" } ?? "…")
-                        .font(bunFont(19, .medium)).foregroundStyle(BunTheme.ink).monospacedDigit()
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                homeStat("EOD coverage", value: store.teamSummary.map { "\($0.coverage)%" })
+                homeStat("Sets · 7 days", value: store.teamRows.map { "\($0.reduce(0) { $0 + $1.sets })" })
+                homeStat("Show rate", value: store.sales?.showRate.map { "\($0)%" } ?? (store.sales == nil ? nil : "–"))
             }
         }
+    }
+
+    /// Clients strip: active and the two exceptions worth a morning glance.
+    /// The tab is where the whole picture lives.
+    private var clientsSection: some View {
+        let delivery = store.delivery
+        return VStack(alignment: .leading, spacing: 20) {
+            sectionHeader("Clients") { tab = .clients }
+            HStack(alignment: .top, spacing: 0) {
+                homeStat("Active", value: store.roster == nil ? nil : "\(delivery.active)")
+                homeStat("At risk", value: store.roster == nil ? nil : "\(delivery.atRisk)",
+                         tone: delivery.atRisk > 0 ? BunTheme.pink : BunTheme.ink)
+                homeStat("Need a check-in", value: store.checkinStamps == nil ? nil : "\(delivery.dueCheckin)")
+            }
+        }
+    }
+
+    private func homeStat(_ label: String, value: String?, tone: Color = BunTheme.ink) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(label).font(BunType.label).foregroundStyle(BunTheme.secondary)
+                .lineLimit(1).minimumScaleFactor(0.8)
+            Text(value ?? "…")
+                .font(bunFont(19, .medium)).foregroundStyle(tone).monospacedDigit()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: Transactions

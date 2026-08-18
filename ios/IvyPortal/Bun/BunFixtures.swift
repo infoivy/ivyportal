@@ -264,21 +264,30 @@ enum BunFixtures {
     }()
 
     static var roster: [StudentRosterItem] {
-        let rows: [(String, String, Int, String?)] = [
-            ("Marcus Reed", "applying", 10, nil),
-            ("Leila Hassan", "training", 10, nil),
-            ("Jordan Blake", "onboarding", 0, nil),
-            ("Nadia Osman", "training", 0, "behind"),
-            ("Tariq Aziz", "applying", 10, nil),
-            ("Sami Idris", "offer_won", 0, nil),
-            ("Dahlia Krum", "onboarding", 0, "scholarship"),
-            ("Elias Vance", "training", 0, nil),
+        // name, phase, calls allotted, payment state, days since joining,
+        // finished Start Here, first win recorded
+        let rows: [(String, String, Int, String?, Int, Bool, Bool)] = [
+            ("Marcus Reed", "applying", 10, nil, 96, true, true),
+            ("Leila Hassan", "training", 10, nil, 61, true, false),
+            ("Jordan Blake", "onboarding", 0, nil, 12, false, false),
+            ("Nadia Osman", "training", 0, "behind", 74, true, false),
+            ("Tariq Aziz", "applying", 10, nil, 118, true, true),
+            ("Sami Idris", "offer_won", 0, nil, 150, true, true),
+            ("Dahlia Krum", "onboarding", 0, "scholarship", 3, false, false),
+            ("Elias Vance", "training", 0, nil, 45, true, false),
         ]
         return rows.enumerated().map { index, row in
-            StudentRosterItem(id: rosterIds[index], fullName: row.0,
-                              email: row.0.lowercased().replacingOccurrences(of: " ", with: "."),
-                              phase: row.1, status: "active", coachId: nil,
-                              callsAllotted: row.2, archivedAt: nil, paymentState: row.3)
+            let joined = Calendar.current.date(byAdding: .day, value: -row.4, to: Date()) ?? Date()
+            return StudentRosterItem(
+                id: rosterIds[index], fullName: row.0,
+                email: row.0.lowercased().replacingOccurrences(of: " ", with: "."),
+                phase: row.1, status: "active", coachId: nil,
+                callsAllotted: row.2, archivedAt: nil, paymentState: row.3,
+                createdAt: BunStore.dayKey(joined) + "T09:00:00Z",
+                onboardingCompletedAt: row.5 ? BunStore.dayKey(joined) + "T12:00:00Z" : nil,
+                firstWinAt: row.6 ? BunStore.dayKey(joined) + "T12:00:00Z" : nil,
+                testimonialCollected: row.0 == "Sami Idris"
+            )
         }
     }
 
@@ -457,6 +466,46 @@ enum BunFixtures {
                                    progressRating: 3 + (index % 3 == 0 ? 1 : 0),
                                    nextStep: index == 0 ? "Five applications before Friday" : nil,
                                    fathomUrl: nil, actionItemsJson: nil)
+            }
+        }
+        return out
+    }
+
+    /// The sales read the demo workspace shows: a healthy week, one setter
+    /// short yesterday.
+    static var sales: SalesPicture {
+        var picture = SalesPicture()
+        picture.setsWeek = 19
+        picture.setsToday = 3
+        picture.showed = 11
+        picture.noShows = 3
+        picture.unclaimed = 1
+        picture.dialsYesterday = 164
+        picture.dmsYesterday = 512
+        picture.setsYesterday = 7
+        picture.dialTarget = 200
+        picture.dmTarget = 600
+        picture.setsTarget = 12
+        picture.shortYesterday = ["Danny Cole"]
+        picture.closesPeriod = 6
+        picture.cashWeek = 11_400
+        picture.periodLabel = PayoutPeriods.period().label
+        return picture
+    }
+
+    /// Client self-reports over the last two weeks: most people reporting,
+    /// two gone quiet.
+    static var studentEODs: [StudentEOD] {
+        var out: [StudentEOD] = []
+        let reporting = [0, 1, 4, 5, 7]      // roster indexes still filing
+        for index in reporting {
+            for back in 0..<12 where (index + back) % 3 != 0 {
+                let date = Calendar.current.date(byAdding: .day, value: -back, to: Date()) ?? Date()
+                out.append(StudentEOD(id: UUID(), studentId: rosterIds[index],
+                                      reportDate: BunStore.dayKey(date),
+                                      applicationsSubmitted: 5 - (back % 3), outreachSent: 12,
+                                      replies: 3, interviews: back % 4 == 0 ? 1 : 0,
+                                      wins: nil, blockers: nil))
             }
         }
         return out

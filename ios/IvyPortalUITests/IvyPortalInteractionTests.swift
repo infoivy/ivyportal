@@ -11,15 +11,22 @@ final class BunSmokeTests: XCTestCase {
 
     func testBarShowsAllFiveTabs() {
         let app = launch()
-        for id in ["tab-home", "tab-money", "tab-team", "tab-clients", "tab-banking"] {
+        for id in ["tab-home", "tab-money", "tab-team", "tab-clients", "tab-work"] {
             XCTAssertTrue(app.buttons[id].waitForExistence(timeout: 4), id)
         }
     }
 
-    func testBankingDirectLaunch() {
-        let app = launch(tab: "banking")
-        XCTAssertTrue(app.staticTexts["Your cards"].waitForExistence(timeout: 5),
-                      "direct: \(app.staticTexts.allElementsBoundByIndex.prefix(12).map(\.label))")
+    /// Banking folded into Money (2026-08-18): the cards live there now.
+    func testCardsLiveOnMoney() {
+        let app = launch(tab: "money")
+        XCTAssertTrue(app.staticTexts["Your cards"].waitForExistence(timeout: 6),
+                      "cards on money: \(app.staticTexts.allElementsBoundByIndex.prefix(12).map(\.label))")
+    }
+
+    func testWorkDirectLaunch() {
+        let app = launch(tab: "work")
+        XCTAssertTrue(app.staticTexts["Work"].waitForExistence(timeout: 6),
+                      "direct work: \(app.staticTexts.allElementsBoundByIndex.prefix(10).map(\.label))")
     }
 
     func testMoneyDirectLaunch() {
@@ -55,7 +62,7 @@ final class BunSmokeTests: XCTestCase {
         switchTab(app, id: "tab-money", expect: "Money")
         switchTab(app, id: "tab-team", expect: "Team")
         switchTab(app, id: "tab-clients", expect: "Clients")
-        switchTab(app, id: "tab-banking", expect: "Total balance")
+        switchTab(app, id: "tab-work", expect: "Work")
     }
 }
 
@@ -153,5 +160,29 @@ final class BunOnboardingDemo: XCTestCase {
         XCTAssertTrue(landed,
                       "signed-in landing: \(app.staticTexts.allElementsBoundByIndex.prefix(14).map(\.label))")
         snap(app, "07-signed-in-landing")
+    }
+}
+
+/// Home's lower half: the strips that route to the Team and Clients tabs.
+/// Kept as a test rather than a manual check because they sit below the fold,
+/// where a broken layout would go unseen in a screenshot review.
+@MainActor
+final class BunHomeStripTests: XCTestCase {
+    func testHomeCarriesTeamAndClientStrips() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-bunTab", "home"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["Welcome, Alex"].waitForExistence(timeout: 8))
+        // XCUITest counts off-screen elements as existing, so scroll first
+        // and judge the strips on where they actually land.
+        for _ in 0..<3 { app.swipeUp() }
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = "home-lower"
+        shot.lifetime = .keepAlways
+        add(shot)
+        XCTAssertTrue(app.staticTexts["EOD coverage"].exists, "team strip")
+        XCTAssertTrue(app.staticTexts["At risk"].exists, "clients strip")
+        XCTAssertTrue(app.staticTexts["Need a check-in"].exists, "check-in stat")
+        XCTAssertTrue(app.staticTexts["At risk"].isHittable, "clients strip on screen")
     }
 }

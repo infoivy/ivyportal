@@ -105,12 +105,28 @@ struct StudentRosterItem: Decodable, Identifiable, Sendable {
     let archivedAt: String?
     /// "scholarship" pins a student to the bottom of the priority roster.
     let paymentState: String?
+    // Delivery-picture columns: joined, onboarding finished, first win, and
+    // whether the testimonial is already in.
+    let createdAt: String?
+    let onboardingCompletedAt: String?
+    let firstWinAt: String?
+    let testimonialCollected: Bool?
 
     enum CodingKeys: String, CodingKey {
         case id, fullName = "full_name", email, phase, status, coachId = "coach_id"
         case callsAllotted = "calls_allotted", archivedAt = "archived_at"
-        case paymentState = "payment_state"
+        case paymentState = "payment_state", createdAt = "created_at"
+        case onboardingCompletedAt = "onboarding_completed_at"
+        case firstWinAt = "first_win_at", testimonialCollected = "testimonial_collected"
     }
+
+    /// Joined but still not through Start Here after a week.
+    var stuckInOnboarding: Bool {
+        (phase ?? "onboarding") == "onboarding" && onboardingCompletedAt == nil
+            && (createdAt?.prefix(10)).map { String($0) < BunStore.dayKey(Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()) } == true
+    }
+
+    var testimonialReady: Bool { firstWinAt != nil && testimonialCollected == false }
 
     /// Program type derives from the coaching allowance (business rule).
     var isOneOnOne: Bool { (callsAllotted ?? 0) > 0 }
@@ -351,7 +367,7 @@ final class PortalAPI {
         // Web conventions: demo rows and archived students never surface
         // (archived_at is the universal roster-removal flag).
         try await client().from("students")
-            .select("id, full_name, email, phase, status, coach_id, calls_allotted, archived_at, payment_state")
+            .select("id, full_name, email, phase, status, coach_id, calls_allotted, archived_at, payment_state, created_at, onboarding_completed_at, first_win_at, testimonial_collected")
             .eq("is_demo", value: false)
             .is("archived_at", value: nil)
             .order("full_name")
@@ -2760,5 +2776,172 @@ extension PortalAPI {
         guard !ids.isEmpty else { return [] }
         return try await profiles(ids: ids)
             .sorted { ($0.displayName ?? "") < ($1.displayName ?? "") }
+    }
+}
+
+// MARK: - Home pictures (web home-sales-picture / home-fulfillment-picture)
+
+/// The sales read: this week's sets and show rate, yesterday's volume against
+/// the targets that applied, and the period's closes.
+struct SalesPicture: Sendable {
+    var setsWeek = 0
+    var setsToday = 0
+    var showed = 0
+    var noShows = 0
+    var unclaimed = 0
+    var dialsYesterday = 0
+    var dmsYesterday = 0
+    var setsYesterday = 0
+    var dialTarget = 0
+    var dmTarget = 0
+    var setsTarget = 0
+    var shortYesterday: [String] = []
+    var closesPeriod = 0
+    var cashWeek: Double = 0
+    var periodLabel = ""
+
+    /// nil when nothing has been marked either way — never render 0%.
+    var showRate: Int? {
+        let den = showed + noShows
+        guard den > 0 else { return nil }
+        return Int((Double(showed) / Double(den) * 100).rounded())
+    }
+
+    /// One honest line: what the setters actually did yesterday.
+    var volumeLine: String {
+        var bits: [String] = []
+        if dialTarget > 0 { bits.append("\(dialsYesterday) of \(dialTarget) dials") }
+        if dmTarget > 0 { bits.append("\(dmsYesterday) of \(dmTarget) DMs") }
+        bits.append("\(setsYesterday) of \(setsTarget) sets")
+        return bits.joined(separator: " · ")
+    }
+}
+
+extension PortalAPI {
+    /// Daily KPI targets by setter type. Same numbers the EOD form judges on
+    /// (founder-directed 2026-07-28: DM setters run 300 DMs and 6 sets).
+    nonisolated static func kpiTargets(for setterType: String) -> (dials: Int, dms: Int, sets: Int) {
+        switch setterType {
+        case "phone": (100, 0, 3)
+        case "full_cycle": (100, 50, 3)
+        default: (0, 300, 6)
+        }
+    }
+
+    private nonisolated static func day(_ offset: Int) -> String {
+        let date = Calendar.current.date(byAdding: .day, value: offset, to: Date()) ?? Date()
+        return BunStore.dayKey(date)
+    }
+
+    /// Monday of the current week, the week every "this week" figure uses.
+    private nonisolated static func weekStart() -> String {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.firstWeekday = 2
+        let start = calendar.dateInterval(of: .weekOfYear, for: Date())?.start ?? Date()
+        return BunStore.dayKey(start)
+    }
+
+    func salesPicture() async throws -> SalesPicture {
+        struct SetRow: Decodable {
+            let ownerId: UUID?
+            let status: String
+            let attendanceStatus: String?
+            let eventStart: String
+            enum CodingKeys: String, CodingKey {
+                case ownerId = "owner_id", status
+                case attendanceStatus = "attendance_status", eventStart = "event_start"
+            }
+        }
+        struct EODRow: Decodable {
+            let userId: UUID
+            let dials: Int?
+            let dmsSent: Int?
+            let leadsContacted: Int?
+            let callsBooked: Int?
+            enum CodingKeys: String, CodingKey {
+                case userId = "user_id", dials, dmsSent = "dms_sent"
+                case leadsContacted = "leads_contacted", callsBooked = "calls_booked"
+            }
+        }
+        struct DealRow: Decodable {
+            let cashCollectedUpfront: Double?
+            let dealDate: String
+            enum CodingKeys: String, CodingKey {
+                case cashCollectedUpfront = "cash_collected_upfront", dealDate = "deal_date"
+            }
+        }
+
+        let today = Self.day(0)
+        let yesterday = Self.day(-1)
+        let week = Self.weekStart()
+        let period = PayoutPeriods.period()
+
+        async let setsTask: [SetRow] = client().from("set_reminders")
+            .select("owner_id, status, attendance_status, event_start")
+            .gte("event_start", value: week + "T00:00:00")
+            .execute().value
+        async let eodsTask: [EODRow] = client().from("eods")
+            .select("user_id, dials, dms_sent, leads_contacted, calls_booked")
+            .eq("report_date", value: yesterday)
+            .execute().value
+        async let dealsTask: [DealRow] = client().from("deals")
+            .select("cash_collected_upfront, deal_date")
+            .eq("is_demo", value: false)
+            .is("voided_at", value: nil)
+            .gte("deal_date", value: min(week, period.start))
+            .lte("deal_date", value: period.end)
+            .execute().value
+        async let rolesTask = staffRoles()
+
+        var picture = SalesPicture()
+        picture.periodLabel = period.label
+
+        let live = (try await setsTask).filter { $0.status != "cancelled" }
+        picture.setsWeek = live.count
+        picture.setsToday = live.filter { $0.eventStart.prefix(10) == today }.count
+        picture.showed = live.filter { $0.attendanceStatus == "showed" }.count
+        picture.noShows = live.filter { $0.attendanceStatus == "no_show" }.count
+        picture.unclaimed = live.filter { $0.ownerId == nil }.count
+
+        let roles = try await rolesTask
+        let setterIDs = Set(roles.filter { $0.role == "setter" }.map(\.userId))
+        let setters = try await profiles(ids: Array(setterIDs)).filter { $0.setterType != nil }
+        let eods = try await eodsTask
+        for setter in setters {
+            let targets = Self.kpiTargets(for: setter.setterType ?? "dm")
+            let mine = eods.filter { $0.userId == setter.id }
+            let dials = mine.reduce(0) { $0 + ($1.dials ?? 0) }
+            // "Leads contacted" folded into DMs sent — old rows kept the old
+            // column, so readers take whichever is larger (founder 2026-07-11).
+            let dms = mine.reduce(0) { $0 + max($1.dmsSent ?? 0, $1.leadsContacted ?? 0) }
+            let sets = mine.reduce(0) { $0 + ($1.callsBooked ?? 0) }
+            picture.dialsYesterday += dials
+            picture.dmsYesterday += dms
+            picture.setsYesterday += sets
+            picture.dialTarget += targets.dials
+            picture.dmTarget += targets.dms
+            picture.setsTarget += targets.sets
+            let short = mine.isEmpty || dials < targets.dials || dms < targets.dms || sets < targets.sets
+            if short { picture.shortYesterday.append(setter.displayName ?? "Team member") }
+        }
+
+        let deals = try await dealsTask
+        picture.closesPeriod = deals.filter { $0.dealDate >= period.start }.count
+        picture.cashWeek = deals.filter { $0.dealDate >= week }
+            .reduce(0) { $0 + ($1.cashCollectedUpfront ?? 0) }
+        return picture
+    }
+
+    /// Coaching calls on the books for the next `days` days.
+    func scheduledCallsCount(days: Int = 7) async throws -> Int {
+        struct Row: Decodable { let id: UUID }
+        let rows: [Row] = try await client().from("student_calls")
+            .select("id")
+            .is("voided_at", value: nil)
+            .eq("status", value: "scheduled")
+            .gte("call_date", value: Self.day(0))
+            .lte("call_date", value: Self.day(days))
+            .execute().value
+        return rows.count
     }
 }

@@ -1,19 +1,20 @@
 import SwiftUI
 
-/// Five tabs (founder 2026-08-18). Studio was two jobs behind a segment and
-/// team coverage was buried in a Home sheet, so both of the surfaces the
-/// founder reads daily were several taps down. Split so each tab does one
-/// thing: Team owns coverage + performance, Clients owns the client book.
+/// Five tabs (founder 2026-08-18, second pass). Banking folded into Money —
+/// accounts, cards and the wallet are the same money as the payments above
+/// them — and the freed slot became Work, the person's own daily queue with
+/// room for the surfaces still coming over from the web portal.
 enum BunTab: String, CaseIterable {
-    case home, money, team, clients, banking
+    case home, money, team, clients, work
 
     /// SF Symbol name, or nil where the glyph is drawn (see BunIcons).
     /// Founder 2026-08-18: Money takes Mercury's transfers arrows, Team takes
     /// the list, Clients takes the two-person glyph.
     var symbol: String? {
         switch self {
-        case .home, .money, .team, .banking: nil
+        case .home, .money, .team: nil
         case .clients: "person.2"
+        case .work: "checkmark.circle"
         }
     }
     var title: String {
@@ -22,7 +23,7 @@ enum BunTab: String, CaseIterable {
         case .money: "Money"
         case .team: "Team"
         case .clients: "Clients"
-        case .banking: "Banking"
+        case .work: "Work"
         }
     }
 }
@@ -100,7 +101,7 @@ struct BunShell: View {
         case .money: BunMoneyPage()
         case .team: BunTeamPage()
         case .clients: BunClientsPage()
-        case .banking: BunBanking(tab: $tab)
+        case .work: BunWorkPage()
         }
     }
 
@@ -164,9 +165,8 @@ struct BunShell: View {
             case .home: BunHouseIcon(size: 21.5)
             case .money: BunTransferIcon(size: 18.3)
             case .team: BunListIcon(size: 18.2)
-            case .banking: BunBankIcon(size: 19.6)
-            case .clients:
-                // SF's person.2 sits ~0.5pt proud of the drawn glyphs.
+            case .clients, .work:
+                // SF's glyphs sit ~0.5pt proud of the drawn ones.
                 Image(systemName: item.symbol ?? "circle")
                     .font(.system(size: 18, weight: .regular))
                     .offset(y: 0.5)

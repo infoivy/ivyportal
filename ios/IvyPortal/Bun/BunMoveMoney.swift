@@ -33,6 +33,12 @@ struct BunMoneyPage: View {
 
                 edgeHairline
 
+                // Banking folded in (founder 2026-08-18): accounts, cards and
+                // the wallet are the same money as the payments above.
+                BunBanking(embedded: true)
+
+                edgeHairline
+
                 BunTransactions(embedded: true)
             }
             .padding(.horizontal, 22)

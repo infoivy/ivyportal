@@ -54,8 +54,11 @@ struct BunTaskRow: View {
     }
 }
 
-struct BunActionItemsSheet: View {
+/// The queue itself. `embedded` drops the sheet chrome so the Work tab can
+/// host it inline rather than behind another tap.
+struct BunActionItemsView: View {
     @Environment(\.dismiss) private var dismiss
+    var embedded = false
     @State private var store = BunStore.shared
     @State private var filter = 0
     @State private var showAdd = false
@@ -76,12 +79,41 @@ struct BunActionItemsSheet: View {
     private var teamTasks: [BunStore.BunTask] { visible.filter { !$0.isClient } }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                HStack {
-                    BunTitle(text: "Action items")
-                    Spacer()
-                    BunChipButton(symbol: "xmark") { dismiss() }
+        Group {
+            if embedded {
+                queue
+            } else {
+                ScrollView {
+                    queue
+                        .padding(.horizontal, 22)
+                        .padding(.top, 18)
+                        .padding(.bottom, 120)
+                }
+                .scrollIndicators(.hidden)
+                .safeAreaInset(edge: .bottom) {
+                    BunCTA(label: "Add an item", symbol: "plus", filled: true) { showAdd = true }
+                        .padding(.horizontal, 22)
+                        .padding(.bottom, 8)
+                        .background(BunTheme.ground.opacity(0.94))
+                }
+            }
+        }
+        .sheet(isPresented: $showAdd) {
+            BunAddTaskSheet()
+                .presentationBackground(BunTheme.ground)
+                .presentationCornerRadius(40)
+        }
+        .task { await store.loadActionItems() }
+    }
+
+    private var queue: some View {
+        VStack(alignment: .leading, spacing: 20) {
+                if !embedded {
+                    HStack {
+                        BunTitle(text: "Action items")
+                        Spacer()
+                        BunChipButton(symbol: "xmark") { dismiss() }
+                    }
                 }
 
                 BunSegment(options: Self.filters, selection: $filter)
@@ -102,24 +134,12 @@ struct BunActionItemsSheet: View {
                     group("Clients", tasks: clientTasks)
                     group("Team", tasks: teamTasks)
                 }
-            }
-            .padding(.horizontal, 22)
-            .padding(.top, 18)
-            .padding(.bottom, 120)
+
+                if embedded {
+                    BunPillChip(symbol: "plus", label: "Add an item") { showAdd = true }
+                        .padding(.top, 4)
+                }
         }
-        .scrollIndicators(.hidden)
-        .safeAreaInset(edge: .bottom) {
-            BunCTA(label: "Add an item", symbol: "plus", filled: true) { showAdd = true }
-                .padding(.horizontal, 22)
-                .padding(.bottom, 8)
-                .background(BunTheme.ground.opacity(0.94))
-        }
-        .sheet(isPresented: $showAdd) {
-            BunAddTaskSheet()
-                .presentationBackground(BunTheme.ground)
-                .presentationCornerRadius(40)
-        }
-        .task { await store.loadActionItems() }
     }
 
     private var emptyLine: String {
@@ -307,4 +327,10 @@ struct BunAddTaskSheet: View {
             }
         }
     }
+}
+
+
+/// Sheet form, kept for deep links and the screenshot preset.
+struct BunActionItemsSheet: View {
+    var body: some View { BunActionItemsView() }
 }

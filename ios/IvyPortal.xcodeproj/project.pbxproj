@@ -53,6 +53,7 @@
 		B02157FCD3E396D7BFDBADC1 /* BunActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60C54485ED7207D8DA4D0EB7 /* BunActions.swift */; };
 		B81AC2EA56708288101A5555 /* objection-handling-playbook.md in Resources */ = {isa = PBXBuildFile; fileRef = 71296072CE3006F177B72061 /* objection-handling-playbook.md */; };
 		B9CCA69A4358D2099BB2E931 /* simple-discovery-framework-phone-setters.md in Resources */ = {isa = PBXBuildFile; fileRef = BD461171928EC09573041F45 /* simple-discovery-framework-phone-setters.md */; };
+		C3696207A9EE0C582553943A /* BunWork.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8B449D0E696174FC6ACB249 /* BunWork.swift */; };
 		C36F2D86492FDAD2E1E4849F /* BunTransactions.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADD8AE473F23EC43644F4E22 /* BunTransactions.swift */; };
 		C5B7A6E28FC0E6FEED0ADAA7 /* Apercu Pro Light.otf in Resources */ = {isa = PBXBuildFile; fileRef = F88DA57E6CAD7D65DD014A5E /* Apercu Pro Light.otf */; };
 		CB5CA7854B1C4F109116C21A /* BunPeople.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72CB90E12D322E37278736F0 /* BunPeople.swift */; };
@@ -130,6 +131,7 @@
 		9D5CE19D6C58F3F1E825D3FD /* Apercu Pro Regular.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Apercu Pro Regular.otf"; sourceTree = "<group>"; };
 		A38ABDF5AC1EB60BA2A87B77 /* IvyPortalTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = IvyPortalTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A7D5D8C7EB8E956CCC461583 /* PortalConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortalConfig.swift; sourceTree = "<group>"; };
+		A8B449D0E696174FC6ACB249 /* BunWork.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BunWork.swift; sourceTree = "<group>"; };
 		AD534AEACCB71381EDEE0B56 /* BunMoveMoney.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BunMoveMoney.swift; sourceTree = "<group>"; };
 		ADD8AE473F23EC43644F4E22 /* BunTransactions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BunTransactions.swift; sourceTree = "<group>"; };
 		AEF974AF4E88ED4AF97F20A1 /* Apercu Pro Bold.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Apercu Pro Bold.otf"; sourceTree = "<group>"; };
@@ -220,6 +222,7 @@
 				0312F0BB9D1814C9B427DF96 /* BunTheme.swift */,
 				ADD8AE473F23EC43644F4E22 /* BunTransactions.swift */,
 				B15CF4267CBF0C60B19D5E29 /* BunWelcome.swift */,
+				A8B449D0E696174FC6ACB249 /* BunWork.swift */,
 			);
 			path = Bun;
 			sourceTree = "<group>";
@@ -544,6 +547,7 @@
 				AA092A861B0904BDE6977689 /* BunTheme.swift in Sources */,
 				C36F2D86492FDAD2E1E4849F /* BunTransactions.swift in Sources */,
 				DF31E1D47C16F256E23EDBDE /* BunWelcome.swift in Sources */,
+				C3696207A9EE0C582553943A /* BunWork.swift in Sources */,
 				7FA7FD5BDF411CF5C28295EE /* ClientPriority.swift in Sources */,
 				4B3B6082562F700C0AA9E795 /* FeatureNavigation.swift in Sources */,
 				FC36D8521EA779B953EFCA50 /* HomeAction.swift in Sources */,

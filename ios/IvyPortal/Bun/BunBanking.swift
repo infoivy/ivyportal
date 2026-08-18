@@ -1,10 +1,12 @@
 import SwiftUI
 
-/// Banking tab (founder 2026-08-17): Accounts and Cards merged. Total balance
-/// and the Bun accounts first, then the cards. Linked external accounts are
-/// gone — this is one workspace's own money.
+/// The banking block: total balance, the workspace's accounts, its cards and
+/// the wallet meter. Founder 2026-08-18: this stopped being its own tab and
+/// folded into Money, because it is the same money as the payments above it.
 struct BunBanking: View {
-    @Binding var tab: BunTab
+    /// Inside Money it drops its own page title; the standalone form is kept
+    /// for previews and tests.
+    var embedded = false
     @State private var store = BunStore.shared
     @State private var selectedCard: BunCard?
     @State private var showCreate = false
@@ -28,19 +30,19 @@ struct BunBanking: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 26) {
-                header
-                accountsSection
-                edgeHairline
-                cardsSection
-                walletBlock
+        Group {
+            if embedded {
+                sections
+            } else {
+                ScrollView {
+                    sections
+                        .padding(.horizontal, 22)
+                        .padding(.top, 12)
+                        .padding(.bottom, 96)
+                }
+                .scrollIndicators(.hidden)
             }
-            .padding(.horizontal, 22)
-            .padding(.top, 12)
-            .padding(.bottom, 96)
         }
-        .scrollIndicators(.hidden)
         .task {
             await store.loadHome()
             await store.loadMove()
@@ -65,6 +67,16 @@ struct BunBanking: View {
         }
     }
 
+    private var sections: some View {
+        VStack(alignment: .leading, spacing: 26) {
+            if !embedded { header }
+            accountsSection
+            edgeHairline
+            cardsSection
+            walletBlock
+        }
+    }
+
     private var header: some View {
         VStack(alignment: .leading, spacing: 14) {
             BunTitle(text: "Banking")
@@ -82,22 +94,20 @@ struct BunBanking: View {
             Text("Bun accounts").font(bunFont(24)).foregroundStyle(BunTheme.ink)
             VStack(spacing: 12) {
                 if live {
-                    accountCard(name: "Collected", caption: "this month", amount: store.monthIn ?? 0) { tab = .money }
-                    accountCard(name: "Outstanding", caption: "installments receivable", amount: outstanding) { tab = .money }
+                    accountCard(name: "Collected", caption: "this month", amount: store.monthIn ?? 0)
+                    accountCard(name: "Outstanding", caption: "installments receivable", amount: outstanding)
                 } else {
                     ForEach(BunFixtures.accounts) { account in
                         accountCard(name: "\(account.name) ••\(account.last4)", caption: "",
-                                    amount: account.balance) { tab = .money }
+                                    amount: account.balance)
                     }
                 }
             }
         }
     }
 
-    private func accountCard(name: String, caption: String, amount: Double,
-                             action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 16) {
+    private func accountCard(name: String, caption: String, amount: Double) -> some View {
+        HStack(spacing: 16) {
                 BunMedallion(size: 44)
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 8) {
@@ -108,16 +118,10 @@ struct BunBanking: View {
                     }
                     BunMoney(amount: amount, size: 20)
                 }
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .regular))
-                    .foregroundStyle(BunTheme.secondary)
-            }
-            .padding(20)
-            .background(BunTheme.raised, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-            .contentShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+            Spacer()
         }
-        .buttonStyle(BunPressStyle())
+        .padding(20)
+        .background(BunTheme.raised, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
     }
 
     // MARK: Cards

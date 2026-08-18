@@ -9,6 +9,8 @@ struct BunTeamPage: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 26) {
                 BunTitle(text: "Team")
+                salesSection
+                hairline
                 BunTeamCoverage()
                 hairline
                 performanceSection
@@ -18,13 +20,63 @@ struct BunTeamPage: View {
             .padding(.bottom, 96)
         }
         .scrollIndicators(.hidden)
-        .task { await store.loadTeam() }
+        .task {
+            await store.loadTeam()
+            await store.loadPictures()
+        }
         .refreshable {
             store.teamSummary = nil
             store.teamRows = nil
             store.teamNotes = nil
+            store.sales = nil
             await store.loadTeam()
+            await store.loadPictures()
         }
+    }
+
+    /// The web's sales picture, minus what the funnel below already answers:
+    /// yesterday judged against the targets that applied, this week's booked
+    /// sets and show rate off the set records, and the period's closes.
+    @ViewBuilder private var salesSection: some View {
+        if let sales = store.sales {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack(alignment: .top, spacing: 0) {
+                    stat("Sets this week", value: "\(sales.setsWeek)",
+                         caption: sales.setsToday > 0 ? "\(sales.setsToday) today" : nil)
+                    stat("Show rate", value: sales.showRate.map { "\($0)%" } ?? "–",
+                         caption: "\(sales.showed) of \(sales.showed + sales.noShows) showed")
+                    stat("Closes", value: "\(sales.closesPeriod)",
+                         caption: "this period", tone: BunTheme.green)
+                }
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Yesterday").font(BunType.label).foregroundStyle(BunTheme.secondary)
+                    Text(sales.volumeLine)
+                        .font(BunType.rowTitle).foregroundStyle(BunTheme.ink)
+                        .lineLimit(1).minimumScaleFactor(0.8)
+                    if !sales.shortYesterday.isEmpty {
+                        Text("Short: " + sales.shortYesterday.joined(separator: ", "))
+                            .font(BunType.caption).foregroundStyle(BunTheme.pink)
+                            .lineLimit(1).minimumScaleFactor(0.8)
+                    }
+                }
+            }
+        }
+    }
+
+    /// Label, value, caption — one baseline across the row, caption line
+    /// always present so the three read as one block.
+    private func stat(_ label: String, value: String, caption: String?, tone: Color = BunTheme.ink) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(label).font(BunType.label).foregroundStyle(BunTheme.secondary)
+                .lineLimit(1).minimumScaleFactor(0.8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Text(value).font(bunFont(26, .medium)).foregroundStyle(tone).monospacedDigit()
+            Text(caption ?? " ").font(bunFont(13))
+                .foregroundStyle(caption == nil ? .clear : BunTheme.tertiary)
+                .lineLimit(1).minimumScaleFactor(0.75)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: Performance
@@ -152,6 +204,8 @@ struct BunClientsPage: View {
                     BunChipButton(symbol: "plus") { showLogClose = true }
                         .accessibilityLabel("Log a close")
                 }
+                deliverySection
+                hairline
                 clientsSection
             }
             .padding(.horizontal, 22)
@@ -162,12 +216,17 @@ struct BunClientsPage: View {
         .task {
             await store.loadClients()
             await store.loadOps()
+            await store.loadPictures()
+            await store.loadActionItems()
         }
         .refreshable {
             store.roster = nil
             store.health = nil
             store.callCounts = nil
+            store.studentEODs = nil
+            store.scheduledCalls = nil
             await store.loadClients()
+            await store.loadPictures()
         }
         .sheet(item: $selectedStudent) { student in
             BunClientSheet(student: student)
@@ -181,6 +240,65 @@ struct BunClientsPage: View {
         }
     }
 
+
+    /// The web's delivery picture, phone-shaped: six numbers, each one a
+    /// filter on the roster below rather than a link to a general page.
+    private var deliverySection: some View {
+        let delivery = store.delivery
+        return VStack(alignment: .leading, spacing: 16) {
+            Text("Delivery").font(BunType.section).foregroundStyle(BunTheme.ink)
+            let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
+            LazyVGrid(columns: columns, spacing: 12) {
+                tile("Active", value: delivery.active,
+                     detail: "\(delivery.newThisWeek) joined this week", filter: .all)
+                tile("At risk", value: delivery.atRisk,
+                     detail: "\(delivery.watch) more to watch", filter: .atRisk,
+                     tone: delivery.atRisk > 0 ? BunTheme.pink : nil)
+                tile("Needs a check-in", value: delivery.dueCheckin,
+                     detail: "\(delivery.checkedToday) done today", filter: .needsCheckin,
+                     tone: delivery.dueCheckin > 0 ? amber : nil)
+                tile("Quiet 14 days", value: delivery.quiet14,
+                     detail: "\(delivery.filedToday) filed today", filter: .quiet)
+                tile("Stuck in onboarding", value: delivery.stuck,
+                     detail: "7+ days in Start Here", filter: .onboarding,
+                     tone: delivery.stuck > 0 ? amber : nil)
+                tile("Testimonial ready", value: delivery.testimonialsReady,
+                     detail: "first win, not collected", filter: .testimonial)
+            }
+            if delivery.callsWeek > 0 || delivery.openItems > 0 {
+                Text("\(delivery.callsWeek) 1:1 call\(delivery.callsWeek == 1 ? "" : "s") booked this week · \(delivery.openItems) open item\(delivery.openItems == 1 ? "" : "s")")
+                    .font(BunType.caption).foregroundStyle(BunTheme.secondary)
+            }
+        }
+    }
+
+    private var amber: Color { Color(red: 0.95, green: 0.72, blue: 0.35) }
+
+    /// Tiles share one height and one value baseline (founder rule), so the
+    /// detail line is always rendered even when it is blank.
+    private func tile(_ label: String, value: Int, detail: String,
+                      filter: BunStore.ClientFilter, tone: Color? = nil) -> some View {
+        Button {
+            withAnimation(.snappy(duration: 0.2)) {
+                store.clientFilter = store.clientFilter == filter ? .all : filter
+            }
+        } label: {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(label).font(BunType.label).foregroundStyle(BunTheme.secondary)
+                    .lineLimit(1).minimumScaleFactor(0.85)
+                Text("\(value)").font(bunFont(26, .medium))
+                    .foregroundStyle(tone ?? BunTheme.ink).monospacedDigit()
+                Text(detail).font(bunFont(13)).foregroundStyle(BunTheme.tertiary)
+                    .lineLimit(1).minimumScaleFactor(0.8)
+            }
+            .frame(maxWidth: .infinity, minHeight: 96, alignment: .topLeading)
+            .padding(14)
+            .background(store.clientFilter == filter && filter != .all ? BunTheme.fieldBright : BunTheme.raised,
+                        in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        }
+        .buttonStyle(BunPressStyle())
+    }
 
     private var clientsSection: some View {
         VStack(alignment: .leading, spacing: 22) {
@@ -210,7 +328,15 @@ struct BunClientsPage: View {
                 }
             }
             hairline
-            Text("All clients").font(BunType.section).foregroundStyle(BunTheme.ink)
+            HStack {
+                Text(store.clientFilter.label).font(BunType.section).foregroundStyle(BunTheme.ink)
+                Spacer()
+                if store.clientFilter != .all {
+                    BunPillChip(symbol: "xmark", label: "Clear") {
+                        withAnimation(.snappy(duration: 0.2)) { store.clientFilter = .all }
+                    }
+                }
+            }
             clientsList
         }
     }
@@ -259,12 +385,14 @@ struct BunClientsPage: View {
                 }
                 .frame(minHeight: 60)
             }
-        } else if store.prioritizedRoster.isEmpty {
-            Text("No active clients yet. Logged closes create client accounts.")
+        } else if store.clients(for: store.clientFilter).isEmpty {
+            Text(store.clientFilter == .all
+                 ? "No active clients yet. Logged closes create client accounts."
+                 : "Nobody is in that state right now.")
                 .font(bunFont(17)).foregroundStyle(BunTheme.secondary)
         } else {
             VStack(spacing: 0) {
-                ForEach(store.prioritizedRoster) { student in
+                ForEach(store.clients(for: store.clientFilter)) { student in
                     BunClientRow(
                         student: student,
                         health: store.health?[student.id],

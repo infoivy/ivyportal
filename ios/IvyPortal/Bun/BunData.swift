@@ -139,6 +139,14 @@ final class BunStore {
     /// Whoever is filing: the signed-in id, or the demo person signed out.
     var meId: UUID { PortalAPI.shared.currentUserID ?? BunFixtures.meId }
 
+    // Home pictures (web home-sales-picture / home-fulfillment-picture)
+    var sales: SalesPicture?
+    /// Client self-reports, last 14 days — filed-today and quiet-14 come off
+    /// the same rows the web counts.
+    var studentEODs: [StudentEOD]?
+    var scheduledCalls: Int?
+    var clientFilter: ClientFilter = .all
+
     // Movement (4 months, oldest first)
     var movementIn: [(label: String, amount: Double)]?
     var movementOut: [(label: String, amount: Double)]?
@@ -468,6 +476,107 @@ final class BunStore {
         }
     }
 
+    // MARK: - The delivery picture
+
+    /// Every tile on the Clients tab is one of these, and tapping it filters
+    /// the roster to exactly the people it counted (founder's exact-element
+    /// rule — a number must land on its own rows).
+    enum ClientFilter: String, CaseIterable, Sendable {
+        case all, atRisk, needsCheckin, quiet, onboarding, testimonial
+
+        var label: String {
+            switch self {
+            case .all: "All clients"
+            case .atRisk: "At risk"
+            case .needsCheckin: "Needs a check-in"
+            case .quiet: "Quiet 14 days"
+            case .onboarding: "Stuck in onboarding"
+            case .testimonial: "Testimonial ready"
+            }
+        }
+    }
+
+    struct Delivery: Sendable {
+        var active = 0
+        var newThisWeek = 0
+        var atRisk = 0
+        var watch = 0
+        var checkedToday = 0
+        var dueCheckin = 0
+        var filedToday = 0
+        var quiet14 = 0
+        var stuck = 0
+        var testimonialsReady = 0
+        var callsWeek = 0
+        var openItems = 0
+        var overdueItems = 0
+    }
+
+    private var activeClients: [StudentRosterItem] {
+        (roster ?? []).filter { $0.status == "active" && $0.archivedAt == nil }
+    }
+
+    /// Working phases only — the same set the check-in queue covers.
+    private var coverageClients: [StudentRosterItem] {
+        activeClients.filter { ["onboarding", "training", "coaching_1on1", "applying"].contains($0.phase ?? "onboarding") }
+    }
+
+    private var reportedRecently: Set<UUID> {
+        Set((studentEODs ?? []).map(\.studentId))
+    }
+
+    var delivery: Delivery {
+        var out = Delivery()
+        let active = activeClients
+        let today = Self.dayKey(Date())
+        out.active = active.count
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.firstWeekday = 2
+        let weekStart = Self.dayKey(calendar.dateInterval(of: .weekOfYear, for: Date())?.start ?? Date())
+        out.newThisWeek = active.filter { ($0.createdAt.map { String($0.prefix(10)) } ?? "9999") >= weekStart }.count
+        for client in active {
+            switch health?[client.id]?.band {
+            case .red: out.atRisk += 1
+            case .amber: out.watch += 1
+            default: break
+            }
+        }
+        out.checkedToday = coverageClients.filter { daysSinceCheckin($0.id) == 0 || checkedNow.contains($0.id) }.count
+        out.dueCheckin = coverageClients.filter { (daysSinceCheckin($0.id) ?? 99) >= 2 }.count
+        let reported = reportedRecently
+        out.filedToday = Set((studentEODs ?? []).filter { $0.reportDate == today }.map(\.studentId)).count
+        out.quiet14 = studentEODs == nil ? 0 : active.filter { !reported.contains($0.id) }.count
+        out.stuck = active.filter(\.stuckInOnboarding).count
+        out.testimonialsReady = active.filter(\.testimonialReady).count
+        out.callsWeek = scheduledCalls ?? 0
+        let clientTasks = tasks.filter { $0.isClient && !$0.done }
+        out.openItems = clientTasks.count
+        out.overdueItems = clientTasks.filter(\.isOverdue).count
+        return out
+    }
+
+    /// The rows behind one tile.
+    func clients(for filter: ClientFilter) -> [StudentRosterItem] {
+        let reported = reportedRecently
+        return prioritizedRoster.filter { client in
+            switch filter {
+            case .all: true
+            case .atRisk: health?[client.id]?.band == .red
+            case .needsCheckin: (daysSinceCheckin(client.id) ?? 99) >= 2
+            case .quiet: client.status == "active" && !reported.contains(client.id) && studentEODs != nil
+            case .onboarding: client.stuckInOnboarding
+            case .testimonial: client.testimonialReady
+            }
+        }
+    }
+
+    func loadPictures() async {
+        guard signedIn else { seedFixturesIfNeeded(); return }
+        if sales == nil { sales = try? await PortalAPI.shared.salesPicture() }
+        if studentEODs == nil { studentEODs = (try? await PortalAPI.shared.allStudentEODs(days: 14)) ?? [] }
+        if scheduledCalls == nil { scheduledCalls = try? await PortalAPI.shared.scheduledCallsCount() }
+    }
+
     // MARK: - Action items (the two sources the web hub merges)
 
     /// One row in the action queue, whichever table it came from.
@@ -701,6 +810,10 @@ final class BunStore {
         taskDoneOverride = [:]
         taskRemoved = []
         localTasks = []
+        sales = nil
+        studentEODs = nil
+        scheduledCalls = nil
+        clientFilter = .all
     }
 
     func refreshAll() async {
@@ -712,6 +825,7 @@ final class BunStore {
         await loadClients()
         await loadTeam()
         await loadActionItems()
+        await loadPictures()
     }
 
     // MARK: - Fixture seeding (signed-out demo workspace)
@@ -762,6 +876,9 @@ final class BunStore {
         if staffNames.isEmpty { staffNames = BunFixtures.staffNames }
         if myEODs == nil { myEODs = BunFixtures.myEODs }
         if callsByStudent.isEmpty { callsByStudent = BunFixtures.callsByStudent }
+        if sales == nil { sales = BunFixtures.sales }
+        if studentEODs == nil { studentEODs = BunFixtures.studentEODs }
+        if scheduledCalls == nil { scheduledCalls = 4 }
     }
 
     /// Sign-out path: drop live data and restore the demo workspace.
