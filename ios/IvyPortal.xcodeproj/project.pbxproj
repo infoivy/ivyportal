@@ -68,6 +68,7 @@
 		DED7B36B11995DD4C6E37850 /* BunCSM.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFAA7B3C1D0538A8B06B26B8 /* BunCSM.swift */; };
 		DF31E1D47C16F256E23EDBDE /* BunWelcome.swift in Sources */ = {isa = PBXBuildFile; fileRef = B15CF4267CBF0C60B19D5E29 /* BunWelcome.swift */; };
 		E303239DFBFBAD37D545E185 /* ClientPriorityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCEE861880D516223E0D7C72 /* ClientPriorityTests.swift */; };
+		E36CA80A2ACC646A6F04B366 /* BunWorkSurfaces.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34233D579F8225BF833AA2A4 /* BunWorkSurfaces.swift */; };
 		EB3B13FA2F5475E1D155D286 /* LoadState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DD51BEE6A265B624CAE96B0 /* LoadState.swift */; };
 		F04F8F8CA9DF3F0B0A4EE294 /* BunBanking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7071081907CE6680BBC714C8 /* BunBanking.swift */; };
 		F344055A2BFA543EEE27EEA5 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = FED59E459B48672F9C197181 /* Supabase */; };
@@ -105,6 +106,7 @@
 		2F88500C81536C1930C96266 /* Typography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Typography.swift; sourceTree = "<group>"; };
 		310F5EDFDA87D1BF05177AC0 /* HomeAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeAction.swift; sourceTree = "<group>"; };
 		313622262ECC323AC7B8136E /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		34233D579F8225BF833AA2A4 /* BunWorkSurfaces.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BunWorkSurfaces.swift; sourceTree = "<group>"; };
 		34642B044BD0E7D79FF89586 /* BunOnboarding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BunOnboarding.swift; sourceTree = "<group>"; };
 		3A0296FBF3AD1C5F202F3BA6 /* BunComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BunComponents.swift; sourceTree = "<group>"; };
 		468266E0B9C82788DE8BEB6D /* BunSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BunSheets.swift; sourceTree = "<group>"; };
@@ -232,6 +234,7 @@
 				ADD8AE473F23EC43644F4E22 /* BunTransactions.swift */,
 				B15CF4267CBF0C60B19D5E29 /* BunWelcome.swift */,
 				A8B449D0E696174FC6ACB249 /* BunWork.swift */,
+				34233D579F8225BF833AA2A4 /* BunWorkSurfaces.swift */,
 			);
 			path = Bun;
 			sourceTree = "<group>";
@@ -560,6 +563,7 @@
 				C36F2D86492FDAD2E1E4849F /* BunTransactions.swift in Sources */,
 				DF31E1D47C16F256E23EDBDE /* BunWelcome.swift in Sources */,
 				C3696207A9EE0C582553943A /* BunWork.swift in Sources */,
+				E36CA80A2ACC646A6F04B366 /* BunWorkSurfaces.swift in Sources */,
 				7FA7FD5BDF411CF5C28295EE /* ClientPriority.swift in Sources */,
 				4B3B6082562F700C0AA9E795 /* FeatureNavigation.swift in Sources */,
 				FC36D8521EA779B953EFCA50 /* HomeAction.swift in Sources */,

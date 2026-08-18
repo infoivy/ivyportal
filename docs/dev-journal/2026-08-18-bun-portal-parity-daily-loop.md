@@ -131,3 +131,29 @@ The web's profit split is a hardcoded constant with three real names in it. That
 ### Future work
 
 Testimonials, calendar and log-a-set, CRM, team chat, knowledge SOPs, admin and team administration. Then the student app mode. The profit split still needs to become a per-org setting before Finance can show it.
+
+---
+
+## Batch 6 — the profit split as an org setting, and the last web-only surfaces
+
+### Prompt
+
+"add the per org setting, call the org ivy sales academy, and also do the rest of the things u just mentioned"
+
+### What I did
+
+- **Migration `20260818040000_org_profit_split.sql`, applied to production.** `orgs.profit_split jsonb` plus an `orgs_admin_update` policy (owner/admin/founder of that org, via the existing SECURITY DEFINER helper) and a seed of the 70/15/15 rows onto tenant #1. The org was already named "Ivy Sales Academy", so nothing was renamed. Finance now renders the split from the org, and Settings has an editor that validates the total against 100%.
+- **Testimonials**: the pipeline (requested → received → approved → published) with one-tap advance, filters, and the client-side request already on the record. Video and image uploads stay on the web.
+- **Team channel**: the real `team_chat` table, General/Issue/Tip/Bug, posts as the caller, follows new messages to the bottom.
+- **Log a set**: writes the `set_reminders` row every set surface in the app reads. The Google Calendar event stays a web job and the flow says so.
+- **Knowledge**: the seven playbooks bundled in `IvyPortal/Resources/SOPs` (which had been dead weight since the rebuild) plus the org's docs, in one shelf with a plain markdown reader.
+- **Team administration**: roles, the EOD-exempt toggle, and the waiting-to-be-let-in queue with role assignment.
+- All four open from the Work tab shelf or Settings, so no new root tab.
+
+### What I did not do
+
+CRM. The Close pipeline and the Mochi dashboard are both served by TanStack server functions holding admin-only API credentials; there is no Supabase table for the app to read, so a CRM screen on the phone would either be empty or would need those credentials on the device. It needs an edge function first.
+
+### Fixes found by screenshot
+
+An em dash in a fixture message and another in a card-ledger caption (the copy rule forbids them), and `BunIconRow` subtitles wrapping to three lines in the Work shelf — one line with a tail truncation now.

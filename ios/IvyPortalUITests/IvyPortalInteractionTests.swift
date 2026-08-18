@@ -225,3 +225,23 @@ final class BunCardLedgerTests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Card balances"].isHittable, "ledger section on screen")
     }
 }
+
+/// The Work shelf (schedule, channel, knowledge, testimonials) sits under the
+/// action-item queue.
+@MainActor
+final class BunWorkShelfTests: XCTestCase {
+    func testWorkCarriesTheShelf() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-bunTab", "work"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["Work"].waitForExistence(timeout: 8))
+        for _ in 0..<4 { app.swipeUp() }
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = "work-shelf"
+        shot.lifetime = .keepAlways
+        add(shot)
+        XCTAssertTrue(app.staticTexts["Team channel"].isHittable, "channel row on screen")
+        XCTAssertTrue(app.staticTexts["Knowledge"].exists, "knowledge row")
+        XCTAssertTrue(app.staticTexts["Testimonials"].exists, "testimonials row")
+    }
+}

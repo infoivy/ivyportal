@@ -413,6 +413,18 @@ final class PortalAPI {
         let id: UUID
         let name: String
         let slug: String?
+        /// Profit split rows, a per-org setting (migration 20260818040000).
+        /// The web still carries a hardcoded constant; this is the version
+        /// that can ship to a second business.
+        var profitSplit: [ProfitShare]?
+
+        enum CodingKeys: String, CodingKey { case id, name, slug, profitSplit = "profit_split" }
+    }
+
+    struct ProfitShare: Codable, Sendable, Hashable, Identifiable {
+        var name: String
+        var pct: Double
+        var id: String { name }
     }
 
     /// Orgs the signed-in account belongs to. Returns [] until the
@@ -423,7 +435,7 @@ final class PortalAPI {
             let orgs: BunOrg
         }
         let rows: [Row] = try await client().from("org_members")
-            .select("orgs(id, name, slug)")
+            .select("orgs(id, name, slug, profit_split)")
             .eq("user_id", value: me)
             .execute().value
         return rows.map(\.orgs)
@@ -3314,5 +3326,129 @@ extension PortalAPI {
                         author: $0.userId.flatMap { names[$0] } ?? "Team member",
                         note: $0.note, createdAt: $0.createdAt)
         }
+    }
+}
+
+// MARK: - Org settings, testimonials, chat, sets, team admin (2026-08-18)
+
+extension PortalAPI {
+    /// The org's profit split. Only an owner/admin/founder of that org may
+    /// write it (policy `orgs_admin_update`).
+    func updateProfitSplit(orgId: UUID, rows: [ProfitShare]) async throws {
+        try await client().from("orgs")
+            .update(["profit_split": rows])
+            .eq("id", value: orgId)
+            .execute()
+    }
+
+    /// Testimonial pipeline: requested → received → approved → published.
+    func setTestimonialStatus(id: UUID, status: String) async throws {
+        var patch: [String: AnyJSON] = ["status": .string(status)]
+        if status != "requested" {
+            patch["collected_at"] = .string(ISO8601DateFormatter().string(from: Date()))
+        }
+        try await client().from("testimonials").update(patch).eq("id", value: id).execute()
+    }
+
+    struct ChatMessage: Identifiable, Sendable {
+        let id: UUID
+        let body: String
+        let kind: String
+        let author: String
+        let authorId: UUID?
+        let studentName: String?
+        let createdAt: String
+    }
+
+    /// The team channel. RLS decides visibility; the app posts as the caller.
+    func teamChat(limit: Int = 80) async throws -> [ChatMessage] {
+        struct Row: Decodable {
+            let id: UUID
+            let body: String
+            let kind: String?
+            let createdBy: UUID?
+            let studentId: UUID?
+            let createdAt: String
+            enum CodingKeys: String, CodingKey {
+                case id, body, kind, createdBy = "created_by"
+                case studentId = "student_id", createdAt = "created_at"
+            }
+        }
+        let rows: [Row] = try await client().from("team_chat")
+            .select("id, body, kind, created_by, student_id, created_at")
+            .order("created_at", ascending: false)
+            .limit(limit)
+            .execute().value
+        guard !rows.isEmpty else { return [] }
+        async let peopleTask = profiles(ids: Array(Set(rows.compactMap(\.createdBy))))
+        async let rosterTask = students()
+        let names = Dictionary(uniqueKeysWithValues: (try await peopleTask).map { ($0.id, $0.displayName ?? "Teammate") })
+        let clients = Dictionary(uniqueKeysWithValues: (try await rosterTask).map { ($0.id, $0.fullName) })
+        return rows.reversed().map {
+            ChatMessage(id: $0.id, body: $0.body, kind: $0.kind ?? "general",
+                        author: $0.createdBy.flatMap { names[$0] } ?? "Teammate",
+                        authorId: $0.createdBy,
+                        studentName: $0.studentId.flatMap { clients[$0] },
+                        createdAt: $0.createdAt)
+        }
+    }
+
+    func postChat(body: String, kind: String) async throws {
+        guard let me = currentUserID else { return }
+        struct Row: Encodable {
+            let body: String
+            let kind: String
+            let createdBy: UUID
+            enum CodingKeys: String, CodingKey { case body, kind, createdBy = "created_by" }
+        }
+        try await client().from("team_chat")
+            .insert(Row(body: body, kind: kind, createdBy: me))
+            .execute()
+    }
+
+    /// Record a booked call. The web version also writes a Google Calendar
+    /// event through a server function; from the phone this records the set
+    /// itself, which is what every set surface in the app reads.
+    func logSet(prospect: String, start: Date, durationMin: Int = 30, notes: String?) async throws {
+        guard let me = currentUserID else { return }
+        struct Row: Encodable {
+            let ownerId: UUID
+            let prospect: String
+            let eventStart: String
+            let durationMin: Int
+            let notes: String?
+            let source: String
+            enum CodingKeys: String, CodingKey {
+                case ownerId = "owner_id", prospect, eventStart = "event_start"
+                case durationMin = "duration_min", notes, source
+            }
+        }
+        try await client().from("set_reminders").insert(Row(
+            ownerId: me, prospect: prospect,
+            eventStart: ISO8601DateFormatter().string(from: start),
+            durationMin: durationMin, notes: notes, source: "app"
+        )).execute()
+    }
+
+    /// Admin toggle: an exempt member disappears from every expected-filer
+    /// surface (founder-directed rule, enforced the same way as the web).
+    func setEodExempt(userId: UUID, exempt: Bool) async throws {
+        try await client().from("profiles")
+            .update(["eod_exempt": exempt])
+            .eq("id", value: userId)
+            .execute()
+    }
+
+    /// Roles per member, for the team admin list.
+    func rolesByMember() async throws -> [UUID: [String]] {
+        Dictionary(grouping: try await staffRoles(), by: \.userId).mapValues { $0.map(\.role).sorted() }
+    }
+
+    /// Profiles with the admin columns the team list shows.
+    func teamAdminProfiles() async throws -> [StaffProfile] {
+        let roles = try await staffRoles()
+        let ids = Array(Set(roles.map(\.userId)))
+        guard !ids.isEmpty else { return [] }
+        return try await profiles(ids: ids).sorted { ($0.displayName ?? "") < ($1.displayName ?? "") }
     }
 }

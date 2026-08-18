@@ -464,6 +464,7 @@ struct BunFinanceView: View {
                 goalBlock(read)
                 edgeHairline
                 profitBlock(read)
+                splitBlock(read)
                 edgeHairline
                 flowBlock(read)
                 edgeHairline
@@ -478,7 +479,10 @@ struct BunFinanceView: View {
                 .presentationCornerRadius(40)
                 .presentationDetents([.height(430)])
         }
-        .task { await store.loadFinance() }
+        .task {
+            await store.loadFinance()
+            await store.loadOrgs()
+        }
     }
 
     /// Cash in against the goal, with where the month lands at today's rate.
@@ -526,6 +530,32 @@ struct BunFinanceView: View {
                 Text("\(ivyMoney(read.installmentCollected)) of instalments collected · \(ivyMoney(read.installmentDue)) still due")
                     .font(BunType.caption).foregroundStyle(BunTheme.secondary)
                     .lineLimit(1).minimumScaleFactor(0.8)
+            }
+        }
+    }
+
+    /// The split is a per-org setting now (migration 20260818040000), so a
+    /// second business sees its own partners rather than Ivy's.
+    @ViewBuilder private func splitBlock(_ read: FinanceRead) -> some View {
+        let split = store.profitSplit
+        if !split.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Split").font(BunType.section).foregroundStyle(BunTheme.ink)
+                VStack(spacing: 0) {
+                    ForEach(split) { share in
+                        HStack(spacing: 12) {
+                            Text(share.name).font(BunType.rowTitle)
+                                .foregroundStyle(BunTheme.ink).lineLimit(1)
+                            Text("\(Int(share.pct))%").font(BunType.caption)
+                                .foregroundStyle(BunTheme.secondary)
+                            Spacer()
+                            BunMoney(amount: max(read.profitSoFar, 0) * share.pct / 100, size: 17)
+                        }
+                        .frame(minHeight: 52)
+                    }
+                }
+                Text("of profit so far · settings has the shares")
+                    .font(BunType.caption).foregroundStyle(BunTheme.tertiary)
             }
         }
     }

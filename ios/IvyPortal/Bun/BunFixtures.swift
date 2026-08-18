@@ -496,6 +496,57 @@ enum BunFixtures {
         )
     }
 
+    /// The demo org's split, so the Finance block and its editor both work
+    /// signed out.
+    static let profitSplit: [PortalAPI.ProfitShare] = [
+        .init(name: "Alex Doe", pct: 60),
+        .init(name: "Sam Rivera", pct: 25),
+        .init(name: "Retained", pct: 15),
+    ]
+
+    static var testimonials: [PortalAPI.TestimonialRow] {
+        let rows: [(String, String, String, String?, Int)] = [
+            ("Sami Idris", "video", "published", "Landed a $3k/month retainer eight weeks in.", 12),
+            ("Marcus Reed", "text", "approved", "The daily loom habit is what changed it for me.", 6),
+            ("Tariq Aziz", "video", "received", nil, 3),
+            ("Leila Hassan", "video", "requested", nil, 1),
+        ]
+        return rows.map { name, type, status, text, back in
+            let date = Calendar.current.date(byAdding: .day, value: -back, to: Date()) ?? Date()
+            return PortalAPI.TestimonialRow(
+                id: UUID(), studentId: nil, type: type, title: nil, contentText: text,
+                filePath: nil, sourceUrl: nil, status: status,
+                collectedAt: status == "requested" ? nil : BunStore.dayKey(date) + "T10:00:00Z",
+                createdAt: BunStore.dayKey(date) + "T10:00:00Z",
+                students: PortalAPI.TestimonialRow.Stu(fullName: name))
+        }
+    }
+
+    static var chat: [PortalAPI.ChatMessage] {
+        let rows: [(Int, String, String, String)] = [
+            (3, "Sofia Marin", "general", "Two sets already this morning, the new opener is landing."),
+            (2, "Ray Ortega", "tip", "If they stall on price, go back to the gap before the number."),
+            (1, "Mia Chen", "issue", "Nadia's card failed again. Closer needs to redo the link."),
+            (0, "Alex Doe", "general", "Jordan finished Start Here. Portal unlocked, now in training."),
+        ]
+        return rows.map { back, author, kind, body in
+            let date = Calendar.current.date(byAdding: .hour, value: -back * 5, to: Date()) ?? Date()
+            return PortalAPI.ChatMessage(id: UUID(), body: body, kind: kind, author: author,
+                                         authorId: nil, studentName: nil,
+                                         createdAt: ISO8601DateFormatter().string(from: date))
+        }
+    }
+
+    static var adminRoles: [UUID: [String]] {
+        [
+            meId: ["admin", "founder"],
+            staffIds[0]: ["setter"],
+            staffIds[1]: ["setter"],
+            staffIds[2]: ["closer"],
+            staffIds[3]: ["csm"],
+        ]
+    }
+
     /// The team's recent CSM notes, for the workspace feed.
     static var csmFeed: [CSMFeedNote] {
         let rows: [(Int, String, String, String)] = [

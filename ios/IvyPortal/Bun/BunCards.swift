@@ -174,7 +174,7 @@ struct BunCardLedgerSheet: View {
                 BunChipButton(symbol: "xmark") { entryKind = nil }
             }
             if kind == "set" {
-                Text("Writes the difference as its own entry — the ledger is a history, so nothing is ever edited away.")
+                Text("Writes the difference as its own entry. The ledger is a history, so nothing is ever edited away.")
                     .font(BunType.caption).foregroundStyle(BunTheme.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }

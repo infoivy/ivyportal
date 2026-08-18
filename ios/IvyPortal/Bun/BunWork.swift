@@ -8,6 +8,10 @@ import SwiftUI
 struct BunWorkPage: View {
     @State private var store = BunStore.shared
     @State private var showEOD = false
+    @State private var showChat = false
+    @State private var showKnowledge = false
+    @State private var showTestimonials = false
+    @State private var showLogSet = false
 
     private var filed: Bool { store.eodDue == false }
 
@@ -24,6 +28,10 @@ struct BunWorkPage: View {
                     Text("Action items").font(BunType.section).foregroundStyle(BunTheme.ink)
                     BunActionItemsView(embedded: true)
                 }
+
+                edgeHairline
+
+                shelf
             }
             .padding(.horizontal, 22)
             .padding(.top, 12)
@@ -35,10 +43,33 @@ struct BunWorkPage: View {
                 .presentationBackground(BunTheme.ground)
                 .presentationCornerRadius(40)
         }
+        .sheet(isPresented: $showChat) {
+            BunChatSheet()
+                .presentationBackground(BunTheme.ground)
+                .presentationCornerRadius(40)
+        }
+        .sheet(isPresented: $showKnowledge) {
+            BunKnowledgeSheet()
+                .presentationBackground(BunTheme.ground)
+                .presentationCornerRadius(40)
+        }
+        .sheet(isPresented: $showTestimonials) {
+            BunTestimonialsSheet()
+                .presentationBackground(BunTheme.ground)
+                .presentationCornerRadius(40)
+        }
+        .sheet(isPresented: $showLogSet) {
+            BunLogSetFlow()
+                .presentationBackground(BunTheme.ground)
+                .presentationCornerRadius(40)
+        }
         .task {
             await store.loadTeam()
             await store.loadMyEODs()
             await store.loadActionItems()
+            await store.loadSets()
+            await store.loadChat()
+            await store.loadTestimonials()
         }
         .refreshable {
             store.myEODs = nil
@@ -75,6 +106,68 @@ struct BunWorkPage: View {
             .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         }
         .buttonStyle(BunPressStyle())
+    }
+
+    /// The rest of the daily work, one tap each. Sets sit at the top because
+    /// a booked call is the thing most likely to need recording mid-day.
+    private var shelf: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text("Schedule").font(BunType.section).foregroundStyle(BunTheme.ink)
+                Spacer()
+                BunPillChip(symbol: "plus", label: "Log a set") { showLogSet = true }
+            }
+            let sets = Array((store.mySets ?? []).prefix(3))
+            if sets.isEmpty {
+                Text("Nothing booked yet.")
+                    .font(bunFont(17)).foregroundStyle(BunTheme.secondary)
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(sets) { set in
+                        HStack(spacing: 14) {
+                            BunAvatar(text: String(set.prospect.prefix(1)), size: 44,
+                                      fill: BunStore.fill(for: set.prospect))
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(set.prospect).font(BunType.rowTitle)
+                                    .foregroundStyle(BunTheme.ink).lineLimit(1)
+                                Text(PortalAPI.friendlyEventTime(set.eventStart))
+                                    .font(BunType.caption).foregroundStyle(BunTheme.secondary)
+                            }
+                            Spacer()
+                            if set.confirmedAt != nil {
+                                BunTag(text: "Confirmed", tint: BunTheme.green,
+                                       fill: BunTheme.green.opacity(0.14))
+                            }
+                        }
+                        .frame(minHeight: 62)
+                    }
+                }
+            }
+
+            VStack(spacing: 12) {
+                BunIconRow(symbol: "bubble.left.and.bubble.right", title: "Team channel",
+                           subtitle: chatSubtitle) { showChat = true }
+                    .frame(minHeight: 60)
+                BunIconRow(symbol: "book", title: "Knowledge",
+                           subtitle: "playbooks, policies and docs") { showKnowledge = true }
+                    .frame(minHeight: 60)
+                BunIconRow(symbol: "quote.bubble", title: "Testimonials",
+                           subtitle: testimonialSubtitle) { showTestimonials = true }
+                    .frame(minHeight: 60)
+            }
+            .padding(.top, 4)
+        }
+    }
+
+    private var chatSubtitle: String {
+        guard let chat = store.chat, let last = chat.last else { return "the team's channel" }
+        return "\(last.author): \(last.body)"
+    }
+
+    private var testimonialSubtitle: String {
+        guard let rows = store.testimonials else { return "collect the proof" }
+        let waiting = rows.filter { $0.status == "requested" || $0.status == "received" }.count
+        return waiting == 0 ? "nothing waiting" : "\(waiting) waiting on you"
     }
 
     private var historyLine: String {

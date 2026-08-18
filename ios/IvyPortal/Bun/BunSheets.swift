@@ -27,6 +27,8 @@ private enum BunSettingsRoute: Hashable {
     case help
     case twoFactor
     case profile
+    case team
+    case split
 }
 
 /// Plain 64pt settings row: title, optional trailing pill, chevron.
@@ -108,6 +110,8 @@ struct BunSettingsSheet: View {
                     case .appearance: BunAppearanceScreen()
                     case .help: BunHelpScreen()
                     case .twoFactor: BunTwoFactorScreen()
+                    case .team: BunTeamAdminScreen()
+                    case .split: BunProfitSplitScreen()
                     case .profile: BunProfileScreen()
                     }
                 }
@@ -180,6 +184,12 @@ struct BunSettingsSheet: View {
         VStack(spacing: 0) {
             BunEdgeHairline()
             BunSettingsRow(title: "Invite teammates") { showInvite = true }
+            // Admin surfaces sit next to the invite that creates the people
+            // they administer.
+            BunSettingsRow(title: "Team") { path.append(.team) }
+            if BunStore.shared.canSeeFinance {
+                BunSettingsRow(title: "Profit split") { path.append(.split) }
+            }
             BunSettingsRow(title: "Knowledge") { path.append(.knowledge) }
             BunSettingsRow(title: "Notifications") { path.append(.notifications) }
             BunSettingsRow(title: "Security") { path.append(.security) }

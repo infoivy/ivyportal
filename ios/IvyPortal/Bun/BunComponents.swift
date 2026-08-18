@@ -125,9 +125,12 @@ struct BunIconRow: View {
                     .frame(width: 44, height: 44)
                     .background(BunTheme.field, in: Circle())
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(bunFont(19)).foregroundStyle(BunTheme.ink)
+                    Text(title).font(bunFont(19)).foregroundStyle(BunTheme.ink).lineLimit(1)
                     if !subtitle.isEmpty {
+                        // One line, always: a wrapped subtitle turns a tidy
+                        // shelf into ragged blocks (founder's no-wrap rule).
                         Text(subtitle).font(bunFont(16)).foregroundStyle(BunTheme.secondary)
+                            .lineLimit(1).truncationMode(.tail)
                     }
                 }
                 Spacer()

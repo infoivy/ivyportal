@@ -226,6 +226,140 @@ final class BunStore {
         await loadPayouts()
     }
 
+    // Testimonials, chat, team admin (web parity batch 2026-08-18)
+    var testimonials: [PortalAPI.TestimonialRow]?
+    var chat: [PortalAPI.ChatMessage]?
+    var adminProfiles: [StaffProfile]?
+    var adminRoles: [UUID: [String]] = [:]
+    var pendingRequests: [PortalAPI.PendingSignup]?
+    /// Local exempt toggles so the switch answers immediately.
+    var exemptPatch: [UUID: Bool] = [:]
+
+    func loadTestimonials() async {
+        guard signedIn else {
+            seedFixturesIfNeeded()
+            if testimonials == nil { testimonials = BunFixtures.testimonials }
+            return
+        }
+        guard testimonials == nil else { return }
+        testimonials = (try? await PortalAPI.shared.testimonials()) ?? []
+    }
+
+    func setTestimonialStatus(_ row: PortalAPI.TestimonialRow, status: String) async throws {
+        guard signedIn else {
+            testimonials = (testimonials ?? []).map { existing in
+                guard existing.id == row.id else { return existing }
+                return PortalAPI.TestimonialRow(id: existing.id, studentId: existing.studentId,
+                                                type: existing.type, title: existing.title,
+                                                contentText: existing.contentText, filePath: existing.filePath,
+                                                sourceUrl: existing.sourceUrl, status: status,
+                                                collectedAt: existing.collectedAt, createdAt: existing.createdAt,
+                                                students: existing.students)
+            }
+            return
+        }
+        try await PortalAPI.shared.setTestimonialStatus(id: row.id, status: status)
+        testimonials = nil
+        await loadTestimonials()
+    }
+
+    func loadChat() async {
+        guard signedIn else {
+            seedFixturesIfNeeded()
+            if chat == nil { chat = BunFixtures.chat }
+            return
+        }
+        guard chat == nil else { return }
+        chat = (try? await PortalAPI.shared.teamChat()) ?? []
+    }
+
+    func post(_ body: String, kind: String) async throws {
+        let trimmed = body.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        guard signedIn else {
+            chat = (chat ?? []) + [PortalAPI.ChatMessage(
+                id: UUID(), body: trimmed, kind: kind, author: BunFixtures.userFullName,
+                authorId: meId, studentName: nil,
+                createdAt: ISO8601DateFormatter().string(from: Date()))]
+            return
+        }
+        try await PortalAPI.shared.postChat(body: trimmed, kind: kind)
+        chat = nil
+        await loadChat()
+    }
+
+    func loadTeamAdmin() async {
+        guard signedIn else {
+            seedFixturesIfNeeded()
+            if adminProfiles == nil { adminProfiles = BunFixtures.teamMembers }
+            if adminRoles.isEmpty { adminRoles = BunFixtures.adminRoles }
+            if pendingRequests == nil { pendingRequests = [] }
+            return
+        }
+        if adminProfiles == nil { adminProfiles = (try? await PortalAPI.shared.teamAdminProfiles()) ?? [] }
+        if adminRoles.isEmpty { adminRoles = (try? await PortalAPI.shared.rolesByMember()) ?? [:] }
+        if pendingRequests == nil { pendingRequests = (try? await PortalAPI.shared.pendingSignups()) ?? [] }
+    }
+
+    func isExempt(_ member: StaffProfile) -> Bool {
+        exemptPatch[member.id] ?? (member.eodExempt ?? false)
+    }
+
+    func setExempt(_ member: StaffProfile, exempt: Bool) async throws {
+        exemptPatch[member.id] = exempt
+        guard signedIn else { return }
+        do {
+            try await PortalAPI.shared.setEodExempt(userId: member.id, exempt: exempt)
+        } catch {
+            exemptPatch[member.id] = !exempt
+            throw error
+        }
+    }
+
+    func approve(_ request: PortalAPI.PendingSignup, role: String) async throws {
+        guard signedIn else {
+            pendingRequests?.removeAll { $0.id == request.id }
+            return
+        }
+        try await PortalAPI.shared.approveTeamMember(userId: request.id, role: role)
+        pendingRequests = nil
+        adminProfiles = nil
+        adminRoles = [:]
+        await loadTeamAdmin()
+    }
+
+    /// The org's profit split, and the write behind the settings editor.
+    var profitSplit: [PortalAPI.ProfitShare] {
+        signedIn ? (activeOrg?.profitSplit ?? []) : fixtureSplit
+    }
+
+    func saveProfitSplit(_ rows: [PortalAPI.ProfitShare]) async throws {
+        guard signedIn, let org = activeOrg else {
+            fixtureSplit = rows
+            return
+        }
+        try await PortalAPI.shared.updateProfitSplit(orgId: org.id, rows: rows)
+        orgs = nil
+        await loadOrgs()
+    }
+
+    /// Demo-mode split, so the editor works signed out too.
+    var fixtureSplit: [PortalAPI.ProfitShare] = BunFixtures.profitSplit
+
+    func logSet(prospect: String, start: Date, notes: String?) async throws {
+        guard signedIn else {
+            let set = PortalAPI.SetReminderFull(
+                id: UUID(), prospect: prospect,
+                eventStart: ISO8601DateFormatter().string(from: start),
+                ownerId: meId, status: "active", confirmedAt: nil, notes: notes, reminderLog: nil)
+            mySets = ((mySets ?? []) + [set]).sorted { $0.eventStart < $1.eventStart }
+            return
+        }
+        try await PortalAPI.shared.logSet(prospect: prospect, start: start, notes: notes)
+        mySets = nil
+        await loadSets()
+    }
+
     // CSM workspace (web /csm)
     var csmFeed: [CSMFeedNote]?
 
@@ -241,6 +375,8 @@ final class BunStore {
         guard signedIn else {
             seedFixturesIfNeeded()
             if csmFeed == nil { csmFeed = BunFixtures.csmFeed }
+        if testimonials == nil { testimonials = BunFixtures.testimonials }
+        if chat == nil { chat = BunFixtures.chat }
             return
         }
         guard canSeeCSM, csmFeed == nil else { return }
@@ -396,6 +532,12 @@ final class BunStore {
         }
         cardLedgers = nil
         csmFeed = nil
+        testimonials = nil
+        chat = nil
+        adminProfiles = nil
+        adminRoles = [:]
+        pendingRequests = nil
+        exemptPatch = [:]
         studentEODsBy = [:]
         weeklyEODsBy = [:]
         notesBy = [:]
