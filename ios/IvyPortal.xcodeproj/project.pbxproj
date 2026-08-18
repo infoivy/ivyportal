@@ -65,6 +65,7 @@
 		D7CEF885C3F5C6D994DE05C4 /* BunOnboarding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34642B044BD0E7D79FF89586 /* BunOnboarding.swift */; };
 		D9CA44ECA616659D6A274153 /* Tokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F3306AD164ACF361BE75C54 /* Tokens.swift */; };
 		DA5F9BBC3EF0DC724C7A012E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C8220D589EEDA534F8C68689 /* Assets.xcassets */; };
+		DED7B36B11995DD4C6E37850 /* BunCSM.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFAA7B3C1D0538A8B06B26B8 /* BunCSM.swift */; };
 		DF31E1D47C16F256E23EDBDE /* BunWelcome.swift in Sources */ = {isa = PBXBuildFile; fileRef = B15CF4267CBF0C60B19D5E29 /* BunWelcome.swift */; };
 		E303239DFBFBAD37D545E185 /* ClientPriorityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCEE861880D516223E0D7C72 /* ClientPriorityTests.swift */; };
 		EB3B13FA2F5475E1D155D286 /* LoadState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DD51BEE6A265B624CAE96B0 /* LoadState.swift */; };
@@ -161,6 +162,7 @@
 		F82910C4D584233E65E7911B /* IvyPortalUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = IvyPortalUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		F88DA57E6CAD7D65DD014A5E /* Apercu Pro Light.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Apercu Pro Light.otf"; sourceTree = "<group>"; };
 		FCEE861880D516223E0D7C72 /* ClientPriorityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClientPriorityTests.swift; sourceTree = "<group>"; };
+		FFAA7B3C1D0538A8B06B26B8 /* BunCSM.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BunCSM.swift; sourceTree = "<group>"; };
 		FFFCC9DC95508E6E4CAACA55 /* isa-setting-process.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "isa-setting-process.md"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -210,6 +212,7 @@
 				4E0D004EB78CEC743DA4B30E /* BunCards.swift */,
 				E26B181DB55FF6F2927121E9 /* BunClients.swift */,
 				3A0296FBF3AD1C5F202F3BA6 /* BunComponents.swift */,
+				FFAA7B3C1D0538A8B06B26B8 /* BunCSM.swift */,
 				1E752A72B4A1BB295055678F /* BunData.swift */,
 				DB01449E5CC3B6A6B22566D9 /* BunFixtures.swift */,
 				D419C7626EBE60B038AEFF4B /* BunFlows.swift */,
@@ -533,6 +536,7 @@
 				74768A9B479074E2A7E9E309 /* AuthView.swift in Sources */,
 				B02157FCD3E396D7BFDBADC1 /* BunActions.swift in Sources */,
 				F04F8F8CA9DF3F0B0A4EE294 /* BunBanking.swift in Sources */,
+				DED7B36B11995DD4C6E37850 /* BunCSM.swift in Sources */,
 				162135FE67E49B4D0D199AF3 /* BunCallLog.swift in Sources */,
 				5C95D428766135D64E898F87 /* BunCards.swift in Sources */,
 				07FC20939BBBF3A4C3B1091D /* BunClients.swift in Sources */,

@@ -289,13 +289,20 @@ struct BunClientsPage: View {
     @State private var selectedStudent: StudentRosterItem?
     @State private var opsError: String?
     @State private var showLogClose = false
+    @State private var showWorkspace = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 26) {
-                HStack {
+                HStack(spacing: 10) {
                     BunTitle(text: "Clients")
                     Spacer()
+                    // The fulfillment workspace lives one tap from the book it
+                    // is about, and only for the roles the web gates it to.
+                    if store.canSeeCSM {
+                        BunChipButton(symbol: "square.grid.2x2") { showWorkspace = true }
+                            .accessibilityLabel("Workspace")
+                    }
                     BunChipButton(symbol: "plus") { showLogClose = true }
                         .accessibilityLabel("Log a close")
                 }

@@ -107,3 +107,27 @@ Finance (needs founder_settings for the cash goal and profit split), per-member 
 ### What I deliberately left out
 
 The web's profit split is a hardcoded constant with three real names in it. That cannot ship in a multi-tenant product, so the app shows profit without the split until it becomes a per-org setting.
+
+---
+
+## Batch 5 — card ledgers, the client record, the CSM workspace
+
+### Prompt
+
+"go ahead with all"
+
+### What I did
+
+- **Card ledgers** (`PortalAPI.cardLedgers`, `BunCards.swift`): per person, loaded and spent all-time, balance, entries grouped by month with carry-in and carry-out. Load, spend and set-balance all write append-only entries — a correction is its own row, so the ledger stays a history rather than an edit log. Replaced the single wallet meter on the Accounts pane.
+- **Client record** (`BunClientSheet` rewritten): a segment over Overview / Calls / Reports / Notes / Money. Overview holds the standing (status, coaching burn-down, health, last report, last check-in), the phase and coach pickers, check-in and log-a-call, money standing, placements and the graduation checklist. Reports carries daily and weekly self-reports with what they wrote; Notes has a composer over the CSM note history.
+- **CSM workspace** (`BunCSM.swift`, opened from the Clients header, gated to the fulfillment roles): landed roles, success rate, first wins, the phase distribution as a bar, the one-tap tally with long-press undo, 14 days of client output, and the team's latest notes.
+
+### What was challenging
+
+- Group clients must never grow 1:1 surfaces, and the record has five tabs for a 1:1 client and four for a group one. Indexing the segment by position would have shown the wrong pane; the selected tab is resolved by NAME so a missing Calls tab cannot shift Reports into its slot.
+- Five segment labels did not fit on a phone and "Overview" wrapped mid-word. `BunSegment` now scales its labels instead of wrapping.
+- A four-item phase legend had the same problem and became a scroller.
+
+### Future work
+
+Testimonials, calendar and log-a-set, CRM, team chat, knowledge SOPs, admin and team administration. Then the student app mode. The profit split still needs to become a per-org setting before Finance can show it.

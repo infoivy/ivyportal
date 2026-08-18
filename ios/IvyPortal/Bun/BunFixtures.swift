@@ -496,6 +496,22 @@ enum BunFixtures {
         )
     }
 
+    /// The team's recent CSM notes, for the workspace feed.
+    static var csmFeed: [CSMFeedNote] {
+        let rows: [(Int, String, String, String)] = [
+            (0, "Mia Chen", "Nadia Osman", "Called about the missed instalment. Paying Friday."),
+            (1, "Mia Chen", "Jordan Blake", "Still on step two of Start Here. Walked him through it."),
+            (2, "Grace Okafor", "Leila Hassan", "Looms are nearly there, one more round."),
+            (4, "Mia Chen", "Elias Vance", "Quiet week. Agreed on a Tuesday check-in."),
+        ]
+        return rows.enumerated().map { index, row in
+            let date = Calendar.current.date(byAdding: .day, value: -row.0, to: Date()) ?? Date()
+            return CSMFeedNote(id: UUID(), studentId: rosterIds[index % rosterIds.count],
+                               studentName: row.2, author: row.1, note: row.3,
+                               createdAt: BunStore.dayKey(date) + "T10:00:00Z")
+        }
+    }
+
     /// A couple of weeks of weekly self-reports for the client record.
     static var weeklyEODs: [PortalAPI.WeeklyEOD] {
         (0..<3).map { back in

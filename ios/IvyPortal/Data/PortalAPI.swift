@@ -3271,3 +3271,48 @@ extension PortalAPI {
         )).execute()
     }
 }
+
+// MARK: - CSM workspace (web /csm)
+
+/// A note with the two names it needs to be readable in a team feed: who
+/// wrote it and who it is about.
+struct CSMFeedNote: Identifiable, Sendable {
+    let id: UUID
+    let studentId: UUID
+    let studentName: String
+    let author: String
+    let note: String
+    let createdAt: String
+}
+
+extension PortalAPI {
+    /// The team's latest CSM notes. RLS decides whose are visible.
+    func latestCSMNotes(limit: Int = 20) async throws -> [CSMFeedNote] {
+        struct Row: Decodable {
+            let id: UUID
+            let studentId: UUID
+            let userId: UUID?
+            let note: String
+            let createdAt: String
+            enum CodingKeys: String, CodingKey {
+                case id, studentId = "student_id", userId = "user_id", note, createdAt = "created_at"
+            }
+        }
+        let rows: [Row] = try await client().from("csm_student_notes")
+            .select("id, student_id, user_id, note, created_at")
+            .order("created_at", ascending: false)
+            .limit(limit)
+            .execute().value
+        guard !rows.isEmpty else { return [] }
+        async let peopleTask = profiles(ids: Array(Set(rows.compactMap(\.userId))))
+        async let rosterTask = students()
+        let names = Dictionary(uniqueKeysWithValues: (try await peopleTask).map { ($0.id, $0.displayName ?? "Team member") })
+        let clients = Dictionary(uniqueKeysWithValues: (try await rosterTask).map { ($0.id, $0.fullName) })
+        return rows.map {
+            CSMFeedNote(id: $0.id, studentId: $0.studentId,
+                        studentName: clients[$0.studentId] ?? "Client",
+                        author: $0.userId.flatMap { names[$0] } ?? "Team member",
+                        note: $0.note, createdAt: $0.createdAt)
+        }
+    }
+}

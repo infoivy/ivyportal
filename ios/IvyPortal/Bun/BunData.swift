@@ -226,6 +226,42 @@ final class BunStore {
         await loadPayouts()
     }
 
+    // CSM workspace (web /csm)
+    var csmFeed: [CSMFeedNote]?
+
+    /// The web gates the workspace to the fulfillment roles; signed out the
+    /// demo shows it, because that is the product being sold.
+    var canSeeCSM: Bool {
+        guard signedIn else { return true }
+        let roles = Set(AuthStore.shared.roles)
+        return !roles.isDisjoint(with: [.admin, .founder, .cofounder, .coach, .csm])
+    }
+
+    func loadCSM() async {
+        guard signedIn else {
+            seedFixturesIfNeeded()
+            if csmFeed == nil { csmFeed = BunFixtures.csmFeed }
+            return
+        }
+        guard canSeeCSM, csmFeed == nil else { return }
+        csmFeed = (try? await PortalAPI.shared.latestCSMNotes()) ?? []
+    }
+
+    /// Client output by day over the loaded window: what the whole roster
+    /// actually did, which is the number a CSM is judged on.
+    var clientOutput: [(day: String, value: Int)] {
+        guard let eods = studentEODs else { return [] }
+        var totals: [String: Int] = [:]
+        for eod in eods {
+            totals[eod.reportDate, default: 0] += eod.applicationsSubmitted + eod.outreachSent + eod.interviews
+        }
+        return (0..<14).reversed().map { back in
+            let date = Calendar.current.date(byAdding: .day, value: -back, to: Date()) ?? Date()
+            let key = Self.dayKey(date)
+            return (day: key, value: totals[key] ?? 0)
+        }
+    }
+
     // The client record (web /students/$id)
     var studentEODsBy: [UUID: [StudentEOD]] = [:]
     var weeklyEODsBy: [UUID: [PortalAPI.WeeklyEOD]] = [:]
@@ -316,6 +352,7 @@ final class BunStore {
         guard signedIn else {
             seedFixturesIfNeeded()
             if cardLedgers == nil { cardLedgers = BunFixtures.cardLedgers }
+        if csmFeed == nil { csmFeed = BunFixtures.csmFeed }
             return
         }
         guard cardLedgers == nil else { return }
@@ -358,6 +395,7 @@ final class BunStore {
                 current: cardLedgers?.first { $0.id == ledgerId }?.balance ?? 0)
         }
         cardLedgers = nil
+        csmFeed = nil
         studentEODsBy = [:]
         weeklyEODsBy = [:]
         notesBy = [:]

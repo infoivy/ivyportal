@@ -208,3 +208,20 @@ final class BunTeamGraphTests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Setters"].exists, "setter rows")
     }
 }
+
+/// Card ledgers sit under the card art on the Accounts pane, below the fold.
+@MainActor
+final class BunCardLedgerTests: XCTestCase {
+    func testAccountsCarriesCardBalances() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-bunTab", "money", "-bunMoneySection", "accounts"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["Bun accounts"].waitForExistence(timeout: 8))
+        for _ in 0..<3 { app.swipeUp() }
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = "card-ledgers"
+        shot.lifetime = .keepAlways
+        add(shot)
+        XCTAssertTrue(app.staticTexts["Card balances"].isHittable, "ledger section on screen")
+    }
+}
