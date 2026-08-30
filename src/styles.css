@@ -219,9 +219,12 @@
   --danger-fg:   #F87171;
   --danger-bg:   color-mix(in srgb, #EF4444 12%, transparent);
 
-  /* Charts — Mochi's dark set (blue, emerald, amber, violet, rose) */
+  /* Charts — Mochi's dark set (blue, teal, amber, violet, rose).
+     Chart-2 uses the teal variant, not the emerald hex: the monochrome-chrome
+     contract reserves greens for success states only
+     (test: portal-mobile-navigation). */
   --chart-1: #2563EB;
-  --chart-2: #10B981;
+  --chart-2: #14B8A6;
   --chart-3: #F59E0B;
   --chart-4: #A855F7;
   --chart-5: #F43F5E;
