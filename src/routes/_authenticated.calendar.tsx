@@ -1,6 +1,7 @@
 import { createFileRoute, useSearch } from "@tanstack/react-router";
 import { CashInCalendarCard } from "@/components/cash-in-calendar";
 import { shortName } from "@/lib/names";
+import { friendlyPastDay } from "@/lib/dates";
 import { SetterTrackingSheet } from "@/components/setter-tracking-sheet";
 import { SetterDailyTracker } from "@/components/setter-daily-tracker";
 import { useServerFn } from "@tanstack/react-start";
@@ -1071,7 +1072,14 @@ function UpcomingSetsList({ sets, loading, filter, onClaim, onTrack, onConfirm, 
                 />
               )}
               {s.owner_id && onUnclaim && (mine || canManageTeam) && (
-                <button onClick={() => onUnclaim(s.id)} className="text-micro text-muted-foreground hover:text-foreground shrink-0" title="Give this set back to the pool">
+                <button
+                  onClick={() => {
+                    if (!confirm(`Give ${s.prospect} back to the unclaimed pool? The call is removed from the current owner's calendar until someone claims it again.`)) return;
+                    onUnclaim(s.id);
+                  }}
+                  className="text-micro text-muted-foreground hover:text-foreground shrink-0"
+                  title="Give this set back to the pool"
+                >
                   unclaim
                 </button>
               )}
@@ -1169,8 +1177,18 @@ function UpcomingSetsList({ sets, loading, filter, onClaim, onTrack, onConfirm, 
                     </button>
                   )}
                   {canTrack && (confirmed ? (
-                    <button onClick={() => onConfirm(s.id, false)} className="text-caption text-muted-foreground hover:text-foreground" title="Undo confirmation">
-                      Confirmed {format(toLocal(s.confirmed_at!), "MMM d, h:mm a")} · undo
+                    <button
+                      onClick={() => {
+                        // A stray tap used to silently reopen the reminder chase and
+                        // expose the destructive "remove from calendar" button in its
+                        // place (founder 2026-08-31).
+                        if (!confirm(`Undo the confirmation for ${s.prospect}? The set goes back to unconfirmed and the reminder chase starts over. The call itself stays on the calendar.`)) return;
+                        onConfirm(s.id, false);
+                      }}
+                      className="text-caption text-muted-foreground hover:text-foreground"
+                      title="Undo confirmation"
+                    >
+                      Confirmed {friendlyPastDay(format(toLocal(s.confirmed_at!), "yyyy-MM-dd"))} at {format(toLocal(s.confirmed_at!), "h:mm a")} · undo
                     </button>
                   ) : (
                     <>
@@ -1180,7 +1198,13 @@ function UpcomingSetsList({ sets, loading, filter, onClaim, onTrack, onConfirm, 
                       >
                         Lead confirmed ✓
                       </button>
-                      <button onClick={() => onCancel(s.id)} className="text-caption text-muted-foreground hover:text-foreground motion-safe:transition-colors">
+                      <button
+                        onClick={() => {
+                          if (!confirm(`Remove ${s.prospect}'s call from the calendar? This cancels the set and deletes the Google Calendar event for everyone invited. You can undo it from the "Removed" list at the bottom of this page.`)) return;
+                          onCancel(s.id);
+                        }}
+                        className="text-caption text-muted-foreground hover:text-foreground motion-safe:transition-colors"
+                      >
                         Didn't confirm · remove from calendar
                       </button>
                     </>
@@ -1227,7 +1251,14 @@ function UpcomingSetsList({ sets, loading, filter, onClaim, onTrack, onConfirm, 
                   );
                 })}
                 {canTrack && (confirmed ? (
-                  <button onClick={() => onConfirm(s.id, false)} className="text-micro text-muted-foreground hover:text-foreground" title="Undo confirmation">
+                  <button
+                    onClick={() => {
+                      if (!confirm(`Undo the confirmation for ${s.prospect}? The set goes back to unconfirmed and the reminder chase starts over. The call itself stays on the calendar.`)) return;
+                      onConfirm(s.id, false);
+                    }}
+                    className="text-micro text-muted-foreground hover:text-foreground"
+                    title="Undo confirmation"
+                  >
                     confirmed · undo
                   </button>
                 ) : (
