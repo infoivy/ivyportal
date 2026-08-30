@@ -1,0 +1,48 @@
+name: iOS Tests
+
+on:
+  pull_request:
+    paths:
+      - 'ios/**'
+      - '.github/workflows/ios-test.yml'
+  push:
+    branches: [ios-bun]
+    paths:
+      - 'ios/**'
+      - '.github/workflows/ios-test.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  swift-test:
+    name: Swift Package (IvyPortalCore)
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run IvyPortalCore package tests
+        run: swift test --package-path ios
+
+  xcode-test:
+    name: Xcode Build + Unit Tests
+    runs-on: macos-15
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install xcodegen
+        run: brew install xcodegen
+      - name: Regenerate project (source of truth is project.yml)
+        run: |
+          cd ios
+          xcodegen generate
+      - name: Build and run app-hosted unit tests (simulator)
+        run: |
+          cd ios
+          xcodebuild -project IvyPortal.xcodeproj -scheme IvyPortal \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+            -configuration Debug \
+            -skipPackagePluginValidation \
+            build-for-testing test \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY= \
+            | xcbeautify --is-ci
