@@ -44,7 +44,7 @@ struct IvyPortalApp: App {
             ZStack {
                 rootContent
                     .environment(\.font, ivyFont(16))
-                    .preferredColorScheme(scheme)
+                    .preferredColorScheme(showsOnboarding ? .dark : scheme)
 
                 if showSplash {
                     BunLaunchSplash()
@@ -62,6 +62,14 @@ struct IvyPortalApp: App {
     /// Onboarding era (founder 2026-08-17): a signed-out launch opens on the
     /// welcome flow (splash, pitch, application); the workspace shell is for
     /// signed-in accounts, sticky demo mode, and `-bunTab` test launches.
+    /// The signed-out onboarding is dark-only art (haze, black cards, light
+    /// captions), so it must not inherit a "Light" Appearance choice — that
+    /// flipped `BunTheme.ink` to near-black titles on black cards and made
+    /// Liquid Glass render its light material, washing the cards out.
+    private var showsOnboarding: Bool {
+        !(forceShell || auth.isSignedIn || demoWorkspace)
+    }
+
     @ViewBuilder private var rootContent: some View {
         if forceShell || auth.isSignedIn || demoWorkspace {
             BunShell()
