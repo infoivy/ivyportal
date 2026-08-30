@@ -29,12 +29,14 @@ test("staff mobile navigation keeps primary work visible and opens the shared si
   assert.match(shell, /pb-24 md:pb-0/);
 });
 
-test("portal chrome is monochrome and dark mode uses a true-black surface stack", () => {
-  assert.match(styles, /--primary:\s+#1C1C1E/);
-  assert.match(styles, /--sidebar-primary:\s+#1C1C1E/);
-  assert.match(styles, /\.dark\s*\{[\s\S]*--background:\s+#000000/);
-  assert.match(styles, /\.dark\s*\{[\s\S]*--card:\s+#080808/);
-  assert.match(styles, /\.dark\s*\{[\s\S]*--primary:\s+#F5F5F7/);
+test("portal chrome is monochrome and dark mode uses the Mochi surface stack", () => {
+  // Tokens per the Mochi rebrand (2026-08-13): measured light #171717 primary,
+  // dark canvas #0A0A0A with #171717 cards and #E5E5E5 primary text.
+  assert.match(styles, /--primary:\s+#171717/);
+  assert.match(styles, /--sidebar-primary:\s+#171717/);
+  assert.match(styles, /\.dark\s*\{[\s\S]*--background:\s+#0A0A0A/);
+  assert.match(styles, /\.dark\s*\{[\s\S]*--card:\s+#171717/);
+  assert.match(styles, /\.dark\s*\{[\s\S]*--primary:\s+#E5E5E5/);
   assert.match(styles, /--success:\s+#16A34A/); // real green per founder 2026-07-28
   assert.match(styles, /\.dark\s*\{[\s\S]*--success:\s+#22C55E/);
   assert.doesNotMatch(
