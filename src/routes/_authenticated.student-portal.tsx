@@ -2167,7 +2167,7 @@ function SubmittedRecap({ form, streak, loomApproved, onEdit }: { form: typeof e
   return (
     <div className="card-soft p-6 text-center space-y-4">
       <div className="flex justify-center">
-        <span className="chip-icon !h-10 !w-10 !rounded-[10px]" style={{ background: "#10b981" }}>
+        <span className="chip-icon !h-10 !w-10 !rounded-[10px]" style={{ background: "var(--success)" }}>
           <CheckCircle2 className="h-5 w-5" />
         </span>
       </div>
