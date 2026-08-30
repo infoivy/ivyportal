@@ -39,3 +39,14 @@ UI checks use `const { roles } = useAuth()` and `roles.includes('role')`. Do not
 ## Change discipline
 
 Keep changes small, typed, and migration-backed. Run `npm run build` and `npx tsc --noEmit` after app changes; run `npm run supabase:verify` after a deployment/migration. Preserve RLS. Use an explicit new migration for schema, policy, function, trigger, or bucket changes. Do not use the service role in client code. Do not change commission rules, role gates, EOD KPIs, or data-history behavior without explicit written approval.
+
+## iOS app (ios/ — the Bun app)
+
+The native iOS client lives in `ios/`. It shares the Supabase backend, RLS, and every business rule above; the native layer adds its own rules:
+
+- `ios/project.yml` is the source of truth for the Xcode project. Run `xcodegen generate` inside `ios/` after ANY file add/remove; the committed `.xcodeproj` is regenerated, never hand-edited.
+- Supabase credentials come from a gitignored config file (`ios/IvyPortal/Config/`, see its README). Never commit keys; never put the service-role key in the app, tests, fixtures, or logs.
+- The launch-argument preset system (see `ios/README.md`) drives DEBUG states: `-demoScenario`, `-demoDestination`, `-workTab`, `-csmTab`, `-moneyTab`, `-homePicture`, `-bunTab`. UI tests and previews must go through presets, not ad-hoc storyboarding.
+- `swift test --package-path ios` runs the IvyPortalCore package tests (CI runs this on macOS runners via `.github/workflows/ios-test.yml`, plus an app-hosted simulator test job). Run both before pushing; do not rely on source inspection as build evidence.
+- Distribution path: simulator -> real device -> TestFlight via `ios/scripts/testflight.sh` (see `ios/TESTFLIGHT.md`). Never ship without the visual verification gate in `docs/ios/MAC_BUILD_HANDOFF.md`.
+- Keep `IvyPortalCore` framework-pure (no SwiftUI imports where logic can stay pure); role/destination policy lives there and is the tested source of truth for navigation visibility.
