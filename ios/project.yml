@@ -22,6 +22,8 @@ targets:
     platform: iOS
     sources:
       - path: IvyPortal
+        excludes:
+          - "Config/PortalConfig.example.swift"
       - path: IvyPortalCore
     settings:
       base:
