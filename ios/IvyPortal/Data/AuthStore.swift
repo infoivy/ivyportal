@@ -39,6 +39,12 @@ final class AuthStore {
     private(set) var roles: [PortalRole] = []
     /// Grantable Home view roles (sales/fulfillment) from the same table.
     private(set) var homeViews: [HomeViewRole] = []
+    /// Roles this account holds in the ACTIVE Bun workspace
+    /// (`org_members.roles`, applied by BunStore). OrgRolePolicy folds them
+    /// with the legacy `user_roles` into `roles` / `homeViews`.
+    private(set) var membershipRoles: [String] = []
+    private var legacyRoles: [PortalRole] = []
+    private var legacyHomeViews: [HomeViewRole] = []
     /// Admin-managed page/money visibility (web role_access parity).
     private(set) var access: [RoleAccessRow] = []
     private(set) var rolesLoaded = false
@@ -122,8 +128,23 @@ final class AuthStore {
         session = nil
         roles = []
         homeViews = []
+        membershipRoles = []
+        legacyRoles = []
+        legacyHomeViews = []
         access = []
         rolesLoaded = false
+    }
+
+    /// The active workspace changed (or its membership loaded): re-derive the
+    /// operating roles. Idempotent; safe before `loadRoles` has run.
+    func applyMembershipRoles(_ raw: [String]) {
+        membershipRoles = raw
+        recomputeRoles()
+    }
+
+    private func recomputeRoles() {
+        roles = OrgRolePolicy.effectiveRoles(membership: membershipRoles, legacy: legacyRoles)
+        homeViews = OrgRolePolicy.effectiveHomeViews(membership: membershipRoles, legacy: legacyHomeViews)
     }
 
     /// Google OAuth through Supabase, same provider the web portal uses.
@@ -151,8 +172,9 @@ final class AuthStore {
         guard isSignedIn else { return }
         do {
             let raw = try await PortalAPI.shared.myRoles()
-            roles = raw.compactMap(PortalRole.init)
-            homeViews = raw.compactMap(HomeViewRole.init)
+            legacyRoles = raw.compactMap(PortalRole.init)
+            legacyHomeViews = raw.compactMap(HomeViewRole.init)
+            recomputeRoles()
             rolesLoaded = true
         } catch {
             // Keep whatever we had; the shell falls back to the safest tab set.

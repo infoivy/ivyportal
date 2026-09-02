@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		0165D59B585B6BF845AB6F55 /* BunSchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98FA19A4B4B43D3EFABB1D62 /* BunSchedule.swift */; };
 		02D5D549772D6BE520728FEB /* BunOrgProbeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52CBBE9140859B30E11369EF /* BunOrgProbeTests.swift */; };
+		050487395D304CB97D8E4B6F /* OrgRolePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBC5AADFA0E3214606C0E48B /* OrgRolePolicy.swift */; };
 		06639E837D93A6C0E122E9D7 /* RoleDestinationPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 691002273A01224D93FBBEF0 /* RoleDestinationPolicy.swift */; };
 		07FC20939BBBF3A4C3B1091D /* BunClients.swift in Sources */ = {isa = PBXBuildFile; fileRef = E26B181DB55FF6F2927121E9 /* BunClients.swift */; };
 		0A83CF32BEA860C53DEF77B4 /* BunHome.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF88E880BC02646266330FEA /* BunHome.swift */; };
@@ -28,6 +29,7 @@
 		49B122E71FDC43487018A782 /* policy-crm-hygiene.md in Resources */ = {isa = PBXBuildFile; fileRef = C7067F4D03BAB4038C9BE6F8 /* policy-crm-hygiene.md */; };
 		4B3B6082562F700C0AA9E795 /* FeatureNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81596ECE61B395F450F9EF50 /* FeatureNavigation.swift */; };
 		4E7990943F3DF74483B4FD82 /* WorkFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E2D4CCB0A7230AD9B9C0FF8 /* WorkFixtures.swift */; };
+		54B0ADEDE83C5E72E55CC284 /* OrgRolePolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA06BBBF1B29AA2709758695 /* OrgRolePolicyTests.swift */; };
 		552CDA45CF94A867EA2AB5E9 /* BunFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB01449E5CC3B6A6B22566D9 /* BunFixtures.swift */; };
 		55D06F2F042CB2DCB6BED741 /* StudentHealthTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 489B417A9AFA4A0D3E538318 /* StudentHealthTests.swift */; };
 		5663021EED0C0A46A7DDF5CD /* BunShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFA3B0E7E49DC4A60E64C024 /* BunShell.swift */; };
@@ -147,6 +149,7 @@
 		A38ABDF5AC1EB60BA2A87B77 /* IvyPortalTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = IvyPortalTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A7D5D8C7EB8E956CCC461583 /* PortalConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortalConfig.swift; sourceTree = "<group>"; };
 		A8B449D0E696174FC6ACB249 /* BunWork.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BunWork.swift; sourceTree = "<group>"; };
+		AA06BBBF1B29AA2709758695 /* OrgRolePolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrgRolePolicyTests.swift; sourceTree = "<group>"; };
 		AD534AEACCB71381EDEE0B56 /* BunMoveMoney.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BunMoveMoney.swift; sourceTree = "<group>"; };
 		ADD8AE473F23EC43644F4E22 /* BunTransactions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BunTransactions.swift; sourceTree = "<group>"; };
 		AE57AF16A51CA2E0972BD54F /* BunCalendar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BunCalendar.swift; sourceTree = "<group>"; };
@@ -169,6 +172,7 @@
 		DFCC906957CB7A8FC6F83144 /* StudentHealth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudentHealth.swift; sourceTree = "<group>"; };
 		E26B181DB55FF6F2927121E9 /* BunClients.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BunClients.swift; sourceTree = "<group>"; };
 		E47E29C16B2641ED296636B1 /* AuthStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthStore.swift; sourceTree = "<group>"; };
+		EBC5AADFA0E3214606C0E48B /* OrgRolePolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrgRolePolicy.swift; sourceTree = "<group>"; };
 		EFA3B0E7E49DC4A60E64C024 /* BunShell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BunShell.swift; sourceTree = "<group>"; };
 		F301E202DFEF1ABC95B9D5CC /* PayoutCustomRatesAndLedgerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PayoutCustomRatesAndLedgerTests.swift; sourceTree = "<group>"; };
 		F82910C4D584233E65E7911B /* IvyPortalUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = IvyPortalUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -328,6 +332,7 @@
 				D6A44331B1380EC5E1F6953D /* FeatureNavigationTests.swift */,
 				D63FFEC06CAD25DFE92B0B4B /* HomeActionRoutingTests.swift */,
 				D82CE802CAA94C209087E537 /* LoadStateTests.swift */,
+				AA06BBBF1B29AA2709758695 /* OrgRolePolicyTests.swift */,
 				F301E202DFEF1ABC95B9D5CC /* PayoutCustomRatesAndLedgerTests.swift */,
 				78F9682CCCAE30FB583FC435 /* PayoutsCalcTests.swift */,
 				C9FAA38FA65B3A14F178C873 /* RoleDestinationPolicyTests.swift */,
@@ -373,6 +378,7 @@
 				81596ECE61B395F450F9EF50 /* FeatureNavigation.swift */,
 				310F5EDFDA87D1BF05177AC0 /* HomeAction.swift */,
 				2DD51BEE6A265B624CAE96B0 /* LoadState.swift */,
+				EBC5AADFA0E3214606C0E48B /* OrgRolePolicy.swift */,
 				7D5C6BC5C2F409FC5C4B9804 /* PayoutsCalc.swift */,
 				691002273A01224D93FBBEF0 /* RoleDestinationPolicy.swift */,
 				DFCC906957CB7A8FC6F83144 /* StudentHealth.swift */,
@@ -540,6 +546,7 @@
 				75D08C1C1F7D558B4DC9EFEA /* FeatureNavigationTests.swift in Sources */,
 				D6E8F90DDA27C979E44EDA33 /* HomeActionRoutingTests.swift in Sources */,
 				A39D25067873C4F71C3A6A84 /* LoadStateTests.swift in Sources */,
+				54B0ADEDE83C5E72E55CC284 /* OrgRolePolicyTests.swift in Sources */,
 				DF6E64A54477B638C5F1CCC8 /* PayoutCustomRatesAndLedgerTests.swift in Sources */,
 				22CEA37A0E1631C85E480CA9 /* PayoutsCalcTests.swift in Sources */,
 				0C502646AB77CF4EDD58D7B6 /* RoleDestinationPolicyTests.swift in Sources */,
@@ -589,6 +596,7 @@
 				FC36D8521EA779B953EFCA50 /* HomeAction.swift in Sources */,
 				74DE9D4302D252C6829D8046 /* IvyPortalApp.swift in Sources */,
 				EB3B13FA2F5475E1D155D286 /* LoadState.swift in Sources */,
+				050487395D304CB97D8E4B6F /* OrgRolePolicy.swift in Sources */,
 				909636404B9D05D730AFF995 /* PayoutsCalc.swift in Sources */,
 				0F345A257EDD1ABB023022EA /* PortalAPI.swift in Sources */,
 				73F79BE350AC53836331381A /* PortalConfig.swift in Sources */,

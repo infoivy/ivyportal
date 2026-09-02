@@ -17,7 +17,7 @@
 ## Real correctness findings (accepted)
 
 5. **Stale async range overwrite** (BunHome cashSeries): rapid range switching can render the wrong range's data. Fix: generation token on load tasks. SCHEDULED.
-6. **Org switch does not clear org-scoped state** (BunStore.switchOrg): stale prior-org data can display. Fix: clear state before refreshAll. SCHEDULED.
+6. **Org switch does not clear org-scoped state** (BunStore.switchOrg): stale prior-org data can display. Fix: clear state before refreshAll. FIXED 2026-09-02: `switchOrg` is awaited behind `isSwitchingOrg`, `clearAll` now resets the 21 org-scoped slices that survived a switch, the active org persists (`bunActiveOrg`) and memberships load oldest-first; roles re-derive per org via `OrgRolePolicy` (IvyPortalCore) so a new business owner is admin+founder inside their own org.
 
 ## Craft (P2) - scheduled as a batch
 

@@ -1111,9 +1111,20 @@ struct BunOrgSwitcherSheet: View {
                 if live {
                     ForEach(store.orgs ?? [], id: \.id) { org in
                         workspaceRow(name: org.name, active: org.id == (store.activeOrg?.id)) {
-                            store.switchOrg(org.id)
-                            dismiss()
+                            guard !store.isSwitchingOrg else { return }
+                            Task {
+                                await store.switchOrg(org.id)
+                                dismiss()
+                            }
                         }
+                    }
+                    if store.isSwitchingOrg {
+                        HStack(spacing: 10) {
+                            ProgressView().tint(BunTheme.secondary)
+                            Text("Switching workspace…").font(bunFont(16)).foregroundStyle(BunTheme.secondary)
+                        }
+                        .padding(.vertical, 10)
+                        .accessibilityIdentifier("bun.org.switching")
                     }
                 } else {
                     ForEach(BunFixtures.workspaces, id: \.self) { name in

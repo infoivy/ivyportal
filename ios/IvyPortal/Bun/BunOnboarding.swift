@@ -4,6 +4,7 @@ import SwiftUI
 /// names their business and gets their own org (create_organization RPC;
 /// the caller becomes owner/admin/founder of the NEW org only).
 struct BunCreateBusinessView: View {
+    @Environment(\.dismiss) private var dismiss
     @State private var store = BunStore.shared
     @State private var name = ""
     @State private var working = false
@@ -35,6 +36,9 @@ struct BunCreateBusinessView: View {
                             try await store.createBusiness(named: name.trimmingCharacters(in: .whitespaces))
                             await store.refreshAll()
                             createError = nil
+                            // Presented from the switcher this closes the sheet;
+                            // inline on Home (needsOrgSetup) it is a no-op.
+                            dismiss()
                         } catch {
                             createError = "Could not create the business: \(error.localizedDescription)"
                         }
@@ -114,11 +118,19 @@ struct BunInviteSheet: View {
                     working = true
                     sent = false
                     Task {
+                        // An invite belongs to one business. Without an active
+                        // workspace the legacy insert would enroll the person
+                        // into the default (Ivy) org — refuse instead.
+                        guard let orgId = store.activeOrg?.id else {
+                            inviteError = "Pick a workspace first: invites belong to one business."
+                            working = false
+                            return
+                        }
                         do {
                             try await PortalAPI.shared.inviteTeammate(
                                 email: email.trimmingCharacters(in: .whitespaces),
                                 roles: Array(selectedRoles),
-                                orgId: store.activeOrg?.id
+                                orgId: orgId
                             )
                             sent = true
                             email = ""

@@ -15,11 +15,33 @@ final class BunStore {
 
     // Organizations (multi-tenant Phase 1)
     var orgs: [PortalAPI.BunOrg]?
-    var activeOrgId: UUID?
+    /// The membership rows behind `orgs` (roles this account holds per org).
+    var memberships: [PortalAPI.BunMembership]?
+    /// Set by a refresh so the next `loadOrgs` refetches without blanking the
+    /// header first (nil-ing `orgs` flashed the fixture name mid-reload).
+    private var orgsStale = false
+    /// The chosen workspace survives relaunch. Before this a person in two
+    /// businesses landed on whichever org PostgREST returned first.
+    var activeOrgId: UUID? {
+        didSet { UserDefaults.standard.set(activeOrgId?.uuidString, forKey: Self.activeOrgKey) }
+    }
+    static let activeOrgKey = "bunActiveOrg"
+    /// True while a workspace switch is reloading. The switcher waits on it,
+    /// so two fast taps can never interleave their loads.
+    private(set) var isSwitchingOrg = false
+
+    private init() {
+        activeOrgId = UserDefaults.standard.string(forKey: Self.activeOrgKey).flatMap { UUID(uuidString: $0) }
+    }
 
     var activeOrg: PortalAPI.BunOrg? {
         guard let orgs else { return nil }
         return orgs.first { $0.id == activeOrgId } ?? orgs.first
+    }
+
+    var activeMembership: PortalAPI.BunMembership? {
+        guard let id = activeOrg?.id else { return nil }
+        return memberships?.first { $0.org.id == id }
     }
 
     /// Fixture-mode workspace selection (the org switcher works signed out
@@ -28,13 +50,17 @@ final class BunStore {
 
     var orgName: String { activeOrg?.name ?? fixtureOrgName }
 
-    /// Switch the active workspace and reload everything under it.
-    /// (Org-scoped data reads land with Phase 2; today this switches the
-    /// membership context and the header.)
-    func switchOrg(_ id: UUID) {
-        guard activeOrgId != id else { return }
+    /// Switch the active workspace and reload everything under it. Awaited
+    /// by the switcher so the header and every slice flip together — never a
+    /// prior-org table under a new-org name (review triage 2026-08-30 #6).
+    /// Roles re-derive from the new org's membership (OrgRolePolicy).
+    func switchOrg(_ id: UUID) async {
+        guard activeOrgId != id, !isSwitchingOrg else { return }
+        isSwitchingOrg = true
+        defer { isSwitchingOrg = false }
         activeOrgId = id
-        Task { await refreshAll() }
+        AuthStore.shared.applyMembershipRoles(activeMembership?.roles ?? [])
+        await refreshAll()
     }
 
     /// A signed-in account with no business and no legacy roles gets the
@@ -45,17 +71,28 @@ final class BunStore {
     }
 
     func loadOrgs() async {
-        guard signedIn, orgs == nil else { return }
+        guard signedIn, orgs == nil || orgsStale else { return }
         if !AuthStore.shared.rolesLoaded { await AuthStore.shared.loadRoles() }
-        orgs = (try? await PortalAPI.shared.myOrgs()) ?? []
-        if activeOrgId == nil { activeOrgId = orgs?.first?.id }
+        guard let rows = try? await PortalAPI.shared.myMemberships() else {
+            if orgs == nil { orgs = []; memberships = [] }
+            return
+        }
+        orgsStale = false
+        memberships = rows
+        orgs = rows.map(\.org)
+        // Reconcile the remembered choice against what this account can see.
+        if activeOrgId == nil || !rows.contains(where: { $0.org.id == activeOrgId }) {
+            activeOrgId = rows.first?.org.id
+        }
+        AuthStore.shared.applyMembershipRoles(activeMembership?.roles ?? [])
     }
 
     func createBusiness(named name: String) async throws {
         let id = try await PortalAPI.shared.createOrganization(name: name)
-        orgs = nil
-        await loadOrgs()
         activeOrgId = id
+        orgs = nil
+        memberships = nil
+        await loadOrgs()
     }
 
     // Home
@@ -1535,7 +1572,7 @@ final class BunStore {
         unconfirmedPayouts = nil
         payoutPeriodLabel = nil
         payoutPeriodStart = nil
-        orgs = nil
+        orgsStale = true
         roster = nil
         callCounts = nil
         health = nil
@@ -1577,6 +1614,30 @@ final class BunStore {
         studentEODs = nil
         scheduledCalls = nil
         clientFilter = .all
+        // Org-scoped surfaces that used to survive a workspace switch (review
+        // triage 2026-08-30 #6). Their loaders guard on nil, so anything left
+        // here stayed pinned to the prior org for the whole session.
+        txCategory = [:]
+        txNote = [:]
+        customCategories = []
+        crm = nil
+        crmError = nil
+        alerts = nil
+        paymentLinks = nil
+        testimonials = nil
+        chat = nil
+        adminProfiles = nil
+        adminRoles = [:]
+        pendingRequests = nil
+        exemptPatch = [:]
+        csmFeed = nil
+        studentEODsBy = [:]
+        weeklyEODsBy = [:]
+        notesBy = [:]
+        placementsBy = [:]
+        coachList = nil
+        phasePatch = [:]
+        coachPatch = [:]
     }
 
     func refreshAll() async {

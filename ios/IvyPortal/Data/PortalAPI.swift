@@ -433,18 +433,29 @@ final class PortalAPI {
         var id: String { name }
     }
 
-    /// Orgs the signed-in account belongs to. Returns [] until the
-    /// multi-tenant migration is applied (callers fall back gracefully).
-    func myOrgs() async throws -> [BunOrg] {
+    /// One membership row: the org plus the roles this account holds IN it
+    /// (`org_members.roles`; see OrgRolePolicy for how they gate the app).
+    struct BunMembership: Decodable, Sendable, Hashable {
+        let roles: [String]
+        let org: BunOrg
+        enum CodingKeys: String, CodingKey { case roles, org = "orgs" }
+    }
+
+    /// Memberships of the signed-in account, oldest first so the default
+    /// workspace is the same on every launch (PostgREST order is not).
+    /// Returns [] until the multi-tenant migration is applied.
+    func myMemberships() async throws -> [BunMembership] {
         guard let me = currentUserID else { return [] }
-        struct Row: Decodable {
-            let orgs: BunOrg
-        }
-        let rows: [Row] = try await client().from("org_members")
-            .select("orgs(id, name, slug, profit_split, team_chat_enabled)")
+        return try await client().from("org_members")
+            .select("roles, created_at, orgs(id, name, slug, profit_split, team_chat_enabled)")
             .eq("user_id", value: me)
+            .order("created_at", ascending: true)
             .execute().value
-        return rows.map(\.orgs)
+    }
+
+    /// Orgs the signed-in account belongs to (memberships without the roles).
+    func myOrgs() async throws -> [BunOrg] {
+        try await myMemberships().map(\.org)
     }
 
     func createOrganization(name: String) async throws -> UUID {
