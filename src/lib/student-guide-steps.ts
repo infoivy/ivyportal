@@ -1,10 +1,14 @@
 /**
  * Start Here onboarding checklist (founder-directed 2026-07-18).
  *
- * Same five steps for both pathways — the 1:1 difference happens AFTER
+ * Same steps for both pathways — the 1:1 difference happens AFTER
  * completion (an automatic "Book your 1:1 coaching calls" action item).
  * Until every step is done the portal shows Start Here and nothing else:
  * placements, EODs, and action items only confuse a student who just paid.
+ *
+ * 2026-09-09 (founder): the "Fill out your onboarding form" (Typeform) step
+ * is removed for now. Students who already ticked it keep their
+ * student_guide_steps row; it simply no longer counts or renders.
  */
 export type GuideStep = {
   key: string;
@@ -18,12 +22,6 @@ export type GuideStep = {
 };
 
 export const START_HERE_STEPS: GuideStep[] = [
-  {
-    key: "typeform",
-    title: "Fill out your onboarding form",
-    shortLabel: "Onboarding form",
-    body: "You received a Typeform right after payment. Fill it out first so the team knows exactly where you're starting from. Check your email/WhatsApp if you can't find it.",
-  },
   {
     key: "offer_board",
     title: "Join the offer board",
