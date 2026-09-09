@@ -743,7 +743,7 @@ export function StudentPortal() {
           Here is how to begin.
         </h1>
         <p className="mt-5 sm:mt-6 text-base sm:text-lg text-muted-foreground leading-relaxed max-w-xl">
-          Five steps into Ivy Sales Academy. Take them in order, and the moment the last one is done your full portal opens: daily logs, action items, and the leaderboard.
+          {STEP_COUNT_WORDS[START_HERE_STEPS.length] ?? START_HERE_STEPS.length} steps into Ivy Sales Academy. Take them in order, and the moment the last one is done your full portal opens: daily logs, action items, and the leaderboard.
         </p>
         <div className="mt-16 sm:mt-24">
           <StartHereGuide done={guideDone} locked unlocking={unlocking} onToggle={toggleGuideStep} />
@@ -1868,6 +1868,8 @@ function GraduationPlacement({ studentId }: { studentId: string }) {
 
 /* ---------- Start Here ---------- */
 
+const STEP_COUNT_WORDS: Record<number, string> = { 3: "Three", 4: "Four", 5: "Five", 6: "Six" };
+
 function StartHereGuide({ done, locked = false, unlocking = false, onToggle }: {
   done: Set<string>;
   locked?: boolean;
@@ -1881,7 +1883,10 @@ function StartHereGuide({ done, locked = false, unlocking = false, onToggle }: {
   // everything before it is done. Done steps stay done and never re-lock.
   const isRowLocked = (i: number) => !done.has(steps[i].key) && nextIdx !== -1 && i > nextIdx;
 
-  const featuredIdx = steps.findIndex(s => s.embedUrl);
+  // The video hero only appears once the student is ON that step (or has
+  // done it). Featuring the first step with a video unconditionally opened
+  // every new student on "Step 03" before steps 1–2 (founder, 2026-09-09).
+  const featuredIdx = steps.findIndex((s, i) => s.embedUrl && (i === nextIdx || done.has(s.key)));
   const featured = featuredIdx === -1 ? null : steps[featuredIdx];
   const featuredChecked = featured ? done.has(featured.key) : false;
   const featuredLocked = featured ? isRowLocked(featuredIdx) : false;
@@ -1951,7 +1956,7 @@ function StartHereGuide({ done, locked = false, unlocking = false, onToggle }: {
           <div className="min-w-0">
             <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">Start here</div>
             <h2 className="mt-2.5 text-[28px] sm:text-[38px] font-semibold tracking-tight leading-[1.12]">
-              {locked ? "Five steps to unlock your portal" : "Your onboarding, all done"}
+              {locked ? `${STEP_COUNT_WORDS[steps.length] ?? steps.length} steps to unlock your portal` : "Your onboarding, all done"}
             </h2>
             <p className="mt-2.5 text-[15px] text-muted-foreground max-w-xl">
               Take them in order. The last tick opens your full portal.
@@ -1981,7 +1986,7 @@ function StartHereGuide({ done, locked = false, unlocking = false, onToggle }: {
                 <div className={`min-w-0 ${rowLocked ? "opacity-60" : ""}`}>
                   <div className="text-[16px] sm:text-[17px] font-semibold text-foreground">{s.title}</div>
                   <p className="mt-2 text-[13px] sm:text-sm text-muted-foreground leading-relaxed max-w-[560px]">{s.body}</p>
-                  {s.embedUrl && (
+                  {s.embedUrl && i === featuredIdx && (
                     <p className="text-[12px] text-muted-foreground mt-2">Featured above. Watch it there, then mark it done.</p>
                   )}
                   <div className="flex flex-wrap items-center gap-3 mt-3.5">
