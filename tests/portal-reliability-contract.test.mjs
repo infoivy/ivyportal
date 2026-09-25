@@ -29,10 +29,6 @@ const studentHealth = readFileSync(new URL("src/lib/use-student-health.ts", root
 const studentPlacements = readFileSync(new URL("src/components/student-placements.tsx", root), "utf8");
 const commandPalette = readFileSync(new URL("src/components/command-palette.tsx", root), "utf8");
 const notificationsBell = readFileSync(new URL("src/components/notifications-bell.tsx", root), "utf8");
-const settingProcess = readFileSync(
-  new URL("src/routes/_authenticated.sops.isa-setting-process.tsx", root),
-  "utf8",
-);
 const studentSuccess = readFileSync(
   new URL("src/routes/_authenticated.student-success.tsx", root),
   "utf8",
@@ -379,7 +375,6 @@ test("shared student workspaces and staff utilities exclude demo-owned records a
 test("base EOD reads are own-row real history; shared activity uses the real-only view", () => {
   assert.match(eods, /from\("eods"\)\.select\("\*"\)\.eq\("is_demo", false\)\.eq\("user_id", user\.id\)/);
   assert.match(authenticatedLayout, /from\("eods"\)[\s\S]*?\.eq\("is_demo", false\)[\s\S]*?\.eq\("user_id", userId\)/);
-  assert.match(settingProcess, /from\("eods"\)[\s\S]*?\.eq\("is_demo", false\)[\s\S]*?\.eq\("user_id", userId\)/);
   assert.match(dailyDigest, /from\("eods"\)[\s\S]*?\.eq\("is_demo", false\)[\s\S]*?\.eq\("report_date", yesterday\)/);
 });
 
@@ -390,8 +385,6 @@ test("submitted staff EOD history is insert-only and cannot be silently replaced
   assert.match(eods, /Submitted reports are locked/);
   assert.match(csm, /from\("eods"\)\.insert\(payload\)/);
   assert.doesNotMatch(csm, /from\("eods"\)\.upsert/);
-  assert.match(settingProcess, /from\("eods"\)\.insert\(payload as never\)/);
-  assert.doesNotMatch(settingProcess, /from\("eods"\)\.upsert/);
 
   const migration = readFileSync(immutableStaffEodMigrationUrl, "utf8");
   assert.match(migration, /drop policy if exists "Users manage own eods" on public\.eods/i);

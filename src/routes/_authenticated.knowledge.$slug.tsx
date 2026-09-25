@@ -11,8 +11,8 @@ const MOVED_TO_STATIC: Record<string, string> = {
   "simple-discovery-framework-phone-setters": "/sops/simple-discovery-framework",
   "objection-handling-playbook": "/sops/objection-handling-playbook",
   "objection-think-about-it": "/sops/objection-think-about-it",
-  "isa-setting-process": "/sops/isa-setting-process",
-  "dm-setting-mastery": "/sops/isa-setting-process",
+  "isa-setting-process": "/sops/dm-setter-playbook",
+  "dm-setting-mastery": "/sops/dm-setter-playbook",
 };
 import { CATEGORY_LABEL, type DocCategory } from "@/lib/knowledge";
 import { MarkdownView, useToc } from "@/components/markdown-view";

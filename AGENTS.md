@@ -29,7 +29,7 @@ UI checks use `const { roles } = useAuth()` and `roles.includes('role')`. Do not
 
 ## Business rules — do not weaken these
 
-- EOD reporting is seven days per week: there are no off days. Phone setters target 100 dials and 3 sets daily; DM setters target 125 leads contacted and 3 sets daily.
+- EOD reporting is seven days per week: there are no off days. Live setter targets come from the `kpi_targets` table (Admin → Setter KPIs, versioned by `effective_from`: every day is judged by the row in force that day; `src/lib/eod-kpi.ts` only holds the fallback). As of 2026-09-25 the live rows are: phone setters 100 dials and 3 sets daily; DM setters 100 DMs sent and 3 sets daily (since 2026-08-20; 300 DMs and 6 sets from 2026-07-29, 125/3 before that); full-cycle setters 50 dials AND 100 DMs sent AND 3 sets daily (since 2026-08-20; 100 dials and 50 DMs before). Query the table before quoting a target.
 - Setter commission is base percentage plus +1% for top setter in each 14-day period and +1% for a $7,500 week. There is no PIF bonus for setters.
 - Content cadence is TOF Monday–Thursday and MOF Friday–Sunday. Record in two-week batches; Thursday is recording day.
 - Founder Hub is founder/admin-only. Payment details are closer/admin-only.

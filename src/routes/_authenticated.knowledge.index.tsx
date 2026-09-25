@@ -187,15 +187,8 @@ function KnowledgeIndex() {
                       key: "dm-setter-playbook",
                       title: "DM Setter Playbook",
                       description:
-                        "The full DM setting system in conversation order: first reply, the checks, the two booking links, triage, show-up, follow-ups and daily numbers.",
+                        "The main script for DM setting, in conversation order: first reply, the checks, the two booking links, triage, show-up, follow-ups and daily numbers.",
                       to: "/sops/dm-setter-playbook",
-                    },
-                    {
-                      key: "setting-process",
-                      title: "Setting Process",
-                      description:
-                        "The complete setting system in one place: guided workflow, the full script library, and the DM mastery board · openers, qualification, objections, follow-ups, psychology, and ops.",
-                      to: "/sops/isa-setting-process",
                     },
                     {
                       key: "simple-discovery-framework",

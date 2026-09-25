@@ -1,9 +1,9 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
-// DM Setting Mastery merged into the Setting Process page (founder-directed
-// 2026-07-29); old links land on its DM board view.
+// DM Setting Mastery merged into the Setting Process page (2026-07-29), which
+// was retired for the DM Setter Playbook (2026-09-25). Old links land there.
 export const Route = createFileRoute("/_authenticated/sops/dm-setting-mastery")({
   beforeLoad: () => {
-    throw redirect({ to: "/sops/isa-setting-process", search: { mode: "dm" } as never, replace: true });
+    throw redirect({ to: "/sops/dm-setter-playbook", replace: true });
   },
 });
