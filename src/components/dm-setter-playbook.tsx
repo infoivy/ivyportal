@@ -487,18 +487,6 @@ const TOOLKIT: CheckItem[] = [
     meta: "Read",
   },
   {
-    id: "kit-videos",
-    title: "Free videos to send.",
-    text: "What setting is, how brothers start with no experience, a student story.",
-    meta: "Links",
-  },
-  {
-    id: "kit-precall",
-    title: "The pre-call video.",
-    text: "Sent after every booking.",
-    meta: "Link",
-  },
-  {
     id: "kit-links",
     title: "Both booking links.",
     text: "The soft link and the hard link.",
@@ -507,7 +495,7 @@ const TOOLKIT: CheckItem[] = [
   {
     id: "kit-mochi",
     title: "Mochi.",
-    text: "Where you talk to leads, tag them and see their history. You're never logged into Instagram itself.",
+    text: "Where you talk to leads, tag them, see their history and send the videos. You're never logged into Instagram itself.",
     meta: "Access",
   },
   {
@@ -634,7 +622,8 @@ const OBJECTIONS: { q: string; a: string; then?: string }[] = [
   },
   {
     q: "just send me the info",
-    a: "i can, but it won't answer what matters for you. this covers the basics: [free video link]\nwhat's your situation at the moment, so i know what to point you to?",
+    a: "i can, but it won't answer what matters for you. i'll send you a video that covers the basics. what's your situation at the moment, so i know what to point you to?",
+    then: "Send the basics video from Mochi.",
   },
   {
     q: "i need to think about it",
@@ -671,7 +660,7 @@ const QUIZ: QuizQuestion[] = [
     q: "A brother replies “PATH” to a post that promised a breakdown. What's your first message?",
     options: [
       "“Hey! Thanks so much for reaching out 😊 Here's the link to book your free call: [link]”",
-      "“salam akhi 🤝 here's the breakdown from the post: [link]. what made you reach out?”",
+      "“salam akhi 🤝 here's the breakdown from the post. what made you reach out?”",
       "“salam akhi, how much could you invest if this was the right fit?”",
     ],
     answer: 1,
@@ -1011,18 +1000,18 @@ export function DmSetterPlaybook() {
         <Lead>
           Every keyword comes from a post that promised him something, like “reply PATH if you want
           to know exactly how i did it”. Check which post it came from (the keyword list is in your
-          toolkit), give him what the post promised, then ask one easy question. No booking link, no
-          price, no money question.
+          toolkit), send him what the post promised from Mochi, then ask one easy question. No
+          booking link, no price, no money question.
         </Lead>
         <ScriptList
           items={[
             {
-              ctx: "He replied with a keyword",
-              text: "salam akhi 🤝 here's the breakdown from the post: [what the post promised]\nwhat made you reach out?",
+              ctx: "He replied with a keyword · send what the post promised from Mochi",
+              text: "salam akhi 🤝 here's the breakdown from the post. what made you reach out?",
             },
             {
-              ctx: "He wrote “salam” with it",
-              text: "wa alaykum salam akhi 🤝 here's the breakdown from the post: [what the post promised]\nwhat made you reach out?",
+              ctx: "He wrote “salam” with it · send what the post promised from Mochi",
+              text: "wa alaykum salam akhi 🤝 here's the breakdown from the post. what made you reach out?",
             },
             {
               ctx: "The automation already sent it",
@@ -1165,8 +1154,8 @@ export function DmSetterPlaybook() {
         <ScriptList
           items={[
             {
-              ctx: "Value with a video",
-              text: "this breaks down what setting actually is and how brothers start with zero experience: [free video link]\nwhen you've watched it, tell me what part you're unsure about",
+              ctx: "Value with a video · send the video from Mochi with it",
+              text: "this breaks down what setting actually is and how brothers start with zero experience. when you've watched it, tell me what part you're unsure about",
             },
             {
               ctx: "Does he want help?",
@@ -1295,8 +1284,8 @@ export function DmSetterPlaybook() {
               text: "let's get you on a call then. what's your whatsapp? i'll send the link there",
             },
             {
-              ctx: "He's half in",
-              text: "if you're serious about [his goal], the call is the next step. if you'd rather look into it more first, no stress, here's a video in the meantime: [free video link]",
+              ctx: "He's half in · send the video from Mochi",
+              text: "if you're serious about [his goal], the call is the next step. if you'd rather look into it more first, no stress, i'll send you a video in the meantime",
             },
             {
               ctx: "He asks a lot of questions",
@@ -1388,7 +1377,7 @@ export function DmSetterPlaybook() {
               lines={[
                 { he: "salam PATH" },
                 {
-                  you: "wa alaykum salam akhi 🤝 here's the breakdown from the post: [link]\nwhat made you reach out?",
+                  you: "wa alaykum salam akhi 🤝 here's the breakdown from the post. what made you reach out?",
                 },
                 { note: "Keyword · give him what the post promised first" },
                 {
@@ -1512,7 +1501,7 @@ export function DmSetterPlaybook() {
               lines={[
                 { he: "salam PATH" },
                 {
-                  you: "wa alaykum salam akhi 🤝 here's the breakdown from the post: [link]\nwhat made you reach out?",
+                  you: "wa alaykum salam akhi 🤝 here's the breakdown from the post. what made you reach out?",
                 },
                 { he: "i want to learn appointment setting and work online" },
                 { you: "good choice. where you based?" },
@@ -1536,8 +1525,8 @@ export function DmSetterPlaybook() {
         <ScriptList
           items={[
             {
-              ctx: "Lives outside our countries",
-              text: "appreciate you telling me akhi. right now we only take on brothers living in the uk and ireland, the us and canada, western europe, australia and nz, and the gulf, so i can't book you in yet. this free video covers how setting works: [free video link]\nif you move, message me 🤝",
+              ctx: "Lives outside our countries · send the free video from Mochi",
+              text: "appreciate you telling me akhi. right now we only take on brothers living in the uk and ireland, the us and canada, western europe, australia and nz, and the gulf, so i can't book you in yet. i'll send you a free video that covers how setting works. if you move, message me 🤝",
             },
             {
               ctx: "He asks why",
@@ -1548,20 +1537,20 @@ export function DmSetterPlaybook() {
               text: "you're a bit early for the mentorship akhi, it's 18+. use the free content to build your skills and message me once you're 18 insha'Allah",
             },
             {
-              ctx: "No laptop",
-              text: "you'll need a laptop and stable internet to train and take calls. once that's sorted message me and i'll get you booked. in the meantime: [free video link]",
+              ctx: "No laptop · send the free video from Mochi",
+              text: "you'll need a laptop and stable internet to train and take calls. once that's sorted message me and i'll get you booked. i'll send you a free video to start with in the meantime",
             },
             {
               ctx: "Wants quick cash",
               text: "i'll be straight with you, this is a skill that takes a few months to build. if you need something this month, this isn't it. if you want the long-term skill, i'm here",
             },
             {
-              ctx: "He tells you he can't afford it right now",
-              text: "appreciate you being honest akhi, no rush at all. start with this, it's free: [free video link]\nwhen the timing's better, message me and we'll pick it up",
+              ctx: "He tells you he can't afford it right now · send the free video from Mochi",
+              text: "appreciate you being honest akhi, no rush at all. i'll send you a free video to start with. when the timing's better, message me and we'll pick it up",
             },
             {
               ctx: "A sister messages",
-              text: "salam sister, thank you for reaching out. the mentorship is for brothers only right now, but the free content on the page is for everyone: [free video link]",
+              text: "salam sister, thank you for reaching out. the mentorship is for brothers only right now, but the free content on the page is for everyone",
             },
           ]}
         />
@@ -1594,7 +1583,7 @@ export function DmSetterPlaybook() {
             {
               tone: "green" as const,
               when: "Everything else",
-              act: "Confirm and send the pre-call video.",
+              act: "Confirm, and send the pre-call video from Mochi.",
             },
           ].map((d) => (
             <Rail
@@ -1611,8 +1600,8 @@ export function DmSetterPlaybook() {
           items={[
             {
               tag: "WhatsApp",
-              ctx: "Confirmation, right after he books",
-              text: "locked in akhi ✅ [day] at [time] your time. watch this before the call, it'll make it way more useful for you: [pre-call video]\nand add the invite from your email to your calendar so it doesn't slip",
+              ctx: "Confirmation, right after he books · send the pre-call video from Mochi too",
+              text: "locked in akhi ✅ [day] at [time] your time. i've sent you a short video on instagram, watch it before the call, it'll make it way more useful for you. and add the invite from your email to your calendar so it doesn't slip",
             },
             {
               tag: "WhatsApp",
@@ -1717,8 +1706,8 @@ export function DmSetterPlaybook() {
               with, and when you've got it set aside, message me and i'll book you straight back in”
             </p>
             <p className="text-caption text-muted-foreground">
-              Cancel in Calendly, send the free video, mark him Cancelled at triage. Lives outside
-              our countries? Cancel and send the “not our region” message.
+              Cancel in Calendly, send the free video from Mochi, mark him Cancelled at triage.
+              Lives outside our countries? Cancel and send the “not our region” message.
             </p>
           </Rail>
         </div>
@@ -1877,8 +1866,8 @@ export function DmSetterPlaybook() {
             },
             {
               tag: "WhatsApp",
-              ctx: "With something useful",
-              text: "saw this and thought of what you said about [his goal]: [video link]",
+              ctx: "With something useful · add the video or post it's about",
+              text: "saw this and thought of what you said about [his goal]",
             },
           ]}
         />

@@ -42,7 +42,7 @@ const SHOTS = [
       await page.waitForTimeout(2500);
     } },
   { name: "setter-knowledge", persona: "setter", path: "/knowledge" },
-  { name: "setting-process", persona: "setter", path: "/sops/isa-setting-process" },
+  { name: "dm-setter-playbook", persona: "setter", path: "/sops/dm-setter-playbook" },
   // closer
   { name: "money-in", persona: "closer", path: "/revenue" },
   { name: "log-a-close", persona: "closer", path: "/revenue", action: async (page) => {

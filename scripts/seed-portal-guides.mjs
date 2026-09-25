@@ -108,9 +108,7 @@ The Calendar opens on the week: every connected call as a chip with its time. Th
 
 ## Scripts and SOPs
 
-${img("setting-process", "Setting Process")}
-
-**Knowledge → Setting Process** is the whole system in one page: the guided workflow, the full script library (press / to search), and the DM mastery board. The **Simple Discovery Framework** covers the phone discovery call. The **EOD & Meetings Policy** and **CRM Hygiene Policy** at the top of Knowledge are the two rules that everything else builds on.
+**Knowledge → DM Setter Playbook** is the main script for DM setting: every step of the conversation in order, the two booking links, triage, follow-ups and your daily numbers, with a copy button on every script. The **Simple Discovery Framework** covers the phone discovery call. The **EOD & Meetings Policy** and **CRM Hygiene Policy** at the top of Knowledge are the two rules that everything else builds on.
 
 ${img("setter-knowledge", "Knowledge hub")}
 
@@ -121,7 +119,7 @@ ${img("setter-knowledge", "Knowledge hub")}
 | File today's report | **Work → My EOD** |
 | See my week and streak | **Home** |
 | Log or confirm a set | **Calendar → Sets** |
-| Find a script mid-conversation | **Knowledge → Setting Process** → press / |
+| Find a DM script mid-conversation | **Knowledge → DM Setter Playbook** |
 | See my assigned tasks | **Home → Next actions** or **Work → Action items** |
 | Fix my timezone | **Profile** |
 `,
