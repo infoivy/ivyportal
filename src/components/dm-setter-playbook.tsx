@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useState, type ReactNode } from "react";
 import { Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { StatusPill } from "@/components/ui/status-pill";
 import { DocSectionHeader, type DocSection } from "@/components/doc-shell";
 import { cn } from "@/lib/utils";
 
@@ -94,7 +95,7 @@ function Bubble({
   return (
     <p
       className={cn(
-        "px-3.5 py-2 text-[15px] leading-[1.42] [overflow-wrap:anywhere]",
+        "px-3.5 py-2 text-body leading-[1.42] [overflow-wrap:anywhere]",
         BUBBLE[kind],
         className,
       )}
@@ -109,7 +110,7 @@ function Tag({ children, wa }: { children: ReactNode; wa?: boolean }) {
   return (
     <span
       className={cn(
-        "rounded-[6px] px-1.5 py-1 font-mono text-[10px] font-medium uppercase leading-none tracking-[0.08em]",
+        "rounded-[6px] px-1.5 py-1 font-mono text-micro font-medium uppercase leading-none tracking-[0.08em]",
         wa ? "bg-success-bg text-success-fg" : "bg-muted text-muted-foreground",
       )}
     >
@@ -139,7 +140,7 @@ function CopyButton({ text }: { text: string }) {
       variant="secondary"
       size="sm"
       onClick={copy}
-      className={cn("rounded-full px-3 text-xs", state === "done" && "text-success-fg")}
+      className={cn("rounded-full px-3 text-caption", state === "done" && "text-success-fg")}
     >
       {state === "done" ? "Copied" : state === "failed" ? "Select it" : "Copy"}
     </Button>
@@ -158,7 +159,7 @@ function ScriptList({ items }: { items: Script[] }) {
             key={i}
             className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 border-b border-border py-3.5"
           >
-            <div className="col-span-2 flex flex-wrap items-center gap-2 text-[13px] text-muted-foreground">
+            <div className="col-span-2 flex flex-wrap items-center gap-2 text-caption text-muted-foreground">
               <Tag wa={wa}>{s.tag ?? "DM"}</Tag>
               <span>{s.ctx}</span>
             </div>
@@ -188,8 +189,8 @@ function Convo({ label, lines }: { label: string; lines: ConvoLine[] }) {
           <p
             key={i}
             className={cn(
-              "self-center py-1.5 text-center font-mono text-[10.5px] font-medium uppercase leading-relaxed tracking-[0.06em]",
-              l.warn ? "text-warning-fg" : "text-success-fg",
+              "self-center py-1.5 text-center font-mono text-micro font-medium uppercase leading-relaxed tracking-[0.06em]",
+              l.warn ? "text-warning-fg" : "text-muted-foreground",
             )}
           >
             <Rich text={l.note} />
@@ -238,16 +239,16 @@ function Section({
 function Part({ no, title }: { no: string; title: string }) {
   return (
     <div className="flex items-baseline gap-3 border-t border-border pt-8">
-      <span className="font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+      <span className="font-mono text-micro font-medium uppercase tracking-[0.1em] text-muted-foreground">
         {no}
       </span>
-      <span className="text-2xl font-semibold tracking-tight">{title}</span>
+      <span className="text-xl font-semibold tracking-tight">{title}</span>
     </div>
   );
 }
 
 function Lead({ children }: { children: ReactNode }) {
-  return <p className="mt-2 max-w-[62ch] text-[15px] leading-7 text-foreground/85">{children}</p>;
+  return <p className="mt-2 max-w-[62ch] text-body leading-6 text-foreground/85">{children}</p>;
 }
 
 function Sub({ children }: { children: ReactNode }) {
@@ -256,13 +257,13 @@ function Sub({ children }: { children: ReactNode }) {
 
 function SubNote({ children }: { children: ReactNode }) {
   return (
-    <p className="mt-1 max-w-[62ch] text-[13px] leading-6 text-muted-foreground">{children}</p>
+    <p className="mt-1 max-w-[62ch] text-caption leading-5 text-muted-foreground">{children}</p>
   );
 }
 
 function Tip({ title, children }: { title?: string; children: ReactNode }) {
   return (
-    <p className="mt-3 max-w-[64ch] text-[13px] leading-6 text-muted-foreground">
+    <p className="mt-3 max-w-[64ch] text-body leading-6 text-muted-foreground">
       {title && <b className="font-semibold text-foreground/80">{title} </b>}
       {children}
     </p>
@@ -274,11 +275,13 @@ function Box({ title, warn, children }: { title: string; warn?: boolean; childre
     <div
       className={cn(
         "mt-6 rounded-xl p-5",
-        warn ? "border-l-4 border-l-warning bg-warning-bg/60" : "border border-border bg-card",
+        warn
+          ? "border border-border bg-card shadow-[inset_2px_0_0_0_var(--warning)]"
+          : "border border-border bg-card",
       )}
     >
       <p className="font-semibold">{title}</p>
-      <p className="mt-1.5 max-w-[64ch] text-[15px] leading-7 text-foreground/85">{children}</p>
+      <p className="mt-1.5 max-w-[64ch] text-body leading-6 text-foreground/85">{children}</p>
     </div>
   );
 }
@@ -289,7 +292,7 @@ function Ticks({ items, kind }: { items: ReactNode[]; kind: "yes" | "no" | "dot"
       {items.map((item, i) => (
         <li
           key={i}
-          className="relative border-b border-border py-2.5 pl-7 text-[15px] leading-6 text-foreground/85"
+          className="relative border-b border-border py-2.5 pl-7 text-body leading-6 text-foreground/85"
         >
           {kind === "yes" ? (
             <Check className="absolute left-0.5 top-3.5 h-4 w-4 text-success" />
@@ -325,21 +328,6 @@ function Rail({
   );
 }
 
-function Pill({ tone, children }: { tone: "green" | "amber" | "red"; children: ReactNode }) {
-  return (
-    <span
-      className={cn(
-        "rounded-[6px] px-2 py-1 font-mono text-[10px] font-medium uppercase leading-none tracking-[0.08em]",
-        tone === "green" && "bg-success-bg text-success-fg",
-        tone === "amber" && "bg-warning-bg text-warning-fg",
-        tone === "red" && "bg-danger-bg text-danger-fg",
-      )}
-    >
-      {children}
-    </span>
-  );
-}
-
 function Chips({ items, muted }: { items: string[]; muted?: boolean }) {
   return (
     <ul className="flex flex-wrap gap-1.5">
@@ -347,7 +335,7 @@ function Chips({ items, muted }: { items: string[]; muted?: boolean }) {
         <li
           key={c}
           className={cn(
-            "rounded-full px-2.5 py-1.5 text-[13px] leading-none",
+            "rounded-full px-2.5 py-1.5 text-caption leading-none",
             muted ? "bg-muted text-foreground/80" : "border border-border bg-card",
           )}
         >
@@ -413,7 +401,7 @@ function Checklist({
               />
               <span
                 className={cn(
-                  "text-[15px] leading-6",
+                  "text-body leading-6",
                   on ? "text-muted-foreground" : "text-foreground/85",
                 )}
               >
@@ -427,7 +415,7 @@ function Checklist({
                 </strong>
                 {it.text ? ` ${it.text}` : ""}
               </span>
-              <span className="whitespace-nowrap pt-0.5 font-mono text-xs text-muted-foreground">
+              <span className="whitespace-nowrap pt-0.5 font-mono text-caption text-muted-foreground">
                 {it.meta}
               </span>
             </label>
@@ -821,17 +809,17 @@ export function DmSetterPlaybook() {
               key={j.title}
               className="grid grid-cols-[28px_minmax(0,1fr)] gap-x-3 gap-y-2 border-b border-border py-4 sm:grid-cols-[64px_minmax(0,1fr)_auto] sm:items-baseline sm:gap-x-4"
             >
-              <span className="font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+              <span className="font-mono text-micro font-medium uppercase tracking-[0.08em] text-muted-foreground">
                 <span className="hidden sm:inline">Step </span>
                 {String(i + 1).padStart(2, "0")}
               </span>
               <div>
                 <p className="font-semibold">{j.title}</p>
-                <p className="mt-0.5 max-w-[60ch] text-[15px] leading-6 text-foreground/80">
+                <p className="mt-0.5 max-w-[60ch] text-body leading-6 text-foreground/80">
                   {j.text}
                 </p>
               </div>
-              <span className="col-start-2 justify-self-start whitespace-nowrap rounded-full border border-border px-2.5 py-1 font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-muted-foreground sm:col-start-auto">
+              <span className="col-start-2 justify-self-start whitespace-nowrap rounded-full border border-border px-2.5 py-1 font-mono text-micro font-medium uppercase tracking-[0.08em] text-muted-foreground sm:col-start-auto">
                 {j.where}
               </span>
             </li>
@@ -867,7 +855,7 @@ export function DmSetterPlaybook() {
             />
           </div>
         </div>
-        <p className="mt-8 max-w-[66ch] rounded-xl border border-border bg-muted/50 px-4 py-3.5 text-[14.5px] leading-6 text-foreground/85">
+        <p className="mt-8 max-w-[66ch] rounded-xl border border-border bg-muted/50 px-4 py-3.5 text-body leading-6 text-foreground/85">
           <b className="font-semibold text-foreground">How we work together:</b> patient while you
           learn, strict on the basics. Speed, honesty, your EOD and showing up.
         </p>
@@ -915,23 +903,21 @@ export function DmSetterPlaybook() {
               key={t.n}
               className="grid grid-cols-[28px_minmax(0,1fr)] gap-3.5 border-b border-border py-5"
             >
-              <span className="pt-0.5 font-mono text-xs text-muted-foreground">{t.n}</span>
+              <span className="pt-0.5 font-mono text-caption text-muted-foreground">{t.n}</span>
               <div>
                 <p className="font-semibold">
                   {t.title}
-                  <span className="ml-2 whitespace-nowrap font-mono text-[10.5px] uppercase tracking-[0.08em] text-success-fg">
+                  <span className="ml-2 whitespace-nowrap font-mono text-micro uppercase tracking-[0.08em] text-muted-foreground">
                     {t.share}
                   </span>
                 </p>
-                <p className="mt-1 max-w-[62ch] text-[15px] leading-6 text-foreground/80">
-                  {t.text}
-                </p>
+                <p className="mt-1 max-w-[62ch] text-body leading-6 text-foreground/80">{t.text}</p>
                 {t.says.length > 0 && (
                   <ul className="mt-2.5 flex flex-wrap gap-1.5" aria-label="What he says">
                     {t.says.map((s) => (
                       <li
                         key={s}
-                        className="rounded-[14px] rounded-bl-[5px] bg-muted px-2.5 py-1.5 text-[13px] leading-snug"
+                        className="rounded-[14px] rounded-bl-[5px] bg-muted px-2.5 py-1.5 text-caption leading-snug"
                       >
                         {s}
                       </li>
@@ -993,7 +979,7 @@ export function DmSetterPlaybook() {
           ].map((r) => (
             <li
               key={r.who}
-              className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-4 gap-y-1 border-b border-border py-3.5 text-[15px] sm:grid-cols-[160px_minmax(0,1fr)_auto]"
+              className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-4 gap-y-1 border-b border-border py-3.5 text-body sm:grid-cols-[160px_minmax(0,1fr)_auto]"
             >
               <span className="font-semibold">{r.who}</span>
               <span className="col-span-2 row-start-2 text-foreground/80 sm:col-span-1 sm:row-start-auto">
@@ -1001,8 +987,8 @@ export function DmSetterPlaybook() {
               </span>
               <span
                 className={cn(
-                  "col-start-2 row-start-1 whitespace-nowrap rounded-full px-2.5 py-1 font-mono text-xs sm:col-start-auto sm:row-start-auto",
-                  r.hot ? "bg-success-bg text-success-fg" : "bg-muted text-foreground",
+                  "col-start-2 row-start-1 whitespace-nowrap rounded-full px-2.5 py-1 font-mono text-caption sm:col-start-auto sm:row-start-auto",
+                  r.hot ? "bg-primary text-primary-foreground" : "bg-muted text-foreground",
                 )}
               >
                 {r.when}
@@ -1093,7 +1079,7 @@ export function DmSetterPlaybook() {
           ].map(([bad, good]) => (
             <div
               key={bad}
-              className="grid gap-0.5 border-b border-border py-3 text-[14.5px] sm:grid-cols-[minmax(0,1fr)_22px_minmax(0,1fr)] sm:items-center sm:gap-3"
+              className="grid gap-0.5 border-b border-border py-3 text-body sm:grid-cols-[minmax(0,1fr)_22px_minmax(0,1fr)] sm:items-center sm:gap-3"
             >
               <span className="text-muted-foreground line-through decoration-danger">{bad}</span>
               <span
@@ -1156,7 +1142,7 @@ export function DmSetterPlaybook() {
         ].map((stage) => (
           <div key={stage.k} className="mt-8">
             <p className="flex items-baseline gap-2.5 font-semibold">
-              <span className="font-mono text-[11px] font-medium text-muted-foreground">
+              <span className="font-mono text-micro font-medium text-muted-foreground">
                 {stage.k}
               </span>
               {stage.title}
@@ -1209,7 +1195,7 @@ export function DmSetterPlaybook() {
             <CheckNo n={1} />
             <div>
               <p className="font-semibold">He lives in one of our countries</p>
-              <p className="mt-1 text-[15px] text-foreground/80">
+              <p className="mt-1 text-body text-foreground/80">
                 Where he lives now. Not where he or his family is from.
               </p>
               <div className="mt-3.5 grid gap-2.5">
@@ -1218,14 +1204,14 @@ export function DmSetterPlaybook() {
                     key={r.label}
                     className="grid gap-1 sm:grid-cols-[128px_minmax(0,1fr)] sm:gap-2.5"
                   >
-                    <span className="pt-0 font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-muted-foreground sm:pt-2">
+                    <span className="pt-0 font-mono text-micro font-medium uppercase tracking-[0.08em] text-muted-foreground sm:pt-2">
                       {r.label}
                     </span>
                     <Chips items={r.items} />
                   </div>
                 ))}
               </div>
-              <p className="mt-3 text-[15px] text-foreground/80">
+              <p className="mt-3 text-body text-foreground/80">
                 Anywhere else is “not our region” for now. Only your manager can make an exception.
               </p>
             </div>
@@ -1254,7 +1240,7 @@ export function DmSetterPlaybook() {
               <CheckNo n={c.n} />
               <div>
                 <p className="font-semibold">{c.title}</p>
-                <p className="mt-1 text-[15px] text-foreground/80">{c.text}</p>
+                <p className="mt-1 text-body text-foreground/80">{c.text}</p>
               </div>
             </div>
           ))}
@@ -1277,16 +1263,16 @@ export function DmSetterPlaybook() {
         </SubNote>
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           <Rail tone="green" className="px-4 py-3.5">
-            <p className="text-[15px] font-semibold">He shows he can do it (soft link)</p>
-            <ul className="mt-2 grid gap-1.5 text-[14.5px] text-foreground/80">
+            <p className="text-body font-semibold">He shows he can do it (soft link)</p>
+            <ul className="mt-2 grid gap-1.5 text-body text-foreground/80">
               <li>“been saving for the move”</li>
               <li>works full-time and says money isn't the problem</li>
               <li>says he's ready to invest in himself</li>
             </ul>
           </Rail>
           <Rail tone="red" className="px-4 py-3.5">
-            <p className="text-[15px] font-semibold">Warning signs (hard link, or not a fit)</p>
-            <ul className="mt-2 grid gap-1.5 text-[14.5px] text-foreground/80">
+            <p className="text-body font-semibold">Warning signs (hard link, or not a fit)</p>
+            <ul className="mt-2 grid gap-1.5 text-body text-foreground/80">
               <li>“i'd have to borrow it”</li>
               <li>“i'm on my last £200”</li>
               <li>“i need money this week”</li>
@@ -1393,7 +1379,10 @@ export function DmSetterPlaybook() {
           keep it short, react first, and ask one thing at a time.
         </Lead>
         <div className="mt-6 grid gap-12">
-          <Example title="A · He wants to make hijra" pill={<Pill tone="green">Soft link</Pill>}>
+          <Example
+            title="A · He wants to make hijra"
+            pill={<StatusPill tone="success">Soft link</StatusPill>}
+          >
             <Convo
               label="Example conversation A"
               lines={[
@@ -1440,7 +1429,7 @@ export function DmSetterPlaybook() {
           </Example>
           <Example
             title="B · Stuck in retail, vague at first"
-            pill={<Pill tone="amber">Hard link</Pill>}
+            pill={<StatusPill tone="warning">Hard link</StatusPill>}
           >
             <Convo
               label="Example conversation B"
@@ -1483,7 +1472,10 @@ export function DmSetterPlaybook() {
               checks it on the call.
             </Tip>
           </Example>
-          <Example title="C · Asks the price first" pill={<Pill tone="amber">Hard link</Pill>}>
+          <Example
+            title="C · Asks the price first"
+            pill={<StatusPill tone="warning">Hard link</StatusPill>}
+          >
             <Convo
               label="Example conversation C"
               lines={[
@@ -1511,7 +1503,10 @@ export function DmSetterPlaybook() {
               because he hasn't shown he can do it yet. The form covers age and laptop.
             </Tip>
           </Example>
-          <Example title="D · Lives outside our countries" pill={<Pill tone="red">Not a fit</Pill>}>
+          <Example
+            title="D · Lives outside our countries"
+            pill={<StatusPill tone="danger">Not a fit</StatusPill>}
+          >
             <Convo
               label="Example conversation D"
               lines={[
@@ -1605,7 +1600,7 @@ export function DmSetterPlaybook() {
             <Rail
               key={d.when}
               tone={d.tone}
-              className="grid gap-1 px-4 py-3.5 text-[15px] md:grid-cols-2 md:gap-5"
+              className="grid gap-1 px-4 py-3.5 text-body md:grid-cols-2 md:gap-5"
             >
               <p className="font-semibold">{d.when}</p>
               <p className="text-foreground/80">{d.act}</p>
@@ -1686,12 +1681,12 @@ export function DmSetterPlaybook() {
               key={l.who}
               className="grid gap-1 border-b border-border py-3.5 last:border-b-0 sm:grid-cols-[84px_minmax(0,1fr)] sm:gap-3.5"
             >
-              <span className="pt-1 font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+              <span className="pt-1 font-mono text-micro font-medium uppercase tracking-[0.08em] text-muted-foreground">
                 {l.who}
               </span>
-              <p className="text-[15.5px] leading-7">
+              <p className="text-body leading-6">
                 {l.cond && (
-                  <span className="mb-0.5 block text-[13px] text-muted-foreground">{l.cond}</span>
+                  <span className="mb-0.5 block text-caption text-muted-foreground">{l.cond}</span>
                 )}
                 <Rich text={l.say} />
               </p>
@@ -1701,27 +1696,27 @@ export function DmSetterPlaybook() {
         <div className="mt-3 grid gap-2.5 md:grid-cols-2">
           <Rail tone="green" className="flex flex-col gap-2 px-4 py-4">
             <p className="font-semibold">Keep him on the calendar</p>
-            <p className="text-[14.5px] text-foreground/80">
+            <p className="text-body text-foreground/80">
               He has $1,000 or more without borrowing, and he lives in one of our countries.
             </p>
-            <p className="rounded-[10px] bg-muted/60 px-3 py-2.5 text-[14.5px] leading-6">
+            <p className="rounded-[10px] bg-muted/60 px-3 py-2.5 text-body leading-6">
               <Rich text="“perfect, you're all set for tomorrow at [time]. is it your decision, or should anyone join you?”" />
             </p>
-            <p className="text-[13px] text-muted-foreground">
+            <p className="text-caption text-muted-foreground">
               Mark him Kept and add what he told you to the closer note.
             </p>
           </Rail>
           <Rail tone="red" className="flex flex-col gap-2 px-4 py-4">
             <p className="font-semibold">Free the slot</p>
-            <p className="text-[14.5px] text-foreground/80">
+            <p className="text-body text-foreground/80">
               He doesn't have it, or he'd need to borrow.
             </p>
-            <p className="rounded-[10px] bg-muted/60 px-3 py-2.5 text-[14.5px] leading-6">
+            <p className="rounded-[10px] bg-muted/60 px-3 py-2.5 text-body leading-6">
               “appreciate you being honest akhi. then tomorrow would be too early and i don't want
               to waste your time, so i'll free up the slot. i'll send you a free video to start
               with, and when you've got it set aside, message me and i'll book you straight back in”
             </p>
-            <p className="text-[13px] text-muted-foreground">
+            <p className="text-caption text-muted-foreground">
               Cancel in Calendly, send the free video, mark him Cancelled at triage. Lives outside
               our countries? Cancel and send the “not our region” message.
             </p>
@@ -1937,7 +1932,7 @@ export function DmSetterPlaybook() {
               />
               <div className="grid min-w-0 gap-1.5">
                 <Bubble kind="me" text={o.a} className="justify-self-start" />
-                {o.then && <p className="text-[13px] leading-6 text-muted-foreground">{o.then}</p>}
+                {o.then && <p className="text-caption leading-5 text-muted-foreground">{o.then}</p>}
               </div>
               <CopyButton text={o.a} />
             </div>
@@ -2057,10 +2052,10 @@ export function DmSetterPlaybook() {
           ].map(([blk, len, what]) => (
             <li
               key={blk}
-              className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-1 border-b border-border py-3 text-[15px] sm:grid-cols-[130px_110px_minmax(0,1fr)]"
+              className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-1 border-b border-border py-3 text-body sm:grid-cols-[130px_110px_minmax(0,1fr)]"
             >
               <span className="font-semibold">{blk}</span>
-              <span className="pt-0.5 font-mono text-xs text-muted-foreground">{len}</span>
+              <span className="pt-0.5 font-mono text-caption text-muted-foreground">{len}</span>
               <span className="col-span-2 text-foreground/80 sm:col-span-1">{what}</span>
             </li>
           ))}
@@ -2079,7 +2074,7 @@ export function DmSetterPlaybook() {
                     →
                   </li>
                 )}
-                <li className="rounded-full border border-border bg-card px-2.5 py-1.5 text-[13px] leading-none">
+                <li className="rounded-full border border-border bg-card px-2.5 py-1.5 text-caption leading-none">
                   {s}
                 </li>
               </Fragment>
@@ -2160,7 +2155,7 @@ where i need help:`}
           ].map(([v, l]) => (
             <div key={l} className="bg-card p-4">
               <p className="text-metric tabular-nums">{v}</p>
-              <p className="mt-2 text-[13px] leading-snug text-muted-foreground">{l}</p>
+              <p className="mt-2 text-caption leading-snug text-muted-foreground">{l}</p>
             </div>
           ))}
         </div>
@@ -2169,15 +2164,15 @@ where i need help:`}
           Roughly one in five real conversations gets a call pitched, and about half of those book.
           So three bookings a day looks like this:
         </SubNote>
-        <div className="mt-3 flex flex-wrap items-center gap-2 text-[15px]">
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-body">
           <span className="rounded-[10px] border border-border bg-card px-3 py-2 tabular-nums">
             <b className="font-semibold">30</b> real conversations
           </span>
-          <span className="font-mono text-xs text-muted-foreground">→ 20%</span>
+          <span className="font-mono text-caption text-muted-foreground">→ 20%</span>
           <span className="rounded-[10px] border border-border bg-card px-3 py-2 tabular-nums">
             <b className="font-semibold">6</b> calls pitched
           </span>
-          <span className="font-mono text-xs text-muted-foreground">→ 50%</span>
+          <span className="font-mono text-caption text-muted-foreground">→ 50%</span>
           <span className="rounded-[10px] border border-border bg-card px-3 py-2 tabular-nums">
             <b className="font-semibold">3</b> booked
           </span>
@@ -2216,7 +2211,7 @@ where i need help:`}
           ].map(([sym, fix]) => (
             <li
               key={sym}
-              className="grid gap-1 border-b border-border py-3.5 text-[15px] sm:grid-cols-[minmax(0,260px)_minmax(0,1fr)] sm:gap-5"
+              className="grid gap-1 border-b border-border py-3.5 text-body sm:grid-cols-[minmax(0,260px)_minmax(0,1fr)] sm:gap-5"
             >
               <span className="font-semibold">{sym}</span>
               <span className="text-foreground/80">{fix}</span>
@@ -2236,8 +2231,8 @@ where i need help:`}
       <Part no="Paused" title="Only with approval" />
 
       <Section id="pb-outbound" no="24" title="Outbound (paused)">
-        <div className="mt-4 flex max-w-[70ch] flex-wrap items-baseline gap-x-3 gap-y-2 rounded-xl bg-warning-bg px-4 py-3.5 text-[15px] shadow-[inset_2px_0_0_0_var(--warning)]">
-          <Pill tone="amber">Paused</Pill>
+        <div className="mt-4 flex max-w-[70ch] flex-wrap items-baseline gap-x-3 gap-y-2 rounded-xl border border-border bg-card px-4 py-3.5 text-body shadow-[inset_2px_0_0_0_var(--warning)]">
+          <StatusPill tone="warning">Paused</StatusPill>
           <span>
             Don't do any of this unless your manager approves it. Meta can flag outreach, and the
             account was banned once already.
@@ -2268,7 +2263,7 @@ where i need help:`}
             ]}
           />
         </div>
-        <p className="mt-10 max-w-[62ch] text-[13px] text-muted-foreground">
+        <p className="mt-10 max-w-[62ch] text-caption text-muted-foreground">
           If something here doesn't match what's happening in the DMs, tell your manager so the
           playbook gets updated.
         </p>
@@ -2281,7 +2276,7 @@ where i need help:`}
 
 function CheckNo({ n }: { n: number }) {
   return (
-    <span className="mt-0.5 grid h-[26px] w-[26px] place-items-center rounded-full bg-success-bg font-mono text-[12.5px] font-semibold text-success-fg">
+    <span className="mt-0.5 grid h-[26px] w-[26px] place-items-center rounded-full bg-muted font-mono text-caption font-semibold text-foreground">
       {n}
     </span>
   );
@@ -2293,9 +2288,9 @@ function Numbered({ items }: { items: ReactNode[] }) {
       {items.map((item, i) => (
         <li
           key={i}
-          className="grid grid-cols-[34px_minmax(0,1fr)] gap-2.5 border-b border-border py-3 text-[15px] leading-6 text-foreground/85"
+          className="grid grid-cols-[34px_minmax(0,1fr)] gap-2.5 border-b border-border py-3 text-body leading-6 text-foreground/85"
         >
-          <span className="pt-0.5 font-mono text-xs text-muted-foreground">
+          <span className="pt-0.5 font-mono text-caption text-muted-foreground">
             {String(i + 1).padStart(2, "0")}
           </span>
           <span>{item}</span>
@@ -2321,19 +2316,19 @@ function LinkCard({
   return (
     <Rail tone={tone} className="p-5">
       <div className="flex flex-wrap items-center gap-2.5">
-        <Pill tone={tone}>{pill}</Pill>
+        <StatusPill tone={tone === "green" ? "success" : "warning"}>{pill}</StatusPill>
         <p className="font-semibold">{title}</p>
       </div>
-      <p className="mt-2.5 text-[14.5px] text-foreground/80">
+      <p className="mt-2.5 text-body text-foreground/80">
         <b className="font-semibold text-foreground">Use it when:</b> {use}
       </p>
       <ol className="mt-3.5 grid gap-2">
         {questions.map((q, i) => (
           <li
             key={q}
-            className="grid grid-cols-[22px_minmax(0,1fr)] gap-2 text-[14px] leading-snug text-foreground/80"
+            className="grid grid-cols-[22px_minmax(0,1fr)] gap-2 text-body leading-snug text-foreground/80"
           >
-            <span className="pt-0.5 font-mono text-[10.5px] text-muted-foreground">
+            <span className="pt-0.5 font-mono text-micro text-muted-foreground">
               {String(i + 1).padStart(2, "0")}
             </span>
             <span>{q}</span>
@@ -2367,8 +2362,8 @@ function Example({
 function Template({ title, body }: { title: string; body: string }) {
   return (
     <div className="relative min-w-0 rounded-xl border border-border bg-card p-4">
-      <p className="pr-20 text-[13.5px] font-semibold">{title}</p>
-      <pre className="mt-2.5 whitespace-pre-wrap font-mono text-[12.5px] leading-7 text-foreground/80">
+      <p className="pr-20 text-body font-semibold">{title}</p>
+      <pre className="mt-2.5 whitespace-pre-wrap font-mono text-caption leading-5 text-foreground/80">
         {body}
       </pre>
       <div className="absolute right-2.5 top-2.5">
@@ -2397,8 +2392,8 @@ function Quiz() {
             key={item.q}
             className="min-w-0 rounded-xl border border-border bg-card p-4 sm:p-5"
           >
-            <legend className="float-left mb-3 w-full text-[15.5px] font-medium leading-snug">
-              <span className="mr-2 font-mono text-xs text-muted-foreground">
+            <legend className="float-left mb-3 w-full text-body font-medium leading-snug">
+              <span className="mr-2 font-mono text-caption text-muted-foreground">
                 {String(qi + 1).padStart(2, "0")}
               </span>
               {item.q}
@@ -2413,11 +2408,11 @@ function Quiz() {
                     key={id}
                     htmlFor={id}
                     className={cn(
-                      "grid cursor-pointer grid-cols-[18px_minmax(0,1fr)] gap-3 rounded-[10px] px-3 py-2.5 text-[15px] leading-6 text-foreground/85 transition-colors hover:bg-muted/60",
+                      "grid cursor-pointer grid-cols-[18px_minmax(0,1fr)] gap-3 rounded-[10px] px-3 py-2.5 text-body leading-6 text-foreground/85 transition-colors hover:bg-muted/60",
                       isCorrect &&
-                        "bg-success-bg text-foreground ring-1 ring-inset ring-success/50 hover:bg-success-bg",
+                        "rounded-l-none bg-muted text-foreground shadow-[inset_2px_0_0_0_var(--success)] hover:bg-muted",
                       isWrongPick &&
-                        "bg-danger-bg text-foreground ring-1 ring-inset ring-danger/50 hover:bg-danger-bg",
+                        "rounded-l-none bg-muted text-foreground shadow-[inset_2px_0_0_0_var(--danger)] hover:bg-muted",
                     )}
                   >
                     <input
@@ -2434,7 +2429,7 @@ function Quiz() {
               })}
             </div>
             {isAnswered && (
-              <p className="mt-2.5 px-3 text-[14px] leading-6 text-foreground/80">
+              <p className="mt-2.5 px-3 text-body leading-6 text-foreground/80">
                 <b
                   className={cn("mr-1 font-semibold", right ? "text-success-fg" : "text-danger-fg")}
                 >
@@ -2456,7 +2451,7 @@ function Quiz() {
               : "shadow-[inset_2px_0_0_0_var(--danger)]"),
         )}
       >
-        <p className="max-w-[52ch] text-[15px]">
+        <p className="max-w-[52ch] text-body">
           {!done ? (
             <>
               {answered} of {QUIZ.length} answered, {correct} right. You need {PASS_MARK} right to
