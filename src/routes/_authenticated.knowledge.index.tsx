@@ -184,6 +184,13 @@ function KnowledgeIndex() {
               (roles.includes("admin") || roles.includes("setter"))
                 ? [
                     {
+                      key: "dm-setter-playbook",
+                      title: "DM Setter Playbook",
+                      description:
+                        "The full DM setting system in conversation order: first reply, the checks, the two booking links, triage, show-up, follow-ups and daily numbers.",
+                      to: "/sops/dm-setter-playbook",
+                    },
+                    {
                       key: "setting-process",
                       title: "Setting Process",
                       description:

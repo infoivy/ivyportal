@@ -37,6 +37,21 @@ export function DocShell({
 }) {
   const [active, setActive] = useState<string>(sections[0]?.id ?? "");
   const observerRef = useRef<IntersectionObserver | null>(null);
+  const navRef = useRef<HTMLElement | null>(null);
+
+  // Long docs overflow the nav, so keep the active item in view. Scrolls the
+  // nav only, never the page.
+  useEffect(() => {
+    const nav = navRef.current;
+    const item = nav?.querySelector<HTMLElement>(`[data-section="${active}"]`);
+    if (!nav || !item || nav.scrollHeight <= nav.clientHeight) return;
+    const above = item.offsetTop < nav.scrollTop;
+    const below = item.offsetTop + item.offsetHeight > nav.scrollTop + nav.clientHeight;
+    if (above || below) {
+      const top = item.offsetTop - (nav.clientHeight - item.offsetHeight) / 2;
+      nav.scrollTo({ top, behavior: "smooth" });
+    }
+  }, [active]);
 
   useEffect(() => {
     observerRef.current?.disconnect();
@@ -95,13 +110,18 @@ export function DocShell({
           {/* No sections (e.g. an embedded live doc) → no empty rail: content
               takes the full width instead of loading "on the right side". */}
           <aside className={sections.length > 0 ? "hidden lg:block" : "hidden"}>
-            <nav className="sticky top-4 space-y-1">
+            {/* Clears the 52px frosted top bar and scrolls when the list is taller than the screen. */}
+            <nav
+              ref={navRef}
+              className="sticky top-[68px] max-h-[calc(100vh-84px)] overflow-y-auto overscroll-contain space-y-1"
+            >
               {sections.map((s) => {
                 const isActive = active === s.id;
                 const SIcon = s.icon;
                 return (
                   <button
                     key={s.id}
+                    data-section={s.id}
                     onClick={() => scrollTo(s.id)}
                     className={`w-full text-left flex items-center gap-2 px-3 py-2 rounded-md text-sm transition ${
                       isActive
